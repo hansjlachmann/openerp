@@ -1,7 +1,6 @@
 """Company management module"""
 
 from typing import Dict, List, Optional, Any
-from datetime import datetime
 from openerp.core.database import Database
 
 
@@ -10,39 +9,25 @@ class Company:
     Company management for multi-tenant ERP system.
 
     Each company represents a separate business entity with its own
-    data isolation within the system.
+    company-specific tables (CompanyName$TableName).
+
+    The Company table is a GLOBAL table with Name as the PRIMARY KEY.
     """
 
-    TABLE_NAME = "companies"
+    TABLE_NAME = "Company"  # Global table
 
-    def __init__(
-        self,
-        id: Optional[int] = None,
-        code: str = "",
-        name: str = "",
-        legal_name: Optional[str] = None,
-        tax_id: Optional[str] = None,
-        currency: str = "USD",
-        active: bool = True,
-        parent_id: Optional[int] = None,
-        created_at: Optional[datetime] = None,
-        updated_at: Optional[datetime] = None
-    ):
-        """Initialize a Company instance."""
-        self.id = id
-        self.code = code
+    def __init__(self, name: str = ""):
+        """
+        Initialize a Company instance.
+
+        Args:
+            name: Company name (PRIMARY KEY)
+        """
         self.name = name
-        self.legal_name = legal_name or name
-        self.tax_id = tax_id
-        self.currency = currency
-        self.active = active
-        self.parent_id = parent_id
-        self.created_at = created_at
-        self.updated_at = updated_at
 
     @classmethod
     def _ensure_table_exists(cls, db: Database):
-        """Ensure the companies table exists in the database."""
+        """Ensure the Company global table exists in the database."""
         cursor = db.conn.cursor()
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -50,101 +35,70 @@ class Company:
         )
 
         if not cursor.fetchone():
-            # Create companies table
-            db.create_table(
-                cls.TABLE_NAME,
-                {
-                    'code': 'TEXT NOT NULL UNIQUE',
-                    'name': 'TEXT NOT NULL',
-                    'legal_name': 'TEXT',
-                    'tax_id': 'TEXT',
-                    'currency': 'TEXT DEFAULT "USD"',
-                    'active': 'INTEGER DEFAULT 1',
-                    'parent_id': 'INTEGER',
-                },
-                on_insert="""
-# Validate company code
-if not record.get('code'):
-    raise ValueError("Company code is required")
+            # Create Company global table with Name as PRIMARY KEY
+            # Note: This bypasses the standard create_table to avoid auto-id
+            cursor.execute(f"""
+                CREATE TABLE {cls.TABLE_NAME} (
+                    Name TEXT PRIMARY KEY NOT NULL
+                )
+            """)
+            db.conn.commit()
 
-# Uppercase the code
-record['code'] = record['code'].upper()
-
-# Set legal_name to name if not provided
-if not record.get('legal_name'):
-    record['legal_name'] = record['name']
-
-print(f"Creating company: {record['name']} ({record['code']})")
-"""
-            )
+            # Register in metadata as global table
+            cursor.execute("""
+                INSERT INTO __table_metadata
+                (table_name, company_id, schema_definition, on_insert_trigger,
+                 on_update_trigger, on_delete_trigger)
+                VALUES (?, NULL, ?, NULL, NULL, NULL)
+            """, (cls.TABLE_NAME, '{"Name": "TEXT PRIMARY KEY"}'))
+            db.conn.commit()
 
     @classmethod
-    def create(
-        cls,
-        db: Database,
-        code: str,
-        name: str,
-        legal_name: Optional[str] = None,
-        tax_id: Optional[str] = None,
-        currency: str = "USD",
-        parent_id: Optional[int] = None
-    ) -> "Company":
+    def create(cls, db: Database, name: str) -> "Company":
         """
         Create a new company.
 
         Args:
             db: Database instance
-            code: Unique company code (e.g., "ACME")
-            name: Company display name
-            legal_name: Legal company name (defaults to name)
-            tax_id: Tax identification number
-            currency: Default currency code
-            parent_id: Parent company ID for subsidiaries
+            name: Company name (must be unique, used as PRIMARY KEY)
 
         Returns:
             Company instance
 
         Example:
-            company = Company.create(
-                db,
-                code="ACME",
-                name="Acme Corporation",
-                tax_id="12-3456789"
+            company = Company.create(db, "ACME")
+
+        Note:
+            This name will be used in company-specific tables as: {name}$TableName
+        """
+        cls._ensure_table_exists(db)
+
+        cursor = db.conn.cursor()
+
+        # Validate name format (no special characters except allowed ones)
+        if not cls._is_valid_company_name(name):
+            raise ValueError(
+                f"Invalid company name '{name}'. "
+                "Only alphanumeric characters, underscores, and hyphens are allowed."
             )
-        """
-        cls._ensure_table_exists(db)
 
-        cursor = db.conn.cursor()
-
-        # Import here to avoid circular dependency
-        from openerp.core.crud import CRUDManager
-        crud = CRUDManager(db)
-
-        record = {
-            'code': code.upper(),
-            'name': name,
-            'legal_name': legal_name or name,
-            'tax_id': tax_id,
-            'currency': currency,
-            'active': 1,
-            'parent_id': parent_id
-        }
-
-        result = crud.insert(cls.TABLE_NAME, record)
-
-        if not result['success']:
-            raise ValueError(f"Failed to create company: {result['errors']}")
-
-        return cls.get_by_id(db, result['id'])
+        try:
+            cursor.execute(f"INSERT INTO {cls.TABLE_NAME} (Name) VALUES (?)", (name,))
+            db.conn.commit()
+            return cls(name=name)
+        except Exception as e:
+            if "UNIQUE constraint failed" in str(e):
+                raise ValueError(f"Company '{name}' already exists")
+            raise
 
     @classmethod
-    def get_by_id(cls, db: Database, company_id: int) -> Optional["Company"]:
+    def get_by_name(cls, db: Database, name: str) -> Optional["Company"]:
         """
-        Retrieve a company by ID.
+        Retrieve a company by name.
 
         Args:
             db: Database instance
-            company_id: Company ID
+            name: Company name (PRIMARY KEY)
 
         Returns:
             Company instance or None
@@ -152,46 +106,34 @@ print(f"Creating company: {record['name']} ({record['code']})")
         cls._ensure_table_exists(db)
 
         cursor = db.conn.cursor()
-        cursor.execute(f"SELECT * FROM {cls.TABLE_NAME} WHERE id = ?", (company_id,))
+        cursor.execute(f"SELECT Name FROM {cls.TABLE_NAME} WHERE Name = ?", (name,))
         row = cursor.fetchone()
 
         if row:
-            return cls._from_db_row(dict(row))
+            return cls(name=row[0])
         return None
 
     @classmethod
-    def get_by_code(cls, db: Database, code: str) -> Optional["Company"]:
+    def exists(cls, db: Database, name: str) -> bool:
         """
-        Retrieve a company by code.
+        Check if a company exists.
 
         Args:
             db: Database instance
-            code: Company code
+            name: Company name
 
         Returns:
-            Company instance or None
+            True if company exists
         """
-        cls._ensure_table_exists(db)
-
-        cursor = db.conn.cursor()
-        cursor.execute(
-            f"SELECT * FROM {cls.TABLE_NAME} WHERE code = ?",
-            (code.upper(),)
-        )
-        row = cursor.fetchone()
-
-        if row:
-            return cls._from_db_row(dict(row))
-        return None
+        return cls.get_by_name(db, name) is not None
 
     @classmethod
-    def list_all(cls, db: Database, active_only: bool = True) -> List["Company"]:
+    def list_all(cls, db: Database) -> List["Company"]:
         """
         List all companies.
 
         Args:
             db: Database instance
-            active_only: If True, only return active companies
 
         Returns:
             List of Company instances
@@ -199,71 +141,52 @@ print(f"Creating company: {record['name']} ({record['code']})")
         cls._ensure_table_exists(db)
 
         cursor = db.conn.cursor()
-
-        if active_only:
-            cursor.execute(f"SELECT * FROM {cls.TABLE_NAME} WHERE active = 1")
-        else:
-            cursor.execute(f"SELECT * FROM {cls.TABLE_NAME}")
+        cursor.execute(f"SELECT Name FROM {cls.TABLE_NAME}")
 
         rows = cursor.fetchall()
-        return [cls._from_db_row(dict(row)) for row in rows]
+        return [cls(name=row[0]) for row in rows]
 
-    def update(self, db: Database, **kwargs):
+    def delete(self, db: Database):
         """
-        Update company fields.
+        Delete this company.
+
+        Warning: This will NOT automatically delete company-specific tables.
+        You should delete those separately if needed.
 
         Args:
             db: Database instance
-            **kwargs: Fields to update
         """
-        from openerp.core.crud import CRUDManager
-        crud = CRUDManager(db)
+        cursor = db.conn.cursor()
+        cursor.execute(f"DELETE FROM {cls.TABLE_NAME} WHERE Name = ?", (self.name,))
+        db.conn.commit()
 
-        result = crud.update(self.TABLE_NAME, self.id, kwargs)
+    @staticmethod
+    def _is_valid_company_name(name: str) -> bool:
+        """
+        Validate company name format.
 
-        if not result['success']:
-            raise ValueError(f"Failed to update company: {result['errors']}")
-
-        # Update instance attributes
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def deactivate(self, db: Database):
-        """Deactivate the company."""
-        self.update(db, active=False)
+        Only alphanumeric, underscore, and hyphen allowed.
+        Must not be empty.
+        """
+        if not name:
+            return False
+        import re
+        return bool(re.match(r'^[a-zA-Z0-9_-]+$', name))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert company to dictionary."""
-        return {
-            'id': self.id,
-            'code': self.code,
-            'name': self.name,
-            'legal_name': self.legal_name,
-            'tax_id': self.tax_id,
-            'currency': self.currency,
-            'active': self.active,
-            'parent_id': self.parent_id,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-        }
-
-    @classmethod
-    def _from_db_row(cls, row: Dict[str, Any]) -> "Company":
-        """Create Company instance from database row."""
-        return cls(
-            id=row['id'],
-            code=row['code'],
-            name=row['name'],
-            legal_name=row.get('legal_name'),
-            tax_id=row.get('tax_id'),
-            currency=row.get('currency', 'USD'),
-            active=bool(row.get('active', 1)),
-            parent_id=row.get('parent_id'),
-            created_at=row.get('created_at'),
-            updated_at=row.get('updated_at')
-        )
+        return {'name': self.name}
 
     def __repr__(self):
         """String representation of Company."""
-        return f"<Company {self.code}: {self.name}>"
+        return f"<Company {self.name}>"
+
+    def __eq__(self, other):
+        """Check equality based on name."""
+        if not isinstance(other, Company):
+            return False
+        return self.name == other.name
+
+    def __hash__(self):
+        """Hash based on name."""
+        return hash(self.name)

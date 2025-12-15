@@ -54,26 +54,30 @@ class CRUDManager:
     def insert(
         self,
         table_name: str,
-        record: Dict[str, Any],
-        company_id: Optional[int] = None
+        record: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Insert a new record with ON_INSERT trigger execution.
 
         Args:
-            table_name: Name of the table
+            table_name: Full table name (may include company prefix like "ACME$Customers")
             record: Dictionary of field_name: value
-            company_id: Optional company ID
 
         Returns:
             Dictionary with insert result and the inserted record
 
         Example:
-            result = crud.insert('customers', {
+            # Company-specific table
+            result = crud.insert('ACME$Customers', {
                 'name': 'John Doe',
                 'email': 'john@example.com'
             })
-            print(result['id'])  # Auto-generated ID
+
+            # Global table
+            result = crud.insert('SystemSettings', {
+                'key': 'theme',
+                'value': 'dark'
+            })
         """
         # Execute ON_INSERT trigger
         trigger_result = self.trigger_manager.execute_trigger(
@@ -92,16 +96,13 @@ class CRUDManager:
         # Use the modified record from trigger
         modified_record = trigger_result['record']
 
-        # Add company_id if specified
-        if company_id is not None:
-            modified_record['company_id'] = company_id
-
         # Build INSERT statement
         fields = list(modified_record.keys())
         placeholders = ', '.join(['?' for _ in fields])
         field_names = ', '.join(fields)
 
-        sql = f"INSERT INTO {table_name} ({field_names}) VALUES ({placeholders})"
+        # Use quotes around table name to handle $ character
+        sql = f'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
         values = tuple(modified_record[f] for f in fields)
 
         try:
@@ -132,7 +133,7 @@ class CRUDManager:
         Update a record with ON_UPDATE trigger execution.
 
         Args:
-            table_name: Name of the table
+            table_name: Full table name (may include company prefix)
             record_id: ID of the record to update
             updates: Dictionary of fields to update
 
@@ -140,7 +141,7 @@ class CRUDManager:
             Dictionary with update result
 
         Example:
-            crud.update('customers', 1, {'email': 'newemail@example.com'})
+            crud.update('ACME$Customers', 1, {'email': 'newemail@example.com'})
         """
         # Fetch the old record
         old_record = self.get_by_id(table_name, record_id)
@@ -175,7 +176,8 @@ class CRUDManager:
         set_clause = ', '.join([f"{field} = ?" for field in updates.keys()])
         set_clause += ", updated_at = ?"
 
-        sql = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+        # Use quotes around table name to handle $ character
+        sql = f'UPDATE "{table_name}" SET {set_clause} WHERE id = ?'
         values = tuple(modified_record[f] for f in updates.keys())
         values += (modified_record['updated_at'], record_id)
 
@@ -198,14 +200,14 @@ class CRUDManager:
         Delete a record with ON_DELETE trigger execution.
 
         Args:
-            table_name: Name of the table
+            table_name: Full table name (may include company prefix)
             record_id: ID of the record to delete
 
         Returns:
             Dictionary with delete result
 
         Example:
-            crud.delete('customers', 1)
+            crud.delete('ACME$Customers', 1)
         """
         # Fetch the record before deletion
         old_record = self.get_by_id(table_name, record_id)
@@ -227,7 +229,8 @@ class CRUDManager:
             }
 
         # Perform the deletion
-        sql = f"DELETE FROM {table_name} WHERE id = ?"
+        # Use quotes around table name to handle $ character
+        sql = f'DELETE FROM "{table_name}" WHERE id = ?'
 
         try:
             self.db.execute(sql, (record_id,))
@@ -248,14 +251,15 @@ class CRUDManager:
         Retrieve a single record by ID.
 
         Args:
-            table_name: Name of the table
+            table_name: Full table name (may include company prefix)
             record_id: ID of the record
 
         Returns:
             Dictionary with the record or error
         """
         cursor = self.db.conn.cursor()
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = ?", (record_id,))
+        # Use quotes around table name to handle $ character
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = ?', (record_id,))
         row = cursor.fetchone()
 
         if row:
@@ -272,7 +276,6 @@ class CRUDManager:
     def get_all(
         self,
         table_name: str,
-        company_id: Optional[int] = None,
         limit: Optional[int] = None,
         offset: int = 0
     ) -> Dict[str, Any]:
@@ -280,8 +283,7 @@ class CRUDManager:
         Retrieve all records from a table.
 
         Args:
-            table_name: Name of the table
-            company_id: Optional company ID filter
+            table_name: Full table name (may include company prefix)
             limit: Maximum number of records to return
             offset: Number of records to skip
 
@@ -290,16 +292,11 @@ class CRUDManager:
         """
         cursor = self.db.conn.cursor()
 
-        sql = f"SELECT * FROM {table_name}"
-        params = []
-
-        if company_id is not None:
-            sql += " WHERE company_id = ?"
-            params.append(company_id)
-
+        # Use quotes around table name to handle $ character
+        sql = f'SELECT * FROM "{table_name}"'
         sql += f" LIMIT {limit or -1} OFFSET {offset}"
 
-        cursor.execute(sql, tuple(params))
+        cursor.execute(sql)
         rows = cursor.fetchall()
 
         return {
@@ -311,33 +308,28 @@ class CRUDManager:
     def search(
         self,
         table_name: str,
-        conditions: Dict[str, Any],
-        company_id: Optional[int] = None
+        conditions: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Search for records matching conditions.
 
         Args:
-            table_name: Name of the table
+            table_name: Full table name (may include company prefix)
             conditions: Dictionary of field: value conditions
-            company_id: Optional company ID filter
 
         Returns:
             Dictionary with matching records
 
         Example:
-            crud.search('customers', {'name': 'John Doe'})
+            crud.search('ACME$Customers', {'name': 'John Doe'})
         """
         cursor = self.db.conn.cursor()
 
         where_clauses = [f"{field} = ?" for field in conditions.keys()]
         params = list(conditions.values())
 
-        if company_id is not None:
-            where_clauses.append("company_id = ?")
-            params.append(company_id)
-
-        sql = f"SELECT * FROM {table_name} WHERE {' AND '.join(where_clauses)}"
+        # Use quotes around table name to handle $ character
+        sql = f'SELECT * FROM "{table_name}" WHERE {" AND ".join(where_clauses)}'
 
         cursor.execute(sql, tuple(params))
         rows = cursor.fetchall()
