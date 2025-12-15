@@ -13,9 +13,15 @@ class Database:
 
     This class provides:
     - Dynamic table creation and management
+    - Company-specific tables (CompanyName$TableName)
+    - Global tables (available to all companies)
     - Metadata storage for table definitions
     - Connection management
     - Schema introspection
+
+    Table Naming Convention:
+    - Global tables: TableName (e.g., "Company", "SystemSettings")
+    - Company-specific tables: CompanyName$TableName (e.g., "ACME$Customers")
     """
 
     def __init__(self, db_path: Union[str, Path] = ":memory:"):
@@ -38,7 +44,8 @@ class Database:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS __table_metadata (
                 table_name TEXT PRIMARY KEY,
-                company_id INTEGER,
+                company_name TEXT,
+                is_global INTEGER DEFAULT 0,
                 schema_definition TEXT,
                 on_insert_trigger TEXT,
                 on_update_trigger TEXT,
@@ -64,36 +71,97 @@ class Database:
 
         self.conn.commit()
 
+    @staticmethod
+    def get_full_table_name(table_name: str, company_name: Optional[str] = None) -> str:
+        """
+        Get the full table name with company prefix if applicable.
+
+        Args:
+            table_name: Base table name
+            company_name: Company name (None for global tables)
+
+        Returns:
+            Full table name (CompanyName$TableName or TableName)
+
+        Example:
+            get_full_table_name("Customers", "ACME") -> "ACME$Customers"
+            get_full_table_name("Company", None) -> "Company"
+        """
+        if company_name:
+            return f"{company_name}${table_name}"
+        return table_name
+
+    @staticmethod
+    def parse_table_name(full_table_name: str) -> tuple[Optional[str], str]:
+        """
+        Parse a full table name into company name and table name.
+
+        Args:
+            full_table_name: Full table name (may include company prefix)
+
+        Returns:
+            Tuple of (company_name, table_name)
+
+        Example:
+            parse_table_name("ACME$Customers") -> ("ACME", "Customers")
+            parse_table_name("Company") -> (None, "Company")
+        """
+        if '$' in full_table_name:
+            parts = full_table_name.split('$', 1)
+            return parts[0], parts[1]
+        return None, full_table_name
+
     def create_table(
         self,
         table_name: str,
         fields: Dict[str, str],
-        company_id: Optional[int] = None,
+        company_name: Optional[str] = None,
         on_insert: Optional[str] = None,
         on_update: Optional[str] = None,
-        on_delete: Optional[str] = None
+        on_delete: Optional[str] = None,
+        is_global: bool = False
     ) -> bool:
         """
         Create a new dynamic table with optional triggers.
 
         Args:
-            table_name: Name of the table to create
+            table_name: Base name of the table to create
             fields: Dictionary of field_name: field_type
-            company_id: Optional company ID for multi-tenancy
+            company_name: Company name for company-specific table
             on_insert: Python code to execute on insert
             on_update: Python code to execute on update
             on_delete: Python code to execute on delete
+            is_global: If True, creates a global table (ignores company_name)
 
         Returns:
             True if successful
 
         Example:
-            db.create_table('customers', {
-                'name': 'TEXT NOT NULL',
-                'email': 'TEXT UNIQUE',
-                'balance': 'REAL DEFAULT 0'
-            })
+            # Global table
+            db.create_table('SystemSettings', {...}, is_global=True)
+
+            # Company-specific table
+            db.create_table('Customers', {...}, company_name='ACME')
+            # Creates: ACME$Customers
         """
+        if is_global:
+            return self._create_global_table(table_name, fields, on_insert, on_update, on_delete)
+        else:
+            if not company_name:
+                raise ValueError("company_name is required for company-specific tables")
+            return self._create_company_table(
+                table_name, company_name, fields, on_insert, on_update, on_delete
+            )
+
+    def _create_global_table(
+        self,
+        table_name: str,
+        fields: Dict[str, str],
+        on_insert: Optional[str] = None,
+        on_update: Optional[str] = None,
+        on_delete: Optional[str] = None
+    ) -> bool:
+        """Create a global table (accessible to all companies)."""
         cursor = self.conn.cursor()
 
         # Check if table already exists
@@ -102,18 +170,13 @@ class Database:
             (table_name,)
         )
         if cursor.fetchone():
-            raise ValueError(f"Table '{table_name}' already exists")
+            raise ValueError(f"Global table '{table_name}' already exists")
 
         # Build CREATE TABLE statement
-        # Always include id as primary key
         field_defs = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
 
         for field_name, field_type in fields.items():
             field_defs.append(f"{field_name} {field_type}")
-
-        # Add company_id if specified
-        if company_id is not None:
-            field_defs.append("company_id INTEGER")
 
         # Add audit fields
         field_defs.extend([
@@ -128,10 +191,10 @@ class Database:
         schema_json = json.dumps(fields)
         cursor.execute("""
             INSERT INTO __table_metadata
-            (table_name, company_id, schema_definition, on_insert_trigger,
+            (table_name, company_name, is_global, schema_definition, on_insert_trigger,
              on_update_trigger, on_delete_trigger)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (table_name, company_id, schema_json, on_insert, on_update, on_delete))
+            VALUES (?, NULL, 1, ?, ?, ?, ?)
+        """, (table_name, schema_json, on_insert, on_update, on_delete))
 
         # Store field metadata
         for field_name, field_type in fields.items():
@@ -141,6 +204,65 @@ class Database:
                 (table_name, field_name, field_type, required)
                 VALUES (?, ?, ?, ?)
             """, (table_name, field_name, field_type, required))
+
+        self.conn.commit()
+        return True
+
+    def _create_company_table(
+        self,
+        table_name: str,
+        company_name: str,
+        fields: Dict[str, str],
+        on_insert: Optional[str] = None,
+        on_update: Optional[str] = None,
+        on_delete: Optional[str] = None
+    ) -> bool:
+        """Create a company-specific table (CompanyName$TableName)."""
+        cursor = self.conn.cursor()
+
+        # Build full table name with company prefix
+        full_table_name = self.get_full_table_name(table_name, company_name)
+
+        # Check if table already exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (full_table_name,)
+        )
+        if cursor.fetchone():
+            raise ValueError(f"Company table '{full_table_name}' already exists")
+
+        # Build CREATE TABLE statement
+        field_defs = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
+
+        for field_name, field_type in fields.items():
+            field_defs.append(f"{field_name} {field_type}")
+
+        # Add audit fields
+        field_defs.extend([
+            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        ])
+
+        create_sql = f'CREATE TABLE "{full_table_name}" ({", ".join(field_defs)})'
+        cursor.execute(create_sql)
+
+        # Store metadata
+        schema_json = json.dumps(fields)
+        cursor.execute("""
+            INSERT INTO __table_metadata
+            (table_name, company_name, is_global, schema_definition, on_insert_trigger,
+             on_update_trigger, on_delete_trigger)
+            VALUES (?, ?, 0, ?, ?, ?, ?)
+        """, (full_table_name, company_name, schema_json, on_insert, on_update, on_delete))
+
+        # Store field metadata
+        for field_name, field_type in fields.items():
+            required = 1 if "NOT NULL" in field_type.upper() else 0
+            cursor.execute("""
+                INSERT INTO __field_metadata
+                (table_name, field_name, field_type, required)
+                VALUES (?, ?, ?, ?)
+            """, (full_table_name, field_name, field_type, required))
 
         self.conn.commit()
         return True
@@ -157,26 +279,93 @@ class Database:
             return dict(row)
         return None
 
-    def list_tables(self, company_id: Optional[int] = None) -> List[str]:
+    def list_tables(self, company_name: Optional[str] = None, include_global: bool = True) -> List[str]:
         """
         List all tables, optionally filtered by company.
 
         Args:
-            company_id: Optional company ID filter
+            company_name: Optional company name filter (returns CompanyName$TableName tables)
+            include_global: If True, includes global tables in the result
 
         Returns:
-            List of table names
+            List of full table names
+
+        Example:
+            list_tables() -> ["Company", "ACME$Customers", "ACME$Orders"]
+            list_tables("ACME") -> ["Company", "ACME$Customers", "ACME$Orders"]
+            list_tables("ACME", include_global=False) -> ["ACME$Customers", "ACME$Orders"]
         """
         cursor = self.conn.cursor()
-        if company_id is not None:
-            cursor.execute(
-                "SELECT table_name FROM __table_metadata WHERE company_id = ?",
-                (company_id,)
-            )
+
+        if company_name is not None:
+            if include_global:
+                cursor.execute(
+                    "SELECT table_name FROM __table_metadata WHERE company_name = ? OR is_global = 1",
+                    (company_name,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT table_name FROM __table_metadata WHERE company_name = ?",
+                    (company_name,)
+                )
         else:
             cursor.execute("SELECT table_name FROM __table_metadata")
 
         return [row[0] for row in cursor.fetchall()]
+
+    def list_global_tables(self) -> List[str]:
+        """
+        List all global tables.
+
+        Returns:
+            List of global table names
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT table_name FROM __table_metadata WHERE is_global = 1")
+        return [row[0] for row in cursor.fetchall()]
+
+    def list_company_tables(self, company_name: str, base_names_only: bool = False) -> List[str]:
+        """
+        List all tables for a specific company.
+
+        Args:
+            company_name: Company name
+            base_names_only: If True, returns just the table names without company prefix
+
+        Returns:
+            List of table names
+
+        Example:
+            list_company_tables("ACME") -> ["ACME$Customers", "ACME$Orders"]
+            list_company_tables("ACME", base_names_only=True) -> ["Customers", "Orders"]
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT table_name FROM __table_metadata WHERE company_name = ?",
+            (company_name,)
+        )
+
+        tables = [row[0] for row in cursor.fetchall()]
+
+        if base_names_only:
+            return [self.parse_table_name(t)[1] for t in tables]
+
+        return tables
+
+    def is_global_table(self, table_name: str) -> bool:
+        """
+        Check if a table is global.
+
+        Args:
+            table_name: Table name to check
+
+        Returns:
+            True if the table is global
+        """
+        metadata = self.get_table_metadata(table_name)
+        if metadata:
+            return bool(metadata['is_global'])
+        return False
 
     def drop_table(self, table_name: str) -> bool:
         """
