@@ -6,8 +6,9 @@ A lightweight, flexible ERP system built from scratch with Python.
 
 - **Object Table Storage**: Dynamic table creation and management
 - **Python Code Execution Engine**: Safe execution of custom business logic
-- **Company Management**: Multi-company support
+- **Company Management**: Multi-company support with physical table separation
 - **Table CRUD Operations**: Full CRUD with trigger support (OnInsert, OnUpdate, OnDelete)
+- **Multi-Language Support (i18n)**: Complete translation system for UI elements, table/field names, messages, and more
 
 ## Architecture
 
@@ -17,7 +18,8 @@ openerp/
 │   ├── database.py    # Object table storage engine
 │   ├── executor.py    # Python code execution engine
 │   ├── triggers.py    # Trigger system
-│   └── crud.py        # CRUD operations
+│   ├── crud.py        # CRUD operations
+│   └── i18n.py        # Multi-language support
 ├── models/         # Data models
 │   ├── company.py     # Company management
 │   └── table.py       # Table definitions
@@ -43,6 +45,39 @@ OpenERP uses **physical table separation** for multi-company support:
   - Complete data isolation at the database level
 
 See [COMPANY_ARCHITECTURE.md](COMPANY_ARCHITECTURE.md) for detailed documentation.
+
+## Multi-Language Support
+
+OpenERP includes built-in support for multi-language applications:
+
+```python
+from openerp import Database, Language, init_i18n, t
+
+db = Database('openerp.db')
+
+# Initialize translation system
+tm = init_i18n(db, default_language="en")
+
+# Create languages
+Language.create(db, "en", "English", "English", is_default=True)
+Language.create(db, "es", "Spanish", "Español")
+Language.create(db, "nl", "Dutch", "Nederlands")
+
+# Add translations
+tm.add_translation("es", "table_name", "Customers", "Clientes")
+tm.add_translation("nl", "table_name", "Customers", "Klanten")
+
+# Use translations
+tm.set_language("es")
+print(t("Customers", "table_name"))  # "Clientes"
+```
+
+**Translatable Elements:**
+- Table names, Field names, Form labels
+- Buttons, Messages, Dialogs
+- Reports, Menus, Validation messages
+
+See [MULTI_LANGUAGE.md](MULTI_LANGUAGE.md) for complete documentation.
 
 ## Quick Start
 
@@ -95,6 +130,7 @@ Phase 1 - Foundation (Complete)
 - [x] Company management (Name as PRIMARY KEY)
 - [x] CRUD with triggers (OnInsert, OnUpdate, OnDelete)
 - [x] Global vs company-specific table support
+- [x] Multi-language support (i18n) for all UI elements
 - [x] Comprehensive test suite
 - [x] Example scripts and documentation
 
