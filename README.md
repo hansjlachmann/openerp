@@ -30,40 +30,73 @@ openerp/
 pip install -r requirements.txt
 ```
 
+## Company Architecture
+
+OpenERP uses **physical table separation** for multi-company support:
+
+- **Global Tables**: `TableName` (e.g., `Company`, `SystemSettings`)
+  - Accessible to all companies
+  - Used for system-wide configuration
+
+- **Company-Specific Tables**: `CompanyName$TableName` (e.g., `ACME$Customers`)
+  - Each company has physically separate tables
+  - Complete data isolation at the database level
+
+See [COMPANY_ARCHITECTURE.md](COMPANY_ARCHITECTURE.md) for detailed documentation.
+
 ## Quick Start
 
 ```python
-from openerp.core.database import Database
-from openerp.models.company import Company
+from openerp import Database, Company
+from openerp.core.crud import CRUDManager
 
 # Initialize database
 db = Database('openerp.db')
+crud = CRUDManager(db)
 
 # Create a company
-company = Company.create(db, name="Acme Corp", code="ACME")
+company = Company.create(db, "ACME")  # Name is PRIMARY KEY
 
-# Create a custom table with OnInsert trigger
-table = db.create_table('customers', {
-    'name': 'TEXT',
-    'email': 'TEXT',
-    'created_at': 'TIMESTAMP'
-}, on_insert="""
-record['created_at'] = datetime.now()
+# Create a company-specific table with OnInsert trigger
+db.create_table(
+    'Customers',  # Base table name
+    {
+        'name': 'TEXT',
+        'email': 'TEXT'
+    },
+    company_name='ACME',  # Creates: ACME$Customers
+    on_insert="""
+from datetime import datetime
+record['email'] = record['email'].lower()
 print(f"New customer: {record['name']}")
-""")
+"""
+)
 
-# Insert data (trigger will execute)
-db.insert('customers', {'name': 'John Doe', 'email': 'john@example.com'})
+# Insert data into company-specific table (trigger will execute)
+crud.insert('ACME$Customers', {
+    'name': 'John Doe',
+    'email': 'JOHN@EXAMPLE.COM'  # Will be lowercased by trigger
+})
+
+# Create a global table
+db.create_table(
+    'SystemSettings',
+    {'key': 'TEXT', 'value': 'TEXT'},
+    is_global=True
+)
 ```
 
 ## Development Status
 
-Phase 1 - Foundation (In Progress)
+Phase 1 - Foundation (Complete)
 - [x] Project structure
-- [ ] Object table storage
-- [ ] Python execution engine
-- [ ] Company management
-- [ ] CRUD with triggers
+- [x] Object table storage with CompanyName$TableName architecture
+- [x] Python execution engine (RestrictedPython-based)
+- [x] Company management (Name as PRIMARY KEY)
+- [x] CRUD with triggers (OnInsert, OnUpdate, OnDelete)
+- [x] Global vs company-specific table support
+- [x] Comprehensive test suite
+- [x] Example scripts and documentation
 
 ## License
 
