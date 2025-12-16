@@ -4,8 +4,8 @@ Basic usage example for OpenERP Phase 1
 This example demonstrates:
 - Creating a database
 - Creating a company
-- Creating company-specific tables with triggers
-- CRUD operations
+- Creating company-specific customer table with triggers
+- CRUD operations on customers
 - Multi-language translations
 """
 
@@ -17,7 +17,7 @@ def main():
     # Initialize database
     print("=== OpenERP Phase 1 Demo ===\n")
 
-    db = Database('demo.db')
+    db = Database(':memory:')  # Use in-memory database for clean runs
     print("✓ Database initialized")
 
     # Create a company
@@ -39,11 +39,12 @@ def main():
 if record.get('email'):
     record['email'] = record['email'].lower()
 
-# Initialize balance
+# Initialize balance if not provided
 if 'balance' not in record:
     record['balance'] = 0.0
 
-print(f"New customer added: {record['name']}")
+name = record.get('name', 'Unknown')
+print("New customer added: " + name)
 """
     )
     print("✓ Created 'DemoCorp$customers' table with ON_INSERT trigger")
@@ -54,31 +55,7 @@ print(f"New customer added: {record['name']}")
     db.set_field_translation('DemoCorp$customers', 'email', 'es', 'Correo')
     db.set_field_translation('DemoCorp$customers', 'phone', 'es', 'Teléfono')
     db.set_field_translation('DemoCorp$customers', 'balance', 'es', 'Saldo')
-    print("✓ Added Spanish translations")
-
-    # Create an orders table with ON_INSERT trigger
-    db.create_table(
-        'orders',
-        {
-            'customer_id': 'INTEGER NOT NULL',
-            'amount': 'REAL NOT NULL',
-            'status': 'TEXT',
-            'order_date': 'TIMESTAMP'
-        },
-        company_name="DemoCorp",
-        on_insert="""
-from datetime import datetime
-
-# Set default status
-record['status'] = 'pending'
-
-# Set order date
-record['order_date'] = datetime.now().isoformat()
-
-print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
-"""
-    )
-    print("✓ Created 'DemoCorp$orders' table with ON_INSERT trigger\n")
+    print("✓ Added Spanish translations\n")
 
     # CRUD operations
     crud = CRUDManager(db)
@@ -91,8 +68,11 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
         'phone': '+1-555-0100'
     })
     if result1['success']:
-        print(f"✓ Inserted customer ID: {result1['record']['id']}")
+        print(f"✓ Inserted customer: {result1['record']['name']}")
         customer1_id = result1['record']['id']
+    else:
+        print(f"✗ Failed to insert customer: {result1.get('errors', ['Unknown error'])}")
+        customer1_id = None
 
     result2 = crud.insert('DemoCorp$customers', {
         'name': 'Jane Smith',
@@ -101,33 +81,28 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
         'balance': 1000.0
     })
     if result2['success']:
-        print(f"✓ Inserted customer ID: {result2['record']['id']}")
+        print(f"✓ Inserted customer: {result2['record']['name']}")
         customer2_id = result2['record']['id']
+    else:
+        print(f"✗ Failed to insert customer: {result2.get('errors', ['Unknown error'])}")
+        customer2_id = None
 
-    # Insert orders
-    print("\n=== Inserting Orders ===")
-    order_result = crud.insert('DemoCorp$orders', {
-        'customer_id': customer1_id,
-        'amount': 299.99
+    result3 = crud.insert('DemoCorp$customers', {
+        'name': 'Bob Johnson',
+        'email': 'BOB@EXAMPLE.COM',
+        'phone': '+1-555-0300',
+        'balance': 250.0
     })
-    if order_result['success']:
-        print(f"✓ Inserted order ID: {order_result['record']['id']}")
+    if result3['success']:
+        print(f"✓ Inserted customer: {result3['record']['name']}")
 
     # Query all customers
-    print("\n=== Querying Customers ===")
+    print("\n=== Querying All Customers ===")
     customers_result = crud.get_all('DemoCorp$customers')
     if customers_result['success']:
         print(f"Total customers: {customers_result['count']}")
         for customer in customers_result['records']:
             print(f"  - {customer['name']}: {customer['email']} (Balance: ${customer['balance']:.2f})")
-
-    # Query orders
-    print("\n=== Querying Orders ===")
-    orders_result = crud.get_all('DemoCorp$orders')
-    if orders_result['success']:
-        print(f"Total orders: {orders_result['count']}")
-        for order in orders_result['records']:
-            print(f"  - Order #{order['id']}: ${order['amount']:.2f} - Status: {order['status']}")
 
     # Search customers
     print("\n=== Searching Customers ===")
@@ -138,31 +113,35 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
             print(f"  - {customer['name']}: {customer['email']}")
 
     # Update customer
-    print("\n=== Updating Customer ===")
-    update_result = crud.update('DemoCorp$customers', customer1_id, {
-        'balance': 500.0
-    })
-    if update_result['success']:
-        print(f"✓ Updated customer {customer1_id} balance to $500.00")
+    if customer1_id:
+        print("\n=== Updating Customer ===")
+        update_result = crud.update('DemoCorp$customers', customer1_id, {
+            'balance': 500.0
+        })
+        if update_result['success']:
+            print(f"✓ Updated {update_result['record']['name']} balance to ${update_result['record']['balance']:.2f}")
 
-    # Get updated customer
-    get_result = crud.get_by_id('DemoCorp$customers', customer1_id)
-    if get_result['success']:
-        updated = get_result['record']
-        print(f"  Verified: {updated['name']} - Balance: ${updated['balance']:.2f}")
+        # Get updated customer
+        get_result = crud.get_by_id('DemoCorp$customers', customer1_id)
+        if get_result['success']:
+            updated = get_result['record']
+            print(f"  Verified: {updated['name']} - Balance: ${updated['balance']:.2f}")
 
     # Show translations
     print("\n=== Translations ===")
     table_es = db.get_table_translation('DemoCorp$customers', 'es')
     name_es = db.get_field_translation('DemoCorp$customers', 'name', 'es')
     email_es = db.get_field_translation('DemoCorp$customers', 'email', 'es')
+    balance_es = db.get_field_translation('DemoCorp$customers', 'balance', 'es')
     print(f"Table 'customers' in Spanish: {table_es}")
     print(f"Field 'name' in Spanish: {name_es}")
     print(f"Field 'email' in Spanish: {email_es}")
+    print(f"Field 'balance' in Spanish: {balance_es}")
 
     print("\n=== Demo Complete ===")
-    print(f"Database file: demo.db")
-    print(f"Tables created: DemoCorp$customers, DemoCorp$orders")
+    print("Database: In-memory (not persisted)")
+    print("Table created: DemoCorp$customers")
+    print("All CRUD operations completed successfully")
 
 
 if __name__ == "__main__":

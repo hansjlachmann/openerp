@@ -4,7 +4,16 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 import pytz
 from RestrictedPython import compile_restricted, safe_globals
-from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence
+from RestrictedPython.Guards import (
+    guarded_iter_unpack_sequence,
+    guarded_unpack_sequence,
+    safe_builtins,
+    safer_getattr
+)
+from RestrictedPython.PrintCollector import PrintCollector
+
+# Save reference to the real __import__ before it's restricted
+_real_import = __import__
 
 
 class CodeExecutor:
@@ -26,38 +35,50 @@ class CodeExecutor:
         Returns:
             Dictionary of safe builtin functions and modules
         """
-        safe_builtins = safe_globals.copy()
+        # Define safe import function
+        def safe_import(name, *args, **kwargs):
+            """Allow only safe modules to be imported."""
+            safe_modules = {'re', 'datetime', 'json', 'math', 'decimal', 'uuid', 'time'}
+            if name in safe_modules:
+                return _real_import(name, *args, **kwargs)
+            raise ImportError(f"Import of module '{name}' is not allowed")
+
+        # Start with RestrictedPython's safe_builtins
+        builtins_dict = safe_builtins.copy()
+
+        # Add safe_globals for additional safety
+        builtins_dict.update(safe_globals)
+
+        # Create custom __builtins__ with safe_import
+        custom_builtins = safe_builtins.copy()
+        custom_builtins['__import__'] = safe_import
+
+        # Define safe container write function
+        def safe_write(obj):
+            """Allow writing to containers like dicts and lists."""
+            return obj
+
+        # Define safe getitem function for dictionary/list access
+        def safe_getitem(obj, key):
+            """Allow getting items from dicts and lists."""
+            return obj[key]
 
         # Add safe utilities
-        safe_builtins.update({
+        builtins_dict.update({
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
+            '_getattr_': safer_getattr,  # Guarded attribute access
+            '_getitem_': safe_getitem,  # Allow dict/list item access
+            '_write_': safe_write,  # Allow container writes
+            '_print_': PrintCollector,  # RestrictedPython's print collector
+            '__builtins__': custom_builtins,  # Custom builtins with safe_import
+            '__import__': safe_import,  # Also add to global namespace
             'datetime': datetime,
             'pytz': pytz,
-            # Safe built-in functions
-            'len': len,
-            'str': str,
-            'int': int,
-            'float': float,
-            'bool': bool,
-            'list': list,
-            'dict': dict,
-            'tuple': tuple,
-            'set': set,
-            'min': min,
-            'max': max,
-            'sum': sum,
-            'abs': abs,
-            'round': round,
-            'sorted': sorted,
-            'enumerate': enumerate,
-            'zip': zip,
-            'range': range,
-            'print': print,
         })
 
-        return safe_builtins
+        return builtins_dict
 
     def execute(
         self,
@@ -95,7 +116,8 @@ class CodeExecutor:
             # Compile with restrictions
             byte_code = compile_restricted(code, '<string>', mode)
 
-            if byte_code.errors:
+            # Check if compile_restricted returned errors
+            if hasattr(byte_code, 'errors') and byte_code.errors:
                 return {
                     'success': False,
                     'errors': byte_code.errors,
@@ -105,6 +127,16 @@ class CodeExecutor:
             # Execute the code
             if mode == 'exec':
                 exec(byte_code, exec_globals)
+
+                # Handle print output from PrintCollector
+                # RestrictedPython creates a _print instance (without trailing underscore)
+                if '_print' in exec_globals:
+                    printer = exec_globals['_print']
+                    if hasattr(printer, '__call__'):
+                        printed = printer()
+                        if printed:
+                            print(printed, end='')
+
                 # Extract modified context (excluding builtins)
                 result_context = {
                     k: v for k, v in exec_globals.items()
@@ -141,7 +173,8 @@ class CodeExecutor:
         try:
             byte_code = compile_restricted(code, '<string>', 'exec')
 
-            if byte_code.errors:
+            # Check if compile_restricted returned errors
+            if hasattr(byte_code, 'errors') and byte_code.errors:
                 return {
                     'valid': False,
                     'errors': byte_code.errors
