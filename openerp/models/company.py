@@ -47,9 +47,9 @@ class Company:
             # Register in metadata as global table
             cursor.execute("""
                 INSERT INTO __table_metadata
-                (table_name, company_id, schema_definition, on_insert_trigger,
-                 on_update_trigger, on_delete_trigger)
-                VALUES (?, NULL, ?, NULL, NULL, NULL)
+                (table_name, company_name, is_global, schema_definition, translations,
+                 on_insert_trigger, on_update_trigger, on_delete_trigger)
+                VALUES (?, NULL, 1, ?, NULL, NULL, NULL, NULL)
             """, (cls.TABLE_NAME, '{"Name": "TEXT PRIMARY KEY"}'))
             db.conn.commit()
 

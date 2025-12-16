@@ -8,7 +8,7 @@ A lightweight, flexible ERP system built from scratch with Python.
 - **Python Code Execution Engine**: Safe execution of custom business logic
 - **Company Management**: Multi-company support with physical table separation
 - **Table CRUD Operations**: Full CRUD with trigger support (OnInsert, OnUpdate, OnDelete)
-- **Multi-Language Support (i18n)**: Complete translation system for UI elements, table/field names, messages, and more
+- **Multi-Language Support**: Translation system for table and field names
 
 ## Architecture
 
@@ -18,8 +18,7 @@ openerp/
 │   ├── database.py    # Object table storage engine
 │   ├── executor.py    # Python code execution engine
 │   ├── triggers.py    # Trigger system
-│   ├── crud.py        # CRUD operations
-│   └── i18n.py        # Multi-language support
+│   └── crud.py        # CRUD operations
 ├── models/         # Data models
 │   ├── company.py     # Company management
 │   └── table.py       # Table definitions
@@ -48,36 +47,28 @@ See [COMPANY_ARCHITECTURE.md](COMPANY_ARCHITECTURE.md) for detailed documentatio
 
 ## Multi-Language Support
 
-OpenERP includes built-in support for multi-language applications:
+OpenERP includes built-in multi-language translation support for table and field names:
+
+- **Translation Storage**: Translations stored as JSON in metadata tables
+- **Multiple Languages**: Support for unlimited language codes (ISO 639-1)
+- **Fallback Support**: Automatic fallback to original names when translations missing
+- **Easy API**: Simple methods to set and retrieve translations
 
 ```python
-from openerp import Database, Language, init_i18n, t
+# Set translations for a table
+db.set_table_translation("ACME$Customers", "es", "Clientes")
+db.set_table_translation("ACME$Customers", "fr", "Clients")
 
-db = Database('openerp.db')
+# Set translations for a field
+db.set_field_translation("ACME$Customers", "Email", "es", "Correo electrónico")
+db.set_field_translation("ACME$Customers", "Email", "fr", "Courriel")
 
-# Initialize translation system
-tm = init_i18n(db, default_language="en")
-
-# Create languages
-Language.create(db, "en", "English", "English", is_default=True)
-Language.create(db, "es", "Spanish", "Español")
-Language.create(db, "nl", "Dutch", "Nederlands")
-
-# Add translations
-tm.add_translation("es", "table_name", "Customers", "Clientes")
-tm.add_translation("nl", "table_name", "Customers", "Klanten")
-
-# Use translations
-tm.set_language("es")
-print(t("Customers", "table_name"))  # "Clientes"
+# Retrieve translations
+table_name_es = db.get_table_translation("ACME$Customers", "es")
+# Returns: "Clientes"
 ```
 
-**Translatable Elements:**
-- Table names, Field names, Form labels
-- Buttons, Messages, Dialogs
-- Reports, Menus, Validation messages
-
-See [MULTI_LANGUAGE.md](MULTI_LANGUAGE.md) for complete documentation.
+See [TRANSLATIONS.md](TRANSLATIONS.md) for detailed documentation.
 
 ## Quick Start
 
@@ -130,7 +121,7 @@ Phase 1 - Foundation (Complete)
 - [x] Company management (Name as PRIMARY KEY)
 - [x] CRUD with triggers (OnInsert, OnUpdate, OnDelete)
 - [x] Global vs company-specific table support
-- [x] Multi-language support (i18n) for all UI elements
+- [x] Multi-language translation support (table and field names)
 - [x] Comprehensive test suite
 - [x] Example scripts and documentation
 
