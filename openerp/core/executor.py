@@ -58,12 +58,18 @@ class CodeExecutor:
             """Allow writing to containers like dicts and lists."""
             return obj
 
+        # Define safe getitem function for dictionary/list access
+        def safe_getitem(obj, key):
+            """Allow getting items from dicts and lists."""
+            return obj[key]
+
         # Add safe utilities
         builtins_dict.update({
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
             '_getattr_': safer_getattr,  # Guarded attribute access
+            '_getitem_': safe_getitem,  # Allow dict/list item access
             '_write_': safe_write,  # Allow container writes
             '_print_': PrintCollector,  # RestrictedPython's print collector
             '__builtins__': custom_builtins,  # Custom builtins with safe_import
