@@ -94,9 +94,9 @@ class CodeExecutor:
                 exec(byte_code, exec_globals)
 
                 # Handle print output from PrintCollector
-                if '_print' in exec_globals and hasattr(exec_globals['_print'], '__call__'):
+                if '_print_' in exec_globals and hasattr(exec_globals['_print_'], '__call__'):
                     # PrintCollector was used, print its output
-                    printed = exec_globals.get('_print', lambda: '')()
+                    printed = exec_globals.get('_print_', lambda: '')()
                     if printed:
                         print(printed, end='')
 
