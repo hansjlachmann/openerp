@@ -28,11 +28,20 @@ class CodeExecutor:
         """
         safe_builtins = safe_globals.copy()
 
+        # Create a safe print function that actually prints
+        def safe_print(*args, **kwargs):
+            """Safe print implementation for RestrictedPython."""
+            print(*args, **kwargs)
+            # Return empty string to satisfy RestrictedPython's 'printed' check
+            return ''
+
         # Add safe utilities
         safe_builtins.update({
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
+            '_print_': safe_print,  # RestrictedPython uses _print_
+            '_getattr_': getattr,   # Add getattr support
             'datetime': datetime,
             'pytz': pytz,
             # Safe built-in functions
@@ -54,7 +63,7 @@ class CodeExecutor:
             'enumerate': enumerate,
             'zip': zip,
             'range': range,
-            'print': print,
+            'print': safe_print,  # Also add as 'print' for direct calls
         })
 
         return safe_builtins
