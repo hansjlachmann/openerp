@@ -64,7 +64,10 @@ print("Validated employee: " + name)
         'age': 30,
         'salary': 75000.0
     })
-    print(f"  ✓ Valid employee inserted: {result['record']['name']}")
+    if result['success']:
+        print(f"  ✓ Valid employee inserted: {result['record']['name']}")
+    else:
+        print(f"  ✗ Insert failed: {result.get('errors', ['Unknown error'])}")
 
     # Invalid employee (will fail)
     result = crud.insert('AdvDemo$employees', {
@@ -114,15 +117,19 @@ total = record.get('total', 0)
 print("Invoice " + invoice_num + ": $" + str(round(total, 2)))
 """
     )
+    crud.reload_triggers()  # Reload to include the newly created invoices table trigger
 
     result = crud.insert('AdvDemo$invoices', {
         'subtotal': 1000.00,
         'discount_percent': 5
     })
-    print(f"  ✓ Invoice: {result['record']['invoice_number']}")
-    print(f"    Subtotal: ${result['record']['subtotal']:.2f}")
-    print(f"    Tax: ${result['record']['tax_amount']:.2f}")
-    print(f"    Total: ${result['record']['total']:.2f}")
+    if result['success']:
+        print(f"  ✓ Invoice: {result['record'].get('invoice_number', 'NOT SET')}")
+        print(f"    Subtotal: ${result['record']['subtotal']:.2f}")
+        print(f"    Tax: ${result['record']['tax_amount']:.2f}")
+        print(f"    Total: ${result['record']['total']:.2f}")
+    else:
+        print(f"  ✗ Invoice creation failed: {result.get('errors', ['Unknown error'])}")
 
     # Example 3: Status Workflow
     print("\n3. Status Workflow Trigger")
@@ -154,6 +161,7 @@ if old_status != new_status:
         print("Task '" + title + "' completed")
 """
     )
+    crud.reload_triggers()  # Reload to include the newly created tasks table trigger
 
     # Create task
     task = crud.insert('AdvDemo$tasks', {
@@ -209,6 +217,7 @@ timestamp = str(datetime.now())
 print("Audit: Deleted " + data_key + " at " + timestamp)
 """
     )
+    crud.reload_triggers()  # Reload to include the newly created sensitive_data table triggers
 
     sensitive = crud.insert('AdvDemo$sensitive_data', {
         'data_key': 'api_key',

@@ -51,6 +51,15 @@ class CRUDManager:
                         metadata['on_delete_trigger']
                     )
 
+    def reload_triggers(self):
+        """
+        Reload all triggers from database metadata.
+
+        Useful when new tables with triggers are created after
+        the CRUDManager was initialized.
+        """
+        self._load_triggers_from_metadata()
+
     def insert(
         self,
         table_name: str,
@@ -108,6 +117,9 @@ class CRUDManager:
         try:
             cursor = self.db.execute(sql, values)
             inserted_id = cursor.lastrowid
+
+            # Add the generated id to the record
+            modified_record['id'] = inserted_id
 
             return {
                 'success': True,
@@ -172,14 +184,18 @@ class CRUDManager:
         # Use the modified record from trigger
         modified_record = trigger_result['record']
 
-        # Build UPDATE statement
-        set_clause = ', '.join([f"{field} = ?" for field in updates.keys()])
-        set_clause += ", updated_at = ?"
+        # Find all fields that changed (excluding id and created_at)
+        fields_to_update = {k: v for k, v in modified_record.items()
+                          if k not in ('id', 'created_at') and
+                          (k not in old_record['record'] or old_record['record'][k] != v)}
+
+        # Build UPDATE statement with all modified fields
+        set_clause = ', '.join([f"{field} = ?" for field in fields_to_update.keys()])
 
         # Use quotes around table name to handle $ character
         sql = f'UPDATE "{table_name}" SET {set_clause} WHERE id = ?'
-        values = tuple(modified_record[f] for f in updates.keys())
-        values += (modified_record['updated_at'], record_id)
+        values = tuple(fields_to_update[f] for f in fields_to_update.keys())
+        values += (record_id,)
 
         try:
             self.db.execute(sql, values)
