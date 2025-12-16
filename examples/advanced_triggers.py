@@ -31,23 +31,27 @@ def main():
         company_name="AdvDemo",
         on_insert=r"""
 # Validate email format
-if record.get('email'):
+email = record.get('email')
+if email:
     import re
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    if not re.match(email_pattern, record['email']):
-        raise ValueError(f"Invalid email format: {record['email']}")
+    if not re.match(email_pattern, email):
+        raise ValueError("Invalid email format: " + email)
 
 # Validate age
-if record.get('age'):
-    if record['age'] < 18 or record['age'] > 70:
-        raise ValueError(f"Age must be between 18 and 70, got {record['age']}")
+age = record.get('age')
+if age:
+    if age < 18 or age > 70:
+        raise ValueError("Age must be between 18 and 70, got " + str(age))
 
 # Validate salary
-if record.get('salary'):
-    if record['salary'] < 0:
+salary = record.get('salary')
+if salary:
+    if salary < 0:
         raise ValueError("Salary cannot be negative")
 
-print(f"Validated employee: {record['name']}")
+name = record.get('name', 'Unknown')
+print("Validated employee: " + name)
 """
     )
 
@@ -87,21 +91,27 @@ print(f"Validated employee: {record['name']}")
         company_name="AdvDemo",
         on_insert="""
 # Calculate tax amount
-record['tax_amount'] = record['subtotal'] * record.get('tax_rate', 0.10)
+subtotal = record.get('subtotal', 0)
+tax_rate = record.get('tax_rate', 0.10)
+record['tax_amount'] = subtotal * tax_rate
 
 # Apply discount
-discount = record['subtotal'] * (record.get('discount_percent', 0) / 100)
+discount_percent = record.get('discount_percent', 0)
+discount = subtotal * (discount_percent / 100)
 
 # Calculate total
-record['total'] = record['subtotal'] + record['tax_amount'] - discount
+tax_amount = record.get('tax_amount', 0)
+record['total'] = subtotal + tax_amount - discount
 
 # Generate invoice number if not provided
 if not record.get('invoice_number'):
     from datetime import datetime
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    record['invoice_number'] = f"INV-{timestamp}"
+    record['invoice_number'] = "INV-" + timestamp
 
-print(f"Invoice {record['invoice_number']}: ${record['total']:.2f}")
+invoice_num = record.get('invoice_number', 'N/A')
+total = record.get('total', 0)
+print("Invoice " + invoice_num + ": $" + str(round(total, 2)))
 """
     )
 
@@ -134,13 +144,14 @@ old_status = old_record.get('status') if old_record else None
 new_status = record.get('status')
 
 if old_status != new_status:
+    title = record.get('title', 'Unknown')
     if new_status == 'in_progress' and not record.get('started_at'):
         record['started_at'] = datetime.now().isoformat()
-        print(f"Task '{record['title']}' started")
+        print("Task '" + title + "' started")
 
     elif new_status == 'completed':
         record['completed_at'] = datetime.now().isoformat()
-        print(f"Task '{record['title']}' completed")
+        print("Task '" + title + "' completed")
 """
     )
 
@@ -186,13 +197,16 @@ if old_status != new_status:
         company_name="AdvDemo",
         on_insert="""
 # Log the insert
-print(f"Logging insert of sensitive data: {record['data_key']}")
+data_key = record.get('data_key', 'unknown')
+print("Logging insert of sensitive data: " + data_key)
 """,
         on_delete="""
 from datetime import datetime
 
 # Would log to audit_log table in real implementation
-print(f"Audit: Deleted {old_record['data_key']} at {datetime.now()}")
+data_key = old_record.get('data_key', 'unknown')
+timestamp = str(datetime.now())
+print("Audit: Deleted " + data_key + " at " + timestamp)
 """
     )
 
