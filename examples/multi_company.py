@@ -4,7 +4,8 @@ Multi-company example for OpenERP
 Demonstrates:
 - Creating multiple companies
 - Company-specific data isolation
-- Parent-subsidiary relationships
+- Separate tables for each company (CompanyName$TableName)
+- Global tables shared across companies
 """
 
 from openerp import Database, Company
@@ -14,166 +15,171 @@ from openerp.core.crud import CRUDManager
 def main():
     print("=== Multi-Company Example ===\n")
 
-    db = Database(':memory:')
+    db = Database('multicompany_demo.db')
     crud = CRUDManager(db)
 
-    # Create parent company
-    print("1. Creating Parent Company")
-    parent = Company.create(
-        db,
-        code="ACME",
-        name="Acme Holdings",
-        legal_name="Acme Holdings Inc.",
-        tax_id="12-3456789",
-        currency="USD"
-    )
-    print(f"  ✓ {parent.name} ({parent.code})")
+    # Create multiple companies
+    print("1. Creating Companies")
+    acme = Company.create(db, "ACME")
+    print(f"  ✓ {acme.name}")
 
-    # Create subsidiaries
-    print("\n2. Creating Subsidiary Companies")
-    subsidiary_us = Company.create(
-        db,
-        code="ACME-US",
-        name="Acme USA",
-        legal_name="Acme USA Inc.",
-        tax_id="12-1111111",
-        currency="USD",
-        parent_id=parent.id
-    )
-    print(f"  ✓ {subsidiary_us.name} ({subsidiary_us.code})")
+    globex = Company.create(db, "Globex")
+    print(f"  ✓ {globex.name}")
 
-    subsidiary_eu = Company.create(
-        db,
-        code="ACME-EU",
-        name="Acme Europe",
-        legal_name="Acme Europe GmbH",
-        tax_id="EU-2222222",
-        currency="EUR",
-        parent_id=parent.id
-    )
-    print(f"  ✓ {subsidiary_eu.name} ({subsidiary_eu.code})")
+    initech = Company.create(db, "Initech")
+    print(f"  ✓ {initech.name}")
 
-    subsidiary_asia = Company.create(
-        db,
-        code="ACME-ASIA",
-        name="Acme Asia",
-        legal_name="Acme Asia Ltd.",
-        tax_id="AS-3333333",
-        currency="JPY",
-        parent_id=parent.id
-    )
-    print(f"  ✓ {subsidiary_asia.name} ({subsidiary_asia.code})")
-
-    # Create a shared table structure
-    print("\n3. Creating Company-Specific Sales Data")
+    # Create a global settings table
+    print("\n2. Creating Global Settings Table")
     db.create_table(
-        'sales',
+        'SystemSettings',
         {
-            'product_name': 'TEXT NOT NULL',
-            'quantity': 'INTEGER',
-            'unit_price': 'REAL',
-            'total': 'REAL',
-            'currency': 'TEXT'
+            'key': 'TEXT NOT NULL UNIQUE',
+            'value': 'TEXT',
+            'description': 'TEXT'
         },
-        on_insert="""
-# Calculate total
-record['total'] = record['quantity'] * record['unit_price']
-"""
+        is_global=True
     )
+    print("  ✓ Created global table: SystemSettings")
 
-    # Add sales for each company
-    print("\n4. Adding Sales Records per Company")
+    # Insert global settings
+    crud.insert('SystemSettings', {
+        'key': 'app_version',
+        'value': '1.0.0',
+        'description': 'Application version'
+    })
+    crud.insert('SystemSettings', {
+        'key': 'default_currency',
+        'value': 'USD',
+        'description': 'Default system currency'
+    })
+    print("  ✓ Inserted global settings")
 
-    # US sales
-    crud.insert('sales', {
-        'product_name': 'Widget Pro',
-        'quantity': 100,
-        'unit_price': 50.0,
-        'currency': 'USD'
-    }, company_id=subsidiary_us.id)
+    # Create company-specific customer tables
+    print("\n3. Creating Company-Specific Customer Tables")
+    for company_name in ["ACME", "Globex", "Initech"]:
+        db.create_table(
+            'Customers',
+            {
+                'name': 'TEXT NOT NULL',
+                'email': 'TEXT NOT NULL',
+                'phone': 'TEXT',
+                'country': 'TEXT'
+            },
+            company_name=company_name
+        )
+        print(f"  ✓ Created {company_name}$Customers")
 
-    crud.insert('sales', {
-        'product_name': 'Gadget Elite',
-        'quantity': 75,
-        'unit_price': 125.0,
-        'currency': 'USD'
-    }, company_id=subsidiary_us.id)
-    print(f"  ✓ Added sales for {subsidiary_us.name}")
+    # Insert data for ACME
+    print("\n4. Inserting ACME Customers")
+    crud.insert('ACME$Customers', {
+        'name': 'John Smith',
+        'email': 'john@acme-customer.com',
+        'phone': '+1-555-0100',
+        'country': 'USA'
+    })
+    crud.insert('ACME$Customers', {
+        'name': 'Alice Johnson',
+        'email': 'alice@acme-customer.com',
+        'phone': '+1-555-0101',
+        'country': 'USA'
+    })
+    print("  ✓ Inserted 2 customers for ACME")
 
-    # EU sales
-    crud.insert('sales', {
-        'product_name': 'Widget Pro',
-        'quantity': 80,
-        'unit_price': 45.0,
-        'currency': 'EUR'
-    }, company_id=subsidiary_eu.id)
+    # Insert data for Globex
+    print("\n5. Inserting Globex Customers")
+    crud.insert('Globex$Customers', {
+        'name': 'Hans Mueller',
+        'email': 'hans@globex-customer.de',
+        'phone': '+49-555-0200',
+        'country': 'Germany'
+    })
+    crud.insert('Globex$Customers', {
+        'name': 'Marie Dubois',
+        'email': 'marie@globex-customer.fr',
+        'phone': '+33-555-0201',
+        'country': 'France'
+    })
+    crud.insert('Globex$Customers', {
+        'name': 'Piet Janssen',
+        'email': 'piet@globex-customer.nl',
+        'phone': '+31-555-0202',
+        'country': 'Netherlands'
+    })
+    print("  ✓ Inserted 3 customers for Globex")
 
-    crud.insert('sales', {
-        'product_name': 'Gadget Elite',
-        'quantity': 60,
-        'unit_price': 110.0,
-        'currency': 'EUR'
-    }, company_id=subsidiary_eu.id)
-    print(f"  ✓ Added sales for {subsidiary_eu.name}")
+    # Insert data for Initech
+    print("\n6. Inserting Initech Customers")
+    crud.insert('Initech$Customers', {
+        'name': 'Raj Patel',
+        'email': 'raj@initech-customer.in',
+        'phone': '+91-555-0300',
+        'country': 'India'
+    })
+    print("  ✓ Inserted 1 customer for Initech")
 
-    # Asia sales
-    crud.insert('sales', {
-        'product_name': 'Widget Pro',
-        'quantity': 150,
-        'unit_price': 5500.0,
-        'currency': 'JPY'
-    }, company_id=subsidiary_asia.id)
+    # Query each company's data
+    print("\n7. Querying Company-Specific Data")
 
-    crud.insert('sales', {
-        'product_name': 'Gadget Elite',
-        'quantity': 120,
-        'unit_price': 13500.0,
-        'currency': 'JPY'
-    }, company_id=subsidiary_asia.id)
-    print(f"  ✓ Added sales for {subsidiary_asia.name}")
+    acme_result = crud.get_all('ACME$Customers')
+    print(f"\n  ACME Customers ({acme_result['count']}):")
+    for customer in acme_result['records']:
+        print(f"    - {customer['name']} ({customer['country']})")
 
-    # Query data per company
-    print("\n5. Company-Specific Sales Reports")
-    print("-" * 60)
+    globex_result = crud.get_all('Globex$Customers')
+    print(f"\n  Globex Customers ({globex_result['count']}):")
+    for customer in globex_result['records']:
+        print(f"    - {customer['name']} ({customer['country']})")
 
-    companies = [subsidiary_us, subsidiary_eu, subsidiary_asia]
-    for company in companies:
-        sales = crud.get_all('sales', company_id=company.id)
+    initech_result = crud.get_all('Initech$Customers')
+    print(f"\n  Initech Customers ({initech_result['count']}):")
+    for customer in initech_result['records']:
+        print(f"    - {customer['name']} ({customer['country']})")
 
-        print(f"\n{company.name} ({company.currency}):")
-        total_revenue = 0
-        for sale in sales['records']:
-            revenue = sale['total']
-            total_revenue += revenue
-            print(f"  - {sale['product_name']}: {sale['quantity']} units × "
-                  f"{sale['unit_price']} = {revenue:,.2f} {sale['currency']}")
+    # Query global settings
+    print("\n8. Querying Global Settings (accessible to all companies)")
+    settings_result = crud.get_all('SystemSettings')
+    print(f"  Total settings: {settings_result['count']}")
+    for setting in settings_result['records']:
+        print(f"    - {setting['key']}: {setting['value']}")
 
-        print(f"  Total Revenue: {total_revenue:,.2f} {company.currency}")
+    # Demonstrate data isolation
+    print("\n9. Demonstrating Data Isolation")
+    print("  Each company's customer data is physically separated:")
+    print(f"    ACME has {acme_result['count']} customers")
+    print(f"    Globex has {globex_result['count']} customers")
+    print(f"    Initech has {initech_result['count']} customer")
+    print("  These are stored in separate tables:")
+    print("    - ACME$Customers")
+    print("    - Globex$Customers")
+    print("    - Initech$Customers")
 
-    # Company hierarchy
-    print("\n6. Company Hierarchy")
-    print("-" * 60)
+    # List all companies
+    print("\n10. All Companies in System")
     all_companies = Company.list_all(db)
-
-    print(f"{parent.name} (Parent)")
+    print(f"  Total companies: {len(all_companies)}")
     for company in all_companies:
-        if company.parent_id == parent.id:
-            print(f"  └─ {company.name} ({company.code})")
+        print(f"    - {company.name}")
 
-    # Summary
-    print("\n7. System Summary")
-    print("-" * 60)
-    print(f"Total Companies: {len(all_companies)}")
-    print(f"Parent Companies: 1")
-    print(f"Subsidiaries: {len([c for c in all_companies if c.parent_id])}")
-
-    # Query all sales (cross-company)
-    all_sales = crud.get_all('sales')
-    print(f"Total Sales Records: {all_sales['count']}")
+    # List all tables
+    print("\n11. All Tables in Database")
+    all_tables = db.list_tables()
+    print(f"  Total tables: {len(all_tables)}")
+    for table in all_tables:
+        if table.startswith('__'):
+            print(f"    - {table} (metadata)")
+        elif '$' in table:
+            print(f"    - {table} (company-specific)")
+        else:
+            print(f"    - {table} (global)")
 
     print("\n=== Multi-Company Demo Complete ===")
-    db.close()
+    print("Key Takeaways:")
+    print("  1. Each company has physically separate tables (CompanyName$TableName)")
+    print("  2. Complete data isolation at the database level")
+    print("  3. Global tables are shared across all companies")
+    print("  4. No company can access another company's data")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
