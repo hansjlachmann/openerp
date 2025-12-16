@@ -95,7 +95,8 @@ class CodeExecutor:
             # Compile with restrictions
             byte_code = compile_restricted(code, '<string>', mode)
 
-            if byte_code.errors:
+            # Check if compile_restricted returned errors
+            if hasattr(byte_code, 'errors') and byte_code.errors:
                 return {
                     'success': False,
                     'errors': byte_code.errors,
@@ -141,7 +142,8 @@ class CodeExecutor:
         try:
             byte_code = compile_restricted(code, '<string>', 'exec')
 
-            if byte_code.errors:
+            # Check if compile_restricted returned errors
+            if hasattr(byte_code, 'errors') and byte_code.errors:
                 return {
                     'valid': False,
                     'errors': byte_code.errors
