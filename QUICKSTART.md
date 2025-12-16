@@ -13,10 +13,20 @@ This guide will help you get OpenERP running on your Ubuntu Linux workstation.
 ### 1. Navigate to the Project Directory
 
 ```bash
-cd /path/to/openerp
+cd ~/Workspace/Python/openerp
+# Or wherever you cloned the repository
 ```
 
-### 2. Create a Virtual Environment (Recommended)
+### 2. Install python3-venv (Ubuntu/Debian Only)
+
+On Ubuntu/Debian systems, you need to install the venv package first:
+
+```bash
+sudo apt install python3.12-venv
+# Or for other Python versions: sudo apt install python3-venv
+```
+
+### 3. Create a Virtual Environment (Recommended)
 
 ```bash
 # Create virtual environment
@@ -28,23 +38,35 @@ source venv/bin/activate
 
 You should see `(venv)` in your terminal prompt after activation.
 
-### 3. Install Dependencies
+### 4. Install Dependencies
+
+**Important for Ubuntu/Debian:** Use `python -m pip` instead of just `pip`:
 
 ```bash
-pip install -r requirements.txt
+# Upgrade pip first
+python -m pip install --upgrade pip
+
+# Install project dependencies
+python -m pip install -r requirements.txt
+
+# Install OpenERP in editable mode
+python -m pip install -e .
 ```
 
 This will install:
 - `RestrictedPython` - For safe code execution
 - `pytz` - For timezone support
+- `SQLAlchemy` - Database toolkit
+- `pydantic` - Data validation
+- `openerp` - The OpenERP package itself (editable mode)
 
-### 4. Verify Installation
+### 5. Verify Installation
 
 ```bash
-python3 -c "from openerp import Database, Company; print('✓ OpenERP imports successfully!')"
+python verify_setup.py
 ```
 
-If you see the success message, you're ready to go!
+You should see all green checkmarks ✓ indicating everything is working correctly.
 
 ## Running Examples
 
@@ -152,8 +174,8 @@ crud.insert('MyCompany$Employees', {
 })
 
 # Query data
-employees = crud.select('MyCompany$Employees')
-for emp in employees:
+result = crud.get_all('MyCompany$Employees')
+for emp in result['records']:
     print(f"Employee: {emp['name']} - {emp['email']}")
 
 # Get translations
@@ -245,13 +267,36 @@ deactivate
 
 ## Troubleshooting
 
-### Issue: "ModuleNotFoundError: No module named 'openerp'"
+### Issue: "error: externally-managed-environment" (Ubuntu/Debian)
 
-**Solution:** Make sure you're in the project root directory and have installed dependencies:
+**Problem:** Getting an error about externally-managed-environment when trying to install packages.
+
+**Solution:** Use `python -m pip` instead of just `pip`:
 
 ```bash
-cd /path/to/openerp
-pip install -r requirements.txt
+# Instead of: pip install -r requirements.txt
+python -m pip install -r requirements.txt
+
+# Instead of: pip install -e .
+python -m pip install -e .
+```
+
+This explicitly uses your virtual environment's Python interpreter.
+
+### Issue: "ModuleNotFoundError: No module named 'openerp'"
+
+**Solution 1:** Install the package in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+**Solution 2:** Make sure you're in the project root directory and have installed dependencies:
+
+```bash
+cd ~/Workspace/Python/openerp
+python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 ### Issue: "ModuleNotFoundError: No module named 'RestrictedPython'"
@@ -259,7 +304,25 @@ pip install -r requirements.txt
 **Solution:** Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+```
+
+### Issue: "ensurepip is not available" when creating venv
+
+**Problem:** Cannot create virtual environment on Ubuntu/Debian.
+
+**Solution:** Install python3-venv package:
+
+```bash
+sudo apt install python3.12-venv
+# Or for other Python versions: sudo apt install python3-venv
+```
+
+Then create the virtual environment again:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 ### Issue: "Permission denied" when creating database files
