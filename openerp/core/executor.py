@@ -4,7 +4,12 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 import pytz
 from RestrictedPython import compile_restricted, safe_globals
-from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence, safe_builtins
+from RestrictedPython.Guards import (
+    guarded_iter_unpack_sequence,
+    guarded_unpack_sequence,
+    safe_builtins,
+    safer_getattr
+)
 from RestrictedPython.PrintCollector import PrintCollector
 
 
@@ -38,6 +43,7 @@ class CodeExecutor:
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
+            '_getattr_': safer_getattr,  # Guarded attribute access
             '_print_': PrintCollector,  # RestrictedPython's print collector
             'datetime': datetime,
             'pytz': pytz,
