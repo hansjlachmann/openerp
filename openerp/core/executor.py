@@ -32,6 +32,14 @@ class CodeExecutor:
         Returns:
             Dictionary of safe builtin functions and modules
         """
+        # Define safe import function
+        def safe_import(name, *args, **kwargs):
+            """Allow only safe modules to be imported."""
+            safe_modules = {'re', 'datetime', 'json', 'math', 'decimal', 'uuid'}
+            if name in safe_modules:
+                return __import__(name, *args, **kwargs)
+            raise ImportError(f"Import of module '{name}' is not allowed")
+
         # Start with RestrictedPython's safe_builtins
         builtins_dict = safe_builtins.copy()
 
@@ -45,6 +53,8 @@ class CodeExecutor:
             '_unpack_sequence_': guarded_unpack_sequence,
             '_getattr_': safer_getattr,  # Guarded attribute access
             '_print_': PrintCollector,  # RestrictedPython's print collector
+            '__import__': safe_import,  # Allow safe imports
+            '__builtins__': safe_builtins,  # Required for imports
             'datetime': datetime,
             'pytz': pytz,
         })
