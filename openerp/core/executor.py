@@ -12,6 +12,9 @@ from RestrictedPython.Guards import (
 )
 from RestrictedPython.PrintCollector import PrintCollector
 
+# Save reference to the real __import__ before it's restricted
+_real_import = __import__
+
 
 class CodeExecutor:
     """
@@ -35,9 +38,9 @@ class CodeExecutor:
         # Define safe import function
         def safe_import(name, *args, **kwargs):
             """Allow only safe modules to be imported."""
-            safe_modules = {'re', 'datetime', 'json', 'math', 'decimal', 'uuid'}
+            safe_modules = {'re', 'datetime', 'json', 'math', 'decimal', 'uuid', 'time'}
             if name in safe_modules:
-                return __import__(name, *args, **kwargs)
+                return _real_import(name, *args, **kwargs)
             raise ImportError(f"Import of module '{name}' is not allowed")
 
         # Start with RestrictedPython's safe_builtins
@@ -46,15 +49,25 @@ class CodeExecutor:
         # Add safe_globals for additional safety
         builtins_dict.update(safe_globals)
 
+        # Create custom __builtins__ with safe_import
+        custom_builtins = safe_builtins.copy()
+        custom_builtins['__import__'] = safe_import
+
+        # Define safe container write function
+        def safe_write(obj):
+            """Allow writing to containers like dicts and lists."""
+            return obj
+
         # Add safe utilities
         builtins_dict.update({
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
             '_getattr_': safer_getattr,  # Guarded attribute access
+            '_write_': safe_write,  # Allow container writes
             '_print_': PrintCollector,  # RestrictedPython's print collector
-            '__import__': safe_import,  # Allow safe imports
-            '__builtins__': safe_builtins,  # Required for imports
+            '__builtins__': custom_builtins,  # Custom builtins with safe_import
+            '__import__': safe_import,  # Also add to global namespace
             'datetime': datetime,
             'pytz': pytz,
         })
@@ -110,11 +123,13 @@ class CodeExecutor:
                 exec(byte_code, exec_globals)
 
                 # Handle print output from PrintCollector
-                if '_print_' in exec_globals and hasattr(exec_globals['_print_'], '__call__'):
-                    # PrintCollector was used, print its output
-                    printed = exec_globals.get('_print_', lambda: '')()
-                    if printed:
-                        print(printed, end='')
+                # RestrictedPython creates a _print instance (without trailing underscore)
+                if '_print' in exec_globals:
+                    printer = exec_globals['_print']
+                    if hasattr(printer, '__call__'):
+                        printed = printer()
+                        if printed:
+                            print(printed, end='')
 
                 # Extract modified context (excluding builtins)
                 result_context = {
