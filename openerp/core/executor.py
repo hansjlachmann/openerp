@@ -4,7 +4,8 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 import pytz
 from RestrictedPython import compile_restricted, safe_globals
-from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence, safe_builtins
+from RestrictedPython.PrintCollector import PrintCollector
 
 
 class CodeExecutor:
@@ -26,47 +27,23 @@ class CodeExecutor:
         Returns:
             Dictionary of safe builtin functions and modules
         """
-        safe_builtins = safe_globals.copy()
+        # Start with RestrictedPython's safe_builtins
+        builtins_dict = safe_builtins.copy()
 
-        # Create a safe print function that actually prints
-        def safe_print(*args, **kwargs):
-            """Safe print implementation for RestrictedPython."""
-            print(*args, **kwargs)
-            # Return empty string to satisfy RestrictedPython's 'printed' check
-            return ''
+        # Add safe_globals for additional safety
+        builtins_dict.update(safe_globals)
 
         # Add safe utilities
-        safe_builtins.update({
+        builtins_dict.update({
             '_getiter_': iter,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_unpack_sequence_': guarded_unpack_sequence,
-            '_print_': safe_print,  # RestrictedPython uses _print_
-            '_getattr_': getattr,   # Add getattr support
+            '_print_': PrintCollector,  # RestrictedPython's print collector
             'datetime': datetime,
             'pytz': pytz,
-            # Safe built-in functions
-            'len': len,
-            'str': str,
-            'int': int,
-            'float': float,
-            'bool': bool,
-            'list': list,
-            'dict': dict,
-            'tuple': tuple,
-            'set': set,
-            'min': min,
-            'max': max,
-            'sum': sum,
-            'abs': abs,
-            'round': round,
-            'sorted': sorted,
-            'enumerate': enumerate,
-            'zip': zip,
-            'range': range,
-            'print': safe_print,  # Also add as 'print' for direct calls
         })
 
-        return safe_builtins
+        return builtins_dict
 
     def execute(
         self,
@@ -115,6 +92,14 @@ class CodeExecutor:
             # Execute the code
             if mode == 'exec':
                 exec(byte_code, exec_globals)
+
+                # Handle print output from PrintCollector
+                if '_print' in exec_globals and hasattr(exec_globals['_print'], '__call__'):
+                    # PrintCollector was used, print its output
+                    printed = exec_globals.get('_print', lambda: '')()
+                    if printed:
+                        print(printed, end='')
+
                 # Extract modified context (excluding builtins)
                 result_context = {
                     k: v for k, v in exec_globals.items()
