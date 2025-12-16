@@ -1,11 +1,11 @@
 """
-Advanced trigger examples for OpenERP
+Advanced trigger examples for OpenERP Phase 1
 
-Demonstrates complex trigger scenarios:
-- Data validation
-- Computed fields
-- Cross-table operations
-- Business logic enforcement
+This example demonstrates various trigger scenarios with customers:
+1. Data validation (email format)
+2. Auto-formatting (phone numbers, names)
+3. Default values (timestamps, status)
+4. Audit logging (tracking changes)
 """
 
 from openerp import Database, Company
@@ -21,187 +21,205 @@ def main():
     # Example 1: Data Validation Trigger
     print("1. Data Validation Trigger")
     db.create_table(
-        'employees',
+        'customers',
         {
             'name': 'TEXT NOT NULL',
             'email': 'TEXT',
-            'age': 'INTEGER',
-            'salary': 'REAL'
+            'phone': 'TEXT',
+            'balance': 'REAL DEFAULT 0'
         },
-        on_insert="""
+        company_name="AdvDemo",
+        on_insert=r"""
 # Validate email format
-if record.get('email'):
+email = record.get('email')
+if email:
     import re
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    if not re.match(email_pattern, record['email']):
-        raise ValueError(f"Invalid email format: {record['email']}")
+    if not re.match(email_pattern, email):
+        raise ValueError("Invalid email format: " + email)
 
-# Validate age
-if record.get('age'):
-    if record['age'] < 18 or record['age'] > 70:
-        raise ValueError(f"Age must be between 18 and 70, got {record['age']}")
+# Validate balance
+balance = record.get('balance', 0)
+if balance < 0:
+    raise ValueError("Balance cannot be negative")
 
-# Validate salary
-if record.get('salary'):
-    if record['salary'] < 0:
-        raise ValueError("Salary cannot be negative")
-
-print(f"Validated employee: {record['name']}")
+name = record.get('name', 'Unknown')
+print("Validated customer: " + name)
 """
     )
 
     crud = CRUDManager(db)
 
-    # Valid employee
-    result = crud.insert('employees', {
+    # Valid customer
+    result = crud.insert('AdvDemo$customers', {
         'name': 'Alice Johnson',
         'email': 'alice@company.com',
-        'age': 30,
-        'salary': 75000.0
+        'phone': '+1-555-0100',
+        'balance': 100.0
     })
-    print(f"  ✓ Valid employee inserted: {result['record']['name']}")
+    if result['success']:
+        print(f"  ✓ Valid customer inserted: {result['record']['name']}")
+    else:
+        print(f"  ✗ Insert failed: {result.get('errors', ['Unknown error'])}")
 
-    # Invalid employee (will fail)
-    result = crud.insert('employees', {
+    # Invalid customer (will fail)
+    result = crud.insert('AdvDemo$customers', {
         'name': 'Bob Smith',
         'email': 'invalid-email',
-        'age': 25,
-        'salary': 60000.0
+        'phone': '+1-555-0200'
     })
     if not result['success']:
-        print(f"  ✗ Validation failed: {result['errors'][0]}")
+        print(f"  ✗ Validation failed as expected: {result['errors'][0]}")
 
-    # Example 2: Computed Fields
-    print("\n2. Computed Fields Trigger")
+    # Example 2: Auto-Formatting Trigger
+    print("\n2. Auto-Formatting Trigger")
     db.create_table(
-        'invoices',
+        'contacts',
         {
-            'invoice_number': 'TEXT',
-            'subtotal': 'REAL NOT NULL',
-            'tax_rate': 'REAL DEFAULT 0.10',
-            'tax_amount': 'REAL',
-            'total': 'REAL',
-            'discount_percent': 'REAL DEFAULT 0'
+            'name': 'TEXT NOT NULL',
+            'email': 'TEXT',
+            'phone': 'TEXT',
+            'country': 'TEXT'
         },
+        company_name="AdvDemo",
         on_insert="""
-# Calculate tax amount
-record['tax_amount'] = record['subtotal'] * record.get('tax_rate', 0.10)
+# Auto-uppercase name
+name = record.get('name', '')
+if name:
+    record['name'] = name.upper()
 
-# Apply discount
-discount = record['subtotal'] * (record.get('discount_percent', 0) / 100)
+# Auto-lowercase email
+email = record.get('email', '')
+if email:
+    record['email'] = email.lower()
 
-# Calculate total
-record['total'] = record['subtotal'] + record['tax_amount'] - discount
+# Format phone number (remove spaces and dashes)
+phone = record.get('phone', '')
+if phone:
+    record['phone'] = phone.replace(' ', '').replace('-', '')
 
-# Generate invoice number if not provided
-if not record.get('invoice_number'):
-    from datetime import datetime
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    record['invoice_number'] = f"INV-{timestamp}"
-
-print(f"Invoice {record['invoice_number']}: ${record['total']:.2f}")
+formatted_name = record.get('name', 'Unknown')
+print("Formatted contact: " + formatted_name)
 """
     )
+    crud.reload_triggers()  # Reload to include the newly created contacts table trigger
 
-    result = crud.insert('invoices', {
-        'subtotal': 1000.00,
-        'discount_percent': 5
+    result = crud.insert('AdvDemo$contacts', {
+        'name': 'john doe',  # Will be uppercased
+        'email': 'JOHN@EXAMPLE.COM',  # Will be lowercased
+        'phone': '+1-555-0100',  # Will be cleaned
+        'country': 'USA'
     })
-    print(f"  ✓ Invoice: {result['record']['invoice_number']}")
-    print(f"    Subtotal: ${result['record']['subtotal']:.2f}")
-    print(f"    Tax: ${result['record']['tax_amount']:.2f}")
-    print(f"    Total: ${result['record']['total']:.2f}")
+    if result['success']:
+        print(f"  ✓ Contact inserted:")
+        print(f"    Name: {result['record']['name']} (auto-uppercased)")
+        print(f"    Email: {result['record']['email']} (auto-lowercased)")
+        print(f"    Phone: {result['record']['phone']} (formatted)")
 
-    # Example 3: Status Workflow
-    print("\n3. Status Workflow Trigger")
+    # Example 3: Default Values and Timestamps
+    print("\n3. Default Values Trigger")
     db.create_table(
-        'tasks',
+        'leads',
         {
-            'title': 'TEXT NOT NULL',
+            'name': 'TEXT NOT NULL',
+            'email': 'TEXT',
             'status': 'TEXT',
-            'assigned_to': 'TEXT',
-            'started_at': 'TIMESTAMP',
-            'completed_at': 'TIMESTAMP'
+            'priority': 'TEXT',
+            'created_date': 'TEXT'
         },
+        company_name="AdvDemo",
+        on_insert="""
+from datetime import datetime
+
+# Set default status if not provided
+if not record.get('status'):
+    record['status'] = 'new'
+
+# Set default priority
+if not record.get('priority'):
+    record['priority'] = 'medium'
+
+# Set created date
+record['created_date'] = datetime.now().isoformat()
+
+name = record.get('name', 'Unknown')
+status = record.get('status', 'unknown')
+print("New lead: " + name + " (Status: " + status + ")")
+"""
+    )
+    crud.reload_triggers()  # Reload to include the newly created leads table trigger
+
+    result = crud.insert('AdvDemo$leads', {
+        'name': 'Potential Customer',
+        'email': 'potential@example.com'
+        # status and priority will be set by trigger
+    })
+    if result['success']:
+        print(f"  ✓ Lead created:")
+        print(f"    Name: {result['record']['name']}")
+        print(f"    Status: {result['record']['status']} (auto-set)")
+        print(f"    Priority: {result['record']['priority']} (auto-set)")
+        print(f"    Created: {result['record']['created_date'][:19]}")
+
+    # Example 4: Update Trigger (Track Changes)
+    print("\n4. Update Tracking Trigger")
+    db.create_table(
+        'accounts',
+        {
+            'name': 'TEXT NOT NULL',
+            'status': 'TEXT',
+            'last_modified': 'TEXT',
+            'modification_count': 'INTEGER DEFAULT 0'
+        },
+        company_name="AdvDemo",
+        on_insert="""
+from datetime import datetime
+
+# Initialize tracking fields
+record['modification_count'] = 0
+record['last_modified'] = datetime.now().isoformat()
+
+name = record.get('name', 'Unknown')
+print("Account created: " + name)
+""",
         on_update="""
 from datetime import datetime
 
-# Track status changes
-old_status = old_record.get('status') if old_record else None
-new_status = record.get('status')
+# Update modification tracking
+old_count = old_record.get('modification_count', 0) if old_record else 0
+record['modification_count'] = old_count + 1
+record['last_modified'] = datetime.now().isoformat()
 
-if old_status != new_status:
-    if new_status == 'in_progress' and not record.get('started_at'):
-        record['started_at'] = datetime.now().isoformat()
-        print(f"Task '{record['title']}' started")
-
-    elif new_status == 'completed':
-        record['completed_at'] = datetime.now().isoformat()
-        print(f"Task '{record['title']}' completed")
+name = record.get('name', 'Unknown')
+count = record.get('modification_count', 0)
+print("Account updated: " + name + " (Modification #" + str(count) + ")")
 """
     )
+    crud.reload_triggers()  # Reload to include the newly created accounts table trigger
 
-    # Create task
-    task = crud.insert('tasks', {
-        'title': 'Implement feature X',
-        'status': 'todo',
-        'assigned_to': 'developer@company.com'
+    # Create account
+    result = crud.insert('AdvDemo$accounts', {
+        'name': 'Customer Account',
+        'status': 'active'
     })
-    print(f"  ✓ Task created: {task['record']['title']}")
+    if result['success']:
+        account_id = result['record']['id']
+        print(f"  ✓ Account created: {result['record']['name']}")
+        print(f"    Modifications: {result['record']['modification_count']}")
 
-    # Start task
-    crud.update('tasks', task['id'], {'status': 'in_progress'})
-    updated_task = crud.get_by_id('tasks', task['id'])
-    print(f"  ✓ Task started at: {updated_task['record']['started_at']}")
+        # Update account
+        crud.update('AdvDemo$accounts', account_id, {'status': 'pending'})
+        crud.update('AdvDemo$accounts', account_id, {'status': 'active'})
 
-    # Complete task
-    crud.update('tasks', task['id'], {'status': 'completed'})
-    completed_task = crud.get_by_id('tasks', task['id'])
-    print(f"  ✓ Task completed at: {completed_task['record']['completed_at']}")
-
-    # Example 4: Audit Trail
-    print("\n4. Audit Trail Trigger")
-    db.create_table(
-        'audit_log',
-        {
-            'table_name': 'TEXT',
-            'record_id': 'INTEGER',
-            'action': 'TEXT',
-            'data': 'TEXT',
-            'timestamp': 'TIMESTAMP'
-        }
-    )
-
-    db.create_table(
-        'sensitive_data',
-        {
-            'data_key': 'TEXT',
-            'data_value': 'TEXT'
-        },
-        on_insert="""
-# Log the insert
-print(f"Logging insert of sensitive data: {record['data_key']}")
-""",
-        on_delete="""
-from datetime import datetime
-
-# Would log to audit_log table in real implementation
-print(f"Audit: Deleted {old_record['data_key']} at {datetime.now()}")
-"""
-    )
-
-    sensitive = crud.insert('sensitive_data', {
-        'data_key': 'api_key',
-        'data_value': 'secret-key-12345'
-    })
-    print(f"  ✓ Sensitive data logged on insert")
-
-    crud.delete('sensitive_data', sensitive['id'])
-    print(f"  ✓ Sensitive data deletion logged")
+        # Check final state
+        final = crud.get_by_id('AdvDemo$accounts', account_id)
+        if final['success']:
+            print(f"  ✓ Final state:")
+            print(f"    Modifications: {final['record']['modification_count']}")
+            print(f"    Last modified: {final['record']['last_modified'][:19]}")
 
     print("\n=== All trigger examples completed ===")
-    db.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
