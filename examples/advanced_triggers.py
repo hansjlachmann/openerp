@@ -28,7 +28,8 @@ def main():
             'age': 'INTEGER',
             'salary': 'REAL'
         },
-        on_insert="""
+        company_name="AdvDemo",
+        on_insert=r"""
 # Validate email format
 if record.get('email'):
     import re
@@ -53,7 +54,7 @@ print(f"Validated employee: {record['name']}")
     crud = CRUDManager(db)
 
     # Valid employee
-    result = crud.insert('employees', {
+    result = crud.insert('AdvDemo$employees', {
         'name': 'Alice Johnson',
         'email': 'alice@company.com',
         'age': 30,
@@ -62,7 +63,7 @@ print(f"Validated employee: {record['name']}")
     print(f"  ✓ Valid employee inserted: {result['record']['name']}")
 
     # Invalid employee (will fail)
-    result = crud.insert('employees', {
+    result = crud.insert('AdvDemo$employees', {
         'name': 'Bob Smith',
         'email': 'invalid-email',
         'age': 25,
@@ -83,6 +84,7 @@ print(f"Validated employee: {record['name']}")
             'total': 'REAL',
             'discount_percent': 'REAL DEFAULT 0'
         },
+        company_name="AdvDemo",
         on_insert="""
 # Calculate tax amount
 record['tax_amount'] = record['subtotal'] * record.get('tax_rate', 0.10)
@@ -103,7 +105,7 @@ print(f"Invoice {record['invoice_number']}: ${record['total']:.2f}")
 """
     )
 
-    result = crud.insert('invoices', {
+    result = crud.insert('AdvDemo$invoices', {
         'subtotal': 1000.00,
         'discount_percent': 5
     })
@@ -123,6 +125,7 @@ print(f"Invoice {record['invoice_number']}: ${record['total']:.2f}")
             'started_at': 'TIMESTAMP',
             'completed_at': 'TIMESTAMP'
         },
+        company_name="AdvDemo",
         on_update="""
 from datetime import datetime
 
@@ -142,7 +145,7 @@ if old_status != new_status:
     )
 
     # Create task
-    task = crud.insert('tasks', {
+    task = crud.insert('AdvDemo$tasks', {
         'title': 'Implement feature X',
         'status': 'todo',
         'assigned_to': 'developer@company.com'
@@ -150,13 +153,14 @@ if old_status != new_status:
     print(f"  ✓ Task created: {task['record']['title']}")
 
     # Start task
-    crud.update('tasks', task['id'], {'status': 'in_progress'})
-    updated_task = crud.get_by_id('tasks', task['id'])
+    task_id = task['record']['id']
+    crud.update('AdvDemo$tasks', task_id, {'status': 'in_progress'})
+    updated_task = crud.get_by_id('AdvDemo$tasks', task_id)
     print(f"  ✓ Task started at: {updated_task['record']['started_at']}")
 
     # Complete task
-    crud.update('tasks', task['id'], {'status': 'completed'})
-    completed_task = crud.get_by_id('tasks', task['id'])
+    crud.update('AdvDemo$tasks', task_id, {'status': 'completed'})
+    completed_task = crud.get_by_id('AdvDemo$tasks', task_id)
     print(f"  ✓ Task completed at: {completed_task['record']['completed_at']}")
 
     # Example 4: Audit Trail
@@ -169,7 +173,8 @@ if old_status != new_status:
             'action': 'TEXT',
             'data': 'TEXT',
             'timestamp': 'TIMESTAMP'
-        }
+        },
+        company_name="AdvDemo"
     )
 
     db.create_table(
@@ -178,6 +183,7 @@ if old_status != new_status:
             'data_key': 'TEXT',
             'data_value': 'TEXT'
         },
+        company_name="AdvDemo",
         on_insert="""
 # Log the insert
 print(f"Logging insert of sensitive data: {record['data_key']}")
@@ -190,13 +196,14 @@ print(f"Audit: Deleted {old_record['data_key']} at {datetime.now()}")
 """
     )
 
-    sensitive = crud.insert('sensitive_data', {
+    sensitive = crud.insert('AdvDemo$sensitive_data', {
         'data_key': 'api_key',
         'data_value': 'secret-key-12345'
     })
     print(f"  ✓ Sensitive data logged on insert")
 
-    crud.delete('sensitive_data', sensitive['id'])
+    sensitive_id = sensitive['record']['id']
+    crud.delete('AdvDemo$sensitive_data', sensitive_id)
     print(f"  ✓ Sensitive data deletion logged")
 
     print("\n=== All trigger examples completed ===")
