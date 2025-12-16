@@ -6,8 +6,9 @@ A lightweight, flexible ERP system built from scratch with Python.
 
 - **Object Table Storage**: Dynamic table creation and management
 - **Python Code Execution Engine**: Safe execution of custom business logic
-- **Company Management**: Multi-company support
+- **Company Management**: Multi-company support with physical table separation
 - **Table CRUD Operations**: Full CRUD with trigger support (OnInsert, OnUpdate, OnDelete)
+- **Multi-Language Support**: Translation system for table and field names
 
 ## Architecture
 
@@ -43,6 +44,31 @@ OpenERP uses **physical table separation** for multi-company support:
   - Complete data isolation at the database level
 
 See [COMPANY_ARCHITECTURE.md](COMPANY_ARCHITECTURE.md) for detailed documentation.
+
+## Multi-Language Support
+
+OpenERP includes built-in multi-language translation support for table and field names:
+
+- **Translation Storage**: Translations stored as JSON in metadata tables
+- **Multiple Languages**: Support for unlimited language codes (ISO 639-1)
+- **Fallback Support**: Automatic fallback to original names when translations missing
+- **Easy API**: Simple methods to set and retrieve translations
+
+```python
+# Set translations for a table
+db.set_table_translation("ACME$Customers", "es", "Clientes")
+db.set_table_translation("ACME$Customers", "fr", "Clients")
+
+# Set translations for a field
+db.set_field_translation("ACME$Customers", "Email", "es", "Correo electrónico")
+db.set_field_translation("ACME$Customers", "Email", "fr", "Courriel")
+
+# Retrieve translations
+table_name_es = db.get_table_translation("ACME$Customers", "es")
+# Returns: "Clientes"
+```
+
+See [TRANSLATIONS.md](TRANSLATIONS.md) for detailed documentation.
 
 ## Quick Start
 
@@ -95,6 +121,7 @@ Phase 1 - Foundation (Complete)
 - [x] Company management (Name as PRIMARY KEY)
 - [x] CRUD with triggers (OnInsert, OnUpdate, OnDelete)
 - [x] Global vs company-specific table support
+- [x] Multi-language translation support (table and field names)
 - [x] Comprehensive test suite
 - [x] Example scripts and documentation
 
