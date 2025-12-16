@@ -47,6 +47,7 @@ class Database:
                 company_name TEXT,
                 is_global INTEGER DEFAULT 0,
                 schema_definition TEXT,
+                translations TEXT,
                 on_insert_trigger TEXT,
                 on_update_trigger TEXT,
                 on_delete_trigger TEXT,
@@ -64,6 +65,7 @@ class Database:
                 field_type TEXT,
                 required INTEGER DEFAULT 0,
                 default_value TEXT,
+                translations TEXT,
                 FOREIGN KEY (table_name) REFERENCES __table_metadata(table_name),
                 UNIQUE(table_name, field_name)
             )
@@ -191,9 +193,9 @@ class Database:
         schema_json = json.dumps(fields)
         cursor.execute("""
             INSERT INTO __table_metadata
-            (table_name, company_name, is_global, schema_definition, on_insert_trigger,
-             on_update_trigger, on_delete_trigger)
-            VALUES (?, NULL, 1, ?, ?, ?, ?)
+            (table_name, company_name, is_global, schema_definition, translations,
+             on_insert_trigger, on_update_trigger, on_delete_trigger)
+            VALUES (?, NULL, 1, ?, NULL, ?, ?, ?)
         """, (table_name, schema_json, on_insert, on_update, on_delete))
 
         # Store field metadata
@@ -250,9 +252,9 @@ class Database:
         schema_json = json.dumps(fields)
         cursor.execute("""
             INSERT INTO __table_metadata
-            (table_name, company_name, is_global, schema_definition, on_insert_trigger,
-             on_update_trigger, on_delete_trigger)
-            VALUES (?, ?, 0, ?, ?, ?, ?)
+            (table_name, company_name, is_global, schema_definition, translations,
+             on_insert_trigger, on_update_trigger, on_delete_trigger)
+            VALUES (?, ?, 0, ?, NULL, ?, ?, ?)
         """, (full_table_name, company_name, schema_json, on_insert, on_update, on_delete))
 
         # Store field metadata
@@ -395,6 +397,192 @@ class Database:
         cursor.execute(sql, params)
         self.conn.commit()
         return cursor
+
+    # Translation methods
+
+    def set_table_translation(self, table_name: str, language_code: str, translation: str):
+        """
+        Set translation for a table name.
+
+        Args:
+            table_name: Full table name (e.g., "ACME$Customers" or "Company")
+            language_code: Language code (e.g., "en", "es", "nl")
+            translation: Translated table name
+
+        Example:
+            db.set_table_translation("ACME$Customers", "es", "Clientes")
+            db.set_table_translation("ACME$Customers", "nl", "Klanten")
+        """
+        cursor = self.conn.cursor()
+
+        # Get current translations
+        cursor.execute("SELECT translations FROM __table_metadata WHERE table_name = ?", (table_name,))
+        row = cursor.fetchone()
+
+        if not row:
+            raise ValueError(f"Table '{table_name}' not found in metadata")
+
+        # Parse existing translations or create new dict
+        translations = json.loads(row[0]) if row[0] else {}
+
+        # Update translation
+        translations[language_code.lower()] = translation
+
+        # Save back to database
+        cursor.execute(
+            "UPDATE __table_metadata SET translations = ? WHERE table_name = ?",
+            (json.dumps(translations), table_name)
+        )
+        self.conn.commit()
+
+    def get_table_translation(self, table_name: str, language_code: str, fallback: Optional[str] = None) -> str:
+        """
+        Get translation for a table name.
+
+        Args:
+            table_name: Full table name
+            language_code: Language code
+            fallback: Fallback text if translation not found (defaults to table_name)
+
+        Returns:
+            Translated table name or fallback
+
+        Example:
+            translation = db.get_table_translation("ACME$Customers", "es")  # "Clientes"
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT translations FROM __table_metadata WHERE table_name = ?", (table_name,))
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return fallback if fallback is not None else table_name
+
+        translations = json.loads(row[0])
+        return translations.get(language_code.lower(), fallback if fallback is not None else table_name)
+
+    def get_table_translations(self, table_name: str) -> Dict[str, str]:
+        """
+        Get all translations for a table.
+
+        Args:
+            table_name: Full table name
+
+        Returns:
+            Dictionary of language_code: translation
+
+        Example:
+            translations = db.get_table_translations("ACME$Customers")
+            # {"en": "Customers", "es": "Clientes", "nl": "Klanten"}
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT translations FROM __table_metadata WHERE table_name = ?", (table_name,))
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {}
+
+        return json.loads(row[0])
+
+    def set_field_translation(self, table_name: str, field_name: str, language_code: str, translation: str):
+        """
+        Set translation for a field name.
+
+        Args:
+            table_name: Full table name
+            field_name: Field name
+            language_code: Language code
+            translation: Translated field name
+
+        Example:
+            db.set_field_translation("ACME$Customers", "name", "es", "nombre")
+            db.set_field_translation("ACME$Customers", "email", "es", "correo electrónico")
+        """
+        cursor = self.conn.cursor()
+
+        # Get current translations
+        cursor.execute(
+            "SELECT translations FROM __field_metadata WHERE table_name = ? AND field_name = ?",
+            (table_name, field_name)
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            raise ValueError(f"Field '{field_name}' not found in table '{table_name}'")
+
+        # Parse existing translations or create new dict
+        translations = json.loads(row[0]) if row[0] else {}
+
+        # Update translation
+        translations[language_code.lower()] = translation
+
+        # Save back to database
+        cursor.execute(
+            "UPDATE __field_metadata SET translations = ? WHERE table_name = ? AND field_name = ?",
+            (json.dumps(translations), table_name, field_name)
+        )
+        self.conn.commit()
+
+    def get_field_translation(
+        self,
+        table_name: str,
+        field_name: str,
+        language_code: str,
+        fallback: Optional[str] = None
+    ) -> str:
+        """
+        Get translation for a field name.
+
+        Args:
+            table_name: Full table name
+            field_name: Field name
+            language_code: Language code
+            fallback: Fallback text if translation not found (defaults to field_name)
+
+        Returns:
+            Translated field name or fallback
+
+        Example:
+            translation = db.get_field_translation("ACME$Customers", "email", "es")  # "correo electrónico"
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT translations FROM __field_metadata WHERE table_name = ? AND field_name = ?",
+            (table_name, field_name)
+        )
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return fallback if fallback is not None else field_name
+
+        translations = json.loads(row[0])
+        return translations.get(language_code.lower(), fallback if fallback is not None else field_name)
+
+    def get_field_translations(self, table_name: str, field_name: str) -> Dict[str, str]:
+        """
+        Get all translations for a field.
+
+        Args:
+            table_name: Full table name
+            field_name: Field name
+
+        Returns:
+            Dictionary of language_code: translation
+
+        Example:
+            translations = db.get_field_translations("ACME$Customers", "email")
+            # {"en": "email", "es": "correo electrónico", "nl": "e-mail"}
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT translations FROM __field_metadata WHERE table_name = ? AND field_name = ?",
+            (table_name, field_name)
+        )
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {}
+
+        return json.loads(row[0])
 
     def close(self):
         """Close database connection."""
