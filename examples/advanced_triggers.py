@@ -16,7 +16,7 @@ def main():
     print("=== Advanced Trigger Examples ===\n")
 
     db = Database(':memory:')
-    company = Company.create(db, code="ADV", name="Advanced Demo")
+    company = Company.create(db, "AdvDemo")
 
     # Example 1: Data Validation Trigger
     print("1. Data Validation Trigger")
