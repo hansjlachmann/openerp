@@ -17,7 +17,7 @@ def main():
     # Initialize database
     print("=== OpenERP Phase 1 Demo ===\n")
 
-    db = Database('demo.db')
+    db = Database(':memory:')  # Use in-memory database for clean runs
     print("✓ Database initialized")
 
     # Create a company
@@ -93,6 +93,9 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
     if result1['success']:
         print(f"✓ Inserted customer ID: {result1['record']['id']}")
         customer1_id = result1['record']['id']
+    else:
+        print(f"✗ Failed to insert customer 1: {result1.get('errors', ['Unknown error'])}")
+        customer1_id = None
 
     result2 = crud.insert('DemoCorp$customers', {
         'name': 'Jane Smith',
@@ -103,15 +106,19 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
     if result2['success']:
         print(f"✓ Inserted customer ID: {result2['record']['id']}")
         customer2_id = result2['record']['id']
+    else:
+        print(f"✗ Failed to insert customer 2: {result2.get('errors', ['Unknown error'])}")
+        customer2_id = None
 
-    # Insert orders
-    print("\n=== Inserting Orders ===")
-    order_result = crud.insert('DemoCorp$orders', {
-        'customer_id': customer1_id,
-        'amount': 299.99
-    })
-    if order_result['success']:
-        print(f"✓ Inserted order ID: {order_result['record']['id']}")
+    # Insert orders (only if customer was created)
+    if customer1_id:
+        print("\n=== Inserting Orders ===")
+        order_result = crud.insert('DemoCorp$orders', {
+            'customer_id': customer1_id,
+            'amount': 299.99
+        })
+        if order_result['success']:
+            print(f"✓ Inserted order ID: {order_result['record']['id']}")
 
     # Query all customers
     print("\n=== Querying Customers ===")
@@ -161,8 +168,8 @@ print(f"Order created: ${record['amount']:.2f} - Status: {record['status']}")
     print(f"Field 'email' in Spanish: {email_es}")
 
     print("\n=== Demo Complete ===")
-    print(f"Database file: demo.db")
-    print(f"Tables created: DemoCorp$customers, DemoCorp$orders")
+    print("Database: In-memory (not persisted)")
+    print("Tables created: DemoCorp$customers, DemoCorp$orders")
 
 
 if __name__ == "__main__":
