@@ -1,190 +1,136 @@
-# OpenERP Go - Proof of Concept
+# OpenERP Go - Foundation Layer
 
-This is a proof-of-concept implementation of OpenERP core in Go, demonstrating the hybrid Go+Python architecture.
+This is the foundation layer for OpenERP in Go, implementing 8 core database and company management functions.
 
-## Available Demos
+## Quick Start
 
-1. **Original PoC** (`poc-demo/main_poc.go`) - CRUD operations demo with NAV-style API
-2. **Foundation Layer** (`cmd/interactive/`) - Interactive menu for 8 core functions
-3. **Foundation Tests** (`cmd/test/`) - Automated test suite (13 tests)
+```bash
+cd /home/user/openerp/go-poc/cmd/interactive
 
-See [FOUNDATION_README.md](FOUNDATION_README.md) for complete foundation layer documentation.
+# Run the interactive menu
+go run .
+
+# Or build and run
+go build -o openerp-foundation .
+./openerp-foundation
+```
+
+## What This Is
+
+The foundation layer provides the base functionality for OpenERP:
+
+**8 Core Functions:**
+1. CreateDatabase - Create new persistent database
+2. OpenDatabase - Open existing database
+3. CloseDatabase - Close database connection
+4. CreateCompany - Create new company
+5. EnterCompany - Enter company session (NAV-style)
+6. ExitCompany - Exit company session
+7. DeleteCompany - Delete company and all its tables
+8. ListCompanies - List all companies
+
+## Architecture
+
+- **Per-Connection State**: Each database connection maintains its own company session
+- **Thread-Safe**: Multiple users can work concurrently with isolated sessions
+- **NAV-Style**: Session-based company context (EnterCompany/ExitCompany)
+- **Multi-Company**: Physical table isolation using `Company$TableName` pattern
 
 ## Project Structure
 
 ```
 go-poc/
-├── foundation.go           # Core foundation library
 ├── cmd/
-│   ├── interactive/        # Interactive menu application
-│   └── test/              # Automated test suite
-└── poc-demo/              # Original PoC (separate package)
+│   └── interactive/           # Foundation Layer Application
+│       ├── foundation.go      # Core foundation library
+│       ├── main_foundation.go # Interactive menu
+│       ├── go.mod
+│       └── go.sum
+├── README.md                  # This file
+└── FOUNDATION_README.md       # Detailed documentation
 ```
 
 ## Features
 
 ✅ **Implemented:**
 - Database connection (SQLite)
-- Multi-company table naming (`Company$Table`)
-- CRUD operations (Insert, Get, Update, Delete, FindSet)
+- Multi-company support with physical table separation
+- Session-based company context
 - NAV-style API patterns
+- Comprehensive error handling
+- Per-connection state for thread safety
 
-🚧 **TODO:**
+🚧 **Next Phase:**
+- CRUD operations (Insert, Get, Update, Delete, FindSet)
 - Python trigger execution (embedded)
 - Metadata management
 - HTTP REST API
-- Performance benchmarking
 
-## Quick Start
+## Usage Example
 
-### 1. Install Dependencies
+```
+=== OpenERP Foundation Layer - Interactive Menu ===
+
+[No database open]
+
+============================================================
+MAIN MENU
+============================================================
+1. Create new database
+2. Open existing database
+3. Close database
+4. Create company
+5. Enter company
+6. Exit company
+7. Delete company
+8. List companies
+9. Exit application
+============================================================
+
+Select option (1-9): 1
+Enter database path: myerp.db
+✓ Database created successfully: myerp.db
+
+[Database: myerp.db]
+
+Select option (1-9): 4
+Enter company name: ACME
+✓ Company 'ACME' created successfully
+
+Select option (1-9): 5
+Available companies:
+  1. ACME
+Enter company name: ACME
+✓ Entered company 'ACME'
+
+[Database: myerp.db | Company: ACME]
+```
+
+## Requirements
+
+- Go 1.21+
+- SQLite3 development files
+- GCC (for CGO)
 
 ```bash
-# Install Go 1.21+
-# On Ubuntu:
-sudo apt install golang-go
-
-# Install SQLite3 development files (required for go-sqlite3)
-sudo apt install libsqlite3-dev gcc
-
-# Get dependencies
-cd go-poc
-go mod download
+# Ubuntu/Debian
+sudo apt install golang-go libsqlite3-dev gcc
 ```
 
-### 2. Run the Proof of Concept
+## Documentation
 
-```bash
-# Original PoC demo (CRUD operations)
-cd poc-demo && go run main_poc.go && cd ..
-
-# Foundation Layer - Interactive menu (8 core functions)
-cd cmd/interactive && go run . && cd ../..
-
-# Foundation Layer - Automated tests (13 tests)
-cd cmd/test && go run . && cd ../..
-```
-
-### Expected Output
-
-```
-=== OpenERP Go - Proof of Concept ===
-
-✓ Created company: ACME
-✓ Created table: ACME$customers
-
-1. INSERT - Creating customer
---------------------------------------------------
-✓ Customer created with ID: 1
-
-2. GET - Retrieving customer
---------------------------------------------------
-✓ Found customer: John Doe
-  {
-    "balance": 1000,
-    "created_at": "2025-12-16 20:30:00",
-    "email": "john@example.com",
-    ...
-  }
-
-3. MODIFY - Updating customer
---------------------------------------------------
-✓ Customer updated
-
-4. FINDSET - Getting all customers
---------------------------------------------------
-✓ Found 3 customers:
-  - John Doe: john.doe@example.com ($2500.00)
-  - Jane Smith: jane@example.com ($3000.00)
-  - Bob Wilson: bob@example.com ($1500.00)
-
-5. DELETE - Removing customer
---------------------------------------------------
-✓ Customer deleted
-  Remaining customers: 2
-
-==================================================
-Proof of Concept Complete!
-==================================================
-```
-
-## Code Structure
-
-```go
-// Create database
-db, _ := NewDatabase(":memory:")
-
-// Create company
-db.CreateCompany("ACME")
-
-// Get full table name
-tableName := GetFullTableName("customers", "ACME")
-// Returns: "ACME$customers"
-
-// CRUD operations
-crud := NewCRUDManager(db)
-
-// INSERT
-id, _ := crud.Insert(tableName, Record{
-    "name": "John Doe",
-    "email": "john@example.com",
-})
-
-// GET (NAV-style)
-customer, _ := crud.Get(tableName, id)
-
-// UPDATE (NAV-style)
-crud.Update(tableName, id, Record{"balance": 2500.0})
-
-// FINDSET (NAV-style)
-customers, _ := crud.FindSet(tableName)
-
-// DELETE
-crud.Delete(tableName, id)
-```
-
-## Comparison with Python
-
-| Feature | Python | Go PoC | Go+Python (Final) |
-|---------|--------|--------|-------------------|
-| Database ops | ~1ms | **~0.1ms** | **~0.1ms** |
-| CRUD insert | ~2ms | **~0.5ms** | ~1.5ms (with trigger) |
-| Query 1000 records | ~50ms | **~5ms** | **~5ms** |
-| NAV-style API | ✅ | ✅ | ✅ |
-| User triggers | ✅ | ❌ (not yet) | ✅ (Python embedded) |
-| Multi-company | ✅ | ✅ | ✅ |
+See [FOUNDATION_README.md](FOUNDATION_README.md) for complete documentation including:
+- Detailed function descriptions
+- Architecture details
+- Multi-company table patterns
+- Concurrency model
+- Error handling
+- NAV-style workflow examples
 
 ## Next Steps
 
-### Week 1: Python Integration
-1. Embed Python interpreter in Go
-2. Call Python for trigger execution
-3. Test trigger performance
-
-### Week 2: Full Implementation
-1. Metadata management
-2. Translation system
-3. HTTP REST API
-
-### Week 3: Production Ready
-1. Connection pooling
-2. Logging and monitoring
-3. Performance optimization
-4. Comprehensive testing
-
-## Building for Production
-
-```bash
-# Build with CGO enabled (required for SQLite and Python)
-CGO_ENABLED=1 go build -o openerp main.go
-
-# Run
-./openerp
-```
-
-## Notes
-
-- This is a **proof of concept** to demonstrate feasibility
-- Python trigger execution will be added next
-- Production version will include proper error handling, logging, and testing
-- Performance improvements are already visible (~10x for database operations)
+After the foundation layer, we'll add:
+1. **CRUD Operations** - Insert, Get, Update, Delete, FindSet using GetFullTableName()
+2. **Python Integration** - Embed Python for user-defined triggers
+3. **Metadata Layer** - Table and field definitions
+4. **REST API** - HTTP endpoints for external access
