@@ -7,6 +7,126 @@ import (
 	"strings"
 )
 
+func objectDesigner(db *Database, scanner *bufio.Scanner) {
+	for {
+		// Show Object Designer header
+		fmt.Println("\n" + strings.Repeat("=", 60))
+		fmt.Printf("OBJECT DESIGNER - Company: %s\n", db.GetCurrentCompany())
+		fmt.Println(strings.Repeat("=", 60))
+		fmt.Println("1. Create Table")
+		fmt.Println("2. List Tables")
+		fmt.Println("3. Delete Table")
+		fmt.Println("4. Back to Main Menu")
+		fmt.Println(strings.Repeat("=", 60))
+		fmt.Print("\nSelect option (1-4): ")
+
+		if !scanner.Scan() {
+			return
+		}
+
+		choice := strings.TrimSpace(scanner.Text())
+
+		switch choice {
+		case "1":
+			// Create Table
+			fmt.Print("\nEnter table name (e.g., customers): ")
+			if !scanner.Scan() {
+				continue
+			}
+			tableName := strings.TrimSpace(scanner.Text())
+
+			if tableName == "" {
+				fmt.Println("✗ Error: Table name cannot be empty")
+				continue
+			}
+
+			err := db.CreateTable(tableName)
+			if err != nil {
+				fmt.Printf("✗ Error: %v\n", err)
+			} else {
+				fullName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), tableName)
+				fmt.Printf("✓ Table '%s' created successfully\n", fullName)
+			}
+
+		case "2":
+			// List Tables
+			tables, err := db.ListTables()
+			if err != nil {
+				fmt.Printf("✗ Error: %v\n", err)
+				continue
+			}
+
+			if len(tables) == 0 {
+				fmt.Println("\nNo tables found for this company")
+			} else {
+				fmt.Printf("\n✓ Found %d table(s) for company '%s':\n", len(tables), db.GetCurrentCompany())
+				for i, table := range tables {
+					fullName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), table)
+					fmt.Printf("  %d. %s (full name: %s)\n", i+1, table, fullName)
+				}
+			}
+
+		case "3":
+			// Delete Table
+			tables, err := db.ListTables()
+			if err != nil {
+				fmt.Printf("✗ Error: %v\n", err)
+				continue
+			}
+
+			if len(tables) == 0 {
+				fmt.Println("✗ No tables to delete")
+				continue
+			}
+
+			fmt.Println("\nAvailable tables:")
+			for i, table := range tables {
+				fmt.Printf("  %d. %s\n", i+1, table)
+			}
+
+			fmt.Print("\nEnter table name to delete: ")
+			if !scanner.Scan() {
+				continue
+			}
+			tableName := strings.TrimSpace(scanner.Text())
+
+			if tableName == "" {
+				fmt.Println("✗ Error: Table name cannot be empty")
+				continue
+			}
+
+			// Confirm deletion
+			fullName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), tableName)
+			fmt.Printf("\n⚠️  WARNING: This will permanently delete table '%s'!\n", fullName)
+			fmt.Print("Are you sure? (yes/no): ")
+			if !scanner.Scan() {
+				continue
+			}
+			confirm := strings.ToLower(strings.TrimSpace(scanner.Text()))
+
+			if confirm != "yes" {
+				fmt.Println("✓ Deletion cancelled")
+				continue
+			}
+
+			err = db.DeleteTable(tableName)
+			if err != nil {
+				fmt.Printf("✗ Error: %v\n", err)
+			} else {
+				fmt.Printf("✓ Table '%s' deleted successfully\n", fullName)
+			}
+
+		case "4":
+			// Back to Main Menu
+			fmt.Println("\n✓ Returning to Main Menu")
+			return
+
+		default:
+			fmt.Printf("✗ Invalid option: %s\n", choice)
+		}
+	}
+}
+
 func main() {
 	fmt.Println("=== OpenERP Foundation Layer - Interactive Menu ===\n")
 
@@ -37,9 +157,10 @@ func main() {
 		fmt.Println("6. Exit company")
 		fmt.Println("7. Delete company")
 		fmt.Println("8. List companies")
-		fmt.Println("9. Exit application")
+		fmt.Println("9. Object Designer")
+		fmt.Println("10. Exit application")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-9): ")
+		fmt.Print("\nSelect option (1-10): ")
 
 		if !scanner.Scan() {
 			break
@@ -269,6 +390,20 @@ func main() {
 			}
 
 		case "9":
+			// Object Designer
+			if db == nil {
+				fmt.Println("✗ Error: No database is open")
+				continue
+			}
+
+			if db.currentCompany == "" {
+				fmt.Println("✗ Error: You must enter a company first")
+				continue
+			}
+
+			objectDesigner(db, scanner)
+
+		case "10":
 			// Exit application
 			if db != nil {
 				fmt.Println("\nClosing database before exit...")
