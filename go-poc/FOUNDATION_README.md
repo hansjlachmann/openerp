@@ -69,11 +69,15 @@ Returns all companies in the database, sorted by name.
 ```bash
 cd go-poc
 
-# Build the foundation layer application
-go build -o openerp-foundation foundation.go main_foundation.go
+# Build the interactive menu application
+cd cmd/interactive && go build -o openerp-foundation . && cd ../..
+
+# Build the test suite
+cd cmd/test && go build -o test-foundation . && cd ../..
 
 # Or run directly
-go run foundation.go main_foundation.go
+cd cmd/interactive && go run . && cd ../..  # Interactive menu
+cd cmd/test && go run . && cd ../..          # Run tests
 ```
 
 ## Usage
@@ -204,8 +208,13 @@ After the foundation layer is tested:
 
 ## Files
 
-- `foundation.go` - Core foundation layer implementation
-- `main_foundation.go` - Interactive menu application
+- `foundation.go` - Core foundation layer library
+- `cmd/interactive/` - Interactive menu application
+  - `main_foundation.go` - Menu implementation
+  - `foundation.go` - Copy of foundation library
+- `cmd/test/` - Automated test suite
+  - `test_foundation.go` - Test implementation
+  - `foundation.go` - Copy of foundation library
 - `FOUNDATION_README.md` - This file
 
 ## NAV-Style Workflow

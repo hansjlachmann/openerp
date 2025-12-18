@@ -58,3 +58,5 @@ Thumbs.db
 go-poc/openerp
 go-poc/openerp-foundation
 go-poc/test-foundation
+go-poc/cmd/interactive/openerp-foundation
+go-poc/cmd/test/test-foundation
