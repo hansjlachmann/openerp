@@ -4,7 +4,7 @@ This is a proof-of-concept implementation of OpenERP core in Go, demonstrating t
 
 ## Available Demos
 
-1. **Original PoC** (`main_poc.go`) - CRUD operations demo with NAV-style API
+1. **Original PoC** (`poc-demo/main_poc.go`) - CRUD operations demo with NAV-style API
 2. **Foundation Layer** (`foundation.go` + `main_foundation.go`) - Interactive menu for 8 core functions
 3. **Foundation Tests** (`foundation.go` + `test_foundation.go`) - Automated test suite (13 tests)
 
@@ -45,7 +45,7 @@ go mod download
 
 ```bash
 # Original PoC demo (CRUD operations)
-go run main_poc.go
+cd poc-demo && go run main_poc.go && cd ..
 
 # OR use the new Foundation Layer (8 core functions with interactive menu)
 go run foundation.go main_foundation.go
