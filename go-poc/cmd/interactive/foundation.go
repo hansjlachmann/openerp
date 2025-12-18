@@ -270,3 +270,114 @@ func (db *Database) GetFullTableName(tableName string) (string, error) {
 	}
 	return fmt.Sprintf("%s$%s", db.currentCompany, tableName), nil
 }
+
+// CreateTable creates a new table for the current company
+func (db *Database) CreateTable(tableName string) error {
+	if db.conn == nil {
+		return fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+
+	// Validate table name (no special characters)
+	if strings.ContainsAny(tableName, " $\"'`\\") {
+		return fmt.Errorf("table name contains invalid characters")
+	}
+
+	// Get full table name with company prefix
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Create basic table with id and created_at
+	_, err := db.conn.Exec(fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS "%s" (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`, fullTableName))
+	if err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+
+	return nil
+}
+
+// ListTables returns all tables for the current company
+func (db *Database) ListTables() ([]string, error) {
+	if db.conn == nil {
+		return nil, fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return nil, fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	// Find all tables for current company (Company$% pattern)
+	rows, err := db.conn.Query(`
+		SELECT name FROM sqlite_master
+		WHERE type='table' AND name LIKE ?
+		ORDER BY name
+	`, db.currentCompany+"$%")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tables: %w", err)
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var fullTableName string
+		if err := rows.Scan(&fullTableName); err != nil {
+			return nil, fmt.Errorf("failed to read table name: %w", err)
+		}
+		// Strip company prefix to show just the table name
+		tableName := strings.TrimPrefix(fullTableName, db.currentCompany+"$")
+		tables = append(tables, tableName)
+	}
+
+	return tables, nil
+}
+
+// DeleteTable deletes a table for the current company
+func (db *Database) DeleteTable(tableName string) error {
+	if db.conn == nil {
+		return fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get full table name with company prefix
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Check if table exists
+	var exists int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master
+		WHERE type='table' AND name = ?
+	`, fullTableName).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if exists == 0 {
+		return fmt.Errorf("table '%s' does not exist", tableName)
+	}
+
+	// Delete the table
+	_, err = db.conn.Exec(fmt.Sprintf(`DROP TABLE "%s"`, fullTableName))
+	if err != nil {
+		return fmt.Errorf("failed to delete table: %w", err)
+	}
+
+	return nil
+}
