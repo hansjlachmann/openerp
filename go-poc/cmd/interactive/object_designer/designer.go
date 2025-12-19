@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+
+	"github.com/hansjlachmann/openerp-go/types"
 )
 
 // Database interface defines the methods we need from the main Database type
@@ -12,6 +14,8 @@ type Database interface {
 	CreateTable(tableName string) error
 	ListTables() ([]string, error)
 	DeleteTable(tableName string) error
+	AddField(tableName, fieldName, fieldType string) error
+	ListFields(tableName string) ([]types.FieldInfo, error)
 }
 
 // Run starts the Object Designer interactive menu
@@ -24,9 +28,10 @@ func Run(db Database, scanner *bufio.Scanner) {
 		fmt.Println("1. Create Table")
 		fmt.Println("2. List Tables")
 		fmt.Println("3. Delete Table")
-		fmt.Println("4. Back to Main Menu")
+		fmt.Println("4. Add Field to Table")
+		fmt.Println("5. Back to Main Menu")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-4): ")
+		fmt.Print("\nSelect option (1-5): ")
 
 		if !scanner.Scan() {
 			return
@@ -42,6 +47,8 @@ func Run(db Database, scanner *bufio.Scanner) {
 		case "3":
 			deleteTable(db, scanner)
 		case "4":
+			addField(db, scanner)
+		case "5":
 			// Back to Main Menu
 			fmt.Println("\n✓ Returning to Main Menu")
 			return
@@ -137,5 +144,102 @@ func deleteTable(db Database, scanner *bufio.Scanner) {
 		fmt.Printf("✗ Error: %v\n", err)
 	} else {
 		fmt.Printf("✓ Table '%s' deleted successfully\n", fullName)
+	}
+}
+
+func addField(db Database, scanner *bufio.Scanner) {
+	// Get list of tables first
+	tables, err := db.ListTables()
+	if err != nil {
+		fmt.Printf("✗ Error: %v\n", err)
+		return
+	}
+
+	if len(tables) == 0 {
+		fmt.Println("✗ No tables available. Create a table first.")
+		return
+	}
+
+	// Show available tables
+	fmt.Println("\nAvailable tables:")
+	for i, table := range tables {
+		fmt.Printf("  %d. %s\n", i+1, table)
+	}
+
+	// Select table
+	fmt.Print("\nEnter table name: ")
+	if !scanner.Scan() {
+		return
+	}
+	tableName := strings.TrimSpace(scanner.Text())
+
+	if tableName == "" {
+		fmt.Println("✗ Error: Table name cannot be empty")
+		return
+	}
+
+	// Show existing fields
+	fields, err := db.ListFields(tableName)
+	if err != nil {
+		fmt.Printf("✗ Error: %v\n", err)
+		return
+	}
+
+	if len(fields) > 0 {
+		fmt.Printf("\nExisting fields in table '%s':\n", tableName)
+		for i, field := range fields {
+			fmt.Printf("  %d. %s (%s)\n", i+1, field.Name, field.Type)
+		}
+	} else {
+		fmt.Printf("\nTable '%s' has no custom fields yet (only id and created_at)\n", tableName)
+	}
+
+	// Enter field name
+	fmt.Print("\nEnter field name (e.g., name, email, price): ")
+	if !scanner.Scan() {
+		return
+	}
+	fieldName := strings.TrimSpace(scanner.Text())
+
+	if fieldName == "" {
+		fmt.Println("✗ Error: Field name cannot be empty")
+		return
+	}
+
+	// Show field types
+	fmt.Println("\nAvailable field types:")
+	fmt.Println("  1. Text")
+	fmt.Println("  2. Boolean")
+	fmt.Println("  3. Date")
+	fmt.Println("  4. Decimal")
+	fmt.Println("  5. Integer")
+	fmt.Print("\nSelect field type (1-5): ")
+
+	if !scanner.Scan() {
+		return
+	}
+	typeChoice := strings.TrimSpace(scanner.Text())
+
+	fieldTypes := map[string]string{
+		"1": "Text",
+		"2": "Boolean",
+		"3": "Date",
+		"4": "Decimal",
+		"5": "Integer",
+	}
+
+	fieldType, ok := fieldTypes[typeChoice]
+	if !ok {
+		fmt.Printf("✗ Error: Invalid field type selection: %s\n", typeChoice)
+		return
+	}
+
+	// Add the field
+	err = db.AddField(tableName, fieldName, fieldType)
+	if err != nil {
+		fmt.Printf("✗ Error: %v\n", err)
+	} else {
+		fullTableName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), tableName)
+		fmt.Printf("✓ Field '%s' (%s) added to table '%s' successfully\n", fieldName, fieldType, fullTableName)
 	}
 }
