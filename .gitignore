@@ -48,3 +48,15 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+go-poc/openerp
+go-poc/openerp-foundation
+go-poc/test-foundation
+go-poc/cmd/interactive/openerp-foundation
+go-poc/cmd/test/test-foundation
