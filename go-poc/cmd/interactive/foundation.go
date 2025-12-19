@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/hansjlachmann/openerp-go/types"
 )
 
 // Database represents a database connection with session state
@@ -38,6 +39,23 @@ func CreateDatabase(path string) (*Database, error) {
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to create Company table: %w", err)
+	}
+
+	// Create FieldDefinition table for metadata
+	_, err = conn.Exec(`
+		CREATE TABLE IF NOT EXISTS FieldDefinition (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			company TEXT NOT NULL,
+			table_name TEXT NOT NULL,
+			field_name TEXT NOT NULL,
+			field_type TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(company, table_name, field_name)
+		)
+	`)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to create FieldDefinition table: %w", err)
 	}
 
 	db := &Database{
@@ -380,4 +398,129 @@ func (db *Database) DeleteTable(tableName string) error {
 	}
 
 	return nil
+}
+
+// AddField adds a new field to a table
+func (db *Database) AddField(tableName, fieldName, fieldType string) error {
+	if db.conn == nil {
+		return fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+
+	if fieldName == "" {
+		return fmt.Errorf("field name cannot be empty")
+	}
+
+	// Validate field name (no special characters)
+	if strings.ContainsAny(fieldName, " $\"'`\\") {
+		return fmt.Errorf("field name contains invalid characters")
+	}
+
+	// Validate field type
+	validTypes := map[string]string{
+		"Text":    "TEXT",
+		"Boolean": "INTEGER", // SQLite uses 0/1 for boolean
+		"Date":    "TEXT",    // SQLite stores dates as TEXT in ISO8601 format
+		"Decimal": "REAL",
+		"Integer": "INTEGER",
+	}
+
+	sqlType, ok := validTypes[fieldType]
+	if !ok {
+		return fmt.Errorf("invalid field type '%s'. Valid types: Text, Boolean, Date, Decimal, Integer", fieldType)
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Check if table exists
+	var exists int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master
+		WHERE type='table' AND name = ?
+	`, fullTableName).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if exists == 0 {
+		return fmt.Errorf("table '%s' does not exist", tableName)
+	}
+
+	// Check if field already exists in metadata
+	var fieldExists int
+	err = db.conn.QueryRow(`
+		SELECT COUNT(*) FROM FieldDefinition
+		WHERE company = ? AND table_name = ? AND field_name = ?
+	`, db.currentCompany, tableName, fieldName).Scan(&fieldExists)
+	if err != nil {
+		return fmt.Errorf("failed to check field existence: %w", err)
+	}
+
+	if fieldExists > 0 {
+		return fmt.Errorf("field '%s' already exists in table '%s'", fieldName, tableName)
+	}
+
+	// Add field to actual table using ALTER TABLE
+	alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, fullTableName, fieldName, sqlType)
+	_, err = db.conn.Exec(alterSQL)
+	if err != nil {
+		return fmt.Errorf("failed to add field to table: %w", err)
+	}
+
+	// Store field metadata
+	_, err = db.conn.Exec(`
+		INSERT INTO FieldDefinition (company, table_name, field_name, field_type)
+		VALUES (?, ?, ?, ?)
+	`, db.currentCompany, tableName, fieldName, fieldType)
+	if err != nil {
+		return fmt.Errorf("failed to store field metadata: %w", err)
+	}
+
+	return nil
+}
+
+// ListFields returns all fields for a table
+func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
+	if db.conn == nil {
+		return nil, fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return nil, fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get fields from metadata
+	rows, err := db.conn.Query(`
+		SELECT field_name, field_type
+		FROM FieldDefinition
+		WHERE company = ? AND table_name = ?
+		ORDER BY id
+	`, db.currentCompany, tableName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list fields: %w", err)
+	}
+	defer rows.Close()
+
+	var fields []types.FieldInfo
+	for rows.Next() {
+		var field types.FieldInfo
+		if err := rows.Scan(&field.Name, &field.Type); err != nil {
+			return nil, fmt.Errorf("failed to read field: %w", err)
+		}
+		fields = append(fields, field)
+	}
+
+	return fields, nil
 }
