@@ -306,7 +306,7 @@ func (db *Database) GetFullTableName(tableName string) (string, error) {
 	return fmt.Sprintf("%s$%s", db.currentCompany, tableName), nil
 }
 
-// CreateTable creates a new table for the current company
+// CreateTable creates a new table for ALL companies
 func (db *Database) CreateTable(tableName string) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
@@ -325,18 +325,26 @@ func (db *Database) CreateTable(tableName string) error {
 		return fmt.Errorf("table name contains invalid characters")
 	}
 
-	// Get full table name with company prefix
-	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
-
-	// Create basic table with id and created_at
-	_, err := db.conn.Exec(fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS "%s" (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		)
-	`, fullTableName))
+	// Get all companies to create table for each
+	companies, err := db.ListCompanies()
 	if err != nil {
-		return fmt.Errorf("failed to create table: %w", err)
+		return fmt.Errorf("failed to get companies: %w", err)
+	}
+
+	// Create table for each company
+	for _, company := range companies {
+		fullTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+		// Create basic table with id and created_at
+		_, err := db.conn.Exec(fmt.Sprintf(`
+			CREATE TABLE IF NOT EXISTS "%s" (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		`, fullTableName))
+		if err != nil {
+			return fmt.Errorf("failed to create table for company %s: %w", company, err)
+		}
 	}
 
 	return nil
@@ -377,7 +385,7 @@ func (db *Database) ListTables() ([]string, error) {
 	return tables, nil
 }
 
-// DeleteTable deletes a table for the current company
+// DeleteTable deletes a table from ALL companies
 func (db *Database) DeleteTable(tableName string) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
@@ -391,10 +399,8 @@ func (db *Database) DeleteTable(tableName string) error {
 		return fmt.Errorf("table name cannot be empty")
 	}
 
-	// Get full table name with company prefix
+	// Check if table exists for current company
 	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
-
-	// Check if table exists
 	var exists int
 	err := db.conn.QueryRow(`
 		SELECT COUNT(*) FROM sqlite_master
@@ -408,10 +414,27 @@ func (db *Database) DeleteTable(tableName string) error {
 		return fmt.Errorf("table '%s' does not exist", tableName)
 	}
 
-	// Delete the table
-	_, err = db.conn.Exec(fmt.Sprintf(`DROP TABLE "%s"`, fullTableName))
+	// Get all companies to delete table from each
+	companies, err := db.ListCompanies()
 	if err != nil {
-		return fmt.Errorf("failed to delete table: %w", err)
+		return fmt.Errorf("failed to get companies: %w", err)
+	}
+
+	// Delete table from each company
+	for _, company := range companies {
+		companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+		// Delete the table
+		_, err = db.conn.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, companyTableName))
+		if err != nil {
+			return fmt.Errorf("failed to delete table for company %s: %w", company, err)
+		}
+	}
+
+	// Delete all field metadata for this table (all companies)
+	_, err = db.conn.Exec(`DELETE FROM FieldDefinition WHERE table_name = ?`, tableName)
+	if err != nil {
+		return fmt.Errorf("failed to delete field metadata: %w", err)
 	}
 
 	return nil
@@ -454,10 +477,8 @@ func (db *Database) AddField(tableName, fieldName, fieldType string) error {
 		return fmt.Errorf("invalid field type '%s'. Valid types: Text, Boolean, Date, Decimal, Integer", fieldType)
 	}
 
-	// Get full table name
+	// Check if table exists for current company
 	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
-
-	// Check if table exists
 	var exists int
 	err := db.conn.QueryRow(`
 		SELECT COUNT(*) FROM sqlite_master
@@ -471,12 +492,13 @@ func (db *Database) AddField(tableName, fieldName, fieldType string) error {
 		return fmt.Errorf("table '%s' does not exist", tableName)
 	}
 
-	// Check if field already exists in metadata
+	// Check if field already exists in metadata (check any company)
 	var fieldExists int
 	err = db.conn.QueryRow(`
 		SELECT COUNT(*) FROM FieldDefinition
-		WHERE company = ? AND table_name = ? AND field_name = ?
-	`, db.currentCompany, tableName, fieldName).Scan(&fieldExists)
+		WHERE table_name = ? AND field_name = ?
+		LIMIT 1
+	`, tableName, fieldName).Scan(&fieldExists)
 	if err != nil {
 		return fmt.Errorf("failed to check field existence: %w", err)
 	}
@@ -485,20 +507,31 @@ func (db *Database) AddField(tableName, fieldName, fieldType string) error {
 		return fmt.Errorf("field '%s' already exists in table '%s'", fieldName, tableName)
 	}
 
-	// Add field to actual table using ALTER TABLE
-	alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, fullTableName, fieldName, sqlType)
-	_, err = db.conn.Exec(alterSQL)
+	// Get all companies to add field to each
+	companies, err := db.ListCompanies()
 	if err != nil {
-		return fmt.Errorf("failed to add field to table: %w", err)
+		return fmt.Errorf("failed to get companies: %w", err)
 	}
 
-	// Store field metadata
-	_, err = db.conn.Exec(`
-		INSERT INTO FieldDefinition (company, table_name, field_name, field_type)
-		VALUES (?, ?, ?, ?)
-	`, db.currentCompany, tableName, fieldName, fieldType)
-	if err != nil {
-		return fmt.Errorf("failed to store field metadata: %w", err)
+	// Add field to table in each company
+	for _, company := range companies {
+		companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+		// Add field to actual table using ALTER TABLE
+		alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, companyTableName, fieldName, sqlType)
+		_, err = db.conn.Exec(alterSQL)
+		if err != nil {
+			return fmt.Errorf("failed to add field to table for company %s: %w", company, err)
+		}
+
+		// Store field metadata for each company
+		_, err = db.conn.Exec(`
+			INSERT INTO FieldDefinition (company, table_name, field_name, field_type)
+			VALUES (?, ?, ?, ?)
+		`, company, tableName, fieldName, fieldType)
+		if err != nil {
+			return fmt.Errorf("failed to store field metadata for company %s: %w", company, err)
+		}
 	}
 
 	return nil
