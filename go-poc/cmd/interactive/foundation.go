@@ -92,6 +92,23 @@ func OpenDatabase(path string) (*Database, error) {
 		return nil, fmt.Errorf("failed to verify database: %w", err)
 	}
 
+	// Create FieldDefinition table if it doesn't exist (for backward compatibility)
+	_, err = conn.Exec(`
+		CREATE TABLE IF NOT EXISTS FieldDefinition (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			company TEXT NOT NULL,
+			table_name TEXT NOT NULL,
+			field_name TEXT NOT NULL,
+			field_type TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(company, table_name, field_name)
+		)
+	`)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to create FieldDefinition table: %w", err)
+	}
+
 	db := &Database{
 		conn:           conn,
 		path:           path,
