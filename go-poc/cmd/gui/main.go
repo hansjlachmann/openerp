@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	"github.com/hansjlachmann/openerp-go/types"
+	"github.com/hansjlachmann/openerp-go-gui/types"
 )
 
 func main() {
