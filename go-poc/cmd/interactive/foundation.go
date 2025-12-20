@@ -574,3 +574,278 @@ func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
 
 	return fields, nil
 }
+
+// InsertRecord inserts a new record into a table
+func (db *Database) InsertRecord(tableName string, record map[string]interface{}) (int64, error) {
+	if db.conn == nil {
+		return 0, fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return 0, fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return 0, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Build INSERT query
+	var columns []string
+	var placeholders []string
+	var values []interface{}
+
+	for key, value := range record {
+		columns = append(columns, fmt.Sprintf(`"%s"`, key))
+		placeholders = append(placeholders, "?")
+		values = append(values, value)
+	}
+
+	query := fmt.Sprintf(
+		`INSERT INTO "%s" (%s) VALUES (%s)`,
+		fullTableName,
+		strings.Join(columns, ", "),
+		strings.Join(placeholders, ", "),
+	)
+
+	result, err := db.conn.Exec(query, values...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to insert record: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get insert id: %w", err)
+	}
+
+	return id, nil
+}
+
+// GetRecord retrieves a single record by ID
+func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{}, error) {
+	if db.conn == nil {
+		return nil, fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return nil, fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Get all column names using PRAGMA
+	columnsQuery := fmt.Sprintf(`PRAGMA table_info("%s")`, fullTableName)
+	rows, err := db.conn.Query(columnsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table info: %w", err)
+	}
+	defer rows.Close()
+
+	var columns []string
+	for rows.Next() {
+		var cid int
+		var name, colType string
+		var notNull, pk int
+		var dfltValue interface{}
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
+			return nil, fmt.Errorf("failed to read column info: %w", err)
+		}
+		columns = append(columns, name)
+	}
+
+	if len(columns) == 0 {
+		return nil, fmt.Errorf("table has no columns")
+	}
+
+	// Build SELECT query
+	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ?`, fullTableName)
+	row := db.conn.QueryRow(query, id)
+
+	// Scan into map
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
+	for i := range columns {
+		valuePtrs[i] = &values[i]
+	}
+
+	if err := row.Scan(valuePtrs...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("record with id %d not found", id)
+		}
+		return nil, fmt.Errorf("failed to scan record: %w", err)
+	}
+
+	record := make(map[string]interface{})
+	for i, col := range columns {
+		record[col] = values[i]
+	}
+
+	return record, nil
+}
+
+// UpdateRecord updates a record by ID
+func (db *Database) UpdateRecord(tableName string, id int64, updates map[string]interface{}) error {
+	if db.conn == nil {
+		return fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+
+	if len(updates) == 0 {
+		return fmt.Errorf("no updates provided")
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Build UPDATE query
+	var setClauses []string
+	var values []interface{}
+
+	for key, value := range updates {
+		setClauses = append(setClauses, fmt.Sprintf(`"%s" = ?`, key))
+		values = append(values, value)
+	}
+	values = append(values, id)
+
+	query := fmt.Sprintf(
+		`UPDATE "%s" SET %s WHERE id = ?`,
+		fullTableName,
+		strings.Join(setClauses, ", "),
+	)
+
+	result, err := db.conn.Exec(query, values...)
+	if err != nil {
+		return fmt.Errorf("failed to update record: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("record with id %d not found", id)
+	}
+
+	return nil
+}
+
+// DeleteRecord deletes a record by ID
+func (db *Database) DeleteRecord(tableName string, id int64) error {
+	if db.conn == nil {
+		return fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	query := fmt.Sprintf(`DELETE FROM "%s" WHERE id = ?`, fullTableName)
+	result, err := db.conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete record: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("record with id %d not found", id)
+	}
+
+	return nil
+}
+
+// ListRecords retrieves all records from a table
+func (db *Database) ListRecords(tableName string) ([]map[string]interface{}, error) {
+	if db.conn == nil {
+		return nil, fmt.Errorf("database not open")
+	}
+
+	if db.currentCompany == "" {
+		return nil, fmt.Errorf("no company context set - use EnterCompany() first")
+	}
+
+	if tableName == "" {
+		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get full table name
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+
+	// Get all column names using PRAGMA
+	columnsQuery := fmt.Sprintf(`PRAGMA table_info("%s")`, fullTableName)
+	columnRows, err := db.conn.Query(columnsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table info: %w", err)
+	}
+	defer columnRows.Close()
+
+	var columns []string
+	for columnRows.Next() {
+		var cid int
+		var name, colType string
+		var notNull, pk int
+		var dfltValue interface{}
+		if err := columnRows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
+			return nil, fmt.Errorf("failed to read column info: %w", err)
+		}
+		columns = append(columns, name)
+	}
+
+	if len(columns) == 0 {
+		return nil, fmt.Errorf("table has no columns")
+	}
+
+	// Query all records
+	query := fmt.Sprintf(`SELECT * FROM "%s" ORDER BY id`, fullTableName)
+	rows, err := db.conn.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query records: %w", err)
+	}
+	defer rows.Close()
+
+	var records []map[string]interface{}
+	for rows.Next() {
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, fmt.Errorf("failed to scan record: %w", err)
+		}
+
+		record := make(map[string]interface{})
+		for i, col := range columns {
+			record[col] = values[i]
+		}
+		records = append(records, record)
+	}
+
+	return records, nil
+}
