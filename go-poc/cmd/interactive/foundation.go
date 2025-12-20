@@ -711,6 +711,104 @@ func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
 	return fields, nil
 }
 
+// ensureTableExists creates the SQL table from metadata if it doesn't exist yet
+func (db *Database) ensureTableExists(tableName string) error {
+	// Check if SQL table exists for current company
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+	var tableExists int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master
+		WHERE type='table' AND name = ?
+	`, fullTableName).Scan(&tableExists)
+	if err != nil {
+		return fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	if tableExists > 0 {
+		return nil // Table already exists
+	}
+
+	// Table doesn't exist - create it from metadata
+	// Get all fields from metadata
+	fields, err := db.ListFields(tableName)
+	if err != nil {
+		return fmt.Errorf("failed to get fields: %w", err)
+	}
+
+	if len(fields) == 0 {
+		return fmt.Errorf("cannot create table: no fields defined")
+	}
+
+	// Separate PK and non-PK fields
+	var pkFields []types.FieldInfo
+	var regularFields []types.FieldInfo
+	for _, field := range fields {
+		if field.IsPrimaryKey {
+			pkFields = append(pkFields, field)
+		} else {
+			regularFields = append(regularFields, field)
+		}
+	}
+
+	if len(pkFields) == 0 {
+		return fmt.Errorf("cannot create table: no primary key fields defined")
+	}
+
+	// Type mapping
+	validTypes := map[string]string{
+		"Text":    "TEXT",
+		"Boolean": "INTEGER",
+		"Date":    "TEXT",
+		"Decimal": "REAL",
+		"Integer": "INTEGER",
+	}
+
+	// Get all companies
+	companies, err := db.ListCompanies()
+	if err != nil {
+		return fmt.Errorf("failed to get companies: %w", err)
+	}
+
+	// Create table for each company
+	for _, company := range companies {
+		companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+		// Build CREATE TABLE statement
+		var allFieldDefs []string
+		var pkNames []string
+
+		// Add PK fields
+		for _, field := range pkFields {
+			sqlType := validTypes[field.Type]
+			allFieldDefs = append(allFieldDefs, fmt.Sprintf(`"%s" %s NOT NULL`, field.Name, sqlType))
+			pkNames = append(pkNames, fmt.Sprintf(`"%s"`, field.Name))
+		}
+
+		// Add regular fields
+		for _, field := range regularFields {
+			sqlType := validTypes[field.Type]
+			allFieldDefs = append(allFieldDefs, fmt.Sprintf(`"%s" %s`, field.Name, sqlType))
+		}
+
+		// Add created_at timestamp
+		allFieldDefs = append(allFieldDefs, "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
+		createSQL := fmt.Sprintf(`
+			CREATE TABLE "%s" (
+				%s,
+				PRIMARY KEY (%s)
+			)
+		`, companyTableName, strings.Join(allFieldDefs, ", "), strings.Join(pkNames, ", "))
+
+		_, err = db.conn.Exec(createSQL)
+		if err != nil {
+			return fmt.Errorf("failed to create table for company %s: %w", company, err)
+		}
+	}
+
+	return nil
+}
+
 // buildPrimaryKeyWhere builds a WHERE clause for primary key fields
 // Returns the WHERE clause string and the values to bind
 func (db *Database) buildPrimaryKeyWhere(tableName string, primaryKey map[string]interface{}) (string, []interface{}, error) {
@@ -760,6 +858,11 @@ func (db *Database) InsertRecord(tableName string, record map[string]interface{}
 
 	if tableName == "" {
 		return 0, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Ensure SQL table exists (create from metadata if needed)
+	if err := db.ensureTableExists(tableName); err != nil {
+		return 0, err
 	}
 
 	// Get primary key fields and validate they are all provided
@@ -819,6 +922,11 @@ func (db *Database) GetRecord(tableName string, primaryKey map[string]interface{
 
 	if tableName == "" {
 		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Ensure SQL table exists (create from metadata if needed)
+	if err := db.ensureTableExists(tableName); err != nil {
+		return nil, err
 	}
 
 	// Build WHERE clause from primary key
@@ -898,6 +1006,11 @@ func (db *Database) UpdateRecord(tableName string, primaryKey map[string]interfa
 		return fmt.Errorf("no updates provided")
 	}
 
+	// Ensure SQL table exists (create from metadata if needed)
+	if err := db.ensureTableExists(tableName); err != nil {
+		return err
+	}
+
 	// Build WHERE clause from primary key
 	whereClause, whereValues, err := db.buildPrimaryKeyWhere(tableName, primaryKey)
 	if err != nil {
@@ -957,6 +1070,11 @@ func (db *Database) DeleteRecord(tableName string, primaryKey map[string]interfa
 		return fmt.Errorf("table name cannot be empty")
 	}
 
+	// Ensure SQL table exists (create from metadata if needed)
+	if err := db.ensureTableExists(tableName); err != nil {
+		return err
+	}
+
 	// Build WHERE clause from primary key
 	whereClause, whereValues, err := db.buildPrimaryKeyWhere(tableName, primaryKey)
 	if err != nil {
@@ -996,6 +1114,11 @@ func (db *Database) ListRecords(tableName string) ([]map[string]interface{}, err
 
 	if tableName == "" {
 		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Ensure SQL table exists (create from metadata if needed)
+	if err := db.ensureTableExists(tableName); err != nil {
+		return nil, err
 	}
 
 	// Get full table name
