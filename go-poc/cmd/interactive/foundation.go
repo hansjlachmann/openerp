@@ -49,6 +49,8 @@ func CreateDatabase(path string) (*Database, error) {
 			table_name TEXT NOT NULL,
 			field_name TEXT NOT NULL,
 			field_type TEXT NOT NULL,
+			is_primary_key INTEGER DEFAULT 0,
+			field_order INTEGER DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(company, table_name, field_name)
 		)
@@ -100,6 +102,8 @@ func OpenDatabase(path string) (*Database, error) {
 			table_name TEXT NOT NULL,
 			field_name TEXT NOT NULL,
 			field_type TEXT NOT NULL,
+			is_primary_key INTEGER DEFAULT 0,
+			field_order INTEGER DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(company, table_name, field_name)
 		)
@@ -108,6 +112,10 @@ func OpenDatabase(path string) (*Database, error) {
 		conn.Close()
 		return nil, fmt.Errorf("failed to create FieldDefinition table: %w", err)
 	}
+
+	// Add new columns if they don't exist (for existing databases)
+	conn.Exec(`ALTER TABLE FieldDefinition ADD COLUMN is_primary_key INTEGER DEFAULT 0`)
+	conn.Exec(`ALTER TABLE FieldDefinition ADD COLUMN field_order INTEGER DEFAULT 0`)
 
 	db := &Database{
 		conn:           conn,
@@ -306,7 +314,7 @@ func (db *Database) GetFullTableName(tableName string) (string, error) {
 	return fmt.Sprintf("%s$%s", db.currentCompany, tableName), nil
 }
 
-// CreateTable creates a new table for ALL companies
+// CreateTable registers a new table (NAV-style: table created when first field added)
 func (db *Database) CreateTable(tableName string) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
@@ -325,32 +333,25 @@ func (db *Database) CreateTable(tableName string) error {
 		return fmt.Errorf("table name contains invalid characters")
 	}
 
-	// Get all companies to create table for each
-	companies, err := db.ListCompanies()
+	// Check if table already has fields defined (table exists)
+	var count int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM FieldDefinition WHERE table_name = ?
+	`, tableName).Scan(&count)
 	if err != nil {
-		return fmt.Errorf("failed to get companies: %w", err)
+		return fmt.Errorf("failed to check table existence: %w", err)
 	}
 
-	// Create table for each company
-	for _, company := range companies {
-		fullTableName := fmt.Sprintf("%s$%s", company, tableName)
-
-		// Create basic table with id and created_at
-		_, err := db.conn.Exec(fmt.Sprintf(`
-			CREATE TABLE IF NOT EXISTS "%s" (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			)
-		`, fullTableName))
-		if err != nil {
-			return fmt.Errorf("failed to create table for company %s: %w", company, err)
-		}
+	if count > 0 {
+		return fmt.Errorf("table '%s' already exists", tableName)
 	}
 
+	// NAV-style: Table is just registered here, actual SQL table created when first field added
+	// No action needed - table will be created by AddField
 	return nil
 }
 
-// ListTables returns all tables for the current company
+// ListTables returns all tables that have field definitions
 func (db *Database) ListTables() ([]string, error) {
 	if db.conn == nil {
 		return nil, fmt.Errorf("database not open")
@@ -360,12 +361,13 @@ func (db *Database) ListTables() ([]string, error) {
 		return nil, fmt.Errorf("no company context set - use EnterCompany() first")
 	}
 
-	// Find all tables for current company (Company$% pattern)
+	// Get distinct table names from FieldDefinition
 	rows, err := db.conn.Query(`
-		SELECT name FROM sqlite_master
-		WHERE type='table' AND name LIKE ?
-		ORDER BY name
-	`, db.currentCompany+"$%")
+		SELECT DISTINCT table_name
+		FROM FieldDefinition
+		WHERE company = ?
+		ORDER BY table_name
+	`, db.currentCompany)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
@@ -373,12 +375,10 @@ func (db *Database) ListTables() ([]string, error) {
 
 	var tables []string
 	for rows.Next() {
-		var fullTableName string
-		if err := rows.Scan(&fullTableName); err != nil {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
 			return nil, fmt.Errorf("failed to read table name: %w", err)
 		}
-		// Strip company prefix to show just the table name
-		tableName := strings.TrimPrefix(fullTableName, db.currentCompany+"$")
 		tables = append(tables, tableName)
 	}
 
@@ -440,8 +440,8 @@ func (db *Database) DeleteTable(tableName string) error {
 	return nil
 }
 
-// AddField adds a new field to a table
-func (db *Database) AddField(tableName, fieldName, fieldType string) error {
+// AddField adds a new field to a table (NAV-style: creates table when first non-PK field added)
+func (db *Database) AddField(tableName, fieldName, fieldType string, isPrimaryKey bool) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
 	}
@@ -477,24 +477,9 @@ func (db *Database) AddField(tableName, fieldName, fieldType string) error {
 		return fmt.Errorf("invalid field type '%s'. Valid types: Text, Boolean, Date, Decimal, Integer", fieldType)
 	}
 
-	// Check if table exists for current company
-	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
-	var exists int
-	err := db.conn.QueryRow(`
-		SELECT COUNT(*) FROM sqlite_master
-		WHERE type='table' AND name = ?
-	`, fullTableName).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("failed to check table existence: %w", err)
-	}
-
-	if exists == 0 {
-		return fmt.Errorf("table '%s' does not exist", tableName)
-	}
-
 	// Check if field already exists in metadata (check any company)
 	var fieldExists int
-	err = db.conn.QueryRow(`
+	err := db.conn.QueryRow(`
 		SELECT COUNT(*) FROM FieldDefinition
 		WHERE table_name = ? AND field_name = ?
 		LIMIT 1
@@ -507,34 +492,167 @@ func (db *Database) AddField(tableName, fieldName, fieldType string) error {
 		return fmt.Errorf("field '%s' already exists in table '%s'", fieldName, tableName)
 	}
 
-	// Get all companies to add field to each
+	// Get current field count to determine field order
+	var fieldCount int
+	err = db.conn.QueryRow(`
+		SELECT COUNT(*) FROM FieldDefinition
+		WHERE table_name = ?
+		LIMIT 1
+	`, tableName).Scan(&fieldCount)
+	if err != nil {
+		return fmt.Errorf("failed to count fields: %w", err)
+	}
+
+	fieldOrder := fieldCount + 1
+
+	// Check if SQL table exists for current company
+	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
+	var tableExists int
+	err = db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master
+		WHERE type='table' AND name = ?
+	`, fullTableName).Scan(&tableExists)
+	if err != nil {
+		return fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	// Get all companies to sync changes
 	companies, err := db.ListCompanies()
 	if err != nil {
 		return fmt.Errorf("failed to get companies: %w", err)
 	}
 
-	// Add field to table in each company
-	for _, company := range companies {
-		companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+	// NAV-Style Logic:
+	// 1. If SQL table doesn't exist yet:
+	//    - If this is a PK field: Store metadata only, don't create table yet
+	//    - If this is NOT a PK field: Create table with all PK fields, then add this field
+	// 2. If SQL table exists:
+	//    - Can't add more PK fields (SQLite limitation)
+	//    - Use ALTER TABLE to add regular field
 
-		// Add field to actual table using ALTER TABLE
-		alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, companyTableName, fieldName, sqlType)
-		_, err = db.conn.Exec(alterSQL)
-		if err != nil {
-			return fmt.Errorf("failed to add field to table for company %s: %w", company, err)
+	if tableExists == 0 {
+		// Table doesn't exist yet
+		if isPrimaryKey {
+			// Just store metadata for PK field, don't create table yet
+			// Table will be created when first non-PK field is added or when data is accessed
+			for _, company := range companies {
+				_, err = db.conn.Exec(`
+					INSERT INTO FieldDefinition (company, table_name, field_name, field_type, is_primary_key, field_order)
+					VALUES (?, ?, ?, ?, 1, ?)
+				`, company, tableName, fieldName, fieldType, fieldOrder)
+				if err != nil {
+					return fmt.Errorf("failed to store field metadata for company %s: %w", company, err)
+				}
+			}
+			return nil
+		} else {
+			// First non-PK field: Create table with all PK fields from metadata
+			// Get all PK fields defined so far
+			rows, err := db.conn.Query(`
+				SELECT field_name, field_type
+				FROM FieldDefinition
+				WHERE table_name = ? AND is_primary_key = 1
+				ORDER BY field_order
+			`, tableName)
+			if err != nil {
+				return fmt.Errorf("failed to get PK fields: %w", err)
+			}
+
+			var pkFields []struct {
+				name     string
+				sqlType  string
+			}
+
+			for rows.Next() {
+				var name, fType string
+				if err := rows.Scan(&name, &fType); err != nil {
+					rows.Close()
+					return fmt.Errorf("failed to read PK field: %w", err)
+				}
+				pkFields = append(pkFields, struct {
+					name    string
+					sqlType string
+				}{name, validTypes[fType]})
+			}
+			rows.Close()
+
+			if len(pkFields) == 0 {
+				return fmt.Errorf("table must have at least one primary key field before adding non-primary key fields")
+			}
+
+			// Create table for each company with PK fields
+			for _, company := range companies {
+				companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+				// Build CREATE TABLE statement with user-defined primary keys (NAV-style)
+				var pkFieldDefs []string
+				var pkNames []string
+				for _, pk := range pkFields {
+					pkFieldDefs = append(pkFieldDefs, fmt.Sprintf(`"%s" %s NOT NULL`, pk.name, pk.sqlType))
+					pkNames = append(pkNames, fmt.Sprintf(`"%s"`, pk.name))
+				}
+
+				createSQL := fmt.Sprintf(`
+					CREATE TABLE "%s" (
+						%s,
+						created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+						PRIMARY KEY (%s)
+					)
+				`, companyTableName, strings.Join(pkFieldDefs, ", "), strings.Join(pkNames, ", "))
+
+				_, err = db.conn.Exec(createSQL)
+				if err != nil {
+					return fmt.Errorf("failed to create table for company %s: %w", company, err)
+				}
+
+				// Now add this non-PK field
+				alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, companyTableName, fieldName, sqlType)
+				_, err = db.conn.Exec(alterSQL)
+				if err != nil {
+					return fmt.Errorf("failed to add field to table for company %s: %w", company, err)
+				}
+
+				// Store field metadata
+				_, err = db.conn.Exec(`
+					INSERT INTO FieldDefinition (company, table_name, field_name, field_type, is_primary_key, field_order)
+					VALUES (?, ?, ?, ?, 0, ?)
+				`, company, tableName, fieldName, fieldType, fieldOrder)
+				if err != nil {
+					return fmt.Errorf("failed to store field metadata for company %s: %w", company, err)
+				}
+			}
+
+			return nil
+		}
+	} else {
+		// Table already exists
+		if isPrimaryKey {
+			return fmt.Errorf("cannot add primary key field after table is created - add all primary key fields first")
 		}
 
-		// Store field metadata for each company
-		_, err = db.conn.Exec(`
-			INSERT INTO FieldDefinition (company, table_name, field_name, field_type)
-			VALUES (?, ?, ?, ?)
-		`, company, tableName, fieldName, fieldType)
-		if err != nil {
-			return fmt.Errorf("failed to store field metadata for company %s: %w", company, err)
+		// Add field to existing table in each company
+		for _, company := range companies {
+			companyTableName := fmt.Sprintf("%s$%s", company, tableName)
+
+			// Add field using ALTER TABLE
+			alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, companyTableName, fieldName, sqlType)
+			_, err = db.conn.Exec(alterSQL)
+			if err != nil {
+				return fmt.Errorf("failed to add field to table for company %s: %w", company, err)
+			}
+
+			// Store field metadata
+			_, err = db.conn.Exec(`
+				INSERT INTO FieldDefinition (company, table_name, field_name, field_type, is_primary_key, field_order)
+				VALUES (?, ?, ?, ?, 0, ?)
+			`, company, tableName, fieldName, fieldType, fieldOrder)
+			if err != nil {
+				return fmt.Errorf("failed to store field metadata for company %s: %w", company, err)
+			}
 		}
+
+		return nil
 	}
-
-	return nil
 }
 
 // ListFields returns all fields for a table
@@ -553,10 +671,10 @@ func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
 
 	// Get fields from metadata
 	rows, err := db.conn.Query(`
-		SELECT field_name, field_type
+		SELECT field_name, field_type, is_primary_key, field_order
 		FROM FieldDefinition
 		WHERE company = ? AND table_name = ?
-		ORDER BY id
+		ORDER BY field_order, id
 	`, db.currentCompany, tableName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list fields: %w", err)
@@ -566,13 +684,52 @@ func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
 	var fields []types.FieldInfo
 	for rows.Next() {
 		var field types.FieldInfo
-		if err := rows.Scan(&field.Name, &field.Type); err != nil {
+		var isPK int
+		if err := rows.Scan(&field.Name, &field.Type, &isPK, &field.FieldOrder); err != nil {
 			return nil, fmt.Errorf("failed to read field: %w", err)
 		}
+		field.IsPrimaryKey = isPK == 1
 		fields = append(fields, field)
 	}
 
 	return fields, nil
+}
+
+// buildPrimaryKeyWhere builds a WHERE clause for primary key fields
+// Returns the WHERE clause string and the values to bind
+func (db *Database) buildPrimaryKeyWhere(tableName string, primaryKey map[string]interface{}) (string, []interface{}, error) {
+	// Get primary key fields for this table
+	fields, err := db.ListFields(tableName)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get fields: %w", err)
+	}
+
+	var pkFields []string
+	for _, field := range fields {
+		if field.IsPrimaryKey {
+			pkFields = append(pkFields, field.Name)
+		}
+	}
+
+	if len(pkFields) == 0 {
+		return "", nil, fmt.Errorf("table has no primary key fields defined")
+	}
+
+	// Build WHERE clause
+	var whereClauses []string
+	var values []interface{}
+
+	for _, pkField := range pkFields {
+		value, ok := primaryKey[pkField]
+		if !ok {
+			return "", nil, fmt.Errorf("primary key field '%s' not provided", pkField)
+		}
+		whereClauses = append(whereClauses, fmt.Sprintf(`"%s" = ?`, pkField))
+		values = append(values, value)
+	}
+
+	whereClause := strings.Join(whereClauses, " AND ")
+	return whereClause, values, nil
 }
 
 // InsertRecord inserts a new record into a table
@@ -587,6 +744,21 @@ func (db *Database) InsertRecord(tableName string, record map[string]interface{}
 
 	if tableName == "" {
 		return 0, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Get primary key fields and validate they are all provided
+	fields, err := db.ListFields(tableName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get fields: %w", err)
+	}
+
+	for _, field := range fields {
+		if field.IsPrimaryKey {
+			value, ok := record[field.Name]
+			if !ok || value == nil || value == "" {
+				return 0, fmt.Errorf("primary key field '%s' is required and cannot be empty", field.Name)
+			}
+		}
 	}
 
 	// Get full table name
@@ -610,21 +782,17 @@ func (db *Database) InsertRecord(tableName string, record map[string]interface{}
 		strings.Join(placeholders, ", "),
 	)
 
-	result, err := db.conn.Exec(query, values...)
+	_, err = db.conn.Exec(query, values...)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert record: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get insert id: %w", err)
-	}
-
-	return id, nil
+	// Return 0 for NAV-style (no auto-increment ID)
+	return 0, nil
 }
 
-// GetRecord retrieves a single record by ID
-func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{}, error) {
+// GetRecord retrieves a single record by primary key
+func (db *Database) GetRecord(tableName string, primaryKey map[string]interface{}) (map[string]interface{}, error) {
 	if db.conn == nil {
 		return nil, fmt.Errorf("database not open")
 	}
@@ -635,6 +803,12 @@ func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{
 
 	if tableName == "" {
 		return nil, fmt.Errorf("table name cannot be empty")
+	}
+
+	// Build WHERE clause from primary key
+	whereClause, whereValues, err := db.buildPrimaryKeyWhere(tableName, primaryKey)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get full table name
@@ -664,9 +838,9 @@ func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{
 		return nil, fmt.Errorf("table has no columns")
 	}
 
-	// Build SELECT query
-	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ?`, fullTableName)
-	row := db.conn.QueryRow(query, id)
+	// Build SELECT query with primary key WHERE clause
+	query := fmt.Sprintf(`SELECT * FROM "%s" WHERE %s`, fullTableName, whereClause)
+	row := db.conn.QueryRow(query, whereValues...)
 
 	// Scan into map
 	values := make([]interface{}, len(columns))
@@ -677,7 +851,7 @@ func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{
 
 	if err := row.Scan(valuePtrs...); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("record with id %d not found", id)
+			return nil, fmt.Errorf("record not found")
 		}
 		return nil, fmt.Errorf("failed to scan record: %w", err)
 	}
@@ -690,8 +864,8 @@ func (db *Database) GetRecord(tableName string, id int64) (map[string]interface{
 	return record, nil
 }
 
-// UpdateRecord updates a record by ID
-func (db *Database) UpdateRecord(tableName string, id int64, updates map[string]interface{}) error {
+// UpdateRecord updates a record by primary key
+func (db *Database) UpdateRecord(tableName string, primaryKey map[string]interface{}, updates map[string]interface{}) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
 	}
@@ -708,6 +882,12 @@ func (db *Database) UpdateRecord(tableName string, id int64, updates map[string]
 		return fmt.Errorf("no updates provided")
 	}
 
+	// Build WHERE clause from primary key
+	whereClause, whereValues, err := db.buildPrimaryKeyWhere(tableName, primaryKey)
+	if err != nil {
+		return err
+	}
+
 	// Get full table name
 	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
 
@@ -719,12 +899,15 @@ func (db *Database) UpdateRecord(tableName string, id int64, updates map[string]
 		setClauses = append(setClauses, fmt.Sprintf(`"%s" = ?`, key))
 		values = append(values, value)
 	}
-	values = append(values, id)
+
+	// Append WHERE values
+	values = append(values, whereValues...)
 
 	query := fmt.Sprintf(
-		`UPDATE "%s" SET %s WHERE id = ?`,
+		`UPDATE "%s" SET %s WHERE %s`,
 		fullTableName,
 		strings.Join(setClauses, ", "),
+		whereClause,
 	)
 
 	result, err := db.conn.Exec(query, values...)
@@ -738,14 +921,14 @@ func (db *Database) UpdateRecord(tableName string, id int64, updates map[string]
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("record with id %d not found", id)
+		return fmt.Errorf("record not found")
 	}
 
 	return nil
 }
 
-// DeleteRecord deletes a record by ID
-func (db *Database) DeleteRecord(tableName string, id int64) error {
+// DeleteRecord deletes a record by primary key
+func (db *Database) DeleteRecord(tableName string, primaryKey map[string]interface{}) error {
 	if db.conn == nil {
 		return fmt.Errorf("database not open")
 	}
@@ -758,11 +941,17 @@ func (db *Database) DeleteRecord(tableName string, id int64) error {
 		return fmt.Errorf("table name cannot be empty")
 	}
 
+	// Build WHERE clause from primary key
+	whereClause, whereValues, err := db.buildPrimaryKeyWhere(tableName, primaryKey)
+	if err != nil {
+		return err
+	}
+
 	// Get full table name
 	fullTableName := fmt.Sprintf("%s$%s", db.currentCompany, tableName)
 
-	query := fmt.Sprintf(`DELETE FROM "%s" WHERE id = ?`, fullTableName)
-	result, err := db.conn.Exec(query, id)
+	query := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, fullTableName, whereClause)
+	result, err := db.conn.Exec(query, whereValues...)
 	if err != nil {
 		return fmt.Errorf("failed to delete record: %w", err)
 	}
@@ -773,7 +962,7 @@ func (db *Database) DeleteRecord(tableName string, id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("record with id %d not found", id)
+		return fmt.Errorf("record not found")
 	}
 
 	return nil

@@ -15,9 +15,9 @@ type Database interface {
 	ListTables() ([]string, error)
 	ListFields(tableName string) ([]types.FieldInfo, error)
 	InsertRecord(tableName string, record map[string]interface{}) (int64, error)
-	GetRecord(tableName string, id int64) (map[string]interface{}, error)
-	UpdateRecord(tableName string, id int64, updates map[string]interface{}) error
-	DeleteRecord(tableName string, id int64) error
+	GetRecord(tableName string, primaryKey map[string]interface{}) (map[string]interface{}, error)
+	UpdateRecord(tableName string, primaryKey map[string]interface{}, updates map[string]interface{}) error
+	DeleteRecord(tableName string, primaryKey map[string]interface{}) error
 	ListRecords(tableName string) ([]map[string]interface{}, error)
 }
 
@@ -115,9 +115,23 @@ func viewAllRecords(db Database, tableName string) {
 		return
 	}
 
-	// Print header
-	fmt.Printf("%-6s %-20s ", "ID", "Created At")
+	// Separate primary key fields and regular fields
+	var pkFields []types.FieldInfo
+	var regularFields []types.FieldInfo
 	for _, field := range fields {
+		if field.IsPrimaryKey {
+			pkFields = append(pkFields, field)
+		} else {
+			regularFields = append(regularFields, field)
+		}
+	}
+
+	// Print header - show PK fields first
+	for _, field := range pkFields {
+		fmt.Printf("%-20s ", field.Name+"*")
+	}
+	fmt.Printf("%-20s ", "Created At")
+	for _, field := range regularFields {
 		fmt.Printf("%-20s ", field.Name)
 	}
 	fmt.Println()
@@ -125,12 +139,16 @@ func viewAllRecords(db Database, tableName string) {
 
 	// Print records
 	for _, record := range records {
-		fmt.Printf("%-6v %-20v ", record["id"], formatValue(record["created_at"]))
-		for _, field := range fields {
+		for _, field := range pkFields {
+			fmt.Printf("%-20v ", formatValue(record[field.Name]))
+		}
+		fmt.Printf("%-20v ", formatValue(record["created_at"]))
+		for _, field := range regularFields {
 			fmt.Printf("%-20v ", formatValue(record[field.Name]))
 		}
 		fmt.Println()
 	}
+	fmt.Println("\n* = Primary Key field")
 }
 
 func addRecord(db Database, scanner *bufio.Scanner, tableName string) {
@@ -173,26 +191,54 @@ func addRecord(db Database, scanner *bufio.Scanner, tableName string) {
 	fmt.Printf("✓ Record created successfully with ID: %d\n", id)
 }
 
-func viewRecord(db Database, scanner *bufio.Scanner, tableName string) {
-	fmt.Print("\nEnter record ID: ")
-	if !scanner.Scan() {
-		return
-	}
-	idStr := strings.TrimSpace(scanner.Text())
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+// getPrimaryKeyValues prompts user for primary key field values
+func getPrimaryKeyValues(db Database, scanner *bufio.Scanner, tableName string) (map[string]interface{}, error) {
+	fields, err := db.ListFields(tableName)
 	if err != nil {
-		fmt.Println("✗ Invalid ID")
-		return
+		return nil, fmt.Errorf("failed to get fields: %w", err)
 	}
 
-	record, err := db.GetRecord(tableName, id)
+	primaryKey := make(map[string]interface{})
+	fmt.Println("\nEnter primary key values:")
+
+	for _, field := range fields {
+		if field.IsPrimaryKey {
+			fmt.Printf("%s (%s): ", field.Name, field.Type)
+			if !scanner.Scan() {
+				return nil, fmt.Errorf("input cancelled")
+			}
+			value := strings.TrimSpace(scanner.Text())
+
+			// Convert value based on field type
+			converted, err := convertValue(value, field.Type)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for %s: %w", field.Type, err)
+			}
+			primaryKey[field.Name] = converted
+		}
+	}
+
+	if len(primaryKey) == 0 {
+		return nil, fmt.Errorf("no primary key fields defined for this table")
+	}
+
+	return primaryKey, nil
+}
+
+func viewRecord(db Database, scanner *bufio.Scanner, tableName string) {
+	primaryKey, err := getPrimaryKeyValues(db, scanner, tableName)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("\n✓ Record ID %d:\n", id)
+	record, err := db.GetRecord(tableName, primaryKey)
+	if err != nil {
+		fmt.Printf("✗ Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("\n✓ Record found:\n")
 	fmt.Println(strings.Repeat("-", 40))
 	for key, value := range record {
 		fmt.Printf("%-20s: %v\n", key, formatValue(value))
@@ -200,26 +246,20 @@ func viewRecord(db Database, scanner *bufio.Scanner, tableName string) {
 }
 
 func updateRecord(db Database, scanner *bufio.Scanner, tableName string) {
-	fmt.Print("\nEnter record ID to update: ")
-	if !scanner.Scan() {
-		return
-	}
-	idStr := strings.TrimSpace(scanner.Text())
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		fmt.Println("✗ Invalid ID")
-		return
-	}
-
-	// Show current record
-	record, err := db.GetRecord(tableName, id)
+	primaryKey, err := getPrimaryKeyValues(db, scanner, tableName)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("\nCurrent values for record %d:\n", id)
+	// Show current record
+	record, err := db.GetRecord(tableName, primaryKey)
+	if err != nil {
+		fmt.Printf("✗ Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("\nCurrent values:\n")
 	fields, err := db.ListFields(tableName)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
@@ -227,13 +267,22 @@ func updateRecord(db Database, scanner *bufio.Scanner, tableName string) {
 	}
 
 	for _, field := range fields {
-		fmt.Printf("%-20s: %v\n", field.Name, formatValue(record[field.Name]))
+		pkMarker := ""
+		if field.IsPrimaryKey {
+			pkMarker = " [PK - cannot update]"
+		}
+		fmt.Printf("%-20s: %v%s\n", field.Name, formatValue(record[field.Name]), pkMarker)
 	}
 
 	fmt.Println("\nEnter new values (press Enter to skip a field):")
 	updates := make(map[string]interface{})
 
 	for _, field := range fields {
+		// Skip primary key fields - they cannot be updated
+		if field.IsPrimaryKey {
+			continue
+		}
+
 		fmt.Printf("%s (%s) [current: %v]: ", field.Name, field.Type, formatValue(record[field.Name]))
 		if !scanner.Scan() {
 			return
@@ -258,36 +307,30 @@ func updateRecord(db Database, scanner *bufio.Scanner, tableName string) {
 		return
 	}
 
-	err = db.UpdateRecord(tableName, id, updates)
+	err = db.UpdateRecord(tableName, primaryKey, updates)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("✓ Record %d updated successfully\n", id)
+	fmt.Printf("✓ Record updated successfully\n")
 }
 
 func deleteRecord(db Database, scanner *bufio.Scanner, tableName string) {
-	fmt.Print("\nEnter record ID to delete: ")
-	if !scanner.Scan() {
-		return
-	}
-	idStr := strings.TrimSpace(scanner.Text())
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	primaryKey, err := getPrimaryKeyValues(db, scanner, tableName)
 	if err != nil {
-		fmt.Println("✗ Invalid ID")
+		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
 	// Show record first
-	record, err := db.GetRecord(tableName, id)
+	record, err := db.GetRecord(tableName, primaryKey)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("\nRecord to delete (ID %d):\n", id)
+	fmt.Printf("\nRecord to delete:\n")
 	for key, value := range record {
 		fmt.Printf("%-20s: %v\n", key, formatValue(value))
 	}
@@ -303,13 +346,13 @@ func deleteRecord(db Database, scanner *bufio.Scanner, tableName string) {
 		return
 	}
 
-	err = db.DeleteRecord(tableName, id)
+	err = db.DeleteRecord(tableName, primaryKey)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("✓ Record %d deleted successfully\n", id)
+	fmt.Printf("✓ Record deleted successfully\n")
 }
 
 func convertValue(value string, fieldType string) (interface{}, error) {

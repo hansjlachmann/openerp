@@ -15,12 +15,12 @@ type Database interface {
 	CreateTable(tableName string) error
 	ListTables() ([]string, error)
 	DeleteTable(tableName string) error
-	AddField(tableName, fieldName, fieldType string) error
+	AddField(tableName, fieldName, fieldType string, isPrimaryKey bool) error
 	ListFields(tableName string) ([]types.FieldInfo, error)
 	InsertRecord(tableName string, record map[string]interface{}) (int64, error)
-	GetRecord(tableName string, id int64) (map[string]interface{}, error)
-	UpdateRecord(tableName string, id int64, updates map[string]interface{}) error
-	DeleteRecord(tableName string, id int64) error
+	GetRecord(tableName string, primaryKey map[string]interface{}) (map[string]interface{}, error)
+	UpdateRecord(tableName string, primaryKey map[string]interface{}, updates map[string]interface{}) error
+	DeleteRecord(tableName string, primaryKey map[string]interface{}) error
 	ListRecords(tableName string) ([]map[string]interface{}, error)
 }
 
@@ -243,12 +243,24 @@ func addField(db Database, scanner *bufio.Scanner) {
 		return
 	}
 
+	// Ask if this is a primary key field
+	fmt.Print("\nIs this a primary key field? (yes/no): ")
+	if !scanner.Scan() {
+		return
+	}
+	isPKInput := strings.ToLower(strings.TrimSpace(scanner.Text()))
+	isPrimaryKey := isPKInput == "yes" || isPKInput == "y"
+
 	// Add the field
-	err = db.AddField(tableName, fieldName, fieldType)
+	err = db.AddField(tableName, fieldName, fieldType, isPrimaryKey)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 	} else {
 		fullTableName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), tableName)
-		fmt.Printf("✓ Field '%s' (%s) added to table '%s' successfully\n", fieldName, fieldType, fullTableName)
+		pkStatus := ""
+		if isPrimaryKey {
+			pkStatus = " [PRIMARY KEY]"
+		}
+		fmt.Printf("✓ Field '%s' (%s)%s added to table '%s' successfully\n", fieldName, fieldType, pkStatus, fullTableName)
 	}
 }
