@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hansjlachmann/openerp-go/data_manager"
 	"github.com/hansjlachmann/openerp-go/types"
 )
 
@@ -16,6 +17,11 @@ type Database interface {
 	DeleteTable(tableName string) error
 	AddField(tableName, fieldName, fieldType string) error
 	ListFields(tableName string) ([]types.FieldInfo, error)
+	InsertRecord(tableName string, record map[string]interface{}) (int64, error)
+	GetRecord(tableName string, id int64) (map[string]interface{}, error)
+	UpdateRecord(tableName string, id int64, updates map[string]interface{}) error
+	DeleteRecord(tableName string, id int64) error
+	ListRecords(tableName string) ([]map[string]interface{}, error)
 }
 
 // Run starts the Object Designer interactive menu
@@ -29,9 +35,10 @@ func Run(db Database, scanner *bufio.Scanner) {
 		fmt.Println("2. List Tables")
 		fmt.Println("3. Delete Table")
 		fmt.Println("4. Add Field to Table")
-		fmt.Println("5. Back to Main Menu")
+		fmt.Println("5. Manage Table Data")
+		fmt.Println("6. Back to Main Menu")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-5): ")
+		fmt.Print("\nSelect option (1-6): ")
 
 		if !scanner.Scan() {
 			return
@@ -49,6 +56,8 @@ func Run(db Database, scanner *bufio.Scanner) {
 		case "4":
 			addField(db, scanner)
 		case "5":
+			data_manager.Run(db, scanner)
+		case "6":
 			// Back to Main Menu
 			fmt.Println("\n✓ Returning to Main Menu")
 			return
