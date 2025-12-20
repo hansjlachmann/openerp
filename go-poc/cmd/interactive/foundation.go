@@ -346,8 +346,24 @@ func (db *Database) CreateTable(tableName string) error {
 		return fmt.Errorf("table '%s' already exists", tableName)
 	}
 
-	// NAV-style: Table is just registered here, actual SQL table created when first field added
-	// No action needed - table will be created by AddField
+	// Get all companies to register table for each
+	companies, err := db.ListCompanies()
+	if err != nil {
+		return fmt.Errorf("failed to get companies: %w", err)
+	}
+
+	// NAV-style: Insert a marker record in FieldDefinition to register the table
+	// Actual SQL table will be created when first field is added
+	for _, company := range companies {
+		_, err = db.conn.Exec(`
+			INSERT INTO FieldDefinition (company, table_name, field_name, field_type, is_primary_key, field_order)
+			VALUES (?, ?, '__table_registered__', 'marker', 0, 0)
+		`, company, tableName)
+		if err != nil {
+			return fmt.Errorf("failed to register table for company %s: %w", company, err)
+		}
+	}
+
 	return nil
 }
 
@@ -492,11 +508,11 @@ func (db *Database) AddField(tableName, fieldName, fieldType string, isPrimaryKe
 		return fmt.Errorf("field '%s' already exists in table '%s'", fieldName, tableName)
 	}
 
-	// Get current field count to determine field order
+	// Get current field count to determine field order (exclude marker)
 	var fieldCount int
 	err = db.conn.QueryRow(`
 		SELECT COUNT(*) FROM FieldDefinition
-		WHERE table_name = ?
+		WHERE table_name = ? AND field_name != '__table_registered__'
 		LIMIT 1
 	`, tableName).Scan(&fieldCount)
 	if err != nil {
@@ -669,11 +685,11 @@ func (db *Database) ListFields(tableName string) ([]types.FieldInfo, error) {
 		return nil, fmt.Errorf("table name cannot be empty")
 	}
 
-	// Get fields from metadata
+	// Get fields from metadata (exclude the table registration marker)
 	rows, err := db.conn.Query(`
 		SELECT field_name, field_type, is_primary_key, field_order
 		FROM FieldDefinition
-		WHERE company = ? AND table_name = ?
+		WHERE company = ? AND table_name = ? AND field_name != '__table_registered__'
 		ORDER BY field_order, id
 	`, db.currentCompany, tableName)
 	if err != nil {
