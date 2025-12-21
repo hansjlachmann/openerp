@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hansjlachmann/openerp-go/data_manager"
 	"github.com/hansjlachmann/openerp-go/types"
 )
 
@@ -14,8 +15,13 @@ type Database interface {
 	CreateTable(tableName string) error
 	ListTables() ([]string, error)
 	DeleteTable(tableName string) error
-	AddField(tableName, fieldName, fieldType string) error
+	AddField(tableName, fieldName, fieldType string, isPrimaryKey bool) error
 	ListFields(tableName string) ([]types.FieldInfo, error)
+	InsertRecord(tableName string, record map[string]interface{}) (int64, error)
+	GetRecord(tableName string, primaryKey map[string]interface{}) (map[string]interface{}, error)
+	UpdateRecord(tableName string, primaryKey map[string]interface{}, updates map[string]interface{}) error
+	DeleteRecord(tableName string, primaryKey map[string]interface{}) error
+	ListRecords(tableName string) ([]map[string]interface{}, error)
 }
 
 // Run starts the Object Designer interactive menu
@@ -29,9 +35,10 @@ func Run(db Database, scanner *bufio.Scanner) {
 		fmt.Println("2. List Tables")
 		fmt.Println("3. Delete Table")
 		fmt.Println("4. Add Field to Table")
-		fmt.Println("5. Back to Main Menu")
+		fmt.Println("5. Manage Table Data")
+		fmt.Println("6. Back to Main Menu")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-5): ")
+		fmt.Print("\nSelect option (1-6): ")
 
 		if !scanner.Scan() {
 			return
@@ -49,6 +56,8 @@ func Run(db Database, scanner *bufio.Scanner) {
 		case "4":
 			addField(db, scanner)
 		case "5":
+			data_manager.Run(db, scanner)
+		case "6":
 			// Back to Main Menu
 			fmt.Println("\n✓ Returning to Main Menu")
 			return
@@ -234,12 +243,24 @@ func addField(db Database, scanner *bufio.Scanner) {
 		return
 	}
 
+	// Ask if this is a primary key field
+	fmt.Print("\nIs this a primary key field? (yes/no): ")
+	if !scanner.Scan() {
+		return
+	}
+	isPKInput := strings.ToLower(strings.TrimSpace(scanner.Text()))
+	isPrimaryKey := isPKInput == "yes" || isPKInput == "y"
+
 	// Add the field
-	err = db.AddField(tableName, fieldName, fieldType)
+	err = db.AddField(tableName, fieldName, fieldType, isPrimaryKey)
 	if err != nil {
 		fmt.Printf("✗ Error: %v\n", err)
 	} else {
 		fullTableName := fmt.Sprintf("%s$%s", db.GetCurrentCompany(), tableName)
-		fmt.Printf("✓ Field '%s' (%s) added to table '%s' successfully\n", fieldName, fieldType, fullTableName)
+		pkStatus := ""
+		if isPrimaryKey {
+			pkStatus = " [PRIMARY KEY]"
+		}
+		fmt.Printf("✓ Field '%s' (%s)%s added to table '%s' successfully\n", fieldName, fieldType, pkStatus, fullTableName)
 	}
 }
