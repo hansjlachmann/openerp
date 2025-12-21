@@ -46,19 +46,18 @@ OpenERP is a 100% Go-based ERP system that implements NAV-style architecture:
 ```
 openerp/
 ├── go-poc/
-│   └── cmd/
-│       ├── interactive/          # CLI Application
-│       │   ├── main.go           # Main entry point
-│       │   ├── foundation.go     # Core database operations
-│       │   ├── go.mod            # Go module definition
-│       │   ├── types/            # Shared type definitions
-│       │   ├── object_designer/  # Table/field management UI
-│       │   └── data_manager/     # CRUD operations UI
-│       │
-│       └── gui/                  # GUI Application (Fyne)
-│           ├── main.go           # GUI screens and logic
-│           ├── database.go       # Database operations wrapper
-│           └── README.md         # GUI-specific documentation
+│   ├── foundation/               # CLI Application
+│   │   ├── main.go               # Main entry point
+│   │   ├── foundation.go         # Core database operations
+│   │   ├── go.mod                # Go module definition
+│   │   ├── types/                # Shared type definitions
+│   │   ├── object_designer/      # Table/field management UI
+│   │   └── data_manager/         # CRUD operations UI
+│   │
+│   └── gui/                      # GUI Application (Fyne)
+│       ├── main.go               # GUI screens and logic
+│       ├── database.go           # Database operations wrapper
+│       └── README.md             # GUI-specific documentation
 │
 └── README.md                     # This file
 ```
@@ -72,7 +71,7 @@ openerp/
 ### Running the CLI
 
 ```bash
-cd go-poc/cmd/interactive
+cd go-poc/foundation
 go build -o openerp-cli
 ./openerp-cli
 ```
@@ -85,7 +84,7 @@ go run .
 ### Running the GUI
 
 ```bash
-cd go-poc/cmd/gui
+cd go-poc/gui
 
 # Install Fyne (first time only)
 go get fyne.io/fyne/v2
@@ -102,7 +101,7 @@ go build -o openerp-gui
 ./openerp-gui
 ```
 
-See [`cmd/gui/README.md`](go-poc/cmd/gui/README.md) for detailed GUI instructions.
+See [`gui/README.md`](go-poc/gui/README.md) for detailed GUI instructions.
 
 ## 📖 Usage Guide
 
@@ -213,13 +212,13 @@ CREATE TABLE FABRIKAM$customer (no TEXT PRIMARY KEY, name TEXT);
 
 **CLI**:
 ```bash
-cd go-poc/cmd/interactive
+cd go-poc/foundation
 go build -o openerp-cli
 ```
 
 **GUI**:
 ```bash
-cd go-poc/cmd/gui
+cd go-poc/gui
 go build -o openerp-gui
 ```
 
@@ -331,9 +330,9 @@ This is currently a personal project. For suggestions or issues:
 
 ## 🔗 Quick Links
 
-- **CLI Application**: [`go-poc/cmd/interactive/`](go-poc/cmd/interactive/)
-- **GUI Application**: [`go-poc/cmd/gui/`](go-poc/cmd/gui/)
-- **GUI Documentation**: [`go-poc/cmd/gui/README.md`](go-poc/cmd/gui/README.md)
+- **CLI Application**: [`go-poc/foundation/`](go-poc/foundation/)
+- **GUI Application**: [`go-poc/gui/`](go-poc/gui/)
+- **GUI Documentation**: [`go-poc/gui/README.md`](go-poc/gui/README.md)
 
 ---
 
