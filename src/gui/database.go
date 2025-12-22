@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/hansjlachmann/openerp-go-gui/types"
+	"github.com/hansjlachmann/openerp/src/gui/types"
 )
 
 // Database wraps the foundation database functionality for GUI use
