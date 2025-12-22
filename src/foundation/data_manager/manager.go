@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hansjlachmann/openerp-go/types"
+	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
 
 // Database interface defines the methods we need from the main Database type

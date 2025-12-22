@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hansjlachmann/openerp-go/data_manager"
-	"github.com/hansjlachmann/openerp-go/types"
+	"github.com/hansjlachmann/openerp/src/foundation/data_manager"
+	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
 
 // Database interface defines the methods we need from the main Database type
