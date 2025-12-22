@@ -24,6 +24,25 @@ type PaymentTerms struct {
 const PaymentTermsTableID = 3
 const PaymentTermsTableName = "Payment Terms"
 
+// ========================================
+// TableDefinition Interface Implementation
+// ========================================
+
+// GetTableID returns the table ID (for Object Registry)
+func (p *PaymentTerms) GetTableID() int {
+	return PaymentTermsTableID
+}
+
+// GetTableName returns the table name
+func (p *PaymentTerms) GetTableName() string {
+	return PaymentTermsTableName
+}
+
+// GetTableSchema returns the CREATE TABLE schema
+func (p *PaymentTerms) GetTableSchema() string {
+	return GetPaymentTermsTableSchema()
+}
+
 // NewPaymentTerms creates a new PaymentTerms instance
 func NewPaymentTerms() *PaymentTerms {
 	return &PaymentTerms{

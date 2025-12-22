@@ -10,15 +10,25 @@ import (
 
 // Manager handles company operations
 type Manager struct {
-	db *database.Database
+	db       *database.Database
+	registry interface {
+		InitializeCompanyTables(db *sql.DB, companyName string) error
+		GetTableCount() int
+	}
 }
 
 // NewManager creates a new company manager
-func NewManager(db *database.Database) *Manager {
-	return &Manager{db: db}
+func NewManager(db *database.Database, registry interface {
+	InitializeCompanyTables(db *sql.DB, companyName string) error
+	GetTableCount() int
+}) *Manager {
+	return &Manager{
+		db:       db,
+		registry: registry,
+	}
 }
 
-// CreateCompany creates a new company in the database
+// CreateCompany creates a new company in the database and initializes all tables
 func (m *Manager) CreateCompany(name string) error {
 	if m.db.GetConnection() == nil {
 		return fmt.Errorf("database not open")
@@ -29,12 +39,26 @@ func (m *Manager) CreateCompany(name string) error {
 		return err
 	}
 
+	// Create company record
 	_, err := m.db.GetConnection().Exec(`INSERT INTO "Company" (name) VALUES ($1)`, name)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			return fmt.Errorf("company '%s' already exists", name)
 		}
 		return fmt.Errorf("failed to create company: %w", err)
+	}
+
+	// Initialize all registered tables for this company
+	if m.registry != nil {
+		tableCount := m.registry.GetTableCount()
+		if tableCount > 0 {
+			err = m.registry.InitializeCompanyTables(m.db.GetConnection(), name)
+			if err != nil {
+				// Rollback: delete the company if table initialization fails
+				m.db.GetConnection().Exec(`DELETE FROM "Company" WHERE name = $1`, name)
+				return fmt.Errorf("failed to initialize tables for company '%s': %w", name, err)
+			}
+		}
 	}
 
 	return nil

@@ -12,6 +12,8 @@ import (
 	"github.com/hansjlachmann/openerp/src/foundation/objects"
 )
 
+// Note: tables import is still needed for registering PaymentTerms
+
 func main() {
 	fmt.Println("=== OpenERP - PostgreSQL Edition ===\n")
 
@@ -47,16 +49,15 @@ func main() {
 		fmt.Println(strings.Repeat("=", 60))
 		fmt.Println("1. Connect to PostgreSQL database")
 		fmt.Println("2. Close database connection")
-		fmt.Println("3. Create company")
+		fmt.Println("3. Create company (auto-initializes all tables)")
 		fmt.Println("4. Enter company")
 		fmt.Println("5. Exit company")
 		fmt.Println("6. Delete company")
 		fmt.Println("7. List companies")
-		fmt.Println("8. Create Payment Terms table")
-		fmt.Println("9. List registered objects")
-		fmt.Println("10. Exit application")
+		fmt.Println("8. List registered objects")
+		fmt.Println("9. Exit application")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-10): ")
+		fmt.Print("\nSelect option (1-9): ")
 
 		if !scanner.Scan() {
 			break
@@ -109,8 +110,9 @@ func main() {
 				fmt.Printf("✗ Error: %v\n", err)
 			} else {
 				db = newDB
-				companyMgr = company.NewManager(db)
+				companyMgr = company.NewManager(db, registry)
 				fmt.Printf("✓ Connected to PostgreSQL database '%s'\n", dbname)
+				fmt.Printf("✓ Object registry: %d table(s) registered\n", registry.GetTableCount())
 			}
 
 		case "2":
@@ -282,25 +284,6 @@ func main() {
 			}
 
 		case "8":
-			// Create Payment Terms table
-			if db == nil || companyMgr == nil {
-				fmt.Println("✗ Error: No database connection")
-				continue
-			}
-
-			if companyMgr.GetCurrentCompany() == "" {
-				fmt.Println("✗ Error: You must enter a company first")
-				continue
-			}
-
-			err := tables.CreateTable(db.GetConnection(), companyMgr.GetCurrentCompany())
-			if err != nil {
-				fmt.Printf("✗ Error: %v\n", err)
-			} else {
-				fmt.Printf("✓ Payment Terms table created for company '%s'\n", companyMgr.GetCurrentCompany())
-			}
-
-		case "9":
 			// List registered objects
 			fmt.Println("\n=== Registered Objects ===")
 
@@ -332,7 +315,7 @@ func main() {
 				fmt.Println("No objects registered yet")
 			}
 
-		case "10":
+		case "9":
 			// Exit application
 			if db != nil {
 				fmt.Println("\nClosing database connection...")
