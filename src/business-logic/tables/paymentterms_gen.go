@@ -5,7 +5,6 @@ package tables
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
@@ -14,11 +13,7 @@ import (
 type PaymentTerms struct {
 	code types.Code `db:"code,pk"`
 	description types.Text `db:"description"`
-	dueDateCalculation string `db:"due_date_calculation"`
-	discountDateCalc string `db:"discount_date_calculation"`
-	discountPct float64 `db:"discount_pct"`
-	calcPmtDiscOnCrMemo bool `db:"calc_pmt_disc_on_cr_memos"`
-	lastModifiedDateTime time.Time `db:"last_modified_date_time"`
+	active bool `db:"active"`
 }
 
 const PaymentTermsTableID = 3
@@ -43,12 +38,8 @@ func (t *PaymentTerms) GetTableSchema() string {
 func GetPaymentTermsTableSchema() string {
 	return `
 		code TEXT(10) PRIMARY KEY,
-		description TEXT(100),
-		due_date_calculation TEXT,
-		discount_date_calculation TEXT,
-		discount_pct REAL CHECK (discount_pct >= 0 AND discount_pct <= 100),
-		calc_pmt_disc_on_cr_memos INTEGER,
-		last_modified_date_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		description TEXT(30),
+		active INTEGER DEFAULT 1
 	`
 }
 
@@ -90,67 +81,20 @@ func (t *PaymentTerms) Description() types.Text {
 
 // SetDescription sets the description field
 func (t *PaymentTerms) SetDescription(value types.Text) error {
-	if len(value) > 100 {
-		return fmt.Errorf("description cannot exceed 100 characters")
+	if len(value) > 30 {
+		return fmt.Errorf("description cannot exceed 30 characters")
 	}
 	t.description = value
 	return nil
 }
 
-// DueDateCalculation returns the dueDateCalculation field
-func (t *PaymentTerms) DueDateCalculation() string {
-	return t.dueDateCalculation
+// Active returns the active field
+func (t *PaymentTerms) Active() bool {
+	return t.active
 }
 
-// SetDueDateCalculation sets the dueDateCalculation field
-func (t *PaymentTerms) SetDueDateCalculation(value string) error {
-	t.dueDateCalculation = value
-	return nil
-}
-
-// DiscountDateCalc returns the discountDateCalc field
-func (t *PaymentTerms) DiscountDateCalc() string {
-	return t.discountDateCalc
-}
-
-// SetDiscountDateCalc sets the discountDateCalc field
-func (t *PaymentTerms) SetDiscountDateCalc(value string) error {
-	t.discountDateCalc = value
-	return nil
-}
-
-// DiscountPct returns the discountPct field
-func (t *PaymentTerms) DiscountPct() float64 {
-	return t.discountPct
-}
-
-// SetDiscountPct sets the discountPct field
-func (t *PaymentTerms) SetDiscountPct(value float64) error {
-	if value < 0 || value > 100 {
-		return fmt.Errorf("discountPct must be between 0 and 100")
-	}
-	t.discountPct = value
-	return nil
-}
-
-// CalcPmtDiscOnCrMemo returns the calcPmtDiscOnCrMemo field
-func (t *PaymentTerms) CalcPmtDiscOnCrMemo() bool {
-	return t.calcPmtDiscOnCrMemo
-}
-
-// SetCalcPmtDiscOnCrMemo sets the calcPmtDiscOnCrMemo field
-func (t *PaymentTerms) SetCalcPmtDiscOnCrMemo(value bool) error {
-	t.calcPmtDiscOnCrMemo = value
-	return nil
-}
-
-// LastModifiedDateTime returns the lastModifiedDateTime field
-func (t *PaymentTerms) LastModifiedDateTime() time.Time {
-	return t.lastModifiedDateTime
-}
-
-// SetLastModifiedDateTime sets the lastModifiedDateTime field
-func (t *PaymentTerms) SetLastModifiedDateTime(value time.Time) error {
-	t.lastModifiedDateTime = value
+// SetActive sets the active field
+func (t *PaymentTerms) SetActive(value bool) error {
+	t.active = value
 	return nil
 }

@@ -3,7 +3,6 @@ package tables
 import (
 	"database/sql"
 	"errors"
-	"time"
 )
 
 //go:generate go run ../../../tools/tablegen/main.go
@@ -11,7 +10,6 @@ import (
 // NewPaymentTerms creates a new PaymentTerms instance
 func NewPaymentTerms() *PaymentTerms {
 	return &PaymentTerms{
-		lastModifiedDateTime: time.Now(),
 	}
 }
 
@@ -21,13 +19,11 @@ func NewPaymentTerms() *PaymentTerms {
 
 // OnInsert trigger - called before inserting a new record
 func (t *PaymentTerms) OnInsert() error {
-	t.lastModifiedDateTime = time.Now()
 	return t.Validate()
 }
 
 // OnModify trigger - called before modifying a record
 func (t *PaymentTerms) OnModify() error {
-	t.lastModifiedDateTime = time.Now()
 	return t.Validate()
 }
 
@@ -49,7 +45,6 @@ func (t *PaymentTerms) OnDelete(db *sql.DB, company string) error {
 
 // OnRename trigger - called before renaming (changing primary key)
 func (t *PaymentTerms) OnRename() error {
-	t.lastModifiedDateTime = time.Now()
 	// TODO: Update related records if needed
 	return nil
 }
@@ -66,11 +61,8 @@ func (t *PaymentTerms) Validate() error {
 	if len(t.code) > 10 {
 		return errors.New("code cannot exceed 10 characters")
 	}
-	if len(t.description) > 100 {
-		return errors.New("description cannot exceed 100 characters")
-	}
-	if t.discountPct < 0 || t.discountPct > 100 {
-		return errors.New("discountPct must be between 0 and 100")
+	if len(t.description) > 30 {
+		return errors.New("description cannot exceed 30 characters")
 	}
 
 	return nil

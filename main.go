@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hansjlachmann/openerp/src/business-logic/codeunits"
 	"github.com/hansjlachmann/openerp/src/business-logic/tables"
 	"github.com/hansjlachmann/openerp/src/foundation/company"
 	"github.com/hansjlachmann/openerp/src/foundation/database"
@@ -56,9 +57,10 @@ func main() {
 		fmt.Println("7. Delete company")
 		fmt.Println("8. List companies")
 		fmt.Println("9. List registered objects")
-		fmt.Println("10. Exit application")
+		fmt.Println("10. Codeunits")
+		fmt.Println("11. Exit application")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-10): ")
+		fmt.Print("\nSelect option (1-11): ")
 
 		if !scanner.Scan() {
 			break
@@ -329,6 +331,47 @@ func main() {
 			}
 
 		case "10":
+			// Codeunits
+			if companyMgr == nil {
+				fmt.Println("✗ Error: No database connection")
+				continue
+			}
+
+			if companyMgr.GetCurrentCompany() == "" {
+				fmt.Println("✗ Error: No company selected. Please enter a company first (option 5)")
+				continue
+			}
+
+			// Show Codeunit submenu
+			fmt.Println("\n" + strings.Repeat("=", 60))
+			fmt.Println("CODEUNITS MENU")
+			fmt.Println(strings.Repeat("=", 60))
+			fmt.Printf("Current Company: %s\n", companyMgr.GetCurrentCompany())
+			fmt.Println(strings.Repeat("-", 60))
+			fmt.Println("1. Codeunit 50000 - Payment Terms Management")
+			fmt.Println("0. Back to main menu")
+			fmt.Println(strings.Repeat("=", 60))
+			fmt.Print("\nSelect codeunit: ")
+
+			if !scanner.Scan() {
+				continue
+			}
+
+			codeunitChoice := strings.TrimSpace(scanner.Text())
+
+			switch codeunitChoice {
+			case "1":
+				// Codeunit 50000: Payment Terms Management
+				runPaymentTermsCodeunit(db, companyMgr.GetCurrentCompany(), scanner)
+
+			case "0":
+				fmt.Println("✓ Returning to main menu")
+
+			default:
+				fmt.Printf("✗ Invalid codeunit option: %s\n", codeunitChoice)
+			}
+
+		case "11":
 			// Exit application
 			if db != nil {
 				fmt.Println("\nClosing database connection...")
@@ -345,4 +388,20 @@ func main() {
 	if scanner.Err() != nil {
 		fmt.Printf("\n✗ Error reading input: %v\n", scanner.Err())
 	}
+}
+
+// runPaymentTermsCodeunit executes Codeunit 50000: Payment Terms Management
+func runPaymentTermsCodeunit(db *database.Database, company string, scanner *bufio.Scanner) {
+	// Create codeunit instance
+	ptMgt := codeunits.NewPaymentTermsManagement(db.GetConnection(), company)
+
+	// Execute codeunit
+	err := ptMgt.RunCLI()
+	if err != nil {
+		fmt.Printf("\n✗ Error: %v\n", err)
+	}
+
+	// Wait for user
+	fmt.Print("\nPress Enter to continue...")
+	scanner.Scan()
 }
