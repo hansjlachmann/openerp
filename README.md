@@ -1,6 +1,5 @@
 
-
-  Individual commands:
+#####  Individual commands:
 ```
   Build CLI:
   go build -o openerp-cli main.go
