@@ -12,30 +12,9 @@ table:
     - name: description
       type: types.Text
       db_name: description
-      length: 100
+      length: 30
 
-    - name: dueDateCalculation
-      type: string
-      db_name: due_date_calculation
-
-    - name: discountDateCalc
-      type: string
-      db_name: discount_date_calculation
-
-    - name: discountPct
-      type: float64
-      db_name: discount_pct
-      validation:
-        min: 0
-        max: 100
-
-    - name: calcPmtDiscOnCrMemo
+    - name: active
       type: bool
-      db_name: calc_pmt_disc_on_cr_memos
-      default: 0
-
-    - name: lastModifiedDateTime
-      type: time.Time
-      db_name: last_modified_date_time
-      required: true
-      auto_timestamp: true
+      db_name: active
+      default: 1
