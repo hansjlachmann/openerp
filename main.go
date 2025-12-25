@@ -15,7 +15,7 @@ import (
 // Note: tables import is still needed for registering PaymentTerms
 
 func main() {
-	fmt.Println("=== OpenERP - PostgreSQL Edition ===\n")
+	fmt.Println("=== OpenERP - Business Central Style ERP ===\n")
 
 	var db *database.Database
 	var companyMgr *company.Manager
@@ -34,30 +34,31 @@ func main() {
 		// Show current status
 		if db != nil && companyMgr != nil {
 			currentCompany := companyMgr.GetCurrentCompany()
-			fmt.Printf("\n[Database: Connected")
+			fmt.Printf("\n[Database: %s", db.GetDatabasePath())
 			if currentCompany != "" {
 				fmt.Printf(" | Company: %s", currentCompany)
 			}
 			fmt.Printf("]\n")
 		} else {
-			fmt.Printf("\n[No database connection]\n")
+			fmt.Printf("\n[No database open]\n")
 		}
 
 		// Show menu
 		fmt.Println("\n" + strings.Repeat("=", 60))
 		fmt.Println("MAIN MENU")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Println("1. Connect to PostgreSQL database")
-		fmt.Println("2. Close database connection")
-		fmt.Println("3. Create company (auto-initializes all tables)")
-		fmt.Println("4. Enter company")
-		fmt.Println("5. Exit company")
-		fmt.Println("6. Delete company")
-		fmt.Println("7. List companies")
-		fmt.Println("8. List registered objects")
-		fmt.Println("9. Exit application")
+		fmt.Println("1. Create new database")
+		fmt.Println("2. Open existing database")
+		fmt.Println("3. Close database")
+		fmt.Println("4. Create company (auto-initializes all tables)")
+		fmt.Println("5. Enter company")
+		fmt.Println("6. Exit company")
+		fmt.Println("7. Delete company")
+		fmt.Println("8. List companies")
+		fmt.Println("9. List registered objects")
+		fmt.Println("10. Exit application")
 		fmt.Println(strings.Repeat("=", 60))
-		fmt.Print("\nSelect option (1-9): ")
+		fmt.Print("\nSelect option (1-10): ")
 
 		if !scanner.Scan() {
 			break
@@ -67,55 +68,67 @@ func main() {
 
 		switch choice {
 		case "1":
-			// Connect to PostgreSQL
+			// Create new database
 			if db != nil {
-				fmt.Println("✗ Error: Already connected to a database. Close it first.")
+				fmt.Println("✗ Error: A database is already open. Close it first.")
 				continue
 			}
 
-			fmt.Print("\nEnter PostgreSQL host (default: localhost): ")
-			scanner.Scan()
-			host := strings.TrimSpace(scanner.Text())
-			if host == "" {
-				host = "localhost"
+			fmt.Print("\nEnter database filename (e.g., mycompany.db): ")
+			if !scanner.Scan() {
+				continue
+			}
+			path := strings.TrimSpace(scanner.Text())
+
+			if path == "" {
+				fmt.Println("✗ Error: Database filename cannot be empty")
+				continue
 			}
 
-			fmt.Print("Enter PostgreSQL port (default: 5432): ")
-			scanner.Scan()
-			port := strings.TrimSpace(scanner.Text())
-			if port == "" {
-				port = "5432"
+			// Add .db extension if not present
+			if !strings.HasSuffix(path, ".db") {
+				path += ".db"
 			}
 
-			fmt.Print("Enter PostgreSQL user (default: postgres): ")
-			scanner.Scan()
-			user := strings.TrimSpace(scanner.Text())
-			if user == "" {
-				user = "postgres"
-			}
-
-			fmt.Print("Enter PostgreSQL password: ")
-			scanner.Scan()
-			password := strings.TrimSpace(scanner.Text())
-
-			fmt.Print("Enter database name (default: openerp): ")
-			scanner.Scan()
-			dbname := strings.TrimSpace(scanner.Text())
-			if dbname == "" {
-				dbname = "openerp"
-			}
-
-			newDB, err := database.CreateDatabase(host, port, user, password, dbname)
+			newDB, err := database.CreateDatabase(path)
 			if err != nil {
 				fmt.Printf("✗ Error: %v\n", err)
 			} else {
 				db = newDB
 				companyMgr = company.NewManager(db, registry)
-				fmt.Printf("✓ Connected to PostgreSQL database '%s'\n", dbname)
+				fmt.Printf("✓ Database created: %s\n", path)
 				fmt.Printf("✓ Object registry: %d table(s) registered\n", registry.GetTableCount())
 			}
 
 		case "2":
+			// Open existing database
+			if db != nil {
+				fmt.Println("✗ Error: A database is already open. Close it first.")
+				continue
+			}
+
+			fmt.Print("\nEnter database filename (e.g., mycompany.db): ")
+			if !scanner.Scan() {
+				continue
+			}
+			path := strings.TrimSpace(scanner.Text())
+
+			if path == "" {
+				fmt.Println("✗ Error: Database filename cannot be empty")
+				continue
+			}
+
+			openedDB, err := database.OpenDatabase(path)
+			if err != nil {
+				fmt.Printf("✗ Error: %v\n", err)
+			} else {
+				db = openedDB
+				companyMgr = company.NewManager(db, registry)
+				fmt.Printf("✓ Database opened: %s\n", path)
+				fmt.Printf("✓ Object registry: %d table(s) registered\n", registry.GetTableCount())
+			}
+
+		case "3":
 			// Close database
 			if db == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -131,7 +144,7 @@ func main() {
 				companyMgr = nil
 			}
 
-		case "3":
+		case "4":
 			// Create company
 			if companyMgr == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -151,7 +164,7 @@ func main() {
 				fmt.Printf("✓ Company '%s' created successfully\n", name)
 			}
 
-		case "4":
+		case "5":
 			// Enter company
 			if companyMgr == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -193,7 +206,7 @@ func main() {
 				fmt.Printf("✓ Entered company '%s'\n", name)
 			}
 
-		case "5":
+		case "6":
 			// Exit company
 			if companyMgr == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -207,7 +220,7 @@ func main() {
 				fmt.Println("✓ Exited company session")
 			}
 
-		case "6":
+		case "7":
 			// Delete company
 			if companyMgr == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -257,7 +270,7 @@ func main() {
 				fmt.Printf("✓ Company '%s' and all its tables deleted successfully\n", name)
 			}
 
-		case "7":
+		case "8":
 			// List companies
 			if companyMgr == nil {
 				fmt.Println("✗ Error: No database connection")
@@ -283,7 +296,7 @@ func main() {
 				}
 			}
 
-		case "8":
+		case "9":
 			// List registered objects
 			fmt.Println("\n=== Registered Objects ===")
 
@@ -315,7 +328,7 @@ func main() {
 				fmt.Println("No objects registered yet")
 			}
 
-		case "9":
+		case "10":
 			// Exit application
 			if db != nil {
 				fmt.Println("\nClosing database connection...")

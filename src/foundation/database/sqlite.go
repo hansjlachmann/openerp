@@ -5,38 +5,33 @@ import (
 	"fmt"
 	"strings"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// Database represents a PostgreSQL database connection with session state
+// Database represents a SQLite database connection with session state
 type Database struct {
 	conn           *sql.DB
-	connString     string
+	path           string
 	currentCompany string // Per-connection state for thread safety
 }
 
-// CreateDatabase creates a new PostgreSQL database connection
-func CreateDatabase(host, port, user, password, dbname string) (*Database, error) {
-	connString := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname,
-	)
-
-	conn, err := sql.Open("postgres", connString)
+// CreateDatabase creates a new SQLite database file
+func CreateDatabase(path string) (*Database, error) {
+	conn, err := sql.Open("sqlite3", path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to create database: %w", err)
 	}
 
-	// Test connection
-	if err := conn.Ping(); err != nil {
+	// Enable foreign keys
+	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
 	// Create Company table
 	_, err = conn.Exec(`
 		CREATE TABLE IF NOT EXISTS "Company" (
-			name VARCHAR(50) PRIMARY KEY,
+			name TEXT PRIMARY KEY,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
@@ -45,61 +40,31 @@ func CreateDatabase(host, port, user, password, dbname string) (*Database, error
 		return nil, fmt.Errorf("failed to create Company table: %w", err)
 	}
 
-	// Create FieldDefinition table for metadata
-	_, err = conn.Exec(`
-		CREATE TABLE IF NOT EXISTS "FieldDefinition" (
-			id SERIAL PRIMARY KEY,
-			company VARCHAR(50) NOT NULL,
-			table_name VARCHAR(100) NOT NULL,
-			field_name VARCHAR(100) NOT NULL,
-			field_type VARCHAR(50) NOT NULL,
-			is_primary_key BOOLEAN DEFAULT FALSE,
-			field_order INTEGER DEFAULT 0,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			UNIQUE(company, table_name, field_name)
-		)
-	`)
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to create FieldDefinition table: %w", err)
-	}
-
 	db := &Database{
 		conn:           conn,
-		connString:     connString,
+		path:           path,
 		currentCompany: "",
 	}
 
 	return db, nil
 }
 
-// OpenDatabase opens an existing PostgreSQL database connection
-func OpenDatabase(host, port, user, password, dbname string) (*Database, error) {
-	connString := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname,
-	)
-
-	conn, err := sql.Open("postgres", connString)
+// OpenDatabase opens an existing SQLite database file
+func OpenDatabase(path string) (*Database, error) {
+	conn, err := sql.Open("sqlite3", path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Test connection
-	if err := conn.Ping(); err != nil {
+	// Enable foreign keys
+	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
 	// Verify Company table exists
 	var tableName string
-	err = conn.QueryRow(`
-		SELECT table_name
-		FROM information_schema.tables
-		WHERE table_schema = 'public'
-		AND table_name = 'Company'
-	`).Scan(&tableName)
-
+	err = conn.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='Company'").Scan(&tableName)
 	if err == sql.ErrNoRows {
 		conn.Close()
 		return nil, fmt.Errorf("not a valid OpenERP database: Company table not found")
@@ -111,7 +76,7 @@ func OpenDatabase(host, port, user, password, dbname string) (*Database, error) 
 
 	db := &Database{
 		conn:           conn,
-		connString:     connString,
+		path:           path,
 		currentCompany: "",
 	}
 
@@ -153,6 +118,11 @@ func (db *Database) SetCurrentCompany(company string) {
 	db.currentCompany = company
 }
 
+// GetDatabasePath returns the database file path
+func (db *Database) GetDatabasePath() string {
+	return db.path
+}
+
 // GetFullTableName returns the company-prefixed table name
 // Format: CompanyName$TableName (Business Central style)
 func (db *Database) GetFullTableName(tableName string) (string, error) {
@@ -168,17 +138,20 @@ func (db *Database) TableExists(tableName string) (bool, error) {
 		return false, fmt.Errorf("database not open")
 	}
 
-	var exists bool
+	var name string
 	err := db.conn.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.tables
-			WHERE table_schema = 'public'
-			AND table_name = $1
-		)
-	`, tableName).Scan(&exists)
+		SELECT name FROM sqlite_master
+		WHERE type='table' AND name=?
+	`, tableName).Scan(&name)
 
-	return exists, err
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // CreateTable creates a new table with the given schema
