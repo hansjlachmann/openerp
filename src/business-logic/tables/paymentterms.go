@@ -252,16 +252,16 @@ func (p *PaymentTerms) GetDescriptionInCurrentLanguage() types.Text {
 // Database Schema
 // ========================================
 
-// GetTableSchema returns the CREATE TABLE SQL for PostgreSQL
+// GetTableSchema returns the CREATE TABLE SQL for SQLite
 func GetPaymentTermsTableSchema() string {
 	return `
-		code VARCHAR(10) PRIMARY KEY,
-		description VARCHAR(100),
-		due_date_calculation VARCHAR(50),
-		discount_date_calculation VARCHAR(50),
-		discount_pct DECIMAL(5,2) CHECK (discount_pct >= 0 AND discount_pct <= 100),
-		calc_pmt_disc_on_cr_memos BOOLEAN DEFAULT FALSE,
-		last_modified_date_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		code TEXT PRIMARY KEY,
+		description TEXT,
+		due_date_calculation TEXT,
+		discount_date_calculation TEXT,
+		discount_pct REAL CHECK (discount_pct >= 0 AND discount_pct <= 100),
+		calc_pmt_disc_on_cr_memos INTEGER DEFAULT 0,
+		last_modified_date_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 	`
 }
 
