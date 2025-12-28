@@ -63,3 +63,8 @@ func (c Code) Value() (driver.Value, error) {
 func (c Code) IsEmpty() bool {
 	return c == ""
 }
+
+// Equal checks if two codes are equal (case-insensitive)
+func (c Code) Equal(other Code) bool {
+	return c == other
+}
