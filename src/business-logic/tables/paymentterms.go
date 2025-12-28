@@ -55,15 +55,50 @@ func (t *PaymentTerms) OnRename() error {
 
 // Validate validates all fields
 func (t *PaymentTerms) Validate() error {
-	if t.code.IsEmpty() {
+	if t.Code.IsEmpty() {
 		return errors.New("code is required")
 	}
-	if len(t.code) > 10 {
+	if len(t.Code) > 10 {
 		return errors.New("code cannot exceed 10 characters")
 	}
-	if len(t.description) > 30 {
+	if len(t.Description) > 30 {
 		return errors.New("description cannot exceed 30 characters")
 	}
+
+	return nil
+}
+
+// ========================================
+// Field Validation Hooks
+// ========================================
+// These methods are called by auto-generated OnValidate triggers in paymentterms_gen.go
+// Add your custom field validation logic here
+
+// CustomValidate_Code - Custom validation for code field
+func (t *PaymentTerms) CustomValidate_Code() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example for code:
+	// if len(t.Code) < 3 {
+	//     return errors.New("code must be at least 3 characters")
+	// }
+
+	return nil
+}
+
+// CustomValidate_Description - Custom validation for description field
+func (t *PaymentTerms) CustomValidate_Description() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example for description:
+	// if len(t.Description) < 3 {
+	//     return errors.New("description must be at least 3 characters")
+	// }
+
+	return nil
+}
+
+// CustomValidate_Active - Custom validation for active field
+func (t *PaymentTerms) CustomValidate_Active() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
 
 	return nil
 }

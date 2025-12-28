@@ -3,6 +3,8 @@ package objects
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 // TableDefinition represents a table that can be initialized
@@ -14,6 +16,7 @@ type TableDefinition interface {
 }
 
 // InitializeCompanyTables creates all registered tables for a new company
+// Also performs schema migration by adding missing columns to existing tables
 func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string) error {
 	// Get all registered table IDs
 	tableIDs := or.ListTables()
@@ -23,6 +26,7 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 	}
 
 	successCount := 0
+	migratedCount := 0
 	failedTables := []string{}
 
 	// Create each registered table
@@ -40,26 +44,98 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 			continue
 		}
 
-		// Create the table for this company
-		err := tableDef.CreateTable(db, companyName)
+		// Build full table name (Company$TableName)
+		fullTableName := fmt.Sprintf("%s$%s", companyName, tableDef.GetTableName())
+
+		// Check if table exists
+		exists, err := tableExists(db, fullTableName)
 		if err != nil {
-			failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
+			failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to check existence: %v", tableID, tableDef.GetTableName(), err))
 			continue
 		}
 
-		successCount++
+		if exists {
+			// Table exists - perform schema migration (add missing columns)
+			schema := tableDef.GetTableSchema()
+			schemaColumns := parseSchemaColumns(schema)
+			existingColumns, err := getTableColumns(db, fullTableName)
+			if err != nil {
+				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to get columns: %v", tableID, tableDef.GetTableName(), err))
+				continue
+			}
+
+			// Add missing columns
+			err = addMissingColumns(db, fullTableName, schemaColumns, existingColumns)
+			if err != nil {
+				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): migration failed: %v", tableID, tableDef.GetTableName(), err))
+				continue
+			}
+
+			// Also fix any existing NULL values in TEXT/INTEGER columns
+			err = fixNullValues(db, fullTableName, schemaColumns, existingColumns)
+			if err != nil {
+				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to fix NULL values: %v", tableID, tableDef.GetTableName(), err))
+				continue
+			}
+
+			migratedCount++
+		} else {
+			// Table doesn't exist - create it
+			err := tableDef.CreateTable(db, companyName)
+			if err != nil {
+				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
+				continue
+			}
+
+			successCount++
+		}
 	}
 
 	if len(failedTables) > 0 {
-		errorMsg := fmt.Sprintf("Failed to create %d table(s):\n", len(failedTables))
+		errorMsg := fmt.Sprintf("Failed to initialize %d table(s):\n", len(failedTables))
 		for _, failure := range failedTables {
 			errorMsg += "  - " + failure + "\n"
 		}
 		return fmt.Errorf(errorMsg)
 	}
 
-	if successCount == 0 {
+	if successCount == 0 && migratedCount == 0 {
 		return fmt.Errorf("no tables were initialized (registered tables may not implement TableDefinition interface)")
+	}
+
+	if successCount > 0 {
+		fmt.Printf("✓ Created %d new table(s)\n", successCount)
+	}
+	if migratedCount > 0 {
+		fmt.Printf("✓ Migrated %d existing table(s)\n", migratedCount)
+	}
+
+	return nil
+}
+
+// fixNullValues updates NULL values in existing columns to appropriate defaults
+func fixNullValues(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool) error {
+	for columnName, columnDef := range schemaColumns {
+		// Skip if column doesn't exist yet
+		if !existingColumns[columnName] {
+			continue
+		}
+
+		// Determine default value based on type
+		var defaultValue string
+		if strings.Contains(strings.ToUpper(columnDef), "TEXT") {
+			defaultValue = "''"
+		} else if strings.Contains(strings.ToUpper(columnDef), "INTEGER") {
+			defaultValue = "0"
+		}
+
+		if defaultValue != "" {
+			updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = %s WHERE %s IS NULL`, tableName, columnName, defaultValue, columnName)
+			_, err := db.Exec(updateSQL)
+			if err != nil {
+				return fmt.Errorf("failed to fix NULL values for column %s: %w", columnName, err)
+			}
+		}
 	}
 
 	return nil
@@ -68,4 +144,157 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 // GetTableCount returns the number of registered tables
 func (or *ObjectRegistry) GetTableCount() int {
 	return len(or.tables)
+}
+
+// ========================================
+// Schema Migration Helpers
+// ========================================
+
+// tableExists checks if a table exists in the database
+func tableExists(db *sql.DB, tableName string) (bool, error) {
+	var name string
+	err := db.QueryRow(`
+		SELECT name FROM sqlite_master
+		WHERE type='table' AND name=?
+	`, tableName).Scan(&name)
+
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// getTableColumns returns a map of existing column names in the table
+func getTableColumns(db *sql.DB, tableName string) (map[string]bool, error) {
+	rows, err := db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, tableName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table info: %w", err)
+	}
+	defer rows.Close()
+
+	columns := make(map[string]bool)
+	for rows.Next() {
+		var cid int
+		var name string
+		var dataType string
+		var notNull int
+		var defaultValue sql.NullString
+		var pk int
+
+		err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &pk)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan column info: %w", err)
+		}
+		columns[strings.ToLower(name)] = true
+	}
+
+	return columns, nil
+}
+
+// parseSchemaColumns extracts column definitions from CREATE TABLE schema
+// Returns map[columnName]columnDefinition
+func parseSchemaColumns(schema string) map[string]string {
+	columns := make(map[string]string)
+
+	// Remove leading/trailing whitespace and newlines
+	schema = strings.TrimSpace(schema)
+
+	// Split by commas (but not commas inside parentheses)
+	lines := strings.Split(schema, "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Remove trailing comma
+		line = strings.TrimSuffix(line, ",")
+
+		// Extract column name (first word)
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			columnName := strings.ToLower(parts[0])
+			columnDef := line
+
+			// Skip PRIMARY KEY constraints (they're on the original column)
+			if strings.Contains(strings.ToUpper(line), "PRIMARY KEY") && !strings.Contains(strings.ToUpper(parts[0]), "PRIMARY") {
+				// This is an inline PRIMARY KEY definition
+				columnDef = line
+			}
+
+			columns[columnName] = columnDef
+		}
+	}
+
+	return columns
+}
+
+// addMissingColumns adds columns that exist in schema but not in table
+func addMissingColumns(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool) error {
+	addedCount := 0
+
+	for columnName, columnDef := range schemaColumns {
+		// Skip if column already exists
+		if existingColumns[columnName] {
+			continue
+		}
+
+		// Skip PRIMARY KEY constraint lines
+		if strings.Contains(strings.ToUpper(columnDef), "PRIMARY KEY") && !strings.Contains(columnDef, columnName) {
+			continue
+		}
+
+		// Remove PRIMARY KEY from column definition for ALTER TABLE
+		// SQLite doesn't allow adding PRIMARY KEY columns via ALTER TABLE
+		cleanDef := columnDef
+		re := regexp.MustCompile(`(?i)\s+PRIMARY KEY`)
+		cleanDef = re.ReplaceAllString(cleanDef, "")
+
+		// Add DEFAULT value to prevent NULL values in existing rows
+		// This prevents "converting NULL to string is unsupported" errors
+		if !strings.Contains(strings.ToUpper(cleanDef), "DEFAULT") {
+			// Determine default value based on type
+			if strings.Contains(strings.ToUpper(cleanDef), "TEXT") {
+				cleanDef = cleanDef + " DEFAULT ''"
+			} else if strings.Contains(strings.ToUpper(cleanDef), "INTEGER") {
+				cleanDef = cleanDef + " DEFAULT 0"
+			}
+		}
+
+		// Execute ALTER TABLE ADD COLUMN
+		alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN %s`, tableName, cleanDef)
+		_, err := db.Exec(alterSQL)
+		if err != nil {
+			return fmt.Errorf("failed to add column %s: %w", columnName, err)
+		}
+
+		// Update existing rows to set default value (ALTER TABLE DEFAULT doesn't update existing rows)
+		var defaultValue string
+		if strings.Contains(strings.ToUpper(cleanDef), "TEXT") {
+			defaultValue = "''"
+		} else if strings.Contains(strings.ToUpper(cleanDef), "INTEGER") {
+			defaultValue = "0"
+		}
+
+		if defaultValue != "" {
+			updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = %s WHERE %s IS NULL`, tableName, columnName, defaultValue, columnName)
+			_, err = db.Exec(updateSQL)
+			if err != nil {
+				return fmt.Errorf("failed to update default values for column %s: %w", columnName, err)
+			}
+		}
+
+		fmt.Printf("  + Added column: %s.%s\n", tableName, columnName)
+		addedCount++
+	}
+
+	if addedCount > 0 {
+		fmt.Printf("  ✓ Added %d column(s) to %s\n", addedCount, tableName)
+	}
+
+	return nil
 }

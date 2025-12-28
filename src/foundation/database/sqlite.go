@@ -40,6 +40,21 @@ func CreateDatabase(path string) (*Database, error) {
 		return nil, fmt.Errorf("failed to create Company table: %w", err)
 	}
 
+	// Create User table (global, no company prefix)
+	_, err = conn.Exec(`
+		CREATE TABLE IF NOT EXISTS "User" (
+			username TEXT PRIMARY KEY,
+			password_hash TEXT NOT NULL,
+			full_name TEXT,
+			language TEXT DEFAULT 'en-US',
+			active INTEGER DEFAULT 1
+		)
+	`)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to create User table: %w", err)
+	}
+
 	db := &Database{
 		conn:           conn,
 		path:           path,
@@ -72,6 +87,21 @@ func OpenDatabase(path string) (*Database, error) {
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to verify database: %w", err)
+	}
+
+	// Create User table if it doesn't exist (for database upgrade compatibility)
+	_, err = conn.Exec(`
+		CREATE TABLE IF NOT EXISTS "User" (
+			username TEXT PRIMARY KEY,
+			password_hash TEXT NOT NULL,
+			full_name TEXT,
+			language TEXT DEFAULT 'en-US',
+			active INTEGER DEFAULT 1
+		)
+	`)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to create User table: %w", err)
 	}
 
 	db := &Database{
