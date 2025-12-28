@@ -20,6 +20,7 @@ func NewCustomer() *Customer {
 
 // OnInsert trigger - called before inserting a new record
 func (t *Customer) OnInsert() error {
+	t.Status = Customer_Status.Open
 	return t.Validate()
 }
 
@@ -166,6 +167,63 @@ func (t *Customer) CustomValidate_Payment_terms_code() error {
 			return errors.New("payment terms is inactive and cannot be used")
 		}
 	}
+
+	return nil
+}
+
+// CustomValidate_Status - Custom validation for status field
+func (t *Customer) CustomValidate_Status() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example: Prevent changing to Posted status if certain conditions aren't met
+	// if t.Status == Customer_Status.Posted {
+	//     if t.Name == "" {
+	//         return errors.New("cannot post customer without name")
+	//     }
+	// }
+
+	return nil
+}
+
+// CustomValidate_Credit_limit - Custom validation for credit_limit field
+func (t *Customer) CustomValidate_Credit_limit() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example: Ensure credit limit is non-negative
+	// if t.Credit_limit.IsNegative() {
+	//     return errors.New("credit limit cannot be negative")
+	// }
+
+	return nil
+}
+
+// CustomValidate_Last_order_date - Custom validation for last_order_date field
+func (t *Customer) CustomValidate_Last_order_date() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example: Ensure last order date is not in the future
+	// if !t.Last_order_date.IsZero() && t.Last_order_date.After(types.Today()) {
+	//     return errors.New("last order date cannot be in the future")
+	// }
+
+	return nil
+}
+
+// CustomValidate_Created_at - Custom validation for created_at field
+func (t *Customer) CustomValidate_Created_at() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example: Ensure created timestamp is not in the future
+	// if !t.Created_at.IsZero() && t.Created_at.After(types.Now()) {
+	//     return errors.New("created timestamp cannot be in the future")
+	// }
+
+	return nil
+}
+
+// CustomValidate_Profile_photo - Custom validation for profile_photo field
+func (t *Customer) CustomValidate_Profile_photo() error {
+	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
+	// Example: Validate photo size
+	// if len(t.Profile_photo) > 5*1024*1024 {
+	//     return errors.New("profile photo cannot exceed 5MB")
+	// }
 
 	return nil
 }

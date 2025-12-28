@@ -41,3 +41,64 @@ table:
       table_relation:
         table: PaymentTerms
         field: code
+
+    - name: status
+      type: Option
+      db_name: status
+      options: [" ", "Open", "Released", "Posted", "Blocked"]
+
+    # Test fields for new data types
+    - name: credit_limit
+      type: types.Decimal
+      db_name: credit_limit
+      precision: 18
+      scale: 2
+
+    - name: last_order_date
+      type: types.Date
+      db_name: last_order_date
+
+    - name: created_at
+      type: types.DateTime
+      db_name: created_at
+
+    - name: profile_photo
+      type: "[]byte"
+      db_name: profile_photo
+
+    # FlowFields - calculated from Customer Ledger Entry
+    - name: balance_lcy
+      type: types.Decimal
+      flow_field: true
+      calc_formula: Sum
+      source_table: CustomerLedgerEntry
+      source_field: remaining_amt_lcy
+      flow_filters:
+        - field: customer_no
+          type: field
+          value: no
+        - field: open
+          type: const
+          value: "true"
+
+    - name: sales_lcy
+      type: types.Decimal
+      flow_field: true
+      calc_formula: Sum
+      source_table: CustomerLedgerEntry
+      source_field: sales_lcy
+      flow_filters:
+        - field: customer_no
+          type: field
+          value: no
+
+    - name: no_of_ledger_entries
+      type: int
+      flow_field: true
+      calc_formula: Count
+      source_table: CustomerLedgerEntry
+      source_field: entry_no
+      flow_filters:
+        - field: customer_no
+          type: field
+          value: no

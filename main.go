@@ -40,6 +40,11 @@ func main() {
 		fmt.Printf("Warning: Failed to register Customer: %v\n", err)
 	}
 
+	// Register Customer Ledger Entry table (Table ID: 21)
+	if err := registry.RegisterTable(tables.CustomerLedgerEntryTableID, &tables.CustomerLedgerEntry{}); err != nil {
+		fmt.Printf("Warning: Failed to register Customer Ledger Entry: %v\n", err)
+	}
+
 	// Try to auto-connect to last used database and company
 	if lastConn, err := config.LoadLastConnection(); err == nil {
 		fmt.Printf("Auto-connecting to last session...\n")
@@ -422,6 +427,12 @@ func main() {
 			fmt.Println("5. Codeunit 50004 - Customer Phase 3 Demo (IsEmpty/ModifyAll/DeleteAll)")
 			fmt.Println("6. Codeunit 50005 - Helper Functions Demo (IncStr/CopyStr)")
 			fmt.Println("7. Codeunit 50006 - OnValidate Triggers Demo (Field Validation)")
+			fmt.Println("8. Codeunit 50007 - Bidirectional Navigation Demo (FindSet/FindSetBuffered)")
+			fmt.Println("9. Codeunit 50008 - New Data Types Demo (Decimal/Date/DateTime/BLOB)")
+			fmt.Println("10. Codeunit 50009 - Customer Ledger Entry Demo (Insert Test Data)")
+			fmt.Println("11. Codeunit 50010 - FlowField Demo (Sum/Count Calculations)")
+			fmt.Println("12. Codeunit 50011 - Create Large Dataset (100K entries for CUST-001)")
+			fmt.Println("13. Codeunit 50012 - Calculate FlowFields for CUST-001")
 			fmt.Println("0. Back to main menu")
 			fmt.Println(strings.Repeat("=", 60))
 			fmt.Print("\nSelect codeunit: ")
@@ -460,6 +471,30 @@ func main() {
 			case "7":
 				// Codeunit 50006: OnValidate Triggers Demo
 				codeunits.RunOnValidateDemo()
+
+			case "8":
+				// Codeunit 50007: Bidirectional Navigation Demo
+				codeunits.RunBidirectionalNavDemo()
+
+			case "9":
+				// Codeunit 50008: New Data Types Demo
+				codeunits.NewTypesDemo(sess.GetConnection(), sess.GetCompany())
+
+			case "10":
+				// Codeunit 50009: Customer Ledger Entry Demo
+				codeunits.CustLedgerEntryDemo(sess.GetConnection(), sess.GetCompany())
+
+			case "11":
+				// Codeunit 50010: FlowField Demo
+				codeunits.FlowFieldDemo(sess.GetConnection(), sess.GetCompany())
+
+			case "12":
+				// Codeunit 50011: Create Large Dataset (100K entries for CUST-001)
+				codeunits.CreateLargeCustomerDataset(sess.GetConnection(), sess.GetCompany())
+
+			case "13":
+				// Codeunit 50012: Calculate FlowFields for CUST-001
+				codeunits.CalcFieldsLargeCustomer(sess.GetConnection(), sess.GetCompany())
 
 			case "0":
 				fmt.Println("✓ Returning to main menu")
