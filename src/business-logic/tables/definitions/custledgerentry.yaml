@@ -1,0 +1,267 @@
+table:
+  id: 21
+  name: "Customer Ledger Entry"
+  fields:
+    # Primary Key
+    - name: entry_no
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    # Customer Information
+    - name: customer_no
+      type: types.Code
+      db_name: customer_no
+      length: 20
+      table_relation:
+        table: Customer
+        field: no
+
+    - name: sell_to_customer_no
+      type: types.Code
+      db_name: sell_to_customer_no
+      length: 20
+      table_relation:
+        table: Customer
+        field: no
+
+    # Document Information
+    - name: posting_date
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_date
+      type: types.Date
+      db_name: document_date
+
+    - name: document_type
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: external_document_no
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: description
+      type: types.Text
+      db_name: description
+      length: 100
+
+    # Currency Information
+    - name: currency_code
+      type: types.Code
+      db_name: currency_code
+      length: 10
+
+    # Amounts in Foreign Currency
+    - name: amount
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+
+    - name: remaining_amount
+      type: types.Decimal
+      db_name: remaining_amount
+      precision: 18
+      scale: 2
+
+    - name: closed_by_amount
+      type: types.Decimal
+      db_name: closed_by_amount
+      precision: 18
+      scale: 2
+
+    # Amounts in Local Currency (LCY)
+    - name: original_amount_lcy
+      type: types.Decimal
+      db_name: original_amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: remaining_amt_lcy
+      type: types.Decimal
+      db_name: remaining_amt_lcy
+      precision: 18
+      scale: 2
+
+    - name: amount_lcy
+      type: types.Decimal
+      db_name: amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: closed_by_amount_lcy
+      type: types.Decimal
+      db_name: closed_by_amount_lcy
+      precision: 18
+      scale: 2
+
+    # Sales Statistics (LCY)
+    - name: sales_lcy
+      type: types.Decimal
+      db_name: sales_lcy
+      precision: 18
+      scale: 2
+
+    - name: profit_lcy
+      type: types.Decimal
+      db_name: profit_lcy
+      precision: 18
+      scale: 2
+
+    - name: inv_discount_lcy
+      type: types.Decimal
+      db_name: inv_discount_lcy
+      precision: 18
+      scale: 2
+
+    # Payment Discount
+    - name: pmt_discount_date
+      type: types.Date
+      db_name: pmt_discount_date
+
+    - name: pmt_disc_possible
+      type: types.Decimal
+      db_name: pmt_disc_possible
+      precision: 18
+      scale: 2
+
+    - name: pmt_disc_given_lcy
+      type: types.Decimal
+      db_name: pmt_disc_given_lcy
+      precision: 18
+      scale: 2
+
+    # Posting Groups and Dimensions (simplified - no TableRelations for now)
+    - name: customer_posting_group
+      type: types.Code
+      db_name: customer_posting_group
+      length: 10
+
+    - name: department_code
+      type: types.Code
+      db_name: department_code
+      length: 10
+
+    - name: project_code
+      type: types.Code
+      db_name: project_code
+      length: 10
+
+    - name: salesperson_code
+      type: types.Code
+      db_name: salesperson_code
+      length: 10
+
+    # System Fields
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      length: 20
+
+    - name: source_code
+      type: types.Code
+      db_name: source_code
+      length: 10
+
+    - name: reason_code
+      type: types.Code
+      db_name: reason_code
+      length: 10
+
+    - name: journal_batch_name
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: transaction_no
+      type: int
+      db_name: transaction_no
+
+    # Application Fields
+    - name: applies_to_doc_type
+      type: Option
+      db_name: applies_to_doc_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: applies_to_doc_no
+      type: types.Code
+      db_name: applies_to_doc_no
+      length: 20
+
+    - name: applies_to_id
+      type: types.Code
+      db_name: applies_to_id
+      length: 20
+
+    # Status Fields
+    - name: open
+      type: bool
+      db_name: open
+
+    - name: positive
+      type: bool
+      db_name: positive
+
+    - name: on_hold
+      type: types.Code
+      db_name: on_hold
+      length: 3
+
+    - name: due_date
+      type: types.Date
+      db_name: due_date
+
+    # Closing Information
+    - name: closed_by_entry_no
+      type: int
+      db_name: closed_by_entry_no
+
+    - name: closed_at_date
+      type: types.Date
+      db_name: closed_at_date
+
+    # Balancing Account
+    - name: bal_account_type
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: bal_account_no
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+
+  # Keys (Indexes) - BC/NAV style
+  # These indexes optimize FlowField calculations and common queries
+  keys:
+    # Key for FlowField: Customer.Balance_lcy (filters by customer_no + open)
+    - name: customer_open
+      fields:
+        - customer_no
+        - open
+
+    # Key for FlowField: Customer.Sales_lcy and No_of_ledger_entries (filters by customer_no)
+    - name: customer
+      fields:
+        - customer_no
+
+    # Key for common queries by document type and number
+    - name: document
+      fields:
+        - document_type
+        - document_no
+
+    # Key for posting date queries (useful for date range filtering)
+    - name: posting_date
+      fields:
+        - posting_date

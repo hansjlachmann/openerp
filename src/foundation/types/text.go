@@ -62,3 +62,8 @@ func (t Text) Value() (driver.Value, error) {
 func (t Text) IsEmpty() bool {
 	return t == ""
 }
+
+// Equal checks if two texts are equal (case-sensitive)
+func (t Text) Equal(other Text) bool {
+	return t == other
+}
