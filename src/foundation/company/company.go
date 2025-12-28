@@ -89,6 +89,29 @@ func (m *Manager) EnterCompany(name string) error {
 		return fmt.Errorf("failed to verify company: %w", err)
 	}
 
+	// Auto-sync: Create any missing tables for ALL companies
+	// This ensures new tables are automatically created across all companies (BC/NAV style)
+	if m.registry != nil {
+		tableCount := m.registry.GetTableCount()
+		if tableCount > 0 {
+			// Get all companies
+			companies, err := m.ListCompanies()
+			if err != nil {
+				return fmt.Errorf("failed to list companies for sync: %w", err)
+			}
+
+			// Sync tables for each company
+			fmt.Println("\nSynchronizing tables across all companies...")
+			for _, companyName := range companies {
+				err = m.registry.InitializeCompanyTables(m.db.GetConnection(), companyName)
+				if err != nil {
+					return fmt.Errorf("failed to sync tables for company '%s': %w", companyName, err)
+				}
+			}
+			fmt.Println()
+		}
+	}
+
 	// Set current company (per-connection state)
 	m.db.SetCurrentCompany(name)
 	return nil
