@@ -1,0 +1,43 @@
+table:
+  id: 18
+  name: "Customer"
+  fields:
+    - name: no
+      type: types.Code
+      db_name: no
+      primary_key: true
+      length: 20
+      required: true
+
+    - name: name
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: address
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: post_code
+      type: types.Code
+      db_name: post_code
+      length: 20
+
+    - name: city
+      type: types.Text
+      db_name: city
+      length: 50
+    
+    - name: phonenumber
+      type: types.Text
+      db_name: phonenumber
+      length: 30
+
+    - name: payment_terms_code
+      type: types.Code
+      db_name: payment_terms_code
+      length: 10
+      table_relation:
+        table: PaymentTerms
+        field: code

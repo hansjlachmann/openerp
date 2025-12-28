@@ -17,4 +17,4 @@ table:
     - name: active
       type: bool
       db_name: active
-      default: 1
+      default: true
