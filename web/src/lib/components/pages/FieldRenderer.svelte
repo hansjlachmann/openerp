@@ -84,7 +84,7 @@
 			id={field.source}
 			type="text"
 			class={cn('input', fieldStyle())}
-			{value}
+			value={value}
 			on:input={handleChange}
 		/>
 	</div>
