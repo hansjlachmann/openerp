@@ -181,21 +181,58 @@
 		const recordId = clickedRecord['no'] || clickedRecord['code'] || clickedRecord['id'];
 		window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
 	}
+
+	// Handle save from list page (inline editing)
+	async function handleListSave(savedRecord: Record<string, any>, isNew: boolean) {
+		if (!page) return;
+
+		try {
+			if (isNew) {
+				// Insert new record
+				await api.insertRecord(page.page.source_table, savedRecord);
+				await loadListData();
+			} else {
+				// Update existing record
+				const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
+				await api.modifyRecord(page.page.source_table, recordId, savedRecord);
+				await loadListData();
+			}
+		} catch (err) {
+			alert('Failed to save record');
+			console.error('Save error:', err);
+			throw err;
+		}
+	}
+
+	// Handle delete from list page
+	async function handleListDelete(deletedRecord: Record<string, any>) {
+		if (!page) return;
+
+		try {
+			const recordId = deletedRecord['no'] || deletedRecord['code'] || deletedRecord['id'];
+			await api.deleteRecord(page.page.source_table, recordId);
+			await loadListData();
+		} catch (err) {
+			alert('Failed to delete record');
+			console.error('Delete error:', err);
+			throw err;
+		}
+	}
 </script>
 
 {#if loading}
 	<div class="flex items-center justify-center h-full">
 		<div class="text-center">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-nav-blue mx-auto mb-4"></div>
-			<p class="text-gray-600">Loading page...</p>
+			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-nav-blue dark:border-blue-400 mx-auto mb-4"></div>
+			<p class="text-gray-600 dark:text-gray-400">Loading page...</p>
 		</div>
 	</div>
 {:else if error}
 	<div class="flex items-center justify-center h-full">
 		<div class="text-center">
-			<div class="text-red-600 text-5xl mb-4">⚠</div>
-			<h2 class="text-xl font-semibold text-gray-800 mb-2">Error Loading Page</h2>
-			<p class="text-gray-600">{error}</p>
+			<div class="text-red-600 dark:text-red-400 text-5xl mb-4">⚠</div>
+			<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Error Loading Page</h2>
+			<p class="text-gray-600 dark:text-gray-400">{error}</p>
 		</div>
 	</div>
 {:else if page}
@@ -208,11 +245,19 @@
 			onsave={handleCardSave}
 		/>
 	{:else if page.page.type === 'List'}
-		<ListPage {page} {records} {captions} onaction={handleListAction} onrowclick={handleRowClick} />
+		<ListPage
+			{page}
+			{records}
+			{captions}
+			onaction={handleListAction}
+			onrowclick={handleRowClick}
+			onsave={handleListSave}
+			ondelete={handleListDelete}
+		/>
 	{:else}
 		<div class="flex items-center justify-center h-full">
 			<div class="text-center">
-				<p class="text-gray-600">Page type "{page.page.type}" not yet supported</p>
+				<p class="text-gray-600 dark:text-gray-400">Page type "{page.page.type}" not yet supported</p>
 			</div>
 		</div>
 	{/if}

@@ -11,6 +11,7 @@ export interface PageMetadata {
 	source_table: string;
 	caption: string;
 	card_page_id?: number;
+	modal_card?: boolean;
 	editable?: boolean;
 	layout: Layout;
 	actions?: Action[];
