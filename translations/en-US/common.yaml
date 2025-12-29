@@ -1,0 +1,45 @@
+# English (US) common translations
+# Shared terms across all objects
+
+common:
+  # Common actions
+  actions:
+    new: "New"
+    edit: "Edit"
+    delete: "Delete"
+    post: "Post"
+    ok: "OK"
+    cancel: "Cancel"
+    close: "Close"
+    save: "Save"
+    refresh: "Refresh"
+    search: "Search"
+    filter: "Filter"
+    print: "Print"
+    export: "Export"
+    import: "Import"
+
+  # Common messages
+  messages:
+    confirm_delete: "Are you sure you want to delete?"
+    record_saved: "Record saved successfully"
+    record_deleted: "Record deleted successfully"
+    no_records_found: "No records found"
+    please_wait: "Please wait..."
+    loading: "Loading..."
+    error_occurred: "An error occurred"
+
+  # Common terms
+  terms:
+    lcy: "LCY"  # Local Currency
+    yes: "Yes"
+    no: "No"
+    total: "Total"
+    subtotal: "Subtotal"
+    quantity: "Quantity"
+    unit_price: "Unit Price"
+    amount: "Amount"
+    date: "Date"
+    time: "Time"
+    user: "User"
+    status: "Status"

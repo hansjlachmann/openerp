@@ -1,0 +1,105 @@
+# English (US) translations for tables
+# Table captions and field captions
+
+tables:
+  # Payment Terms (Table 3)
+  payment_terms:
+    caption: "Payment Terms"
+    fields:
+      code: "Code"
+      description: "Description"
+      due_date_calculation: "Due Date Calculation"
+      discount_date_calculation: "Discount Date Calculation"
+      discount_percent: "Discount %"
+
+  # Customer (Table 18)
+  customer:
+    caption: "Customer"
+    fields:
+      no: "No."
+      name: "Name"
+      address: "Address"
+      post_code: "Post Code"
+      city: "City"
+      phone_number: "Phone No."
+      email: "E-Mail"
+      payment_terms_code: "Payment Terms Code"
+      credit_limit: "Credit Limit (LCY)"
+      balance_lcy: "Balance (LCY)"
+      sales_lcy: "Sales (LCY)"
+      no_of_ledger_entries: "No. of Ledger Entries"
+      last_order_date: "Last Order Date"
+      created_at: "Created At"
+      status: "Status"
+
+    # Option field values
+    options:
+      status:
+        open: "Open"
+        blocked: "Blocked"
+        closed: "Closed"
+
+  # Customer Ledger Entry (Table 21)
+  customer_ledger_entry:
+    caption: "Customer Ledger Entry"
+    fields:
+      entry_no: "Entry No."
+      customer_no: "Customer No."
+      sell_to_customer_no: "Sell-to Customer No."
+      posting_date: "Posting Date"
+      document_date: "Document Date"
+      document_type: "Document Type"
+      document_no: "Document No."
+      external_document_no: "External Document No."
+      description: "Description"
+      currency_code: "Currency Code"
+      amount: "Amount"
+      remaining_amount: "Remaining Amount"
+      closed_by_amount: "Closed by Amount"
+      original_amount_lcy: "Original Amount (LCY)"
+      remaining_amt_lcy: "Remaining Amt. (LCY)"
+      amount_lcy: "Amount (LCY)"
+      closed_by_amount_lcy: "Closed by Amount (LCY)"
+      sales_lcy: "Sales (LCY)"
+      profit_lcy: "Profit (LCY)"
+      inv_discount_lcy: "Inv. Discount (LCY)"
+      pmt_discount_date: "Pmt. Discount Date"
+      pmt_disc_possible: "Pmt. Disc. Possible"
+      pmt_disc_given_lcy: "Pmt. Disc. Given (LCY)"
+      customer_posting_group: "Customer Posting Group"
+      department_code: "Department Code"
+      project_code: "Project Code"
+      salesperson_code: "Salesperson Code"
+      user_id: "User ID"
+      source_code: "Source Code"
+      reason_code: "Reason Code"
+      journal_batch_name: "Journal Batch Name"
+      transaction_no: "Transaction No."
+      applies_to_doc_type: "Applies-to Doc. Type"
+      applies_to_doc_no: "Applies-to Doc. No."
+      applies_to_id: "Applies-to ID"
+      open: "Open"
+      positive: "Positive"
+      on_hold: "On Hold"
+      due_date: "Due Date"
+      closed_by_entry_no: "Closed by Entry No."
+      closed_at_date: "Closed at Date"
+      bal_account_type: "Bal. Account Type"
+      bal_account_no: "Bal. Account No."
+
+    # Option field values
+    options:
+      document_type:
+        " ": " "
+        payment: "Payment"
+        invoice: "Invoice"
+        credit_memo: "Credit Memo"
+        finance_charge_memo: "Finance Charge Memo"
+        reminder: "Reminder"
+
+      bal_account_type:
+        g_l_account: "G/L Account"
+        customer: "Customer"
+        vendor: "Vendor"
+        bank_account: "Bank Account"
+        fixed_asset: "Fixed Asset"
