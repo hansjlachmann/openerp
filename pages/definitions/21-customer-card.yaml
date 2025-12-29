@@ -71,15 +71,25 @@ page:
       caption: New
       shortcut: Ctrl+N
       promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
 
     - name: Delete
       caption: Delete
       shortcut: Ctrl+D
       promoted: true
+      enabled: true
 
     - name: Refresh
       caption: Refresh
       shortcut: F5
+      promoted: true
+      enabled: true
 
     - name: Ledger Entries
       caption: Ledger Entries

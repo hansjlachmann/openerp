@@ -23,7 +23,11 @@
 			{/if}
 		</div>
 
-		{#if actions.length > 0}
+		{#if $$slots.actions}
+			<div class="flex gap-3">
+				<slot name="actions" />
+			</div>
+		{:else if actions.length > 0}
 			<div class="flex gap-3">
 				{#each actions as action}
 					<Button variant={action.variant || 'secondary'} on:click={action.onClick}>
