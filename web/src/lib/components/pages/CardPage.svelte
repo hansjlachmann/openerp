@@ -106,7 +106,7 @@
 				<Button
 					variant={action.name === 'Delete' ? 'danger' : 'secondary'}
 					size="sm"
-					onclick={() => handleAction(action.name)}
+					on:click={() => handleAction(action.name)}
 					disabled={action.enabled === false}
 				>
 					{action.caption}
@@ -117,10 +117,10 @@
 			{/each}
 
 			{#if isEditing}
-				<Button variant="primary" size="sm" onclick={handleSave}>
+				<Button variant="primary" size="sm" on:click={handleSave}>
 					Save
 				</Button>
-				<Button variant="secondary" size="sm" onclick={handleCancel}>
+				<Button variant="secondary" size="sm" on:click={handleCancel}>
 					Cancel
 				</Button>
 			{/if}
