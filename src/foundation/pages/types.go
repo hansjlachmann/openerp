@@ -13,6 +13,7 @@ type PageMetadata struct {
 	SourceTable  string   `yaml:"source_table" json:"source_table"`
 	Caption      string   `yaml:"caption" json:"caption"`
 	CardPageID   int      `yaml:"card_page_id,omitempty" json:"card_page_id,omitempty"`
+	ModalCard    bool     `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
 	Editable     bool     `yaml:"editable,omitempty" json:"editable,omitempty"`
 	Layout       Layout   `yaml:"layout" json:"layout"`
 	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`

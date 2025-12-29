@@ -14,12 +14,12 @@
 	export let actions: Action[] = [];
 </script>
 
-<div class="bg-white border-b border-gray-200 px-6 py-4">
+<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold text-nav-blue">{title}</h1>
+			<h1 class="text-2xl font-bold text-nav-blue dark:text-blue-400">{title}</h1>
 			{#if subtitle}
-				<p class="mt-1 text-sm text-gray-600">{subtitle}</p>
+				<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
 			{/if}
 		</div>
 

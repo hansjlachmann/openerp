@@ -106,7 +106,13 @@
 				<Button
 					variant={action.name === 'Delete' ? 'danger' : 'secondary'}
 					size="sm"
-					on:click={() => handleAction(action.name)}
+					onclick={() => {
+						if (action.run_page) {
+							window.location.href = `/pages/${action.run_page}`;
+						} else {
+							handleAction(action.name);
+						}
+					}}
 					disabled={action.enabled === false}
 				>
 					{action.caption}
@@ -117,10 +123,10 @@
 			{/each}
 
 			{#if isEditing}
-				<Button variant="primary" size="sm" on:click={handleSave}>
+				<Button variant="primary" size="sm" onclick={handleSave}>
 					Save
 				</Button>
-				<Button variant="secondary" size="sm" on:click={handleCancel}>
+				<Button variant="secondary" size="sm" onclick={handleCancel}>
 					Cancel
 				</Button>
 			{/if}
@@ -131,7 +137,7 @@
 		{#each page.page.layout.sections || [] as section}
 			<Card>
 				<svelte:fragment slot="header">
-					<h3 class="text-lg font-semibold text-nav-blue">{section.caption}</h3>
+					<h3 class="text-lg font-semibold text-nav-blue dark:text-blue-400">{section.caption}</h3>
 				</svelte:fragment>
 
 				<div class="section-fields">

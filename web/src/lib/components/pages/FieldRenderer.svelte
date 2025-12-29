@@ -38,16 +38,16 @@
 		// Style-based coloring
 		switch (field.style) {
 			case 'Strong':
-				classes.push('text-nav-blue font-bold');
+				classes.push('text-nav-blue dark:text-blue-400 font-bold');
 				break;
 			case 'Attention':
-				classes.push('text-orange-600 font-medium');
+				classes.push('text-orange-600 dark:text-orange-400 font-medium');
 				break;
 			case 'Favorable':
-				classes.push('text-green-600');
+				classes.push('text-green-600 dark:text-green-400');
 				break;
 			case 'Unfavorable':
-				classes.push('text-red-600');
+				classes.push('text-red-600 dark:text-red-400');
 				break;
 		}
 
@@ -85,15 +85,15 @@
 			type="text"
 			class={cn('input', fieldStyle())}
 			value={value}
-			on:input={handleChange}
+			oninput={handleChange}
 		/>
 	</div>
 {:else}
 	<!-- Read-only field -->
 	<div class="field-group">
-		<label class="field-label text-gray-500">
+		<div class="field-label">
 			{fieldCaption}
-		</label>
+		</div>
 		<div class={cn('field-value', fieldStyle())}>
 			{formatValue(value)}
 		</div>
@@ -106,11 +106,12 @@
 	}
 
 	.field-label {
-		@apply text-sm font-medium text-gray-700;
+		@apply text-sm font-medium text-gray-700 dark:text-gray-300;
 	}
 
 	.field-value {
 		@apply text-base py-1.5 px-3 bg-gray-50 border border-gray-200 rounded;
+		@apply dark:bg-gray-700 dark:border-gray-600;
 		min-height: 2.5rem;
 	}
 </style>

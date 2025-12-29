@@ -67,6 +67,13 @@ page:
             editable: true
 
   actions:
+    - name: Back to List
+      caption: Back to List
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 22
+
     - name: New
       caption: New
       shortcut: Ctrl+N

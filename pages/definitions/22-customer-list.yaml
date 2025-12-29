@@ -5,6 +5,7 @@ page:
   source_table: Customer
   caption: Customer List
   card_page_id: 21
+  modal_card: true
   editable: false
 
   layout:
