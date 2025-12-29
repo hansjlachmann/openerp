@@ -447,6 +447,7 @@ import (
 {{- end }}
 
 	"github.com/hansjlachmann/openerp/src/foundation/database"
+	"github.com/hansjlachmann/openerp/src/foundation/i18n"
 {{- if or .HasCodeField .HasTextField .HasDecimalField .HasDateField .HasDateTimeField }}
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 {{- end }}
@@ -561,6 +562,30 @@ func Get{{ .StructName }}TableSchema() string {
 {{- end }}
 	` + "`" + `
 }
+
+// ========================================
+// Translation Support (BC/NAV CaptionML)
+// ========================================
+
+// GetCaption returns the table caption in the specified language
+func (t *{{ .StructName }}) GetCaption(language string) string {
+	ts := i18n.GetInstance()
+	return ts.TableCaption("{{ .Table.Name }}", language)
+}
+
+// GetFieldCaption returns the field caption in the specified language
+func (t *{{ .StructName }}) GetFieldCaption(fieldName, language string) string {
+	ts := i18n.GetInstance()
+	return ts.FieldCaption("{{ .Table.Name }}", fieldName, language)
+}
+{{- if .HasOptionField }}
+
+// GetOptionCaption returns the option field value caption in the specified language
+func (t *{{ .StructName }}) GetOptionCaption(fieldName, optionValue, language string) string {
+	ts := i18n.GetInstance()
+	return ts.OptionCaption("{{ .Table.Name }}", fieldName, optionValue, language)
+}
+{{- end }}
 
 // CreateTable creates the {{ .Table.Name }} table for the specified company
 // The db parameter can be either *sql.DB or *sql.Tx

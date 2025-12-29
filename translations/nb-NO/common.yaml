@@ -1,0 +1,45 @@
+# Norwegian (Bokmål) common translations
+# Shared terms across all objects
+
+common:
+  # Common actions
+  actions:
+    new: "Ny"
+    edit: "Rediger"
+    delete: "Slett"
+    post: "Bokfør"
+    ok: "OK"
+    cancel: "Avbryt"
+    close: "Lukk"
+    save: "Lagre"
+    refresh: "Oppdater"
+    search: "Søk"
+    filter: "Filter"
+    print: "Skriv ut"
+    export: "Eksporter"
+    import: "Importer"
+
+  # Common messages
+  messages:
+    confirm_delete: "Er du sikker på at du vil slette?"
+    record_saved: "Post lagret"
+    record_deleted: "Post slettet"
+    no_records_found: "Ingen poster funnet"
+    please_wait: "Vennligst vent..."
+    loading: "Laster..."
+    error_occurred: "En feil oppstod"
+
+  # Common terms
+  terms:
+    lcy: "NOK"  # Local Currency (Norwegian Kroner)
+    yes: "Ja"
+    no: "Nei"
+    total: "I alt"
+    subtotal: "Delsum"
+    quantity: "Antall"
+    unit_price: "Enhetspris"
+    amount: "Beløp"
+    date: "Dato"
+    time: "Klokkeslett"
+    user: "Bruker"
+    status: "Status"

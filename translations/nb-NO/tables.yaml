@@ -1,0 +1,105 @@
+# Norwegian (Bokmål) translations for tables
+# Tabellnavn og feltnavn
+
+tables:
+  # Payment Terms (Table 3)
+  payment_terms:
+    caption: "Betalingsbetingelser"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      due_date_calculation: "Beregning av forfallsdato"
+      discount_date_calculation: "Beregning av kontantrabattdato"
+      discount_percent: "Kontantrabatt-%"
+
+  # Customer (Table 18)
+  customer:
+    caption: "Kunde"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      address: "Adresse"
+      post_code: "Postnr."
+      city: "Poststed"
+      phone_number: "Telefonnr."
+      email: "E-post"
+      payment_terms_code: "Betalingsbeting.kode"
+      credit_limit: "Kredittgrense (NOK)"
+      balance_lcy: "Saldo (NOK)"
+      sales_lcy: "Salg (NOK)"
+      no_of_ledger_entries: "Antall poster"
+      last_order_date: "Siste ordredato"
+      created_at: "Opprettet den"
+      status: "Status"
+
+    # Option field values
+    options:
+      status:
+        open: "Åpen"
+        blocked: "Sperret"
+        closed: "Lukket"
+
+  # Customer Ledger Entry (Table 21)
+  customer_ledger_entry:
+    caption: "Kundepost"
+    fields:
+      entry_no: "Løpenr."
+      customer_no: "Kundenr."
+      sell_to_customer_no: "Salg til-kundenr."
+      posting_date: "Bokføringsdato"
+      document_date: "Bilagsdato"
+      document_type: "Bilagstype"
+      document_no: "Bilagsnr."
+      external_document_no: "Eksternt bilagsnr."
+      description: "Beskrivelse"
+      currency_code: "Valutakode"
+      amount: "Beløp"
+      remaining_amount: "Restbeløp"
+      closed_by_amount: "Lukket med beløp"
+      original_amount_lcy: "Opprinnelig beløp (NOK)"
+      remaining_amt_lcy: "Restbeløp (NOK)"
+      amount_lcy: "Beløp (NOK)"
+      closed_by_amount_lcy: "Lukket med beløp (NOK)"
+      sales_lcy: "Salg (NOK)"
+      profit_lcy: "Fortjeneste (NOK)"
+      inv_discount_lcy: "Fakturarabatt (NOK)"
+      pmt_discount_date: "Kont.rabattdato"
+      pmt_disc_possible: "Mulig kontantrabatt"
+      pmt_disc_given_lcy: "Gitt kontantrabatt (NOK)"
+      customer_posting_group: "Bokføringsgruppe - kunde"
+      department_code: "Avdelingskode"
+      project_code: "Prosjektkode"
+      salesperson_code: "Selgerkode"
+      user_id: "Bruker-ID"
+      source_code: "Kildekode"
+      reason_code: "Årsakskode"
+      journal_batch_name: "Kladdenavn"
+      transaction_no: "Transaksjons-nr."
+      applies_to_doc_type: "Utligningsbilagstype"
+      applies_to_doc_no: "Utligningsbilagsnr."
+      applies_to_id: "Utlignings-ID"
+      open: "Åpen"
+      positive: "Positiv"
+      on_hold: "Avvent"
+      due_date: "Forfallsdato"
+      closed_by_entry_no: "Lukket med løpenr."
+      closed_at_date: "Lukket den"
+      bal_account_type: "Motkontotype"
+      bal_account_no: "Motkontonr."
+
+    # Option field values
+    options:
+      document_type:
+        " ": " "
+        payment: "Betaling"
+        invoice: "Faktura"
+        credit_memo: "Kreditnota"
+        finance_charge_memo: "Rentenota"
+        reminder: "Purring"
+
+      bal_account_type:
+        g_l_account: "Finanskonto"
+        customer: "Kunde"
+        vendor: "Leverandør"
+        bank_account: "Bankkonto"
+        fixed_asset: "Aktivum"
