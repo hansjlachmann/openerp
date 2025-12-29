@@ -105,6 +105,8 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		if !customer.Get(types.NewCode(id)) {
 			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
 		}
+		// Calculate FlowFields before converting to map
+		customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
 		record = customerToMap(&customer)
 
 	case "Payment_terms":
@@ -319,6 +321,8 @@ func (h *TablesHandler) listCustomers(company, sortBy, sortOrder string) ([]map[
 
 	if customer.FindSet() {
 		for {
+			// Calculate FlowFields before converting to map
+			customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
 			customers = append(customers, customerToMap(&customer))
 			if !customer.Next() {
 				break

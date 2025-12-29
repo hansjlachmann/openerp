@@ -64,16 +64,14 @@
 		try {
 			if (recordid) {
 				// Load specific record
-				const response = await api.getRecord(page.page.source_table, recordid);
-				if (response.success) {
-					record = response.data;
-				}
+				record = await api.getRecord(page.page.source_table, recordid);
 			} else {
 				// New record
 				record = {};
 			}
 		} catch (err) {
 			console.error('Error loading card data:', err);
+			record = {};
 		}
 	}
 
@@ -83,11 +81,10 @@
 
 		try {
 			const response = await api.listRecords(page.page.source_table);
-			if (response.success) {
-				records = response.data;
-			}
+			records = response.records || [];
 		} catch (err) {
 			console.error('Error loading list data:', err);
+			records = [];
 		}
 	}
 

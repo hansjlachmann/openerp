@@ -22,6 +22,13 @@
 	// Local copy of record for editing
 	let editedRecord = $state({ ...record });
 
+	// Sync editedRecord when record changes and not editing
+	$effect(() => {
+		if (!isEditing) {
+			editedRecord = { ...record };
+		}
+	});
+
 	// Handle action clicks
 	function handleAction(actionName: string) {
 		onaction?.(actionName);
@@ -127,19 +134,17 @@
 					<h3 class="text-lg font-semibold text-nav-blue">{section.caption}</h3>
 				</svelte:fragment>
 
-				<svelte:fragment slot="body">
-					<div class="section-fields">
-						{#each section.fields as field}
-							<FieldRenderer
-								{field}
-								bind:value={isEditing ? editedRecord[field.source] : record[field.source]}
-								caption={getFieldCaption(field.source, field.caption)}
-								editable={isEditing}
-								readonly={!isEditing}
-							/>
-						{/each}
-					</div>
-				</svelte:fragment>
+				<div class="section-fields">
+					{#each section.fields as field}
+						<FieldRenderer
+							{field}
+							bind:value={editedRecord[field.source]}
+							caption={getFieldCaption(field.source, field.caption)}
+							editable={isEditing}
+							readonly={!isEditing}
+						/>
+					{/each}
+				</div>
 			</Card>
 		{/each}
 	</div>
