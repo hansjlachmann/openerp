@@ -45,12 +45,14 @@ func (s *Server) Setup() {
 	sessionHandler := handlers.NewSessionHandler()
 	tablesHandler := handlers.NewTablesHandler(s.db)
 	pagesHandler := handlers.NewPagesHandler()
+	preferencesHandler := handlers.NewPreferencesHandler(s.db)
 
 	// Session routes
 	api.Get("/session", sessionHandler.GetSession)
 
 	// Table routes
 	tables := api.Group("/tables/:table")
+	tables.Get("/ids", tablesHandler.GetRecordIDs)        // Lightweight IDs-only endpoint
 	tables.Get("/list", tablesHandler.ListRecords)
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)
@@ -62,6 +64,11 @@ func (s *Server) Setup() {
 	api.Get("/pages", pagesHandler.GetAllPages)
 	api.Get("/pages/:id", pagesHandler.GetPage)
 	api.Get("/menu", pagesHandler.GetMenu)
+
+	// Preferences routes
+	api.Get("/preferences/:page_id/:type", preferencesHandler.GetPreferences)
+	api.Post("/preferences/:page_id/:type", preferencesHandler.SavePreference)
+	api.Delete("/preferences/:page_id/:type/:name", preferencesHandler.DeletePreference)
 
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {

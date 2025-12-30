@@ -1,0 +1,59 @@
+table:
+  id: 5120
+  name: User_Preferences
+  caption: User Preferences
+  description: Stores user-specific preferences for pages and filters
+  fields:
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      caption: User ID
+      description: User identifier
+      primary_key: true
+      length: 50
+
+    - name: page_id
+      type: int
+      db_name: page_id
+      caption: Page ID
+      description: Page identifier
+      primary_key: true
+
+    - name: preference_type
+      type: types.Code
+      db_name: preference_type
+      caption: Preference Type
+      description: Type of preference (page_customization, filter_preset)
+      primary_key: true
+      length: 20
+
+    - name: preference_name
+      type: types.Code
+      db_name: preference_name
+      caption: Preference Name
+      description: Name of the preset (or 'default' for customizations)
+      primary_key: true
+      length: 50
+
+    - name: preference_data
+      type: types.Text
+      db_name: preference_data
+      caption: Preference Data
+      description: JSON data containing the preference settings
+
+    - name: created_at
+      type: types.DateTime
+      db_name: created_at
+      caption: Created At
+      description: When this preference was created
+
+    - name: updated_at
+      type: types.DateTime
+      db_name: updated_at
+      caption: Updated At
+      description: When this preference was last updated
+
+  keys:
+    - name: Primary
+      fields: [user_id, page_id, preference_type, preference_name]
+      clustered: true

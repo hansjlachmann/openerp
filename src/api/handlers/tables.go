@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/src/api/types"
 	"github.com/hansjlachmann/openerp/src/business-logic/tables"
+	"github.com/hansjlachmann/openerp/src/foundation/filters"
 	"github.com/hansjlachmann/openerp/src/foundation/i18n"
 	"github.com/hansjlachmann/openerp/src/foundation/session"
 	"github.com/hansjlachmann/openerp/src/foundation/types"
@@ -21,6 +23,46 @@ type TablesHandler struct {
 // NewTablesHandler creates a new tables handler
 func NewTablesHandler(db *sql.DB) *TablesHandler {
 	return &TablesHandler{db: db}
+}
+
+// GetRecordIDs returns only the IDs from a table (lightweight for navigation)
+// GET /api/tables/:table/ids
+func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := session.GetCurrent()
+
+	if sess == nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+	}
+
+	company := sess.GetCompany()
+
+	// Parse query parameters
+	sortBy := c.Query("sort_by", "")
+
+	// Get IDs based on table name
+	var ids []string
+	var err error
+
+	switch tableName {
+	case "Customer":
+		ids, err = h.getCustomerIDs(company, sortBy)
+	case "Payment_terms":
+		ids, err = h.getPaymentTermsIDs(company, sortBy)
+	case "Customer_ledger_entry":
+		ids, err = h.getCustomerLedgerEntryIDs(company, sortBy)
+	default:
+		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+	}
+
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+
+	response := apitypes.NewSuccessResponse(map[string]interface{}{
+		"ids": ids,
+	})
+	return c.JSON(response)
 }
 
 // ListRecords returns a list of records from a table
@@ -40,13 +82,43 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	sortBy := c.Query("sort_by", "")
 	sortOrder := c.Query("sort_order", "asc")
 
+	// Parse fields parameter (JSON array of field names)
+	var requestedFields []string
+	fieldsParam := c.Query("fields", "")
+	if fieldsParam != "" {
+		if err := json.Unmarshal([]byte(fieldsParam), &requestedFields); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid fields parameter"))
+		}
+	}
+
+	// Parse filters parameter (JSON array of filter expressions)
+	var requestedFilters []filters.FilterExpression
+	filtersParam := c.Query("filters", "")
+	if filtersParam != "" {
+		var apiFilters []struct {
+			Field      string `json:"field"`
+			Expression string `json:"expression"`
+		}
+		if err := json.Unmarshal([]byte(filtersParam), &apiFilters); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid filters parameter"))
+		}
+
+		// Convert API filters to filter expressions
+		for _, f := range apiFilters {
+			requestedFilters = append(requestedFilters, filters.FilterExpression{
+				Field:      f.Field,
+				Expression: f.Expression,
+			})
+		}
+	}
+
 	// Build query based on table name
 	var records interface{}
 	var err error
 
 	switch tableName {
 	case "Customer":
-		records, err = h.listCustomers(company, sortBy, sortOrder)
+		records, err = h.listCustomers(company, sortBy, sortOrder, requestedFields, requestedFilters)
 	case "Payment_terms":
 		records, err = h.listPaymentTerms(company, sortBy, sortOrder)
 	case "Customer_ledger_entry":
@@ -309,10 +381,34 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 
 // Helper functions
 
-func (h *TablesHandler) listCustomers(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
+// filterFlowFields returns only the FlowFields that are in the requested fields list
+func filterFlowFields(requestedFields []string, availableFlowFields []string) []string {
+	var result []string
+	requestedMap := make(map[string]bool)
+
+	for _, field := range requestedFields {
+		requestedMap[field] = true
+	}
+
+	for _, flowField := range availableFlowFields {
+		if requestedMap[flowField] {
+			result = append(result, flowField)
+		}
+	}
+
+	return result
+}
+
+func (h *TablesHandler) listCustomers(company, sortBy, sortOrder string, requestedFields []string, requestedFilters []filters.FilterExpression) ([]map[string]interface{}, error) {
 	var customer tables.Customer
 	customer.Init(h.db, company)
 
+	// Apply filters using SetFilter
+	for _, filter := range requestedFilters {
+		customer.SetFilter(filter.Field, filter.Expression)
+	}
+
+	// Apply sorting
 	if sortBy != "" {
 		customer.SetCurrentKey(sortBy)
 	}
@@ -321,8 +417,17 @@ func (h *TablesHandler) listCustomers(company, sortBy, sortOrder string) ([]map[
 
 	if customer.FindSet() {
 		for {
-			// Calculate FlowFields before converting to map
-			customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
+			// Only calculate FlowFields that are requested
+			if len(requestedFields) > 0 {
+				flowFieldsToCalc := filterFlowFields(requestedFields, []string{"balance_lcy", "sales_lcy", "no_of_ledger_entries"})
+				if len(flowFieldsToCalc) > 0 {
+					customer.CalcFields(flowFieldsToCalc...)
+				}
+			} else {
+				// If no fields specified, calculate all FlowFields (backward compatibility)
+				customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
+			}
+
 			customers = append(customers, customerToMap(&customer))
 			if !customer.Next() {
 				break
@@ -375,6 +480,74 @@ func (h *TablesHandler) listCustomerLedgerEntries(company, sortBy, sortOrder str
 	}
 
 	return entries, nil
+}
+
+// ID-only helper functions for navigation
+
+func (h *TablesHandler) getCustomerIDs(company, sortBy string) ([]string, error) {
+	var customer tables.Customer
+	customer.Init(h.db, company)
+
+	if sortBy != "" {
+		customer.SetCurrentKey(sortBy)
+	}
+
+	var ids []string
+
+	if customer.FindSet() {
+		for {
+			ids = append(ids, customer.No.String())
+			if !customer.Next() {
+				break
+			}
+		}
+	}
+
+	return ids, nil
+}
+
+func (h *TablesHandler) getPaymentTermsIDs(company, sortBy string) ([]string, error) {
+	var pt tables.PaymentTerms
+	pt.Init(h.db, company)
+
+	if sortBy != "" {
+		pt.SetCurrentKey(sortBy)
+	}
+
+	var ids []string
+
+	if pt.FindSet() {
+		for {
+			ids = append(ids, pt.Code.String())
+			if !pt.Next() {
+				break
+			}
+		}
+	}
+
+	return ids, nil
+}
+
+func (h *TablesHandler) getCustomerLedgerEntryIDs(company, sortBy string) ([]string, error) {
+	var cle tables.CustomerLedgerEntry
+	cle.Init(h.db, company)
+
+	if sortBy != "" {
+		cle.SetCurrentKey(sortBy)
+	}
+
+	var ids []string
+
+	if cle.FindSet() {
+		for {
+			ids = append(ids, fmt.Sprintf("%d", cle.Entry_no))
+			if !cle.Next() {
+				break
+			}
+		}
+	}
+
+	return ids, nil
 }
 
 func (h *TablesHandler) addFieldCaptions(tableName, language string, captions *apitypes.CaptionData) {
