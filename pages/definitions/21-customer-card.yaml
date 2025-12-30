@@ -4,6 +4,7 @@ page:
   name: Customer Card
   source_table: Customer
   caption: Customer Card
+  enable_navigation: true
 
   layout:
     sections:
@@ -42,6 +43,7 @@ page:
 
           - source: credit_limit
             editable: true
+            visible: true
 
           - source: balance_lcy
             editable: false
@@ -77,12 +79,6 @@ page:
     - name: New
       caption: New
       shortcut: Ctrl+N
-      promoted: true
-      enabled: true
-
-    - name: Edit
-      caption: Edit
-      shortcut: Ctrl+E
       promoted: true
       enabled: true
 

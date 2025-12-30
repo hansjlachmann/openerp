@@ -46,6 +46,13 @@ func (s *Server) Setup() {
 	tablesHandler := handlers.NewTablesHandler(s.db)
 	pagesHandler := handlers.NewPagesHandler()
 	preferencesHandler := handlers.NewPreferencesHandler(s.db)
+	authHandler := handlers.NewAuthHandler(s.db)
+
+	// Auth routes
+	api.Post("/auth/login", authHandler.Login)
+	api.Post("/auth/logout", authHandler.Logout)
+	api.Get("/auth/user", authHandler.GetCurrentUser)
+	api.Post("/auth/init", authHandler.CreateInitialUser)
 
 	// Session routes
 	api.Get("/session", sessionHandler.GetSession)

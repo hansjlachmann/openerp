@@ -28,9 +28,7 @@ export interface ListResponse<T = TableRecord> {
 // Filter types (BC/NAV style)
 export interface TableFilter {
 	field: string;
-	operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'in' | 'between';
-	value: any;
-	value2?: any; // For BETWEEN operator
+	expression: string; // BC-style filter expression: supports *, |, .., <, >, etc.
 }
 
 export interface ListOptions {
@@ -39,6 +37,7 @@ export interface ListOptions {
 	sort_order?: 'asc' | 'desc';
 	page?: number;
 	page_size?: number;
+	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
 
 // Customer type (specific)
