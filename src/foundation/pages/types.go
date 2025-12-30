@@ -12,11 +12,12 @@ type PageMetadata struct {
 	Name         string   `yaml:"name" json:"name"`
 	SourceTable  string   `yaml:"source_table" json:"source_table"`
 	Caption      string   `yaml:"caption" json:"caption"`
-	CardPageID   int      `yaml:"card_page_id,omitempty" json:"card_page_id,omitempty"`
-	ModalCard    bool     `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
-	Editable     bool     `yaml:"editable,omitempty" json:"editable,omitempty"`
-	Layout       Layout   `yaml:"layout" json:"layout"`
-	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	CardPageID        int      `yaml:"card_page_id,omitempty" json:"card_page_id,omitempty"`
+	ModalCard         *bool    `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
+	Editable          *bool    `yaml:"editable,omitempty" json:"editable,omitempty"`
+	EnableNavigation  *bool    `yaml:"enable_navigation,omitempty" json:"enable_navigation,omitempty"`
+	Layout            Layout   `yaml:"layout" json:"layout"`
+	Actions           []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
 }
 
 // Layout defines the page layout structure
@@ -42,6 +43,7 @@ type Field struct {
 	Source        string `yaml:"source" json:"source"`                                   // Field name from table
 	Caption       string `yaml:"caption,omitempty" json:"caption,omitempty"`             // Override caption
 	Editable      bool   `yaml:"editable,omitempty" json:"editable,omitempty"`           // Can be edited
+	Visible       *bool  `yaml:"visible,omitempty" json:"visible,omitempty"`             // Field is visible (default true)
 	Importance    string `yaml:"importance,omitempty" json:"importance,omitempty"`       // Promoted, Standard, Additional
 	Style         string `yaml:"style,omitempty" json:"style,omitempty"`                 // Strong, Attention, Favorable, Unfavorable
 	TableRelation string `yaml:"table_relation,omitempty" json:"table_relation,omitempty"` // Lookup table

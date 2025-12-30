@@ -1,0 +1,79 @@
+page:
+  id: 30
+  type: list
+  name: Users
+  source_table: User
+  caption:
+    en-US: Users
+    de-DE: Benutzer
+  description:
+    en-US: List of system users
+    de-DE: Liste der Systembenutzer
+
+  fields:
+    - source: user_id
+      visible: true
+      width: 150
+      caption:
+        en-US: User ID
+        de-DE: Benutzer-ID
+
+    - source: user_name
+      visible: true
+      width: 200
+      caption:
+        en-US: Name
+        de-DE: Name
+
+    - source: email
+      visible: true
+      width: 250
+      caption:
+        en-US: Email
+        de-DE: E-Mail
+
+    - source: language
+      visible: true
+      width: 100
+      caption:
+        en-US: Language
+        de-DE: Sprache
+
+    - source: active
+      visible: true
+      width: 80
+      caption:
+        en-US: Active
+        de-DE: Aktiv
+
+    - source: last_login
+      visible: true
+      width: 180
+      caption:
+        en-US: Last Login
+        de-DE: Letzte Anmeldung
+
+    - source: created_at
+      visible: true
+      width: 180
+      caption:
+        en-US: Created
+        de-DE: Erstellt
+
+  actions:
+    - id: new
+      caption:
+        en-US: New User
+        de-DE: Neuer Benutzer
+      target_page: 31
+
+    - id: edit
+      caption:
+        en-US: Edit
+        de-DE: Bearbeiten
+      target_page: 31
+
+    - id: delete
+      caption:
+        en-US: Delete
+        de-DE: Löschen

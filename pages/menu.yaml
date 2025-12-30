@@ -38,7 +38,7 @@ menu:
         enabled: false
 
       - name: Users
-        page_id: 9800
+        page_id: 30
         icon: user
         description: User management
-        enabled: false
+        enabled: true

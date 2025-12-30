@@ -14,7 +14,7 @@
 	export let actions: Action[] = [];
 </script>
 
-<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+<div class="page-header bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-bold text-nav-blue dark:text-blue-400">{title}</h1>

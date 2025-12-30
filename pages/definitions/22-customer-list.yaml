@@ -38,11 +38,6 @@ page:
       shortcut: Ctrl+N
       promoted: true
 
-    - name: Edit
-      caption: Edit
-      shortcut: Ctrl+E
-      promoted: true
-
     - name: Delete
       caption: Delete
       shortcut: Ctrl+D

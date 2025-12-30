@@ -8,7 +8,7 @@
 		caption?: string;
 		editable?: boolean;
 		onchange?: (value: any) => void;
-		readonly?: boolean;
+		onblur?: () => void;
 	}
 
 	let {
@@ -17,11 +17,11 @@
 		caption,
 		editable = false,
 		onchange,
-		readonly = false
+		onblur
 	}: Props = $props();
 
 	// Determine if field is editable
-	const isEditable = $derived(editable && field.editable && !readonly);
+	const isEditable = $derived(editable);
 
 	// Get field caption (from props, field definition, or field source)
 	const fieldCaption = $derived(caption || field.caption || field.source);
@@ -86,6 +86,7 @@
 			class={cn('input', fieldStyle())}
 			value={value}
 			oninput={handleChange}
+			onblur={() => onblur?.()}
 		/>
 	</div>
 {:else}
