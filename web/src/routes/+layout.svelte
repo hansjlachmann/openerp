@@ -2,11 +2,13 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { session } from '$stores/session';
+	import { currentUser } from '$lib/stores/user';
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 
-	// Initialize session on app load
+	// Initialize session and user on app load
 	onMount(() => {
 		session.initialize();
+		currentUser.loadFromStorage();
 	});
 </script>
 

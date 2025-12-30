@@ -3,6 +3,7 @@
 	import type { PageDefinition } from '$lib/types/pages';
 	import { fetchPage } from '$lib/services/pages';
 	import { api } from '$lib/services/api';
+	import { currentUser } from '$lib/stores/user';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 
@@ -121,8 +122,13 @@
 	function getVisibleFields(): string[] {
 		if (!page || !page.page.layout.repeater?.fields) return [];
 
-		// Load user customizations from localStorage
-		const key = `page-customization-${page.page.id}`;
+		// Load user customizations from localStorage (user-specific)
+		let userId: string;
+		currentUser.subscribe(user => {
+			userId = user?.user_id || 'anonymous';
+		})();
+
+		const key = `page-customization-${userId}-${page.page.id}`;
 		const stored = localStorage.getItem(key);
 		let customizations: Record<string, { visible: boolean }> = {};
 

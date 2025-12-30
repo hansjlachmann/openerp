@@ -9,6 +9,7 @@
 	import { shortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
+	import { currentUser } from '$lib/stores/user';
 
 	interface Props {
 		page: PageDefinition;
@@ -49,7 +50,8 @@
 
 	// Load customizations from localStorage on mount
 	$effect(() => {
-		const key = `page-customization-${page.page.id}`;
+		const userId = $currentUser?.user_id || 'anonymous';
+		const key = `page-customization-${userId}-${page.page.id}`;
 		const stored = localStorage.getItem(key);
 		if (stored) {
 			try {
@@ -94,6 +96,7 @@
 	let modalCardPage = $state<PageDefinition | null>(null);
 	let modalRecord = $state<Record<string, any>>({});
 	let modalCaptions = $state<Record<string, string>>({});
+	let modalSaving = $state(false);
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -115,6 +118,12 @@
 					handleDelete();
 					return;
 			}
+		}
+
+		// Handle "New" action for modal cards
+		if (actionName === 'New' && page.page.modal_card && page.page.card_page_id) {
+			openModalCard({});
+			return;
 		}
 
 		onaction?.(actionName, selectedRecord || undefined);
@@ -222,26 +231,44 @@
 
 	// Handle save from modal
 	async function handleModalSave(savedRecord: Record<string, any>) {
-		if (!modalCardPage) return;
+		if (!modalCardPage || modalSaving) {
+			return; // Prevent concurrent saves
+		}
 
+		modalSaving = true;
 		try {
 			const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
-			await api.modifyRecord(page.page.source_table, recordId, savedRecord);
 
-			// Update the record in the list without full refresh
-			const index = records.findIndex(r =>
-				(r['no'] && r['no'] === recordId) ||
-				(r['code'] && r['code'] === recordId) ||
-				(r['id'] && r['id'] === recordId)
-			);
-			if (index !== -1) {
-				records[index] = { ...savedRecord };
+			if (recordId) {
+				// Update existing record
+				const responseData = await api.modifyRecord(page.page.source_table, recordId, savedRecord);
+
+				// Update the record in the list without full refresh
+				const index = records.findIndex(r =>
+					(r['no'] && r['no'] === recordId) ||
+					(r['code'] && r['code'] === recordId) ||
+					(r['id'] && r['id'] === recordId)
+				);
+				if (index !== -1) {
+					records[index] = responseData;
+				}
+				// Update modal record with the response data
+				modalRecord = responseData;
+			} else {
+				// Insert new record
+				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
+				// Add the new record to the list
+				records = [...records, responseData];
+				// Update modal record with the saved data (including generated ID)
+				modalRecord = responseData;
 			}
 
 			// Don't close modal - keep it open like Business Central
 		} catch (err) {
 			console.error('Error saving modal record:', err);
 			alert('Failed to save record');
+		} finally {
+			modalSaving = false;
 		}
 	}
 
@@ -381,7 +408,8 @@
 	// Save customizations
 	function handleSaveCustomizations(customizations: Record<string, ColumnCustomization>) {
 		columnCustomizations = customizations;
-		const key = `page-customization-${page.page.id}`;
+		const userId = $currentUser?.user_id || 'anonymous';
+		const key = `page-customization-${userId}-${page.page.id}`;
 		localStorage.setItem(key, JSON.stringify(customizations));
 	}
 

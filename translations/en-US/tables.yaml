@@ -21,7 +21,7 @@ tables:
       address: "Address"
       post_code: "Post Code"
       city: "City"
-      phone_number: "Phone No."
+      phonenumber: "Phone No."
       email: "E-Mail"
       payment_terms_code: "Payment Terms Code"
       credit_limit: "Credit Limit (LCY)"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/services/api';
+	import { currentUser } from '$lib/stores/user';
 	import { onMount } from 'svelte';
 
 	let userID = $state('');
@@ -62,8 +63,8 @@
 		try {
 			const response = await api.login(userID, password);
 			if (response.success) {
-				// Store user info in localStorage
-				localStorage.setItem('currentUser', JSON.stringify(response.data));
+				// Store user info in store (also saves to localStorage)
+				currentUser.setUser(response.data);
 				// Redirect to home
 				goto('/');
 			} else {
