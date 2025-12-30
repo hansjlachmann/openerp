@@ -26,7 +26,28 @@
 				goto('/');
 			}
 		} catch (err) {
-			// Not logged in, that's fine
+			// Not logged in, check if we need initial setup
+			// Try to detect if no users exist by attempting to create initial user with invalid data
+			// This will tell us if users already exist
+			try {
+				const testResponse = await fetch('/api/auth/init', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ user_id: '', user_name: '', password: '' })
+				});
+
+				if (testResponse.status === 403) {
+					// Users already exist
+					needsInitialSetup = false;
+				} else {
+					// No users exist, show setup
+					needsInitialSetup = true;
+					setupMode = true;
+				}
+			} catch (err) {
+				// Assume users exist if we can't check
+				needsInitialSetup = false;
+			}
 		}
 	});
 

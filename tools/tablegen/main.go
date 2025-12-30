@@ -15,6 +15,7 @@ type TableDef struct {
 	Table struct {
 		ID     int     `yaml:"id"`
 		Name   string  `yaml:"name"`
+		Global bool    `yaml:"global"` // If true, table is global (no company prefix)
 		Fields []Field `yaml:"fields"`
 		Keys   []Key   `yaml:"keys"`
 	} `yaml:"table"`
@@ -252,12 +253,23 @@ func generateBusinessLogicSkeleton(filename string, data TemplateData) error {
 	return tmpl.Execute(f, data)
 }
 
+// getTableNameExpr returns the Go code expression for getting the table name
+// For global tables: just the table name constant
+// For company tables: company prefix + table name
+func getTableNameExpr(isGlobal bool, structName, companyVar string) string {
+	if isGlobal {
+		return fmt.Sprintf("%sTableName", structName)
+	}
+	return fmt.Sprintf(`fmt.Sprintf("%%s$%%s", %s, %sTableName)`, companyVar, structName)
+}
+
 // templateFuncs returns template helper functions
 func templateFuncs() template.FuncMap {
 	return template.FuncMap{
 		"upperFirst":         upperFirst,
 		"lowerFirst":         lowerFirst,
 		"sqlType":            getSQLType,
+		"tableName":          getTableNameExpr,
 		"isLast":             isLast,
 		"isLastPK":           isLastPK,
 		"isLastDBField":      isLastDBField,

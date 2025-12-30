@@ -37,9 +37,15 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("User ID and password are required"))
 	}
 
-	// Find user
+	// Find user - use session company or default to "cronus"
+	sess := session.GetCurrent()
+	company := "cronus"
+	if sess != nil && sess.GetCompany() != "" {
+		company = sess.GetCompany()
+	}
+
 	var user tables.User
-	user.Init(h.db, "")
+	user.Init(h.db, company)
 
 	if !user.Get(types.NewCode(requestBody.UserID)) {
 		return c.Status(401).JSON(apitypes.NewErrorResponse("Invalid credentials"))
@@ -63,7 +69,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// Create/update session
-	sess := session.GetCurrent()
 	if sess == nil {
 		// For API, we don't have a pre-existing session, so we'll just return user info
 		// The frontend will store this and send it with future requests
@@ -114,8 +119,13 @@ func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 	}
 
 	// Get full user details
+	company := sess.GetCompany()
+	if company == "" {
+		company = "cronus"
+	}
+
 	var user tables.User
-	user.Init(h.db, "")
+	user.Init(h.db, company)
 
 	if !user.Get(types.NewCode(userID)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("User not found"))
@@ -148,8 +158,10 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	}
 
 	// Check if any users exist
+	// Use default company "cronus" for user storage
+	company := "cronus"
 	var user tables.User
-	user.Init(h.db, "")
+	user.Init(h.db, company)
 	count := user.Count()
 
 	if count > 0 {
@@ -157,12 +169,14 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	}
 
 	// Create the initial user
+	now := time.Now()
 	user.User_id = types.NewCode(requestBody.UserID)
 	user.User_name = types.NewText(requestBody.UserName)
 	user.Email = types.NewText(requestBody.Email)
 	user.Language = types.NewCode("en-US")
 	user.Active = true
-	user.Created_at = types.NewDateTimeFromTime(time.Now())
+	user.Created_at = types.NewDateTimeFromTime(now)
+	user.Last_login = types.NewDateTimeFromTime(now) // Initialize to avoid NULL
 
 	if err := user.SetPassword(requestBody.Password); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))

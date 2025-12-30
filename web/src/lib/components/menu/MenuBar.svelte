@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import type { MenuDefinition } from '$lib/types/pages';
 	import { fetchMenu } from '$lib/services/pages';
 	import MenuGroup from './MenuGroup.svelte';
 	import { theme } from '$lib/stores/theme';
+	import { api } from '$lib/services/api';
 
 	let menu: MenuDefinition | null = $state(null);
 	let loading = $state(true);
 	let currentTheme = $state<'light' | 'dark'>('light');
+	let currentUser = $state<any>(null);
+	let showUserMenu = $state(false);
 
 	theme.subscribe((value) => {
 		currentTheme = value;
@@ -16,6 +20,11 @@
 	onMount(async () => {
 		try {
 			menu = await fetchMenu();
+			// Load current user info
+			const userInfo = localStorage.getItem('currentUser');
+			if (userInfo) {
+				currentUser = JSON.parse(userInfo);
+			}
 		} catch (err) {
 			console.error('Error loading menu:', err);
 		} finally {
@@ -25,6 +34,23 @@
 
 	function toggleTheme() {
 		theme.toggle();
+	}
+
+	async function handleLogout() {
+		try {
+			await api.logout();
+			localStorage.removeItem('currentUser');
+			goto('/login');
+		} catch (err) {
+			console.error('Logout error:', err);
+			// Even if API call fails, remove local data and redirect
+			localStorage.removeItem('currentUser');
+			goto('/login');
+		}
+	}
+
+	function toggleUserMenu() {
+		showUserMenu = !showUserMenu;
 	}
 </script>
 
@@ -64,6 +90,79 @@
 					<MenuGroup {group} />
 				{/each}
 			</div>
+
+			<!-- User menu -->
+			{#if currentUser}
+				<div class="relative border-l border-white/20 pl-3 ml-2">
+					<button
+						onclick={toggleUserMenu}
+						class="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded transition-colors"
+						title="User menu"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+							/>
+						</svg>
+						<span class="text-sm font-medium">{currentUser.user_name || currentUser.user_id}</span>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 9l-7 7-7-7"
+							/>
+						</svg>
+					</button>
+
+					<!-- User dropdown menu -->
+					{#if showUserMenu}
+						<div class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+							<div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+								<p class="text-sm font-medium text-gray-900 dark:text-white">{currentUser.user_name}</p>
+								<p class="text-xs text-gray-500 dark:text-gray-400">{currentUser.email || currentUser.user_id}</p>
+							</div>
+							<div class="py-1">
+								<button
+									onclick={handleLogout}
+									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+										/>
+									</svg>
+									Sign Out
+								</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Theme toggle button -->
 			<button
