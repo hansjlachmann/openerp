@@ -1,79 +1,62 @@
 page:
   id: 30
-  type: list
+  type: List
   name: Users
   source_table: User
-  caption:
-    en-US: Users
-    de-DE: Benutzer
-  description:
-    en-US: List of system users
-    de-DE: Liste der Systembenutzer
+  caption: Users
+  card_page_id: 31
+  modal_card: true
 
-  fields:
-    - source: user_id
-      visible: true
-      width: 150
-      caption:
-        en-US: User ID
-        de-DE: Benutzer-ID
+  layout:
+    repeater:
+      fields:
+        - source: user_id
+          visible: true
+          width: 150
+          caption: User ID
 
-    - source: user_name
-      visible: true
-      width: 200
-      caption:
-        en-US: Name
-        de-DE: Name
+        - source: user_name
+          visible: true
+          width: 200
+          caption: Name
 
-    - source: email
-      visible: true
-      width: 250
-      caption:
-        en-US: Email
-        de-DE: E-Mail
+        - source: email
+          visible: true
+          width: 250
+          caption: Email
 
-    - source: language
-      visible: true
-      width: 100
-      caption:
-        en-US: Language
-        de-DE: Sprache
+        - source: language
+          visible: true
+          width: 100
+          caption: Language
 
-    - source: active
-      visible: true
-      width: 80
-      caption:
-        en-US: Active
-        de-DE: Aktiv
+        - source: active
+          visible: true
+          width: 80
+          caption: Active
 
-    - source: last_login
-      visible: true
-      width: 180
-      caption:
-        en-US: Last Login
-        de-DE: Letzte Anmeldung
+        - source: last_login
+          visible: true
+          width: 180
+          caption: Last Login
 
-    - source: created_at
-      visible: true
-      width: 180
-      caption:
-        en-US: Created
-        de-DE: Erstellt
+        - source: created_at
+          visible: true
+          width: 180
+          caption: Created
 
   actions:
-    - id: new
-      caption:
-        en-US: New User
-        de-DE: Neuer Benutzer
-      target_page: 31
+    - name: New
+      caption: New User
+      promoted: true
+      enabled: true
 
-    - id: edit
-      caption:
-        en-US: Edit
-        de-DE: Bearbeiten
-      target_page: 31
+    - name: Delete
+      caption: Delete
+      promoted: true
+      enabled: true
 
-    - id: delete
-      caption:
-        en-US: Delete
-        de-DE: Löschen
+    - name: Refresh
+      caption: Refresh
+      promoted: true
+      enabled: true

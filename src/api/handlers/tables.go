@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/src/api/types"
@@ -51,6 +52,8 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 		ids, err = h.getPaymentTermsIDs(company, sortBy)
 	case "Customer_ledger_entry":
 		ids, err = h.getCustomerLedgerEntryIDs(company, sortBy)
+	case "User":
+		ids, err = h.getUserIDs(company, sortBy)
 	default:
 		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
 	}
@@ -123,6 +126,8 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		records, err = h.listPaymentTerms(company, sortBy, sortOrder)
 	case "Customer_ledger_entry":
 		records, err = h.listCustomerLedgerEntries(company, sortBy, sortOrder)
+	case "User":
+		records, err = h.listUsers(company, sortBy, sortOrder)
 	default:
 		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
 	}
@@ -189,6 +194,14 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		}
 		record = paymentTermsToMap(&pt)
 
+	case "User":
+		var user tables.User
+		user.Init(h.db, company)
+		if !user.Get(types.NewCode(id)) {
+			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+		}
+		record = userToMap(&user)
+
 	default:
 		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
 	}
@@ -246,6 +259,25 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		response := apitypes.NewSuccessResponse(paymentTermsToMap(pt))
 		return c.JSON(response)
 
+	case "User":
+		user := mapToUser(data)
+		user.Init(h.db, company)
+		// Initialize timestamps for new user
+		now := time.Now()
+		user.Created_at = types.NewDateTimeFromTime(now)
+		user.Last_login = types.NewDateTimeFromTime(now)
+		// Handle password if provided
+		if password, ok := data["password"].(string); ok && password != "" {
+			if err := user.SetPassword(password); err != nil {
+				return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+			}
+		}
+		if !user.Insert(true) {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to insert user"))
+		}
+		response := apitypes.NewSuccessResponse(userToMap(user))
+		return c.JSON(response)
+
 	default:
 		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
 	}
@@ -297,6 +329,25 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		response := apitypes.NewSuccessResponse(paymentTermsToMap(&pt))
 		return c.JSON(response)
 
+	case "User":
+		var user tables.User
+		user.Init(h.db, company)
+		if !user.Get(types.NewCode(id)) {
+			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+		}
+		updateUserFromMap(&user, data)
+		// Handle password if provided
+		if password, ok := data["password"].(string); ok && password != "" {
+			if err := user.SetPassword(password); err != nil {
+				return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+			}
+		}
+		if !user.Modify(true) {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to modify user"))
+		}
+		response := apitypes.NewSuccessResponse(userToMap(&user))
+		return c.JSON(response)
+
 	default:
 		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
 	}
@@ -336,6 +387,18 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		}
 		if !pt.Delete(true) {
 			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete payment terms"))
+		}
+		response := apitypes.NewSuccessResponse(nil)
+		return c.JSON(response)
+
+	case "User":
+		var user tables.User
+		user.Init(h.db, company)
+		if !user.Get(types.NewCode(id)) {
+			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+		}
+		if !user.Delete(true) {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete user"))
 		}
 		response := apitypes.NewSuccessResponse(nil)
 		return c.JSON(response)
@@ -555,7 +618,7 @@ func (h *TablesHandler) addFieldCaptions(tableName, language string, captions *a
 
 	switch tableName {
 	case "Customer":
-		fields := []string{"no", "name", "address", "post_code", "city", "phone_number", "email",
+		fields := []string{"no", "name", "address", "post_code", "city", "phonenumber", "email",
 			"payment_terms_code", "credit_limit", "balance_lcy", "sales_lcy", "no_of_ledger_entries",
 			"last_order_date", "created_at", "status"}
 		for _, field := range fields {
@@ -574,6 +637,12 @@ func (h *TablesHandler) addFieldCaptions(tableName, language string, captions *a
 		for _, field := range fields {
 			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
 		}
+
+	case "User":
+		fields := []string{"user_id", "user_name", "email", "language", "active", "created_at", "last_login"}
+		for _, field := range fields {
+			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
+		}
 	}
 }
 
@@ -586,7 +655,7 @@ func customerToMap(c *tables.Customer) map[string]interface{} {
 		"address":               c.Address.String(),
 		"post_code":             c.Post_code.String(),
 		"city":                  c.City.String(),
-		"phone_number":          c.Phonenumber.String(),
+		"phonenumber":           c.Phonenumber.String(),
 		"payment_terms_code":    c.Payment_terms_code.String(),
 		"credit_limit":          c.Credit_limit.String(),
 		"balance_lcy":           c.Balance_lcy.String(),
@@ -616,7 +685,7 @@ func mapToCustomer(data map[string]interface{}) *tables.Customer {
 	if v, ok := data["city"].(string); ok {
 		customer.City = types.NewText(v)
 	}
-	if v, ok := data["phone_number"].(string); ok {
+	if v, ok := data["phonenumber"].(string); ok {
 		customer.Phonenumber = types.NewText(v)
 	}
 	if v, ok := data["payment_terms_code"].(string); ok {
@@ -642,7 +711,7 @@ func updateCustomerFromMap(customer *tables.Customer, data map[string]interface{
 	if v, ok := data["city"].(string); ok {
 		customer.City = types.NewText(v)
 	}
-	if v, ok := data["phone_number"].(string); ok {
+	if v, ok := data["phonenumber"].(string); ok {
 		customer.Phonenumber = types.NewText(v)
 	}
 	if v, ok := data["payment_terms_code"].(string); ok {
@@ -711,4 +780,100 @@ func getRecordCount(records interface{}) int {
 // normalizeTableName converts "Customer" to "customer", "Payment Terms" to "payment_terms"
 func normalizeTableName(name string) string {
 	return strings.ToLower(strings.ReplaceAll(name, " ", "_"))
+}
+
+// User table helper functions
+
+func (h *TablesHandler) listUsers(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
+	var user tables.User
+	user.Init(h.db, company)
+
+	if sortBy != "" {
+		user.SetCurrentKey(sortBy)
+	}
+
+	var users []map[string]interface{}
+
+	if user.FindSet() {
+		for {
+			users = append(users, userToMap(&user))
+			if !user.Next() {
+				break
+			}
+		}
+	}
+
+	return users, nil
+}
+
+func (h *TablesHandler) getUserIDs(company, sortBy string) ([]string, error) {
+	var user tables.User
+	user.Init(h.db, company)
+
+	if sortBy != "" {
+		user.SetCurrentKey(sortBy)
+	}
+
+	var ids []string
+
+	if user.FindSet() {
+		for {
+			ids = append(ids, user.User_id.String())
+			if !user.Next() {
+				break
+			}
+		}
+	}
+
+	return ids, nil
+}
+
+func userToMap(user *tables.User) map[string]interface{} {
+	return map[string]interface{}{
+		"id":          user.User_id.String(), // Generic ID field for frontend compatibility
+		"user_id":     user.User_id.String(),
+		"user_name":   user.User_name.String(),
+		"email":       user.Email.String(),
+		"language":    user.Language.String(),
+		"active":      user.Active,
+		"created_at":  user.Created_at.String(),
+		"last_login":  user.Last_login.String(),
+	}
+}
+
+func mapToUser(data map[string]interface{}) *tables.User {
+	user := &tables.User{}
+
+	if v, ok := data["user_id"].(string); ok {
+		user.User_id = types.NewCode(v)
+	}
+	if v, ok := data["user_name"].(string); ok {
+		user.User_name = types.NewText(v)
+	}
+	if v, ok := data["email"].(string); ok {
+		user.Email = types.NewText(v)
+	}
+	if v, ok := data["language"].(string); ok {
+		user.Language = types.NewCode(v)
+	}
+	if v, ok := data["active"].(bool); ok {
+		user.Active = v
+	}
+
+	return user
+}
+
+func updateUserFromMap(user *tables.User, data map[string]interface{}) {
+	if v, ok := data["user_name"].(string); ok {
+		user.User_name = types.NewText(v)
+	}
+	if v, ok := data["email"].(string); ok {
+		user.Email = types.NewText(v)
+	}
+	if v, ok := data["language"].(string); ok {
+		user.Language = types.NewCode(v)
+	}
+	if v, ok := data["active"].(bool); ok {
+		user.Active = v
+	}
 }

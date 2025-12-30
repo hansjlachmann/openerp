@@ -20,7 +20,8 @@ page:
         - source: city
           width: 150
 
-        - source: phone_number
+        - source: phonenumber
+          caption: Phone No.
           width: 150
 
         - source: balance_lcy

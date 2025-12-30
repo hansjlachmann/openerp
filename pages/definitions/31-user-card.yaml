@@ -1,87 +1,62 @@
 page:
   id: 31
-  type: card
+  type: Card
   name: User Card
   source_table: User
-  caption:
-    en-US: User Card
-    de-DE: Benutzerkarte
-  description:
-    en-US: User details and settings
-    de-DE: Benutzerdetails und -einstellungen
+  caption: User Card
+  enable_navigation: true
 
-  groups:
-    - id: general
-      caption:
-        en-US: General
-        de-DE: Allgemein
-      fields:
-        - source: user_id
-          editable: true
-          caption:
-            en-US: User ID
-            de-DE: Benutzer-ID
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: user_id
+            editable: true
+            caption: User ID
+            importance: Promoted
 
-        - source: user_name
-          editable: true
-          caption:
-            en-US: Name
-            de-DE: Name
+          - source: user_name
+            editable: true
+            caption: Name
+            importance: Promoted
 
-        - source: email
-          editable: true
-          caption:
-            en-US: Email
-            de-DE: E-Mail
+          - source: email
+            editable: true
+            caption: Email
 
-        - source: language
-          editable: true
-          caption:
-            en-US: Language
-            de-DE: Sprache
+          - source: language
+            editable: true
+            caption: Language
 
-        - source: active
-          editable: true
-          caption:
-            en-US: Active
-            de-DE: Aktiv
+          - source: active
+            editable: true
+            caption: Active
 
-    - id: authentication
-      caption:
-        en-US: Authentication
-        de-DE: Authentifizierung
-      fields:
-        - source: password_hash
-          editable: false
-          visible: false
-          caption:
-            en-US: Password Hash
-            de-DE: Passwort-Hash
+      - name: Authentication
+        caption: Authentication
+        fields:
+          - source: password
+            editable: true
+            caption: Password
+            importance: Promoted
 
-    - id: timestamps
-      caption:
-        en-US: Timestamps
-        de-DE: Zeitstempel
-      fields:
-        - source: created_at
-          editable: false
-          caption:
-            en-US: Created At
-            de-DE: Erstellt am
+          - source: password_hash
+            editable: false
+            visible: false
+            caption: Password Hash
 
-        - source: last_login
-          editable: false
-          caption:
-            en-US: Last Login
-            de-DE: Letzte Anmeldung
+      - name: Timestamps
+        caption: Timestamps
+        fields:
+          - source: created_at
+            editable: false
+            caption: Created At
+
+          - source: last_login
+            editable: false
+            caption: Last Login
 
   actions:
-    - id: save
-      caption:
-        en-US: Save
-        de-DE: Speichern
-
-    - id: delete
-      caption:
-        en-US: Delete
-        de-DE: Löschen
+    - name: delete
+      caption: Delete

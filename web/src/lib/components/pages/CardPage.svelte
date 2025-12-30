@@ -6,6 +6,7 @@
 	import Card from '$lib/components/Card.svelte';
 	import CustomizePageModal from './CustomizePageModal.svelte';
 	import { shortcuts, createShortcutMap } from '$lib/utils/shortcuts';
+	import { currentUser } from '$lib/stores/user';
 
 	interface Props {
 		page: PageDefinition;
@@ -54,7 +55,8 @@
 
 	// Load customizations from localStorage on mount
 	$effect(() => {
-		const key = `page-customization-${page.page.id}`;
+		const userId = $currentUser?.user_id || 'anonymous';
+		const key = `page-customization-${userId}-${page.page.id}`;
 		const stored = localStorage.getItem(key);
 		if (stored) {
 			try {
@@ -72,6 +74,11 @@
 
 	// Auto-save with debouncing
 	function autoSave() {
+		// Skip if already saving
+		if (saveState === 'saving') {
+			return;
+		}
+
 		// Clear any pending timeouts
 		if (saveTimeout) {
 			clearTimeout(saveTimeout);
@@ -82,6 +89,11 @@
 
 		// Debounce: wait 300ms after last change before saving
 		saveTimeout = setTimeout(async () => {
+			// Double-check save state before proceeding
+			if (saveState === 'saving') {
+				return;
+			}
+
 			saveState = 'saving';
 			try {
 				await onsave?.(record);
@@ -219,7 +231,8 @@
 	// Save customizations
 	function handleSaveCustomizations(customizations: Record<string, FieldCustomization>) {
 		fieldCustomizations = customizations;
-		const key = `page-customization-${page.page.id}`;
+		const userId = $currentUser?.user_id || 'anonymous';
+		const key = `page-customization-${userId}-${page.page.id}`;
 		localStorage.setItem(key, JSON.stringify(customizations));
 	}
 </script>

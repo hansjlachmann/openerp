@@ -31,7 +31,8 @@ page:
       - name: Communication
         caption: Communication
         fields:
-          - source: phone_number
+          - source: phonenumber
+            caption: Phone No.
             editable: true
 
       - name: Invoicing

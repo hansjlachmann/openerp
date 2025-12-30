@@ -72,6 +72,14 @@
 		}
 		return String(val);
 	}
+
+	// Determine input type based on field
+	const inputType = $derived(() => {
+		if (field.source === 'password') {
+			return 'password';
+		}
+		return 'text';
+	});
 </script>
 
 {#if isEditable}
@@ -82,7 +90,7 @@
 		</label>
 		<input
 			id={field.source}
-			type="text"
+			type={inputType()}
 			class={cn('input', fieldStyle())}
 			value={value}
 			oninput={handleChange}
