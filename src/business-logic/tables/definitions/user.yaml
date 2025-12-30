@@ -3,6 +3,7 @@ table:
   name: User
   caption: User
   description: System users with authentication
+  global: true  # Global table - no company prefix
   fields:
     - name: user_id
       type: types.Code
