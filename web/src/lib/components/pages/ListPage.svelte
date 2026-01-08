@@ -6,10 +6,16 @@
 	import ModalCardPage from './ModalCardPage.svelte';
 	import CustomizeListPageModal from './CustomizeListPageModal.svelte';
 	import FilterPane from './FilterPane.svelte';
+	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
+	import EditIcon from '$lib/components/icons/EditIcon.svelte';
+	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
+	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
 	import { shortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
+	import { getFieldCaption, getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
+	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 
 	interface Props {
 		page: PageDefinition;
@@ -48,18 +54,42 @@
 	// Filter pane state
 	let filterPaneOpen = $state(false);
 
+	// Edit mode state
+	let editMode = $state(false);
+	// Editable copy of records for edit mode (to avoid mutating props)
+	let editableRecords = $state<Array<Record<string, any>>>([]);
+	// Prevent rapid toggling
+	let isToggling = false;
+
+	// Records to display - switches between editable and read-only
+	const displayRecords = $derived(editMode ? editableRecords : records);
+
+	// Track list page element for focus
+	let listPageElement: HTMLDivElement | null = null;
+
+	// Auto-focus the page on mount and when records load
+	$effect(() => {
+		if (listPageElement && !editMode && records.length > 0) {
+			setTimeout(() => {
+				listPageElement?.focus();
+			}, 100);
+		}
+	});
+
+	// Auto-focus first cell when entering edit mode
+	$effect(() => {
+		if (editMode && currentCellRow >= 0 && currentCellCol >= 0) {
+			focusCell(currentCellRow, currentCellCol);
+		}
+	});
+
 	// Load customizations from localStorage on mount
 	$effect(() => {
 		const userId = $currentUser?.user_id || 'anonymous';
-		const key = `page-customization-${userId}-${page.page.id}`;
-		const stored = localStorage.getItem(key);
-		if (stored) {
-			try {
-				columnCustomizations = JSON.parse(stored);
-			} catch (e) {
-				console.error('Failed to load page customizations:', e);
-			}
-		}
+		columnCustomizations = loadPageCustomizations<Record<string, ColumnCustomization>>(
+			userId,
+			page.page.id
+		);
 	});
 
 	// Track selected row index
@@ -86,10 +116,14 @@
 		}
 	});
 
-	// Track editing state
+	// Track editing state (old inline editing - keep for compatibility)
 	let editingIndex = $state<number | null>(null);
 	let editingRecord = $state<Record<string, any>>({});
 	let isNewRecord = $state(false);
+
+	// Edit List mode state (BC-style full list editing)
+	let currentCellRow = $state<number>(-1);
+	let currentCellCol = $state<number>(-1);
 
 	// Modal card state
 	let modalOpen = $state(false);
@@ -105,14 +139,17 @@
 
 	// Handle action clicks
 	function handleAction(actionName: string) {
+		// Handle Edit mode toggle
+		if (actionName === 'Edit') {
+			toggleEditMode();
+			return;
+		}
+
 		// Handle built-in actions for editable lists
 		if (page.page.editable) {
 			switch (actionName) {
 				case 'New':
 					handleNew();
-					return;
-				case 'Edit':
-					handleEdit();
 					return;
 				case 'Delete':
 					handleDelete();
@@ -136,8 +173,184 @@
 		isNewRecord = true;
 	}
 
-	// Handle edit record
+	// Toggle edit mode
+	function toggleEditMode() {
+		if (isToggling) {
+			return;
+		}
+
+		isToggling = true;
+		editMode = !editMode;
+
+		if (editMode) {
+			// Entering edit mode - create editable copies and focus at selected row
+			editableRecords = records.map(r => ({ ...r }));
+			if (editableRecords.length > 0) {
+				// Start at the currently selected row, or first row if none selected
+				currentCellRow = selectedIndex >= 0 ? selectedIndex : 0;
+				currentCellCol = 0;
+			}
+		} else {
+			// Exiting edit mode - reset state
+			currentCellRow = -1;
+			currentCellCol = -1;
+			editableRecords = [];
+		}
+
+		// Reset the toggling flag after a short delay
+		setTimeout(() => {
+			isToggling = false;
+		}, 100);
+	}
+
+	// Auto-save when leaving a cell
+	async function handleCellBlur(record: Record<string, any>, rowIndex: number) {
+		if (!page || !editMode) return;
+
+		try {
+			// Check if this is a new record
+			const isNew = record._isNew === true;
+			const recordId = record['no'] || record['code'] || record['id'];
+
+			if (isNew && !recordId) {
+				// New record - only save if user has entered some data
+				const hasData = Object.keys(record).some(key => key !== '_isNew' && record[key] !== undefined && record[key] !== '');
+				if (hasData) {
+					// Remove the temporary flag before saving
+					const { _isNew, ...recordToSave } = record;
+					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
+					// Update with the saved record (which now has an ID)
+					editableRecords[rowIndex] = savedRecord;
+					// Trigger parent update if callback exists
+					if (onsave) {
+						await onsave(savedRecord, true);
+					}
+				}
+			} else if (recordId) {
+				// Existing record - update it
+				const { _isNew, ...recordToSave } = record;
+				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, recordToSave);
+				// Update the editable record with the response
+				editableRecords[rowIndex] = savedRecord;
+				// Trigger parent update if callback exists
+				if (onsave) {
+					await onsave(savedRecord, false);
+				}
+			}
+		} catch (err) {
+			console.error('Error saving cell:', err);
+			// Silently fail - user can see the change didn't save if they refresh
+		}
+	}
+
+	// Insert a new row at cursor position
+	function insertNewRow() {
+		if (!editMode) return;
+
+		// Create a new empty record
+		const newRecord: Record<string, any> = {};
+
+		// Mark it as new with a temporary flag
+		newRecord._isNew = true;
+
+		// Insert at current cursor position (or at the end if no cursor)
+		const insertIndex = currentCellRow >= 0 ? currentCellRow : editableRecords.length;
+		editableRecords = [
+			...editableRecords.slice(0, insertIndex),
+			newRecord,
+			...editableRecords.slice(insertIndex)
+		];
+
+		// Focus the first cell of the new row
+		currentCellRow = insertIndex;
+		currentCellCol = 0;
+
+		// Focus will happen via the effect
+	}
+
+	// Handle keyboard navigation in edit list mode
+	function handleCellKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
+		const cols = visibleColumns();
+		const totalRows = editMode ? editableRecords.length : records.length;
+
+		// Ctrl+Insert or Ctrl+N to insert new row
+		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
+			event.preventDefault();
+			insertNewRow();
+			return;
+		}
+
+		switch (event.key) {
+			case 'ArrowUp':
+				event.preventDefault();
+				if (rowIndex > 0) {
+					currentCellRow = rowIndex - 1;
+					currentCellCol = colIndex;
+					focusCell(currentCellRow, currentCellCol);
+				}
+				break;
+			case 'ArrowDown':
+				event.preventDefault();
+				if (rowIndex < totalRows - 1) {
+					currentCellRow = rowIndex + 1;
+					currentCellCol = colIndex;
+					focusCell(currentCellRow, currentCellCol);
+				} else {
+					// On last row, create new row below
+					insertNewRow();
+				}
+				break;
+			case 'ArrowLeft':
+				event.preventDefault();
+				if (colIndex > 0) {
+					currentCellRow = rowIndex;
+					currentCellCol = colIndex - 1;
+					focusCell(currentCellRow, currentCellCol);
+				}
+				break;
+			case 'ArrowRight':
+			case 'Tab':
+				event.preventDefault();
+				if (colIndex < cols.length - 1) {
+					currentCellRow = rowIndex;
+					currentCellCol = colIndex + 1;
+					focusCell(currentCellRow, currentCellCol);
+				}
+				break;
+			case 'Enter':
+				event.preventDefault();
+				// Move to next row on Enter
+				if (rowIndex < totalRows - 1) {
+					currentCellRow = rowIndex + 1;
+					currentCellCol = colIndex;
+					focusCell(currentCellRow, currentCellCol);
+				} else {
+					// On last row, create new row below
+					insertNewRow();
+				}
+				break;
+		}
+	}
+
+	// Focus a specific cell
+	function focusCell(rowIndex: number, colIndex: number) {
+		setTimeout(() => {
+			const input = document.querySelector(
+				`input[data-row="${rowIndex}"][data-col="${colIndex}"]`
+			) as HTMLInputElement;
+			if (input) {
+				input.focus();
+				input.select();
+			}
+		}, 0);
+	}
+
+	// Handle edit record (only works in edit mode)
 	function handleEdit() {
+		if (!editMode) {
+			alert('Please enable Edit mode first by clicking the Edit button.');
+			return;
+		}
 		if (selectedRecord) {
 			editingRecord = { ...selectedRecord };
 			editingIndex = selectedIndex;
@@ -174,19 +387,12 @@
 		editingRecord[fieldSource] = value;
 	}
 
-	// Handle row click
-	async function handleRowClick(index: number) {
+	// Handle row click - just select the row
+	function handleRowClick(index: number) {
+		console.log('Row clicked:', index);
 		selectedIndex = index;
-
-		if (page.page.card_page_id) {
-			if (page.page.modal_card) {
-				// Open as modal
-				await openModalCard(records[index]);
-			} else {
-				// Navigate to full page
-				onrowclick?.(records[index]);
-			}
-		}
+		// Give focus to the page so keyboard shortcuts work
+		listPageElement?.focus();
 	}
 
 	// Open modal card
@@ -272,10 +478,58 @@
 		}
 	}
 
-	// Handle row double-click
-	function handleRowDoubleClick(index: number) {
+	// Handle actions from modal card
+	async function handleModalAction(actionName: string) {
+		if (!modalCardPage) return;
+
+		switch (actionName) {
+			case 'Delete':
+				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
+				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+					try {
+						await api.deleteRecord(page.page.source_table, recordId);
+
+						// Remove the record from the list
+						records = records.filter(r => {
+							const id = r['no'] || r['code'] || r['id'];
+							return id !== recordId;
+						});
+
+						// Close the modal
+						closeModal();
+
+						alert('Record deleted successfully');
+					} catch (err) {
+						console.error('Delete error:', err);
+						alert('Failed to delete record');
+					}
+				}
+				break;
+			case 'Refresh':
+				// Reload the modal record
+				const id = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
+				if (id) {
+					try {
+						modalRecord = await api.getRecord(page.page.source_table, id);
+					} catch (err) {
+						console.error('Refresh error:', err);
+					}
+				}
+				break;
+		}
+	}
+
+	// Handle row double-click - open the card
+	async function handleRowDoubleClick(index: number) {
+		selectedIndex = index;
 		if (page.page.card_page_id) {
-			onrowclick?.(records[index]);
+			if (page.page.modal_card) {
+				// Open as modal
+				await openModalCard(records[index]);
+			} else {
+				// Navigate to full page
+				onrowclick?.(records[index]);
+			}
 		}
 	}
 
@@ -289,12 +543,14 @@
 			}
 		});
 
-		// Add navigation shortcuts
-		map['ArrowDown'] = moveDown;
-		map['ArrowUp'] = moveUp;
-		map['Home'] = moveFirst;
-		map['End'] = moveLast;
-		map['Enter'] = openCard;
+		// Add navigation shortcuts only when NOT in edit mode
+		if (!editMode) {
+			map['ArrowDown'] = moveDown;
+			map['ArrowUp'] = moveUp;
+			map['Home'] = moveFirst;
+			map['End'] = moveLast;
+			map['Enter'] = openCard;
+		}
 
 		return map;
 	});
@@ -336,43 +592,6 @@
 		}
 	}
 
-	// Get field caption
-	function getFieldCaption(fieldSource: string, fieldCaption?: string): string {
-		return captions[fieldSource] || fieldCaption || fieldSource;
-	}
-
-	// Format cell value
-	function formatValue(val: any): string {
-		if (val === null || val === undefined) {
-			return '';
-		}
-		if (typeof val === 'boolean') {
-			return val ? 'Yes' : 'No';
-		}
-		return String(val);
-	}
-
-	// Get field style classes
-	function getFieldStyle(field: any) {
-		const classes: string[] = [];
-
-		switch (field.style) {
-			case 'Strong':
-				classes.push('font-bold text-nav-blue dark:text-blue-400');
-				break;
-			case 'Attention':
-				classes.push('font-medium text-orange-600 dark:text-orange-400');
-				break;
-			case 'Favorable':
-				classes.push('text-green-600 dark:text-green-400');
-				break;
-			case 'Unfavorable':
-				classes.push('text-red-600 dark:text-red-400');
-				break;
-		}
-
-		return classes.join(' ');
-	}
 
 	// Check if column should be visible based on customizations
 	function isColumnVisible(field: Field): boolean {
@@ -409,8 +628,7 @@
 	function handleSaveCustomizations(customizations: Record<string, ColumnCustomization>) {
 		columnCustomizations = customizations;
 		const userId = $currentUser?.user_id || 'anonymous';
-		const key = `page-customization-${userId}-${page.page.id}`;
-		localStorage.setItem(key, JSON.stringify(customizations));
+		savePageCustomizations(userId, page.page.id, customizations);
 	}
 
 	// Toggle filter pane
@@ -429,7 +647,7 @@
 	}
 </script>
 
-<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" autofocus>
+<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement}>
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="actions">
 			{#if editingIndex !== null}
@@ -441,7 +659,52 @@
 					Cancel
 				</Button>
 			{:else}
-				<!-- Show normal actions when not editing -->
+				{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
+					{@const isDisabled = action.enabled === false || (action.name !== 'New' && action.name !== 'Edit' && action.name !== 'Refresh' && !selectedRecord)}
+					{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
+					<Button
+						variant={variant}
+						size="sm"
+						onclick={() => handleAction(action.name)}
+						disabled={isDisabled}
+					>
+						{#snippet icon()}
+							{#if action.name === 'New'}
+								<PlusIcon size={16} color="currentColor" />
+							{:else if action.name === 'Edit'}
+								<EditIcon size={16} color="currentColor" />
+							{:else if action.name === 'Delete'}
+								<TrashIcon size={16} color="currentColor" />
+							{:else if action.name === 'Refresh'}
+								<RefreshIcon size={16} color="currentColor" />
+							{/if}
+						{/snippet}
+						{action.caption}
+						{#if action.shortcut}
+							<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
+						{/if}
+					</Button>
+				{/each}
+
+				<!-- Customize button -->
+				<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize columns">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+						/>
+					</svg>
+					<span class="ml-1">Customize</span>
+				</Button>
+
 				<!-- Filter button -->
 				<Button
 					variant={filterPaneOpen ? 'primary' : 'secondary'}
@@ -470,40 +733,7 @@
 						</span>
 					{/if}
 				</Button>
-
-				<!-- Customize button -->
-				<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize columns">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-						/>
-					</svg>
-					<span class="ml-1">Customize</span>
-				</Button>
-
-				{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
-					{@const isDisabled = action.enabled === false || (action.name !== 'New' && action.name !== 'Refresh' && !selectedRecord)}
-					<Button
-						variant={action.name === 'Delete' ? 'danger' : 'secondary'}
-						size="sm"
-						onclick={() => handleAction(action.name)}
-						disabled={isDisabled}
-					>
-						{action.caption}
-						{#if action.shortcut}
-							<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
-						{/if}
-					</Button>
-				{/each}
+				
 			{/if}
 		</svelte:fragment>
 	</PageHeader>
@@ -525,62 +755,67 @@
 				<tr>
 					{#each visibleColumns() as field}
 						<th style={field.width ? `width: ${field.width}px` : ''}>
-							{getFieldCaption(field.source, field.caption)}
+							{getFieldCaption(field.source, captions, field.caption)}
 						</th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody bind:this={tableBodyElement}>
-				{#each records as record, index}
+				{#each displayRecords as record, index (record.code || record.no || record.id || index)}
 					<tr
-						class={cn('cursor-pointer', selectedIndex === index && 'selected')}
-						onclick={() => handleRowClick(index)}
-						ondblclick={() => handleRowDoubleClick(index)}
+						class={cn(
+							editMode ? '' : 'cursor-pointer',
+							selectedIndex === index && 'selected',
+							record._isNew && 'new-row'
+						)}
+						onclick={() => !editMode && handleRowClick(index)}
+						ondblclick={() => !editMode && handleRowDoubleClick(index)}
 					>
-						{#each visibleColumns() as field}
-							<td class={getFieldStyle(field)}>
-								{#if editingIndex === index}
-									<!-- Editable cell -->
-									<input
-										type="text"
-										class="w-full px-2 py-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-										value={editingRecord[field.source] ?? ''}
-										oninput={(e) => handleFieldChange(field.source, e.currentTarget.value)}
-									/>
+						{#each visibleColumns() as field, colIndex}
+							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
+								{#if editMode}
+									<!-- Edit Mode - Editable inputs -->
+									{#if typeof record[field.source] === 'boolean'}
+										<div class="edit-cell-input flex items-center">
+											<input
+												type="checkbox"
+												data-row={index}
+												data-col={colIndex}
+												bind:checked={record[field.source]}
+												onchange={async () => {
+													await handleCellBlur(record, index);
+												}}
+												onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+											/>
+										</div>
+									{:else}
+										<input
+											type="text"
+											data-row={index}
+											data-col={colIndex}
+											class="edit-cell-input"
+											bind:value={record[field.source]}
+											onblur={async () => {
+												await handleCellBlur(record, index);
+											}}
+											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+										/>
+									{/if}
 								{:else}
-									<!-- Read-only cell -->
-									{formatValue(record[field.source])}
+									<!-- Normal Mode - Read-only -->
+									<div class={cn('read-cell-content', getFieldStyleClasses(field))}>
+										{#if typeof record[field.source] === 'boolean'}
+											<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
+										{:else}
+											{formatValue(record[field.source])}
+										{/if}
+									</div>
 								{/if}
 							</td>
 						{/each}
 					</tr>
 				{/each}
-
-				<!-- New record row if adding -->
-				{#if isNewRecord && editingIndex === records.length}
-					<tr class="bg-blue-50 dark:bg-blue-900/20">
-						{#each visibleColumns() as field}
-							<td>
-								<input
-									type="text"
-									class="w-full px-2 py-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-									value={editingRecord[field.source] ?? ''}
-									oninput={(e) => handleFieldChange(field.source, e.currentTarget.value)}
-									placeholder={getFieldCaption(field.source, field.caption)}
-								/>
-							</td>
-						{/each}
-					</tr>
-				{/if}
-
-				{#if records.length === 0 && !isNewRecord}
-					<tr>
-						<td colspan={page.page.layout.repeater?.fields?.length || 1} class="text-center py-8">
-							<span class="text-gray-500 dark:text-gray-400">No records found</span>
-						</td>
-					</tr>
-				{/if}
-			</tbody>
+		</tbody>
 		</table>
 		</div>
 
@@ -603,6 +838,7 @@
 		bind:record={modalRecord}
 		captions={modalCaptions}
 		onclose={closeModal}
+		onaction={handleModalAction}
 		onsave={handleModalSave}
 	/>
 {/if}
@@ -660,12 +896,82 @@
 		@apply dark:bg-blue-900/30 dark:hover:bg-blue-900/30;
 	}
 
+	.table tbody tr.new-row {
+		background-color: #e0f2fe !important;
+	}
+
+	:global(.dark) .table tbody tr.new-row {
+		background-color: rgba(56, 189, 248, 0.15) !important;
+	}
+
 	.table td {
-		@apply px-4 py-2 text-sm;
+		padding: 2px 6px;
+		font-size: 0.875rem;
+		line-height: 1.3;
+		vertical-align: bottom;
 	}
 
 	.status-bar {
 		@apply px-4 py-2 bg-gray-50 border-t border-gray-200 rounded-b;
 		@apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300;
+	}
+
+	.edit-cell-input {
+		display: block !important;
+		width: 100%;
+		height: auto !important;
+		min-height: 0 !important;
+		padding: 2px 6px;
+		line-height: 1.3;
+		font-size: 0.875rem;
+		background: transparent !important;
+		border: 0 !important;
+		outline: 0 !important;
+		box-shadow: none !important;
+		-webkit-appearance: none !important;
+		-moz-appearance: none !important;
+		appearance: none !important;
+		margin: 0 !important;
+	}
+
+	.edit-cell-input:focus {
+		outline: 0 !important;
+		box-shadow: none !important;
+		border: 0 !important;
+		background: transparent !important;
+	}
+
+	:global(.dark) .edit-cell-input {
+		background: transparent !important;
+		color: white;
+	}
+
+	:global(.dark) .edit-cell-input:focus {
+		background: transparent !important;
+	}
+
+	/* Set background on the td cells in edit mode and normal mode */
+	tbody tr:not(.selected) td.p-0 {
+		background: white;
+	}
+
+	:global(.dark) tbody tr:not(.selected) td.p-0 {
+		background: rgb(31 41 55);
+	}
+
+	/* Selected rows - make td background transparent to show row highlight */
+	tbody tr.selected td.p-0 {
+		background: transparent;
+	}
+
+	/* Normal mode cell content - match edit mode input exactly */
+	.read-cell-content {
+		display: block;
+		width: 100%;
+		height: auto;
+		padding: 2px 6px;
+		line-height: 1.3;
+		font-size: 0.875rem;
+		margin: 0;
 	}
 </style>
