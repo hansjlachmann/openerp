@@ -8,6 +8,7 @@ tables:
     fields:
       code: "Code"
       description: "Description"
+      active: "Active"
       due_date_calculation: "Due Date Calculation"
       discount_date_calculation: "Discount Date Calculation"
       discount_percent: "Discount %"
