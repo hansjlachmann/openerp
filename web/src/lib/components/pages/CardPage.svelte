@@ -256,7 +256,7 @@
 	{/if}
 
 	<PageHeader title={page.page.caption}>
-		<svelte:fragment slot="actions">
+		<svelte:fragment slot="leftActions">
 			{#if saveState === 'saving'}
 				<div class="saving-indicator">
 					<svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -305,7 +305,9 @@
 					{/if}
 				</Button>
 			{/each}
+		</svelte:fragment>
 
+		<svelte:fragment slot="rightActions">
 			<!-- Customize button -->
 			<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize page">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

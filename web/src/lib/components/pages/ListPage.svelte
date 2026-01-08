@@ -649,7 +649,7 @@
 
 <div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement}>
 	<PageHeader title={page.page.caption}>
-		<svelte:fragment slot="actions">
+		<svelte:fragment slot="leftActions">
 			{#if editingIndex !== null}
 				<!-- Show Save/Cancel when editing -->
 				<Button variant="primary" size="sm" onclick={handleSave}>
@@ -685,7 +685,11 @@
 						{/if}
 					</Button>
 				{/each}
+			{/if}
+		</svelte:fragment>
 
+		<svelte:fragment slot="rightActions">
+			{#if editingIndex === null}
 				<!-- Customize button -->
 				<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize columns">
 					<svg
@@ -733,7 +737,6 @@
 						</span>
 					{/if}
 				</Button>
-				
 			{/if}
 		</svelte:fragment>
 	</PageHeader>
