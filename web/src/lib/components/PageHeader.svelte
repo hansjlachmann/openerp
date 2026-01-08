@@ -16,16 +16,28 @@
 
 <div class="page-header bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
 	<div class="flex items-center justify-between">
-		<div>
-			<h1 class="text-2xl font-bold text-nav-blue dark:text-blue-400">{title}</h1>
-			{#if subtitle}
-				<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
+		<div class="flex items-center gap-4">
+			<div>
+				<h1 class="text-2xl font-bold text-nav-blue dark:text-blue-400">{title}</h1>
+				{#if subtitle}
+					<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
+				{/if}
+			</div>
+
+			{#if $$slots.leftActions}
+				<div class="flex gap-3">
+					<slot name="leftActions" />
+				</div>
 			{/if}
 		</div>
 
-		{#if $$slots.actions}
+		{#if $$slots.actions || $$slots.rightActions}
 			<div class="flex gap-3">
-				<slot name="actions" />
+				{#if $$slots.rightActions}
+					<slot name="rightActions" />
+				{:else}
+					<slot name="actions" />
+				{/if}
 			</div>
 		{:else if actions.length > 0}
 			<div class="flex gap-3">
