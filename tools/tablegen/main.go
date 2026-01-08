@@ -445,8 +445,10 @@ import (
 {{- if or .HasTimeField .HasDateField .HasDateTimeField }}
 	"time"
 {{- end }}
-{{- if or .HasCodeField .HasTextField .HasDecimalField .HasDateField .HasDateTimeField }}
 
+	"github.com/hansjlachmann/openerp/src/foundation/database"
+	"github.com/hansjlachmann/openerp/src/foundation/i18n"
+{{- if or .HasCodeField .HasTextField .HasDecimalField .HasDateField .HasDateTimeField }}
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 {{- end }}
 )
@@ -493,7 +495,7 @@ type {{ .StructName }} struct {
 {{- end }}
 
 	// Internal context (set by Init)
-	db      *sql.DB
+	db      database.Executor
 	company string
 
 	// Field tracking for optimal Modify() operations
@@ -561,8 +563,33 @@ func Get{{ .StructName }}TableSchema() string {
 	` + "`" + `
 }
 
+// ========================================
+// Translation Support (BC/NAV CaptionML)
+// ========================================
+
+// GetCaption returns the table caption in the specified language
+func (t *{{ .StructName }}) GetCaption(language string) string {
+	ts := i18n.GetInstance()
+	return ts.TableCaption("{{ .Table.Name }}", language)
+}
+
+// GetFieldCaption returns the field caption in the specified language
+func (t *{{ .StructName }}) GetFieldCaption(fieldName, language string) string {
+	ts := i18n.GetInstance()
+	return ts.FieldCaption("{{ .Table.Name }}", fieldName, language)
+}
+{{- if .HasOptionField }}
+
+// GetOptionCaption returns the option field value caption in the specified language
+func (t *{{ .StructName }}) GetOptionCaption(fieldName, optionValue, language string) string {
+	ts := i18n.GetInstance()
+	return ts.OptionCaption("{{ .Table.Name }}", fieldName, optionValue, language)
+}
+{{- end }}
+
 // CreateTable creates the {{ .Table.Name }} table for the specified company
-func (t *{{ .StructName }}) CreateTable(db *sql.DB, company string) error {
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *{{ .StructName }}) CreateTable(db database.Executor, company string) error {
 	tableName := fmt.Sprintf("%s$%s", company, {{ .StructName }}TableName)
 	schema := Get{{ .StructName }}TableSchema()
 
@@ -594,7 +621,9 @@ func (t *{{ .StructName }}) CreateTable(db *sql.DB, company string) error {
 // ========================================
 
 // Init initializes a new {{ .StructName }} record with database context
-func (t *{{ .StructName }}) Init(db *sql.DB, company string) {
+// The db parameter can be either *sql.DB or *sql.Tx, allowing operations
+// to work seamlessly with or without explicit transactions
+func (t *{{ .StructName }}) Init(db database.Executor, company string) {
 	t.db = db
 	t.company = company
 	t.oldValues = nil // Fresh record, no old values

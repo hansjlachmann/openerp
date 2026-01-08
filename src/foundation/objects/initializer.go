@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/hansjlachmann/openerp/src/foundation/database"
 )
 
 // TableDefinition represents a table that can be initialized
@@ -12,7 +14,7 @@ type TableDefinition interface {
 	GetTableID() int
 	GetTableName() string
 	GetTableSchema() string
-	CreateTable(db *sql.DB, company string) error
+	CreateTable(db database.Executor, company string) error
 }
 
 // InitializeCompanyTables creates all registered tables for a new company

@@ -1,9 +1,9 @@
 package tables
 
 import (
-	"database/sql"
 	"errors"
 
+	"github.com/hansjlachmann/openerp/src/foundation/database"
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
 
@@ -30,7 +30,7 @@ func (t *CustomerLedgerEntry) OnModify() error {
 }
 
 // OnDelete trigger - called before deleting a record
-func (t *CustomerLedgerEntry) OnDelete(db *sql.DB, company string) error {
+func (t *CustomerLedgerEntry) OnDelete(db database.Executor, company string) error {
 	// TODO: Add checks for related records (if any)
 	// Example:
 	// var count int
