@@ -433,6 +433,8 @@ func main() {
 			fmt.Println("11. Codeunit 50010 - FlowField Demo (Sum/Count Calculations)")
 			fmt.Println("12. Codeunit 50011 - Create Large Dataset (100K entries for CUST-001)")
 			fmt.Println("13. Codeunit 50012 - Calculate FlowFields for CUST-001")
+			fmt.Println("14. Codeunit 50013 - Transaction Demo (Commit/Rollback)")
+			fmt.Println("15. Codeunit 50014 - Translation Demo (Multilanguage Support)")
 			fmt.Println("0. Back to main menu")
 			fmt.Println(strings.Repeat("=", 60))
 			fmt.Print("\nSelect codeunit: ")
@@ -495,6 +497,14 @@ func main() {
 			case "13":
 				// Codeunit 50012: Calculate FlowFields for CUST-001
 				codeunits.CalcFieldsLargeCustomer(sess.GetConnection(), sess.GetCompany())
+
+			case "14":
+				// Codeunit 50013: Transaction Demo (Commit/Rollback)
+				codeunits.TransactionDemo(sess.GetConnection(), sess.GetCompany())
+
+			case "15":
+				// Codeunit 50014: Translation Demo (Multilanguage Support)
+				codeunits.TranslationDemo(sess.GetConnection(), sess.GetCompany())
 
 			case "0":
 				fmt.Println("✓ Returning to main menu")

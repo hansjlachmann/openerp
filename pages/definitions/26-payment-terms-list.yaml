@@ -1,0 +1,44 @@
+page:
+  id: 26
+  type: List
+  name: Payment Terms List
+  source_table: Payment_terms
+  caption: Payment Terms
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: description
+          width: 300
+
+        - source: active
+          width: 100
+
+  actions:
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

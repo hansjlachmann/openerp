@@ -3,6 +3,7 @@ package session
 import (
 	"bufio"
 	"database/sql"
+	"fmt"
 
 	"github.com/hansjlachmann/openerp/src/foundation/database"
 )
@@ -10,12 +11,13 @@ import (
 // Session represents a user session (similar to BC/NAV SESSION variable)
 // Contains database connection, current company, and other session state
 type Session struct {
-	DB       *database.Database // Database connection
-	Company  string             // Current company context
-	Scanner  *bufio.Scanner     // Input scanner (for CLI)
-	UserID   string             // Current user ID/username
-	UserName string             // Current user full name
-	Language string             // Application language (e.g., "en-US", "de-DE")
+	DB          *database.Database // Database connection
+	Company     string             // Current company context
+	Scanner     *bufio.Scanner     // Input scanner (for CLI)
+	UserID      string             // Current user ID/username
+	UserName    string             // Current user full name
+	Language    string             // Application language (e.g., "en-US", "de-DE")
+	transaction *sql.Tx            // Active transaction (nil if not in transaction)
 	// Future extensions:
 	// DateFormat string
 	// Permissions map[string]bool
@@ -97,4 +99,112 @@ func GetCurrent() *Session {
 // ClearCurrent clears the global current session
 func ClearCurrent() {
 	currentSession = nil
+}
+
+// ========================================
+// Transaction Management
+// ========================================
+
+// BeginTransaction starts a new database transaction
+// Similar to BC/NAV's implicit transaction handling
+// Returns error if a transaction is already active
+func (s *Session) BeginTransaction() error {
+	if s.transaction != nil {
+		return fmt.Errorf("transaction already active")
+	}
+
+	tx, err := s.DB.GetConnection().Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	s.transaction = tx
+	return nil
+}
+
+// Commit commits the current transaction (BC/NAV COMMIT)
+// Makes all changes permanent since BeginTransaction
+// Returns error if no transaction is active
+func (s *Session) Commit() error {
+	if s.transaction == nil {
+		return fmt.Errorf("no active transaction to commit")
+	}
+
+	err := s.transaction.Commit()
+	s.transaction = nil // Clear transaction regardless of error
+
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// Rollback rolls back the current transaction
+// Undoes all changes since BeginTransaction
+// Returns error if no transaction is active
+func (s *Session) Rollback() error {
+	if s.transaction == nil {
+		return fmt.Errorf("no active transaction to rollback")
+	}
+
+	err := s.transaction.Rollback()
+	s.transaction = nil // Clear transaction regardless of error
+
+	if err != nil {
+		return fmt.Errorf("failed to rollback transaction: %w", err)
+	}
+
+	return nil
+}
+
+// InTransaction returns true if there is an active transaction
+func (s *Session) InTransaction() bool {
+	return s.transaction != nil
+}
+
+// GetExecutor returns the appropriate database executor
+// Returns the active transaction if one exists, otherwise returns the DB connection
+// This allows table operations to work seamlessly with or without transactions
+func (s *Session) GetExecutor() database.Executor {
+	if s.transaction != nil {
+		return s.transaction
+	}
+	return s.DB.GetConnection()
+}
+
+// WithTransaction executes a function within a transaction with automatic rollback on error/panic
+// This is the recommended way to use transactions - ensures cleanup even on errors
+//
+// Example:
+//   err := sess.WithTransaction(func() error {
+//       customer.Insert(false)
+//       ledgerEntry.Insert(false)
+//       return nil  // Commits on success
+//   })
+func (s *Session) WithTransaction(fn func() error) error {
+	// Begin transaction
+	if err := s.BeginTransaction(); err != nil {
+		return err
+	}
+
+	// Defer rollback - will execute if:
+	// 1. Function returns error
+	// 2. Function panics
+	// 3. Commit fails
+	// Will NOT execute if Commit succeeds (transaction is nil after commit)
+	defer func() {
+		if s.InTransaction() {
+			s.Rollback()
+		}
+	}()
+
+	// Execute the function
+	err := fn()
+	if err != nil {
+		return err // Deferred rollback will execute
+	}
+
+	// Commit if function succeeded
+	return s.Commit()
 }
