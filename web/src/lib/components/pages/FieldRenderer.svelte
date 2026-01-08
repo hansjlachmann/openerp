@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Field } from '$lib/types/pages';
 	import { cn } from '$lib/utils/cn';
+	import { getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
 
 	interface Props {
 		field: Field;
@@ -27,32 +28,7 @@
 	const fieldCaption = $derived(caption || field.caption || field.source);
 
 	// Determine field style classes based on metadata
-	const fieldStyle = $derived(() => {
-		const classes: string[] = [];
-
-		// Importance styling
-		if (field.importance === 'Promoted') {
-			classes.push('font-semibold');
-		}
-
-		// Style-based coloring
-		switch (field.style) {
-			case 'Strong':
-				classes.push('text-nav-blue dark:text-blue-400 font-bold');
-				break;
-			case 'Attention':
-				classes.push('text-orange-600 dark:text-orange-400 font-medium');
-				break;
-			case 'Favorable':
-				classes.push('text-green-600 dark:text-green-400');
-				break;
-			case 'Unfavorable':
-				classes.push('text-red-600 dark:text-red-400');
-				break;
-		}
-
-		return classes.join(' ');
-	});
+	const fieldStyle = $derived(getFieldStyleClasses(field));
 
 	// Handle value change
 	function handleChange(e: Event) {
@@ -60,17 +36,6 @@
 		const newValue = target.value;
 		value = newValue;
 		onchange?.(newValue);
-	}
-
-	// Format value for display
-	function formatValue(val: any): string {
-		if (val === null || val === undefined) {
-			return '';
-		}
-		if (typeof val === 'boolean') {
-			return val ? 'Yes' : 'No';
-		}
-		return String(val);
 	}
 
 	// Determine input type based on field
@@ -91,7 +56,7 @@
 		<input
 			id={field.source}
 			type={inputType()}
-			class={cn('input', fieldStyle())}
+			class={cn('input', fieldStyle)}
 			value={value}
 			oninput={handleChange}
 			onblur={() => onblur?.()}
@@ -103,7 +68,7 @@
 		<div class="field-label">
 			{fieldCaption}
 		</div>
-		<div class={cn('field-value', fieldStyle())}>
+		<div class={cn('field-value', fieldStyle)}>
 			{formatValue(value)}
 		</div>
 	</div>

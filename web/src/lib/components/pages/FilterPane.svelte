@@ -4,6 +4,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import { currentUser } from '$lib/stores/user';
+	import { getFieldCaption as getFieldCaptionUtil } from '$lib/utils/fieldHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -72,14 +73,14 @@
 	function getFieldCaptionBySource(fieldSource: string): string {
 		const field = allFields().find((f) => f.source === fieldSource);
 		if (field) {
-			return captions[field.source] || field.caption || field.source;
+			return getFieldCaptionUtil(field.source, captions, field.caption);
 		}
 		return fieldSource;
 	}
 
 	// Get field caption
 	function getFieldCaption(field: Field): string {
-		return captions[field.source] || field.caption || field.source;
+		return getFieldCaptionUtil(field.source, captions, field.caption);
 	}
 
 	// Add a new filter field

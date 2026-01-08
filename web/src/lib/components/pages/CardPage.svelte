@@ -5,8 +5,15 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import CustomizePageModal from './CustomizePageModal.svelte';
+	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
+	import EditIcon from '$lib/components/icons/EditIcon.svelte';
+	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
+	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
+	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
+	import { getFieldCaption } from '$lib/utils/fieldHelpers';
+	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 
 	interface Props {
 		page: PageDefinition;
@@ -53,18 +60,16 @@
 	let customizeModalOpen = $state(false);
 	let fieldCustomizations = $state<Record<string, FieldCustomization>>({});
 
+	// Edit mode state
+	let editMode = $state(false);
+
 	// Load customizations from localStorage on mount
 	$effect(() => {
 		const userId = $currentUser?.user_id || 'anonymous';
-		const key = `page-customization-${userId}-${page.page.id}`;
-		const stored = localStorage.getItem(key);
-		if (stored) {
-			try {
-				fieldCustomizations = JSON.parse(stored);
-			} catch (e) {
-				console.error('Failed to load page customizations:', e);
-			}
-		}
+		fieldCustomizations = loadPageCustomizations<Record<string, FieldCustomization>>(
+			userId,
+			page.page.id
+		);
 	});
 
 	// Auto-save state
@@ -117,27 +122,26 @@
 
 	// Handle action clicks
 	function handleAction(actionName: string) {
-		onaction?.(actionName);
-
-		// Handle built-in actions
+		// Handle built-in actions locally first
 		switch (actionName) {
+			case 'Edit':
+				toggleEditMode();
+				return;
 			case 'New':
 				handleNew();
-				break;
-			case 'Delete':
-				handleDelete();
-				break;
+				return;
 		}
+
+		// Pass all other actions to parent (including Delete)
+		onaction?.(actionName);
 	}
 
 	function handleNew() {
 		record = {};
 	}
 
-	function handleDelete() {
-		if (confirm(`Delete this ${page.page.caption}?`)) {
-			onaction?.('Delete');
-		}
+	function toggleEditMode() {
+		editMode = !editMode;
 	}
 
 	// Build keyboard shortcut map from actions
@@ -160,11 +164,6 @@
 
 		return map;
 	});
-
-	// Get field caption (from captions or field definition)
-	function getFieldCaption(fieldSource: string, fieldCaption?: string): string {
-		return captions[fieldSource] || fieldCaption || fieldSource;
-	}
 
 	// Check if field should be visible based on customizations
 	function isFieldVisible(field: Field): boolean {
@@ -232,8 +231,7 @@
 	function handleSaveCustomizations(customizations: Record<string, FieldCustomization>) {
 		fieldCustomizations = customizations;
 		const userId = $currentUser?.user_id || 'anonymous';
-		const key = `page-customization-${userId}-${page.page.id}`;
-		localStorage.setItem(key, JSON.stringify(customizations));
+		savePageCustomizations(userId, page.page.id, customizations);
 	}
 </script>
 
@@ -249,31 +247,12 @@
 
 	<!-- Edge Navigation Buttons (Business Central style) -->
 	{#if navigationEnabled}
-		<!-- Previous Button (Left Edge) -->
-		<button
-			class="edge-nav-btn edge-nav-left"
-			onclick={onNavigatePrevious}
-			disabled={!canNavigatePrevious}
-			title="Previous Record (Ctrl+Up)"
-			aria-label="Previous Record"
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-			</svg>
-		</button>
-
-		<!-- Next Button (Right Edge) -->
-		<button
-			class="edge-nav-btn edge-nav-right"
-			onclick={onNavigateNext}
-			disabled={!canNavigateNext}
-			title="Next Record (Ctrl+Down)"
-			aria-label="Next Record"
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-			</svg>
-		</button>
+		<NavigationButtons
+			onPrevious={onNavigatePrevious}
+			onNext={onNavigateNext}
+			canNavigatePrevious={canNavigatePrevious}
+			canNavigateNext={canNavigateNext}
+		/>
 	{/if}
 
 	<PageHeader title={page.page.caption}>
@@ -295,17 +274,10 @@
 				</div>
 			{/if}
 
-			<!-- Customize button -->
-			<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize page">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-				</svg>
-				<span class="ml-1">Customize</span>
-			</Button>
-
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
+				{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
 				<Button
-					variant={action.name === 'Delete' ? 'danger' : 'secondary'}
+					variant={variant}
 					size="sm"
 					onclick={() => {
 						if (action.run_page) {
@@ -316,12 +288,32 @@
 					}}
 					disabled={action.enabled === false}
 				>
+					{#snippet icon()}
+						{#if action.name === 'New'}
+							<PlusIcon size={16} color="currentColor" />
+						{:else if action.name === 'Edit'}
+							<EditIcon size={16} color="currentColor" />
+						{:else if action.name === 'Delete'}
+							<TrashIcon size={16} color="currentColor" />
+						{:else if action.name === 'Refresh'}
+							<RefreshIcon size={16} color="currentColor" />
+						{/if}
+					{/snippet}
 					{action.caption}
 					{#if action.shortcut}
 						<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
 					{/if}
 				</Button>
 			{/each}
+
+			<!-- Customize button -->
+			<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize page">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+				</svg>
+				<span class="ml-1">Customize</span>
+			</Button>
+
 		</svelte:fragment>
 	</PageHeader>
 
@@ -337,8 +329,8 @@
 						<FieldRenderer
 							{field}
 							bind:value={record[field.source]}
-							caption={getFieldCaption(field.source, field.caption)}
-							editable={field.editable}
+							caption={getFieldCaption(field.source, captions, field.caption)}
+							editable={field.editable && editMode}
 							onblur={handleFieldBlur}
 						/>
 					{/each}
@@ -399,32 +391,6 @@
 		@apply flex items-center gap-1;
 	}
 
-	/* Edge Navigation Buttons (Business Central style) */
-	.card-page :global(.edge-nav-btn) {
-		@apply absolute top-1/2 -translate-y-1/2 z-50;
-		@apply w-12 h-12 rounded-full;
-		@apply bg-gray-700 dark:bg-gray-600;
-		@apply text-white;
-		@apply flex items-center justify-center;
-		@apply shadow-lg;
-		@apply transition-all duration-200;
-		@apply hover:bg-gray-600 dark:hover:bg-gray-500;
-		@apply hover:scale-110;
-		@apply focus:outline-none focus:ring-2 focus:ring-blue-500;
-	}
-
-	.card-page :global(.edge-nav-btn:disabled) {
-		@apply opacity-30 cursor-not-allowed;
-		@apply hover:scale-100 hover:bg-gray-700 dark:hover:bg-gray-600;
-	}
-
-	.card-page :global(.edge-nav-left) {
-		left: 16px;
-	}
-
-	.card-page :global(.edge-nav-right) {
-		right: 16px;
-	}
 
 	.card-page :global(.edge-nav-btn:not(:disabled):hover) {
 		@apply shadow-xl;
