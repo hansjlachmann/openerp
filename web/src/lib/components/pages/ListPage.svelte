@@ -15,7 +15,7 @@
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
-	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
+	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 
 	interface Props {
 		page: PageDefinition;
@@ -54,6 +54,20 @@
 	// Filter pane state
 	let filterPaneOpen = $state(false);
 
+	// Sort state
+	let sortField = $state<string | null>(null);
+	let sortDirection = $state<'asc' | 'desc'>('asc');
+
+	// Column resize state
+	let isResizing = $state(false);
+	let resizeField = $state<string | null>(null);
+	let resizeStartX = $state(0);
+	let resizeStartWidth = $state(0);
+	let columnWidths = $state<Record<string, number>>({});
+
+	// Row numbers state
+	let showRowNumbers = $state(false);
+
 	// Edit mode state
 	let editMode = $state(false);
 	// Editable copy of records for edit mode (to avoid mutating props)
@@ -61,8 +75,36 @@
 	// Prevent rapid toggling
 	let isToggling = false;
 
-	// Records to display - switches between editable and read-only
-	const displayRecords = $derived(editMode ? editableRecords : records);
+	// Sort records
+	const sortedRecords = $derived(() => {
+		const sourceRecords = editMode ? editableRecords : records;
+		if (!sortField) return sourceRecords;
+
+		return [...sourceRecords].sort((a, b) => {
+			const aVal = a[sortField];
+			const bVal = b[sortField];
+
+			// Handle null/undefined
+			if (aVal == null && bVal == null) return 0;
+			if (aVal == null) return sortDirection === 'asc' ? -1 : 1;
+			if (bVal == null) return sortDirection === 'asc' ? 1 : -1;
+
+			// Compare based on type
+			let comparison = 0;
+			if (typeof aVal === 'number' && typeof bVal === 'number') {
+				comparison = aVal - bVal;
+			} else if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+				comparison = aVal === bVal ? 0 : aVal ? 1 : -1;
+			} else {
+				comparison = String(aVal).localeCompare(String(bVal));
+			}
+
+			return sortDirection === 'asc' ? comparison : -comparison;
+		});
+	});
+
+	// Records to display
+	const displayRecords = $derived(sortedRecords());
 
 	// Track list page element for focus
 	let listPageElement: HTMLDivElement | null = null;
@@ -90,6 +132,8 @@
 			userId,
 			page.page.id
 		);
+		columnWidths = loadColumnWidths(userId, page.page.id);
+		showRowNumbers = loadRowNumbersPreference(userId, page.page.id);
 	});
 
 	// Track selected row index
@@ -619,6 +663,71 @@
 			.map(item => item.field);
 	});
 
+	// Toggle sort on a column
+	function handleSort(fieldSource: string) {
+		if (sortField === fieldSource) {
+			// Toggle direction if same field
+			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			// New field, start with ascending
+			sortField = fieldSource;
+			sortDirection = 'asc';
+		}
+	}
+
+	// Column resize handlers
+	function handleResizeStart(e: MouseEvent, fieldSource: string, currentWidth: number) {
+		e.preventDefault();
+		isResizing = true;
+		resizeField = fieldSource;
+		resizeStartX = e.clientX;
+		resizeStartWidth = currentWidth;
+
+		// Prevent text selection while dragging
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+
+		// Add document-level listeners for drag
+		document.addEventListener('mousemove', handleResizeMove);
+		document.addEventListener('mouseup', handleResizeEnd);
+	}
+
+	function handleResizeMove(e: MouseEvent) {
+		if (!isResizing || !resizeField) return;
+
+		const delta = e.clientX - resizeStartX;
+		const newWidth = Math.max(50, resizeStartWidth + delta); // Minimum 50px width
+
+		columnWidths = {
+			...columnWidths,
+			[resizeField]: newWidth
+		};
+	}
+
+	function handleResizeEnd() {
+		if (isResizing && resizeField) {
+			// Save to localStorage
+			const userId = $currentUser?.user_id || 'anonymous';
+			saveColumnWidths(userId, page.page.id, columnWidths);
+		}
+
+		isResizing = false;
+		resizeField = null;
+
+		// Reset cursor and selection
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+
+		// Remove document-level listeners
+		document.removeEventListener('mousemove', handleResizeMove);
+		document.removeEventListener('mouseup', handleResizeEnd);
+	}
+
+	// Get column width (custom or default from field definition)
+	function getColumnWidth(field: Field): number {
+		return columnWidths[field.source] ?? field.width ?? 150;
+	}
+
 	// Open customize modal
 	function handleCustomize() {
 		customizeModalOpen = true;
@@ -629,6 +738,13 @@
 		columnCustomizations = customizations;
 		const userId = $currentUser?.user_id || 'anonymous';
 		savePageCustomizations(userId, page.page.id, customizations);
+	}
+
+	// Toggle row numbers
+	function handleToggleRowNumbers() {
+		showRowNumbers = !showRowNumbers;
+		const userId = $currentUser?.user_id || 'anonymous';
+		saveRowNumbersPreference(userId, page.page.id, showRowNumbers);
 	}
 
 	// Toggle filter pane
@@ -690,6 +806,30 @@
 
 		<svelte:fragment slot="rightActions">
 			{#if editingIndex === null}
+				<!-- Row Numbers toggle button -->
+				<Button
+					variant={showRowNumbers ? 'primary' : 'secondary'}
+					size="sm"
+					onclick={handleToggleRowNumbers}
+					title="Toggle row numbers"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+						/>
+					</svg>
+					<span class="ml-1">#</span>
+				</Button>
+
 				<!-- Customize button -->
 				<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize columns">
 					<svg
@@ -756,9 +896,46 @@
 		<table class="table">
 			<thead>
 				<tr>
+					{#if showRowNumbers}
+						<th class="row-number-header">#</th>
+					{/if}
 					{#each visibleColumns() as field}
-						<th style={field.width ? `width: ${field.width}px` : ''}>
-							{getFieldCaption(field.source, captions, field.caption)}
+						<th style="width: {getColumnWidth(field)}px">
+							<div class="th-content">
+								<span class="th-label">{getFieldCaption(field.source, captions, field.caption)}</span>
+								<button
+									type="button"
+									class="sort-btn"
+									onclick={(e) => {
+										e.stopPropagation();
+										handleSort(field.source);
+									}}
+									title={sortField === field.source
+										? `Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`
+										: 'Sort ascending'}
+								>
+									{#if sortField === field.source}
+										{#if sortDirection === 'asc'}
+											<svg class="sort-icon" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M7 14l5-5 5 5H7z"/>
+											</svg>
+										{:else}
+											<svg class="sort-icon" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M7 10l5 5 5-5H7z"/>
+											</svg>
+										{/if}
+									{:else}
+										<svg class="sort-icon sort-icon-inactive" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M7 10l5 5 5-5H7z"/>
+										</svg>
+									{/if}
+								</button>
+							</div>
+							<!-- Resize handle -->
+							<div
+								class="resize-handle"
+								onmousedown={(e) => handleResizeStart(e, field.source, getColumnWidth(field))}
+							></div>
 						</th>
 					{/each}
 				</tr>
@@ -773,6 +950,9 @@
 						)}
 						onclick={() => !editMode && handleRowClick(index)}
 					>
+						{#if showRowNumbers}
+							<td class="row-number-cell">{index + 1}</td>
+						{/if}
 						{#each visibleColumns() as field, colIndex}
 							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
 								{#if editMode}
@@ -831,15 +1011,15 @@
 		</tbody>
 		</table>
 		</div>
+	</div>
 
-		<div class="status-bar">
-			<span class="text-sm text-gray-600 dark:text-gray-400">
-				{records.length} record{records.length !== 1 ? 's' : ''}
-				{#if selectedRecord}
-					• Row {selectedIndex + 1} selected
-				{/if}
-			</span>
-		</div>
+	<div class="status-bar">
+		<span class="text-sm text-gray-600 dark:text-gray-400">
+			{records.length} record{records.length !== 1 ? 's' : ''}
+			{#if selectedRecord}
+				• Row {selectedIndex + 1} selected
+			{/if}
+		</span>
 	</div>
 </div>
 
@@ -877,8 +1057,8 @@
 	}
 
 	.table-container {
-		@apply flex-1 overflow-auto border border-gray-200 rounded-lg;
-		@apply dark:border-gray-700;
+		@apply flex-1 overflow-auto border border-gray-200 rounded-lg bg-white;
+		@apply dark:border-gray-700 dark:bg-gray-900;
 	}
 
 	.table {
@@ -893,10 +1073,86 @@
 	.table th {
 		@apply px-4 py-3 text-left text-sm font-semibold;
 		border-right: 1px solid rgba(255, 255, 255, 0.1);
+		position: relative;
 	}
 
 	.table th:last-child {
 		border-right: none;
+	}
+
+	/* Row number column styles */
+	.row-number-header {
+		width: 50px !important;
+		min-width: 50px;
+		max-width: 50px;
+		text-align: center;
+		color: white;
+	}
+
+	.row-number-cell {
+		width: 50px;
+		min-width: 50px;
+		max-width: 50px;
+		text-align: center;
+		font-size: 0.75rem;
+		color: #6b7280;
+		border-right: 1px solid #d1d5db;
+		border-bottom: 1px solid #d1d5db;
+		@apply dark:text-gray-500 dark:border-gray-600;
+	}
+
+	.resize-handle {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 6px;
+		cursor: col-resize;
+		background: transparent;
+		z-index: 1;
+	}
+
+	.resize-handle:hover {
+		background: rgba(255, 255, 255, 0.3);
+	}
+
+	.th-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 4px;
+	}
+
+	.th-label {
+		flex: 1;
+		color: white;
+	}
+
+	.sort-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		padding: 2px;
+		cursor: pointer;
+		border-radius: 2px;
+		opacity: 0.5;
+		transition: opacity 0.15s;
+	}
+
+	.sort-btn:hover {
+		opacity: 1;
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	.sort-icon {
+		width: 16px;
+		height: 16px;
+	}
+
+	.sort-icon-inactive {
+		opacity: 0.4;
 	}
 
 	.table tbody tr {
@@ -904,9 +1160,38 @@
 		@apply dark:border-gray-700 dark:hover:bg-gray-700;
 	}
 
+	/* Zebra striping - alternating row colors */
+	.table tbody tr:nth-child(even) {
+		@apply bg-gray-50;
+		@apply dark:bg-gray-800/50;
+	}
+
+	.table tbody tr:nth-child(odd) {
+		@apply bg-white;
+		@apply dark:bg-gray-900;
+	}
+
 	.table tbody tr.selected {
-		@apply bg-blue-100 hover:bg-blue-100;
-		@apply dark:bg-blue-900/30 dark:hover:bg-blue-900/30;
+		background-color: #dbeafe !important; /* bg-blue-100 */
+	}
+
+	.table tbody tr.selected:hover {
+		background-color: #dbeafe !important;
+	}
+
+	:global(.dark) .table tbody tr.selected {
+		background-color: #1e40af !important; /* bg-blue-800 */
+		color: white;
+	}
+
+	:global(.dark) .table tbody tr.selected:hover {
+		background-color: #1e40af !important;
+	}
+
+	:global(.dark) .table tbody tr.selected td,
+	:global(.dark) .table tbody tr.selected .read-cell-content,
+	:global(.dark) .table tbody tr.selected .primary-key-link {
+		color: white !important;
 	}
 
 	.table tbody tr.new-row {
@@ -926,7 +1211,12 @@
 
 	.status-bar {
 		@apply px-4 py-2 bg-gray-50 border-t border-gray-200 rounded-b;
-		@apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300;
+	}
+
+	:global(.dark) .status-bar {
+		background-color: #1f2937; /* gray-800 */
+		border-color: #374151; /* gray-700 */
+		color: #d1d5db; /* gray-300 */
 	}
 
 	.edit-cell-input {

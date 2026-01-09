@@ -282,13 +282,22 @@
 <style>
 	.modal-header {
 		@apply flex items-center justify-between px-6 py-4;
-		@apply border-b border-gray-200 dark:border-gray-700;
-		@apply bg-white dark:bg-gray-800;
+		@apply border-b border-gray-200;
+		@apply bg-white;
 		@apply shrink-0;
 	}
 
+	:global(.dark) .modal-header {
+		border-color: #374151; /* gray-700 */
+		background-color: #1f2937; /* gray-800 */
+	}
+
 	.modal-title {
-		@apply text-xl font-bold text-nav-blue dark:text-blue-400;
+		@apply text-xl font-bold text-nav-blue;
+	}
+
+	:global(.dark) .modal-title {
+		color: #60a5fa; /* blue-400 */
 	}
 
 	.modal-controls {
@@ -296,36 +305,60 @@
 	}
 
 	.control-btn {
-		@apply p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700;
-		@apply text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100;
+		@apply p-2 rounded;
+		@apply text-gray-600;
 		@apply transition-colors;
 	}
 
 	.control-btn:hover {
-		@apply bg-gray-100 dark:bg-gray-700;
+		@apply bg-gray-100;
+		@apply text-gray-900;
+	}
+
+	:global(.dark) .control-btn {
+		color: #9ca3af; /* gray-400 */
+	}
+
+	:global(.dark) .control-btn:hover {
+		background-color: #374151; /* gray-700 */
+		color: #f3f4f6; /* gray-100 */
 	}
 
 	.modal-body {
 		@apply flex-1 flex flex-col p-6;
-		@apply bg-gray-50 dark:bg-gray-900;
+		@apply bg-gray-50;
 		@apply overflow-hidden; /* Prevent modal-body from scrolling */
 		@apply relative; /* For keyboard-hint positioning */
 	}
 
+	:global(.dark) .modal-body {
+		background-color: #111827; /* gray-900 */
+	}
+
 	.keyboard-hint {
 		@apply absolute top-4 right-4 z-40;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-white;
 		@apply px-3 py-1.5 rounded-md;
-		@apply shadow-sm border border-gray-200 dark:border-gray-700;
+		@apply shadow-sm border border-gray-200;
 		@apply opacity-70 hover:opacity-100;
 		@apply transition-opacity duration-200;
 	}
 
+	:global(.dark) .keyboard-hint {
+		background-color: #1f2937; /* gray-800 */
+		border-color: #374151; /* gray-700 */
+	}
+
 	.keyboard-hint kbd {
-		@apply bg-gray-100 dark:bg-gray-700;
+		@apply bg-gray-100;
 		@apply px-1.5 py-0.5 rounded;
 		@apply text-xs font-mono;
-		@apply border border-gray-300 dark:border-gray-600;
+		@apply border border-gray-300;
+	}
+
+	:global(.dark) .keyboard-hint kbd {
+		background-color: #374151; /* gray-700 */
+		border-color: #4b5563; /* gray-600 */
 	}
 
 
