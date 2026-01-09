@@ -4,8 +4,11 @@
 	import { fetchPage } from '$lib/services/pages';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
+	import { toast } from '$lib/stores/toast';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
+	import ListPageSkeleton from './ListPageSkeleton.svelte';
+	import CardPageSkeleton from './CardPageSkeleton.svelte';
 
 	interface Props {
 		pageid: number;
@@ -17,7 +20,8 @@
 	// State
 	let page: PageDefinition | null = $state(null);
 	let captions: Record<string, string> = $state({});
-	let loading = $state(true);
+	let pageLoading = $state(true);  // Loading page definition
+	let dataLoading = $state(false); // Loading data after page definition is known
 	let error = $state<string | null>(null);
 
 	// Data for the page
@@ -34,7 +38,7 @@
 	// Load page definition and data
 	onMount(async () => {
 		try {
-			loading = true;
+			pageLoading = true;
 			error = null;
 
 			// Fetch page definition
@@ -50,6 +54,10 @@
 
 			page = result.data;
 			captions = result.captions?.fields || {};
+			pageLoading = false;
+
+			// Now show skeleton while loading data
+			dataLoading = true;
 
 			// Load data based on page type
 			if (page.page.type === 'Card') {
@@ -61,7 +69,8 @@
 			error = err instanceof Error ? err.message : 'Unknown error';
 			console.error('Error loading page:', err);
 		} finally {
-			loading = false;
+			pageLoading = false;
+			dataLoading = false;
 		}
 	});
 
@@ -167,7 +176,7 @@
 				if (id && confirm(`Delete this ${page.page.caption}?`)) {
 					try {
 						await api.deleteRecord(page.page.source_table, id);
-						alert('Record deleted successfully');
+						toast.success('Record deleted successfully');
 						// Navigate back to the list page if available
 						if (page.page.type === 'Card') {
 							// Try to find the associated list page by convention
@@ -177,7 +186,7 @@
 						}
 					} catch (err) {
 						console.error('Delete error:', err);
-						alert('Failed to delete record');
+						toast.error('Failed to delete record');
 					}
 				}
 				break;
@@ -195,17 +204,17 @@
 			if (recordid) {
 				// Update existing record
 				await api.modifyRecord(page.page.source_table, recordid, savedRecord);
-				alert('Record updated');
+				toast.success('Record updated');
 			} else {
 				// Insert new record
 				const response = await api.insertRecord(page.page.source_table, savedRecord);
 				if (response.success) {
-					alert('Record created');
+					toast.success('Record created');
 					// Could navigate to the new record
 				}
 			}
 		} catch (err) {
-			alert('Failed to save record');
+			toast.error('Failed to save record');
 			console.error('Save error:', err);
 		}
 	}
@@ -235,9 +244,9 @@
 						try {
 							await api.deleteRecord(page.page.source_table, recordId);
 							await loadListData();
-							alert('Record deleted');
+							toast.success('Record deleted');
 						} catch (err) {
-							alert('Failed to delete record');
+							toast.error('Failed to delete record');
 						}
 					}
 				}
@@ -272,7 +281,7 @@
 				await loadListData();
 			}
 		} catch (err) {
-			alert('Failed to save record');
+			toast.error('Failed to save record');
 			console.error('Save error:', err);
 			throw err;
 		}
@@ -286,8 +295,9 @@
 			const recordId = deletedRecord['no'] || deletedRecord['code'] || deletedRecord['id'];
 			await api.deleteRecord(page.page.source_table, recordId);
 			await loadListData();
+			toast.success('Record deleted');
 		} catch (err) {
-			alert('Failed to delete record');
+			toast.error('Failed to delete record');
 			console.error('Delete error:', err);
 			throw err;
 		}
@@ -330,13 +340,16 @@
 	}
 </script>
 
-{#if loading}
-	<div class="flex items-center justify-center h-full">
-		<div class="text-center">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-nav-blue dark:border-blue-400 mx-auto mb-4"></div>
-			<p class="text-gray-600 dark:text-gray-400">Loading page...</p>
-		</div>
-	</div>
+{#if pageLoading}
+	<!-- Initial loading - show list skeleton as default -->
+	<ListPageSkeleton />
+{:else if dataLoading && page}
+	<!-- Page definition loaded, show type-specific skeleton while data loads -->
+	{#if page.page.type === 'Card'}
+		<CardPageSkeleton />
+	{:else}
+		<ListPageSkeleton />
+	{/if}
 {:else if error}
 	<div class="flex items-center justify-center h-full">
 		<div class="text-center">
