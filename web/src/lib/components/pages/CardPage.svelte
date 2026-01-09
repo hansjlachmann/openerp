@@ -69,12 +69,35 @@
 	// Edit mode state - start in edit mode for new records
 	let editMode = $state(checkIsNewRecord());
 
+	// Track if we've already focused the initial field (to avoid refocusing on every state change)
+	let initialFocusDone = $state(false);
+
 	// Auto-enable edit mode when record changes to a new record
 	$effect(() => {
 		// Re-check when record changes
 		const id = record?.no || record?.code || record?.id;
 		if (!id) {
 			editMode = true;
+			// Reset focus flag for new records so focus happens again
+			initialFocusDone = false;
+		}
+	});
+
+	// Focus the configured field when page opens in edit mode (only once per new record)
+	$effect(() => {
+		if (editMode && page.page.focus_field && !initialFocusDone) {
+			initialFocusDone = true;
+			// Use longer timeout to ensure modal animation completes and DOM is ready
+			setTimeout(() => {
+				const input = document.getElementById(page.page.focus_field!);
+				if (input) {
+					input.focus();
+					// Select all text if it's an input
+					if (input instanceof HTMLInputElement) {
+						input.select();
+					}
+				}
+			}, 250);
 		}
 	});
 

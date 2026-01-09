@@ -16,6 +16,7 @@ type PageMetadata struct {
 	ModalCard         *bool    `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
 	Editable          *bool    `yaml:"editable,omitempty" json:"editable,omitempty"`
 	EnableNavigation  *bool    `yaml:"enable_navigation,omitempty" json:"enable_navigation,omitempty"`
+	FocusField        string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout            Layout   `yaml:"layout" json:"layout"`
 	Actions           []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
 }

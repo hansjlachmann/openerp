@@ -6,6 +6,7 @@ page:
   caption: Customer Card
   enable_navigation: true
   editable: true
+  focus_field: "no"
 
   layout:
     sections:
