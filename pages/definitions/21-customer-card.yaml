@@ -1,0 +1,104 @@
+page:
+  id: 21
+  type: Card
+  name: Customer Card
+  source_table: Customer
+  caption: Customer Card
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: no
+            editable: false
+            importance: Promoted
+
+          - source: name
+            editable: true
+            importance: Promoted
+
+          - source: address
+            editable: true
+
+          - source: post_code
+            editable: true
+
+          - source: city
+            editable: true
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: phone_number
+            editable: true
+
+      - name: Invoicing
+        caption: Invoicing
+        fields:
+          - source: payment_terms_code
+            editable: true
+            table_relation: Payment_terms
+
+          - source: credit_limit
+            editable: true
+
+          - source: balance_lcy
+            editable: false
+            style: Strong
+
+          - source: sales_lcy
+            editable: false
+            style: Strong
+
+      - name: Statistics
+        caption: Statistics
+        fields:
+          - source: no_of_ledger_entries
+            editable: false
+
+          - source: last_order_date
+            editable: false
+
+          - source: created_at
+            editable: false
+
+          - source: status
+            editable: true
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 22
+
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      shortcut: Ctrl+F7
+      run_page: 25
