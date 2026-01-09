@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Field } from '$lib/types/pages';
 	import { cn } from '$lib/utils/cn';
+	import { getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
 
 	interface Props {
 		field: Field;
@@ -8,7 +9,7 @@
 		caption?: string;
 		editable?: boolean;
 		onchange?: (value: any) => void;
-		readonly?: boolean;
+		onblur?: () => void;
 	}
 
 	let {
@@ -17,42 +18,17 @@
 		caption,
 		editable = false,
 		onchange,
-		readonly = false
+		onblur
 	}: Props = $props();
 
 	// Determine if field is editable
-	const isEditable = $derived(editable && field.editable && !readonly);
+	const isEditable = $derived(editable);
 
 	// Get field caption (from props, field definition, or field source)
 	const fieldCaption = $derived(caption || field.caption || field.source);
 
 	// Determine field style classes based on metadata
-	const fieldStyle = $derived(() => {
-		const classes: string[] = [];
-
-		// Importance styling
-		if (field.importance === 'Promoted') {
-			classes.push('font-semibold');
-		}
-
-		// Style-based coloring
-		switch (field.style) {
-			case 'Strong':
-				classes.push('text-nav-blue dark:text-blue-400 font-bold');
-				break;
-			case 'Attention':
-				classes.push('text-orange-600 dark:text-orange-400 font-medium');
-				break;
-			case 'Favorable':
-				classes.push('text-green-600 dark:text-green-400');
-				break;
-			case 'Unfavorable':
-				classes.push('text-red-600 dark:text-red-400');
-				break;
-		}
-
-		return classes.join(' ');
-	});
+	const fieldStyle = $derived(getFieldStyleClasses(field));
 
 	// Handle value change
 	function handleChange(e: Event) {
@@ -62,16 +38,13 @@
 		onchange?.(newValue);
 	}
 
-	// Format value for display
-	function formatValue(val: any): string {
-		if (val === null || val === undefined) {
-			return '';
+	// Determine input type based on field
+	const inputType = $derived(() => {
+		if (field.source === 'password') {
+			return 'password';
 		}
-		if (typeof val === 'boolean') {
-			return val ? 'Yes' : 'No';
-		}
-		return String(val);
-	}
+		return 'text';
+	});
 </script>
 
 {#if isEditable}
@@ -82,10 +55,11 @@
 		</label>
 		<input
 			id={field.source}
-			type="text"
-			class={cn('input', fieldStyle())}
+			type={inputType()}
+			class={cn('input', fieldStyle)}
 			value={value}
 			oninput={handleChange}
+			onblur={() => onblur?.()}
 		/>
 	</div>
 {:else}
@@ -94,7 +68,7 @@
 		<div class="field-label">
 			{fieldCaption}
 		</div>
-		<div class={cn('field-value', fieldStyle())}>
+		<div class={cn('field-value', fieldStyle)}>
 			{formatValue(value)}
 		</div>
 	</div>
@@ -106,12 +80,28 @@
 	}
 
 	.field-label {
-		@apply text-sm font-medium text-gray-700 dark:text-gray-300;
+		@apply text-sm font-medium text-gray-700;
+	}
+
+	:global(.dark) .field-label {
+		color: #d1d5db; /* gray-300 */
 	}
 
 	.field-value {
 		@apply text-base py-1.5 px-3 bg-gray-50 border border-gray-200 rounded;
-		@apply dark:bg-gray-700 dark:border-gray-600;
 		min-height: 2.5rem;
+	}
+
+	:global(.dark) .field-value {
+		background-color: #374151; /* gray-700 */
+		border-color: #4b5563; /* gray-600 */
+		color: #f3f4f6; /* gray-100 */
+	}
+
+	/* Override input styles for dark mode */
+	:global(.dark) .field-group input.input {
+		background-color: #374151 !important; /* gray-700 */
+		border-color: #4b5563 !important; /* gray-600 */
+		color: #f3f4f6 !important; /* gray-100 */
 	}
 </style>

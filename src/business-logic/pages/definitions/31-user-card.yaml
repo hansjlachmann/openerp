@@ -1,0 +1,84 @@
+page:
+  id: 31
+  type: Card
+  name: User Card
+  source_table: User
+  caption: User Card
+  enable_navigation: true
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: user_id
+            editable: true
+            caption: User ID
+            importance: Promoted
+
+          - source: user_name
+            editable: true
+            caption: Name
+            importance: Promoted
+
+          - source: email
+            editable: true
+            caption: Email
+
+          - source: language
+            editable: true
+            caption: Language
+
+          - source: active
+            editable: true
+            caption: Active
+
+      - name: Authentication
+        caption: Authentication
+        fields:
+          - source: password
+            editable: true
+            caption: Password
+            importance: Promoted
+
+          - source: password_hash
+            editable: false
+            visible: false
+            caption: Password Hash
+
+      - name: Timestamps
+        caption: Timestamps
+        fields:
+          - source: created_at
+            editable: false
+            caption: Created At
+
+          - source: last_login
+            editable: false
+            caption: Last Login
+
+  actions:
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

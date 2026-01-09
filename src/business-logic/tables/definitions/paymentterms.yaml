@@ -17,4 +17,5 @@ table:
     - name: active
       type: bool
       db_name: active
+      caption: Active
       default: true

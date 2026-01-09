@@ -8,6 +8,7 @@ tables:
     fields:
       code: "Code"
       description: "Description"
+      active: "Active"
       due_date_calculation: "Due Date Calculation"
       discount_date_calculation: "Discount Date Calculation"
       discount_percent: "Discount %"
@@ -21,7 +22,7 @@ tables:
       address: "Address"
       post_code: "Post Code"
       city: "City"
-      phone_number: "Phone No."
+      phonenumber: "Phone No."
       email: "E-Mail"
       payment_terms_code: "Payment Terms Code"
       credit_limit: "Credit Limit (LCY)"

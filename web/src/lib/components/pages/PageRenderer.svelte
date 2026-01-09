@@ -3,6 +3,7 @@
 	import type { PageDefinition } from '$lib/types/pages';
 	import { fetchPage } from '$lib/services/pages';
 	import { api } from '$lib/services/api';
+	import { currentUser } from '$lib/stores/user';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 
@@ -22,6 +23,13 @@
 	// Data for the page
 	let record: Record<string, any> = $state({});
 	let records: Array<Record<string, any>> = $state([]);
+
+	// Filters for list pages
+	let currentFilters: import('$lib/types/api').TableFilter[] = $state([]);
+
+	// Navigation data for card pages
+	let recordIds: string[] = $state([]);
+	let currentRecordIndex = $state(-1);
 
 	// Load page definition and data
 	onMount(async () => {
@@ -69,6 +77,15 @@
 				// New record
 				record = {};
 			}
+
+			// Load record IDs for navigation if enabled
+			if (page.page.enable_navigation && recordid) {
+				// Use lightweight IDs-only endpoint
+				recordIds = await api.getRecordIDs(page.page.source_table);
+
+				// Find current record index
+				currentRecordIndex = recordIds.indexOf(recordid);
+			}
 		} catch (err) {
 			console.error('Error loading card data:', err);
 			record = {};
@@ -80,12 +97,60 @@
 		if (!page) return;
 
 		try {
-			const response = await api.listRecords(page.page.source_table);
+			// Determine which fields are visible based on customizations
+			const visibleFields = getVisibleFields();
+
+			// Load records with only visible fields to avoid expensive FlowField calculations
+			// Also apply current filters
+			const options: import('$lib/types/api').ListOptions = {};
+			if (visibleFields.length > 0) {
+				options.fields = visibleFields;
+			}
+			if (currentFilters.length > 0) {
+				options.filters = currentFilters;
+			}
+
+			const response = await api.listRecords(page.page.source_table, options);
 			records = response.records || [];
 		} catch (err) {
 			console.error('Error loading list data:', err);
 			records = [];
 		}
+	}
+
+	// Get visible fields from page definition and user customizations
+	function getVisibleFields(): string[] {
+		if (!page || !page.page.layout.repeater?.fields) return [];
+
+		// Load user customizations from localStorage (user-specific)
+		let userId: string;
+		currentUser.subscribe(user => {
+			userId = user?.user_id || 'anonymous';
+		})();
+
+		const key = `page-customization-${userId}-${page.page.id}`;
+		const stored = localStorage.getItem(key);
+		let customizations: Record<string, { visible: boolean }> = {};
+
+		if (stored) {
+			try {
+				customizations = JSON.parse(stored);
+			} catch (e) {
+				console.error('Failed to load page customizations:', e);
+			}
+		}
+
+		// Filter to visible fields only
+		return page.page.layout.repeater.fields
+			.filter(field => {
+				// Check if user has customized this field
+				if (field.source in customizations) {
+					return customizations[field.source].visible;
+				}
+				// Otherwise use the field's visible property (default true)
+				return field.visible !== false;
+			})
+			.map(field => field.source);
 	}
 
 	// Handle actions from card page
@@ -97,12 +162,21 @@
 				record = {};
 				break;
 			case 'Delete':
-				if (recordid) {
+				// Get record ID from record object or recordid prop
+				const id = record.no || record.code || record.id || recordid;
+				if (id && confirm(`Delete this ${page.page.caption}?`)) {
 					try {
-						await api.deleteRecord(page.page.source_table, recordid);
-						// Navigate back or show message
-						alert('Record deleted');
+						await api.deleteRecord(page.page.source_table, id);
+						alert('Record deleted successfully');
+						// Navigate back to the list page if available
+						if (page.page.type === 'Card') {
+							// Try to find the associated list page by convention
+							// Customer Card (21) -> Customer List (22)
+							const listPageId = page.page.id + 1;
+							window.location.href = `/pages/${listPageId}`;
+						}
 					} catch (err) {
+						console.error('Delete error:', err);
 						alert('Failed to delete record');
 					}
 				}
@@ -218,6 +292,42 @@
 			throw err;
 		}
 	}
+
+	// Handle filter change from list page
+	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[]) {
+		currentFilters = filters;
+		await loadListData();
+	}
+
+	// Navigation functions for card pages
+	function navigateToRecord(targetRecordId: string) {
+		if (!page) return;
+		window.location.href = `/pages/${page.page.id}/${targetRecordId}`;
+	}
+
+	function navigateFirst() {
+		if (recordIds.length > 0) {
+			navigateToRecord(recordIds[0]);
+		}
+	}
+
+	function navigatePrevious() {
+		if (currentRecordIndex > 0) {
+			navigateToRecord(recordIds[currentRecordIndex - 1]);
+		}
+	}
+
+	function navigateNext() {
+		if (currentRecordIndex < recordIds.length - 1) {
+			navigateToRecord(recordIds[currentRecordIndex + 1]);
+		}
+	}
+
+	function navigateLast() {
+		if (recordIds.length > 0) {
+			navigateToRecord(recordIds[recordIds.length - 1]);
+		}
+	}
 </script>
 
 {#if loading}
@@ -243,16 +353,27 @@
 			{captions}
 			onaction={handleCardAction}
 			onsave={handleCardSave}
+			navigationEnabled={page.page.enable_navigation || false}
+			canNavigateFirst={currentRecordIndex > 0}
+			canNavigatePrevious={currentRecordIndex > 0}
+			canNavigateNext={currentRecordIndex >= 0 && currentRecordIndex < recordIds.length - 1}
+			canNavigateLast={currentRecordIndex >= 0 && currentRecordIndex < recordIds.length - 1}
+			onNavigateFirst={navigateFirst}
+			onNavigatePrevious={navigatePrevious}
+			onNavigateNext={navigateNext}
+			onNavigateLast={navigateLast}
 		/>
 	{:else if page.page.type === 'List'}
 		<ListPage
 			{page}
 			{records}
 			{captions}
+			{currentFilters}
 			onaction={handleListAction}
 			onrowclick={handleRowClick}
 			onsave={handleListSave}
 			ondelete={handleListDelete}
+			onfilter={handleFilterChange}
 		/>
 	{:else}
 		<div class="flex items-center justify-center h-full">

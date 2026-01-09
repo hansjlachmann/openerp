@@ -1,0 +1,67 @@
+table:
+  id: 2000020000
+  name: User
+  caption: User
+  description: System users with authentication
+  global: true  # Global table - no company prefix
+  fields:
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      caption: User ID
+      description: Unique user identifier
+      primary_key: true
+      length: 50
+      required: true
+
+    - name: user_name
+      type: types.Text
+      db_name: user_name
+      caption: User Name
+      description: Full name of the user
+      length: 100
+
+    - name: email
+      type: types.Text
+      db_name: email
+      caption: Email
+      description: User email address
+      length: 100
+
+    - name: password_hash
+      type: types.Text
+      db_name: password_hash
+      caption: Password Hash
+      description: Hashed password (bcrypt)
+
+    - name: language
+      type: types.Code
+      db_name: language
+      caption: Language
+      description: Preferred language (en-US, de-DE, etc.)
+      length: 10
+
+    - name: active
+      type: bool
+      db_name: active
+      caption: Active
+      description: Whether user account is active
+      default: true
+
+    - name: created_at
+      type: types.DateTime
+      db_name: created_at
+      caption: Created At
+      description: When this user was created
+
+    - name: last_login
+      type: types.DateTime
+      db_name: last_login
+      caption: Last Login
+      description: When user last logged in
+     
+
+  keys:
+    - name: Primary
+      fields: [user_id]
+      clustered: true

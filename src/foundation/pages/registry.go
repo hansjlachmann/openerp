@@ -50,7 +50,7 @@ func (r *Registry) LoadPages() error {
 		return fmt.Errorf("failed to find project root: %w", err)
 	}
 
-	pagesPath := filepath.Join(rootPath, "pages", "definitions")
+	pagesPath := filepath.Join(rootPath, "src", "business-logic", "pages", "definitions")
 
 	// Check if pages directory exists
 	if _, err := os.Stat(pagesPath); os.IsNotExist(err) {
@@ -109,7 +109,7 @@ func (r *Registry) LoadMenu() error {
 		return fmt.Errorf("failed to find project root: %w", err)
 	}
 
-	menuPath := filepath.Join(rootPath, "pages", "menu.yaml")
+	menuPath := filepath.Join(rootPath, "src", "business-logic", "pages", "menu.yaml")
 
 	// Check if menu file exists
 	if _, err := os.Stat(menuPath); os.IsNotExist(err) {

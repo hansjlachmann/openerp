@@ -47,22 +47,15 @@
 								href="/pages/22"
 								class="block p-4 border border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
 							>
-								<div class="font-semibold text-nav-blue">Customer List (YAML)</div>
-								<div class="text-sm text-gray-600 mt-1">View and manage customers - YAML-driven page</div>
+								<div class="font-semibold text-nav-blue">Customer List</div>
+								<div class="text-sm text-gray-600 mt-1">View and manage customers</div>
 							</a>
 							<a
 								href="/pages/26"
 								class="block p-4 border border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
 							>
-								<div class="font-semibold text-nav-blue">Payment Terms (YAML)</div>
-								<div class="text-sm text-gray-600 mt-1">Manage payment terms - YAML-driven page</div>
-							</a>
-							<a
-								href="/customers"
-								class="block p-4 border border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
-							>
-								<div class="font-semibold text-nav-blue">Customer List (Old)</div>
-								<div class="text-sm text-gray-600 mt-1">Original hardcoded customer list</div>
+								<div class="font-semibold text-nav-blue">Payment Terms</div>
+								<div class="text-sm text-gray-600 mt-1">Manage payment terms</div>
 							</a>
 						</div>
 					</div>
