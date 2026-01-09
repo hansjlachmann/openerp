@@ -185,11 +185,11 @@ export const api = {
 	},
 
 	// Authentication
-	async login(userID: string, password: string): Promise<ApiResponse> {
+	async login(userID: string, password: string, company?: string): Promise<ApiResponse> {
 		const response = await fetch(`${API_BASE}/auth/login`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ user_id: userID, password })
+			body: JSON.stringify({ user_id: userID, password, company })
 		});
 
 		if (!response.ok) {
@@ -237,6 +237,16 @@ export const api = {
 		if (!response.ok) {
 			const result: ApiResponse = await response.json();
 			throw new Error(result.error || 'Failed to create user');
+		}
+
+		return await response.json();
+	},
+
+	async listCompanies(): Promise<ApiResponse<string[]>> {
+		const response = await fetch(`${API_BASE}/auth/companies`);
+
+		if (!response.ok) {
+			throw new Error('Failed to list companies');
 		}
 
 		return await response.json();

@@ -53,6 +53,7 @@ func (s *Server) Setup() {
 	api.Post("/auth/logout", authHandler.Logout)
 	api.Get("/auth/user", authHandler.GetCurrentUser)
 	api.Post("/auth/init", authHandler.CreateInitialUser)
+	api.Get("/auth/companies", authHandler.ListCompanies)
 
 	// Session routes
 	api.Get("/session", sessionHandler.GetSession)

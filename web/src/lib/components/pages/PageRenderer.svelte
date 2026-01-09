@@ -162,12 +162,21 @@
 				record = {};
 				break;
 			case 'Delete':
-				if (recordid) {
+				// Get record ID from record object or recordid prop
+				const id = record.no || record.code || record.id || recordid;
+				if (id && confirm(`Delete this ${page.page.caption}?`)) {
 					try {
-						await api.deleteRecord(page.page.source_table, recordid);
-						// Navigate back or show message
-						alert('Record deleted');
+						await api.deleteRecord(page.page.source_table, id);
+						alert('Record deleted successfully');
+						// Navigate back to the list page if available
+						if (page.page.type === 'Card') {
+							// Try to find the associated list page by convention
+							// Customer Card (21) -> Customer List (22)
+							const listPageId = page.page.id + 1;
+							window.location.href = `/pages/${listPageId}`;
+						}
 					} catch (err) {
+						console.error('Delete error:', err);
 						alert('Failed to delete record');
 					}
 				}

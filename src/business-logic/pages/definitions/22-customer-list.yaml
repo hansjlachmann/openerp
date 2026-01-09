@@ -6,7 +6,7 @@ page:
   caption: Customer List
   card_page_id: 21
   modal_card: true
-  editable: false
+  editable: true
 
   layout:
     repeater:
@@ -37,6 +37,11 @@ page:
     - name: New
       caption: New
       shortcut: Ctrl+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
       promoted: true
 
     - name: Delete

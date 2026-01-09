@@ -5,6 +5,7 @@ page:
   source_table: User
   caption: User Card
   enable_navigation: true
+  editable: true
 
   layout:
     sections:
@@ -58,5 +59,26 @@ page:
             caption: Last Login
 
   actions:
-    - name: delete
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
       caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true
