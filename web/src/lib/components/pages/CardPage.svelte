@@ -60,8 +60,23 @@
 	let customizeModalOpen = $state(false);
 	let fieldCustomizations = $state<Record<string, FieldCustomization>>({});
 
-	// Edit mode state
-	let editMode = $state(false);
+	// Check if this is a new record (no ID)
+	function checkIsNewRecord(): boolean {
+		const id = record?.no || record?.code || record?.id;
+		return !id;
+	}
+
+	// Edit mode state - start in edit mode for new records
+	let editMode = $state(checkIsNewRecord());
+
+	// Auto-enable edit mode when record changes to a new record
+	$effect(() => {
+		// Re-check when record changes
+		const id = record?.no || record?.code || record?.id;
+		if (!id) {
+			editMode = true;
+		}
+	});
 
 	// Load customizations from localStorage on mount
 	$effect(() => {
@@ -328,11 +343,12 @@
 
 				<div class="section-fields">
 					{#each section.fields as field}
+						{@const fieldEditable = field.editable !== false && editMode}
 						<FieldRenderer
 							{field}
 							bind:value={record[field.source]}
 							caption={getFieldCaption(field.source, captions, field.caption)}
-							editable={field.editable && editMode}
+							editable={fieldEditable}
 							onblur={handleFieldBlur}
 						/>
 					{/each}

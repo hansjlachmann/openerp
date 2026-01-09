@@ -7,6 +7,7 @@
 	import { shortcuts, createShortcutMap } from '$utils/shortcuts';
 	import type { Customer } from '$types/api';
 	import { currentLanguage } from '$stores/session';
+	import { toast } from '$lib/stores/toast';
 
 	let customers: Customer[] = [];
 	let loading = true;
@@ -53,8 +54,9 @@
 			try {
 				await customerApi.delete(customer.no);
 				await loadCustomers();
+				toast.success('Customer deleted successfully');
 			} catch (err) {
-				alert(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`);
+				toast.error(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`);
 			}
 		}
 	}
