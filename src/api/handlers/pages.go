@@ -43,6 +43,10 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse("No active session"))
 	}
 
+	// Get table metadata for primary key info
+	tableMeta := pages.GetTableMetadata()
+	primaryKeyField := tableMeta.GetPrimaryKeyField(pageDef.Page.SourceTable)
+
 	// Get field captions using i18n
 	var captions *apitypes.CaptionData
 	if pageDef.Page.SourceTable != "" {
@@ -52,17 +56,25 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		// Build field captions map
 		fieldCaptions := make(map[string]string)
 
-		// Get captions for card page sections
-		for _, section := range pageDef.Page.Layout.Sections {
-			for _, field := range section.Fields {
+		// Get captions for card page sections and mark primary key
+		for i := range pageDef.Page.Layout.Sections {
+			for j := range pageDef.Page.Layout.Sections[i].Fields {
+				field := &pageDef.Page.Layout.Sections[i].Fields[j]
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				if field.Source == primaryKeyField {
+					field.PrimaryKey = true
+				}
 			}
 		}
 
-		// Get captions for list page repeater
+		// Get captions for list page repeater and mark primary key
 		if pageDef.Page.Layout.Repeater != nil {
-			for _, field := range pageDef.Page.Layout.Repeater.Fields {
+			for i := range pageDef.Page.Layout.Repeater.Fields {
+				field := &pageDef.Page.Layout.Repeater.Fields[i]
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				if field.Source == primaryKeyField {
+					field.PrimaryKey = true
+				}
 			}
 		}
 

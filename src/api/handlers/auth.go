@@ -27,6 +27,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var requestBody struct {
 		UserID   string `json:"user_id"`
 		Password string `json:"password"`
+		Company  string `json:"company"`
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
@@ -37,12 +38,23 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("User ID and password are required"))
 	}
 
-	// Find user - use session company or default to "cronus"
-	sess := session.GetCurrent()
-	company := "cronus"
-	if sess != nil && sess.GetCompany() != "" {
-		company = sess.GetCompany()
+	// Determine company - use provided company, or default to "cronus"
+	company := requestBody.Company
+	if company == "" {
+		company = "cronus"
 	}
+
+	// Verify company exists
+	var companyCheck string
+	err := h.db.QueryRow(`SELECT name FROM "Company" WHERE name = $1`, company).Scan(&companyCheck)
+	if err == sql.ErrNoRows {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Company does not exist"))
+	}
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to verify company"))
+	}
+
+	sess := session.GetCurrent()
 
 	var user tables.User
 	user.Init(h.db, company)
@@ -79,6 +91,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			user.User_name.String(),
 			user.Language.String(),
 		)
+		sess.SetCompany(company)
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -86,6 +99,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		"user_name": user.User_name.String(),
 		"email":     user.Email.String(),
 		"language":  user.Language.String(),
+		"company":   company,
 		"message":   "Login successful",
 	})
 	return c.JSON(response)
@@ -191,5 +205,27 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 		"user_id":   user.User_id.String(),
 		"user_name": user.User_name.String(),
 	})
+	return c.JSON(response)
+}
+
+// ListCompanies returns all available companies
+// GET /api/auth/companies
+func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
+	rows, err := h.db.Query(`SELECT name FROM "Company" ORDER BY name`)
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to list companies"))
+	}
+	defer rows.Close()
+
+	var companies []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to read company name"))
+		}
+		companies = append(companies, name)
+	}
+
+	response := apitypes.NewSuccessResponse(companies)
 	return c.JSON(response)
 }

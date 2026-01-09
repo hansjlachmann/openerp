@@ -6,6 +6,7 @@ page:
   caption: Users
   card_page_id: 31
   modal_card: true
+  editable: true
 
   layout:
     repeater:
@@ -48,6 +49,12 @@ page:
   actions:
     - name: New
       caption: New User
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
       promoted: true
       enabled: true
 

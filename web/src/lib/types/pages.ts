@@ -42,6 +42,7 @@ export interface Field {
 	style?: 'Strong' | 'Attention' | 'Favorable' | 'Unfavorable';
 	table_relation?: string;
 	width?: number;
+	primary_key?: boolean;
 }
 
 export interface Action {

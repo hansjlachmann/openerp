@@ -59,6 +59,7 @@ table:
       db_name: last_login
       caption: Last Login
       description: When user last logged in
+     
 
   keys:
     - name: Primary

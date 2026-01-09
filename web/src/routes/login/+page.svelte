@@ -6,6 +6,8 @@
 
 	let userID = $state('');
 	let password = $state('');
+	let company = $state('');
+	let companies = $state<string[]>([]);
 	let error = $state('');
 	let loading = $state(false);
 	let needsInitialSetup = $state(false);
@@ -19,6 +21,20 @@
 	let setupPasswordConfirm = $state('');
 
 	onMount(async () => {
+		// Load companies
+		try {
+			const response = await api.listCompanies();
+			if (response.success && response.data) {
+				companies = response.data;
+				// Set default company if available
+				if (companies.length > 0) {
+					company = companies[0];
+				}
+			}
+		} catch (err) {
+			console.error('Failed to load companies:', err);
+		}
+
 		// Check if we're already logged in
 		try {
 			const response = await api.getCurrentUser();
@@ -59,9 +75,14 @@
 			return;
 		}
 
+		if (!company) {
+			error = 'Please select a company';
+			return;
+		}
+
 		loading = true;
 		try {
-			const response = await api.login(userID, password);
+			const response = await api.login(userID, password, company);
 			if (response.success) {
 				// Store user info in store (also saves to localStorage)
 				currentUser.setUser(response.data);
@@ -227,6 +248,24 @@
 		{:else}
 			<!-- Login Form -->
 			<div class="form-group">
+				<label for="company">Company</label>
+				<select
+					id="company"
+					bind:value={company}
+					disabled={loading || companies.length === 0}
+					class="company-select"
+				>
+					{#if companies.length === 0}
+						<option value="">Loading companies...</option>
+					{:else}
+						{#each companies as companyName}
+							<option value={companyName}>{companyName}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
+			<div class="form-group">
 				<label for="userid">User ID</label>
 				<input
 					id="userid"
@@ -342,6 +381,29 @@
 	}
 
 	.form-group input:disabled {
+		background-color: #f7fafc;
+		cursor: not-allowed;
+	}
+
+	.company-select {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #cbd5e0;
+		border-radius: 4px;
+		font-size: 1rem;
+		transition: border-color 0.15s ease-in-out;
+		box-sizing: border-box;
+		background-color: white;
+		cursor: pointer;
+	}
+
+	.company-select:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+	}
+
+	.company-select:disabled {
 		background-color: #f7fafc;
 		cursor: not-allowed;
 	}

@@ -48,6 +48,7 @@ type Field struct {
 	Style         string `yaml:"style,omitempty" json:"style,omitempty"`                 // Strong, Attention, Favorable, Unfavorable
 	TableRelation string `yaml:"table_relation,omitempty" json:"table_relation,omitempty"` // Lookup table
 	Width         int    `yaml:"width,omitempty" json:"width,omitempty"`                 // Column width (for List pages)
+	PrimaryKey    bool   `yaml:"-" json:"primary_key,omitempty"`                         // Is this the primary key field (populated at runtime)
 }
 
 // Action represents a page action/button

@@ -519,8 +519,8 @@
 		}
 	}
 
-	// Handle row double-click - open the card
-	async function handleRowDoubleClick(index: number) {
+	// Handle primary key click - open the card
+	async function handlePrimaryKeyClick(index: number) {
 		selectedIndex = index;
 		if (page.page.card_page_id) {
 			if (page.page.modal_card) {
@@ -772,7 +772,6 @@
 							record._isNew && 'new-row'
 						)}
 						onclick={() => !editMode && handleRowClick(index)}
-						ondblclick={() => !editMode && handleRowDoubleClick(index)}
 					>
 						{#each visibleColumns() as field, colIndex}
 							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
@@ -809,6 +808,17 @@
 									<div class={cn('read-cell-content', getFieldStyleClasses(field))}>
 										{#if typeof record[field.source] === 'boolean'}
 											<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
+										{:else if field.primary_key && page.page.card_page_id}
+											<button
+												type="button"
+												class="primary-key-link"
+												onclick={(e) => {
+													e.stopPropagation();
+													handlePrimaryKeyClick(index);
+												}}
+											>
+												{formatValue(record[field.source])}
+											</button>
 										{:else}
 											{formatValue(record[field.source])}
 										{/if}
@@ -976,5 +986,29 @@
 		line-height: 1.3;
 		font-size: 0.875rem;
 		margin: 0;
+	}
+
+	/* Primary key link - looks like a hyperlink */
+	.primary-key-link {
+		color: #2563eb;
+		text-decoration: underline;
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		cursor: pointer;
+		text-align: inherit;
+	}
+
+	.primary-key-link:hover {
+		color: #1d4ed8;
+	}
+
+	:global(.dark) .primary-key-link {
+		color: #60a5fa;
+	}
+
+	:global(.dark) .primary-key-link:hover {
+		color: #93c5fd;
 	}
 </style>
