@@ -1,0 +1,69 @@
+page:
+  id: 30
+  type: List
+  name: Users
+  source_table: User
+  caption: Users
+  card_page_id: 31
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: user_id
+          visible: true
+          width: 150
+          caption: User ID
+
+        - source: user_name
+          visible: true
+          width: 200
+          caption: Name
+
+        - source: email
+          visible: true
+          width: 250
+          caption: Email
+
+        - source: language
+          visible: true
+          width: 100
+          caption: Language
+
+        - source: active
+          visible: true
+          width: 80
+          caption: Active
+
+        - source: last_login
+          visible: true
+          width: 180
+          caption: Last Login
+
+        - source: created_at
+          visible: true
+          width: 180
+          caption: Created
+
+  actions:
+    - name: New
+      caption: New User
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      promoted: true
+      enabled: true

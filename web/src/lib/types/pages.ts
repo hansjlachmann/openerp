@@ -13,6 +13,7 @@ export interface PageMetadata {
 	card_page_id?: number;
 	modal_card?: boolean;
 	editable?: boolean;
+	enable_navigation?: boolean;
 	layout: Layout;
 	actions?: Action[];
 }
@@ -36,10 +37,12 @@ export interface Field {
 	source: string;
 	caption?: string;
 	editable?: boolean;
+	visible?: boolean;
 	importance?: 'Promoted' | 'Standard' | 'Additional';
 	style?: 'Strong' | 'Attention' | 'Favorable' | 'Unfavorable';
 	table_relation?: string;
 	width?: number;
+	primary_key?: boolean;
 }
 
 export interface Action {
