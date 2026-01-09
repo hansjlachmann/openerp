@@ -80,12 +80,28 @@
 	}
 
 	.field-label {
-		@apply text-sm font-medium text-gray-700 dark:text-gray-300;
+		@apply text-sm font-medium text-gray-700;
+	}
+
+	:global(.dark) .field-label {
+		color: #d1d5db; /* gray-300 */
 	}
 
 	.field-value {
 		@apply text-base py-1.5 px-3 bg-gray-50 border border-gray-200 rounded;
-		@apply dark:bg-gray-700 dark:border-gray-600;
 		min-height: 2.5rem;
+	}
+
+	:global(.dark) .field-value {
+		background-color: #374151; /* gray-700 */
+		border-color: #4b5563; /* gray-600 */
+		color: #f3f4f6; /* gray-100 */
+	}
+
+	/* Override input styles for dark mode */
+	:global(.dark) .field-group input.input {
+		background-color: #374151 !important; /* gray-700 */
+		border-color: #4b5563 !important; /* gray-600 */
+		color: #f3f4f6 !important; /* gray-100 */
 	}
 </style>

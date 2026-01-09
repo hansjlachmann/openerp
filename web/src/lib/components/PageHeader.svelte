@@ -14,13 +14,13 @@
 	export let actions: Action[] = [];
 </script>
 
-<div class="page-header bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+<div class="page-header">
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<div>
-				<h1 class="text-2xl font-bold text-nav-blue dark:text-blue-400">{title}</h1>
+				<h1 class="header-title">{title}</h1>
 				{#if subtitle}
-					<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
+					<p class="header-subtitle">{subtitle}</p>
 				{/if}
 			</div>
 
@@ -53,3 +53,30 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.page-header {
+		@apply bg-white border-b border-gray-200 px-6 py-4;
+	}
+
+	:global(.dark) .page-header {
+		background-color: #1f2937; /* gray-800 */
+		border-color: #374151; /* gray-700 */
+	}
+
+	.header-title {
+		@apply text-2xl font-bold text-nav-blue;
+	}
+
+	:global(.dark) .header-title {
+		color: #60a5fa; /* blue-400 */
+	}
+
+	.header-subtitle {
+		@apply mt-1 text-sm text-gray-600;
+	}
+
+	:global(.dark) .header-subtitle {
+		color: #9ca3af; /* gray-400 */
+	}
+</style>

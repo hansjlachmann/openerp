@@ -58,8 +58,17 @@
 		@apply w-full px-3 py-2 border border-gray-300 rounded;
 		@apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
 		@apply disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed;
-		@apply dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100;
-		@apply dark:disabled:bg-gray-800 dark:disabled:text-gray-500;
+	}
+
+	.dark .input {
+		background-color: #374151; /* gray-700 */
+		border-color: #4b5563; /* gray-600 */
+		color: #f3f4f6; /* gray-100 */
+	}
+
+	.dark .input:disabled {
+		background-color: #1f2937; /* gray-800 */
+		color: #6b7280; /* gray-500 */
 	}
 
 	.input-error {
@@ -69,12 +78,19 @@
 	/* Card component */
 	.card {
 		@apply bg-white rounded-lg shadow-sm border border-gray-200;
-		@apply dark:bg-gray-800 dark:border-gray-700;
+	}
+
+	.dark .card {
+		background-color: #1f2937; /* gray-800 */
+		border-color: #374151; /* gray-700 */
 	}
 
 	.card-header {
 		@apply px-6 py-4 border-b border-gray-200;
-		@apply dark:border-gray-700;
+	}
+
+	.dark .card-header {
+		border-color: #374151; /* gray-700 */
 	}
 
 	.card-body {

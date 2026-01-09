@@ -357,6 +357,11 @@
 	.card-page {
 		@apply flex flex-col flex-1 min-h-0;
 		@apply relative; /* For keyboard-hint positioning */
+		@apply bg-white;
+	}
+
+	:global(.dark) .card-page {
+		background-color: #111827; /* gray-900 */
 	}
 
 	.keyboard-hint {
@@ -400,7 +405,11 @@
 
 	/* Ensure PageHeader stays at top */
 	.card-page :global(.page-header) {
-		@apply sticky top-0 z-10 bg-white dark:bg-gray-900;
+		@apply sticky top-0 z-10 bg-white;
 		@apply mb-4;
+	}
+
+	:global(.dark) .card-page :global(.page-header) {
+		background-color: #111827; /* gray-900 */
 	}
 </style>
