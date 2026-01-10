@@ -14,6 +14,7 @@ export interface PageMetadata {
 	modal_card?: boolean;
 	editable?: boolean;
 	enable_navigation?: boolean;
+	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];
 }
