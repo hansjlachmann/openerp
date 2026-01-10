@@ -22,6 +22,7 @@
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => void;
 		navigationEnabled?: boolean;
+		initialEditMode?: boolean;
 		canNavigateFirst?: boolean;
 		canNavigatePrevious?: boolean;
 		canNavigateNext?: boolean;
@@ -39,6 +40,7 @@
 		onaction,
 		onsave,
 		navigationEnabled = false,
+		initialEditMode,
 		canNavigateFirst = false,
 		canNavigatePrevious = false,
 		canNavigateNext = false,
@@ -66,8 +68,8 @@
 		return !id;
 	}
 
-	// Edit mode state - start in edit mode for new records
-	let editMode = $state(checkIsNewRecord());
+	// Edit mode state - start in edit mode for new records or if initialEditMode is true
+	let editMode = $state(initialEditMode ?? checkIsNewRecord());
 
 	// Track if we've already focused the initial field (to avoid refocusing on every state change)
 	let initialFocusDone = $state(false);

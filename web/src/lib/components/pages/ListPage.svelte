@@ -207,8 +207,13 @@
 	let modalOpen = $state(false);
 	let modalCardPage = $state<PageDefinition | null>(null);
 	let modalRecord = $state<Record<string, any>>({});
+	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
 	let modalSaving = $state(false);
+	let skipNextAutoSave = $state(false);
+	let lastSaveToastTime = 0; // Debounce for save toast
+	let modalHadChanges = $state(false); // Track if modal made any changes
+	let modalInitialEditMode = $state(false); // Start modal in edit mode
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -217,10 +222,22 @@
 
 	// Handle action clicks
 	function handleAction(actionName: string) {
-		// Handle Edit mode toggle
+		// Handle Edit action - open card page in edit mode
 		if (actionName === 'Edit') {
-			toggleEditMode();
-			return;
+			if (page.page.card_page_id && selectedRecord) {
+				if (page.page.modal_card) {
+					// Open as modal card in edit mode
+					openModalCard(selectedRecord, true);
+				} else {
+					// Navigate to card page
+					onaction?.(actionName, selectedRecord);
+				}
+				return;
+			} else if (page.page.editable) {
+				// Fallback to inline edit mode toggle
+				toggleEditMode();
+				return;
+			}
 		}
 
 		// Handle "New" action - prioritize opening card page if available
@@ -482,7 +499,7 @@
 	}
 
 	// Open modal card
-	async function openModalCard(record: Record<string, any>) {
+	async function openModalCard(record: Record<string, any>, editMode: boolean = false) {
 		try {
 			// Fetch the card page definition
 			const response = await fetch(`/api/pages/${page.page.card_page_id}`);
@@ -502,10 +519,16 @@
 			const recordId = record['no'] || record['code'] || record['id'];
 			if (recordId) {
 				modalRecord = await api.getRecord(page.page.source_table, recordId);
+				modalIsNewRecord = false;
 			} else {
 				modalRecord = { ...record };
+				modalIsNewRecord = true;
 			}
 
+			// Set initial edit mode
+			modalInitialEditMode = editMode || modalIsNewRecord;
+
+			modalHadChanges = false;
 			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
@@ -515,10 +538,28 @@
 
 	// Close modal
 	function closeModal() {
+		const hadChanges = modalHadChanges;
 		modalOpen = false;
 		modalCardPage = null;
 		modalRecord = {};
+		modalIsNewRecord = false;
+		skipNextAutoSave = false;
 		modalCaptions = {};
+		modalHadChanges = false;
+
+		// Refresh the list if changes were made
+		if (hadChanges) {
+			onaction?.('Refresh');
+		}
+	}
+
+	// Show save toast with debounce to prevent duplicates
+	function showSaveToast() {
+		const now = Date.now();
+		if (now - lastSaveToastTime > 500) {
+			toast.success('Record saved successfully');
+			lastSaveToastTime = now;
+		}
 	}
 
 	// Handle save from modal
@@ -527,11 +568,30 @@
 			return; // Prevent concurrent saves
 		}
 
+		// Skip if this is a reactive trigger from programmatic update
+		if (skipNextAutoSave) {
+			skipNextAutoSave = false;
+			return;
+		}
+
 		modalSaving = true;
 		try {
 			const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
 
-			if (recordId) {
+			// Save the currently focused element to restore after update
+			const focusedElement = document.activeElement as HTMLElement;
+			const focusedId = focusedElement?.id;
+
+			if (modalIsNewRecord) {
+				// Insert new record
+				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
+				// Add the new record to the list
+				records = [...records, responseData];
+				// After first save, it's no longer a new record
+				modalIsNewRecord = false;
+				modalHadChanges = true;
+				showSaveToast();
+			} else {
 				// Update existing record
 				const responseData = await api.modifyRecord(page.page.source_table, recordId, savedRecord);
 
@@ -544,15 +604,27 @@
 				if (index !== -1) {
 					records[index] = responseData;
 				}
-				// Update modal record with the response data
-				modalRecord = responseData;
-			} else {
-				// Insert new record
-				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
-				// Add the new record to the list
-				records = [...records, responseData];
-				// Update modal record with the saved data (including generated ID)
-				modalRecord = responseData;
+				modalHadChanges = true;
+				// No toast for modifications - too noisy with auto-save
+			}
+			// Note: We intentionally don't update modalRecord to avoid losing focus
+			// The user's edits are preserved and the save was successful
+
+			// Restore focus after save completes
+			// Multiple attempts to handle async re-renders from CardPage saveState changes
+			if (focusedId) {
+				const restoreFocus = () => {
+					const element = document.getElementById(focusedId);
+					if (element && document.activeElement !== element) {
+						element.focus();
+					}
+				};
+				// First attempt: after current frame completes
+				requestAnimationFrame(restoreFocus);
+				// Second attempt: after short delay for CardPage saveState updates
+				setTimeout(restoreFocus, 100);
+				// Third attempt: after longer delay for any animations
+				setTimeout(restoreFocus, 300);
 			}
 
 			// Don't close modal - keep it open like Business Central
@@ -1151,6 +1223,7 @@
 		page={modalCardPage}
 		bind:record={modalRecord}
 		captions={modalCaptions}
+		initialEditMode={modalInitialEditMode}
 		onclose={closeModal}
 		onaction={handleModalAction}
 		onsave={handleModalSave}
