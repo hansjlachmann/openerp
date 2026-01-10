@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import type { TableFilter } from '$lib/types/api';
+	import { toast } from '$lib/stores/toast';
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
@@ -54,6 +55,10 @@
 	// Filter pane state
 	let filterPaneOpen = $state(false);
 
+	// Quick search state
+	let searchQuery = $state('');
+	let searchInputElement: HTMLInputElement | null = null;
+
 	// Sort state
 	let sortField = $state<string | null>(null);
 	let sortDirection = $state<'asc' | 'desc'>('asc');
@@ -75,9 +80,27 @@
 	// Prevent rapid toggling
 	let isToggling = false;
 
+	// Filter records by search query
+	const filteredRecords = $derived(() => {
+		const sourceRecords = editMode ? editableRecords : records;
+		if (!searchQuery.trim()) return sourceRecords;
+
+		const query = searchQuery.toLowerCase().trim();
+		const columns = visibleColumns();
+
+		return sourceRecords.filter(record => {
+			// Search across all visible columns
+			return columns.some(field => {
+				const value = record[field.source];
+				if (value == null) return false;
+				return String(value).toLowerCase().includes(query);
+			});
+		});
+	});
+
 	// Sort records
 	const sortedRecords = $derived(() => {
-		const sourceRecords = editMode ? editableRecords : records;
+		const sourceRecords = filteredRecords();
 		if (!sortField) return sourceRecords;
 
 		return [...sourceRecords].sort((a, b) => {
@@ -149,6 +172,17 @@
 		}
 	});
 
+	// Reset selection when search query changes
+	$effect(() => {
+		// Depend on searchQuery
+		searchQuery;
+		// Reset to first row if current selection is out of bounds
+		const filtered = filteredRecords();
+		if (selectedIndex >= filtered.length) {
+			selectedIndex = filtered.length > 0 ? 0 : -1;
+		}
+	});
+
 	// Auto-scroll selected row into view
 	$effect(() => {
 		if (selectedIndex >= 0 && tableBodyElement) {
@@ -189,22 +223,30 @@
 			return;
 		}
 
-		// Handle built-in actions for editable lists
-		if (page.page.editable) {
-			switch (actionName) {
-				case 'New':
-					handleNew();
-					return;
-				case 'Delete':
-					handleDelete();
-					return;
+		// Handle "New" action - prioritize opening card page if available
+		if (actionName === 'New') {
+			if (page.page.card_page_id) {
+				if (page.page.modal_card) {
+					// Open as modal card
+					openModalCard({});
+				} else {
+					// Navigate to card page
+					onaction?.(actionName, undefined);
+				}
+				return;
+			} else if (page.page.editable) {
+				// Inline editing (no card page available)
+				handleNew();
+				return;
 			}
 		}
 
-		// Handle "New" action for modal cards
-		if (actionName === 'New' && page.page.modal_card && page.page.card_page_id) {
-			openModalCard({});
-			return;
+		// Handle Delete action
+		if (actionName === 'Delete') {
+			if (page.page.editable) {
+				handleDelete();
+				return;
+			}
 		}
 
 		onaction?.(actionName, selectedRecord || undefined);
@@ -392,7 +434,7 @@
 	// Handle edit record (only works in edit mode)
 	function handleEdit() {
 		if (!editMode) {
-			alert('Please enable Edit mode first by clicking the Edit button.');
+			toast.warning('Please enable Edit mode first by clicking the Edit button.');
 			return;
 		}
 		if (selectedRecord) {
@@ -400,7 +442,7 @@
 			editingIndex = selectedIndex;
 			isNewRecord = false;
 		} else {
-			alert('Please select a record first by clicking on it in the list.');
+			toast.warning('Please select a record first by clicking on it in the list.');
 		}
 	}
 
@@ -467,7 +509,7 @@
 			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
-			alert('Failed to open card');
+			toast.error('Failed to open card');
 		}
 	}
 
@@ -516,7 +558,7 @@
 			// Don't close modal - keep it open like Business Central
 		} catch (err) {
 			console.error('Error saving modal record:', err);
-			alert('Failed to save record');
+			toast.error('Failed to save record');
 		} finally {
 			modalSaving = false;
 		}
@@ -542,10 +584,10 @@
 						// Close the modal
 						closeModal();
 
-						alert('Record deleted successfully');
+						toast.success('Record deleted successfully');
 					} catch (err) {
 						console.error('Delete error:', err);
-						alert('Failed to delete record');
+						toast.error('Failed to delete record');
 					}
 				}
 				break;
@@ -761,9 +803,24 @@
 	function handleCloseFilterPane() {
 		filterPaneOpen = false;
 	}
+
+	// Clear search
+	function clearSearch() {
+		searchQuery = '';
+		searchInputElement?.focus();
+	}
+
+	// Focus search on Ctrl+F
+	function handleSearchShortcut(e: KeyboardEvent) {
+		if (e.ctrlKey && e.key === 'f') {
+			e.preventDefault();
+			searchInputElement?.focus();
+			searchInputElement?.select();
+		}
+	}
 </script>
 
-<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement}>
+<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut}>
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="leftActions">
 			{#if editingIndex !== null}
@@ -776,7 +833,19 @@
 				</Button>
 			{:else}
 				{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
-					{@const isDisabled = action.enabled === false || (action.name !== 'New' && action.name !== 'Edit' && action.name !== 'Refresh' && !selectedRecord)}
+					{@const isDisabled = (() => {
+						// New and Refresh are always enabled
+						if (action.name === 'New' || action.name === 'Refresh') return false;
+
+						// Edit is disabled if page is not editable
+						if (action.name === 'Edit') return page.page.editable !== true;
+
+						// Delete requires a selected record
+						if (action.name === 'Delete') return !selectedRecord;
+
+						// Other buttons require selection
+						return !selectedRecord;
+					})()}
 					{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
 					<Button
 						variant={variant}
@@ -801,6 +870,54 @@
 						{/if}
 					</Button>
 				{/each}
+
+				<!-- Quick Search -->
+				<div class="search-container">
+					<svg
+						class="search-icon"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+						/>
+					</svg>
+					<input
+						type="text"
+						class="search-input"
+						placeholder="Search... (Ctrl+F)"
+						bind:value={searchQuery}
+						bind:this={searchInputElement}
+					/>
+					{#if searchQuery}
+						<button
+							type="button"
+							class="clear-search-btn"
+							onclick={clearSearch}
+							title="Clear search"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
+							</svg>
+						</button>
+					{/if}
+				</div>
 			{/if}
 		</svelte:fragment>
 
@@ -1015,8 +1132,12 @@
 
 	<div class="status-bar">
 		<span class="text-sm text-gray-600 dark:text-gray-400">
-			{records.length} record{records.length !== 1 ? 's' : ''}
-			{#if selectedRecord}
+			{#if searchQuery}
+				{displayRecords.length} of {records.length} record{records.length !== 1 ? 's' : ''} (filtered)
+			{:else}
+				{records.length} record{records.length !== 1 ? 's' : ''}
+			{/if}
+			{#if selectedIndex >= 0 && selectedIndex < displayRecords.length}
 				• Row {selectedIndex + 1} selected
 			{/if}
 		</span>
@@ -1300,5 +1421,64 @@
 
 	:global(.dark) .primary-key-link:hover {
 		color: #93c5fd;
+	}
+
+	/* Quick Search Styles */
+	.search-container {
+		@apply relative flex items-center;
+		margin-left: 1rem;
+	}
+
+	.search-icon {
+		@apply absolute left-3 w-4 h-4 text-gray-400 pointer-events-none;
+	}
+
+	:global(.dark) .search-icon {
+		color: #9ca3af;
+	}
+
+	.search-input {
+		@apply pl-9 pr-8 py-1.5 text-sm rounded-md border border-gray-300;
+		@apply bg-white text-gray-900;
+		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+		width: 200px;
+		transition: width 0.2s ease;
+	}
+
+	.search-input:focus {
+		width: 280px;
+	}
+
+	.search-input::placeholder {
+		@apply text-gray-400;
+	}
+
+	:global(.dark) .search-input {
+		background-color: #374151;
+		border-color: #4b5563;
+		color: white;
+	}
+
+	:global(.dark) .search-input::placeholder {
+		color: #9ca3af;
+	}
+
+	:global(.dark) .search-input:focus {
+		border-color: #3b82f6;
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+	}
+
+	.clear-search-btn {
+		@apply absolute right-2 p-0.5 rounded text-gray-400 hover:text-gray-600;
+		@apply hover:bg-gray-100 transition-colors;
+	}
+
+	:global(.dark) .clear-search-btn {
+		color: #9ca3af;
+	}
+
+	:global(.dark) .clear-search-btn:hover {
+		color: #d1d5db;
+		background-color: #4b5563;
 	}
 </style>
