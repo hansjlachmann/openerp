@@ -20,7 +20,7 @@
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
 		onaction?: (actionName: string) => void;
-		onsave?: (record: Record<string, any>) => void;
+		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		navigationEnabled?: boolean;
 		initialEditMode?: boolean;
 		canNavigateFirst?: boolean;
@@ -141,13 +141,19 @@
 
 			saveState = 'saving';
 			try {
-				await onsave?.(record);
-				saveState = 'saved';
+				// onsave returns true if a save actually happened
+				const didSave = await onsave?.(record);
 
-				// Show "Saved" for 1.5 seconds then hide
-				savedTimeout = setTimeout(() => {
+				if (didSave) {
+					saveState = 'saved';
+					// Show "Saved" for 1.5 seconds then hide
+					savedTimeout = setTimeout(() => {
+						saveState = 'idle';
+					}, 1500) as unknown as number;
+				} else {
+					// No actual save happened (no changes)
 					saveState = 'idle';
-				}, 1500) as unknown as number;
+				}
 			} catch (err) {
 				saveState = 'idle';
 				console.error('Auto-save failed:', err);

@@ -14,7 +14,7 @@
 		initialEditMode?: boolean;
 		onclose?: () => void;
 		onaction?: (actionName: string) => void;
-		onsave?: (record: Record<string, any>) => void;
+		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 	}
 
 	let {
