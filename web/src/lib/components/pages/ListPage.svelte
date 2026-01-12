@@ -207,6 +207,7 @@
 	let modalOpen = $state(false);
 	let modalCardPage = $state<PageDefinition | null>(null);
 	let modalRecord = $state<Record<string, any>>({});
+	let modalOriginalRecord = $state<Record<string, any>>({}); // Track original for change detection
 	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
 	let modalSaving = $state(false);
@@ -214,6 +215,7 @@
 	let lastSaveToastTime = 0; // Debounce for save toast
 	let modalHadChanges = $state(false); // Track if modal made any changes
 	let modalInitialEditMode = $state(false); // Start modal in edit mode
+	let modalRecordDeleted = $state(false); // Prevent saves after delete
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -519,9 +521,11 @@
 			const recordId = record['no'] || record['code'] || record['id'];
 			if (recordId) {
 				modalRecord = await api.getRecord(page.page.source_table, recordId);
+				modalOriginalRecord = JSON.parse(JSON.stringify(modalRecord)); // Deep copy
 				modalIsNewRecord = false;
 			} else {
 				modalRecord = { ...record };
+				modalOriginalRecord = {};
 				modalIsNewRecord = true;
 			}
 
@@ -529,6 +533,7 @@
 			modalInitialEditMode = editMode || modalIsNewRecord;
 
 			modalHadChanges = false;
+			modalRecordDeleted = false;
 			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
@@ -546,6 +551,7 @@
 		skipNextAutoSave = false;
 		modalCaptions = {};
 		modalHadChanges = false;
+		modalRecordDeleted = false;
 
 		// Refresh the list if changes were made
 		if (hadChanges) {
@@ -562,16 +568,41 @@
 		}
 	}
 
-	// Handle save from modal
-	async function handleModalSave(savedRecord: Record<string, any>) {
-		if (!modalCardPage || modalSaving) {
-			return; // Prevent concurrent saves
+	// Check if record has changed from original
+	function hasRecordChanged(current: Record<string, any>, original: Record<string, any>): boolean {
+		const currentKeys = Object.keys(current);
+		for (const key of currentKeys) {
+			// Skip internal fields
+			if (key.startsWith('_')) continue;
+
+			const currentVal = current[key];
+			const originalVal = original[key];
+
+			// Handle null/undefined
+			if (currentVal == null && originalVal == null) continue;
+			if (currentVal == null || originalVal == null) return true;
+
+			// Compare values
+			if (currentVal !== originalVal) return true;
+		}
+		return false;
+	}
+
+	// Handle save from modal - returns true if save happened, false otherwise
+	async function handleModalSave(savedRecord: Record<string, any>): Promise<boolean> {
+		if (!modalCardPage || !modalOpen || modalSaving || modalRecordDeleted) {
+			return false; // Prevent saves when modal closed, concurrent saves, or after delete
 		}
 
 		// Skip if this is a reactive trigger from programmatic update
 		if (skipNextAutoSave) {
 			skipNextAutoSave = false;
-			return;
+			return false;
+		}
+
+		// For existing records, skip save if nothing changed
+		if (!modalIsNewRecord && !hasRecordChanged(savedRecord, modalOriginalRecord)) {
+			return false;
 		}
 
 		modalSaving = true;
@@ -589,6 +620,8 @@
 				records = [...records, responseData];
 				// After first save, it's no longer a new record
 				modalIsNewRecord = false;
+				// Update original to current for future change detection
+				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
 				modalHadChanges = true;
 				showSaveToast();
 			} else {
@@ -604,6 +637,8 @@
 				if (index !== -1) {
 					records[index] = responseData;
 				}
+				// Update original for future change detection
+				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
 				modalHadChanges = true;
 				// No toast for modifications - too noisy with auto-save
 			}
@@ -628,9 +663,11 @@
 			}
 
 			// Don't close modal - keep it open like Business Central
+			return true; // Save happened
 		} catch (err) {
 			console.error('Error saving modal record:', err);
 			toast.error('Failed to save record');
+			return false; // Save failed
 		} finally {
 			modalSaving = false;
 		}
@@ -644,6 +681,9 @@
 			case 'Delete':
 				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
 				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+					// Mark as deleted BEFORE API call to prevent any pending auto-saves
+					modalRecordDeleted = true;
+
 					try {
 						await api.deleteRecord(page.page.source_table, recordId);
 
@@ -660,6 +700,8 @@
 					} catch (err) {
 						console.error('Delete error:', err);
 						toast.error('Failed to delete record');
+						// Reset flag if delete failed
+						modalRecordDeleted = false;
 					}
 				}
 				break;
@@ -1292,7 +1334,12 @@
 		color: #6b7280;
 		border-right: 1px solid #d1d5db;
 		border-bottom: 1px solid #d1d5db;
-		@apply dark:text-gray-500 dark:border-gray-600;
+	}
+
+	:global(.dark) .row-number-cell {
+		color: white;
+		background-color: rgb(31 41 55); /* gray-800 - matches normal columns */
+		border-color: #4b5563; /* gray-600 */
 	}
 
 	.resize-handle {
