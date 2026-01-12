@@ -141,6 +141,36 @@
 		}
 	});
 
+	// Window-level keyboard shortcuts (to capture before browser handles them)
+	$effect(() => {
+		function handleGlobalKeydown(event: KeyboardEvent) {
+			// Skip if modal is open or we're in an input field
+			if (modalOpen) return;
+			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+
+			// Build shortcut key string
+			const parts: string[] = [];
+			if (event.ctrlKey || event.metaKey) parts.push('Ctrl');
+			if (event.altKey) parts.push('Alt');
+			if (event.shiftKey) parts.push('Shift');
+			let key = event.key;
+			if (key.length === 1) key = key.toUpperCase();
+			parts.push(key);
+			const shortcutKey = parts.join('+');
+
+			// Check if this matches any action shortcut
+			const action = page.page.actions?.find(a => a.shortcut === shortcutKey);
+			if (action) {
+				event.preventDefault();
+				event.stopPropagation();
+				handleAction(action.name);
+			}
+		}
+
+		window.addEventListener('keydown', handleGlobalKeydown, true); // capture phase
+		return () => window.removeEventListener('keydown', handleGlobalKeydown, true);
+	});
+
 	// Auto-focus first cell when entering edit mode
 	$effect(() => {
 		if (editMode && currentCellRow >= 0 && currentCellCol >= 0) {

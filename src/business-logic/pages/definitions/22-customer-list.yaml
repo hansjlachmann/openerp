@@ -36,17 +36,17 @@ page:
   actions:
     - name: New
       caption: New
-      shortcut: Ctrl+N
+      shortcut: F3
       promoted: true
 
     - name: Edit
       caption: Edit
-      shortcut: Ctrl+E
+      shortcut: F2
       promoted: true
 
     - name: Delete
       caption: Delete
-      shortcut: Ctrl+D
+      shortcut: F4
       promoted: true
 
     - name: Refresh
