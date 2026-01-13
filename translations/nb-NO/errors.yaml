@@ -1,0 +1,14 @@
+# Norwegian Bokmal (nb-NO) error messages
+# %1, %2, %3 are placeholders for dynamic values
+
+errors:
+  ERR_DUPLICATE_RECORD: "%1 %2 finnes allerede"
+  ERR_RECORD_NOT_FOUND: "%1 %2 ble ikke funnet"
+  ERR_VALIDATION_FAILED: "Validering feilet for %1: %2"
+  ERR_REQUIRED_FIELD: "%1 er obligatorisk"
+  ERR_INVALID_VALUE: "Ugyldig verdi '%2' for %1"
+  ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
+  ERR_INSERT_FAILED: "Kunne ikke opprette %1"
+  ERR_MODIFY_FAILED: "Kunne ikke endre %1 %2"
+  ERR_NO_ACTIVE_SESSION: "Ingen aktiv sesjon"
+  ERR_TABLE_NOT_FOUND: "Tabell '%1' ble ikke funnet"

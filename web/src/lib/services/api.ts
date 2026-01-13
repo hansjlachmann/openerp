@@ -92,13 +92,9 @@ export const api = {
 			body: JSON.stringify(data)
 		});
 
-		if (!response.ok) {
-			throw new Error(`Failed to insert ${tableName}: ${response.statusText}`);
-		}
-
 		const result: ApiResponse<T> = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
+		if (!response.ok || !result.success) {
+			throw new Error(result.error || `Failed to insert ${tableName}`);
 		}
 
 		return result.data!;
