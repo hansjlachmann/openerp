@@ -1,0 +1,14 @@
+# English (US) error messages
+# %1, %2, %3 are placeholders for dynamic values
+
+errors:
+  ERR_DUPLICATE_RECORD: "%1 %2 already exists"
+  ERR_RECORD_NOT_FOUND: "%1 %2 not found"
+  ERR_VALIDATION_FAILED: "Validation failed for %1: %2"
+  ERR_REQUIRED_FIELD: "%1 is required"
+  ERR_INVALID_VALUE: "Invalid value '%2' for %1"
+  ERR_DELETE_FAILED: "Failed to delete %1 %2"
+  ERR_INSERT_FAILED: "Failed to insert %1"
+  ERR_MODIFY_FAILED: "Failed to modify %1 %2"
+  ERR_NO_ACTIVE_SESSION: "No active session"
+  ERR_TABLE_NOT_FOUND: "Table '%1' not found"

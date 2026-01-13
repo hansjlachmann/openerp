@@ -696,7 +696,8 @@
 			return true; // Save happened
 		} catch (err) {
 			console.error('Error saving modal record:', err);
-			toast.error('Failed to save record');
+			const message = err instanceof Error ? err.message : 'Failed to save record';
+			toast.error(message);
 			return false; // Save failed
 		} finally {
 			modalSaving = false;
