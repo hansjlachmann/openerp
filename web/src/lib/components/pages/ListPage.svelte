@@ -141,6 +141,36 @@
 		}
 	});
 
+	// Window-level keyboard shortcuts (to capture before browser handles them)
+	$effect(() => {
+		function handleGlobalKeydown(event: KeyboardEvent) {
+			// Skip if modal is open or we're in an input field
+			if (modalOpen) return;
+			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+
+			// Build shortcut key string
+			const parts: string[] = [];
+			if (event.ctrlKey || event.metaKey) parts.push('Ctrl');
+			if (event.altKey) parts.push('Alt');
+			if (event.shiftKey) parts.push('Shift');
+			let key = event.key;
+			if (key.length === 1) key = key.toUpperCase();
+			parts.push(key);
+			const shortcutKey = parts.join('+');
+
+			// Check if this matches any action shortcut
+			const action = page.page.actions?.find(a => a.shortcut === shortcutKey);
+			if (action) {
+				event.preventDefault();
+				event.stopPropagation();
+				handleAction(action.name);
+			}
+		}
+
+		window.addEventListener('keydown', handleGlobalKeydown, true); // capture phase
+		return () => window.removeEventListener('keydown', handleGlobalKeydown, true);
+	});
+
 	// Auto-focus first cell when entering edit mode
 	$effect(() => {
 		if (editMode && currentCellRow >= 0 && currentCellCol >= 0) {
@@ -207,8 +237,15 @@
 	let modalOpen = $state(false);
 	let modalCardPage = $state<PageDefinition | null>(null);
 	let modalRecord = $state<Record<string, any>>({});
+	let modalOriginalRecord = $state<Record<string, any>>({}); // Track original for change detection
+	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
 	let modalSaving = $state(false);
+	let skipNextAutoSave = $state(false);
+	let lastSaveToastTime = 0; // Debounce for save toast
+	let modalHadChanges = $state(false); // Track if modal made any changes
+	let modalInitialEditMode = $state(false); // Start modal in edit mode
+	let modalRecordDeleted = $state(false); // Prevent saves after delete
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -217,10 +254,22 @@
 
 	// Handle action clicks
 	function handleAction(actionName: string) {
-		// Handle Edit mode toggle
+		// Handle Edit action - open card page in edit mode
 		if (actionName === 'Edit') {
-			toggleEditMode();
-			return;
+			if (page.page.card_page_id && selectedRecord) {
+				if (page.page.modal_card) {
+					// Open as modal card in edit mode
+					openModalCard(selectedRecord, true);
+				} else {
+					// Navigate to card page
+					onaction?.(actionName, selectedRecord);
+				}
+				return;
+			} else if (page.page.editable) {
+				// Fallback to inline edit mode toggle
+				toggleEditMode();
+				return;
+			}
 		}
 
 		// Handle "New" action - prioritize opening card page if available
@@ -482,7 +531,7 @@
 	}
 
 	// Open modal card
-	async function openModalCard(record: Record<string, any>) {
+	async function openModalCard(record: Record<string, any>, editMode: boolean = false) {
 		try {
 			// Fetch the card page definition
 			const response = await fetch(`/api/pages/${page.page.card_page_id}`);
@@ -502,10 +551,19 @@
 			const recordId = record['no'] || record['code'] || record['id'];
 			if (recordId) {
 				modalRecord = await api.getRecord(page.page.source_table, recordId);
+				modalOriginalRecord = JSON.parse(JSON.stringify(modalRecord)); // Deep copy
+				modalIsNewRecord = false;
 			} else {
 				modalRecord = { ...record };
+				modalOriginalRecord = {};
+				modalIsNewRecord = true;
 			}
 
+			// Set initial edit mode
+			modalInitialEditMode = editMode || modalIsNewRecord;
+
+			modalHadChanges = false;
+			modalRecordDeleted = false;
 			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
@@ -515,23 +573,88 @@
 
 	// Close modal
 	function closeModal() {
+		const hadChanges = modalHadChanges;
 		modalOpen = false;
 		modalCardPage = null;
 		modalRecord = {};
+		modalIsNewRecord = false;
+		skipNextAutoSave = false;
 		modalCaptions = {};
+		modalHadChanges = false;
+		modalRecordDeleted = false;
+
+		// Refresh the list if changes were made
+		if (hadChanges) {
+			onaction?.('Refresh');
+		}
 	}
 
-	// Handle save from modal
-	async function handleModalSave(savedRecord: Record<string, any>) {
-		if (!modalCardPage || modalSaving) {
-			return; // Prevent concurrent saves
+	// Show save toast with debounce to prevent duplicates
+	function showSaveToast() {
+		const now = Date.now();
+		if (now - lastSaveToastTime > 500) {
+			toast.success('Record saved successfully');
+			lastSaveToastTime = now;
+		}
+	}
+
+	// Check if record has changed from original
+	function hasRecordChanged(current: Record<string, any>, original: Record<string, any>): boolean {
+		const currentKeys = Object.keys(current);
+		for (const key of currentKeys) {
+			// Skip internal fields
+			if (key.startsWith('_')) continue;
+
+			const currentVal = current[key];
+			const originalVal = original[key];
+
+			// Handle null/undefined
+			if (currentVal == null && originalVal == null) continue;
+			if (currentVal == null || originalVal == null) return true;
+
+			// Compare values
+			if (currentVal !== originalVal) return true;
+		}
+		return false;
+	}
+
+	// Handle save from modal - returns true if save happened, false otherwise
+	async function handleModalSave(savedRecord: Record<string, any>): Promise<boolean> {
+		if (!modalCardPage || !modalOpen || modalSaving || modalRecordDeleted) {
+			return false; // Prevent saves when modal closed, concurrent saves, or after delete
+		}
+
+		// Skip if this is a reactive trigger from programmatic update
+		if (skipNextAutoSave) {
+			skipNextAutoSave = false;
+			return false;
+		}
+
+		// For existing records, skip save if nothing changed
+		if (!modalIsNewRecord && !hasRecordChanged(savedRecord, modalOriginalRecord)) {
+			return false;
 		}
 
 		modalSaving = true;
 		try {
 			const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
 
-			if (recordId) {
+			// Save the currently focused element to restore after update
+			const focusedElement = document.activeElement as HTMLElement;
+			const focusedId = focusedElement?.id;
+
+			if (modalIsNewRecord) {
+				// Insert new record
+				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
+				// Add the new record to the list
+				records = [...records, responseData];
+				// After first save, it's no longer a new record
+				modalIsNewRecord = false;
+				// Update original to current for future change detection
+				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
+				modalHadChanges = true;
+				showSaveToast();
+			} else {
 				// Update existing record
 				const responseData = await api.modifyRecord(page.page.source_table, recordId, savedRecord);
 
@@ -544,21 +667,38 @@
 				if (index !== -1) {
 					records[index] = responseData;
 				}
-				// Update modal record with the response data
-				modalRecord = responseData;
-			} else {
-				// Insert new record
-				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
-				// Add the new record to the list
-				records = [...records, responseData];
-				// Update modal record with the saved data (including generated ID)
-				modalRecord = responseData;
+				// Update original for future change detection
+				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
+				modalHadChanges = true;
+				// No toast for modifications - too noisy with auto-save
+			}
+			// Note: We intentionally don't update modalRecord to avoid losing focus
+			// The user's edits are preserved and the save was successful
+
+			// Restore focus after save completes
+			// Multiple attempts to handle async re-renders from CardPage saveState changes
+			if (focusedId) {
+				const restoreFocus = () => {
+					const element = document.getElementById(focusedId);
+					if (element && document.activeElement !== element) {
+						element.focus();
+					}
+				};
+				// First attempt: after current frame completes
+				requestAnimationFrame(restoreFocus);
+				// Second attempt: after short delay for CardPage saveState updates
+				setTimeout(restoreFocus, 100);
+				// Third attempt: after longer delay for any animations
+				setTimeout(restoreFocus, 300);
 			}
 
 			// Don't close modal - keep it open like Business Central
+			return true; // Save happened
 		} catch (err) {
 			console.error('Error saving modal record:', err);
-			toast.error('Failed to save record');
+			const message = err instanceof Error ? err.message : 'Failed to save record';
+			toast.error(message);
+			return false; // Save failed
 		} finally {
 			modalSaving = false;
 		}
@@ -572,6 +712,9 @@
 			case 'Delete':
 				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
 				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+					// Mark as deleted BEFORE API call to prevent any pending auto-saves
+					modalRecordDeleted = true;
+
 					try {
 						await api.deleteRecord(page.page.source_table, recordId);
 
@@ -588,6 +731,8 @@
 					} catch (err) {
 						console.error('Delete error:', err);
 						toast.error('Failed to delete record');
+						// Reset flag if delete failed
+						modalRecordDeleted = false;
 					}
 				}
 				break;
@@ -1151,6 +1296,7 @@
 		page={modalCardPage}
 		bind:record={modalRecord}
 		captions={modalCaptions}
+		initialEditMode={modalInitialEditMode}
 		onclose={closeModal}
 		onaction={handleModalAction}
 		onsave={handleModalSave}
@@ -1219,7 +1365,12 @@
 		color: #6b7280;
 		border-right: 1px solid #d1d5db;
 		border-bottom: 1px solid #d1d5db;
-		@apply dark:text-gray-500 dark:border-gray-600;
+	}
+
+	:global(.dark) .row-number-cell {
+		color: white;
+		background-color: rgb(31 41 55); /* gray-800 - matches normal columns */
+		border-color: #4b5563; /* gray-600 */
 	}
 
 	.resize-handle {

@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/src/api/types"
 	"github.com/hansjlachmann/openerp/src/business-logic/tables"
+	apperrors "github.com/hansjlachmann/openerp/src/foundation/errors"
 	"github.com/hansjlachmann/openerp/src/foundation/filters"
 	"github.com/hansjlachmann/openerp/src/foundation/i18n"
 	"github.com/hansjlachmann/openerp/src/foundation/session"
@@ -33,10 +34,11 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
+	language := sess.GetLanguage()
 
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
@@ -55,7 +57,7 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	case "User":
 		ids, err = h.getUserIDs(company, sortBy)
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
 	if err != nil {
@@ -75,7 +77,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -129,7 +131,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	case "User":
 		records, err = h.listUsers(company, sortBy, sortOrder)
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
 	if err != nil {
@@ -166,11 +168,12 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
 	var record interface{}
 	var err error
@@ -180,7 +183,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		var customer tables.Customer
 		customer.Init(h.db, company)
 		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		// Calculate FlowFields before converting to map
 		customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
@@ -190,7 +193,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		var pt tables.PaymentTerms
 		pt.Init(h.db, company)
 		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		record = paymentTermsToMap(&pt)
 
@@ -198,12 +201,12 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		var user tables.User
 		user.Init(h.db, company)
 		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		record = userToMap(&user)
 
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
 	if err != nil {
@@ -229,10 +232,12 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
+	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
 	// Parse request body
 	var data map[string]interface{}
@@ -244,8 +249,14 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	case "Customer":
 		customer := mapToCustomer(data)
 		customer.Init(h.db, company)
+		// Check if customer already exists
+		var existing tables.Customer
+		existing.Init(h.db, company)
+		if existing.Get(customer.No) {
+			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, customer.No.String()).Message(language)))
+		}
 		if !customer.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to insert customer"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(customerToMap(customer))
 		return c.JSON(response)
@@ -253,8 +264,14 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	case "Payment_terms":
 		pt := mapToPaymentTerms(data)
 		pt.Init(h.db, company)
+		// Check if payment terms already exists
+		var existing tables.PaymentTerms
+		existing.Init(h.db, company)
+		if existing.Get(pt.Code) {
+			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pt.Code.String()).Message(language)))
+		}
 		if !pt.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to insert payment terms"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(paymentTermsToMap(pt))
 		return c.JSON(response)
@@ -262,6 +279,12 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	case "User":
 		user := mapToUser(data)
 		user.Init(h.db, company)
+		// Check if user already exists
+		var existing tables.User
+		existing.Init(h.db, company)
+		if existing.Get(user.User_id) {
+			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, user.User_id.String()).Message(language)))
+		}
 		// Initialize timestamps for new user
 		now := time.Now()
 		user.Created_at = types.NewDateTimeFromTime(now)
@@ -273,13 +296,13 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 			}
 		}
 		if !user.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to insert user"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(userToMap(user))
 		return c.JSON(response)
 
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 }
 
@@ -291,10 +314,12 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
+	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
 	// Parse request body
 	var data map[string]interface{}
@@ -307,11 +332,11 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		var customer tables.Customer
 		customer.Init(h.db, company)
 		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		updateCustomerFromMap(&customer, data)
 		if !customer.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to modify customer"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(customerToMap(&customer))
 		return c.JSON(response)
@@ -320,11 +345,11 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		var pt tables.PaymentTerms
 		pt.Init(h.db, company)
 		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		updatePaymentTermsFromMap(&pt, data)
 		if !pt.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to modify payment terms"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(paymentTermsToMap(&pt))
 		return c.JSON(response)
@@ -333,7 +358,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		var user tables.User
 		user.Init(h.db, company)
 		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		updateUserFromMap(&user, data)
 		// Handle password if provided
@@ -343,13 +368,13 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 			}
 		}
 		if !user.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to modify user"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(userToMap(&user))
 		return c.JSON(response)
 
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 }
 
@@ -361,20 +386,22 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
+	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
 	switch tableName {
 	case "Customer":
 		var customer tables.Customer
 		customer.Init(h.db, company)
 		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		if !customer.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete customer"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(nil)
 		return c.JSON(response)
@@ -383,10 +410,10 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		var pt tables.PaymentTerms
 		pt.Init(h.db, company)
 		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		if !pt.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete payment terms"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(nil)
 		return c.JSON(response)
@@ -395,16 +422,16 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		var user tables.User
 		user.Init(h.db, company)
 		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse("Record not found"))
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		if !user.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete user"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 		}
 		response := apitypes.NewSuccessResponse(nil)
 		return c.JSON(response)
 
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 }
 
@@ -415,10 +442,11 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
+	language := sess.GetLanguage()
 
 	var req apitypes.ValidationRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -438,7 +466,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		}))
 
 	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Table '%s' not found", tableName)))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 }
 
