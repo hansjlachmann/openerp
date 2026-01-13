@@ -11,9 +11,10 @@
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
+		initialEditMode?: boolean;
 		onclose?: () => void;
 		onaction?: (actionName: string) => void;
-		onsave?: (record: Record<string, any>) => void;
+		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 	}
 
 	let {
@@ -21,6 +22,7 @@
 		page,
 		record = $bindable({}),
 		captions = {},
+		initialEditMode,
 		onclose,
 		onaction,
 		onsave
@@ -272,6 +274,7 @@
 			{page}
 			bind:record
 			{captions}
+			{initialEditMode}
 			{onaction}
 			{onsave}
 			navigationEnabled={false}
