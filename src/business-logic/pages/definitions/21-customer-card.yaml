@@ -4,6 +4,7 @@ page:
   name: Customer Card
   source_table: Customer
   caption: Customer Card
+  list_page_id: 22
   enable_navigation: true
   editable: true
   focus_field: "no"

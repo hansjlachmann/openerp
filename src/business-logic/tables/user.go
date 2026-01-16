@@ -15,7 +15,7 @@ import (
 func NewUser() *User {
 	return &User{
 		Active:   true,
-		Language: types.NewCode("en-US"),
+		Language: types.NewText("en-US"),
 	}
 }
 

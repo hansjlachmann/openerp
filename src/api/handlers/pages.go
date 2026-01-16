@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -48,11 +49,15 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	primaryKeyField := tableMeta.GetPrimaryKeyField(pageDef.Page.SourceTable)
 
 	// Get field captions using i18n
+	ts := i18n.GetInstance()
+	lang := normalizeLanguageCode(sess.GetLanguage())
+	// Fallback to en-US if language is not set
+	if lang == "" {
+		lang = "en-US"
+	}
+
 	var captions *apitypes.CaptionData
 	if pageDef.Page.SourceTable != "" {
-		ts := i18n.GetInstance()
-		lang := sess.GetLanguage()
-
 		// Build field captions map
 		fieldCaptions := make(map[string]string)
 
@@ -84,11 +89,45 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		}
 	}
 
+	// Translate page caption
+	translatedCaption := ts.PageCaption(pageDef.Page.Name, lang)
+	// If no translation found (key returned), use original caption
+	expectedKey := fmt.Sprintf("pages.%s.caption", normalizePageName(pageDef.Page.Name))
+	if translatedCaption != expectedKey {
+		pageDef.Page.Caption = translatedCaption
+	}
+
+	// Build navigation translations for breadcrumbs
+	navigation := map[string]string{
+		"home": ts.CommonTranslation("navigation.home", lang),
+	}
+
 	return c.JSON(apitypes.APIResponse{
-		Success:  true,
-		Data:     pageDef,
-		Captions: captions,
+		Success:    true,
+		Data:       pageDef,
+		Captions:   captions,
+		Navigation: navigation,
 	})
+}
+
+// normalizePageName converts "Customer Card" to "customer_card"
+func normalizePageName(name string) string {
+	result := strings.ToLower(name)
+	result = strings.ReplaceAll(result, " ", "_")
+	return result
+}
+
+// normalizeLanguageCode converts language codes to proper BCP-47 format
+// e.g., "NB-NO" -> "nb-NO", "EN-US" -> "en-US"
+func normalizeLanguageCode(code string) string {
+	if code == "" {
+		return ""
+	}
+	parts := strings.Split(code, "-")
+	if len(parts) == 2 {
+		return strings.ToLower(parts[0]) + "-" + strings.ToUpper(parts[1])
+	}
+	return strings.ToLower(code)
 }
 
 // GetMenu returns the menu structure

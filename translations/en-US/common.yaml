@@ -2,6 +2,10 @@
 # Shared terms across all objects
 
 common:
+  # Navigation
+  navigation:
+    home: "Home"
+
   # Common actions
   actions:
     new: "New"

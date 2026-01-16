@@ -7,12 +7,13 @@ type PageDefinition struct {
 
 // PageMetadata contains page metadata and structure
 type PageMetadata struct {
-	ID           int      `yaml:"id" json:"id"`
-	Type         string   `yaml:"type" json:"type"` // Card, List, Document, Worksheet
-	Name         string   `yaml:"name" json:"name"`
-	SourceTable  string   `yaml:"source_table" json:"source_table"`
-	Caption      string   `yaml:"caption" json:"caption"`
+	ID                int      `yaml:"id" json:"id"`
+	Type              string   `yaml:"type" json:"type"` // Card, List, Document, Worksheet
+	Name              string   `yaml:"name" json:"name"`
+	SourceTable       string   `yaml:"source_table" json:"source_table"`
+	Caption           string   `yaml:"caption" json:"caption"`
 	CardPageID        int      `yaml:"card_page_id,omitempty" json:"card_page_id,omitempty"`
+	ListPageID        int      `yaml:"list_page_id,omitempty" json:"list_page_id,omitempty"` // For card pages, the associated list page
 	ModalCard         *bool    `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
 	Editable          *bool    `yaml:"editable,omitempty" json:"editable,omitempty"`
 	EnableNavigation  *bool    `yaml:"enable_navigation,omitempty" json:"enable_navigation,omitempty"`

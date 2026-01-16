@@ -4,6 +4,7 @@ page:
   name: User Card
   source_table: User
   caption: User Card
+  list_page_id: 30
   enable_navigation: true
   editable: true
 

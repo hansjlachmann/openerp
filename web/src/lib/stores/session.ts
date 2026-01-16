@@ -24,7 +24,8 @@ function createSessionStore() {
 			try {
 				const response = await fetch('/api/session');
 				if (response.ok) {
-					const data = await response.json();
+					const result = await response.json();
+					const data = result.data; // API returns { success: true, data: { ... } }
 					set({
 						database: data.database,
 						company: data.company,
