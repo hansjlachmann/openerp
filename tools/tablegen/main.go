@@ -277,7 +277,30 @@ func templateFuncs() template.FuncMap {
 		"join":               strings.Join,
 		"sub":                func(a, b int) int { return a - b },
 		"sanitizeIdentifier": sanitizeIdentifier,
+		"pkCount":            countPrimaryKeys,
+		"firstPK":            getFirstPK,
 	}
+}
+
+// countPrimaryKeys counts the number of primary key fields
+func countPrimaryKeys(fields []Field) int {
+	count := 0
+	for _, f := range fields {
+		if f.PrimaryKey {
+			count++
+		}
+	}
+	return count
+}
+
+// getFirstPK returns the first primary key field (or nil if none)
+func getFirstPK(fields []Field) *Field {
+	for i := range fields {
+		if fields[i].PrimaryKey {
+			return &fields[i]
+		}
+	}
+	return nil
 }
 
 // Helper functions
@@ -460,6 +483,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/src/foundation/database"
 	"github.com/hansjlachmann/openerp/src/foundation/i18n"
+	"github.com/hansjlachmann/openerp/src/foundation/tables"
 {{- if or .HasCodeField .HasTextField .HasDecimalField .HasDateField .HasDateTimeField }}
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 {{- end }}
@@ -660,8 +684,114 @@ func (t *{{ .StructName }}) StoreOldValues() {
 {{- end }}
 }
 
-// Get retrieves a record from the database by primary key
-func (t *{{ .StructName }}) Get({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
+// Get retrieves a record from the database by primary key (interface{} for generic API)
+// For single primary key: pass the value directly (string, int, etc.)
+// For composite keys: pass a map[string]interface{} with field names as keys
+func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
+	// Handle composite primary key (map[string]interface{})
+	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
+{{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}
+		var {{ lowerFirst $f.Name }}Val {{ $f.Type }}
+		if v, exists := pkMap["{{ $f.DBName }}"]; exists {
+{{- if eq $f.Type "types.Code" }}
+			switch val := v.(type) {
+			case types.Code:
+				{{ lowerFirst $f.Name }}Val = val
+			case string:
+				{{ lowerFirst $f.Name }}Val = types.NewCode(val)
+			}
+{{- else if eq $f.Type "types.Text" }}
+			switch val := v.(type) {
+			case types.Text:
+				{{ lowerFirst $f.Name }}Val = val
+			case string:
+				{{ lowerFirst $f.Name }}Val = types.NewText(val)
+			}
+{{- else if eq $f.Type "int" }}
+			switch val := v.(type) {
+			case int:
+				{{ lowerFirst $f.Name }}Val = val
+			case float64:
+				{{ lowerFirst $f.Name }}Val = int(val)
+			}
+{{- else if eq $f.Type "int64" }}
+			switch val := v.(type) {
+			case int64:
+				{{ lowerFirst $f.Name }}Val = val
+			case int:
+				{{ lowerFirst $f.Name }}Val = int64(val)
+			case float64:
+				{{ lowerFirst $f.Name }}Val = int64(val)
+			}
+{{- else if eq $f.Type "string" }}
+			if val, ok := v.(string); ok {
+				{{ lowerFirst $f.Name }}Val = val
+			}
+{{- end }}
+		}
+{{- end }}{{- end }}
+		return t.GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }}Val{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }})
+	}
+
+{{- if eq (pkCount .Table.Fields) 1 }}
+	// Handle single primary key (for tables with only one PK field)
+{{- $pk := firstPK .Table.Fields }}
+{{- if eq $pk.Type "types.Code" }}
+	switch pk := primaryKey.(type) {
+	case types.Code:
+		return t.GetByPK(pk)
+	case string:
+		return t.GetByPK(types.NewCode(pk))
+	}
+{{- else if eq $pk.Type "types.Text" }}
+	switch pk := primaryKey.(type) {
+	case types.Text:
+		return t.GetByPK(pk)
+	case string:
+		return t.GetByPK(types.NewText(pk))
+	}
+{{- else if eq $pk.Type "int" }}
+	switch pk := primaryKey.(type) {
+	case int:
+		return t.GetByPK(pk)
+	case float64:
+		return t.GetByPK(int(pk))
+	case string:
+		var intVal int
+		if _, err := fmt.Sscanf(pk, "%d", &intVal); err == nil {
+			return t.GetByPK(intVal)
+		}
+	}
+{{- else if eq $pk.Type "int64" }}
+	switch pk := primaryKey.(type) {
+	case int64:
+		return t.GetByPK(pk)
+	case int:
+		return t.GetByPK(int64(pk))
+	case float64:
+		return t.GetByPK(int64(pk))
+	case string:
+		var intVal int64
+		if _, err := fmt.Sscanf(pk, "%d", &intVal); err == nil {
+			return t.GetByPK(intVal)
+		}
+	}
+{{- else if eq $pk.Type "string" }}
+	if pk, ok := primaryKey.(string); ok {
+		return t.GetByPK(pk)
+	}
+{{- end }}
+{{- else }}
+	// For tables with composite keys, direct value is not supported
+	// Use a map[string]interface{} with field names as keys
+{{- end }}
+
+	fmt.Printf("Error: Invalid primary key type for {{ .Table.Name }}.Get: %T (use map for composite keys)\n", primaryKey)
+	return false
+}
+
+// GetByPK retrieves a record by its typed primary key(s) - for direct typed access
+func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
 
 	{{- range .Table.Fields }}
@@ -1059,6 +1189,14 @@ func (t *{{ $.StructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 }
 {{- end }}
 {{- end }}
+
+{{- else }}
+
+// CalcFields is a no-op for tables without FlowFields
+// Implemented for tables.Table interface compliance
+func (t *{{ .StructName }}) CalcFields(fieldNames ...string) {
+	// This table has no FlowFields to calculate
+}
 
 {{- end }}
 
@@ -1996,6 +2134,215 @@ func (t *{{ $.StructName }}) OnValidate_{{ upperFirst .Name }}() error {
 }
 {{- end }}
 {{- end }}
+
+// ========================================
+// Interface Implementation (tables.Table)
+// ========================================
+
+// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+func (t *{{ .StructName }}) ClearFilters() {
+	t.filters = nil
+	t.orderByFields = nil
+	// Note: Don't clear oldValues or iteration state here
+}
+
+// ToMap converts the current record to a map for JSON serialization
+func (t *{{ .StructName }}) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+{{- if eq .Type "types.Code" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else if eq .Type "types.Text" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else if eq .Type "types.Decimal" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else if eq .Type "types.Date" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else if eq .Type "types.DateTime" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else if eq .Type "Option" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }},
+{{- end }}
+{{- else }}
+		// FlowField: {{ .DBName }}
+{{- if eq .Type "types.Decimal" }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+{{- else }}
+		"{{ .DBName }}": t.{{ upperFirst .Name }},
+{{- end }}
+{{- end }}
+{{- end }}
+	}
+}
+
+// FromMap populates the record fields from a map (for API POST/PUT)
+func (t *{{ .StructName }}) FromMap(data map[string]interface{}) {
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	if v, ok := data["{{ .DBName }}"]; ok && v != nil {
+{{- if eq .Type "types.Code" }}
+		if s, ok := v.(string); ok {
+			t.{{ upperFirst .Name }} = types.NewCode(s)
+		}
+{{- else if eq .Type "types.Text" }}
+		if s, ok := v.(string); ok {
+			t.{{ upperFirst .Name }} = types.NewText(s)
+		}
+{{- else if eq .Type "types.Decimal" }}
+		switch val := v.(type) {
+		case string:
+			t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.{{ upperFirst .Name }} = types.NewDecimal(val)
+		}
+{{- else if eq .Type "types.Date" }}
+		if s, ok := v.(string); ok {
+			t.{{ upperFirst .Name }}, _ = types.NewDateFromString(s)
+		}
+{{- else if eq .Type "types.DateTime" }}
+		if s, ok := v.(string); ok {
+			t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString(s)
+		}
+{{- else if eq .Type "Option" }}
+		switch val := v.(type) {
+		case float64:
+			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(int(val))
+		case int:
+			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(val)
+		case string:
+			// Lookup string value in options
+			options := []string{ {{- range $i, $opt := .Options }}{{- if $i }}, {{ end }}"{{ $opt }}"{{- end }} }
+			for i, opt := range options {
+				if opt == val {
+					t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(i)
+					break
+				}
+			}
+		}
+{{- else if eq .Type "bool" }}
+		if b, ok := v.(bool); ok {
+			t.{{ upperFirst .Name }} = b
+		}
+{{- else if eq .Type "int" }}
+		switch val := v.(type) {
+		case float64:
+			t.{{ upperFirst .Name }} = int(val)
+		case int:
+			t.{{ upperFirst .Name }} = val
+		}
+{{- else if eq .Type "int64" }}
+		switch val := v.(type) {
+		case float64:
+			t.{{ upperFirst .Name }} = int64(val)
+		case int64:
+			t.{{ upperFirst .Name }} = val
+		case int:
+			t.{{ upperFirst .Name }} = int64(val)
+		}
+{{- else if eq .Type "float64" }}
+		if f, ok := v.(float64); ok {
+			t.{{ upperFirst .Name }} = f
+		}
+{{- else if eq .Type "string" }}
+		if s, ok := v.(string); ok {
+			t.{{ upperFirst .Name }} = s
+		}
+{{- end }}
+	}
+{{- end }}
+{{- end }}
+}
+
+// UpdateFromMap updates only the provided fields (for PATCH-style updates)
+func (t *{{ .StructName }}) UpdateFromMap(data map[string]interface{}) {
+	// Same as FromMap - only updates fields present in the map
+	t.FromMap(data)
+}
+
+// GetPrimaryKeyField returns the name of the primary key field
+func (t *{{ .StructName }}) GetPrimaryKeyField() string {
+{{- range .Table.Fields }}
+{{- if .PrimaryKey }}
+	return "{{ .DBName }}"
+{{- end }}
+{{- end }}
+}
+
+// GetPrimaryKeyValue returns the current primary key value as a string
+func (t *{{ .StructName }}) GetPrimaryKeyValue() string {
+{{- range .Table.Fields }}
+{{- if .PrimaryKey }}
+{{- if eq .Type "types.Code" }}
+	return t.{{ upperFirst .Name }}.String()
+{{- else if eq .Type "types.Text" }}
+	return t.{{ upperFirst .Name }}.String()
+{{- else if eq .Type "int" }}
+	return fmt.Sprintf("%d", t.{{ upperFirst .Name }})
+{{- else if eq .Type "int64" }}
+	return fmt.Sprintf("%d", t.{{ upperFirst .Name }})
+{{- else if eq .Type "string" }}
+	return t.{{ upperFirst .Name }}
+{{- else }}
+	return fmt.Sprintf("%v", t.{{ upperFirst .Name }})
+{{- end }}
+{{- end }}
+{{- end }}
+}
+
+// GetFields returns metadata about all fields
+func (t *{{ .StructName }}) GetFields() []tables.FieldInfo {
+	return []tables.FieldInfo{
+{{- range .Table.Fields }}
+		{
+			Name:       "{{ .DBName }}",
+{{- if eq .Type "types.Code" }}
+			Type:       tables.FieldTypeCode,
+{{- else if eq .Type "types.Text" }}
+			Type:       tables.FieldTypeText,
+{{- else if eq .Type "int" }}
+			Type:       tables.FieldTypeInteger,
+{{- else if eq .Type "int64" }}
+			Type:       tables.FieldTypeInteger,
+{{- else if eq .Type "types.Decimal" }}
+			Type:       tables.FieldTypeDecimal,
+{{- else if eq .Type "float64" }}
+			Type:       tables.FieldTypeDecimal,
+{{- else if eq .Type "bool" }}
+			Type:       tables.FieldTypeBoolean,
+{{- else if eq .Type "types.Date" }}
+			Type:       tables.FieldTypeDate,
+{{- else if eq .Type "types.DateTime" }}
+			Type:       tables.FieldTypeDateTime,
+{{- else if eq .Type "Option" }}
+			Type:       tables.FieldTypeOption,
+{{- else if or (eq .Type "[]byte") (eq .Type "BLOB") }}
+			Type:       tables.FieldTypeBlob,
+{{- else }}
+			Type:       tables.FieldTypeText,
+{{- end }}
+			Length:     {{ .Length }},
+			Required:   {{ .Required }},
+			Editable:   {{ not .PrimaryKey }},
+			PrimaryKey: {{ .PrimaryKey }},
+			FlowField:  {{ .FlowField }},
+		},
+{{- end }}
+	}
+}
+
+// GetFlowFields returns names of FlowFields that need CalcFields
+func (t *{{ .StructName }}) GetFlowFields() []string {
+	return []string{
+{{- range .Table.Fields }}
+{{- if .FlowField }}
+		"{{ .DBName }}",
+{{- end }}
+{{- end }}
+	}
+}
 `
 
 const businessTemplate = `package {{ .PackageName }}
