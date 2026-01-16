@@ -39,31 +39,3 @@ export interface ListOptions {
 	page_size?: number;
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
-
-// Customer type (specific)
-export interface Customer {
-	no: string;
-	name: string;
-	address?: string;
-	post_code?: string;
-	city?: string;
-	phone_number?: string;
-	email?: string;
-	payment_terms_code?: string;
-	credit_limit?: string;
-	balance_lcy?: string;
-	sales_lcy?: string;
-	no_of_ledger_entries?: number;
-	last_order_date?: string;
-	created_at?: string;
-	status?: number;
-}
-
-// Payment Terms type (specific)
-export interface PaymentTerms {
-	code: string;
-	description: string;
-	due_date_calculation?: string;
-	discount_date_calculation?: string;
-	discount_percent?: string;
-}

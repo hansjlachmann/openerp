@@ -174,20 +174,3 @@ export const api = {
 		return handleApiResponseFull<string[]>(response, 'list companies');
 	}
 };
-
-// Specific table APIs (typed)
-export const customerApi = {
-	list: (options?: ListOptions) => api.listRecords('Customer', options),
-	get: (no: string) => api.getRecord('Customer', no),
-	insert: (data: any) => api.insertRecord('Customer', data),
-	modify: (no: string, data: any) => api.modifyRecord('Customer', no, data),
-	delete: (no: string) => api.deleteRecord('Customer', no)
-};
-
-export const paymentTermsApi = {
-	list: (options?: ListOptions) => api.listRecords('Payment_terms', options),
-	get: (code: string) => api.getRecord('Payment_terms', code),
-	insert: (data: any) => api.insertRecord('Payment_terms', data),
-	modify: (code: string, data: any) => api.modifyRecord('Payment_terms', code, data),
-	delete: (code: string) => api.deleteRecord('Payment_terms', code)
-};
