@@ -10,6 +10,7 @@
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
+	import ConfirmModal from '../ConfirmModal.svelte';
 
 	interface Props {
 		pageid: number;
@@ -36,6 +37,12 @@
 	// Navigation data for card pages
 	let recordIds: string[] = $state([]);
 	let currentRecordIndex = $state(-1);
+
+	// Confirm modal state
+	let confirmModalOpen = $state(false);
+	let confirmModalTitle = $state('');
+	let confirmModalMessage = $state('');
+	let confirmModalAction: (() => Promise<void>) | null = $state(null);
 
 	// Load page definition and data
 	onMount(async () => {
@@ -204,6 +211,29 @@
 			.map(field => field.source);
 	}
 
+	// Show confirm modal with action
+	function showConfirm(title: string, message: string, action: () => Promise<void>) {
+		confirmModalTitle = title;
+		confirmModalMessage = message;
+		confirmModalAction = action;
+		confirmModalOpen = true;
+	}
+
+	// Handle confirm modal confirmation
+	async function handleConfirm() {
+		confirmModalOpen = false;
+		if (confirmModalAction) {
+			await confirmModalAction();
+		}
+		confirmModalAction = null;
+	}
+
+	// Handle confirm modal cancel
+	function handleConfirmCancel() {
+		confirmModalOpen = false;
+		confirmModalAction = null;
+	}
+
 	// Handle actions from card page
 	async function handleCardAction(actionName: string) {
 		if (!page) return;
@@ -215,21 +245,27 @@
 			case 'Delete':
 				// Get record ID from record object or recordid prop
 				const id = record.no || record.code || record.id || recordid;
-				if (id && confirm(`Delete this ${page.page.caption}?`)) {
-					try {
-						await api.deleteRecord(page.page.source_table, id);
-						toast.success('Record deleted successfully');
-						// Navigate back to the list page if available
-						if (page.page.type === 'Card') {
-							// Try to find the associated list page by convention
-							// Customer Card (21) -> Customer List (22)
-							const listPageId = page.page.id + 1;
-							window.location.href = `/pages/${listPageId}`;
+				if (id) {
+					showConfirm(
+						'Delete Record',
+						`Are you sure you want to delete this ${page.page.caption}?`,
+						async () => {
+							try {
+								await api.deleteRecord(page.page.source_table, id);
+								toast.success('Record deleted successfully');
+								// Navigate back to the list page if available
+								if (page.page.type === 'Card') {
+									// Try to find the associated list page by convention
+									// Customer Card (21) -> Customer List (22)
+									const listPageId = page.page.id + 1;
+									window.location.href = `/pages/${listPageId}`;
+								}
+							} catch (err) {
+								console.error('Delete error:', err);
+								toast.error('Failed to delete record');
+							}
 						}
-					} catch (err) {
-						console.error('Delete error:', err);
-						toast.error('Failed to delete record');
-					}
+					);
 				}
 				break;
 			case 'Refresh':
@@ -282,15 +318,19 @@
 			case 'Delete':
 				if (selectedRecord) {
 					const recordId = selectedRecord['no'] || selectedRecord['code'] || selectedRecord['id'];
-					if (confirm('Delete this record?')) {
-						try {
-							await api.deleteRecord(page.page.source_table, recordId);
-							await loadListData();
-							toast.success('Record deleted');
-						} catch (err) {
-							toast.error('Failed to delete record');
+					showConfirm(
+						'Delete Record',
+						'Are you sure you want to delete this record?',
+						async () => {
+							try {
+								await api.deleteRecord(page.page.source_table, recordId);
+								await loadListData();
+								toast.success('Record deleted');
+							} catch (err) {
+								toast.error('Failed to delete record');
+							}
 						}
-					}
+					);
 				}
 				break;
 			case 'Refresh':
@@ -307,26 +347,13 @@
 		window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
 	}
 
-	// Handle save from list page (inline editing)
+	// Handle save notification from list page (inline editing)
+	// Note: ListPage already saves the record internally via handleCellBlur,
+	// this callback is just for notification - no need to save again
 	async function handleListSave(savedRecord: Record<string, any>, isNew: boolean) {
 		if (!page) return;
-
-		try {
-			if (isNew) {
-				// Insert new record
-				await api.insertRecord(page.page.source_table, savedRecord);
-				await loadListData();
-			} else {
-				// Update existing record
-				const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
-				await api.modifyRecord(page.page.source_table, recordId, savedRecord);
-				await loadListData();
-			}
-		} catch (err) {
-			toast.error('Failed to save record');
-			console.error('Save error:', err);
-			throw err;
-		}
+		// Record is already saved by ListPage, just refresh the underlying data
+		await loadListData();
 	}
 
 	// Handle delete from list page
@@ -438,3 +465,14 @@
 		</div>
 	{/if}
 {/if}
+
+<!-- Confirm Modal -->
+<ConfirmModal
+	open={confirmModalOpen}
+	title={confirmModalTitle}
+	message={confirmModalMessage}
+	confirmText="Delete"
+	variant="danger"
+	onconfirm={handleConfirm}
+	oncancel={handleConfirmCancel}
+/>
