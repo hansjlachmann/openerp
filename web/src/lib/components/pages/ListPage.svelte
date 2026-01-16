@@ -787,35 +787,29 @@
 		switch (actionName) {
 			case 'Delete':
 				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
-				if (recordId) {
-					showConfirm(
-						'Delete Record',
-						`Are you sure you want to delete this ${modalCardPage.page.caption}?`,
-						async () => {
-							// Mark as deleted BEFORE API call to prevent any pending auto-saves
-							modalRecordDeleted = true;
+				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+					// Mark as deleted BEFORE API call to prevent any pending auto-saves
+					modalRecordDeleted = true;
 
-							try {
-								await api.deleteRecord(page.page.source_table, recordId);
+					try {
+						await api.deleteRecord(page.page.source_table, recordId);
 
-								// Remove the record from the list
-								records = records.filter(r => {
-									const id = r['no'] || r['code'] || r['id'];
-									return id !== recordId;
-								});
+						// Remove the record from the list
+						records = records.filter(r => {
+							const id = r['no'] || r['code'] || r['id'];
+							return id !== recordId;
+						});
 
-								// Close the modal
-								closeModal();
+						// Close the modal
+						closeModal();
 
-								toast.success('Record deleted successfully');
-							} catch (err) {
-								console.error('Delete error:', err);
-								toast.error('Failed to delete record');
-								// Reset flag if delete failed
-								modalRecordDeleted = false;
-							}
-						}
-					);
+						toast.success('Record deleted successfully');
+					} catch (err) {
+						console.error('Delete error:', err);
+						toast.error('Failed to delete record');
+						// Reset flag if delete failed
+						modalRecordDeleted = false;
+					}
 				}
 				break;
 			case 'Refresh':
