@@ -8,6 +8,8 @@
 		value: any;
 		caption?: string;
 		editable?: boolean;
+		required?: boolean;
+		error?: string;
 		onchange?: (value: any) => void;
 		onblur?: () => void;
 	}
@@ -17,6 +19,8 @@
 		value = $bindable(),
 		caption,
 		editable = false,
+		required = false,
+		error,
 		onchange,
 		onblur
 	}: Props = $props();
@@ -43,28 +47,41 @@
 		if (field.source === 'password') {
 			return 'password';
 		}
+		if (field.source.includes('email')) {
+			return 'email';
+		}
 		return 'text';
 	});
 </script>
 
 {#if isEditable}
 	<!-- Editable field -->
-	<div class="field-group">
+	<div class="field-group" class:has-error={!!error}>
 		<label for={field.source} class="field-label">
 			{fieldCaption}
+			{#if required}
+				<span class="required-indicator">*</span>
+			{/if}
 		</label>
-		<input
-			id={field.source}
-			type={inputType()}
-			class={cn('input', fieldStyle)}
-			value={value}
-			oninput={handleChange}
-			onblur={() => onblur?.()}
-		/>
+		<div class="input-wrapper">
+			<input
+				id={field.source}
+				type={inputType()}
+				class={cn('input', fieldStyle, error ? 'input-error' : '')}
+				value={value ?? ''}
+				oninput={handleChange}
+				onblur={() => onblur?.()}
+				aria-invalid={!!error}
+				aria-describedby={error ? `${field.source}-error` : undefined}
+			/>
+		</div>
+		{#if error}
+			<p id="{field.source}-error" class="error-message">{error}</p>
+		{/if}
 	</div>
 {:else}
 	<!-- Read-only field -->
-	<div class="field-group">
+	<div class="field-group readonly">
 		<div class="field-label">
 			{fieldCaption}
 		</div>
@@ -81,27 +98,98 @@
 
 	.field-label {
 		@apply text-sm font-medium text-gray-700;
+		@apply flex items-center gap-1;
 	}
 
 	:global(.dark) .field-label {
-		color: #d1d5db; /* gray-300 */
+		color: var(--color-text-secondary);
+	}
+
+	.required-indicator {
+		@apply text-red-500 font-bold;
+	}
+
+	.input-wrapper {
+		@apply relative;
+	}
+
+	.field-group :global(input.input) {
+		@apply w-full py-2 px-3;
+		@apply bg-white border border-gray-300 rounded-md;
+		@apply text-gray-900 text-base;
+		@apply transition-all duration-150;
+		@apply outline-none;
+	}
+
+	.field-group :global(input.input:hover:not(:focus)) {
+		@apply border-gray-400;
+	}
+
+	.field-group :global(input.input:focus) {
+		@apply border-blue-500 ring-2 ring-blue-500/20;
+	}
+
+	.field-group.has-error :global(input.input) {
+		@apply border-red-500;
+	}
+
+	.field-group.has-error :global(input.input:focus) {
+		@apply border-red-500 ring-2 ring-red-500/20;
+	}
+
+	/* Dark mode input styles */
+	:global(.dark) .field-group :global(input.input) {
+		background-color: var(--color-bg-input);
+		border-color: var(--color-border-secondary);
+		color: var(--color-text-primary);
+	}
+
+	:global(.dark) .field-group :global(input.input:hover:not(:focus)) {
+		border-color: var(--color-text-muted);
+	}
+
+	:global(.dark) .field-group :global(input.input:focus) {
+		border-color: #3b82f6; /* blue-500 */
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+	}
+
+	:global(.dark) .field-group :global(input.input::placeholder) {
+		color: var(--color-text-muted);
+	}
+
+	.error-message {
+		@apply text-xs text-red-600 mt-1;
+	}
+
+	:global(.dark) .error-message {
+		color: #fca5a5; /* red-300 */
 	}
 
 	.field-value {
-		@apply text-base py-1.5 px-3 bg-gray-50 border border-gray-200 rounded;
+		@apply text-base py-2 px-3;
+		@apply bg-gray-50 border border-gray-200 rounded-md;
+		@apply text-gray-900;
 		min-height: 2.5rem;
+		@apply flex items-center;
 	}
 
 	:global(.dark) .field-value {
-		background-color: #374151; /* gray-700 */
-		border-color: #4b5563; /* gray-600 */
-		color: #f3f4f6; /* gray-100 */
+		background-color: var(--color-bg-input);
+		border-color: var(--color-border-secondary);
+		color: var(--color-text-primary);
 	}
 
-	/* Override input styles for dark mode */
-	:global(.dark) .field-group input.input {
-		background-color: #374151 !important; /* gray-700 */
-		border-color: #4b5563 !important; /* gray-600 */
-		color: #f3f4f6 !important; /* gray-100 */
+	/* Strong style for important values */
+	.field-value :global(.strong) {
+		@apply font-semibold;
+	}
+
+	/* Readonly visual distinction */
+	.field-group.readonly .field-value {
+		@apply bg-gray-100;
+	}
+
+	:global(.dark) .field-group.readonly .field-value {
+		background-color: var(--color-bg-primary);
 	}
 </style>

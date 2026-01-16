@@ -2,9 +2,9 @@ import type {
 	ApiResponse,
 	ListResponse,
 	ListOptions,
-	TableRecord,
-	TableFilter
+	TableRecord
 } from '$types/api';
+import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull } from '$lib/utils/apiHelpers';
 
 const API_BASE = '/api';
 
@@ -41,48 +41,20 @@ export const api = {
 	): Promise<ListResponse<T>> {
 		const query = buildQueryString(options);
 		const url = `${API_BASE}/tables/${tableName}/list${query ? '?' + query : ''}`;
-
 		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error(`Failed to list ${tableName}: ${response.statusText}`);
-		}
-
-		const result: ApiResponse<ListResponse<T>> = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
-
-		return result.data!;
+		return handleApiResponse<ListResponse<T>>(response, `list ${tableName}`);
 	},
 
 	async getRecordIDs(tableName: string, sortBy?: string): Promise<string[]> {
 		const url = `${API_BASE}/tables/${tableName}/ids${sortBy ? '?sort_by=' + sortBy : ''}`;
-
 		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error(`Failed to get ${tableName} IDs: ${response.statusText}`);
-		}
-
-		const result: ApiResponse<{ ids: string[] }> = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
-
-		return result.data!.ids;
+		const data = await handleApiResponse<{ ids: string[] }>(response, `get ${tableName} IDs`);
+		return data.ids;
 	},
 
 	async getRecord<T = TableRecord>(tableName: string, id: string): Promise<T> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/card/${id}`);
-		if (!response.ok) {
-			throw new Error(`Failed to get ${tableName} ${id}: ${response.statusText}`);
-		}
-
-		const result: ApiResponse<T> = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
-
-		return result.data!;
+		return handleApiResponse<T>(response, `get ${tableName} ${id}`);
 	},
 
 	async insertRecord<T = TableRecord>(tableName: string, data: Partial<T>): Promise<T> {
@@ -91,13 +63,7 @@ export const api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		});
-
-		const result: ApiResponse<T> = await response.json();
-		if (!response.ok || !result.success) {
-			throw new Error(result.error || `Failed to insert ${tableName}`);
-		}
-
-		return result.data!;
+		return handleApiResponse<T>(response, `insert ${tableName}`);
 	},
 
 	async modifyRecord<T = TableRecord>(
@@ -110,32 +76,14 @@ export const api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to modify ${tableName} ${id}: ${response.statusText}`);
-		}
-
-		const result: ApiResponse<T> = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
-
-		return result.data!;
+		return handleApiResponse<T>(response, `modify ${tableName} ${id}`);
 	},
 
 	async deleteRecord(tableName: string, id: string): Promise<void> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/delete/${id}`, {
 			method: 'DELETE'
 		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to delete ${tableName} ${id}: ${response.statusText}`);
-		}
-
-		const result: ApiResponse = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
+		return handleApiResponseVoid(response, `delete ${tableName} ${id}`);
 	},
 
 	async validateField(
@@ -167,17 +115,7 @@ export const api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(params || {})
 		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to run codeunit ${codeunitId}: ${response.statusText}`);
-		}
-
-		const result: ApiResponse = await response.json();
-		if (!result.success) {
-			throw new Error(result.error || 'Unknown error');
-		}
-
-		return result.data;
+		return handleApiResponse<any>(response, `run codeunit ${codeunitId}`);
 	},
 
 	// Authentication
@@ -187,35 +125,19 @@ export const api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ user_id: userID, password, company })
 		});
-
-		if (!response.ok) {
-			const result: ApiResponse = await response.json();
-			throw { status: response.status, message: result.error || 'Login failed' };
-		}
-
-		return await response.json();
+		return handleApiResponseFull(response, 'login');
 	},
 
 	async logout(): Promise<ApiResponse> {
 		const response = await fetch(`${API_BASE}/auth/logout`, {
 			method: 'POST'
 		});
-
-		if (!response.ok) {
-			throw new Error('Logout failed');
-		}
-
-		return await response.json();
+		return handleApiResponseFull(response, 'logout');
 	},
 
 	async getCurrentUser(): Promise<ApiResponse> {
 		const response = await fetch(`${API_BASE}/auth/user`);
-
-		if (!response.ok) {
-			throw { status: response.status, message: 'Not authenticated' };
-		}
-
-		return await response.json();
+		return handleApiResponseFull(response, 'get current user');
 	},
 
 	async createInitialUser(data: {
@@ -229,13 +151,22 @@ export const api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		});
+		return handleApiResponseFull(response, 'create initial user');
+	},
 
-		if (!response.ok) {
-			const result: ApiResponse = await response.json();
-			throw new Error(result.error || 'Failed to create user');
-		}
+	async setLanguage(language: string, persist: boolean = true): Promise<ApiResponse> {
+		const response = await fetch(`${API_BASE}/auth/language`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ language, persist })
+		});
+		return handleApiResponseFull(response, 'set language');
+	},
 
-		return await response.json();
+	async getLanguages(): Promise<{ code: string; name: string }[]> {
+		const response = await fetch(`${API_BASE}/auth/languages`);
+		const result = await handleApiResponseFull<{ code: string; name: string }[]>(response, 'get languages');
+		return result.data || [];
 	},
 
 	async setLanguage(language: string, persist: boolean = true): Promise<ApiResponse> {
@@ -266,28 +197,6 @@ export const api = {
 
 	async listCompanies(): Promise<ApiResponse<string[]>> {
 		const response = await fetch(`${API_BASE}/auth/companies`);
-
-		if (!response.ok) {
-			throw new Error('Failed to list companies');
-		}
-
-		return await response.json();
+		return handleApiResponseFull<string[]>(response, 'list companies');
 	}
-};
-
-// Specific table APIs (typed)
-export const customerApi = {
-	list: (options?: ListOptions) => api.listRecords('Customer', options),
-	get: (no: string) => api.getRecord('Customer', no),
-	insert: (data: any) => api.insertRecord('Customer', data),
-	modify: (no: string, data: any) => api.modifyRecord('Customer', no, data),
-	delete: (no: string) => api.deleteRecord('Customer', no)
-};
-
-export const paymentTermsApi = {
-	list: (options?: ListOptions) => api.listRecords('Payment_terms', options),
-	get: (code: string) => api.getRecord('Payment_terms', code),
-	insert: (data: any) => api.insertRecord('Payment_terms', data),
-	modify: (code: string, data: any) => api.modifyRecord('Payment_terms', code, data),
-	delete: (code: string) => api.deleteRecord('Payment_terms', code)
 };
