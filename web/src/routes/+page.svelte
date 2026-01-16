@@ -1,5 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { session } from '$stores/session';
+	import { breadcrumb } from '$lib/stores/breadcrumb';
+
+	// Clear breadcrumb on home page
+	onMount(() => {
+		breadcrumb.clear();
+	});
 </script>
 
 <div class="container mx-auto px-4 py-8">

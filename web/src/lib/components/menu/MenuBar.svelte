@@ -6,15 +6,27 @@
 	import MenuGroup from './MenuGroup.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { currentUser } from '$lib/stores/user';
+	import { session } from '$stores/session';
 	import { api } from '$lib/services/api';
 
 	let menu: MenuDefinition | null = $state(null);
 	let loading = $state(true);
 	let currentTheme = $state<'light' | 'dark'>('light');
 	let showUserMenu = $state(false);
+	let showLanguageMenu = $state(false);
+	let languages = $state<{ code: string; name: string }[]>([]);
+	let currentLanguage = $state('en-US');
+	let changingLanguage = $state(false);
 
 	theme.subscribe((value) => {
 		currentTheme = value;
+	});
+
+	// Subscribe to session for language updates
+	session.subscribe((sess) => {
+		if (sess.language) {
+			currentLanguage = sess.language;
+		}
 	});
 
 	onMount(async () => {
@@ -22,6 +34,8 @@
 			menu = await fetchMenu();
 			// Load current user info from storage
 			currentUser.loadFromStorage();
+			// Load available languages
+			languages = await api.getLanguages();
 		} catch (err) {
 			console.error('Error loading menu:', err);
 		} finally {
@@ -49,6 +63,31 @@
 
 	function toggleUserMenu() {
 		showUserMenu = !showUserMenu;
+		showLanguageMenu = false;
+	}
+
+	function toggleLanguageMenu() {
+		showLanguageMenu = !showLanguageMenu;
+	}
+
+	async function handleLanguageChange(langCode: string) {
+		if (langCode === currentLanguage || changingLanguage) return;
+
+		changingLanguage = true;
+		try {
+			await api.setLanguage(langCode, true);
+			currentLanguage = langCode;
+			session.setLanguage(langCode);
+			showLanguageMenu = false;
+			showUserMenu = false;
+
+			// Reload the page to apply new translations
+			window.location.reload();
+		} catch (err) {
+			console.error('Error changing language:', err);
+		} finally {
+			changingLanguage = false;
+		}
 	}
 
 	// Close dropdown when clicking outside
@@ -59,6 +98,7 @@
 
 		if (!userMenuButton && !userMenuDropdown && showUserMenu) {
 			showUserMenu = false;
+			showLanguageMenu = false;
 		}
 	}
 
@@ -68,6 +108,17 @@
 			document.removeEventListener('click', handleClickOutside);
 		};
 	});
+
+	// Get language display name
+	function getLanguageName(code: string): string {
+		const lang = languages.find((l) => l.code === code);
+		return lang?.name || code;
+	}
+
+	// Get short language code for display (e.g., "EN" from "en-US")
+	function getShortCode(code: string): string {
+		return code.split('-')[0].toUpperCase();
+	}
 </script>
 
 {#if loading}
@@ -155,6 +206,89 @@
 								<p class="text-xs text-gray-500 dark:text-gray-400">{$currentUser.email || $currentUser.user_id}</p>
 							</div>
 							<div class="py-1">
+								<!-- Language selector -->
+								<div class="relative">
+									<button
+										onclick={toggleLanguageMenu}
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+									>
+										<span class="flex items-center gap-2">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+												/>
+											</svg>
+											Language
+										</span>
+										<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+											{getShortCode(currentLanguage)}
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-3 w-3"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M9 5l7 7-7 7"
+												/>
+											</svg>
+										</span>
+									</button>
+
+									<!-- Language submenu -->
+									{#if showLanguageMenu}
+										<div class="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+											{#each languages as lang}
+												<button
+													onclick={() => handleLanguageChange(lang.code)}
+													disabled={changingLanguage}
+													class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between disabled:opacity-50"
+													class:text-blue-600={lang.code === currentLanguage}
+													class:dark:text-blue-400={lang.code === currentLanguage}
+													class:font-medium={lang.code === currentLanguage}
+													class:text-gray-700={lang.code !== currentLanguage}
+													class:dark:text-gray-300={lang.code !== currentLanguage}
+												>
+													{lang.name}
+													{#if lang.code === currentLanguage}
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															class="h-4 w-4"
+															fill="none"
+															viewBox="0 0 24 24"
+															stroke="currentColor"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M5 13l4 4L19 7"
+															/>
+														</svg>
+													{/if}
+												</button>
+											{/each}
+										</div>
+									{/if}
+								</div>
+
+								<!-- Divider -->
+								<div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+								<!-- Sign out -->
 								<button
 									onclick={handleLogout}
 									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
