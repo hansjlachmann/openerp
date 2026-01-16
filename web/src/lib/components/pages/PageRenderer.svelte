@@ -5,6 +5,7 @@
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
+	import { breadcrumb } from '$lib/stores/breadcrumb';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
@@ -20,6 +21,7 @@
 	// State
 	let page: PageDefinition | null = $state(null);
 	let captions: Record<string, string> = $state({});
+	let navigation: Record<string, string> = $state({}); // Navigation translations
 	let pageLoading = $state(true);  // Loading page definition
 	let dataLoading = $state(false); // Loading data after page definition is known
 	let error = $state<string | null>(null);
@@ -54,6 +56,7 @@
 
 			page = result.data;
 			captions = result.captions?.fields || {};
+			navigation = result.navigation || {};
 			pageLoading = false;
 
 			// Now show skeleton while loading data
@@ -62,8 +65,12 @@
 			// Load data based on page type
 			if (page.page.type === 'Card') {
 				await loadCardData();
+				// Set breadcrumb for card page
+				await setBreadcrumbForCardPage();
 			} else if (page.page.type === 'List') {
 				await loadListData();
+				// Set breadcrumb for list page
+				breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unknown error';
@@ -73,6 +80,41 @@
 			dataLoading = false;
 		}
 	});
+
+	// Set breadcrumb for card page (needs to fetch list page caption if available)
+	async function setBreadcrumbForCardPage() {
+		if (!page) return;
+
+		let listPageCaption: string | undefined;
+
+		// If card page has a list_page_id, fetch the list page caption
+		if (page.page.list_page_id) {
+			try {
+				const listPageResponse = await fetch(`/api/pages/${page.page.list_page_id}`);
+				if (listPageResponse.ok) {
+					const listPageResult = await listPageResponse.json();
+					if (listPageResult.success) {
+						listPageCaption = listPageResult.data.page.caption;
+					}
+				}
+			} catch (err) {
+				console.error('Error fetching list page for breadcrumb:', err);
+			}
+		}
+
+		// Get record label (primary key value like customer number)
+		const recordLabel = record['no'] || record['code'] || record['user_id'] || record['id'] || recordid;
+
+		breadcrumb.setCardPage(
+			page.page.id,
+			page.page.caption,
+			recordid,
+			recordLabel,
+			page.page.list_page_id,
+			listPageCaption,
+			navigation.home
+		);
+	}
 
 	// Load data for card page
 	async function loadCardData() {

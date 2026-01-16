@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
+	import { session } from '$stores/session';
 	import { onMount } from 'svelte';
 
 	let userID = $state('');
@@ -86,6 +87,8 @@
 			if (response.success) {
 				// Store user info in store (also saves to localStorage)
 				currentUser.setUser(response.data);
+				// Re-initialize session to get updated language from backend
+				await session.initialize();
 				// Redirect to home
 				goto('/');
 			} else {

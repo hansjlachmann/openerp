@@ -187,7 +187,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	user.User_id = types.NewCode(requestBody.UserID)
 	user.User_name = types.NewText(requestBody.UserName)
 	user.Email = types.NewText(requestBody.Email)
-	user.Language = types.NewCode("en-US")
+	user.Language = types.NewText("en-US")
 	user.Active = true
 	user.Created_at = types.NewDateTimeFromTime(now)
 	user.Last_login = types.NewDateTimeFromTime(now) // Initialize to avoid NULL
@@ -227,5 +227,75 @@ func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 	}
 
 	response := apitypes.NewSuccessResponse(companies)
+	return c.JSON(response)
+}
+
+// SetLanguage changes the current session language
+// POST /api/auth/language
+func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
+	var requestBody struct {
+		Language string `json:"language"`
+		Persist  bool   `json:"persist"` // If true, also update user record
+	}
+
+	if err := c.BodyParser(&requestBody); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+	}
+
+	if requestBody.Language == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Language is required"))
+	}
+
+	// Validate language code (must be one of supported languages)
+	supportedLanguages := []string{"en-US", "nb-NO"}
+	valid := false
+	for _, lang := range supportedLanguages {
+		if lang == requestBody.Language {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Unsupported language: " + requestBody.Language))
+	}
+
+	sess := session.GetCurrent()
+	if sess == nil {
+		return c.Status(401).JSON(apitypes.NewErrorResponse("No active session"))
+	}
+
+	// Update session language
+	sess.SetUser(sess.GetUserID(), sess.GetUserName(), requestBody.Language)
+
+	// Optionally persist to user record
+	if requestBody.Persist {
+		userID := sess.GetUserID()
+		company := sess.GetCompany()
+		if userID != "" && company != "" {
+			var user tables.User
+			user.Init(h.db, company)
+			if user.Get(types.NewCode(userID)) {
+				user.Language = types.NewText(requestBody.Language)
+				user.Modify(false) // Don't run triggers
+			}
+		}
+	}
+
+	response := apitypes.NewSuccessResponse(map[string]interface{}{
+		"language": requestBody.Language,
+		"message":  "Language updated successfully",
+	})
+	return c.JSON(response)
+}
+
+// GetLanguages returns supported languages
+// GET /api/auth/languages
+func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {
+	languages := []map[string]string{
+		{"code": "en-US", "name": "English (US)"},
+		{"code": "nb-NO", "name": "Norsk (Bokmål)"},
+	}
+
+	response := apitypes.NewSuccessResponse(languages)
 	return c.JSON(response)
 }

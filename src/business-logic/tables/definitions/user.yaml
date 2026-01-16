@@ -35,7 +35,7 @@ table:
       description: Hashed password (bcrypt)
 
     - name: language
-      type: types.Code
+      type: types.Text
       db_name: language
       caption: Language
       description: Preferred language (en-US, de-DE, etc.)

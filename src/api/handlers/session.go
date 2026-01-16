@@ -21,7 +21,6 @@ func NewSessionHandler() *SessionHandler {
 func (h *SessionHandler) GetSession(c *fiber.Ctx) error {
 	// Get current session (in real app, this would come from authentication)
 	sess := session.GetCurrent()
-
 	if sess == nil {
 		// No active session - return empty session
 		response := apitypes.NewSuccessResponse(&apitypes.SessionResponse{
@@ -41,13 +40,19 @@ func (h *SessionHandler) GetSession(c *fiber.Ctx) error {
 		dbPath = db.GetDatabasePath()
 	}
 
+	// Normalize language code (Code type uppercases to "NB-NO", but we need "nb-NO" format)
+	language := normalizeLanguageCode(sess.GetLanguage())
+	if language == "" {
+		language = "en-US"
+	}
+
 	sessionData := &apitypes.SessionResponse{
 		Database:     dbPath,
 		Company:      sess.GetCompany(),
 		UserID:       sess.GetUserID(),
 		UserName:     sess.GetUserName(),
 		UserFullName: sess.GetUserName(), // Session doesn't have full name, use username
-		Language:     sess.GetLanguage(),
+		Language:     language,
 	}
 
 	response := apitypes.NewSuccessResponse(sessionData)

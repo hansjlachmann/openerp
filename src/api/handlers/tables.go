@@ -882,7 +882,7 @@ func mapToUser(data map[string]interface{}) *tables.User {
 		user.Email = types.NewText(v)
 	}
 	if v, ok := data["language"].(string); ok {
-		user.Language = types.NewCode(v)
+		user.Language = types.NewText(v)
 	}
 	if v, ok := data["active"].(bool); ok {
 		user.Active = v
@@ -899,7 +899,7 @@ func updateUserFromMap(user *tables.User, data map[string]interface{}) {
 		user.Email = types.NewText(v)
 	}
 	if v, ok := data["language"].(string); ok {
-		user.Language = types.NewCode(v)
+		user.Language = types.NewText(v)
 	}
 	if v, ok := data["active"].(bool); ok {
 		user.Active = v
