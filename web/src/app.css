@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode color palette - CSS custom properties for consistency */
+:root {
+	/* Light mode colors */
+	--color-bg-primary: #ffffff;
+	--color-bg-secondary: #f9fafb; /* gray-50 */
+	--color-bg-tertiary: #f3f4f6; /* gray-100 */
+	--color-bg-input: #ffffff;
+	--color-border-primary: #e5e7eb; /* gray-200 */
+	--color-border-secondary: #d1d5db; /* gray-300 */
+	--color-text-primary: #111827; /* gray-900 */
+	--color-text-secondary: #4b5563; /* gray-600 */
+	--color-text-tertiary: #6b7280; /* gray-500 */
+	--color-text-muted: #9ca3af; /* gray-400 */
+}
+
+.dark {
+	--color-bg-primary: #1f2937; /* gray-800 */
+	--color-bg-secondary: #111827; /* gray-900 */
+	--color-bg-tertiary: #374151; /* gray-700 */
+	--color-bg-input: #374151; /* gray-700 */
+	--color-border-primary: #374151; /* gray-700 */
+	--color-border-secondary: #4b5563; /* gray-600 */
+	--color-text-primary: #f3f4f6; /* gray-100 */
+	--color-text-secondary: #d1d5db; /* gray-300 */
+	--color-text-tertiary: #9ca3af; /* gray-400 */
+	--color-text-muted: #6b7280; /* gray-500 */
+}
+
 /* BC/NAV-inspired global styles */
 @layer base {
 	body {
@@ -61,14 +89,14 @@
 	}
 
 	.dark .input {
-		background-color: #374151; /* gray-700 */
-		border-color: #4b5563; /* gray-600 */
-		color: #f3f4f6; /* gray-100 */
+		background-color: var(--color-bg-input);
+		border-color: var(--color-border-secondary);
+		color: var(--color-text-primary);
 	}
 
 	.dark .input:disabled {
-		background-color: #1f2937; /* gray-800 */
-		color: #6b7280; /* gray-500 */
+		background-color: var(--color-bg-primary);
+		color: var(--color-text-muted);
 	}
 
 	.input-error {
@@ -81,8 +109,8 @@
 	}
 
 	.dark .card {
-		background-color: #1f2937; /* gray-800 */
-		border-color: #374151; /* gray-700 */
+		background-color: var(--color-bg-primary);
+		border-color: var(--color-border-primary);
 	}
 
 	.card-header {
@@ -90,7 +118,7 @@
 	}
 
 	.dark .card-header {
-		border-color: #374151; /* gray-700 */
+		border-color: var(--color-border-primary);
 	}
 
 	.card-body {
