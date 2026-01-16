@@ -797,15 +797,15 @@ func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $
 	{{- range .Table.Fields }}
 	{{- if not .FlowField }}
 	{{- if eq .Type "types.Code" }}
-	var {{ lowerFirst .Name }}Str string
+	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "types.Text" }}
-	var {{ lowerFirst .Name }}Str string
+	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "types.Decimal" }}
-	var {{ lowerFirst .Name }}Str string
+	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "types.Date" }}
-	var {{ lowerFirst .Name }}Str string
+	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "types.DateTime" }}
-	var {{ lowerFirst .Name }}Str string
+	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "bool" }}
 	var {{ lowerFirst .Name }}Int int
 	{{- else if eq .Type "Option" }}
@@ -825,15 +825,15 @@ func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $
 {{- range $i, $f := .Table.Fields }}
 		{{- if not $f.FlowField }}
 		{{- if eq $f.Type "types.Code" }}
-		&{{ lowerFirst $f.Name }}Str,
+		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "types.Text" }}
-		&{{ lowerFirst $f.Name }}Str,
+		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "types.Decimal" }}
-		&{{ lowerFirst $f.Name }}Str,
+		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "types.Date" }}
-		&{{ lowerFirst $f.Name }}Str,
+		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "types.DateTime" }}
-		&{{ lowerFirst $f.Name }}Str,
+		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "bool" }}
 		&{{ lowerFirst $f.Name }}Int,
 		{{- else if eq $f.Type "Option" }}
@@ -859,15 +859,15 @@ func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-	t.{{ upperFirst .Name }} = types.NewCode({{ lowerFirst .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewCode({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "types.Text" }}
-	t.{{ upperFirst .Name }} = types.NewText({{ lowerFirst .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewText({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "types.Decimal" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ lowerFirst .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "types.Date" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ lowerFirst .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "types.DateTime" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ lowerFirst .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "bool" }}
 	t.{{ upperFirst .Name }} = {{ lowerFirst .Name }}Int != 0
 {{- else if eq .Type "Option" }}
@@ -1379,15 +1379,15 @@ func (t *{{ .StructName }}) FindFirst() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Text" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Decimal" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Date" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.DateTime" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
 	var {{ .Name }}Int int
 {{- else if eq .Type "Option" }}
@@ -1402,15 +1402,15 @@ func (t *{{ .StructName }}) FindFirst() bool {
 {{- range $i, $f := .Table.Fields }}
 {{- if not $f.FlowField }}
 {{- if eq $f.Type "types.Code" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Text" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Decimal" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Date" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.DateTime" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
 		&{{ $f.Name }}Int,
 {{- else if eq $f.Type "Option" }}
@@ -1436,15 +1436,15 @@ func (t *{{ .StructName }}) FindFirst() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-	t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Null.String)
 {{- else if eq .Type "types.Text" }}
-	t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Null.String)
 {{- else if eq .Type "types.Decimal" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.Date" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.DateTime" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
 	t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
 {{- else if eq .Type "Option" }}
@@ -1473,15 +1473,15 @@ func (t *{{ .StructName }}) FindLast() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Text" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Decimal" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Date" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.DateTime" }}
-	var {{ .Name }}Str string
+	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
 	var {{ .Name }}Int int
 {{- else if eq .Type "Option" }}
@@ -1496,15 +1496,15 @@ func (t *{{ .StructName }}) FindLast() bool {
 {{- range $i, $f := .Table.Fields }}
 {{- if not $f.FlowField }}
 {{- if eq $f.Type "types.Code" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Text" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Decimal" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Date" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.DateTime" }}
-		&{{ $f.Name }}Str,
+		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
 		&{{ $f.Name }}Int,
 {{- else if eq $f.Type "Option" }}
@@ -1530,15 +1530,15 @@ func (t *{{ .StructName }}) FindLast() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-	t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Null.String)
 {{- else if eq .Type "types.Text" }}
-	t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Str)
+	t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Null.String)
 {{- else if eq .Type "types.Decimal" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.Date" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.DateTime" }}
-	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Str)
+	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
 	t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
 {{- else if eq .Type "Option" }}
@@ -1654,15 +1654,15 @@ func (t *{{ .StructName }}) Next(steps ...int) bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Text" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Decimal" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Date" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.DateTime" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
 		var {{ .Name }}Int int
 {{- else if eq .Type "Option" }}
@@ -1677,15 +1677,15 @@ func (t *{{ .StructName }}) Next(steps ...int) bool {
 {{- range $i, $f := .Table.Fields }}
 {{- if not $f.FlowField }}
 {{- if eq $f.Type "types.Code" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Text" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Decimal" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Date" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.DateTime" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
 			&{{ $f.Name }}Int,
 {{- else if eq $f.Type "Option" }}
@@ -1710,15 +1710,15 @@ func (t *{{ .StructName }}) Next(steps ...int) bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-		t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Str)
+		t.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Null.String)
 {{- else if eq .Type "types.Text" }}
-		t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Str)
+		t.{{ upperFirst .Name }} = types.NewText({{ .Name }}Null.String)
 {{- else if eq .Type "types.Decimal" }}
-		t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Str)
+		t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.Date" }}
-		t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Str)
+		t.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.DateTime" }}
-		t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Str)
+		t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
 		t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
 {{- else if eq .Type "Option" }}
@@ -1779,15 +1779,15 @@ func (t *{{ .StructName }}) FindSetBuffered() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Text" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Decimal" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.Date" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "types.DateTime" }}
-		var {{ .Name }}Str string
+		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
 		var {{ .Name }}Int int
 {{- else if eq .Type "Option" }}
@@ -1802,15 +1802,15 @@ func (t *{{ .StructName }}) FindSetBuffered() bool {
 {{- range $i, $f := .Table.Fields }}
 {{- if not $f.FlowField }}
 {{- if eq $f.Type "types.Code" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Text" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Decimal" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.Date" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "types.DateTime" }}
-			&{{ $f.Name }}Str,
+			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
 			&{{ $f.Name }}Int,
 {{- else if eq $f.Type "Option" }}
@@ -1833,15 +1833,15 @@ func (t *{{ .StructName }}) FindSetBuffered() bool {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 {{- if eq .Type "types.Code" }}
-		record.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Str)
+		record.{{ upperFirst .Name }} = types.NewCode({{ .Name }}Null.String)
 {{- else if eq .Type "types.Text" }}
-		record.{{ upperFirst .Name }} = types.NewText({{ .Name }}Str)
+		record.{{ upperFirst .Name }} = types.NewText({{ .Name }}Null.String)
 {{- else if eq .Type "types.Decimal" }}
-		record.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Str)
+		record.{{ upperFirst .Name }}, _ = types.NewDecimalFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.Date" }}
-		record.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Str)
+		record.{{ upperFirst .Name }}, _ = types.NewDateFromString({{ .Name }}Null.String)
 {{- else if eq .Type "types.DateTime" }}
-		record.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Str)
+		record.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
 		record.{{ upperFirst .Name }} = {{ .Name }}Int != 0
 {{- else if eq .Type "Option" }}
