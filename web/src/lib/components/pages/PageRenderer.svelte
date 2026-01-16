@@ -31,6 +31,11 @@
 	let record: Record<string, any> = $state({});
 	let records: Array<Record<string, any>> = $state([]);
 
+	// Track if record was successfully loaded (for distinguishing new vs existing)
+	let isExistingRecord = $state(false);
+	// Track the current record ID (may differ from URL recordid after insert)
+	let currentRecordId = $state<string | undefined>(undefined);
+
 	// Filters for list pages
 	let currentFilters: import('$lib/types/api').TableFilter[] = $state([]);
 
@@ -131,9 +136,13 @@
 			if (recordid) {
 				// Load specific record
 				record = await api.getRecord(page.page.source_table, recordid);
+				isExistingRecord = true; // Successfully loaded an existing record
+				currentRecordId = recordid;
 			} else {
 				// New record
 				record = {};
+				isExistingRecord = false;
+				currentRecordId = undefined;
 			}
 
 			// Load record IDs for navigation if enabled
@@ -147,6 +156,8 @@
 		} catch (err) {
 			console.error('Error loading card data:', err);
 			record = {};
+			isExistingRecord = false; // Record didn't exist or failed to load - treat as new
+			currentRecordId = undefined;
 		}
 	}
 
@@ -241,6 +252,10 @@
 		switch (actionName) {
 			case 'New':
 				record = {};
+				isExistingRecord = false; // Reset for new record
+				currentRecordId = undefined;
+				// Update URL to remove the recordid
+				window.history.replaceState({}, '', `/pages/${page.page.id}`);
 				break;
 			case 'Delete':
 				// Get record ID from record object or recordid prop
@@ -275,25 +290,34 @@
 	}
 
 	// Handle save from card page
-	async function handleCardSave(savedRecord: Record<string, any>) {
-		if (!page) return;
+	async function handleCardSave(savedRecord: Record<string, any>): Promise<boolean> {
+		if (!page) return false;
 
 		try {
-			if (recordid) {
-				// Update existing record
-				await api.modifyRecord(page.page.source_table, recordid, savedRecord);
+			if (isExistingRecord && currentRecordId) {
+				// Update existing record (only if we successfully loaded an existing record)
+				await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
 				toast.success('Record updated');
 			} else {
 				// Insert new record
-				const response = await api.insertRecord(page.page.source_table, savedRecord);
-				if (response.success) {
-					toast.success('Record created');
-					// Could navigate to the new record
+				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
+				// After successful insert, mark as existing for future saves
+				const newRecordId = insertedRecord.no || insertedRecord.code || insertedRecord.id;
+				isExistingRecord = true;
+				currentRecordId = newRecordId;
+				toast.success('Record created');
+				// Navigate to the proper URL with the new record ID
+				if (newRecordId && page.page.id) {
+					// Update URL without full page reload
+					window.history.replaceState({}, '', `/pages/${page.page.id}/${newRecordId}`);
 				}
 			}
+			return true;
 		} catch (err) {
-			toast.error('Failed to save record');
+			const errorMessage = err instanceof Error ? err.message : 'Failed to save record';
+			toast.error(errorMessage);
 			console.error('Save error:', err);
+			return false;
 		}
 	}
 
