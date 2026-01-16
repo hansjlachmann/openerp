@@ -277,7 +277,7 @@
 
 <div class="filter-pane">
 	<Card>
-		<svelte:fragment slot="header">
+		{#snippet header()}
 			<div class="filter-header">
 				<h3 class="filter-title">Filter {page.page.caption}</h3>
 				<button onclick={onClose} class="close-btn" title="Close filter pane">
@@ -297,7 +297,7 @@
 					</svg>
 				</button>
 			</div>
-		</svelte:fragment>
+		{/snippet}
 
 		<!-- Views Section -->
 		<div class="views-section">

@@ -4,9 +4,16 @@
 	import { session } from '$stores/session';
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
+	import { theme } from '$lib/stores/theme';
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
+
+	// Subscribe to theme to ensure it stays in sync
+	let currentTheme = $state<'light' | 'dark'>('light');
+	theme.subscribe((value) => {
+		currentTheme = value;
+	});
 
 	// Initialize session and user on app load
 	onMount(() => {

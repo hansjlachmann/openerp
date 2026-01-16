@@ -4,7 +4,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Card from '$lib/components/Card.svelte';
-	import CustomizePageModal from './CustomizePageModal.svelte';
+	import CustomizeFieldsModal, { type ItemCustomization } from './CustomizeFieldsModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
@@ -51,16 +51,17 @@
 		onNavigateLast
 	}: Props = $props();
 
-	// Field customization type
-	interface FieldCustomization {
-		visible: boolean;
-		section?: string;
-		order?: number;
-	}
-
 	// Customization state
 	let customizeModalOpen = $state(false);
-	let fieldCustomizations = $state<Record<string, FieldCustomization>>({});
+	let fieldCustomizations = $state<Record<string, ItemCustomization>>({});
+
+
+	// Check if record is empty (no data loaded)
+	const isEmptyRecord = $derived(() => {
+		if (!record) return true;
+		const keys = Object.keys(record).filter(k => !k.startsWith('_'));
+		return keys.length === 0;
+	});
 
 	// Check if this is a new record (no ID)
 	function checkIsNewRecord(): boolean {
@@ -106,7 +107,7 @@
 	// Load customizations from localStorage on mount
 	$effect(() => {
 		const userId = $currentUser?.user_id || 'anonymous';
-		fieldCustomizations = loadPageCustomizations<Record<string, FieldCustomization>>(
+		fieldCustomizations = loadPageCustomizations<Record<string, ItemCustomization>>(
 			userId,
 			page.page.id
 		);
@@ -274,7 +275,7 @@
 	}
 
 	// Save customizations
-	function handleSaveCustomizations(customizations: Record<string, FieldCustomization>) {
+	function handleSaveCustomizations(customizations: Record<string, ItemCustomization>) {
 		fieldCustomizations = customizations;
 		const userId = $currentUser?.user_id || 'anonymous';
 		savePageCustomizations(userId, page.page.id, customizations);
@@ -366,35 +367,57 @@
 	</PageHeader>
 
 	<div class="sections-container">
-		{#each customizedSections() as section}
-			<Card>
-				<svelte:fragment slot="header">
-					<h3 class="text-lg font-semibold text-nav-blue dark:text-blue-400">{section.caption}</h3>
-				</svelte:fragment>
-
-				<div class="section-fields">
-					{#each section.fields as field}
-						{@const fieldEditable = field.editable !== false && editMode}
-						<FieldRenderer
-							{field}
-							bind:value={record[field.source]}
-							caption={getFieldCaption(field.source, captions, field.caption)}
-							editable={fieldEditable}
-							onblur={handleFieldBlur}
-						/>
-					{/each}
+		{#if isEmptyRecord() && !editMode}
+			<!-- Empty state -->
+			<div class="empty-state">
+				<div class="empty-state-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+					</svg>
 				</div>
-			</Card>
-		{/each}
+				<h3 class="empty-state-title">No record loaded</h3>
+				<p class="empty-state-text">Select a record from the list or create a new one.</p>
+				<Button variant="primary" onclick={() => handleAction('New')}>
+					{#snippet icon()}
+						<PlusIcon size={16} color="currentColor" />
+					{/snippet}
+					Create New
+				</Button>
+			</div>
+		{:else}
+			{#each customizedSections() as section}
+				<Card>
+					{#snippet header()}
+						<h3 class="text-lg font-semibold text-nav-blue dark:text-blue-400">
+							{section.caption}
+						</h3>
+					{/snippet}
+
+					<div class="section-fields">
+						{#each section.fields as field}
+							{@const fieldEditable = field.editable !== false && editMode}
+							<FieldRenderer
+								{field}
+								bind:value={record[field.source]}
+								caption={getFieldCaption(field.source, captions, field.caption)}
+								editable={fieldEditable}
+								onblur={handleFieldBlur}
+							/>
+						{/each}
+					</div>
+				</Card>
+			{/each}
+		{/if}
 	</div>
 </div>
 
 <!-- Customize Page Modal -->
 {#if customizeModalOpen}
-	<CustomizePageModal
+	<CustomizeFieldsModal
 		open={customizeModalOpen}
 		{page}
 		customizations={fieldCustomizations}
+		mode="card"
 		onclose={() => customizeModalOpen = false}
 		onsave={handleSaveCustomizations}
 	/>
@@ -439,6 +462,42 @@
 	.saving-indicator,
 	.saved-indicator {
 		@apply flex items-center gap-2 px-3 py-1.5;
+	}
+
+	/* Empty state styles */
+	.empty-state {
+		@apply flex flex-col items-center justify-center;
+		@apply py-16 px-8;
+		@apply text-center;
+	}
+
+	.empty-state-icon {
+		@apply w-16 h-16 mb-4;
+		@apply text-gray-300;
+	}
+
+	:global(.dark) .empty-state-icon {
+		color: #4b5563; /* gray-600 */
+	}
+
+	.empty-state-icon svg {
+		@apply w-full h-full;
+	}
+
+	.empty-state-title {
+		@apply text-xl font-semibold text-gray-700 mb-2;
+	}
+
+	:global(.dark) .empty-state-title {
+		color: #d1d5db; /* gray-300 */
+	}
+
+	.empty-state-text {
+		@apply text-gray-500 mb-6;
+	}
+
+	:global(.dark) .empty-state-text {
+		color: #9ca3af; /* gray-400 */
 	}
 
 	.nav-buttons {

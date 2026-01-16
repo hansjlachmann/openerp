@@ -326,6 +326,10 @@
 		padding: 1rem;
 	}
 
+	:global(.dark) .login-container {
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+	}
+
 	.login-card {
 		background: white;
 		border-radius: 8px;
@@ -333,6 +337,11 @@
 		padding: 2rem;
 		width: 100%;
 		max-width: 420px;
+	}
+
+	:global(.dark) .login-card {
+		background: #1f2937;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 	}
 
 	.login-header {
@@ -346,10 +355,18 @@
 		font-size: 2rem;
 	}
 
+	:global(.dark) .login-header h1 {
+		color: #f3f4f6;
+	}
+
 	.login-header p {
 		margin: 0;
 		color: #718096;
 		font-size: 1rem;
+	}
+
+	:global(.dark) .login-header p {
+		color: #9ca3af;
 	}
 
 	.error-message {
@@ -360,6 +377,12 @@
 		padding: 0.75rem;
 		margin-bottom: 1rem;
 		font-size: 0.875rem;
+	}
+
+	:global(.dark) .error-message {
+		background-color: #450a0a;
+		border-color: #7f1d1d;
+		color: #fca5a5;
 	}
 
 	.form-group {
@@ -374,6 +397,10 @@
 		font-size: 0.875rem;
 	}
 
+	:global(.dark) .form-group label {
+		color: #e5e7eb;
+	}
+
 	.form-group input {
 		width: 100%;
 		padding: 0.75rem;
@@ -382,6 +409,14 @@
 		font-size: 1rem;
 		transition: border-color 0.15s ease-in-out;
 		box-sizing: border-box;
+		background-color: white;
+		color: #2d3748;
+	}
+
+	:global(.dark) .form-group input {
+		background-color: #374151;
+		border-color: #4b5563;
+		color: #f3f4f6;
 	}
 
 	.form-group input:focus {
@@ -390,9 +425,26 @@
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
+	:global(.dark) .form-group input:focus {
+		border-color: #818cf8;
+		box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+	}
+
 	.form-group input:disabled {
 		background-color: #f7fafc;
 		cursor: not-allowed;
+	}
+
+	:global(.dark) .form-group input:disabled {
+		background-color: #1f2937;
+	}
+
+	.form-group input::placeholder {
+		color: #a0aec0;
+	}
+
+	:global(.dark) .form-group input::placeholder {
+		color: #6b7280;
 	}
 
 	.company-select {
@@ -404,7 +456,14 @@
 		transition: border-color 0.15s ease-in-out;
 		box-sizing: border-box;
 		background-color: white;
+		color: #2d3748;
 		cursor: pointer;
+	}
+
+	:global(.dark) .company-select {
+		background-color: #374151;
+		border-color: #4b5563;
+		color: #f3f4f6;
 	}
 
 	.company-select:focus {
@@ -413,9 +472,18 @@
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
+	:global(.dark) .company-select:focus {
+		border-color: #818cf8;
+		box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+	}
+
 	.company-select:disabled {
 		background-color: #f7fafc;
 		cursor: not-allowed;
+	}
+
+	:global(.dark) .company-select:disabled {
+		background-color: #1f2937;
 	}
 
 	.login-button {
@@ -431,9 +499,17 @@
 		transition: transform 0.1s ease-in-out, box-shadow 0.15s ease-in-out;
 	}
 
+	:global(.dark) .login-button {
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	}
+
 	.login-button:hover:not(:disabled) {
 		transform: translateY(-1px);
 		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+
+	:global(.dark) .login-button:hover:not(:disabled) {
+		box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 	}
 
 	.login-button:active:not(:disabled) {
@@ -459,8 +535,17 @@
 		transition: background-color 0.15s ease-in-out;
 	}
 
+	:global(.dark) .secondary-button {
+		background: #374151;
+		color: #e5e7eb;
+	}
+
 	.secondary-button:hover:not(:disabled) {
 		background: #cbd5e0;
+	}
+
+	:global(.dark) .secondary-button:hover:not(:disabled) {
+		background: #4b5563;
 	}
 
 	.secondary-button:disabled {
@@ -476,9 +561,17 @@
 		text-align: center;
 	}
 
+	:global(.dark) .setup-prompt {
+		background-color: #374151;
+	}
+
 	.setup-prompt p {
 		margin: 0 0 0.75rem 0;
 		color: #4a5568;
 		font-size: 0.875rem;
+	}
+
+	:global(.dark) .setup-prompt p {
+		color: #9ca3af;
 	}
 </style>

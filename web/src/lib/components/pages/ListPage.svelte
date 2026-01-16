@@ -5,7 +5,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
-	import CustomizeListPageModal from './CustomizeListPageModal.svelte';
+	import CustomizeFieldsModal, { type ItemCustomization } from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
@@ -43,15 +43,9 @@
 		onfilter
 	}: Props = $props();
 
-	// Column customization type
-	interface ColumnCustomization {
-		visible: boolean;
-		order?: number;
-	}
-
 	// Customization state
 	let customizeModalOpen = $state(false);
-	let columnCustomizations = $state<Record<string, ColumnCustomization>>({});
+	let columnCustomizations = $state<Record<string, ItemCustomization>>({});
 
 	// Filter pane state
 	let filterPaneOpen = $state(false);
@@ -188,7 +182,7 @@
 	// Load customizations from localStorage on mount
 	$effect(() => {
 		const userId = $currentUser?.user_id || 'anonymous';
-		columnCustomizations = loadPageCustomizations<Record<string, ColumnCustomization>>(
+		columnCustomizations = loadPageCustomizations<Record<string, ItemCustomization>>(
 			userId,
 			page.page.id
 		);
@@ -997,7 +991,7 @@
 	}
 
 	// Save customizations
-	function handleSaveCustomizations(customizations: Record<string, ColumnCustomization>) {
+	function handleSaveCustomizations(customizations: Record<string, ItemCustomization>) {
 		columnCustomizations = customizations;
 		const userId = $currentUser?.user_id || 'anonymous';
 		savePageCustomizations(userId, page.page.id, customizations);
@@ -1369,10 +1363,11 @@
 
 <!-- Customize Columns Modal -->
 {#if customizeModalOpen}
-	<CustomizeListPageModal
+	<CustomizeFieldsModal
 		open={customizeModalOpen}
 		{page}
 		customizations={columnCustomizations}
+		mode="list"
 		onclose={() => customizeModalOpen = false}
 		onsave={handleSaveCustomizations}
 	/>
@@ -1546,7 +1541,7 @@
 	}
 
 	:global(.dark) .table tbody tr.new-row {
-		background-color: rgba(56, 189, 248, 0.15) !important;
+		background-color: #1e3a5f !important; /* Dark blue background for new rows */
 	}
 
 	.table td {

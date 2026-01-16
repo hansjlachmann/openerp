@@ -4,49 +4,75 @@
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import { createDragAndDrop, type DragItem } from '$lib/utils/dragAndDrop.svelte';
 
-	interface ColumnCustomization {
+	export interface ItemCustomization {
 		visible: boolean;
+		section?: string;
 		order?: number;
 	}
 
 	interface Props {
 		open?: boolean;
 		page: PageDefinition;
-		customizations: Record<string, ColumnCustomization>;
+		customizations: Record<string, ItemCustomization>;
+		mode: 'card' | 'list';
 		onclose?: () => void;
-		onsave?: (customizations: Record<string, ColumnCustomization>) => void;
+		onsave?: (customizations: Record<string, ItemCustomization>) => void;
 	}
 
-	let { open = false, page, customizations, onclose, onsave }: Props = $props();
+	let { open = false, page, customizations, mode, onclose, onsave }: Props = $props();
 
 	// Local copy of customizations for editing
-	let localCustomizations = $state<Record<string, ColumnCustomization>>({ ...customizations });
-
-	// Drag and drop utility
-	const drag = createDragAndDrop<ColumnCustomization>();
+	let localCustomizations = $state<Record<string, ItemCustomization>>({ ...customizations });
 
 	// Sync when customizations prop changes
 	$effect(() => {
 		localCustomizations = { ...customizations };
 	});
 
-	// Get all columns from repeater with applied order
-	const allColumns = $derived(() => {
-		const columns: Array<DragItem<{ index: number }>> = (page.page.layout.repeater?.fields || []).map((field, index) => ({
-			field,
-			data: { index }
-		}));
+	// Drag and drop utility
+	const drag = createDragAndDrop<ItemCustomization>();
+
+	// Get all items (fields for card, columns for list) with applied order
+	const allItems = $derived(() => {
+		const items: Array<DragItem<{ section?: string; index: number }>> = [];
+		let globalIndex = 0;
+
+		if (mode === 'card') {
+			// Card mode: iterate through sections
+			page.page.layout.sections?.forEach((section) => {
+				section.fields.forEach((field) => {
+					items.push({
+						field,
+						data: { section: section.caption, index: globalIndex++ }
+					});
+				});
+			});
+		} else {
+			// List mode: iterate through repeater fields
+			(page.page.layout.repeater?.fields || []).forEach((field, index) => {
+				items.push({
+					field,
+					data: { index }
+				});
+			});
+		}
 
 		// Sort by custom order if available
-		return columns.sort((a, b) => {
+		return items.sort((a, b) => {
 			const orderA = localCustomizations[a.field.source]?.order ?? a.data.index;
 			const orderB = localCustomizations[b.field.source]?.order ?? b.data.index;
 			return orderA - orderB;
 		});
 	});
 
-	// Toggle column visibility
-	function toggleColumn(fieldSource: string, currentVisible: boolean) {
+	// Get all sections (card mode only)
+	const allSections = $derived(() => {
+		if (mode !== 'card') return [];
+		return page.page.layout.sections?.map((s) => s.name) || [];
+	});
+
+	// Toggle item visibility
+	function toggleItem(fieldSource: string, currentVisible: boolean) {
 		localCustomizations = {
 			...localCustomizations,
 			[fieldSource]: {
@@ -56,14 +82,31 @@
 		};
 	}
 
-	// Get effective visibility for a column
+	// Change field section (card mode only)
+	function changeFieldSection(fieldSource: string, newSection: string) {
+		localCustomizations = {
+			...localCustomizations,
+			[fieldSource]: {
+				...(localCustomizations[fieldSource] || { visible: true }),
+				section: newSection
+			}
+		};
+	}
+
+	// Get effective visibility for an item
 	function getEffectiveVisibility(field: Field): boolean {
-		// If user has customized this column, use that
 		if (field.source in localCustomizations) {
 			return localCustomizations[field.source].visible;
 		}
-		// Otherwise use the field's visible property (default true)
 		return field.visible !== false;
+	}
+
+	// Get effective section for a field (card mode only)
+	function getEffectiveSection(field: Field, originalSection?: string): string {
+		if (field.source in localCustomizations && localCustomizations[field.source].section) {
+			return localCustomizations[field.source].section!;
+		}
+		return originalSection || '';
 	}
 
 	// Save customizations
@@ -78,22 +121,33 @@
 	}
 
 	// Drag and drop handler wrapper
-	function handleDropColumn(e: DragEvent, targetIndex: number) {
-		localCustomizations = drag.handleDrop(e, targetIndex, allColumns(), localCustomizations);
+	function handleDrop(e: DragEvent, targetIndex: number) {
+		localCustomizations = drag.handleDrop(e, targetIndex, allItems(), localCustomizations);
 	}
+
+	// UI labels based on mode
+	const title = $derived(
+		mode === 'card' ? `Customize Page: ${page.page.caption}` : `Customize Columns: ${page.page.caption}`
+	);
+	const subtitle = $derived(
+		mode === 'card'
+			? 'Show/hide fields, change sections, and drag to reorder'
+			: 'Show/hide columns and drag to reorder'
+	);
 </script>
 
-<Modal {open} onclose={onclose} size="expanded">
+<Modal {open} {onclose} size="expanded">
 	<div class="customize-modal">
 		<div class="customize-header">
-			<h2 class="customize-title">Customize Columns: {page.page.caption}</h2>
-			<p class="customize-subtitle">Show/hide columns and drag to reorder</p>
+			<h2 class="customize-title">{title}</h2>
+			<p class="customize-subtitle">{subtitle}</p>
 		</div>
 
 		<div class="customize-body">
 			<div class="fields-list">
-				{#each allColumns() as item, idx}
+				{#each allItems() as item, idx}
 					{@const isVisible = getEffectiveVisibility(item.field)}
+					{@const currentSection = mode === 'card' ? getEffectiveSection(item.field, item.data.section) : ''}
 					{@const isDragging = drag.isDragging(item.field.source)}
 					{@const isDragOver = drag.isDragOver(idx)}
 					<div
@@ -104,13 +158,15 @@
 						ondragstart={(e) => drag.handleDragStart(e, item)}
 						ondragover={(e) => drag.handleDragOver(e, idx)}
 						ondragleave={drag.handleDragLeave}
-						ondrop={(e) => handleDropColumn(e, idx)}
+						ondrop={(e) => handleDrop(e, idx)}
 						ondragend={drag.handleDragEnd}
 					>
 						<!-- Drag handle -->
 						<div class="drag-handle" title="Drag to reorder">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-								<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+								<path
+									d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
+								/>
 							</svg>
 						</div>
 
@@ -120,13 +176,29 @@
 								checked={isVisible}
 								onchange={(e) => {
 									e.stopPropagation();
-									toggleColumn(item.field.source, isVisible);
+									toggleItem(item.field.source, isVisible);
 								}}
 								onclick={(e) => e.stopPropagation()}
 							/>
 							<div class="field-info">
 								<span class="field-name">{item.field.caption || item.field.source}</span>
-								{#if item.field.width}
+								{#if mode === 'card'}
+									<!-- Card mode: show section dropdown -->
+									<div class="field-meta-row">
+										<span class="field-section-label">Section:</span>
+										<select
+											class="section-select"
+											value={currentSection}
+											onchange={(e) => changeFieldSection(item.field.source, e.currentTarget.value)}
+											onclick={(e) => e.stopPropagation()}
+										>
+											{#each allSections() as sectionName}
+												<option value={sectionName}>{sectionName}</option>
+											{/each}
+										</select>
+									</div>
+								{:else if item.field.width}
+									<!-- List mode: show width info -->
 									<span class="field-meta">Width: {item.field.width}px</span>
 								{/if}
 							</div>
@@ -140,16 +212,10 @@
 		</div>
 
 		<div class="customize-footer">
-			<Button variant="secondary" size="sm" onclick={handleReset}>
-				Reset to Defaults
-			</Button>
+			<Button variant="secondary" size="sm" onclick={handleReset}>Reset to Defaults</Button>
 			<div class="footer-actions">
-				<Button variant="secondary" size="sm" onclick={onclose}>
-					Cancel
-				</Button>
-				<Button variant="primary" size="sm" onclick={handleSave}>
-					Save Customization
-				</Button>
+				<Button variant="secondary" size="sm" onclick={onclose}>Cancel</Button>
+				<Button variant="primary" size="sm" onclick={handleSave}>Save Customization</Button>
 			</div>
 		</div>
 	</div>
@@ -224,7 +290,7 @@
 	}
 
 	.field-info {
-		@apply flex flex-col flex-1;
+		@apply flex flex-col flex-1 gap-2;
 	}
 
 	.field-name {
@@ -233,6 +299,21 @@
 
 	.field-meta {
 		@apply text-sm text-gray-500 dark:text-gray-400;
+	}
+
+	.field-meta-row {
+		@apply flex items-center gap-2;
+	}
+
+	.field-section-label {
+		@apply text-sm text-gray-500 dark:text-gray-400;
+	}
+
+	.section-select {
+		@apply text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-600;
+		@apply bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+		@apply cursor-pointer;
 	}
 
 	.field-badge {
