@@ -69,7 +69,7 @@
 	}
 
 	:global(.dark) .modal-content {
-		background-color: var(--color-bg-primary);
+		background-color: #1f2937; /* gray-800 */
 	}
 
 	@keyframes modalFadeIn {

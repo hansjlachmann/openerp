@@ -169,6 +169,32 @@ export const api = {
 		return result.data || [];
 	},
 
+	async setLanguage(language: string, persist: boolean = true): Promise<ApiResponse> {
+		const response = await fetch(`${API_BASE}/auth/language`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ language, persist })
+		});
+
+		if (!response.ok) {
+			const result: ApiResponse = await response.json();
+			throw new Error(result.error || 'Failed to change language');
+		}
+
+		return await response.json();
+	},
+
+	async getLanguages(): Promise<{ code: string; name: string }[]> {
+		const response = await fetch(`${API_BASE}/auth/languages`);
+
+		if (!response.ok) {
+			throw new Error('Failed to get languages');
+		}
+
+		const result: ApiResponse<{ code: string; name: string }[]> = await response.json();
+		return result.data || [];
+	},
+
 	async listCompanies(): Promise<ApiResponse<string[]>> {
 		const response = await fetch(`${API_BASE}/auth/companies`);
 		return handleApiResponseFull<string[]>(response, 'list companies');
