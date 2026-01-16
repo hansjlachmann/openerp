@@ -110,7 +110,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	var pref tables.UserPreferences
 	pref.Init(h.db, "")
 
-	exists := pref.Get(
+	exists := pref.GetByPK(
 		types.NewCode(userID),
 		pageIDInt,
 		types.NewCode(preferenceType),
@@ -170,7 +170,7 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 	var pref tables.UserPreferences
 	pref.Init(h.db, "")
 
-	if !pref.Get(
+	if !pref.GetByPK(
 		types.NewCode(userID),
 		pageIDInt,
 		types.NewCode(preferenceType),

@@ -3,8 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,6 +12,7 @@ import (
 	"github.com/hansjlachmann/openerp/src/foundation/filters"
 	"github.com/hansjlachmann/openerp/src/foundation/i18n"
 	"github.com/hansjlachmann/openerp/src/foundation/session"
+	ftables "github.com/hansjlachmann/openerp/src/foundation/tables"
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
 
@@ -25,6 +24,17 @@ type TablesHandler struct {
 // NewTablesHandler creates a new tables handler
 func NewTablesHandler(db *sql.DB) *TablesHandler {
 	return &TablesHandler{db: db}
+}
+
+// getTable creates a table instance by name using the registry
+func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, error) {
+	factory, ok := tables.GetTableFactory(tableName)
+	if !ok {
+		return nil, apperrors.TableNotFound(tableName)
+	}
+	table := factory()
+	table.Init(h.db, company)
+	return table, nil
 }
 
 // GetRecordIDs returns only the IDs from a table (lightweight for navigation)
@@ -40,28 +50,25 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
 
-	// Parse query parameters
-	sortBy := c.Query("sort_by", "")
-
-	// Get IDs based on table name
-	var ids []string
-	var err error
-
-	switch tableName {
-	case "Customer":
-		ids, err = h.getCustomerIDs(company, sortBy)
-	case "Payment_terms":
-		ids, err = h.getPaymentTermsIDs(company, sortBy)
-	case "Customer_ledger_entry":
-		ids, err = h.getCustomerLedgerEntryIDs(company, sortBy)
-	case "User":
-		ids, err = h.getUserIDs(company, sortBy)
-	default:
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	// Parse query parameters
+	sortBy := c.Query("sort_by", "")
+	if sortBy != "" {
+		table.SetCurrentKey(sortBy)
+	}
+
+	// Collect IDs
+	var ids []string
+	if table.FindSet() {
+		ids = append(ids, table.GetPrimaryKeyValue())
+		for table.Next() {
+			ids = append(ids, table.GetPrimaryKeyValue())
+		}
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -83,11 +90,19 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
 
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
-	sortOrder := c.Query("sort_order", "asc")
+	if sortBy != "" {
+		table.SetCurrentKey(sortBy)
+	}
 
-	// Parse fields parameter (JSON array of field names)
+	// Parse fields parameter (JSON array of field names) - for future FlowField optimization
 	var requestedFields []string
 	fieldsParam := c.Query("fields", "")
 	if fieldsParam != "" {
@@ -97,7 +112,6 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	}
 
 	// Parse filters parameter (JSON array of filter expressions)
-	var requestedFilters []filters.FilterExpression
 	filtersParam := c.Query("filters", "")
 	if filtersParam != "" {
 		var apiFilters []struct {
@@ -108,55 +122,50 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 			return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid filters parameter"))
 		}
 
-		// Convert API filters to filter expressions
+		// Apply BC-style filters
 		for _, f := range apiFilters {
-			requestedFilters = append(requestedFilters, filters.FilterExpression{
-				Field:      f.Field,
-				Expression: f.Expression,
-			})
+			table.SetFilter(f.Field, f.Expression)
 		}
 	}
 
-	// Build query based on table name
-	var records interface{}
-	var err error
+	// Collect records
+	var records []map[string]interface{}
+	flowFields := table.GetFlowFields()
 
-	switch tableName {
-	case "Customer":
-		records, err = h.listCustomers(company, sortBy, sortOrder, requestedFields, requestedFilters)
-	case "Payment_terms":
-		records, err = h.listPaymentTerms(company, sortBy, sortOrder)
-	case "Customer_ledger_entry":
-		records, err = h.listCustomerLedgerEntries(company, sortBy, sortOrder)
-	case "User":
-		records, err = h.listUsers(company, sortBy, sortOrder)
-	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
-	}
+	if table.FindSet() {
+		// Calculate FlowFields if not explicitly excluded
+		if len(requestedFields) == 0 || containsAny(requestedFields, flowFields) {
+			table.CalcFields(flowFields...)
+		}
+		records = append(records, table.ToMap())
 
-	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+		for table.Next() {
+			if len(requestedFields) == 0 || containsAny(requestedFields, flowFields) {
+				table.CalcFields(flowFields...)
+			}
+			records = append(records, table.ToMap())
+		}
 	}
 
 	// Get captions
 	ts := i18n.GetInstance()
 	captions := &apitypes.CaptionData{
-		Table:  ts.TableCaption(tableName, language),
-		Fields: make(map[string]string),
+		Table:   ts.TableCaption(tableName, language),
+		Fields:  make(map[string]string),
+		Options: make(map[string]map[string]string),
 	}
 
-	// Add field captions based on table
-	h.addFieldCaptions(tableName, language, captions)
-
-	// Return paginated response
-	listResponse := &apitypes.ListResponse{
-		Records:  records,
-		Total:    getRecordCount(records),
-		Page:     1,
-		PageSize: getRecordCount(records),
+	// Add field captions from metadata
+	for _, field := range table.GetFields() {
+		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
 	}
 
-	response := apitypes.NewSuccessResponseWithCaptions(listResponse, captions)
+	response := apitypes.NewSuccessResponseWithCaptions(map[string]interface{}{
+		"records":   records,
+		"total":     len(records),
+		"page":      1,
+		"page_size": len(records),
+	}, captions)
 	return c.JSON(response)
 }
 
@@ -175,53 +184,33 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
-	var record interface{}
-	var err error
-
-	switch tableName {
-	case "Customer":
-		var customer tables.Customer
-		customer.Init(h.db, company)
-		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		// Calculate FlowFields before converting to map
-		customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
-		record = customerToMap(&customer)
-
-	case "Payment_terms":
-		var pt tables.PaymentTerms
-		pt.Init(h.db, company)
-		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		record = paymentTermsToMap(&pt)
-
-	case "User":
-		var user tables.User
-		user.Init(h.db, company)
-		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		record = userToMap(&user)
-
-	default:
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	// Get record by primary key
+	if !table.Get(id) {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
+
+	// Calculate FlowFields
+	table.CalcFields(table.GetFlowFields()...)
 
 	// Get captions
 	ts := i18n.GetInstance()
 	captions := &apitypes.CaptionData{
-		Table:  ts.TableCaption(tableName, language),
-		Fields: make(map[string]string),
+		Table:   ts.TableCaption(tableName, language),
+		Fields:  make(map[string]string),
+		Options: make(map[string]map[string]string),
 	}
-	h.addFieldCaptions(tableName, language, captions)
 
-	response := apitypes.NewSuccessResponseWithCaptions(record, captions)
+	for _, field := range table.GetFields() {
+		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
+	}
+
+	response := apitypes.NewSuccessResponseWithCaptions(table.ToMap(), captions)
 	return c.JSON(response)
 }
 
@@ -239,71 +228,46 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
 	// Parse request body
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
 	}
 
-	switch tableName {
-	case "Customer":
-		customer := mapToCustomer(data)
-		customer.Init(h.db, company)
-		// Check if customer already exists
-		var existing tables.Customer
-		existing.Init(h.db, company)
-		if existing.Get(customer.No) {
-			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, customer.No.String()).Message(language)))
-		}
-		if !customer.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(customerToMap(customer))
-		return c.JSON(response)
+	// Populate table from map
+	table.FromMap(data)
 
-	case "Payment_terms":
-		pt := mapToPaymentTerms(data)
-		pt.Init(h.db, company)
-		// Check if payment terms already exists
-		var existing tables.PaymentTerms
-		existing.Init(h.db, company)
-		if existing.Get(pt.Code) {
-			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pt.Code.String()).Message(language)))
-		}
-		if !pt.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(paymentTermsToMap(pt))
-		return c.JSON(response)
-
-	case "User":
-		user := mapToUser(data)
-		user.Init(h.db, company)
-		// Check if user already exists
-		var existing tables.User
-		existing.Init(h.db, company)
-		if existing.Get(user.User_id) {
-			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, user.User_id.String()).Message(language)))
-		}
-		// Initialize timestamps for new user
-		now := time.Now()
-		user.Created_at = types.NewDateTimeFromTime(now)
-		user.Last_login = types.NewDateTimeFromTime(now)
-		// Handle password if provided
+	// Special handling for User table password
+	if tableName == "User" {
 		if password, ok := data["password"].(string); ok && password != "" {
-			if err := user.SetPassword(password); err != nil {
-				return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+			if userTable, ok := table.(*tables.User); ok {
+				if err := userTable.SetPassword(password); err != nil {
+					return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+				}
 			}
 		}
-		if !user.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(userToMap(user))
-		return c.JSON(response)
-
-	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
+
+	// Check if record already exists
+	existingTable, _ := h.getTable(tableName, company)
+	pkValue := table.GetPrimaryKeyValue()
+	if existingTable.Get(pkValue) {
+		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pkValue).Message(language)))
+	}
+
+	// Insert record
+	if !table.Insert(true) {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
+	}
+
+	response := apitypes.NewSuccessResponse(table.ToMap())
+	return c.JSON(response)
 }
 
 // ModifyRecord updates an existing record
@@ -321,61 +285,47 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// Get existing record
+	if !table.Get(id) {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
+	}
+
 	// Parse request body
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
 	}
 
-	switch tableName {
-	case "Customer":
-		var customer tables.Customer
-		customer.Init(h.db, company)
-		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		updateCustomerFromMap(&customer, data)
-		if !customer.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(customerToMap(&customer))
-		return c.JSON(response)
+	// Update only provided fields
+	table.UpdateFromMap(data)
 
-	case "Payment_terms":
-		var pt tables.PaymentTerms
-		pt.Init(h.db, company)
-		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		updatePaymentTermsFromMap(&pt, data)
-		if !pt.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(paymentTermsToMap(&pt))
-		return c.JSON(response)
-
-	case "User":
-		var user tables.User
-		user.Init(h.db, company)
-		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		updateUserFromMap(&user, data)
-		// Handle password if provided
+	// Special handling for User table password
+	if tableName == "User" {
 		if password, ok := data["password"].(string); ok && password != "" {
-			if err := user.SetPassword(password); err != nil {
-				return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+			if userTable, ok := table.(*tables.User); ok {
+				if err := userTable.SetPassword(password); err != nil {
+					return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+				}
 			}
 		}
-		if !user.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(userToMap(&user))
-		return c.JSON(response)
-
-	default:
-		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
+
+	// Modify record
+	if !table.Modify(true) {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
+	}
+
+	// Calculate FlowFields for response
+	table.CalcFields(table.GetFlowFields()...)
+
+	response := apitypes.NewSuccessResponse(table.ToMap())
+	return c.JSON(response)
 }
 
 // DeleteRecord deletes a record
@@ -393,49 +343,27 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
-	switch tableName {
-	case "Customer":
-		var customer tables.Customer
-		customer.Init(h.db, company)
-		if !customer.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		if !customer.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(nil)
-		return c.JSON(response)
-
-	case "Payment_terms":
-		var pt tables.PaymentTerms
-		pt.Init(h.db, company)
-		if !pt.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		if !pt.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(nil)
-		return c.JSON(response)
-
-	case "User":
-		var user tables.User
-		user.Init(h.db, company)
-		if !user.Get(types.NewCode(id)) {
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
-		}
-		if !user.Delete(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
-		}
-		response := apitypes.NewSuccessResponse(nil)
-		return c.JSON(response)
-
-	default:
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
+
+	// Get existing record
+	if !table.Get(id) {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
+	}
+
+	// Delete record
+	if !table.Delete(true) {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
+	}
+
+	response := apitypes.NewSuccessResponse(nil)
+	return c.JSON(response)
 }
 
-// ValidateField validates a field value
+// ValidateField validates a single field value
 // POST /api/tables/:table/validate
 func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	tableName := c.Params("table")
@@ -448,460 +376,75 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
 
-	var req apitypes.ValidationRequest
+	// Parse request body
+	var req struct {
+		Field string      `json:"field"`
+		Value interface{} `json:"value"`
+	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
 	}
 
-	// Validate field based on table
-	switch tableName {
-	case "Customer":
-		var customer tables.Customer
-		customer.Init(h.db, company)
-		if err := customer.ValidateField(req.Field, req.Value); err != nil {
-			return c.JSON(apitypes.NewErrorResponse(err.Error()))
-		}
-		return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
-			"valid": true,
-		}))
-
-	default:
+	// Create table instance
+	table, err := h.getTable(tableName, company)
+	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
+
+	// Validate field
+	if err := table.ValidateField(req.Field, req.Value); err != nil {
+		return c.JSON(apitypes.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(apitypes.APIResponse{
+		Success: true,
+	})
 }
 
-// Helper functions
-
-// filterFlowFields returns only the FlowFields that are in the requested fields list
-func filterFlowFields(requestedFields []string, availableFlowFields []string) []string {
-	var result []string
-	requestedMap := make(map[string]bool)
-
-	for _, field := range requestedFields {
-		requestedMap[field] = true
-	}
-
-	for _, flowField := range availableFlowFields {
-		if requestedMap[flowField] {
-			result = append(result, flowField)
-		}
-	}
-
-	return result
-}
-
-func (h *TablesHandler) listCustomers(company, sortBy, sortOrder string, requestedFields []string, requestedFilters []filters.FilterExpression) ([]map[string]interface{}, error) {
-	var customer tables.Customer
-	customer.Init(h.db, company)
-
-	// Apply filters using SetFilter
-	for _, filter := range requestedFilters {
-		customer.SetFilter(filter.Field, filter.Expression)
-	}
-
-	// Apply sorting
-	if sortBy != "" {
-		customer.SetCurrentKey(sortBy)
-	}
-
-	var customers []map[string]interface{}
-
-	if customer.FindSet() {
-		for {
-			// Only calculate FlowFields that are requested
-			if len(requestedFields) > 0 {
-				flowFieldsToCalc := filterFlowFields(requestedFields, []string{"balance_lcy", "sales_lcy", "no_of_ledger_entries"})
-				if len(flowFieldsToCalc) > 0 {
-					customer.CalcFields(flowFieldsToCalc...)
-				}
-			} else {
-				// If no fields specified, calculate all FlowFields (backward compatibility)
-				customer.CalcFields("balance_lcy", "sales_lcy", "no_of_ledger_entries")
-			}
-
-			customers = append(customers, customerToMap(&customer))
-			if !customer.Next() {
-				break
+// containsAny checks if slice contains any of the items
+func containsAny(slice []string, items []string) bool {
+	for _, s := range slice {
+		for _, item := range items {
+			if s == item {
+				return true
 			}
 		}
 	}
-
-	return customers, nil
+	return false
 }
 
-func (h *TablesHandler) listPaymentTerms(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
-	var pt tables.PaymentTerms
-	pt.Init(h.db, company)
-
-	if sortBy != "" {
-		pt.SetCurrentKey(sortBy)
-	}
-
-	var paymentTerms []map[string]interface{}
-
-	if pt.FindSet() {
-		for {
-			paymentTerms = append(paymentTerms, paymentTermsToMap(&pt))
-			if !pt.Next() {
-				break
-			}
-		}
-	}
-
-	return paymentTerms, nil
-}
-
-func (h *TablesHandler) listCustomerLedgerEntries(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
-	var cle tables.CustomerLedgerEntry
-	cle.Init(h.db, company)
-
-	if sortBy != "" {
-		cle.SetCurrentKey(sortBy)
-	}
-
-	var entries []map[string]interface{}
-
-	if cle.FindSet() {
-		for {
-			entries = append(entries, customerLedgerEntryToMap(&cle))
-			if !cle.Next() {
-				break
-			}
-		}
-	}
-
-	return entries, nil
-}
-
-// ID-only helper functions for navigation
-
-func (h *TablesHandler) getCustomerIDs(company, sortBy string) ([]string, error) {
-	var customer tables.Customer
-	customer.Init(h.db, company)
-
-	if sortBy != "" {
-		customer.SetCurrentKey(sortBy)
-	}
-
-	var ids []string
-
-	if customer.FindSet() {
-		for {
-			ids = append(ids, customer.No.String())
-			if !customer.Next() {
-				break
-			}
-		}
-	}
-
-	return ids, nil
-}
-
-func (h *TablesHandler) getPaymentTermsIDs(company, sortBy string) ([]string, error) {
-	var pt tables.PaymentTerms
-	pt.Init(h.db, company)
-
-	if sortBy != "" {
-		pt.SetCurrentKey(sortBy)
-	}
-
-	var ids []string
-
-	if pt.FindSet() {
-		for {
-			ids = append(ids, pt.Code.String())
-			if !pt.Next() {
-				break
-			}
-		}
-	}
-
-	return ids, nil
-}
-
-func (h *TablesHandler) getCustomerLedgerEntryIDs(company, sortBy string) ([]string, error) {
-	var cle tables.CustomerLedgerEntry
-	cle.Init(h.db, company)
-
-	if sortBy != "" {
-		cle.SetCurrentKey(sortBy)
-	}
-
-	var ids []string
-
-	if cle.FindSet() {
-		for {
-			ids = append(ids, fmt.Sprintf("%d", cle.Entry_no))
-			if !cle.Next() {
-				break
-			}
-		}
-	}
-
-	return ids, nil
-}
-
+// Legacy field captions helper (kept for backward compatibility, uses metadata now)
 func (h *TablesHandler) addFieldCaptions(tableName, language string, captions *apitypes.CaptionData) {
 	ts := i18n.GetInstance()
 
-	switch tableName {
-	case "Customer":
-		fields := []string{"no", "name", "address", "post_code", "city", "phonenumber", "email",
-			"payment_terms_code", "credit_limit", "balance_lcy", "sales_lcy", "no_of_ledger_entries",
-			"last_order_date", "created_at", "status"}
-		for _, field := range fields {
-			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
-		}
+	// Get field names from a temporary table instance
+	factory, ok := tables.GetTableFactory(tableName)
+	if !ok {
+		return
+	}
 
-	case "Payment_terms":
-		fields := []string{"code", "description", "due_date_calculation", "discount_date_calculation", "discount_percent"}
-		for _, field := range fields {
-			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
-		}
-
-	case "Customer_ledger_entry":
-		fields := []string{"entry_no", "customer_no", "posting_date", "document_type", "document_no",
-			"description", "amount", "remaining_amount"}
-		for _, field := range fields {
-			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
-		}
-
-	case "User":
-		fields := []string{"user_id", "user_name", "email", "language", "active", "created_at", "last_login"}
-		for _, field := range fields {
-			captions.Fields[field] = ts.FieldCaption(tableName, field, language)
-		}
+	table := factory()
+	for _, field := range table.GetFields() {
+		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
 	}
 }
 
-// Conversion functions: Table struct <-> map[string]interface{}
-
-func customerToMap(c *tables.Customer) map[string]interface{} {
-	return map[string]interface{}{
-		"no":                    c.No.String(),
-		"name":                  c.Name.String(),
-		"address":               c.Address.String(),
-		"post_code":             c.Post_code.String(),
-		"city":                  c.City.String(),
-		"phonenumber":           c.Phonenumber.String(),
-		"payment_terms_code":    c.Payment_terms_code.String(),
-		"credit_limit":          c.Credit_limit.String(),
-		"balance_lcy":           c.Balance_lcy.String(),
-		"sales_lcy":             c.Sales_lcy.String(),
-		"no_of_ledger_entries":  c.No_of_ledger_entries,
-		"last_order_date":       c.Last_order_date.String(),
-		"created_at":            c.Created_at.String(),
-		"status":                int(c.Status),
+// applyFilters applies BC-style filters to a table (utility function)
+func applyFilters(table ftables.Table, filterExpressions []filters.FilterExpression) {
+	for _, f := range filterExpressions {
+		table.SetFilter(f.Field, f.Expression)
 	}
 }
 
-func mapToCustomer(data map[string]interface{}) *tables.Customer {
-	customer := &tables.Customer{}
-
-	if v, ok := data["no"].(string); ok {
-		customer.No = types.NewCode(v)
-	}
-	if v, ok := data["name"].(string); ok {
-		customer.Name = types.NewText(v)
-	}
-	if v, ok := data["address"].(string); ok {
-		customer.Address = types.NewText(v)
-	}
-	if v, ok := data["post_code"].(string); ok {
-		customer.Post_code = types.NewCode(v)
-	}
-	if v, ok := data["city"].(string); ok {
-		customer.City = types.NewText(v)
-	}
-	if v, ok := data["phonenumber"].(string); ok {
-		customer.Phonenumber = types.NewText(v)
-	}
-	if v, ok := data["payment_terms_code"].(string); ok {
-		customer.Payment_terms_code = types.NewCode(v)
-	}
-	if v, ok := data["status"].(float64); ok {
-		customer.Status = tables.CustomerStatus(int(v))
-	}
-
-	return customer
-}
-
-func updateCustomerFromMap(customer *tables.Customer, data map[string]interface{}) {
-	if v, ok := data["name"].(string); ok {
-		customer.Name = types.NewText(v)
-	}
-	if v, ok := data["address"].(string); ok {
-		customer.Address = types.NewText(v)
-	}
-	if v, ok := data["post_code"].(string); ok {
-		customer.Post_code = types.NewCode(v)
-	}
-	if v, ok := data["city"].(string); ok {
-		customer.City = types.NewText(v)
-	}
-	if v, ok := data["phonenumber"].(string); ok {
-		customer.Phonenumber = types.NewText(v)
-	}
-	if v, ok := data["payment_terms_code"].(string); ok {
-		customer.Payment_terms_code = types.NewCode(v)
-	}
-	if v, ok := data["status"].(float64); ok {
-		customer.Status = tables.CustomerStatus(int(v))
-	}
-}
-
-func paymentTermsToMap(pt *tables.PaymentTerms) map[string]interface{} {
-	return map[string]interface{}{
-		"code":        pt.Code.String(),
-		"description": pt.Description.String(),
-		"active":      pt.Active,
-	}
-}
-
-func mapToPaymentTerms(data map[string]interface{}) *tables.PaymentTerms {
-	pt := &tables.PaymentTerms{}
-
-	if v, ok := data["code"].(string); ok {
-		pt.Code = types.NewCode(v)
-	}
-	if v, ok := data["description"].(string); ok {
-		pt.Description = types.NewText(v)
-	}
-	if v, ok := data["active"].(bool); ok {
-		pt.Active = v
-	}
-
-	return pt
-}
-
-func updatePaymentTermsFromMap(pt *tables.PaymentTerms, data map[string]interface{}) {
-	if v, ok := data["description"].(string); ok {
-		pt.Description = types.NewText(v)
-	}
-	if v, ok := data["active"].(bool); ok {
-		pt.Active = v
-	}
-}
-
-func customerLedgerEntryToMap(cle *tables.CustomerLedgerEntry) map[string]interface{} {
-	return map[string]interface{}{
-		"entry_no":         cle.Entry_no,
-		"customer_no":      cle.Customer_no.String(),
-		"posting_date":     cle.Posting_date.String(),
-		"document_type":    int(cle.Document_type),
-		"document_no":      cle.Document_no.String(),
-		"description":      cle.Description.String(),
-		"amount":           cle.Amount.String(),
-		"remaining_amount": cle.Remaining_amount.String(),
-	}
-}
-
-func getRecordCount(records interface{}) int {
-	switch v := records.(type) {
-	case []map[string]interface{}:
-		return len(v)
-	default:
-		return 0
-	}
-}
-
-// normalizeTableName converts "Customer" to "customer", "Payment Terms" to "payment_terms"
-func normalizeTableName(name string) string {
-	return strings.ToLower(strings.ReplaceAll(name, " ", "_"))
-}
-
-// User table helper functions
-
-func (h *TablesHandler) listUsers(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
-	var user tables.User
-	user.Init(h.db, company)
-
-	if sortBy != "" {
-		user.SetCurrentKey(sortBy)
-	}
-
-	var users []map[string]interface{}
-
-	if user.FindSet() {
-		for {
-			users = append(users, userToMap(&user))
-			if !user.Next() {
-				break
-			}
-		}
-	}
-
-	return users, nil
-}
-
-func (h *TablesHandler) getUserIDs(company, sortBy string) ([]string, error) {
-	var user tables.User
-	user.Init(h.db, company)
-
-	if sortBy != "" {
-		user.SetCurrentKey(sortBy)
-	}
-
-	var ids []string
-
-	if user.FindSet() {
-		for {
-			ids = append(ids, user.User_id.String())
-			if !user.Next() {
-				break
-			}
-		}
-	}
-
-	return ids, nil
-}
-
-func userToMap(user *tables.User) map[string]interface{} {
-	return map[string]interface{}{
-		"id":          user.User_id.String(), // Generic ID field for frontend compatibility
-		"user_id":     user.User_id.String(),
-		"user_name":   user.User_name.String(),
-		"email":       user.Email.String(),
-		"language":    user.Language.String(),
-		"active":      user.Active,
-		"created_at":  user.Created_at.String(),
-		"last_login":  user.Last_login.String(),
-	}
-}
-
-func mapToUser(data map[string]interface{}) *tables.User {
-	user := &tables.User{}
-
-	if v, ok := data["user_id"].(string); ok {
-		user.User_id = types.NewCode(v)
-	}
-	if v, ok := data["user_name"].(string); ok {
-		user.User_name = types.NewText(v)
-	}
-	if v, ok := data["email"].(string); ok {
-		user.Email = types.NewText(v)
-	}
-	if v, ok := data["language"].(string); ok {
-		user.Language = types.NewText(v)
-	}
-	if v, ok := data["active"].(bool); ok {
-		user.Active = v
-	}
-
-	return user
-}
-
-func updateUserFromMap(user *tables.User, data map[string]interface{}) {
-	if v, ok := data["user_name"].(string); ok {
-		user.User_name = types.NewText(v)
-	}
-	if v, ok := data["email"].(string); ok {
-		user.Email = types.NewText(v)
-	}
-	if v, ok := data["language"].(string); ok {
-		user.Language = types.NewText(v)
-	}
-	if v, ok := data["active"].(bool); ok {
-		user.Active = v
+// getTableForTimestamps provides timestamp initialization for User tables
+// This is a table-specific hook that can't be fully generic
+func initializeUserTimestamps(table ftables.Table) {
+	if userTable, ok := table.(*tables.User); ok {
+		now := time.Now()
+		userTable.Created_at = types.NewDateTimeFromTime(now)
+		userTable.Last_login = types.NewDateTimeFromTime(now)
 	}
 }

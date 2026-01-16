@@ -3,25 +3,30 @@ package objects
 import (
 	"fmt"
 
+	"github.com/hansjlachmann/openerp/src/foundation/tables"
 	"github.com/hansjlachmann/openerp/src/foundation/types"
 )
 
 // ObjectRegistry maintains a registry of all Business Central objects
 // Similar to BC's object numbering system
 type ObjectRegistry struct {
-	tables    map[int]interface{}
-	pages     map[int]interface{}
-	reports   map[int]interface{}
-	codeunits map[int]interface{}
+	tables        map[int]interface{}
+	tablesByName  map[string]int              // Table name -> Table ID
+	tableFactories map[string]tables.TableFactory // Table name -> Factory function
+	pages         map[int]interface{}
+	reports       map[int]interface{}
+	codeunits     map[int]interface{}
 }
 
 // NewObjectRegistry creates a new object registry
 func NewObjectRegistry() *ObjectRegistry {
 	return &ObjectRegistry{
-		tables:    make(map[int]interface{}),
-		pages:     make(map[int]interface{}),
-		reports:   make(map[int]interface{}),
-		codeunits: make(map[int]interface{}),
+		tables:         make(map[int]interface{}),
+		tablesByName:   make(map[string]int),
+		tableFactories: make(map[string]tables.TableFactory),
+		pages:          make(map[int]interface{}),
+		reports:        make(map[int]interface{}),
+		codeunits:      make(map[int]interface{}),
 	}
 }
 
@@ -85,6 +90,44 @@ func (or *ObjectRegistry) RegisterReport(id int, report interface{}) error {
 func (or *ObjectRegistry) GetTable(id int) (interface{}, bool) {
 	table, ok := or.tables[id]
 	return table, ok
+}
+
+// RegisterTableFactory registers a table factory with its name and ID
+// This allows creating new table instances by name for generic API handling
+func (or *ObjectRegistry) RegisterTableFactory(name string, id int, factory tables.TableFactory) error {
+	if err := validateObjectID(id); err != nil {
+		return fmt.Errorf("invalid table ID %d: %w", id, err)
+	}
+
+	if _, exists := or.tableFactories[name]; exists {
+		return fmt.Errorf("table '%s' already registered", name)
+	}
+
+	or.tableFactories[name] = factory
+	or.tablesByName[name] = id
+	return nil
+}
+
+// GetTableFactory retrieves a table factory by name
+// Returns the factory and true if found, nil and false otherwise
+func (or *ObjectRegistry) GetTableFactory(name string) (tables.TableFactory, bool) {
+	factory, ok := or.tableFactories[name]
+	return factory, ok
+}
+
+// GetTableIDByName retrieves a table ID by name
+func (or *ObjectRegistry) GetTableIDByName(name string) (int, bool) {
+	id, ok := or.tablesByName[name]
+	return id, ok
+}
+
+// ListTableNames returns all registered table names
+func (or *ObjectRegistry) ListTableNames() []string {
+	names := make([]string, 0, len(or.tableFactories))
+	for name := range or.tableFactories {
+		names = append(names, name)
+	}
+	return names
 }
 
 // GetPage retrieves a page by ID
