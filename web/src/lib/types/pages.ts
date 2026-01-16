@@ -11,6 +11,7 @@ export interface PageMetadata {
 	source_table: string;
 	caption: string;
 	card_page_id?: number;
+	list_page_id?: number; // For card pages, the associated list page
 	modal_card?: boolean;
 	editable?: boolean;
 	enable_navigation?: boolean;
@@ -82,6 +83,7 @@ export interface PageResponse {
 		table_name: string;
 		fields: Record<string, string>;
 	};
+	navigation?: Record<string, string>; // Translated navigation strings (e.g., "home")
 }
 
 export interface MenuResponse {

@@ -5,6 +5,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
 
 	// Initialize session and user on app load
@@ -21,6 +22,7 @@
 
 <div class="min-h-screen flex flex-col">
 	<MenuBar />
+	<Breadcrumb />
 	<main class="flex-1 overflow-hidden">
 		<slot />
 	</main>

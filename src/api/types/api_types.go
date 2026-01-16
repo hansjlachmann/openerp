@@ -2,11 +2,12 @@ package types
 
 // APIResponse is the standard API response wrapper
 type APIResponse struct {
-	Success  bool                   `json:"success"`
-	Data     interface{}            `json:"data,omitempty"`
-	Error    string                 `json:"error,omitempty"`
-	Captions *CaptionData           `json:"captions,omitempty"`
-	Meta     map[string]interface{} `json:"meta,omitempty"`
+	Success    bool                   `json:"success"`
+	Data       interface{}            `json:"data,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+	Captions   *CaptionData           `json:"captions,omitempty"`
+	Navigation map[string]string      `json:"navigation,omitempty"` // Translated navigation strings (e.g., "home")
+	Meta       map[string]interface{} `json:"meta,omitempty"`
 }
 
 // CaptionData contains translated captions for tables and fields

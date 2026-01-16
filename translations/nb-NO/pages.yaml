@@ -1,0 +1,25 @@
+# Norwegian (Bokmål) translations for pages
+# Page captions
+
+pages:
+  # Customer pages
+  customer_card:
+    caption: "Kundekort"
+  customer_list:
+    caption: "Kundeliste"
+
+  # Customer Ledger Entry pages
+  customer_ledger_entries:
+    caption: "Kundeposter"
+
+  # Payment Terms pages
+  payment_terms_card:
+    caption: "Betalingsbetingelseskort"
+  payment_terms_list:
+    caption: "Betalingsbetingelser"
+
+  # User pages
+  user_card:
+    caption: "Brukerkort"
+  user_list:
+    caption: "Brukere"

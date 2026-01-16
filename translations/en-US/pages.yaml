@@ -1,0 +1,25 @@
+# English (US) translations for pages
+# Page captions
+
+pages:
+  # Customer pages
+  customer_card:
+    caption: "Customer Card"
+  customer_list:
+    caption: "Customer List"
+
+  # Customer Ledger Entry pages
+  customer_ledger_entries:
+    caption: "Customer Ledger Entries"
+
+  # Payment Terms pages
+  payment_terms_card:
+    caption: "Payment Terms Card"
+  payment_terms_list:
+    caption: "Payment Terms"
+
+  # User pages
+  user_card:
+    caption: "User Card"
+  user_list:
+    caption: "Users"

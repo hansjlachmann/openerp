@@ -191,6 +191,22 @@ func (s *TranslationService) OptionCaption(tableName, fieldName, optionValue, la
 	return s.Translate(key, language)
 }
 
+// PageCaption returns page caption in specified language
+// pageName should be the normalized page name like "customer_card", "customer_list"
+func (s *TranslationService) PageCaption(pageName, language string) string {
+	// Normalize page name: "Customer Card" -> "customer_card"
+	normalizedName := normalizeTableName(pageName)
+	key := fmt.Sprintf("pages.%s.caption", normalizedName)
+	return s.Translate(key, language)
+}
+
+// CommonTranslation returns a common translation by key
+// key is the dot-notation path like "navigation.home", "actions.save"
+func (s *TranslationService) CommonTranslation(key, language string) string {
+	fullKey := fmt.Sprintf("common.%s", key)
+	return s.Translate(fullKey, language)
+}
+
 // GetSupportedLanguages returns list of available languages
 func (s *TranslationService) GetSupportedLanguages() []string {
 	s.mu.RLock()
