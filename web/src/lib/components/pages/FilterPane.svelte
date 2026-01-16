@@ -3,6 +3,7 @@
 	import type { TableFilter } from '$lib/types/api';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import ConfirmModal from '../ConfirmModal.svelte';
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption as getFieldCaptionUtil } from '$lib/utils/fieldHelpers';
 
@@ -27,6 +28,10 @@
 	let showPresetMenu = $state<string | null>(null);
 	let editingPresetName = $state<string | null>(null);
 	let newPresetNameInput = $state('');
+
+	// Confirm modal state
+	let confirmModalOpen = $state(false);
+	let presetToDelete = $state<string | null>(null);
 
 	// Active filters - array of { field, expression }
 	let activeFilters = $state<Array<{ field: string; expression: string }>>([]);
@@ -198,21 +203,35 @@
 		newPresetNameInput = '';
 	}
 
-	// Delete a preset
+	// Delete a preset - show confirm modal
 	function handleDeletePreset(presetName: string) {
-		if (!confirm(`Delete view "${presetName}"?`)) return;
+		presetToDelete = presetName;
+		confirmModalOpen = true;
+		showPresetMenu = null;
+	}
+
+	// Confirm deletion
+	function confirmDeletePreset() {
+		if (!presetToDelete) return;
 
 		const userId = $currentUser?.user_id || 'anonymous';
 		const key = `filter-preset-${userId}-${page.page.id}`;
 
-		delete savedPresets[presetName];
+		delete savedPresets[presetToDelete];
 
-		if (activePresetName === presetName) {
+		if (activePresetName === presetToDelete) {
 			activePresetName = null;
 		}
 
 		localStorage.setItem(key, JSON.stringify(savedPresets));
-		showPresetMenu = null;
+		confirmModalOpen = false;
+		presetToDelete = null;
+	}
+
+	// Cancel deletion
+	function cancelDeletePreset() {
+		confirmModalOpen = false;
+		presetToDelete = null;
 	}
 
 	// Toggle preset menu
@@ -501,6 +520,17 @@
 		</div>
 	</Card>
 </div>
+
+<!-- Confirm Delete View Modal -->
+<ConfirmModal
+	open={confirmModalOpen}
+	title="Delete View"
+	message={`Are you sure you want to delete the view "${presetToDelete}"?`}
+	confirmText="Delete"
+	variant="danger"
+	onconfirm={confirmDeletePreset}
+	oncancel={cancelDeletePreset}
+/>
 
 <style>
 	.filter-pane {

@@ -3,6 +3,7 @@
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
 	import { session } from '$stores/session';
+	import { toast } from '$lib/stores/toast';
 	import { onMount } from 'svelte';
 
 	let userID = $state('');
@@ -89,10 +90,12 @@
 				currentUser.setUser(response.data);
 				// Re-initialize session to get updated language from backend
 				await session.initialize();
+				toast.success('Welcome back, ' + (response.data.user_name || userID));
 				// Redirect to home
 				goto('/');
 			} else {
 				error = response.error || 'Login failed';
+				toast.error(error);
 				// Check if it's because no users exist
 				if (error.includes('Invalid credentials')) {
 					// Try to detect if this is the initial setup scenario
@@ -105,6 +108,7 @@
 			} else {
 				error = 'An error occurred. Please try again.';
 			}
+			toast.error(error);
 		} finally {
 			loading = false;
 		}
@@ -139,6 +143,7 @@
 			});
 
 			if (response.success) {
+				toast.success('Initial user created successfully');
 				// User created, now log in
 				userID = setupUserID;
 				password = setupPassword;
@@ -147,9 +152,11 @@
 				await handleLogin();
 			} else {
 				error = response.error || 'Failed to create user';
+				toast.error(error);
 			}
 		} catch (err: any) {
 			error = err.message || 'An error occurred during setup';
+			toast.error(error);
 		} finally {
 			loading = false;
 		}

@@ -7,6 +7,7 @@
 	import ModalCardPage from './ModalCardPage.svelte';
 	import CustomizeListPageModal from './CustomizeListPageModal.svelte';
 	import FilterPane from './FilterPane.svelte';
+	import ConfirmModal from '../ConfirmModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
@@ -79,6 +80,12 @@
 	let editableRecords = $state<Array<Record<string, any>>>([]);
 	// Prevent rapid toggling
 	let isToggling = false;
+
+	// Confirm modal state
+	let confirmModalOpen = $state(false);
+	let confirmModalTitle = $state('');
+	let confirmModalMessage = $state('');
+	let confirmModalAction: (() => Promise<void>) | null = $state(null);
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
@@ -197,7 +204,7 @@
 
 	// Auto-select first row when records load
 	$effect(() => {
-		if (records.length > 0 && selectedIndex === -1 && editingIndex === null) {
+		if (records.length > 0 && selectedIndex === -1) {
 			selectedIndex = 0;
 		}
 	});
@@ -301,11 +308,35 @@
 		onaction?.(actionName, selectedRecord || undefined);
 	}
 
-	// Handle new record
+	// Handle new record - insert blank row below current selection
 	function handleNew() {
-		editingRecord = {};
-		editingIndex = records.length; // Add at the end
-		isNewRecord = true;
+		// Enter edit mode if not already
+		if (!editMode) {
+			editableRecords = records.map(r => ({ ...r }));
+			editMode = true;
+		}
+
+		// Create a new empty record with temporary flag and stable ID for keying
+		const newRecord: Record<string, any> = {
+			_isNew: true,
+			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+		};
+
+		// Insert below the currently selected row (or at end if none selected)
+		const insertIndex = selectedIndex >= 0 ? selectedIndex + 1 : editableRecords.length;
+		editableRecords = [
+			...editableRecords.slice(0, insertIndex),
+			newRecord,
+			...editableRecords.slice(insertIndex)
+		];
+
+		// Update selection to the new row
+		selectedIndex = insertIndex;
+
+		// Focus the first cell of the new row
+		currentCellRow = insertIndex;
+		currentCellCol = 0;
+		focusCell(currentCellRow, currentCellCol);
 	}
 
 	// Toggle edit mode
@@ -343,19 +374,29 @@
 		if (!page || !editMode) return;
 
 		try {
-			// Check if this is a new record
+			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
 			const recordId = record['no'] || record['code'] || record['id'];
 
-			if (isNew && !recordId) {
+			// Remember current focus position before save
+			const focusRow = currentCellRow;
+			const focusCol = currentCellCol;
+
+			if (isNew) {
 				// New record - only save if user has entered some data
-				const hasData = Object.keys(record).some(key => key !== '_isNew' && record[key] !== undefined && record[key] !== '');
+				const hasData = Object.keys(record).some(key => !key.startsWith('_') && record[key] !== undefined && record[key] !== '');
 				if (hasData) {
-					// Remove the temporary flag before saving
-					const { _isNew, ...recordToSave } = record;
+					// Remove temporary flags before saving
+					const { _isNew, _tempId, ...recordToSave } = record;
 					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
-					// Update with the saved record (which now has an ID)
-					editableRecords[rowIndex] = savedRecord;
+					// Update record in place to preserve _tempId (keeps Svelte's keyed each stable)
+					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering
+					Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
+					delete editableRecords[rowIndex]._isNew;
+					// Re-focus after save to maintain cursor position
+					if (focusRow >= 0 && focusCol >= 0) {
+						focusCell(focusRow, focusCol);
+					}
 					// Trigger parent update if callback exists
 					if (onsave) {
 						await onsave(savedRecord, true);
@@ -363,10 +404,15 @@
 				}
 			} else if (recordId) {
 				// Existing record - update it
-				const { _isNew, ...recordToSave } = record;
+				const { _isNew, _tempId, ...recordToSave } = record;
 				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, recordToSave);
-				// Update the editable record with the response
-				editableRecords[rowIndex] = savedRecord;
+				// Update record in place to preserve any _tempId
+				Object.assign(editableRecords[rowIndex], savedRecord);
+				if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
+				// Re-focus after save to maintain cursor position
+				if (focusRow >= 0 && focusCol >= 0) {
+					focusCell(focusRow, focusCol);
+				}
 				// Trigger parent update if callback exists
 				if (onsave) {
 					await onsave(savedRecord, false);
@@ -382,11 +428,11 @@
 	function insertNewRow() {
 		if (!editMode) return;
 
-		// Create a new empty record
-		const newRecord: Record<string, any> = {};
-
-		// Mark it as new with a temporary flag
-		newRecord._isNew = true;
+		// Create a new empty record with temporary flag and stable ID for keying
+		const newRecord: Record<string, any> = {
+			_isNew: true,
+			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+		};
 
 		// Insert at current cursor position (or at the end if no cursor)
 		const insertIndex = currentCellRow >= 0 ? currentCellRow : editableRecords.length;
@@ -469,6 +515,7 @@
 
 	// Focus a specific cell
 	function focusCell(rowIndex: number, colIndex: number) {
+		// Use a longer timeout to ensure Svelte has finished any re-renders
 		setTimeout(() => {
 			const input = document.querySelector(
 				`input[data-row="${rowIndex}"][data-col="${colIndex}"]`
@@ -477,7 +524,7 @@
 				input.focus();
 				input.select();
 			}
-		}, 0);
+		}, 50);
 	}
 
 	// Handle edit record (only works in edit mode)
@@ -495,10 +542,39 @@
 		}
 	}
 
+	// Show confirm modal with action
+	function showConfirm(title: string, message: string, action: () => Promise<void>) {
+		confirmModalTitle = title;
+		confirmModalMessage = message;
+		confirmModalAction = action;
+		confirmModalOpen = true;
+	}
+
+	// Handle confirm modal confirmation
+	async function handleConfirm() {
+		confirmModalOpen = false;
+		if (confirmModalAction) {
+			await confirmModalAction();
+		}
+		confirmModalAction = null;
+	}
+
+	// Handle confirm modal cancel
+	function handleConfirmCancel() {
+		confirmModalOpen = false;
+		confirmModalAction = null;
+	}
+
 	// Handle delete record
 	async function handleDelete() {
-		if (selectedRecord && confirm('Delete this record?')) {
-			await ondelete?.(selectedRecord);
+		if (selectedRecord) {
+			showConfirm(
+				'Delete Record',
+				'Are you sure you want to delete this record?',
+				async () => {
+					await ondelete?.(selectedRecord);
+				}
+			);
 		}
 	}
 
@@ -711,29 +787,35 @@
 		switch (actionName) {
 			case 'Delete':
 				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
-				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
-					// Mark as deleted BEFORE API call to prevent any pending auto-saves
-					modalRecordDeleted = true;
+				if (recordId) {
+					showConfirm(
+						'Delete Record',
+						`Are you sure you want to delete this ${modalCardPage.page.caption}?`,
+						async () => {
+							// Mark as deleted BEFORE API call to prevent any pending auto-saves
+							modalRecordDeleted = true;
 
-					try {
-						await api.deleteRecord(page.page.source_table, recordId);
+							try {
+								await api.deleteRecord(page.page.source_table, recordId);
 
-						// Remove the record from the list
-						records = records.filter(r => {
-							const id = r['no'] || r['code'] || r['id'];
-							return id !== recordId;
-						});
+								// Remove the record from the list
+								records = records.filter(r => {
+									const id = r['no'] || r['code'] || r['id'];
+									return id !== recordId;
+								});
 
-						// Close the modal
-						closeModal();
+								// Close the modal
+								closeModal();
 
-						toast.success('Record deleted successfully');
-					} catch (err) {
-						console.error('Delete error:', err);
-						toast.error('Failed to delete record');
-						// Reset flag if delete failed
-						modalRecordDeleted = false;
-					}
+								toast.success('Record deleted successfully');
+							} catch (err) {
+								console.error('Delete error:', err);
+								toast.error('Failed to delete record');
+								// Reset flag if delete failed
+								modalRecordDeleted = false;
+							}
+						}
+					);
 				}
 				break;
 			case 'Refresh':
@@ -968,16 +1050,7 @@
 <div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut}>
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="leftActions">
-			{#if editingIndex !== null}
-				<!-- Show Save/Cancel when editing -->
-				<Button variant="primary" size="sm" onclick={handleSave}>
-					Save
-				</Button>
-				<Button variant="secondary" size="sm" onclick={handleCancel}>
-					Cancel
-				</Button>
-			{:else}
-				{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
+			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
 					{@const isDisabled = (() => {
 						// New and Refresh are always enabled
 						if (action.name === 'New' || action.name === 'Refresh') return false;
@@ -1063,13 +1136,11 @@
 						</button>
 					{/if}
 				</div>
-			{/if}
 		</svelte:fragment>
 
 		<svelte:fragment slot="rightActions">
-			{#if editingIndex === null}
-				<!-- Row Numbers toggle button -->
-				<Button
+			<!-- Row Numbers toggle button -->
+			<Button
 					variant={showRowNumbers ? 'primary' : 'secondary'}
 					size="sm"
 					onclick={handleToggleRowNumbers}
@@ -1139,7 +1210,6 @@
 						</span>
 					{/if}
 				</Button>
-			{/if}
 		</svelte:fragment>
 	</PageHeader>
 
@@ -1203,7 +1273,7 @@
 				</tr>
 			</thead>
 			<tbody bind:this={tableBodyElement}>
-				{#each displayRecords as record, index (record.code || record.no || record.id || index)}
+				{#each displayRecords as record, index (record._tempId || record.code || record.no || record.id || index)}
 					<tr
 						class={cn(
 							editMode ? '' : 'cursor-pointer',
@@ -1313,6 +1383,17 @@
 		onsave={handleSaveCustomizations}
 	/>
 {/if}
+
+<!-- Confirm Modal -->
+<ConfirmModal
+	open={confirmModalOpen}
+	title={confirmModalTitle}
+	message={confirmModalMessage}
+	confirmText="Delete"
+	variant="danger"
+	onconfirm={handleConfirm}
+	oncancel={handleConfirmCancel}
+/>
 
 <style>
 	.list-page {
