@@ -1605,16 +1605,17 @@
 
 	/* Option field dropdown in list */
 	.option-select {
-		@apply w-full px-2 py-1 text-sm;
+		@apply w-full text-sm;
 		@apply bg-transparent border-0 rounded;
 		@apply cursor-pointer;
 		@apply outline-none;
 		appearance: none;
+		padding: 2px 1.5rem 2px 6px;
+		line-height: 1.3;
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 		background-position: right 0.25rem center;
 		background-repeat: no-repeat;
-		background-size: 1.25em 1.25em;
-		padding-right: 1.75rem;
+		background-size: 1em 1em;
 	}
 
 	.option-select:hover {
