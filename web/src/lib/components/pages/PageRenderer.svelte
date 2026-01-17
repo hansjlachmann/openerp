@@ -11,6 +11,7 @@
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
+	import { getRecordId, getRecordLabel } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		pageid: number;
@@ -116,13 +117,13 @@
 		}
 
 		// Get record label (primary key value like customer number)
-		const recordLabel = record['no'] || record['code'] || record['user_id'] || record['id'] || recordid;
+		const recordLabelValue = getRecordLabel(record) || recordid;
 
 		breadcrumb.setCardPage(
 			page.page.id,
 			page.page.caption,
 			recordid,
-			recordLabel,
+			recordLabelValue,
 			page.page.list_page_id,
 			listPageCaption,
 			navigation.home
@@ -275,14 +276,14 @@
 				break;
 			case 'Delete':
 				// Get record ID from record object or recordid prop
-				const id = record.no || record.code || record.id || recordid;
-				if (id) {
+				const deleteId = getRecordId(record) || recordid;
+				if (deleteId) {
 					showConfirm(
 						'Delete Record',
 						`Are you sure you want to delete this ${page.page.caption}?`,
 						async () => {
 							try {
-								await api.deleteRecord(page.page.source_table, id);
+								await api.deleteRecord(page.page.source_table, deleteId);
 								toast.success('Record deleted successfully');
 								// Navigate back to the list page if available
 								if (page.page.type === 'Card') {
@@ -351,19 +352,19 @@
 			case 'Edit':
 				if (selectedRecord && page.page.card_page_id) {
 					// Navigate to card page with record ID
-					const recordId = selectedRecord['no'] || selectedRecord['code'] || selectedRecord['id'];
-					window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
+					const editRecordId = getRecordId(selectedRecord);
+					window.location.href = `/pages/${page.page.card_page_id}/${editRecordId}`;
 				}
 				break;
 			case 'Delete':
 				if (selectedRecord) {
-					const recordId = selectedRecord['no'] || selectedRecord['code'] || selectedRecord['id'];
+					const deleteRecordId = getRecordId(selectedRecord);
 					showConfirm(
 						'Delete Record',
 						'Are you sure you want to delete this record?',
 						async () => {
 							try {
-								await api.deleteRecord(page.page.source_table, recordId);
+								await api.deleteRecord(page.page.source_table, deleteRecordId!);
 								await loadListData();
 								toast.success('Record deleted');
 							} catch (err) {

@@ -3,6 +3,30 @@
 import type { ApiResponse } from '$types/api';
 
 /**
+ * Result type for API calls that need both data and captions
+ */
+export interface DataWithCaptions<T> {
+	data: T;
+	captions?: {
+		table?: string;
+		fields?: Record<string, string>;
+		options?: Record<string, Record<string, string>>;
+	};
+}
+
+/**
+ * Parse error from API response
+ */
+async function parseApiError(response: Response, errorContext: string): Promise<string> {
+	try {
+		const result: ApiResponse = await response.json();
+		return result.error || `Failed to ${errorContext}: ${response.statusText}`;
+	} catch {
+		return `Failed to ${errorContext}: ${response.statusText}`;
+	}
+}
+
+/**
  * Handle API response - checks for HTTP errors and API-level errors
  * @param response - The fetch Response object
  * @param errorContext - Context for error messages (e.g., "list customers")
@@ -14,16 +38,7 @@ export async function handleApiResponse<T>(
 	errorContext: string
 ): Promise<T> {
 	if (!response.ok) {
-		// Try to get error from response body
-		try {
-			const result: ApiResponse = await response.json();
-			throw new Error(result.error || `Failed to ${errorContext}: ${response.statusText}`);
-		} catch (e) {
-			if (e instanceof Error && e.message !== `Failed to ${errorContext}: ${response.statusText}`) {
-				throw e;
-			}
-			throw new Error(`Failed to ${errorContext}: ${response.statusText}`);
-		}
+		throw new Error(await parseApiError(response, errorContext));
 	}
 
 	const result: ApiResponse<T> = await response.json();
@@ -42,15 +57,7 @@ export async function handleApiResponseVoid(
 	errorContext: string
 ): Promise<void> {
 	if (!response.ok) {
-		try {
-			const result: ApiResponse = await response.json();
-			throw new Error(result.error || `Failed to ${errorContext}: ${response.statusText}`);
-		} catch (e) {
-			if (e instanceof Error && e.message !== `Failed to ${errorContext}: ${response.statusText}`) {
-				throw e;
-			}
-			throw new Error(`Failed to ${errorContext}: ${response.statusText}`);
-		}
+		throw new Error(await parseApiError(response, errorContext));
 	}
 
 	const result: ApiResponse = await response.json();
@@ -82,18 +89,6 @@ export async function handleApiResponseFull<T = any>(
 }
 
 /**
- * Result type for API calls that need both data and captions
- */
-export interface DataWithCaptions<T> {
-	data: T;
-	captions?: {
-		table?: string;
-		fields?: Record<string, string>;
-		options?: Record<string, Record<string, string>>;
-	};
-}
-
-/**
  * Handle API response returning data with captions (for table operations that need option values)
  */
 export async function handleApiResponseWithCaptions<T>(
@@ -101,15 +96,7 @@ export async function handleApiResponseWithCaptions<T>(
 	errorContext: string
 ): Promise<DataWithCaptions<T>> {
 	if (!response.ok) {
-		try {
-			const result: ApiResponse = await response.json();
-			throw new Error(result.error || `Failed to ${errorContext}: ${response.statusText}`);
-		} catch (e) {
-			if (e instanceof Error && e.message !== `Failed to ${errorContext}: ${response.statusText}`) {
-				throw e;
-			}
-			throw new Error(`Failed to ${errorContext}: ${response.statusText}`);
-		}
+		throw new Error(await parseApiError(response, errorContext));
 	}
 
 	const result: ApiResponse<T> = await response.json();

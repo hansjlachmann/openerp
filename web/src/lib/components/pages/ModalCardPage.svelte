@@ -5,6 +5,7 @@
 	import type { PageDefinition } from '$lib/types/pages';
 	import { api } from '$lib/services/api';
 	import { onMount } from 'svelte';
+	import { getRecordId } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		open?: boolean;
@@ -59,7 +60,7 @@
 	// Update current record index when record changes
 	$effect(() => {
 		if (recordIdsLoaded && record) {
-			const currentRecordId = record['no'] || record['code'] || record['id'];
+			const currentRecordId = getRecordId(record);
 			if (currentRecordId) {
 				currentRecordIndex = recordIds.indexOf(currentRecordId);
 			}
@@ -103,8 +104,8 @@
 			recordIds = await api.getRecordIDs(page.page.source_table);
 
 			// Find current record index
-			const currentRecordId = record['no'] || record['code'] || record['id'];
-			currentRecordIndex = recordIds.indexOf(currentRecordId);
+			const currentRecordId = getRecordId(record);
+			currentRecordIndex = currentRecordId ? recordIds.indexOf(currentRecordId) : -1;
 
 			recordIdsLoaded = true;
 		} catch (err) {
@@ -115,7 +116,7 @@
 
 	// Handle pop-out to new window
 	function handlePopOut() {
-		const recordId = record['no'] || record['code'] || record['id'];
+		const recordId = getRecordId(record);
 		const url = `/pages/${page.page.id}${recordId ? `/${recordId}` : ''}`;
 		window.open(url, '_blank', 'width=1200,height=800');
 		onclose?.();
