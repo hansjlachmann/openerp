@@ -63,6 +63,7 @@ func (s *Server) Setup() {
 	// Table routes
 	tables := api.Group("/tables/:table")
 	tables.Get("/ids", tablesHandler.GetRecordIDs)        // Lightweight IDs-only endpoint
+	tables.Get("/options", tablesHandler.GetOptions)      // Fast options metadata only
 	tables.Get("/list", tablesHandler.ListRecords)
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)

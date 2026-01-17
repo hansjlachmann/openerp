@@ -23,6 +23,7 @@
 		page: PageDefinition;
 		records?: Array<Record<string, any>>;
 		captions?: Record<string, string>;
+		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		currentFilters?: TableFilter[];
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		onrowclick?: (record: Record<string, any>) => void;
@@ -35,6 +36,7 @@
 		page,
 		records = [],
 		captions = {},
+		options = {},
 		currentFilters = [],
 		onaction,
 		onrowclick,
@@ -42,6 +44,16 @@
 		ondelete,
 		onfilter
 	}: Props = $props();
+
+	// Helper to format option field values
+	function formatOptionValue(fieldSource: string, value: any): string {
+		const fieldOptions = options[fieldSource];
+		if (fieldOptions && value !== undefined && value !== null) {
+			const stringValue = String(value);
+			return fieldOptions[stringValue] || String(value);
+		}
+		return formatValue(value);
+	}
 
 	// Customization state
 	let customizeModalOpen = $state(false);
@@ -133,9 +145,9 @@
 	// Track list page element for focus
 	let listPageElement: HTMLDivElement | null = null;
 
-	// Auto-focus the page on mount and when records load
+	// Auto-focus the page on mount and when records load (but not when modal is open)
 	$effect(() => {
-		if (listPageElement && !editMode && records.length > 0) {
+		if (listPageElement && !editMode && records.length > 0 && !modalOpen) {
 			setTimeout(() => {
 				listPageElement?.focus();
 			}, 100);
@@ -241,6 +253,8 @@
 	let modalOriginalRecord = $state<Record<string, any>>({}); // Track original for change detection
 	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
+	let modalOptions = $state<Record<string, Record<string, string>>>({}); // Option field values
+	let modalOptionsLoaded = $state(false); // Track if options have been loaded (prevent re-render during editing)
 	let modalSaving = $state(false);
 	let skipNextAutoSave = $state(false);
 	let lastSaveToastTime = 0; // Debounce for save toast
@@ -254,13 +268,13 @@
 	);
 
 	// Handle action clicks
-	function handleAction(actionName: string) {
+	async function handleAction(actionName: string) {
 		// Handle Edit action - open card page in edit mode
 		if (actionName === 'Edit') {
 			if (page.page.card_page_id && selectedRecord) {
 				if (page.page.modal_card) {
 					// Open as modal card in edit mode
-					openModalCard(selectedRecord, true);
+					await openModalCard(selectedRecord, true);
 				} else {
 					// Navigate to card page
 					onaction?.(actionName, selectedRecord);
@@ -278,7 +292,7 @@
 			if (page.page.card_page_id) {
 				if (page.page.modal_card) {
 					// Open as modal card
-					openModalCard({});
+					await openModalCard({});
 				} else {
 					// Navigate to card page
 					onaction?.(actionName, undefined);
@@ -617,16 +631,50 @@
 			modalCardPage = result.data;
 			modalCaptions = result.captions?.fields || {};
 
-			// Load the record data
+			// Use the card page's source table (more reliable)
+			const sourceTable = modalCardPage?.page?.source_table || page.page.source_table;
+
+			// Load the record data with options (for enum dropdowns)
 			const recordId = record['no'] || record['code'] || record['id'];
 			if (recordId) {
-				modalRecord = await api.getRecord(page.page.source_table, recordId);
+				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
+				modalRecord = recordResult.data;
+				modalOptions = recordResult.captions?.options || {};
 				modalOriginalRecord = JSON.parse(JSON.stringify(modalRecord)); // Deep copy
 				modalIsNewRecord = false;
 			} else {
+				// New record - open modal immediately, fetch options in background
 				modalRecord = { ...record };
 				modalOriginalRecord = {};
+				modalOptions = {}; // Start with empty options
+				modalOptionsLoaded = false; // Reset the loaded flag
 				modalIsNewRecord = true;
+
+				// Fetch options in background (non-blocking)
+				api.getTableOptions(sourceTable).then(opts => {
+					// Only update if modal is still open and options haven't been loaded yet
+					if (modalOpen && !modalOptionsLoaded) {
+						// Save currently focused element
+						const activeElement = document.activeElement;
+						const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
+
+						modalOptions = opts;
+						modalOptionsLoaded = true;
+
+						// Restore focus if it was lost during re-render
+						if (activeElementId) {
+							setTimeout(() => {
+								const element = document.getElementById(activeElementId);
+								if (element && document.activeElement !== element) {
+									element.focus();
+								}
+							}, 0);
+						}
+					}
+				}).catch(err => {
+					console.error('Failed to load options:', err);
+					modalOptionsLoaded = true; // Mark as loaded even on error to prevent retries
+				});
 			}
 
 			// Set initial edit mode
@@ -650,6 +698,8 @@
 		modalIsNewRecord = false;
 		skipNextAutoSave = false;
 		modalCaptions = {};
+		modalOptions = {};
+		modalOptionsLoaded = false;
 		modalHadChanges = false;
 		modalRecordDeleted = false;
 
@@ -678,12 +728,19 @@
 			const currentVal = current[key];
 			const originalVal = original[key];
 
-			// Handle null/undefined
-			if (currentVal == null && originalVal == null) continue;
-			if (currentVal == null || originalVal == null) return true;
+			// Handle null/undefined/empty string as equivalent
+			const currentEmpty = currentVal == null || currentVal === '';
+			const originalEmpty = originalVal == null || originalVal === '';
+			if (currentEmpty && originalEmpty) continue;
+			if (currentEmpty || originalEmpty) return true;
 
-			// Compare values
-			if (currentVal !== originalVal) return true;
+			// Compare values with type coercion for numbers/strings
+			// This handles cases where API returns number but form has string
+			if (typeof currentVal === 'number' || typeof originalVal === 'number') {
+				if (Number(currentVal) !== Number(originalVal)) return true;
+			} else if (String(currentVal) !== String(originalVal)) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -705,13 +762,13 @@
 			return false;
 		}
 
+		// Save currently focused element before any state changes
+		const activeElement = document.activeElement;
+		const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
+
 		modalSaving = true;
 		try {
 			const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
-
-			// Save the currently focused element to restore after update
-			const focusedElement = document.activeElement as HTMLElement;
-			const focusedId = focusedElement?.id;
 
 			if (modalIsNewRecord) {
 				// Insert new record
@@ -723,7 +780,8 @@
 				// Update original to current for future change detection
 				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
 				modalHadChanges = true;
-				showSaveToast();
+				// Don't show toast for auto-save - it's disruptive during data entry
+				// The CardPage has a subtle "Saved" indicator in the header
 			} else {
 				// Update existing record
 				const responseData = await api.modifyRecord(page.page.source_table, recordId, savedRecord);
@@ -745,24 +803,16 @@
 			// Note: We intentionally don't update modalRecord to avoid losing focus
 			// The user's edits are preserved and the save was successful
 
-			// Restore focus after save completes
-			// Multiple attempts to handle async re-renders from CardPage saveState changes
-			if (focusedId) {
-				const restoreFocus = () => {
-					const element = document.getElementById(focusedId);
+			// Don't close modal - keep it open like Business Central
+			// Restore focus if it was lost during state updates
+			if (activeElementId) {
+				setTimeout(() => {
+					const element = document.getElementById(activeElementId);
 					if (element && document.activeElement !== element) {
 						element.focus();
 					}
-				};
-				// First attempt: after current frame completes
-				requestAnimationFrame(restoreFocus);
-				// Second attempt: after short delay for CardPage saveState updates
-				setTimeout(restoreFocus, 100);
-				// Third attempt: after longer delay for any animations
-				setTimeout(restoreFocus, 300);
+				}, 0);
 			}
-
-			// Don't close modal - keep it open like Business Central
 			return true; // Save happened
 		} catch (err) {
 			console.error('Error saving modal record:', err);
@@ -807,11 +857,13 @@
 				}
 				break;
 			case 'Refresh':
-				// Reload the modal record
+				// Reload the modal record with options
 				const id = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
 				if (id) {
 					try {
-						modalRecord = await api.getRecord(page.page.source_table, id);
+						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, id);
+						modalRecord = refreshResult.data;
+						modalOptions = refreshResult.captions?.options || {};
 					} catch (err) {
 						console.error('Refresh error:', err);
 					}
@@ -1319,8 +1371,25 @@
 											>
 												{formatValue(record[field.source])}
 											</button>
+										{:else if options[field.source]}
+											<!-- Option field - always show dropdown -->
+											<select
+												class="option-select"
+												value={String(record[field.source] ?? 0)}
+												onchange={async (e) => {
+													const target = e.target as HTMLSelectElement;
+													const newValue = parseInt(target.value, 10);
+													record[field.source] = newValue;
+													await handleCellBlur(record, index);
+												}}
+												onclick={(e) => e.stopPropagation()}
+											>
+												{#each Object.entries(options[field.source]) as [optValue, optLabel]}
+													<option value={optValue}>{optLabel}</option>
+												{/each}
+											</select>
 										{:else}
-											{formatValue(record[field.source])}
+											{formatOptionValue(field.source, record[field.source])}
 										{/if}
 									</div>
 								{/if}
@@ -1354,6 +1423,7 @@
 		page={modalCardPage}
 		bind:record={modalRecord}
 		captions={modalCaptions}
+		options={modalOptions}
 		initialEditMode={modalInitialEditMode}
 		onclose={closeModal}
 		onaction={handleModalAction}
@@ -1642,6 +1712,46 @@
 
 	:global(.dark) .primary-key-link:hover {
 		color: #93c5fd;
+	}
+
+	/* Option field dropdown in list */
+	.option-select {
+		@apply w-full px-2 py-1 text-sm;
+		@apply bg-transparent border-0 rounded;
+		@apply cursor-pointer;
+		@apply outline-none;
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right 0.25rem center;
+		background-repeat: no-repeat;
+		background-size: 1.25em 1.25em;
+		padding-right: 1.75rem;
+	}
+
+	.option-select:hover {
+		@apply bg-gray-100;
+	}
+
+	.option-select:focus {
+		@apply bg-white ring-2 ring-blue-500/30;
+	}
+
+	:global(.dark) .option-select {
+		color: var(--color-text-primary);
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+	}
+
+	:global(.dark) .option-select:hover {
+		background-color: rgba(255, 255, 255, 0.1);
+	}
+
+	:global(.dark) .option-select:focus {
+		background-color: var(--color-bg-input);
+	}
+
+	:global(.dark) .option-select option {
+		background-color: var(--color-bg-primary);
+		color: var(--color-text-primary);
 	}
 
 	/* Quick Search Styles */

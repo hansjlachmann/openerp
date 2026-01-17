@@ -11,6 +11,7 @@
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
+		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		initialEditMode?: boolean;
 		onclose?: () => void;
 		onaction?: (actionName: string) => void;
@@ -22,6 +23,7 @@
 		page,
 		record = $bindable({}),
 		captions = {},
+		options = {},
 		initialEditMode,
 		onclose,
 		onaction,
@@ -179,6 +181,7 @@
 			<button
 				onclick={toggleFullscreen}
 				class="control-btn"
+				tabindex="-1"
 				title={modalSize === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen'}
 				aria-label={modalSize === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen'}
 			>
@@ -221,6 +224,7 @@
 			<button
 				onclick={handlePopOut}
 				class="control-btn"
+				tabindex="-1"
 				title="Open in new window"
 				aria-label="Open in new window"
 			>
@@ -241,7 +245,7 @@
 			</button>
 
 			<!-- Close button -->
-			<button onclick={onclose} class="control-btn" title="Close" aria-label="Close">
+			<button onclick={onclose} class="control-btn" tabindex="-1" title="Close" aria-label="Close">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-5 w-5"
@@ -274,6 +278,7 @@
 			{page}
 			bind:record
 			{captions}
+			{options}
 			{initialEditMode}
 			{onaction}
 			{onsave}

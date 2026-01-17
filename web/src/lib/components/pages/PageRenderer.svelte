@@ -22,6 +22,7 @@
 	// State
 	let page: PageDefinition | null = $state(null);
 	let captions: Record<string, string> = $state({});
+	let options: Record<string, Record<string, string>> = $state({}); // Option field values (enum lookups)
 	let navigation: Record<string, string> = $state({}); // Navigation translations
 	let pageLoading = $state(true);  // Loading page definition
 	let dataLoading = $state(false); // Loading data after page definition is known
@@ -134,15 +135,28 @@
 
 		try {
 			if (recordid) {
-				// Load specific record
-				record = await api.getRecord(page.page.source_table, recordid);
+				// Load specific record with captions (includes option values)
+				const result = await api.getRecordWithCaptions(page.page.source_table, recordid);
+				record = result.data;
+				// Merge options from the record response (contains enum values)
+				if (result.captions?.options) {
+					options = result.captions.options;
+				}
 				isExistingRecord = true; // Successfully loaded an existing record
 				currentRecordId = recordid;
 			} else {
-				// New record
+				// New record - open immediately, fetch options in background
 				record = {};
 				isExistingRecord = false;
 				currentRecordId = undefined;
+				options = {}; // Start with empty, load in background
+
+				// Fetch options non-blocking
+				api.getTableOptions(page.page.source_table).then(opts => {
+					options = opts;
+				}).catch(err => {
+					console.error('Failed to load options:', err);
+				});
 			}
 
 			// Load record IDs for navigation if enabled
@@ -171,16 +185,18 @@
 
 			// Load records with only visible fields to avoid expensive FlowField calculations
 			// Also apply current filters
-			const options: import('$lib/types/api').ListOptions = {};
+			const listOptions: import('$lib/types/api').ListOptions = {};
 			if (visibleFields.length > 0) {
-				options.fields = visibleFields;
+				listOptions.fields = visibleFields;
 			}
 			if (currentFilters.length > 0) {
-				options.filters = currentFilters;
+				listOptions.filters = currentFilters;
 			}
 
-			const response = await api.listRecords(page.page.source_table, options);
-			records = response.records || [];
+			// Fetch records and options in a single API call
+			const response = await api.listRecordsWithOptions(page.page.source_table, listOptions);
+			records = response.list.records || [];
+			options = response.options;
 		} catch (err) {
 			console.error('Error loading list data:', err);
 			records = [];
@@ -457,6 +473,7 @@
 			{page}
 			bind:record
 			{captions}
+			{options}
 			onaction={handleCardAction}
 			onsave={handleCardSave}
 			navigationEnabled={page.page.enable_navigation || false}
@@ -474,6 +491,7 @@
 			{page}
 			{records}
 			{captions}
+			{options}
 			{currentFilters}
 			onaction={handleListAction}
 			onrowclick={handleRowClick}

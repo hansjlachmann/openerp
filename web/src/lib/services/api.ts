@@ -4,7 +4,7 @@ import type {
 	ListOptions,
 	TableRecord
 } from '$types/api';
-import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull } from '$lib/utils/apiHelpers';
+import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 
 const API_BASE = '/api';
 
@@ -45,6 +45,20 @@ export const api = {
 		return handleApiResponse<ListResponse<T>>(response, `list ${tableName}`);
 	},
 
+	async listRecordsWithOptions<T = TableRecord>(
+		tableName: string,
+		listOptions?: ListOptions
+	): Promise<{ list: ListResponse<T>; options: Record<string, Record<string, string>> }> {
+		const query = buildQueryString(listOptions);
+		const url = `${API_BASE}/tables/${tableName}/list${query ? '?' + query : ''}`;
+		const response = await fetch(url);
+		const result = await handleApiResponseWithCaptions<ListResponse<T>>(response, `list ${tableName}`);
+		return {
+			list: result.data,
+			options: result.captions?.options || {}
+		};
+	},
+
 	async getRecordIDs(tableName: string, sortBy?: string): Promise<string[]> {
 		const url = `${API_BASE}/tables/${tableName}/ids${sortBy ? '?sort_by=' + sortBy : ''}`;
 		const response = await fetch(url);
@@ -55,6 +69,26 @@ export const api = {
 	async getRecord<T = TableRecord>(tableName: string, id: string): Promise<T> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/card/${id}`);
 		return handleApiResponse<T>(response, `get ${tableName} ${id}`);
+	},
+
+	async getRecordWithCaptions<T = TableRecord>(tableName: string, id: string): Promise<DataWithCaptions<T>> {
+		const response = await fetch(`${API_BASE}/tables/${tableName}/card/${id}`);
+		return handleApiResponseWithCaptions<T>(response, `get ${tableName} ${id}`);
+	},
+
+	async getTableOptions(tableName: string): Promise<Record<string, Record<string, string>>> {
+		// Fast endpoint that only returns option metadata (no records)
+		if (!tableName) {
+			console.warn('getTableOptions called with empty tableName');
+			return {};
+		}
+		const response = await fetch(`${API_BASE}/tables/${tableName}/options`);
+		if (!response.ok) {
+			console.error(`getTableOptions failed for ${tableName}: ${response.statusText}`);
+			return {};
+		}
+		const result = await response.json();
+		return result.data?.options || {};
 	},
 
 	async insertRecord<T = TableRecord>(tableName: string, data: Partial<T>): Promise<T> {

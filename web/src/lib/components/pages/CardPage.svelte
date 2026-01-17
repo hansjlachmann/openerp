@@ -19,6 +19,7 @@
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
+		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		navigationEnabled?: boolean;
@@ -37,6 +38,7 @@
 		page,
 		record = $bindable({}),
 		captions = {},
+		options = {},
 		onaction,
 		onsave,
 		navigationEnabled = false,
@@ -75,14 +77,20 @@
 	// Track if we've already focused the initial field (to avoid refocusing on every state change)
 	let initialFocusDone = $state(false);
 
-	// Auto-enable edit mode when record changes to a new record
+	// Track the last known record ID to detect when a truly new record is loaded
+	let lastRecordId = $state<string | undefined>(undefined);
+
+	// Auto-enable edit mode when a new record is loaded (not when field values change)
 	$effect(() => {
-		// Re-check when record changes
 		const id = record?.no || record?.code || record?.id;
-		if (!id) {
-			editMode = true;
-			// Reset focus flag for new records so focus happens again
-			initialFocusDone = false;
+		// Only trigger when the record ID actually changes (not on every field change)
+		if (id !== lastRecordId) {
+			lastRecordId = id;
+			if (!id) {
+				editMode = true;
+				// Reset focus flag only when loading a truly new record
+				initialFocusDone = false;
+			}
 		}
 	});
 
@@ -304,28 +312,29 @@
 
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="leftActions">
-			{#if saveState === 'saving'}
-				<div class="saving-indicator">
+			<!-- Save state indicator - fixed width container to prevent layout shift -->
+			<div class="save-state-container">
+				<div class="saving-indicator" class:visible={saveState === 'saving'}>
 					<svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 					</svg>
 					<span class="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
 				</div>
-			{:else if saveState === 'saved'}
-				<div class="saved-indicator">
+				<div class="saved-indicator" class:visible={saveState === 'saved'}>
 					<svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
 					<span class="text-sm text-green-600 dark:text-green-400 font-medium">Saved</span>
 				</div>
-			{/if}
+			</div>
 
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
 				{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
 				<Button
 					variant={variant}
 					size="sm"
+					tabindex={-1}
 					onclick={() => {
 						if (action.run_page) {
 							window.location.href = `/pages/${action.run_page}`;
@@ -356,7 +365,7 @@
 
 		<svelte:fragment slot="rightActions">
 			<!-- Customize button -->
-			<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize page">
+			<Button variant="secondary" size="sm" tabindex={-1} onclick={handleCustomize} title="Customize page">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
 				</svg>
@@ -385,6 +394,7 @@
 				</Button>
 			</div>
 		{:else}
+			{@const allFields = customizedSections().flatMap(s => s.fields)}
 			{#each customizedSections() as section}
 				<Card>
 					{#snippet header()}
@@ -394,13 +404,17 @@
 					{/snippet}
 
 					<div class="section-fields">
-						{#each section.fields as field}
+						{#each section.fields as field (field.source)}
 							{@const fieldEditable = field.editable !== false && editMode}
+							{@const fieldOptions = options[field.source]}
+							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
 							<FieldRenderer
 								{field}
 								bind:value={record[field.source]}
 								caption={getFieldCaption(field.source, captions, field.caption)}
 								editable={fieldEditable}
+								options={fieldOptions}
+								tabindex={fieldTabIndex}
 								onblur={handleFieldBlur}
 							/>
 						{/each}
@@ -459,9 +473,25 @@
 		@apply grid grid-cols-1 md:grid-cols-2 gap-4;
 	}
 
+	/* Save state container - fixed width to prevent layout shift */
+	.save-state-container {
+		@apply relative;
+		width: 80px; /* Fixed width to accommodate "Saving..." text */
+		height: 32px;
+	}
+
 	.saving-indicator,
 	.saved-indicator {
-		@apply flex items-center gap-2 px-3 py-1.5;
+		@apply flex items-center gap-2;
+		@apply absolute inset-0;
+		@apply opacity-0 transition-opacity duration-200;
+		pointer-events: none;
+	}
+
+	.saving-indicator.visible,
+	.saved-indicator.visible {
+		@apply opacity-100;
+		pointer-events: auto;
 	}
 
 	/* Empty state styles */

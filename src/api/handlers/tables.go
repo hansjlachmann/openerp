@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -35,6 +36,41 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 	table := factory()
 	table.Init(h.db, company)
 	return table, nil
+}
+
+// GetOptions returns only the option field metadata (no records)
+// GET /api/tables/:table/options
+func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := session.GetCurrent()
+
+	if sess == nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+
+	company := sess.GetCompany()
+	language := sess.GetLanguage()
+
+	// Create table instance (doesn't fetch any data)
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// Build options map
+	options := make(map[string]map[string]string)
+	for fieldName, optionValues := range table.GetOptionFields() {
+		optionMap := make(map[string]string)
+		for i, opt := range optionValues {
+			optionMap[fmt.Sprintf("%d", i)] = opt
+		}
+		options[fieldName] = optionMap
+	}
+
+	response := apitypes.NewSuccessResponse(map[string]interface{}{
+		"options": options,
+	})
+	return c.JSON(response)
 }
 
 // GetRecordIDs returns only the IDs from a table (lightweight for navigation)
@@ -160,6 +196,15 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
 	}
 
+	// Add option field values
+	for fieldName, options := range table.GetOptionFields() {
+		optionMap := make(map[string]string)
+		for i, opt := range options {
+			optionMap[fmt.Sprintf("%d", i)] = opt
+		}
+		captions.Options[fieldName] = optionMap
+	}
+
 	response := apitypes.NewSuccessResponseWithCaptions(map[string]interface{}{
 		"records":   records,
 		"total":     len(records),
@@ -208,6 +253,15 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 
 	for _, field := range table.GetFields() {
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
+	}
+
+	// Add option field values
+	for fieldName, options := range table.GetOptionFields() {
+		optionMap := make(map[string]string)
+		for i, opt := range options {
+			optionMap[fmt.Sprintf("%d", i)] = opt
+		}
+		captions.Options[fieldName] = optionMap
 	}
 
 	response := apitypes.NewSuccessResponseWithCaptions(table.ToMap(), captions)
