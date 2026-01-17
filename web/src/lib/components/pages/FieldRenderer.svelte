@@ -11,6 +11,7 @@
 		required?: boolean;
 		error?: string;
 		options?: Record<string, string>; // Option field values (key = stored value, value = display text)
+		lookups?: Record<string, string>; // Lookup values (key = code, value = display text)
 		tabindex?: number;
 		onchange?: (value: any) => void;
 		onblur?: () => void;
@@ -24,6 +25,7 @@
 		required = false,
 		error,
 		options,
+		lookups,
 		tabindex,
 		onchange,
 		onblur
@@ -34,6 +36,9 @@
 
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
+
+	// Check if this is a lookup/table relation field (has lookups provided)
+	const isLookupField = $derived(lookups && Object.keys(lookups).length > 0);
 
 	// Get field caption (from props, field definition, or field source)
 	const fieldCaption = $derived(caption || field.caption || field.source);
@@ -60,11 +65,33 @@
 		onblur?.();
 	}
 
+	// Handle value change for lookup select (table relation fields)
+	function handleLookupSelectChange(e: Event) {
+		const target = e.target as HTMLSelectElement;
+		// Lookups store the code as a string
+		const newValue = target.value;
+		value = newValue;
+		onchange?.(newValue);
+		// Trigger blur to save immediately after selection
+		onblur?.();
+	}
+
 	// Get display value for option field (convert stored integer to display text)
 	const optionDisplayValue = $derived(() => {
 		if (!options || value === undefined || value === null) return '';
 		const stringValue = String(value);
 		return options[stringValue] || stringValue;
+	});
+
+	// Get display value for lookup field (show "code - description" or just description)
+	const lookupDisplayValue = $derived(() => {
+		if (!lookups || value === undefined || value === null || value === '') return '';
+		const stringValue = String(value);
+		const description = lookups[stringValue];
+		if (description && description !== stringValue) {
+			return `${stringValue} - ${description}`;
+		}
+		return stringValue;
 	});
 
 	// Determine input type based on field
@@ -105,6 +132,23 @@
 						<option value={optValue}>{optLabel}</option>
 					{/each}
 				</select>
+			{:else if isLookupField && lookups}
+				<!-- Lookup/Table relation field - render as dropdown -->
+				<select
+					id={field.source}
+					class={cn('select', fieldStyle, error ? 'input-error' : '')}
+					value={value ?? ''}
+					{tabindex}
+					onchange={handleLookupSelectChange}
+					onblur={() => onblur?.()}
+					aria-invalid={!!error}
+					aria-describedby={error ? `${field.source}-error` : undefined}
+				>
+					<option value=""></option>
+					{#each Object.entries(lookups) as [lookupCode, lookupDisplay]}
+						<option value={lookupCode}>{lookupCode} - {lookupDisplay}</option>
+					{/each}
+				</select>
 			{:else}
 				<!-- Regular text field -->
 				<input
@@ -133,6 +177,8 @@
 		<div class={cn('field-value', fieldStyle)}>
 			{#if isOptionField}
 				{optionDisplayValue()}
+			{:else if isLookupField}
+				{lookupDisplayValue()}
 			{:else}
 				{formatValue(value)}
 			{/if}

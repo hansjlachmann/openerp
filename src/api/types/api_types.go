@@ -14,7 +14,8 @@ type APIResponse struct {
 type CaptionData struct {
 	Table   string                       `json:"table,omitempty"`
 	Fields  map[string]string            `json:"fields,omitempty"`
-	Options map[string]map[string]string `json:"options,omitempty"`
+	Options map[string]map[string]string `json:"options,omitempty"` // Option field values (enum)
+	Lookups map[string]map[string]string `json:"lookups,omitempty"` // Table relation lookup values
 }
 
 // ListRequest represents a list query with filters and pagination

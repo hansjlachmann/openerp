@@ -11,6 +11,7 @@ export interface DataWithCaptions<T> {
 		table?: string;
 		fields?: Record<string, string>;
 		options?: Record<string, Record<string, string>>;
+		lookups?: Record<string, Record<string, string>>;
 	};
 }
 
