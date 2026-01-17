@@ -61,3 +61,30 @@ export function formatValue(val: any): string {
 	}
 	return String(val);
 }
+
+/**
+ * Item customization type for visibility checks
+ */
+export interface ItemCustomization {
+	visible: boolean;
+	order?: number;
+	section?: string;
+}
+
+/**
+ * Check if a field/column is visible based on customizations
+ * @param field - The field object with source and visible properties
+ * @param customizations - User customizations for the page
+ * @returns Whether the field should be visible
+ */
+export function isItemVisible(
+	field: { source: string; visible?: boolean },
+	customizations: Record<string, ItemCustomization>
+): boolean {
+	// If user has customized this field, use that preference
+	if (field.source in customizations) {
+		return customizations[field.source].visible;
+	}
+	// Otherwise use the field's visible property (default true)
+	return field.visible !== false;
+}
