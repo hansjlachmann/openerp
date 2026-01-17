@@ -23,6 +23,9 @@
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
+		saveBlocked?: boolean; // Block editing due to save error (e.g., record already exists)
+		saveBlockedMessage?: string; // Error message to display when blocked
+		onclearerror?: () => void; // Callback to clear the error state
 		navigationEnabled?: boolean;
 		initialEditMode?: boolean;
 		canNavigateFirst?: boolean;
@@ -42,6 +45,9 @@
 		options = {},
 		onaction,
 		onsave,
+		saveBlocked = false,
+		saveBlockedMessage = '',
+		onclearerror,
 		navigationEnabled = false,
 		initialEditMode,
 		canNavigateFirst = false,
@@ -128,8 +134,8 @@
 
 	// Auto-save with debouncing
 	function autoSave() {
-		// Skip if already saving
-		if (saveState === 'saving') {
+		// Skip if already saving or blocked due to error
+		if (saveState === 'saving' || saveBlocked) {
 			return;
 		}
 
@@ -365,6 +371,23 @@
 		</svelte:fragment>
 	</PageHeader>
 
+	<!-- Error banner when save is blocked -->
+	{#if saveBlocked}
+		<div class="error-banner">
+			<div class="error-content">
+				<svg class="error-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+				</svg>
+				<span class="error-message">{saveBlockedMessage || 'Save failed. Please correct the error before continuing.'}</span>
+			</div>
+			<div class="error-actions">
+				<button class="error-clear-btn" onclick={() => onclearerror?.()}>
+					Clear Form
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<div class="sections-container">
 		{#if isEmptyRecord() && !editMode}
 			<!-- Empty state -->
@@ -395,7 +418,7 @@
 
 					<div class="section-fields">
 						{#each section.fields as field (field.source)}
-							{@const fieldEditable = field.editable !== false && editMode}
+							{@const fieldEditable = field.editable !== false && editMode && !saveBlocked}
 							{@const fieldOptions = options[field.source]}
 							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
 							<FieldRenderer
@@ -537,5 +560,55 @@
 
 	:global(.dark) .card-page :global(.page-header) {
 		background-color: #111827; /* gray-900 */
+	}
+
+	/* Error banner styles */
+	.error-banner {
+		@apply flex items-center justify-between;
+		@apply mx-4 mb-4 px-4 py-3;
+		@apply bg-red-50 border border-red-200 rounded-lg;
+	}
+
+	:global(.dark) .error-banner {
+		background-color: rgba(127, 29, 29, 0.3); /* red-900 with opacity */
+		border-color: #991b1b; /* red-800 */
+	}
+
+	.error-content {
+		@apply flex items-center gap-3;
+	}
+
+	.error-icon {
+		@apply w-5 h-5 text-red-600 flex-shrink-0;
+	}
+
+	:global(.dark) .error-icon {
+		color: #f87171; /* red-400 */
+	}
+
+	.error-message {
+		@apply text-sm text-red-700 font-medium;
+	}
+
+	:global(.dark) .error-message {
+		color: #fca5a5; /* red-300 */
+	}
+
+	.error-actions {
+		@apply flex items-center gap-2;
+	}
+
+	.error-clear-btn {
+		@apply px-3 py-1.5 text-sm font-medium;
+		@apply bg-red-600 text-white rounded;
+		@apply hover:bg-red-700 transition-colors;
+	}
+
+	:global(.dark) .error-clear-btn {
+		background-color: #dc2626; /* red-600 */
+	}
+
+	:global(.dark) .error-clear-btn:hover {
+		background-color: #b91c1c; /* red-700 */
 	}
 </style>
