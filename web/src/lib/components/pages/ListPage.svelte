@@ -5,7 +5,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
-	import CustomizeFieldsModal, { type ItemCustomization } from './CustomizeFieldsModal.svelte';
+	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
@@ -16,7 +16,7 @@
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption, getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { getRecordId, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
 
@@ -237,11 +237,6 @@
 			}
 		}
 	});
-
-	// Track editing state (old inline editing - keep for compatibility)
-	let editingIndex = $state<number | null>(null);
-	let editingRecord = $state<Record<string, any>>({});
-	let isNewRecord = $state(false);
 
 	// Edit List mode state (BC-style full list editing)
 	let currentCellRow = $state<number>(-1);
@@ -536,21 +531,6 @@
 		}, 50);
 	}
 
-	// Handle edit record (only works in edit mode)
-	function handleEdit() {
-		if (!editMode) {
-			toast.warning('Please enable Edit mode first by clicking the Edit button.');
-			return;
-		}
-		if (selectedRecord) {
-			editingRecord = { ...selectedRecord };
-			editingIndex = selectedIndex;
-			isNewRecord = false;
-		} else {
-			toast.warning('Please select a record first by clicking on it in the list.');
-		}
-	}
-
 	// Show confirm modal with action
 	function showConfirm(title: string, message: string, action: () => Promise<void>) {
 		confirmModalTitle = title;
@@ -585,26 +565,6 @@
 				}
 			);
 		}
-	}
-
-	// Handle save record
-	async function handleSave() {
-		await onsave?.(editingRecord, isNewRecord);
-		editingIndex = null;
-		editingRecord = {};
-		isNewRecord = false;
-	}
-
-	// Handle cancel editing
-	function handleCancel() {
-		editingIndex = null;
-		editingRecord = {};
-		isNewRecord = false;
-	}
-
-	// Handle field change
-	function handleFieldChange(fieldSource: string, value: any) {
-		editingRecord[fieldSource] = value;
 	}
 
 	// Handle row click - just select the row
@@ -913,21 +873,11 @@
 	}
 
 
-	// Check if column should be visible based on customizations
-	function isColumnVisible(field: Field): boolean {
-		// If user has customized this column, use that preference
-		if (field.source in columnCustomizations) {
-			return columnCustomizations[field.source].visible;
-		}
-		// Otherwise use the field's visible property (default true)
-		return field.visible !== false;
-	}
-
 	// Get visible columns (for rendering) with custom order applied
 	const visibleColumns = $derived(() => {
 		const fields = (page.page.layout.repeater?.fields || [])
 			.map((field, index) => ({ field, index }))
-			.filter(item => isColumnVisible(item.field));
+			.filter(item => isItemVisible(item.field, columnCustomizations));
 
 		// Sort by custom order if available
 		return fields

@@ -4,7 +4,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Card from '$lib/components/Card.svelte';
-	import CustomizeFieldsModal, { type ItemCustomization } from './CustomizeFieldsModal.svelte';
+	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
@@ -12,7 +12,7 @@
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord } from '$lib/utils/recordHelpers';
 
@@ -220,16 +220,6 @@
 		return map;
 	});
 
-	// Check if field should be visible based on customizations
-	function isFieldVisible(field: Field): boolean {
-		// If user has customized this field, use that preference
-		if (field.source in fieldCustomizations) {
-			return fieldCustomizations[field.source].visible;
-		}
-		// Otherwise use the field's visible property (default true)
-		return field.visible !== false;
-	}
-
 	// Get customized sections (fields reorganized by user preferences)
 	const customizedSections = $derived(() => {
 		if (!page.page.layout.sections) return [];
@@ -257,7 +247,7 @@
 				globalIndex++;
 
 				// Add field to target section if visible with order info
-				if (isFieldVisible(field)) {
+				if (isItemVisible(field, fieldCustomizations)) {
 					const fields = sectionMap.get(targetSection) || [];
 					fields.push({ field, order } as any);
 					sectionMap.set(targetSection, fields as any);
