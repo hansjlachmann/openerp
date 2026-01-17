@@ -253,6 +253,8 @@
 	let modalHadChanges = $state(false); // Track if modal made any changes
 	let modalInitialEditMode = $state(false); // Start modal in edit mode
 	let modalRecordDeleted = $state(false); // Prevent saves after delete
+	let modalSaveBlocked = $state(false); // Block editing due to save error
+	let modalSaveBlockedMessage = $state(''); // Error message for blocked state
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -635,11 +637,21 @@
 		modalOptionsLoaded = false;
 		modalHadChanges = false;
 		modalRecordDeleted = false;
+		modalSaveBlocked = false;
+		modalSaveBlockedMessage = '';
 
 		// Refresh the list if changes were made
 		if (hadChanges) {
 			onaction?.('Refresh');
 		}
+	}
+
+	// Clear error and reset the form for a fresh new record
+	function handleClearError() {
+		modalRecord = {};
+		modalSaveBlocked = false;
+		modalSaveBlockedMessage = '';
+		modalIsNewRecord = true;
 	}
 
 	// Show save toast with debounce to prevent duplicates
@@ -720,6 +732,14 @@
 			console.error('Error saving modal record:', err);
 			const message = err instanceof Error ? err.message : 'Failed to save record';
 			toast.error(message);
+
+			// Block further edits if this was a new record that failed to save
+			// (likely because the record already exists)
+			if (modalIsNewRecord) {
+				modalSaveBlocked = true;
+				modalSaveBlockedMessage = message;
+			}
+
 			return false; // Save failed
 		} finally {
 			modalSaving = false;
@@ -1314,9 +1334,12 @@
 		captions={modalCaptions}
 		options={modalOptions}
 		initialEditMode={modalInitialEditMode}
+		saveBlocked={modalSaveBlocked}
+		saveBlockedMessage={modalSaveBlockedMessage}
 		onclose={closeModal}
 		onaction={handleModalAction}
 		onsave={handleModalSave}
+		onclearerror={handleClearError}
 	/>
 {/if}
 
@@ -1605,16 +1628,17 @@
 
 	/* Option field dropdown in list */
 	.option-select {
-		@apply w-full px-2 py-1 text-sm;
+		@apply w-full text-sm;
 		@apply bg-transparent border-0 rounded;
 		@apply cursor-pointer;
 		@apply outline-none;
 		appearance: none;
+		padding: 2px 1.5rem 2px 6px;
+		line-height: 1.3;
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 		background-position: right 0.25rem center;
 		background-repeat: no-repeat;
-		background-size: 1.25em 1.25em;
-		padding-right: 1.75rem;
+		background-size: 1em 1em;
 	}
 
 	.option-select:hover {
