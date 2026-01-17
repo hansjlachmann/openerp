@@ -253,6 +253,8 @@
 	let modalHadChanges = $state(false); // Track if modal made any changes
 	let modalInitialEditMode = $state(false); // Start modal in edit mode
 	let modalRecordDeleted = $state(false); // Prevent saves after delete
+	let modalSaveBlocked = $state(false); // Block editing due to save error
+	let modalSaveBlockedMessage = $state(''); // Error message for blocked state
 
 	// Get selected record
 	const selectedRecord = $derived(
@@ -635,11 +637,21 @@
 		modalOptionsLoaded = false;
 		modalHadChanges = false;
 		modalRecordDeleted = false;
+		modalSaveBlocked = false;
+		modalSaveBlockedMessage = '';
 
 		// Refresh the list if changes were made
 		if (hadChanges) {
 			onaction?.('Refresh');
 		}
+	}
+
+	// Clear error and reset the form for a fresh new record
+	function handleClearError() {
+		modalRecord = {};
+		modalSaveBlocked = false;
+		modalSaveBlockedMessage = '';
+		modalIsNewRecord = true;
 	}
 
 	// Show save toast with debounce to prevent duplicates
@@ -720,6 +732,14 @@
 			console.error('Error saving modal record:', err);
 			const message = err instanceof Error ? err.message : 'Failed to save record';
 			toast.error(message);
+
+			// Block further edits if this was a new record that failed to save
+			// (likely because the record already exists)
+			if (modalIsNewRecord) {
+				modalSaveBlocked = true;
+				modalSaveBlockedMessage = message;
+			}
+
 			return false; // Save failed
 		} finally {
 			modalSaving = false;
@@ -1314,9 +1334,12 @@
 		captions={modalCaptions}
 		options={modalOptions}
 		initialEditMode={modalInitialEditMode}
+		saveBlocked={modalSaveBlocked}
+		saveBlockedMessage={modalSaveBlockedMessage}
 		onclose={closeModal}
 		onaction={handleModalAction}
 		onsave={handleModalSave}
+		onclearerror={handleClearError}
 	/>
 {/if}
 
