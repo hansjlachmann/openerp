@@ -60,6 +60,9 @@ type Table interface {
 	GetFields() []FieldInfo
 	// GetFlowFields returns names of FlowFields that need CalcFields
 	GetFlowFields() []string
+	// GetOptionFields returns Option field names mapped to their option values
+	// Returns map[fieldName][]string where each string is an option value (index = stored int value)
+	GetOptionFields() map[string][]string
 }
 
 // FieldInfo contains metadata about a table field

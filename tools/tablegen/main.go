@@ -2162,7 +2162,7 @@ func (t *{{ .StructName }}) ToMap() map[string]interface{} {
 {{- else if eq .Type "types.DateTime" }}
 		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
 {{- else if eq .Type "Option" }}
-		"{{ .DBName }}": t.{{ upperFirst .Name }}.String(),
+		"{{ .DBName }}": int(t.{{ upperFirst .Name }}),
 {{- else }}
 		"{{ .DBName }}": t.{{ upperFirst .Name }},
 {{- end }}
@@ -2339,6 +2339,17 @@ func (t *{{ .StructName }}) GetFlowFields() []string {
 {{- range .Table.Fields }}
 {{- if .FlowField }}
 		"{{ .DBName }}",
+{{- end }}
+{{- end }}
+	}
+}
+
+// GetOptionFields returns Option field names mapped to their option values
+func (t *{{ .StructName }}) GetOptionFields() map[string][]string {
+	return map[string][]string{
+{{- range .Table.Fields }}
+{{- if eq .Type "Option" }}
+		"{{ .DBName }}": { {{- range $i, $opt := .Options }}{{ if $i }}, {{ end }}"{{ $opt }}"{{- end }} },
 {{- end }}
 {{- end }}
 	}

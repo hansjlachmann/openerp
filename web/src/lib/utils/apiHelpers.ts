@@ -80,3 +80,45 @@ export async function handleApiResponseFull<T = any>(
 
 	return await response.json();
 }
+
+/**
+ * Result type for API calls that need both data and captions
+ */
+export interface DataWithCaptions<T> {
+	data: T;
+	captions?: {
+		table?: string;
+		fields?: Record<string, string>;
+		options?: Record<string, Record<string, string>>;
+	};
+}
+
+/**
+ * Handle API response returning data with captions (for table operations that need option values)
+ */
+export async function handleApiResponseWithCaptions<T>(
+	response: Response,
+	errorContext: string
+): Promise<DataWithCaptions<T>> {
+	if (!response.ok) {
+		try {
+			const result: ApiResponse = await response.json();
+			throw new Error(result.error || `Failed to ${errorContext}: ${response.statusText}`);
+		} catch (e) {
+			if (e instanceof Error && e.message !== `Failed to ${errorContext}: ${response.statusText}`) {
+				throw e;
+			}
+			throw new Error(`Failed to ${errorContext}: ${response.statusText}`);
+		}
+	}
+
+	const result: ApiResponse<T> = await response.json();
+	if (!result.success) {
+		throw new Error(result.error || `Failed to ${errorContext}`);
+	}
+
+	return {
+		data: result.data as T,
+		captions: result.captions
+	};
+}

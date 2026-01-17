@@ -10,6 +10,8 @@
 		editable?: boolean;
 		required?: boolean;
 		error?: string;
+		options?: Record<string, string>; // Option field values (key = stored value, value = display text)
+		tabindex?: number;
 		onchange?: (value: any) => void;
 		onblur?: () => void;
 	}
@@ -21,6 +23,8 @@
 		editable = false,
 		required = false,
 		error,
+		options,
+		tabindex,
 		onchange,
 		onblur
 	}: Props = $props();
@@ -28,19 +32,40 @@
 	// Determine if field is editable
 	const isEditable = $derived(editable);
 
+	// Check if this is an option/enum field (has options provided)
+	const isOptionField = $derived(options && Object.keys(options).length > 0);
+
 	// Get field caption (from props, field definition, or field source)
 	const fieldCaption = $derived(caption || field.caption || field.source);
 
 	// Determine field style classes based on metadata
 	const fieldStyle = $derived(getFieldStyleClasses(field));
 
-	// Handle value change
+	// Handle value change for text inputs
 	function handleChange(e: Event) {
 		const target = e.target as HTMLInputElement;
 		const newValue = target.value;
 		value = newValue;
 		onchange?.(newValue);
 	}
+
+	// Handle value change for select (option fields)
+	function handleSelectChange(e: Event) {
+		const target = e.target as HTMLSelectElement;
+		// Convert back to number since options are stored as integers
+		const newValue = parseInt(target.value, 10);
+		value = newValue;
+		onchange?.(newValue);
+		// Trigger blur to save immediately after selection
+		onblur?.();
+	}
+
+	// Get display value for option field (convert stored integer to display text)
+	const optionDisplayValue = $derived(() => {
+		if (!options || value === undefined || value === null) return '';
+		const stringValue = String(value);
+		return options[stringValue] || stringValue;
+	});
 
 	// Determine input type based on field
 	const inputType = $derived(() => {
@@ -64,16 +89,36 @@
 			{/if}
 		</label>
 		<div class="input-wrapper">
-			<input
-				id={field.source}
-				type={inputType()}
-				class={cn('input', fieldStyle, error ? 'input-error' : '')}
-				value={value ?? ''}
-				oninput={handleChange}
-				onblur={() => onblur?.()}
-				aria-invalid={!!error}
-				aria-describedby={error ? `${field.source}-error` : undefined}
-			/>
+			{#if isOptionField && options}
+				<!-- Option/Enum field - render as dropdown -->
+				<select
+					id={field.source}
+					class={cn('select', fieldStyle, error ? 'input-error' : '')}
+					value={String(value ?? 0)}
+					{tabindex}
+					onchange={handleSelectChange}
+					onblur={() => onblur?.()}
+					aria-invalid={!!error}
+					aria-describedby={error ? `${field.source}-error` : undefined}
+				>
+					{#each Object.entries(options) as [optValue, optLabel]}
+						<option value={optValue}>{optLabel}</option>
+					{/each}
+				</select>
+			{:else}
+				<!-- Regular text field -->
+				<input
+					id={field.source}
+					type={inputType()}
+					class={cn('input', fieldStyle, error ? 'input-error' : '')}
+					value={value ?? ''}
+					{tabindex}
+					oninput={handleChange}
+					onblur={() => onblur?.()}
+					aria-invalid={!!error}
+					aria-describedby={error ? `${field.source}-error` : undefined}
+				/>
+			{/if}
 		</div>
 		{#if error}
 			<p id="{field.source}-error" class="error-message">{error}</p>
@@ -86,7 +131,11 @@
 			{fieldCaption}
 		</div>
 		<div class={cn('field-value', fieldStyle)}>
-			{formatValue(value)}
+			{#if isOptionField}
+				{optionDisplayValue()}
+			{:else}
+				{formatValue(value)}
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -113,7 +162,8 @@
 		@apply relative;
 	}
 
-	.field-group :global(input.input) {
+	.field-group :global(input.input),
+	.field-group :global(select.select) {
 		@apply w-full py-2 px-3;
 		@apply bg-white border border-gray-300 rounded-md;
 		@apply text-gray-900 text-base;
@@ -121,34 +171,60 @@
 		@apply outline-none;
 	}
 
-	.field-group :global(input.input:hover:not(:focus)) {
+	.field-group :global(select.select) {
+		@apply cursor-pointer;
+		@apply appearance-none;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right 0.5rem center;
+		background-repeat: no-repeat;
+		background-size: 1.5em 1.5em;
+		padding-right: 2.5rem;
+	}
+
+	.field-group :global(input.input:hover:not(:focus)),
+	.field-group :global(select.select:hover:not(:focus)) {
 		@apply border-gray-400;
 	}
 
-	.field-group :global(input.input:focus) {
+	.field-group :global(input.input:focus),
+	.field-group :global(select.select:focus) {
 		@apply border-blue-500 ring-2 ring-blue-500/20;
 	}
 
-	.field-group.has-error :global(input.input) {
+	.field-group.has-error :global(input.input),
+	.field-group.has-error :global(select.select) {
 		@apply border-red-500;
 	}
 
-	.field-group.has-error :global(input.input:focus) {
+	.field-group.has-error :global(input.input:focus),
+	.field-group.has-error :global(select.select:focus) {
 		@apply border-red-500 ring-2 ring-red-500/20;
 	}
 
 	/* Dark mode input styles */
-	:global(.dark) .field-group :global(input.input) {
+	:global(.dark) .field-group :global(input.input),
+	:global(.dark) .field-group :global(select.select) {
 		background-color: var(--color-bg-input);
 		border-color: var(--color-border-secondary);
 		color: var(--color-text-primary);
 	}
 
-	:global(.dark) .field-group :global(input.input:hover:not(:focus)) {
+	:global(.dark) .field-group :global(select.select) {
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+	}
+
+	:global(.dark) .field-group :global(select.select) option {
+		background-color: var(--color-bg-primary);
+		color: var(--color-text-primary);
+	}
+
+	:global(.dark) .field-group :global(input.input:hover:not(:focus)),
+	:global(.dark) .field-group :global(select.select:hover:not(:focus)) {
 		border-color: var(--color-text-muted);
 	}
 
-	:global(.dark) .field-group :global(input.input:focus) {
+	:global(.dark) .field-group :global(input.input:focus),
+	:global(.dark) .field-group :global(select.select:focus) {
 		border-color: #3b82f6; /* blue-500 */
 		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 	}
