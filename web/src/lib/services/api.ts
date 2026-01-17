@@ -48,14 +48,15 @@ export const api = {
 	async listRecordsWithOptions<T = TableRecord>(
 		tableName: string,
 		listOptions?: ListOptions
-	): Promise<{ list: ListResponse<T>; options: Record<string, Record<string, string>> }> {
+	): Promise<{ list: ListResponse<T>; options: Record<string, Record<string, string>>; lookups: Record<string, Record<string, string>> }> {
 		const query = buildQueryString(listOptions);
 		const url = `${API_BASE}/tables/${tableName}/list${query ? '?' + query : ''}`;
 		const response = await fetch(url);
 		const result = await handleApiResponseWithCaptions<ListResponse<T>>(response, `list ${tableName}`);
 		return {
 			list: result.data,
-			options: result.captions?.options || {}
+			options: result.captions?.options || {},
+			lookups: result.captions?.lookups || {}
 		};
 	},
 
@@ -89,6 +90,24 @@ export const api = {
 		}
 		const result = await response.json();
 		return result.data?.options || {};
+	},
+
+	async getTableOptionsAndLookups(tableName: string): Promise<{ options: Record<string, Record<string, string>>; lookups: Record<string, Record<string, string>> }> {
+		// Fast endpoint that returns both options and lookup metadata (no records)
+		if (!tableName) {
+			console.warn('getTableOptionsAndLookups called with empty tableName');
+			return { options: {}, lookups: {} };
+		}
+		const response = await fetch(`${API_BASE}/tables/${tableName}/options`);
+		if (!response.ok) {
+			console.error(`getTableOptionsAndLookups failed for ${tableName}: ${response.statusText}`);
+			return { options: {}, lookups: {} };
+		}
+		const result = await response.json();
+		return {
+			options: result.data?.options || {},
+			lookups: result.data?.lookups || {}
+		};
 	},
 
 	async insertRecord<T = TableRecord>(tableName: string, data: Partial<T>): Promise<T> {

@@ -13,6 +13,7 @@
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
+		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
 		initialEditMode?: boolean;
 		saveBlocked?: boolean;
 		saveBlockedMessage?: string;
@@ -28,6 +29,7 @@
 		record = $bindable({}),
 		captions = {},
 		options = {},
+		lookups = {},
 		initialEditMode,
 		saveBlocked = false,
 		saveBlockedMessage = '',
@@ -286,6 +288,7 @@
 			bind:record
 			{captions}
 			{options}
+			{lookups}
 			{initialEditMode}
 			{saveBlocked}
 			{saveBlockedMessage}

@@ -60,9 +60,10 @@ type FlowFilter struct {
 
 // TableRelation represents a foreign key relationship to another table
 type TableRelation struct {
-	Table    string `yaml:"table"`
-	Field    string `yaml:"field"`
-	Validate *bool  `yaml:"validate"` // Whether to validate the relation (default: true)
+	Table        string `yaml:"table"`
+	Field        string `yaml:"field"`
+	DisplayField string `yaml:"display_field"` // Field to show in dropdown (e.g., "description")
+	Validate     *bool  `yaml:"validate"`      // Whether to validate the relation (default: true)
 }
 
 // ShouldValidate returns whether this table relation should be validated
@@ -2094,6 +2095,13 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 				return fmt.Errorf("invalid option value %d for field {{ .Name }} (valid range: 0-%d)", v, {{ len .Options }}-1)
 			}
 			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(v)
+		// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= {{ len .Options }} {
+				return fmt.Errorf("invalid option value %d for field {{ .Name }} (valid range: 0-%d)", intVal, {{ len .Options }}-1)
+			}
+			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
 			options := []string{ {{- range $i, $opt := .Options }}{{- if $i }}, {{ end }}"{{ $opt }}"{{- end }} }
@@ -2369,6 +2377,21 @@ func (t *{{ .StructName }}) GetOptionFields() map[string][]string {
 {{- range .Table.Fields }}
 {{- if eq .Type "Option" }}
 		"{{ .DBName }}": { {{- range $i, $opt := .Options }}{{ if $i }}, {{ end }}"{{ $opt }}"{{- end }} },
+{{- end }}
+{{- end }}
+	}
+}
+
+// GetTableRelationFields returns fields that have table relations (foreign keys)
+func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRelationInfo {
+	return map[string]tables.TableRelationInfo{
+{{- range .Table.Fields }}
+{{- if .TableRelation }}
+		"{{ .DBName }}": {
+			Table:        "{{ .TableRelation.Table }}",
+			Field:        "{{ .TableRelation.Field }}",
+			DisplayField: "{{ .TableRelation.DisplayField }}",
+		},
 {{- end }}
 {{- end }}
 	}
