@@ -2,6 +2,7 @@
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import type { TableFilter } from '$lib/types/api';
 	import { toast } from '$lib/stores/toast';
+	import { confirm } from '$lib/stores/confirm';
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
@@ -88,11 +89,6 @@
 	// Prevent rapid toggling
 	let isToggling = false;
 
-	// Confirm modal state
-	let confirmModalOpen = $state(false);
-	let confirmModalTitle = $state('');
-	let confirmModalMessage = $state('');
-	let confirmModalAction: (() => Promise<void>) | null = $state(null);
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
@@ -531,33 +527,10 @@
 		}, 50);
 	}
 
-	// Show confirm modal with action
-	function showConfirm(title: string, message: string, action: () => Promise<void>) {
-		confirmModalTitle = title;
-		confirmModalMessage = message;
-		confirmModalAction = action;
-		confirmModalOpen = true;
-	}
-
-	// Handle confirm modal confirmation
-	async function handleConfirm() {
-		confirmModalOpen = false;
-		if (confirmModalAction) {
-			await confirmModalAction();
-		}
-		confirmModalAction = null;
-	}
-
-	// Handle confirm modal cancel
-	function handleConfirmCancel() {
-		confirmModalOpen = false;
-		confirmModalAction = null;
-	}
-
 	// Handle delete record
 	async function handleDelete() {
 		if (selectedRecord) {
-			showConfirm(
+			confirm.show(
 				'Delete Record',
 				'Are you sure you want to delete this record?',
 				async () => {
@@ -1362,13 +1335,13 @@
 
 <!-- Confirm Modal -->
 <ConfirmModal
-	open={confirmModalOpen}
-	title={confirmModalTitle}
-	message={confirmModalMessage}
+	open={$confirm.open}
+	title={$confirm.title}
+	message={$confirm.message}
 	confirmText="Delete"
 	variant="danger"
-	onconfirm={handleConfirm}
-	oncancel={handleConfirmCancel}
+	onconfirm={confirm.confirm}
+	oncancel={confirm.cancel}
 />
 
 <style>
