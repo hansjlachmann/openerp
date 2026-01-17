@@ -542,7 +542,6 @@
 
 	// Handle row click - just select the row
 	function handleRowClick(index: number) {
-		console.log('Row clicked:', index);
 		selectedIndex = index;
 		// Give focus to the page so keyboard shortcuts work
 		listPageElement?.focus();
