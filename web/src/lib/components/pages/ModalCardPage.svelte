@@ -14,9 +14,12 @@
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		initialEditMode?: boolean;
+		saveBlocked?: boolean;
+		saveBlockedMessage?: string;
 		onclose?: () => void;
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
+		onclearerror?: () => void;
 	}
 
 	let {
@@ -26,9 +29,12 @@
 		captions = {},
 		options = {},
 		initialEditMode,
+		saveBlocked = false,
+		saveBlockedMessage = '',
 		onclose,
 		onaction,
-		onsave
+		onsave,
+		onclearerror
 	}: Props = $props();
 
 	// Modal size state: normal, expanded, fullscreen
@@ -281,8 +287,11 @@
 			{captions}
 			{options}
 			{initialEditMode}
+			{saveBlocked}
+			{saveBlockedMessage}
 			{onaction}
 			{onsave}
+			{onclearerror}
 			navigationEnabled={false}
 		/>
 	</div>
