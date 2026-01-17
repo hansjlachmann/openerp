@@ -14,6 +14,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
+	import { getRecordId, isNewRecord } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -67,8 +68,7 @@
 
 	// Check if this is a new record (no ID)
 	function checkIsNewRecord(): boolean {
-		const id = record?.no || record?.code || record?.id;
-		return !id;
+		return isNewRecord(record);
 	}
 
 	// Edit mode state - start in edit mode for new records or if initialEditMode is true
@@ -82,7 +82,7 @@
 
 	// Auto-enable edit mode when a new record is loaded (not when field values change)
 	$effect(() => {
-		const id = record?.no || record?.code || record?.id;
+		const id = getRecordId(record);
 		// Only trigger when the record ID actually changes (not on every field change)
 		if (id !== lastRecordId) {
 			lastRecordId = id;

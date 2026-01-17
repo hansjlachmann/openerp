@@ -18,6 +18,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
+	import { getRecordId, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -384,7 +385,7 @@
 		try {
 			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
-			const recordId = record['no'] || record['code'] || record['id'];
+			const recordId = getRecordId(record);
 
 			// Remember current focus position before save
 			const focusRow = currentCellRow;
@@ -635,12 +636,12 @@
 			const sourceTable = modalCardPage?.page?.source_table || page.page.source_table;
 
 			// Load the record data with options (for enum dropdowns)
-			const recordId = record['no'] || record['code'] || record['id'];
+			const recordId = getRecordId(record);
 			if (recordId) {
 				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
 				modalRecord = recordResult.data;
 				modalOptions = recordResult.captions?.options || {};
-				modalOriginalRecord = JSON.parse(JSON.stringify(modalRecord)); // Deep copy
+				modalOriginalRecord = deepCopy(modalRecord);
 				modalIsNewRecord = false;
 			} else {
 				// New record - open modal immediately, fetch options in background
@@ -718,33 +719,6 @@
 		}
 	}
 
-	// Check if record has changed from original
-	function hasRecordChanged(current: Record<string, any>, original: Record<string, any>): boolean {
-		const currentKeys = Object.keys(current);
-		for (const key of currentKeys) {
-			// Skip internal fields
-			if (key.startsWith('_')) continue;
-
-			const currentVal = current[key];
-			const originalVal = original[key];
-
-			// Handle null/undefined/empty string as equivalent
-			const currentEmpty = currentVal == null || currentVal === '';
-			const originalEmpty = originalVal == null || originalVal === '';
-			if (currentEmpty && originalEmpty) continue;
-			if (currentEmpty || originalEmpty) return true;
-
-			// Compare values with type coercion for numbers/strings
-			// This handles cases where API returns number but form has string
-			if (typeof currentVal === 'number' || typeof originalVal === 'number') {
-				if (Number(currentVal) !== Number(originalVal)) return true;
-			} else if (String(currentVal) !== String(originalVal)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	// Handle save from modal - returns true if save happened, false otherwise
 	async function handleModalSave(savedRecord: Record<string, any>): Promise<boolean> {
 		if (!modalCardPage || !modalOpen || modalSaving || modalRecordDeleted) {
@@ -768,7 +742,7 @@
 
 		modalSaving = true;
 		try {
-			const recordId = savedRecord['no'] || savedRecord['code'] || savedRecord['id'];
+			const recordId = getRecordId(savedRecord);
 
 			if (modalIsNewRecord) {
 				// Insert new record
@@ -778,25 +752,21 @@
 				// After first save, it's no longer a new record
 				modalIsNewRecord = false;
 				// Update original to current for future change detection
-				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
+				modalOriginalRecord = deepCopy(responseData);
 				modalHadChanges = true;
 				// Don't show toast for auto-save - it's disruptive during data entry
 				// The CardPage has a subtle "Saved" indicator in the header
 			} else {
 				// Update existing record
-				const responseData = await api.modifyRecord(page.page.source_table, recordId, savedRecord);
+				const responseData = await api.modifyRecord(page.page.source_table, recordId!, savedRecord);
 
 				// Update the record in the list without full refresh
-				const index = records.findIndex(r =>
-					(r['no'] && r['no'] === recordId) ||
-					(r['code'] && r['code'] === recordId) ||
-					(r['id'] && r['id'] === recordId)
-				);
+				const index = records.findIndex(r => getRecordId(r) === recordId);
 				if (index !== -1) {
 					records[index] = responseData;
 				}
 				// Update original for future change detection
-				modalOriginalRecord = JSON.parse(JSON.stringify(responseData));
+				modalOriginalRecord = deepCopy(responseData);
 				modalHadChanges = true;
 				// No toast for modifications - too noisy with auto-save
 			}
@@ -830,19 +800,16 @@
 
 		switch (actionName) {
 			case 'Delete':
-				const recordId = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
-				if (recordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+				const deleteRecordId = getRecordId(modalRecord);
+				if (deleteRecordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
 					// Mark as deleted BEFORE API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
 
 					try {
-						await api.deleteRecord(page.page.source_table, recordId);
+						await api.deleteRecord(page.page.source_table, deleteRecordId);
 
 						// Remove the record from the list
-						records = records.filter(r => {
-							const id = r['no'] || r['code'] || r['id'];
-							return id !== recordId;
-						});
+						records = records.filter(r => getRecordId(r) !== deleteRecordId);
 
 						// Close the modal
 						closeModal();
@@ -858,10 +825,10 @@
 				break;
 			case 'Refresh':
 				// Reload the modal record with options
-				const id = modalRecord['no'] || modalRecord['code'] || modalRecord['id'];
-				if (id) {
+				const refreshRecordId = getRecordId(modalRecord);
+				if (refreshRecordId) {
 					try {
-						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, id);
+						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, refreshRecordId);
 						modalRecord = refreshResult.data;
 						modalOptions = refreshResult.captions?.options || {};
 					} catch (err) {
