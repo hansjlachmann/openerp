@@ -5,6 +5,7 @@
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
+	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
@@ -45,11 +46,6 @@
 	let recordIds: string[] = $state([]);
 	let currentRecordIndex = $state(-1);
 
-	// Confirm modal state
-	let confirmModalOpen = $state(false);
-	let confirmModalTitle = $state('');
-	let confirmModalMessage = $state('');
-	let confirmModalAction: (() => Promise<void>) | null = $state(null);
 
 	// Load page definition and data
 	onMount(async () => {
@@ -239,29 +235,6 @@
 			.map(field => field.source);
 	}
 
-	// Show confirm modal with action
-	function showConfirm(title: string, message: string, action: () => Promise<void>) {
-		confirmModalTitle = title;
-		confirmModalMessage = message;
-		confirmModalAction = action;
-		confirmModalOpen = true;
-	}
-
-	// Handle confirm modal confirmation
-	async function handleConfirm() {
-		confirmModalOpen = false;
-		if (confirmModalAction) {
-			await confirmModalAction();
-		}
-		confirmModalAction = null;
-	}
-
-	// Handle confirm modal cancel
-	function handleConfirmCancel() {
-		confirmModalOpen = false;
-		confirmModalAction = null;
-	}
-
 	// Handle actions from card page
 	async function handleCardAction(actionName: string) {
 		if (!page) return;
@@ -278,7 +251,7 @@
 				// Get record ID from record object or recordid prop
 				const deleteId = getRecordId(record) || recordid;
 				if (deleteId) {
-					showConfirm(
+					confirm.show(
 						'Delete Record',
 						`Are you sure you want to delete this ${page.page.caption}?`,
 						async () => {
@@ -359,7 +332,7 @@
 			case 'Delete':
 				if (selectedRecord) {
 					const deleteRecordId = getRecordId(selectedRecord);
-					showConfirm(
+					confirm.show(
 						'Delete Record',
 						'Are you sure you want to delete this record?',
 						async () => {
@@ -511,11 +484,11 @@
 
 <!-- Confirm Modal -->
 <ConfirmModal
-	open={confirmModalOpen}
-	title={confirmModalTitle}
-	message={confirmModalMessage}
+	open={$confirm.open}
+	title={$confirm.title}
+	message={$confirm.message}
 	confirmText="Delete"
 	variant="danger"
-	onconfirm={handleConfirm}
-	oncancel={handleConfirmCancel}
+	onconfirm={confirm.confirm}
+	oncancel={confirm.cancel}
 />
