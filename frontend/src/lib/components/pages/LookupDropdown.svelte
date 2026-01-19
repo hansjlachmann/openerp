@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
+	import { toast } from '$lib/stores/toast';
 
 	interface LookupColumn {
 		source: string;
@@ -15,6 +16,7 @@
 		columns: LookupColumn[];
 		rows: LookupRow[];
 		value?: string;
+		fieldName?: string; // Field name for error messages
 		captions?: Record<string, string>; // Field captions for column headers
 		searchTimeout?: number; // Auto-clear search timeout in ms (default 1500)
 		tabindex?: number;
@@ -28,6 +30,7 @@
 		columns,
 		rows,
 		value = $bindable(''),
+		fieldName = '',
 		captions = {},
 		searchTimeout = 1500,
 		tabindex,
@@ -37,39 +40,33 @@
 		onblur
 	}: Props = $props();
 
-	// Use configured timeout (0 or undefined = no auto-clear)
-	const hasAutoTimeout = $derived(searchTimeout > 0);
-
 	let isOpen = $state(false);
 	let containerRef: HTMLDivElement;
+	let inputRef: HTMLInputElement;
 	let bodyRef: HTMLDivElement;
 	let selectedIndex = $state(-1);
-	let searchTerm = $state('');
-	let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// Filter rows based on search term
+	// Track input value separately from actual value (for typing)
+	let inputValue = $state(value || '');
+
+	// Sync inputValue when value changes externally
+	$effect(() => {
+		inputValue = value || '';
+	});
+
+	// Filter rows based on input value (type-ahead filtering)
 	const filteredRows = $derived(() => {
-		if (!searchTerm) return rows;
-		const term = searchTerm.toLowerCase();
+		if (!inputValue) return rows;
+		const term = inputValue.toLowerCase();
 		return rows.filter(row => {
-			// Search in all column values
+			// Search in _key (code) first, then all columns
+			if (row._key.toLowerCase().startsWith(term)) return true;
 			return columns.some(col => {
 				const val = row[col.source];
 				if (val === null || val === undefined) return false;
 				return String(val).toLowerCase().includes(term);
 			});
 		});
-	});
-
-	// Reset search when dropdown closes
-	$effect(() => {
-		if (!isOpen) {
-			searchTerm = '';
-			if (searchTimer) {
-				clearTimeout(searchTimer);
-				searchTimer = null;
-			}
-		}
 	});
 
 	// Scroll selected row into view when navigating with keyboard
@@ -82,16 +79,10 @@
 		}
 	});
 
-	// Get display value for current selection
+	// Get display value for current selection (show key/code)
 	const displayValue = $derived(() => {
 		if (!value) return '';
-		const row = rows.find(r => r._key === value);
-		if (!row) return value;
-		// Show first column value
-		if (columns.length > 0) {
-			return row[columns[0].source] ?? value;
-		}
-		return value;
+		return value; // Just show the key/code value
 	});
 
 	// Get column header text
@@ -106,83 +97,119 @@
 		return String(val);
 	}
 
+	function openDropdown() {
+		if (disabled) return;
+		isOpen = true;
+		// Find current selection index in filtered rows
+		selectedIndex = filteredRows().findIndex(r => r._key === value);
+		if (selectedIndex < 0 && filteredRows().length > 0) selectedIndex = 0;
+	}
+
 	function handleToggle() {
 		if (disabled) return;
-		isOpen = !isOpen;
 		if (isOpen) {
-			// Find current selection index
-			selectedIndex = rows.findIndex(r => r._key === value);
+			isOpen = false;
+		} else {
+			openDropdown();
 		}
 	}
 
 	function handleSelect(row: LookupRow) {
 		value = row._key;
+		inputValue = row._key;
 		isOpen = false;
 		onselect?.(row._key);
 		onblur?.();
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (!isOpen) {
-			if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-				e.preventDefault();
-				isOpen = true;
-				selectedIndex = rows.findIndex(r => r._key === value);
-				if (selectedIndex < 0) selectedIndex = 0;
-			}
-			return;
+	// Handle input change (user typing)
+	function handleInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		inputValue = target.value;
+
+		// Open dropdown when typing
+		if (!isOpen && inputValue) {
+			openDropdown();
 		}
 
+		// Reset selection to first match
+		selectedIndex = 0;
+	}
+
+	// Handle blur - validate and set value
+	function handleBlur() {
+		// Small delay to allow click on dropdown to register
+		setTimeout(() => {
+			if (!containerRef?.contains(document.activeElement)) {
+				isOpen = false;
+
+				// Validate input - find matching row
+				const trimmedInput = inputValue.trim().toUpperCase();
+				if (trimmedInput) {
+					// Find exact match by key (case-insensitive)
+					const matchingRow = rows.find(r => r._key.toUpperCase() === trimmedInput);
+					if (matchingRow) {
+						value = matchingRow._key;
+						inputValue = matchingRow._key;
+						onselect?.(matchingRow._key);
+					} else {
+						// No match - show error and revert to previous value
+						const fieldLabel = fieldName || 'Value';
+						toast.error(`${fieldLabel} '${inputValue.trim()}' does not exist`);
+						inputValue = value || '';
+					}
+				} else {
+					// Empty input - clear value
+					value = '';
+					inputValue = '';
+					onselect?.('');
+				}
+
+				onblur?.();
+			}
+		}, 150);
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
 		switch (e.key) {
 			case 'Escape':
 				e.preventDefault();
-				if (searchTerm) {
-					// First Escape clears search, second closes dropdown
-					searchTerm = '';
-					selectedIndex = 0;
-				} else {
+				if (isOpen) {
 					isOpen = false;
+					// Revert to current value
+					inputValue = value || '';
 				}
 				break;
 			case 'ArrowDown':
 				e.preventDefault();
-				selectedIndex = Math.min(selectedIndex + 1, filteredRows().length - 1);
+				if (!isOpen) {
+					openDropdown();
+				} else {
+					selectedIndex = Math.min(selectedIndex + 1, filteredRows().length - 1);
+				}
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
-				selectedIndex = Math.max(selectedIndex - 1, 0);
+				if (isOpen) {
+					selectedIndex = Math.max(selectedIndex - 1, 0);
+				}
 				break;
 			case 'Enter':
 				e.preventDefault();
-				if (selectedIndex >= 0 && selectedIndex < filteredRows().length) {
+				if (isOpen && selectedIndex >= 0 && selectedIndex < filteredRows().length) {
 					handleSelect(filteredRows()[selectedIndex]);
+				} else if (!isOpen) {
+					openDropdown();
 				}
 				break;
 			case 'Tab':
+				// Let blur handle validation
 				isOpen = false;
 				break;
-			case 'Backspace':
+			case 'F4':
+				// F4 toggles dropdown (Business Central style)
 				e.preventDefault();
-				if (searchTerm.length > 0) {
-					searchTerm = searchTerm.slice(0, -1);
-					selectedIndex = 0;
-				}
-				break;
-			default:
-				// Type-ahead search: single printable character
-				if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-					e.preventDefault();
-					searchTerm += e.key;
-					selectedIndex = 0;
-
-					// Auto-clear search after configured timeout (only if timeout is set)
-					if (searchTimer) clearTimeout(searchTimer);
-					if (hasAutoTimeout) {
-						searchTimer = setTimeout(() => {
-							searchTerm = '';
-						}, searchTimeout);
-					}
-				}
+				handleToggle();
 				break;
 		}
 	}
@@ -190,6 +217,8 @@
 	function handleClickOutside(e: MouseEvent) {
 		if (containerRef && !containerRef.contains(e.target as Node)) {
 			isOpen = false;
+			// Revert input to actual value
+			inputValue = value || '';
 		}
 	}
 
@@ -209,31 +238,36 @@
 	bind:this={containerRef}
 	style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
 >
-	<button
-		type="button"
-		class={cn('lookup-trigger', error && 'input-error')}
-		{tabindex}
-		{disabled}
-		onclick={handleToggle}
-		onkeydown={handleKeydown}
-		aria-haspopup="listbox"
-		aria-expanded={isOpen}
-	>
-		<span class="lookup-value">{displayValue()}</span>
-		<span class="lookup-arrow">{isOpen ? '▲' : '▼'}</span>
-	</button>
+	<div class="lookup-input-wrapper">
+		<input
+			type="text"
+			class={cn('lookup-input', error && 'input-error')}
+			bind:this={inputRef}
+			value={inputValue}
+			{tabindex}
+			{disabled}
+			oninput={handleInput}
+			onkeydown={handleKeydown}
+			onblur={handleBlur}
+			onfocus={openDropdown}
+			aria-haspopup="listbox"
+			aria-expanded={isOpen}
+			autocomplete="off"
+		/>
+		<button
+			type="button"
+			class="lookup-arrow-btn"
+			tabindex={-1}
+			{disabled}
+			onclick={handleToggle}
+			aria-label="Toggle dropdown"
+		>
+			<span class="lookup-arrow">{isOpen ? '▲' : '▼'}</span>
+		</button>
+	</div>
 
 	{#if isOpen}
 		<div class="lookup-panel" role="listbox">
-			<!-- Search indicator -->
-			{#if searchTerm}
-				<div class="lookup-search">
-					<span class="search-icon">🔍</span>
-					<span class="search-term">{searchTerm}</span>
-					<span class="search-hint">({filteredRows().length} matches)</span>
-				</div>
-			{/if}
-
 			<!-- Column headers -->
 			<div class="lookup-header">
 				{#each columns as col}
@@ -267,7 +301,7 @@
 					</div>
 				{/each}
 				{#if filteredRows().length === 0}
-					<div class="lookup-empty">{searchTerm ? 'No matches found' : 'No records found'}</div>
+					<div class="lookup-empty">{inputValue ? 'No matches found' : 'No records found'}</div>
 				{/if}
 			</div>
 		</div>
@@ -280,27 +314,38 @@
 		width: 100%;
 	}
 
-	.lookup-trigger {
-		@apply w-full px-2 py-1 text-left bg-white border border-gray-300 rounded;
-		@apply flex items-center justify-between gap-2;
+	.lookup-input-wrapper {
+		@apply relative flex items-center;
+	}
+
+	.lookup-input {
+		@apply w-full px-2 py-1 pr-8 text-left bg-white border border-gray-300 rounded;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 		@apply disabled:opacity-50 disabled:cursor-not-allowed;
 		min-height: 2rem;
 		font-size: 0.875rem;
 	}
 
-	:global(.dark) .lookup-trigger {
+	:global(.dark) .lookup-input {
 		background-color: var(--color-bg-input, #1f2937);
 		border-color: var(--color-border-secondary, #374151);
 		color: var(--color-text-primary, #f9fafb);
 	}
 
-	.lookup-trigger.input-error {
+	.lookup-input.input-error {
 		@apply border-red-500;
 	}
 
-	.lookup-value {
-		@apply flex-1 truncate;
+	.lookup-arrow-btn {
+		@apply absolute right-0 top-0 bottom-0 px-2;
+		@apply flex items-center justify-center;
+		@apply bg-transparent border-none cursor-pointer;
+		@apply hover:bg-gray-100 rounded-r;
+		@apply disabled:opacity-50 disabled:cursor-not-allowed;
+	}
+
+	:global(.dark) .lookup-arrow-btn:hover {
+		background-color: var(--color-bg-secondary, #374151);
 	}
 
 	.lookup-arrow {
@@ -323,36 +368,6 @@
 	:global(.dark) .lookup-panel {
 		background-color: var(--color-bg-primary, #111827);
 		border-color: var(--color-border-secondary, #374151);
-	}
-
-	.lookup-search {
-		@apply px-2 py-1 bg-blue-50 border-b border-blue-200 flex items-center gap-2;
-		font-size: 0.75rem;
-	}
-
-	:global(.dark) .lookup-search {
-		background-color: rgba(59, 130, 246, 0.1);
-		border-color: rgba(59, 130, 246, 0.3);
-	}
-
-	.search-icon {
-		font-size: 0.875rem;
-	}
-
-	.search-term {
-		@apply font-semibold text-blue-700;
-	}
-
-	:global(.dark) .search-term {
-		color: #93c5fd;
-	}
-
-	.search-hint {
-		@apply text-gray-500;
-	}
-
-	:global(.dark) .search-hint {
-		color: #9ca3af;
 	}
 
 	.lookup-header {

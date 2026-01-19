@@ -103,6 +103,7 @@ type TemplateData struct {
 	HasDateField     bool
 	HasDateTimeField bool
 	HasFlowField     bool
+	HasBlobField     bool
 }
 
 func main() {
@@ -240,6 +241,9 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		if field.FlowField {
 			data.HasFlowField = true
 		}
+		if field.Type == "[]byte" || field.Type == "BLOB" {
+			data.HasBlobField = true
+		}
 	}
 
 	return data
@@ -299,6 +303,7 @@ func templateFuncs() template.FuncMap {
 		"upperFirst":         upperFirst,
 		"lowerFirst":         lowerFirst,
 		"sqlType":            getSQLType,
+		"postgresSqlType":    getPostgresSQLType,
 		"tableName":          getTableNameExpr,
 		"isLast":             isLast,
 		"isLastPK":           isLastPK,
@@ -310,7 +315,18 @@ func templateFuncs() template.FuncMap {
 		"pkCount":            countPrimaryKeys,
 		"firstPK":            getFirstPK,
 		"toPascalCase":       toPascalCase,
+		"tableNameVar":       getTableNameVarCode,
 	}
+}
+
+// getTableNameVarCode returns the Go code to set the tableName variable
+// For global tables: tableName := StructNameTableName
+// For company tables: tableName := fmt.Sprintf("%s$%s", t.company, StructNameTableName)
+func getTableNameVarCode(isGlobal bool, structName, companyVar string) string {
+	if isGlobal {
+		return fmt.Sprintf("tableName := %sTableName", structName)
+	}
+	return fmt.Sprintf(`tableName := fmt.Sprintf("%%s$%%s", %s, %sTableName)`, companyVar, structName)
 }
 
 // countPrimaryKeys counts the number of primary key fields
@@ -459,6 +475,36 @@ func getSQLType(f Field) string {
 	}
 }
 
+func getPostgresSQLType(f Field) string {
+	switch f.Type {
+	case "types.Code", "types.Text", "string":
+		if f.Length > 0 {
+			return fmt.Sprintf("VARCHAR(%d)", f.Length)
+		}
+		return "TEXT"
+	case "int", "int64":
+		return "INTEGER"
+	case "float64":
+		return "DOUBLE PRECISION"
+	case "bool":
+		return "BOOLEAN"
+	case "time.Time":
+		return "TIMESTAMP"
+	case "Option":
+		return "INTEGER"
+	case "types.Decimal":
+		return "NUMERIC" // PostgreSQL NUMERIC for exact decimal representation
+	case "types.Date":
+		return "DATE"
+	case "types.DateTime":
+		return "TIMESTAMP"
+	case "BLOB", "[]byte":
+		return "BYTEA"
+	default:
+		return "TEXT"
+	}
+}
+
 func getSQLConstraints(f Field) string {
 	var constraints []string
 
@@ -506,6 +552,9 @@ package {{ .PackageName }}
 
 import (
 	"database/sql"
+{{- if .HasBlobField }}
+	"encoding/base64"
+{{- end }}
 	"fmt"
 	"strings"
 {{- if or .HasTimeField .HasDateField .HasDateTimeField }}
@@ -565,6 +614,7 @@ type {{ .BaseStructName }} struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -622,9 +672,14 @@ func (t *{{ .BaseStructName }}) GetTableName() string {
 	return {{ .StructName }}TableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *{{ .BaseStructName }}) GetTableSchema() string {
 	return Get{{ .StructName }}TableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *{{ .BaseStructName }}) GetPostgresTableSchema() string {
+	return Get{{ .StructName }}PostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -648,7 +703,22 @@ func (t *{{ .BaseStructName }}) GetCompany() string {
 func Get{{ .StructName }}TableSchema() string {
 	return ` + "`" + `
 {{- range $i, $f := .Table.Fields }}
-		{{ $f.DBName }} {{ sqlType $f }}{{ if $f.PrimaryKey }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ if $f.Validation }} CHECK ({{ $f.DBName }} >= {{ $f.Validation.Min }} AND {{ $f.DBName }} <= {{ $f.Validation.Max }}){{ end }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ $f.Default }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if not (isLast $i $.Table.Fields) }},{{ end }}
+		{{ $f.DBName }} {{ sqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ if $f.Validation }} CHECK ({{ $f.DBName }} >= {{ $f.Validation.Min }} AND {{ $f.DBName }} <= {{ $f.Validation.Max }}){{ end }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ $f.Default }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
+{{- end }}
+{{- if gt (pkCount .Table.Fields) 1 }}
+		PRIMARY KEY ({{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})
+{{- end }}
+	` + "`" + `
+}
+
+// Get{{ .StructName }}PostgresTableSchema returns the PostgreSQL schema
+func Get{{ .StructName }}PostgresTableSchema() string {
+	return ` + "`" + `
+{{- range $i, $f := .Table.Fields }}
+		{{ $f.DBName }} {{ postgresSqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ if $f.Validation }} CHECK ({{ $f.DBName }} >= {{ $f.Validation.Min }} AND {{ $f.DBName }} <= {{ $f.Validation.Max }}){{ end }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ $f.Default }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
+{{- end }}
+{{- if gt (pkCount .Table.Fields) 1 }}
+		PRIMARY KEY ({{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})
 {{- end }}
 	` + "`" + `
 }
@@ -677,11 +747,26 @@ func (t *{{ .BaseStructName }}) GetOptionCaption(fieldName, optionValue, languag
 }
 {{- end }}
 
-// CreateTable creates the {{ .Table.Name }} table for the specified company
+// CreateTable creates the {{ .Table.Name }} table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *{{ .BaseStructName }}) CreateTable(db database.Executor, company string) error {
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the {{ .Table.Name }} table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *{{ .BaseStructName }}) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", company, {{ .StructName }}TableName)
-	schema := Get{{ .StructName }}TableSchema()
+{{- end }}
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = Get{{ .StructName }}PostgresTableSchema()
+	} else {
+		schema = Get{{ .StructName }}TableSchema()
+	}
 
 	createSQL := fmt.Sprintf(` + "`CREATE TABLE IF NOT EXISTS \"%s\" (%s)`" + `, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -714,8 +799,14 @@ func (t *{{ .BaseStructName }}) CreateTable(db database.Executor, company string
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *{{ .BaseStructName }}) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new {{ .StructName }} record with database context and type
+func (t *{{ .BaseStructName }}) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 
 {{- range .Table.Fields }}
@@ -736,6 +827,19 @@ func (t *{{ .BaseStructName }}) StoreOldValues() {
 	t.oldValues["{{ .DBName }}"] = t.{{ upperFirst .Name }}
 {{- end }}
 {{- end }}
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *{{ .BaseStructName }}) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -846,7 +950,11 @@ func (t *{{ .BaseStructName }}) Get(primaryKey interface{}) bool {
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
 func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 
 	{{- range .Table.Fields }}
 	{{- if not .FlowField }}
@@ -861,7 +969,7 @@ func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- 
 	{{- else if eq .Type "types.DateTime" }}
 	var {{ lowerFirst .Name }}Null sql.NullString
 	{{- else if eq .Type "bool" }}
-	var {{ lowerFirst .Name }}Int int
+	var {{ lowerFirst .Name }}Bool sql.NullBool
 	{{- else if eq .Type "Option" }}
 	var {{ lowerFirst .Name }}Int int
 	{{- else }}
@@ -870,12 +978,20 @@ func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- 
 	{{- end }}
 	{{- end }}
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE 1=1{{ range .Table.Fields }}{{ if .PrimaryKey }} AND {{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		{{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}
 		{{ lowerFirst $f.Name }},
 		{{- end }}{{- end }}
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE 1=1{{ range .Table.Fields }}{{ if .PrimaryKey }} AND {{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 {{- range $i, $f := .Table.Fields }}
 		{{- if not $f.FlowField }}
 		{{- if eq $f.Type "types.Code" }}
@@ -889,7 +1005,7 @@ func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- 
 		{{- else if eq $f.Type "types.DateTime" }}
 		&{{ lowerFirst $f.Name }}Null,
 		{{- else if eq $f.Type "bool" }}
-		&{{ lowerFirst $f.Name }}Int,
+		&{{ lowerFirst $f.Name }}Bool,
 		{{- else if eq $f.Type "Option" }}
 		&{{ lowerFirst $f.Name }}Int,
 		{{- else }}
@@ -923,7 +1039,7 @@ func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- 
 {{- else if eq .Type "types.DateTime" }}
 	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ lowerFirst .Name }}Null.String)
 {{- else if eq .Type "bool" }}
-	t.{{ upperFirst .Name }} = {{ lowerFirst .Name }}Int != 0
+	t.{{ upperFirst .Name }} = {{ lowerFirst .Name }}Bool.Bool
 {{- else if eq .Type "Option" }}
 	t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}({{ lowerFirst .Name }}Int)
 {{- else }}
@@ -948,15 +1064,28 @@ func (t *{{ .BaseStructName }}) Insert(runTrigger bool) bool {
 		}
 	}
 
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(` + "`INSERT INTO \"%s\" ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) VALUES ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}?{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})`" + `, tableName),
+{{- end }}
+
+	// Collect arguments for INSERT
+	args := []interface{}{
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 		t.{{ upperFirst .Name }},
 {{- end }}
 {{- end }}
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(` + "`INSERT INTO \"%s\" ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) VALUES ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}?{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})`" + `, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert {{ .Table.Name }}: %v\n", err)
 		return false
@@ -974,7 +1103,11 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 		}
 	}
 
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -1013,12 +1146,15 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 {{- end }}
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `,
+	sqlStr := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify {{ .Table.Name }}: %v\n", err)
 		return false
@@ -1092,15 +1228,28 @@ func (t *{{ .BaseStructName }}) Delete(runTrigger bool) bool {
 		}
 	}
 
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(` + "`DELETE FROM \"%s\" WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName),
+{{- end }}
+
+	// Collect arguments for DELETE
+	args := []interface{}{
 {{- range .Table.Fields }}
 {{- if .PrimaryKey }}
 		t.{{ upperFirst .Name }},
 {{- end }}
 {{- end }}
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(` + "`DELETE FROM \"%s\" WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete {{ .Table.Name }}: %v\n", err)
 		return false
@@ -1195,6 +1344,9 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 
 	query := fmt.Sprintf(` + "`SELECT COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
 
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
 	var sumStr string
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
@@ -1231,6 +1383,9 @@ func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 	}
 
 	query := fmt.Sprintf(` + "`SELECT COUNT(*) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -1424,11 +1579,18 @@ func (t *{{ .BaseStructName }}) getOrderByClause() string {
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *{{ .BaseStructName }}) FindFirst() bool {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}{{ end }}{{ end }} ASC LIMIT 1`" + `, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -1443,7 +1605,7 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 {{- else if eq .Type "types.DateTime" }}
 	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
-	var {{ .Name }}Int int
+	var {{ .Name }}Bool sql.NullBool
 {{- else if eq .Type "Option" }}
 	var {{ .Name }}Int int
 {{- else if eq .Type "time.Time" }}
@@ -1466,7 +1628,7 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 {{- else if eq $f.Type "types.DateTime" }}
 		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
-		&{{ $f.Name }}Int,
+		&{{ $f.Name }}Bool,
 {{- else if eq $f.Type "Option" }}
 		&{{ $f.Name }}Int,
 {{- else if eq $f.Type "time.Time" }}
@@ -1500,7 +1662,7 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 {{- else if eq .Type "types.DateTime" }}
 	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
-	t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
+	t.{{ upperFirst .Name }} = {{ .Name }}Bool.Bool
 {{- else if eq .Type "Option" }}
 	t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}({{ .Name }}Int)
 {{- else if eq .Type "time.Time" }}
@@ -1518,11 +1680,18 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *{{ .BaseStructName }}) FindLast() bool {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}{{ end }}{{ end }} DESC LIMIT 1`" + `, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -1537,7 +1706,7 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 {{- else if eq .Type "types.DateTime" }}
 	var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
-	var {{ .Name }}Int int
+	var {{ .Name }}Bool sql.NullBool
 {{- else if eq .Type "Option" }}
 	var {{ .Name }}Int int
 {{- else if eq .Type "time.Time" }}
@@ -1560,7 +1729,7 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 {{- else if eq $f.Type "types.DateTime" }}
 		&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
-		&{{ $f.Name }}Int,
+		&{{ $f.Name }}Bool,
 {{- else if eq $f.Type "Option" }}
 		&{{ $f.Name }}Int,
 {{- else if eq $f.Type "time.Time" }}
@@ -1594,7 +1763,7 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 {{- else if eq .Type "types.DateTime" }}
 	t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
-	t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
+	t.{{ upperFirst .Name }} = {{ .Name }}Bool.Bool
 {{- else if eq .Type "Option" }}
 	t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}({{ .Name }}Int)
 {{- else if eq .Type "time.Time" }}
@@ -1611,10 +1780,17 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 
 // Count returns the number of records matching current filters (BC/NAV style)
 func (t *{{ .BaseStructName }}) Count() int {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(` + "`SELECT COUNT(*) FROM \"%s\" WHERE %s`" + `, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -1636,12 +1812,19 @@ func (t *{{ .BaseStructName }}) FindSet() bool {
 		t.currentRows = nil
 	}
 
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s`" + `, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1718,7 +1901,7 @@ func (t *{{ .BaseStructName }}) Next(steps ...int) bool {
 {{- else if eq .Type "types.DateTime" }}
 		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
-		var {{ .Name }}Int int
+		var {{ .Name }}Bool sql.NullBool
 {{- else if eq .Type "Option" }}
 		var {{ .Name }}Int int
 {{- else if eq .Type "time.Time" }}
@@ -1741,7 +1924,7 @@ func (t *{{ .BaseStructName }}) Next(steps ...int) bool {
 {{- else if eq $f.Type "types.DateTime" }}
 			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
-			&{{ $f.Name }}Int,
+			&{{ $f.Name }}Bool,
 {{- else if eq $f.Type "Option" }}
 			&{{ $f.Name }}Int,
 {{- else if eq $f.Type "time.Time" }}
@@ -1774,7 +1957,7 @@ func (t *{{ .BaseStructName }}) Next(steps ...int) bool {
 {{- else if eq .Type "types.DateTime" }}
 		t.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
-		t.{{ upperFirst .Name }} = {{ .Name }}Int != 0
+		t.{{ upperFirst .Name }} = {{ .Name }}Bool.Bool
 {{- else if eq .Type "Option" }}
 		t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}({{ .Name }}Int)
 {{- else if eq .Type "time.Time" }}
@@ -1808,12 +1991,19 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
 
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s`" + `, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1828,6 +2018,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 		record := &{{ .BaseStructName }}{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 {{- range .Table.Fields }}
@@ -1843,7 +2034,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 {{- else if eq .Type "types.DateTime" }}
 		var {{ .Name }}Null sql.NullString
 {{- else if eq .Type "bool" }}
-		var {{ .Name }}Int int
+		var {{ .Name }}Bool sql.NullBool
 {{- else if eq .Type "Option" }}
 		var {{ .Name }}Int int
 {{- else if eq .Type "time.Time" }}
@@ -1866,7 +2057,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 {{- else if eq $f.Type "types.DateTime" }}
 			&{{ $f.Name }}Null,
 {{- else if eq $f.Type "bool" }}
-			&{{ $f.Name }}Int,
+			&{{ $f.Name }}Bool,
 {{- else if eq $f.Type "Option" }}
 			&{{ $f.Name }}Int,
 {{- else if eq $f.Type "time.Time" }}
@@ -1897,7 +2088,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 {{- else if eq .Type "types.DateTime" }}
 		record.{{ upperFirst .Name }}, _ = types.NewDateTimeFromString({{ .Name }}Null.String)
 {{- else if eq .Type "bool" }}
-		record.{{ upperFirst .Name }} = {{ .Name }}Int != 0
+		record.{{ upperFirst .Name }} = {{ .Name }}Bool.Bool
 {{- else if eq .Type "Option" }}
 		record.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}({{ .Name }}Int)
 {{- else if eq .Type "time.Time" }}
@@ -1951,7 +2142,11 @@ func (t *{{ .BaseStructName }}) IsEmpty() bool {
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
 func (t *{{ .BaseStructName }}) ModifyAll(fieldName string, newValue interface{}) int {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -1959,6 +2154,9 @@ func (t *{{ .BaseStructName }}) ModifyAll(fieldName string, newValue interface{}
 
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
+
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
@@ -1973,11 +2171,18 @@ func (t *{{ .BaseStructName }}) ModifyAll(fieldName string, newValue interface{}
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
 func (t *{{ .BaseStructName }}) DeleteAll() int {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(` + "`DELETE FROM \"%s\" WHERE %s`" + `, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
@@ -2118,10 +2323,24 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 			return fmt.Errorf("invalid type for field {{ .Name }} (expected DateTime, string, or time.Time)")
 		}
 {{- else if eq .Type "[]byte" }}
-		if v, ok := value.([]byte); ok {
+		// Accept nil, []byte, or base64-encoded string
+		if value == nil {
+			t.{{ upperFirst .Name }} = nil
+		} else if v, ok := value.([]byte); ok {
 			t.{{ upperFirst .Name }} = v
+		} else if s, ok := value.(string); ok {
+			if s == "" {
+				t.{{ upperFirst .Name }} = nil
+			} else {
+				// Try base64 decode
+				decoded, err := base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					return fmt.Errorf("invalid base64 value for field {{ .Name }}: %w", err)
+				}
+				t.{{ upperFirst .Name }} = decoded
+			}
 		} else {
-			return fmt.Errorf("invalid type for field {{ .Name }} (expected []byte)")
+			return fmt.Errorf("invalid type for field {{ .Name }} (expected []byte, string, or nil)")
 		}
 {{- else if eq .Type "bool" }}
 		if v, ok := value.(bool); ok {

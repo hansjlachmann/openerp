@@ -2,23 +2,31 @@ package handlers
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 // AuthHandler handles authentication API requests
 type AuthHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	dbType database.DBType
 }
 
-// NewAuthHandler creates a new auth handler
+// NewAuthHandler creates a new auth handler (defaults to SQLite)
 func NewAuthHandler(db *sql.DB) *AuthHandler {
-	return &AuthHandler{db: db}
+	return NewAuthHandlerWithDBType(db, database.DBTypeSQLite)
+}
+
+// NewAuthHandlerWithDBType creates a new auth handler with explicit database type
+func NewAuthHandlerWithDBType(db *sql.DB, dbType database.DBType) *AuthHandler {
+	return &AuthHandler{db: db, dbType: dbType}
 }
 
 // Login authenticates a user and creates a session
@@ -57,7 +65,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	var user tables.User
-	user.Init(h.db, company)
+	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(requestBody.UserID)) {
 		return c.Status(401).JSON(apitypes.NewErrorResponse("Invalid credentials"))
@@ -139,7 +147,7 @@ func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 	}
 
 	var user tables.User
-	user.Init(h.db, company)
+	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(userID)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("User not found"))
@@ -175,7 +183,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	// Use default company "cronus" for user storage
 	company := "cronus"
 	var user tables.User
-	user.Init(h.db, company)
+	user.InitWithDBType(h.db, company, h.dbType)
 	count := user.Count()
 
 	if count > 0 {
@@ -273,7 +281,7 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 		company := sess.GetCompany()
 		if userID != "" && company != "" {
 			var user tables.User
-			user.Init(h.db, company)
+			user.InitWithDBType(h.db, company, h.dbType)
 			if user.Get(types.NewCode(userID)) {
 				user.Language = types.NewText(requestBody.Language)
 				user.Modify(false) // Don't run triggers
@@ -297,5 +305,52 @@ func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {
 	}
 
 	response := apitypes.NewSuccessResponse(languages)
+	return c.JSON(response)
+}
+
+// CreateCompany creates a new company
+// POST /api/auth/companies
+func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
+	var requestBody struct {
+		Name string `json:"name"`
+	}
+
+	if err := c.BodyParser(&requestBody); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+	}
+
+	if requestBody.Name == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Company name is required"))
+	}
+
+	// Validate company name (alphanumeric, underscores, hyphens only)
+	name := strings.ToLower(strings.TrimSpace(requestBody.Name))
+	for _, r := range name {
+		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-') {
+			return c.Status(400).JSON(apitypes.NewErrorResponse("Company name can only contain letters, numbers, underscores, and hyphens"))
+		}
+	}
+
+	if len(name) < 2 || len(name) > 50 {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Company name must be between 2 and 50 characters"))
+	}
+
+	// Check if company already exists
+	var existingName string
+	err := h.db.QueryRow(`SELECT name FROM "Company" WHERE name = $1`, name).Scan(&existingName)
+	if err == nil {
+		return c.Status(409).JSON(apitypes.NewErrorResponse("Company '" + name + "' already exists"))
+	}
+
+	// Insert company
+	_, err = h.db.Exec(`INSERT INTO "Company" (name) VALUES ($1)`, name)
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to create company: " + err.Error()))
+	}
+
+	response := apitypes.NewSuccessResponse(map[string]interface{}{
+		"name":    name,
+		"message": "Company created successfully",
+	})
 	return c.JSON(response)
 }

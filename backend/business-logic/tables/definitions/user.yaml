@@ -1,5 +1,5 @@
 table:
-  id: 2000020000
+  id: 5100
   name: User
   caption: User
   description: System users with authentication

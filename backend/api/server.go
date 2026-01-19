@@ -9,16 +9,23 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/hansjlachmann/openerp/backend/api/handlers"
 	"github.com/hansjlachmann/openerp/backend/api/middleware"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
 )
 
 // Server represents the API server
 type Server struct {
-	app *fiber.App
-	db  *sql.DB
+	app    *fiber.App
+	db     *sql.DB
+	dbType database.DBType
 }
 
-// NewServer creates a new API server
+// NewServer creates a new API server (defaults to SQLite)
 func NewServer(db *sql.DB) *Server {
+	return NewServerWithDBType(db, database.DBTypeSQLite)
+}
+
+// NewServerWithDBType creates a new API server with explicit database type
+func NewServerWithDBType(db *sql.DB, dbType database.DBType) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:      "OpenERP API v1.0",
 		ServerHeader: "OpenERP",
@@ -26,8 +33,9 @@ func NewServer(db *sql.DB) *Server {
 	})
 
 	return &Server{
-		app: app,
-		db:  db,
+		app:    app,
+		db:     db,
+		dbType: dbType,
 	}
 }
 
@@ -43,10 +51,10 @@ func (s *Server) Setup() {
 
 	// Initialize handlers
 	sessionHandler := handlers.NewSessionHandler()
-	tablesHandler := handlers.NewTablesHandler(s.db)
+	tablesHandler := handlers.NewTablesHandlerWithDBType(s.db, s.dbType)
 	pagesHandler := handlers.NewPagesHandler()
-	preferencesHandler := handlers.NewPreferencesHandler(s.db)
-	authHandler := handlers.NewAuthHandler(s.db)
+	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
+	authHandler := handlers.NewAuthHandlerWithDBType(s.db, s.dbType)
 
 	// Auth routes
 	api.Post("/auth/login", authHandler.Login)
@@ -54,6 +62,7 @@ func (s *Server) Setup() {
 	api.Get("/auth/user", authHandler.GetCurrentUser)
 	api.Post("/auth/init", authHandler.CreateInitialUser)
 	api.Get("/auth/companies", authHandler.ListCompanies)
+	api.Post("/auth/companies", authHandler.CreateCompany)
 	api.Post("/auth/language", authHandler.SetLanguage)
 	api.Get("/auth/languages", authHandler.GetLanguages)
 
@@ -98,12 +107,18 @@ func (s *Server) Setup() {
 	})
 }
 
-// Start starts the API server
+// Start starts the API server on the specified port (int)
 func (s *Server) Start(port int) error {
-	addr := fmt.Sprintf(":%d", port)
-	log.Printf("🚀 API Server starting on http://localhost%s\n", addr)
-	log.Printf("📡 Health check: http://localhost%s/health\n", addr)
-	log.Printf("📚 API base: http://localhost%s/api\n", addr)
+	return s.StartOnPort(fmt.Sprintf("%d", port))
+}
+
+// StartOnPort starts the API server on the specified port (string)
+// Binds to 0.0.0.0 for Docker compatibility
+func (s *Server) StartOnPort(port string) error {
+	addr := fmt.Sprintf("0.0.0.0:%s", port)
+	log.Printf("🚀 API Server starting on http://localhost:%s\n", port)
+	log.Printf("📡 Health check: http://localhost:%s/health\n", port)
+	log.Printf("📚 API base: http://localhost:%s/api\n", port)
 	return s.app.Listen(addr)
 }
 

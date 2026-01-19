@@ -183,6 +183,7 @@
 					columns={lookups.columns}
 					rows={lookups.rows}
 					bind:value
+					fieldName={fieldCaption}
 					captions={fieldCaptions}
 					searchTimeout={lookups.search_timeout}
 					{tabindex}

@@ -434,6 +434,16 @@
 			navigateToRecord(recordIds[recordIds.length - 1]);
 		}
 	}
+
+	// Handle closing the card page
+	function handleCardClose() {
+		if (page?.page.list_page_id) {
+			window.location.href = `/pages/${page.page.list_page_id}`;
+		} else {
+			// Fallback: go back in history
+			window.history.back();
+		}
+	}
 </script>
 
 {#if pageLoading}
@@ -464,6 +474,7 @@
 			{lookups}
 			onaction={handleCardAction}
 			onsave={handleCardSave}
+			onclose={handleCardClose}
 			navigationEnabled={page.page.enable_navigation || false}
 			canNavigateFirst={currentRecordIndex > 0}
 			canNavigatePrevious={currentRecordIndex > 0}
