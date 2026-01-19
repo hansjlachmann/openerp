@@ -9,12 +9,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/hansjlachmann/openerp/src/api"
-	"github.com/hansjlachmann/openerp/src/business-logic/tables"
-	"github.com/hansjlachmann/openerp/src/foundation/company"
-	"github.com/hansjlachmann/openerp/src/foundation/database"
-	"github.com/hansjlachmann/openerp/src/foundation/objects"
-	"github.com/hansjlachmann/openerp/src/foundation/session"
+	"github.com/hansjlachmann/openerp/backend/api"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/company"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/objects"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
 func main() {
