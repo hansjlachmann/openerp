@@ -60,8 +60,18 @@ type FlowFilter struct {
 
 // TableRelation represents a foreign key relationship to another table
 type TableRelation struct {
-	Table string `yaml:"table"`
-	Field string `yaml:"field"`
+	Table        string `yaml:"table"`
+	Field        string `yaml:"field"`
+	DisplayField string `yaml:"display_field"` // Field to show in dropdown (e.g., "description")
+	Validate     *bool  `yaml:"validate"`      // Whether to validate the relation (default: true)
+}
+
+// ShouldValidate returns whether this table relation should be validated
+func (tr *TableRelation) ShouldValidate() bool {
+	if tr.Validate == nil {
+		return true // default is true
+	}
+	return *tr.Validate
 }
 
 // Validation represents field validation rules
@@ -2085,6 +2095,13 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 				return fmt.Errorf("invalid option value %d for field {{ .Name }} (valid range: 0-%d)", v, {{ len .Options }}-1)
 			}
 			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(v)
+		// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= {{ len .Options }} {
+				return fmt.Errorf("invalid option value %d for field {{ .Name }} (valid range: 0-%d)", intVal, {{ len .Options }}-1)
+			}
+			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
 			options := []string{ {{- range $i, $opt := .Options }}{{- if $i }}, {{ end }}"{{ $opt }}"{{- end }} }
@@ -2128,8 +2145,18 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 {{- if not .FlowField }}
 
 // OnValidate_{{ upperFirst .Name }} is the validation trigger for {{ .Name }} field (BC/NAV style)
-// All validation logic is in {{ lowerFirst $.StructName }}.go - CustomValidate_{{ upperFirst .Name }}()
 func (t *{{ $.StructName }}) OnValidate_{{ upperFirst .Name }}() error {
+{{- if and .TableRelation .TableRelation.ShouldValidate }}
+	// Table relation validation: {{ .Name }} must exist in {{ .TableRelation.Table }}
+	if t.{{ upperFirst .Name }} != "" && t.{{ upperFirst .Name }} != types.{{ if eq .Type "types.Code" }}Code{{ else }}Text{{ end }}("") {
+		var relatedRecord {{ .TableRelation.Table }}
+		relatedRecord.Init(t.db, t.company)
+		if !relatedRecord.Get(t.{{ upperFirst .Name }}) {
+			return fmt.Errorf("{{ .Name }} '%s' does not exist in {{ .TableRelation.Table }} table", t.{{ upperFirst .Name }})
+		}
+	}
+{{- end }}
+	// Call custom validation hook (in {{ lowerFirst $.StructName }}.go)
 	return t.CustomValidate_{{ upperFirst .Name }}()
 }
 {{- end }}
@@ -2354,6 +2381,21 @@ func (t *{{ .StructName }}) GetOptionFields() map[string][]string {
 {{- end }}
 	}
 }
+
+// GetTableRelationFields returns fields that have table relations (foreign keys)
+func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRelationInfo {
+	return map[string]tables.TableRelationInfo{
+{{- range .Table.Fields }}
+{{- if .TableRelation }}
+		"{{ .DBName }}": {
+			Table:        "{{ .TableRelation.Table }}",
+			Field:        "{{ .TableRelation.Field }}",
+			DisplayField: "{{ .TableRelation.DisplayField }}",
+		},
+{{- end }}
+{{- end }}
+	}
+}
 `
 
 const businessTemplate = `package {{ .PackageName }}
@@ -2475,20 +2517,10 @@ func (t *{{ .StructName }}) Validate() error {
 // CustomValidate_{{ upperFirst .Name }} - Custom validation for {{ .Name }} field
 func (t *{{ $.StructName }}) CustomValidate_{{ upperFirst .Name }}() error {
 {{- if .TableRelation }}
-	// Table relation validation - {{ .Name }} must exist in {{ .TableRelation.Table }}
-	if t.{{ upperFirst .Name }} != "" && t.{{ upperFirst .Name }} != types.{{ if eq .Type "types.Code" }}Code{{ else }}Text{{ end }}("") {
-		var relatedRecord {{ .TableRelation.Table }}
-		relatedRecord.Init(t.db, t.company)
-		if !relatedRecord.Get(t.{{ upperFirst .Name }}) {
-			return errors.New("{{ .Name }} does not exist in {{ .TableRelation.Table }} table")
-		}
-
-		// *** ADD YOUR CUSTOM LOGIC HERE ***
-		// You can access the related record:
-		// if !relatedRecord.Active {
-		//     return errors.New("{{ .TableRelation.Table }} is inactive")
-		// }
-	}
+	// Table relation validation is auto-generated in {{ lowerFirst $.StructName }}_gen.go
+	// Add additional custom validation here if needed, e.g.:
+	// - Check if related record is active
+	// - Apply business rules based on related data
 {{- else }}
 	// *** ADD YOUR CUSTOM VALIDATION LOGIC HERE ***
 	// Example for {{ .Name }}:

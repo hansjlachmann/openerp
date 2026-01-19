@@ -41,6 +41,7 @@ table:
       table_relation:
         table: PaymentTerms
         field: code
+        display_field: description
 
     - name: status
       type: Option

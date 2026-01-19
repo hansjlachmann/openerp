@@ -14,13 +14,15 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
-	import { getRecordId, isNewRecord } from '$lib/utils/recordHelpers';
+	import { getRecordId, isNewRecord, deepCopy } from '$lib/utils/recordHelpers';
+	import { toast } from '$lib/stores/toast';
 
 	interface Props {
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
+		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		saveBlocked?: boolean; // Block editing due to save error (e.g., record already exists)
@@ -43,6 +45,7 @@
 		record = $bindable({}),
 		captions = {},
 		options = {},
+		lookups = {},
 		onaction,
 		onsave,
 		saveBlocked = false,
@@ -132,6 +135,18 @@
 	let saveTimeout: number | null = null;
 	let savedTimeout: number | null = null;
 
+	// Track last saved record state for reverting on validation error
+	let lastSavedRecord = $state<Record<string, any>>({});
+
+	// Update lastSavedRecord when record is loaded from parent
+	$effect(() => {
+		const id = getRecordId(record);
+		// When a record is first loaded (has ID and we don't have it saved yet)
+		if (id && (!lastSavedRecord || getRecordId(lastSavedRecord) !== id)) {
+			lastSavedRecord = deepCopy(record);
+		}
+	});
+
 	// Auto-save with debouncing
 	function autoSave() {
 		// Skip if already saving or blocked due to error
@@ -160,6 +175,8 @@
 				const didSave = await onsave?.(record);
 
 				if (didSave) {
+					// Update lastSavedRecord after successful save
+					lastSavedRecord = deepCopy(record);
 					saveState = 'saved';
 					// Show "Saved" for 1.5 seconds then hide
 					savedTimeout = setTimeout(() => {
@@ -171,7 +188,19 @@
 				}
 			} catch (err) {
 				saveState = 'idle';
-				console.error('Auto-save failed:', err);
+				// Validation error - revert to last saved state
+				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+				toast.error(errorMessage);
+
+				// Revert record to last saved state
+				if (lastSavedRecord && Object.keys(lastSavedRecord).length > 0) {
+					// Copy each field back to revert changes
+					for (const key of Object.keys(record)) {
+						if (key in lastSavedRecord) {
+							record[key] = lastSavedRecord[key];
+						}
+					}
+				}
 			}
 		}, 300) as unknown as number;
 	}
@@ -420,6 +449,7 @@
 						{#each section.fields as field (field.source)}
 							{@const fieldEditable = field.editable !== false && editMode && !saveBlocked}
 							{@const fieldOptions = options[field.source]}
+							{@const fieldLookups = lookups[field.source]}
 							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
 							<FieldRenderer
 								{field}
@@ -427,6 +457,7 @@
 								caption={getFieldCaption(field.source, captions, field.caption)}
 								editable={fieldEditable}
 								options={fieldOptions}
+								lookups={fieldLookups}
 								tabindex={fieldTabIndex}
 								onblur={handleFieldBlur}
 							/>
