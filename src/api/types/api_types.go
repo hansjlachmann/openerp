@@ -15,7 +15,7 @@ type CaptionData struct {
 	Table   string                       `json:"table,omitempty"`
 	Fields  map[string]string            `json:"fields,omitempty"`
 	Options map[string]map[string]string `json:"options,omitempty"` // Option field values (enum)
-	Lookups map[string]map[string]string `json:"lookups,omitempty"` // Table relation lookup values
+	Lookups map[string]interface{}       `json:"lookups,omitempty"` // Table relation lookup values (LookupData)
 }
 
 // ListRequest represents a list query with filters and pagination

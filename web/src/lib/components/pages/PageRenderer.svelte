@@ -21,11 +21,18 @@
 
 	let { pageid, recordid }: Props = $props();
 
+	// Lookup data structure from API
+	interface LookupData {
+		columns?: Array<{ source: string; width: number }>;
+		rows?: Array<{ _key: string; [key: string]: any }>;
+		simple?: Record<string, string>;
+	}
+
 	// State
 	let page: PageDefinition | null = $state(null);
 	let captions: Record<string, string> = $state({});
 	let options: Record<string, Record<string, string>> = $state({}); // Option field values (enum lookups)
-	let lookups: Record<string, Record<string, string>> = $state({}); // Table relation lookup values
+	let lookups: Record<string, LookupData> = $state({}); // Table relation lookup values
 	let navigation: Record<string, string> = $state({}); // Navigation translations
 	let pageLoading = $state(true);  // Loading page definition
 	let dataLoading = $state(false); // Loading data after page definition is known

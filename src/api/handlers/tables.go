@@ -38,9 +38,23 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 	return table, nil
 }
 
+// LookupData represents structured lookup data for a field
+type LookupData struct {
+	Columns       []LookupColumn           `json:"columns,omitempty"`        // Column definitions (advanced mode)
+	Rows          []map[string]interface{} `json:"rows"`                     // Row data
+	Simple        map[string]string        `json:"simple,omitempty"`         // Simple key->display map (simple mode)
+	SearchTimeout int                      `json:"search_timeout,omitempty"` // Auto-clear search timeout in ms (0 = default 1500)
+}
+
+// LookupColumn represents a column in the lookup dropdown
+type LookupColumn struct {
+	Source string `json:"source"`
+	Width  int    `json:"width"`
+}
+
 // getLookupValues fetches lookup values for table relation fields
-func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map[string]map[string]string {
-	lookups := make(map[string]map[string]string)
+func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map[string]*LookupData {
+	lookups := make(map[string]*LookupData)
 
 	for fieldName, relInfo := range table.GetTableRelationFields() {
 		// Get the related table
@@ -52,23 +66,48 @@ func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map
 		relTable := relFactory()
 		relTable.Init(h.db, company)
 
+		lookup := &LookupData{
+			Rows:          []map[string]interface{}{},
+			Simple:        make(map[string]string),
+			SearchTimeout: relInfo.SearchTimeout,
+		}
+
+		// Add column definitions if lookup_columns is specified (advanced mode)
+		if len(relInfo.LookupColumns) > 0 {
+			for _, col := range relInfo.LookupColumns {
+				lookup.Columns = append(lookup.Columns, LookupColumn{
+					Source: col.Source,
+					Width:  col.Width,
+				})
+			}
+		}
+
 		// Fetch all records from related table
-		lookupMap := make(map[string]string)
 		if relTable.FindSet() {
 			for {
-				// Get the key field value
 				keyValue := relTable.GetPrimaryKeyValue()
+				recordMap := relTable.ToMap()
 
-				// Get the display value (either display_field or the key itself)
+				// For advanced mode: add full row data
+				if len(relInfo.LookupColumns) > 0 {
+					row := make(map[string]interface{})
+					row["_key"] = keyValue // Always include the key
+					for _, col := range relInfo.LookupColumns {
+						if val, ok := recordMap[col.Source]; ok {
+							row[col.Source] = val
+						}
+					}
+					lookup.Rows = append(lookup.Rows, row)
+				}
+
+				// For simple mode: add key->display mapping
 				displayValue := keyValue
 				if relInfo.DisplayField != "" {
-					recordMap := relTable.ToMap()
 					if dv, ok := recordMap[relInfo.DisplayField]; ok && dv != nil {
 						displayValue = fmt.Sprintf("%v", dv)
 					}
 				}
-
-				lookupMap[keyValue] = displayValue
+				lookup.Simple[keyValue] = displayValue
 
 				if !relTable.Next() {
 					break
@@ -76,10 +115,20 @@ func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map
 			}
 		}
 
-		lookups[fieldName] = lookupMap
+		lookups[fieldName] = lookup
 	}
 
 	return lookups
+}
+
+// getLookupValuesAsInterface converts lookup data to interface{} map for JSON serialization
+func (h *TablesHandler) getLookupValuesAsInterface(table ftables.Table, company string) map[string]interface{} {
+	lookups := h.getLookupValues(table, company)
+	result := make(map[string]interface{})
+	for k, v := range lookups {
+		result[k] = v
+	}
+	return result
 }
 
 // GetOptions returns only the option field metadata (no records)
@@ -237,7 +286,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		Table:   ts.TableCaption(tableName, language),
 		Fields:  make(map[string]string),
 		Options: make(map[string]map[string]string),
-		Lookups: h.getLookupValues(table, company),
+		Lookups: h.getLookupValuesAsInterface(table, company),
 	}
 
 	// Add field captions from metadata
@@ -298,7 +347,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		Table:   ts.TableCaption(tableName, language),
 		Fields:  make(map[string]string),
 		Options: make(map[string]map[string]string),
-		Lookups: h.getLookupValues(table, company),
+		Lookups: h.getLookupValuesAsInterface(table, company),
 	}
 
 	for _, field := range table.GetFields() {

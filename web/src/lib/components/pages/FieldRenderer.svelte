@@ -2,6 +2,20 @@
 	import type { Field } from '$lib/types/pages';
 	import { cn } from '$lib/utils/cn';
 	import { getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
+	import LookupDropdown from './LookupDropdown.svelte';
+
+	// Lookup data structure from API
+	interface LookupColumn {
+		source: string;
+		width: number;
+	}
+
+	interface LookupData {
+		columns?: LookupColumn[];
+		rows?: Array<{ _key: string; [key: string]: any }>;
+		simple?: Record<string, string>;
+		search_timeout?: number;
+	}
 
 	interface Props {
 		field: Field;
@@ -11,7 +25,8 @@
 		required?: boolean;
 		error?: string;
 		options?: Record<string, string>; // Option field values (key = stored value, value = display text)
-		lookups?: Record<string, string>; // Lookup values (key = code, value = display text)
+		lookups?: LookupData; // Lookup values (advanced or simple mode)
+		fieldCaptions?: Record<string, string>; // Field captions for lookup column headers
 		tabindex?: number;
 		onchange?: (value: any) => void;
 		onblur?: () => void;
@@ -26,6 +41,7 @@
 		error,
 		options,
 		lookups,
+		fieldCaptions = {},
 		tabindex,
 		onchange,
 		onblur
@@ -37,8 +53,18 @@
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
 
-	// Check if this is a lookup/table relation field (has lookups provided)
-	const isLookupField = $derived(lookups && Object.keys(lookups).length > 0);
+	// Check if this is a lookup field with advanced columns (table-style dropdown)
+	const isAdvancedLookup = $derived(
+		lookups && lookups.columns && lookups.columns.length > 0 && lookups.rows
+	);
+
+	// Check if this is a simple lookup field (basic dropdown)
+	const isSimpleLookup = $derived(
+		lookups && lookups.simple && Object.keys(lookups.simple).length > 0 && !isAdvancedLookup
+	);
+
+	// Check if this is any lookup field
+	const isLookupField = $derived(isAdvancedLookup || isSimpleLookup);
 
 	// Get field caption (from props, field definition, or field source)
 	const fieldCaption = $derived(caption || field.caption || field.source);
@@ -87,12 +113,31 @@
 	const lookupDisplayValue = $derived(() => {
 		if (!lookups || value === undefined || value === null || value === '') return '';
 		const stringValue = String(value);
-		const description = lookups[stringValue];
-		if (description && description !== stringValue) {
-			return `${stringValue} - ${description}`;
+
+		// For advanced lookup, get description from first non-key column
+		if (isAdvancedLookup && lookups.rows) {
+			const row = lookups.rows.find(r => r._key === stringValue);
+			if (row && lookups.columns && lookups.columns.length > 0) {
+				// Return first column value
+				return row[lookups.columns[0].source] ?? stringValue;
+			}
+		}
+
+		// For simple lookup
+		if (lookups.simple) {
+			const description = lookups.simple[stringValue];
+			if (description && description !== stringValue) {
+				return `${stringValue} - ${description}`;
+			}
 		}
 		return stringValue;
 	});
+
+	// Handle lookup selection from LookupDropdown
+	function handleLookupSelect(key: string) {
+		value = key;
+		onchange?.(key);
+	}
 
 	// Determine input type based on field
 	const inputType = $derived(() => {
@@ -132,8 +177,21 @@
 						<option value={optValue}>{optLabel}</option>
 					{/each}
 				</select>
-			{:else if isLookupField && lookups}
-				<!-- Lookup/Table relation field - render as dropdown -->
+			{:else if isAdvancedLookup && lookups.columns && lookups.rows}
+				<!-- Advanced lookup with columns - render as table-style dropdown -->
+				<LookupDropdown
+					columns={lookups.columns}
+					rows={lookups.rows}
+					bind:value
+					captions={fieldCaptions}
+					searchTimeout={lookups.search_timeout}
+					{tabindex}
+					error={!!error}
+					onselect={handleLookupSelect}
+					onblur={() => onblur?.()}
+				/>
+			{:else if isSimpleLookup && lookups.simple}
+				<!-- Simple lookup - render as basic dropdown -->
 				<select
 					id={field.source}
 					class={cn('select', fieldStyle, error ? 'input-error' : '')}
@@ -145,8 +203,8 @@
 					aria-describedby={error ? `${field.source}-error` : undefined}
 				>
 					<option value=""></option>
-					{#each Object.entries(lookups) as [lookupCode, lookupDisplay]}
-						<option value={lookupCode}>{lookupCode} - {lookupDisplay}</option>
+					{#each Object.entries(lookups.simple) as [lookupCode, lookupDisplay]}
+						<option value={lookupCode} title={lookupDisplay}>{lookupCode}</option>
 					{/each}
 				</select>
 			{:else}

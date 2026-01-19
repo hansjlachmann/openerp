@@ -7,13 +7,20 @@
 	import { onMount } from 'svelte';
 	import { getRecordId } from '$lib/utils/recordHelpers';
 
+	// Lookup data structure from API
+	interface LookupData {
+		columns?: Array<{ source: string; width: number }>;
+		rows?: Array<{ _key: string; [key: string]: any }>;
+		simple?: Record<string, string>;
+	}
+
 	interface Props {
 		open?: boolean;
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
-		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
+		lookups?: Record<string, LookupData>; // Table relation lookup values
 		initialEditMode?: boolean;
 		saveBlocked?: boolean;
 		saveBlockedMessage?: string;

@@ -17,12 +17,19 @@
 	import { getRecordId, isNewRecord, deepCopy } from '$lib/utils/recordHelpers';
 	import { toast } from '$lib/stores/toast';
 
+	// Lookup data structure from API
+	interface LookupData {
+		columns?: Array<{ source: string; width: number }>;
+		rows?: Array<{ _key: string; [key: string]: any }>;
+		simple?: Record<string, string>;
+	}
+
 	interface Props {
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
-		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
+		lookups?: Record<string, LookupData>; // Table relation lookup values
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		saveBlocked?: boolean; // Block editing due to save error (e.g., record already exists)
@@ -458,6 +465,7 @@
 								editable={fieldEditable}
 								options={fieldOptions}
 								lookups={fieldLookups}
+								fieldCaptions={captions}
 								tabindex={fieldTabIndex}
 								onblur={handleFieldBlur}
 							/>
