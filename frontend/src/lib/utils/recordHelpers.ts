@@ -2,11 +2,11 @@
 
 /**
  * Extract the primary key/ID from a record
- * Records can use 'no', 'code', or 'id' as their primary key field
+ * Records can use 'no', 'code', 'user_id', or 'id' as their primary key field
  */
 export function getRecordId(record: Record<string, any> | null | undefined): string | undefined {
 	if (!record) return undefined;
-	return record.no || record.code || record.id;
+	return record.no || record.code || record.user_id || record.id;
 }
 
 /**

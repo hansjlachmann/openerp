@@ -416,6 +416,10 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		if flowFields[fieldName] {
 			continue
 		}
+		// Skip virtual password field for User table - handled separately below
+		if tableName == "User" && fieldName == "password" {
+			continue
+		}
 		if err := table.ValidateField(fieldName, value); err != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 		}
@@ -494,6 +498,10 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		}
 		// Skip FlowFields - they're calculated, not validated
 		if flowFields[fieldName] {
+			continue
+		}
+		// Skip virtual password field for User table - handled separately below
+		if tableName == "User" && fieldName == "password" {
 			continue
 		}
 		if err := table.ValidateField(fieldName, value); err != nil {
