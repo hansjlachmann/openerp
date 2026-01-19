@@ -12,3 +12,4 @@ errors:
   ERR_MODIFY_FAILED: "Kunne ikke endre %1 %2"
   ERR_NO_ACTIVE_SESSION: "Ingen aktiv sesjon"
   ERR_TABLE_NOT_FOUND: "Tabell '%1' ble ikke funnet"
+  ERR_EMPTY_PRIMARY_KEY: "%1-nummer kan ikke være tomt"
