@@ -173,12 +173,13 @@
 	function handleKeydown(e: KeyboardEvent) {
 		switch (e.key) {
 			case 'Escape':
-				e.preventDefault();
 				if (isOpen) {
+					e.preventDefault();
 					isOpen = false;
 					// Revert to current value
 					inputValue = value || '';
 				}
+				// If dropdown is closed, let Escape bubble up to close the card page
 				break;
 			case 'ArrowDown':
 				e.preventDefault();
