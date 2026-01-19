@@ -1394,16 +1394,20 @@
 
 <style>
 	.list-page {
-		@apply flex flex-col gap-4 h-full;
+		@apply flex flex-col gap-4;
+		height: calc(100vh - 180px); /* Account for menu, breadcrumb, padding */
 	}
 
 	.list-content {
-		@apply flex flex-1 gap-4 min-h-0;
+		@apply flex flex-1 gap-4;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.table-container {
-		@apply flex-1 overflow-auto border border-gray-200 rounded-lg bg-white;
+		@apply flex-1 border border-gray-200 rounded-lg bg-white;
 		@apply dark:border-gray-700 dark:bg-gray-900;
+		overflow: auto;
 	}
 
 	.table {
@@ -1413,7 +1417,7 @@
 	}
 
 	.table thead {
-		@apply sticky top-0 z-10;
+		@apply z-10;
 	}
 
 	.table th {
@@ -1422,7 +1426,9 @@
 		@apply dark:bg-gray-800;
 		border-right: 1px solid rgba(255, 255, 255, 0.1);
 		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-		position: relative;
+		position: sticky;
+		top: 0;
+		z-index: 10;
 	}
 
 	.table th:last-child {
