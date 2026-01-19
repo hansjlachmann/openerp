@@ -1407,17 +1407,21 @@
 	}
 
 	.table {
-		@apply w-full border-collapse;
+		@apply w-full;
+		border-collapse: separate;
+		border-spacing: 0;
 	}
 
 	.table thead {
-		@apply sticky top-0 bg-nav-blue text-white z-10;
-		@apply dark:bg-gray-800;
+		@apply sticky top-0 z-10;
 	}
 
 	.table th {
 		@apply px-4 py-3 text-left text-sm font-semibold;
+		@apply bg-nav-blue text-white;
+		@apply dark:bg-gray-800;
 		border-right: 1px solid rgba(255, 255, 255, 0.1);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 		position: relative;
 	}
 
@@ -1431,7 +1435,6 @@
 		min-width: 50px;
 		max-width: 50px;
 		text-align: center;
-		color: white;
 	}
 
 	.row-number-cell {
