@@ -6,6 +6,20 @@ export interface ShortcutMap {
 	[key: string]: ShortcutHandler;
 }
 
+// Normalize shortcut key names to a consistent format
+// This handles common aliases like "Esc" -> "Escape"
+function normalizeKeyName(key: string): string {
+	const aliases: Record<string, string> = {
+		'Esc': 'Escape',
+		'Del': 'Delete',
+		'Ins': 'Insert',
+		'PgUp': 'PageUp',
+		'PgDn': 'PageDown',
+		'PgDown': 'PageDown',
+	};
+	return aliases[key] || key;
+}
+
 // Parse keyboard event to shortcut string (e.g., "Ctrl+N", "F5")
 export function getShortcutKey(event: KeyboardEvent): string {
 	const parts: string[] = [];
@@ -24,6 +38,14 @@ export function getShortcutKey(event: KeyboardEvent): string {
 	return parts.join('+');
 }
 
+// Normalize a shortcut string from page definitions
+// Converts aliases like "Esc" to "Escape" for consistent matching
+export function normalizeShortcut(shortcut: string): string {
+	const parts = shortcut.split('+');
+	const normalizedParts = parts.map(part => normalizeKeyName(part));
+	return normalizedParts.join('+');
+}
+
 // Svelte action for keyboard shortcuts
 export function shortcuts(node: HTMLElement, shortcutMap: ShortcutMap) {
 	function handleKeydown(event: KeyboardEvent) {
@@ -31,9 +53,16 @@ export function shortcuts(node: HTMLElement, shortcutMap: ShortcutMap) {
 		const handler = shortcutMap[shortcutKey];
 
 		if (handler) {
-			const result = handler(event);
-			// Prevent default unless handler returns false
-			if (result !== false) {
+			try {
+				const result = handler(event);
+				// Prevent default unless handler returns false
+				if (result !== false) {
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			} catch (err) {
+				console.error('Error in shortcut handler:', err);
+				// Still prevent default to avoid unexpected behavior
 				event.preventDefault();
 				event.stopPropagation();
 			}

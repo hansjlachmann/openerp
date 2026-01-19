@@ -154,20 +154,21 @@
 				isExistingRecord = true; // Successfully loaded an existing record
 				currentRecordId = recordid;
 			} else {
-				// New record - open immediately, fetch options/lookups in background
+				// New record - fetch options/lookups before rendering
 				record = {};
 				isExistingRecord = false;
 				currentRecordId = undefined;
-				options = {}; // Start with empty, load in background
-				lookups = {}; // Start with empty, load in background
 
-				// Fetch options and lookups non-blocking
-				api.getTableOptionsAndLookups(page.page.source_table).then(result => {
+				// Fetch options and lookups (await to ensure they're loaded before render)
+				try {
+					const result = await api.getTableOptionsAndLookups(page.page.source_table);
 					options = result.options;
 					lookups = result.lookups;
-				}).catch(err => {
+				} catch (err) {
 					console.error('Failed to load options/lookups:', err);
-				});
+					options = {};
+					lookups = {};
+				}
 			}
 
 			// Load record IDs for navigation if enabled

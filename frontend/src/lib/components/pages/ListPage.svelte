@@ -13,7 +13,7 @@
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
 	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
-	import { shortcuts } from '$lib/utils/shortcuts';
+	import { shortcuts, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
@@ -177,8 +177,8 @@
 			parts.push(key);
 			const shortcutKey = parts.join('+');
 
-			// Check if this matches any action shortcut
-			const action = page.page.actions?.find(a => a.shortcut === shortcutKey);
+			// Check if this matches any action shortcut (normalize the action shortcut for comparison)
+			const action = page.page.actions?.find(a => a.shortcut && normalizeShortcut(a.shortcut) === shortcutKey);
 			if (action) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -589,40 +589,13 @@
 				modalOriginalRecord = deepCopy(modalRecord);
 				modalIsNewRecord = false;
 			} else {
-				// New record - open modal immediately, fetch options/lookups in background
+				// New record - open modal immediately with empty options/lookups
 				modalRecord = { ...record };
 				modalOriginalRecord = {};
-				modalOptions = {}; // Start with empty options
-				modalLookups = {}; // Start with empty lookups
-				modalOptionsLoaded = false; // Reset the loaded flag
 				modalIsNewRecord = true;
-
-				// Fetch options and lookups in background (non-blocking)
-				api.getTableOptionsAndLookups(sourceTable).then(({ options: opts, lookups: lkps }) => {
-					// Only update if modal is still open and options haven't been loaded yet
-					if (modalOpen && !modalOptionsLoaded) {
-						// Save currently focused element
-						const activeElement = document.activeElement;
-						const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
-
-						modalOptions = opts;
-						modalLookups = lkps;
-						modalOptionsLoaded = true;
-
-						// Restore focus if it was lost during re-render
-						if (activeElementId) {
-							setTimeout(() => {
-								const element = document.getElementById(activeElementId);
-								if (element && document.activeElement !== element) {
-									element.focus();
-								}
-							}, 0);
-						}
-					}
-				}).catch(err => {
-					console.error('Failed to load options/lookups:', err);
-					modalOptionsLoaded = true; // Mark as loaded even on error to prevent retries
-				});
+				modalOptions = {};
+				modalLookups = {};
+				modalOptionsLoaded = false;
 			}
 
 			// Set initial edit mode
@@ -631,6 +604,20 @@
 			modalHadChanges = false;
 			modalRecordDeleted = false;
 			modalOpen = true;
+
+			// For new records, load options/lookups in background after modal is open
+			if (modalIsNewRecord && !modalOptionsLoaded) {
+				api.getTableOptionsAndLookups(sourceTable).then(({ options: opts, lookups: lkps }) => {
+					if (modalOpen) {
+						modalOptions = opts;
+						modalLookups = lkps;
+						modalOptionsLoaded = true;
+					}
+				}).catch(err => {
+					console.error('Failed to load options/lookups:', err);
+					modalOptionsLoaded = true;
+				});
+			}
 		} catch (err) {
 			console.error('Error opening modal card:', err);
 			toast.error('Failed to open card');
@@ -640,6 +627,8 @@
 	// Close modal
 	function closeModal() {
 		const hadChanges = modalHadChanges;
+
+		// Close the modal
 		modalOpen = false;
 		modalCardPage = null;
 		modalRecord = {};
@@ -749,9 +738,14 @@
 
 			// Block further edits if this was a new record that failed to save
 			// (likely because the record already exists)
+			// Use setTimeout to avoid Svelte prop update issues during error handling
 			if (modalIsNewRecord) {
-				modalSaveBlocked = true;
-				modalSaveBlockedMessage = message;
+				setTimeout(() => {
+					if (modalOpen) { // Only update if modal is still open
+						modalSaveBlocked = true;
+						modalSaveBlockedMessage = message;
+					}
+				}, 0);
 			}
 
 			return false; // Save failed
@@ -765,6 +759,10 @@
 		if (!modalCardPage) return;
 
 		switch (actionName) {
+			case 'Back to List':
+				// Close modal and return to list (triggered by Esc key or Back to List button)
+				closeModal();
+				break;
 			case 'Delete':
 				const deleteRecordId = getRecordId(modalRecord);
 				if (deleteRecordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
@@ -825,7 +823,9 @@
 
 		page.page.actions?.forEach((action) => {
 			if (action.shortcut && action.enabled !== false) {
-				map[action.shortcut] = () => handleAction(action.name);
+				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
+				const normalizedShortcut = normalizeShortcut(action.shortcut);
+				map[normalizedShortcut] = () => handleAction(action.name);
 			}
 		});
 

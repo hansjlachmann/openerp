@@ -10,7 +10,7 @@
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
 	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
-	import { shortcuts, createShortcutMap } from '$lib/utils/shortcuts';
+	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
@@ -114,6 +114,7 @@
 
 	// Focus the configured field when page opens in edit mode (only once per new record)
 	$effect(() => {
+		if (!page?.page) return; // Guard during cleanup
 		if (editMode && page.page.focus_field && !initialFocusDone) {
 			initialFocusDone = true;
 			// Use longer timeout to ensure modal animation completes and DOM is ready
@@ -132,6 +133,7 @@
 
 	// Load customizations from localStorage on mount
 	$effect(() => {
+		if (!page?.page) return; // Guard during cleanup
 		const userId = $currentUser?.user_id || 'anonymous';
 		fieldCustomizations = loadPageCustomizations<Record<string, ItemCustomization>>(
 			userId,
@@ -247,9 +249,14 @@
 	const shortcutMap = $derived(() => {
 		const map: Record<string, () => void> = {};
 
+		// Guard against page being undefined during cleanup
+		if (!page?.page) return map;
+
 		page.page.actions?.forEach((action) => {
 			if (action.shortcut && action.enabled !== false) {
-				map[action.shortcut] = () => handleAction(action.name);
+				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
+				const normalizedShortcut = normalizeShortcut(action.shortcut);
+				map[normalizedShortcut] = () => handleAction(action.name);
 			}
 		});
 
@@ -271,7 +278,7 @@
 
 	// Get customized sections (fields reorganized by user preferences)
 	const customizedSections = $derived(() => {
-		if (!page.page.layout.sections) return [];
+		if (!page?.page?.layout?.sections) return [];
 
 		// Create a map of section names to fields
 		const sectionMap = new Map<string, Field[]>();
