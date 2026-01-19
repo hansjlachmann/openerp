@@ -738,19 +738,16 @@
 		} catch (err) {
 			console.error('Error saving modal record:', err);
 			const message = err instanceof Error ? err.message : 'Failed to save record';
+			toast.error(message);
 
 			// Block further edits if this was a new record that failed to save
 			// (likely because the record already exists)
 			if (modalIsNewRecord) {
-				toast.error(message);
 				modalSaveBlocked = true;
 				modalSaveBlockedMessage = message;
-				return false; // Save failed
 			}
 
-			// For existing records, re-throw so CardPage can catch and revert
-			modalSaving = false;
-			throw err;
+			return false; // Save failed
 		} finally {
 			modalSaving = false;
 		}
