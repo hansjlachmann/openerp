@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
@@ -28,20 +29,20 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	pageIDStr := c.Params("id")
 	pageID, err := strconv.Atoi(pageIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(apitypes.NewErrorResponse("Invalid page ID"))
+		return c.Status(fiber.StatusBadRequest).JSON(apitypes.NewErrorResponse(apperrors.InvalidPageID().Message("en-US")))
 	}
 
 	// Get page definition from registry
 	registry := pages.GetRegistry()
 	pageDef, err := registry.GetPage(pageID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(fmt.Sprintf("Page %d not found", pageID)))
+		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(apperrors.PageNotFound(pageIDStr).Message("en-US")))
 	}
 
 	// Get current session for captions
 	sess := session.GetCurrent()
 	if sess == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	// Get table metadata for primary key info
@@ -137,7 +138,7 @@ func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
 	registry := pages.GetRegistry()
 	menuDef := registry.GetMenu()
 	if menuDef == nil {
-		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse("Menu not found"))
+		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(apperrors.MenuNotFound().Message("en-US")))
 	}
 
 	return c.JSON(apitypes.NewSuccessResponse(menuDef))
