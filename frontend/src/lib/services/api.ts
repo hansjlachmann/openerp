@@ -8,6 +8,19 @@ import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handle
 
 const API_BASE = '/api';
 
+// Lookup data structure (matches backend LookupData)
+interface LookupColumn {
+	source: string;
+	width: number;
+}
+
+interface LookupData {
+	columns?: LookupColumn[];
+	rows?: Array<{ _key: string; [key: string]: any }>;
+	simple?: Record<string, string>;
+	search_timeout?: number;
+}
+
 // Helper to build query string from filters
 function buildQueryString(options?: ListOptions): string {
 	if (!options) return '';
@@ -92,8 +105,8 @@ export const api = {
 		return result.data?.options || {};
 	},
 
-	async getTableOptionsAndLookups(tableName: string): Promise<{ options: Record<string, Record<string, string>>; lookups: Record<string, Record<string, string>> }> {
-		// Fast endpoint that returns both options and lookup metadata (no records)
+	async getTableOptionsAndLookups(tableName: string): Promise<{ options: Record<string, Record<string, string>>; lookups: Record<string, LookupData> }> {
+		// Fast endpoint that returns both options and lookup data (includes columns, rows for advanced lookups)
 		if (!tableName) {
 			console.warn('getTableOptionsAndLookups called with empty tableName');
 			return { options: {}, lookups: {} };
