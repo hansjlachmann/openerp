@@ -32,6 +32,7 @@
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
+		onclose?: () => void; // Callback when closing the card
 		saveBlocked?: boolean; // Block editing due to save error (e.g., record already exists)
 		saveBlockedMessage?: string; // Error message to display when blocked
 		onclearerror?: () => void; // Callback to clear the error state
@@ -55,6 +56,7 @@
 		lookups = {},
 		onaction,
 		onsave,
+		onclose,
 		saveBlocked = false,
 		saveBlockedMessage = '',
 		onclearerror,
@@ -259,6 +261,11 @@
 			if (canNavigateLast) map['Ctrl+End'] = () => onNavigateLast?.();
 		}
 
+		// Add Escape to close
+		if (onclose) {
+			map['Escape'] = () => onclose();
+		}
+
 		return map;
 	});
 
@@ -342,7 +349,7 @@
 		/>
 	{/if}
 
-	<PageHeader title={page.page.caption}>
+	<PageHeader title={page.page.caption} {onclose}>
 		<svelte:fragment slot="leftActions">
 			<!-- Save state indicator - fixed width container to prevent layout shift -->
 			<div class="save-state-container">

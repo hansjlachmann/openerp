@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/filters"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -19,12 +20,18 @@ import (
 
 // TablesHandler handles table-related API requests
 type TablesHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	dbType database.DBType
 }
 
-// NewTablesHandler creates a new tables handler
+// NewTablesHandler creates a new tables handler (defaults to SQLite)
 func NewTablesHandler(db *sql.DB) *TablesHandler {
-	return &TablesHandler{db: db}
+	return NewTablesHandlerWithDBType(db, database.DBTypeSQLite)
+}
+
+// NewTablesHandlerWithDBType creates a new tables handler with explicit database type
+func NewTablesHandlerWithDBType(db *sql.DB, dbType database.DBType) *TablesHandler {
+	return &TablesHandler{db: db, dbType: dbType}
 }
 
 // getTable creates a table instance by name using the registry
@@ -34,7 +41,7 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 		return nil, apperrors.TableNotFound(tableName)
 	}
 	table := factory()
-	table.Init(h.db, company)
+	table.InitWithDBType(h.db, company, h.dbType)
 	return table, nil
 }
 
@@ -64,7 +71,7 @@ func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map
 		}
 
 		relTable := relFactory()
-		relTable.Init(h.db, company)
+		relTable.InitWithDBType(h.db, company, h.dbType)
 
 		lookup := &LookupData{
 			Rows:          []map[string]interface{}{},

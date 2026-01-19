@@ -9,18 +9,25 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 // PreferencesHandler handles user preferences API requests
 type PreferencesHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	dbType database.DBType
 }
 
-// NewPreferencesHandler creates a new preferences handler
+// NewPreferencesHandler creates a new preferences handler (defaults to SQLite)
 func NewPreferencesHandler(db *sql.DB) *PreferencesHandler {
-	return &PreferencesHandler{db: db}
+	return NewPreferencesHandlerWithDBType(db, database.DBTypeSQLite)
+}
+
+// NewPreferencesHandlerWithDBType creates a new preferences handler with explicit database type
+func NewPreferencesHandlerWithDBType(db *sql.DB, dbType database.DBType) *PreferencesHandler {
+	return &PreferencesHandler{db: db, dbType: dbType}
 }
 
 // GetPreferences returns user preferences for a specific page and type
@@ -41,7 +48,7 @@ func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 
 	// Query preferences for this user, page, and type
 	var prefs tables.UserPreferences
-	prefs.Init(h.db, "") // No company context
+	prefs.InitWithDBType(h.db, "", h.dbType) // No company context
 
 	// Set filters
 	prefs.SetFilter("user_id", userID)
@@ -108,7 +115,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 
 	// Check if preference already exists
 	var pref tables.UserPreferences
-	pref.Init(h.db, "")
+	pref.InitWithDBType(h.db, "", h.dbType)
 
 	exists := pref.GetByPK(
 		types.NewCode(userID),
@@ -168,7 +175,7 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 
 	// Find and delete the preference
 	var pref tables.UserPreferences
-	pref.Init(h.db, "")
+	pref.InitWithDBType(h.db, "", h.dbType)
 
 	if !pref.GetByPK(
 		types.NewCode(userID),

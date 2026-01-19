@@ -13,6 +13,7 @@ type Manager struct {
 	db       *database.Database
 	registry interface {
 		InitializeCompanyTables(db *sql.DB, companyName string) error
+		InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error
 		GetTableCount() int
 	}
 }
@@ -20,6 +21,7 @@ type Manager struct {
 // NewManager creates a new company manager
 func NewManager(db *database.Database, registry interface {
 	InitializeCompanyTables(db *sql.DB, companyName string) error
+	InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error
 	GetTableCount() int
 }) *Manager {
 	return &Manager{
@@ -52,7 +54,7 @@ func (m *Manager) CreateCompany(name string) error {
 	if m.registry != nil {
 		tableCount := m.registry.GetTableCount()
 		if tableCount > 0 {
-			err = m.registry.InitializeCompanyTables(m.db.GetConnection(), name)
+			err = m.registry.InitializeCompanyTablesWithDBType(m.db.GetConnection(), name, m.db.GetDBType())
 			if err != nil {
 				// Rollback: delete the company if table initialization fails
 				m.db.GetConnection().Exec(`DELETE FROM "Company" WHERE name = $1`, name)
@@ -103,7 +105,7 @@ func (m *Manager) EnterCompany(name string) error {
 			// Sync tables for each company
 			fmt.Println("\nSynchronizing tables across all companies...")
 			for _, companyName := range companies {
-				err = m.registry.InitializeCompanyTables(m.db.GetConnection(), companyName)
+				err = m.registry.InitializeCompanyTablesWithDBType(m.db.GetConnection(), companyName, m.db.GetDBType())
 				if err != nil {
 					return fmt.Errorf("failed to sync tables for company '%s': %w", companyName, err)
 				}

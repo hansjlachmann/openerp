@@ -13,6 +13,8 @@ type Table interface {
 
 	// Initialization - must be called before any operations
 	Init(db database.Executor, company string)
+	// InitWithDBType initializes with explicit database type (required for PostgreSQL)
+	InitWithDBType(db database.Executor, company string, dbType database.DBType)
 
 	// CRUD operations (BC/NAV style)
 	// Get retrieves a record by primary key, returns true if found
