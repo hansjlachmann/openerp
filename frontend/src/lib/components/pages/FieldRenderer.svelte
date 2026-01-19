@@ -180,9 +180,9 @@
 			{:else if isAdvancedLookup && lookups.columns && lookups.rows}
 				<!-- Advanced lookup with columns - render as table-style dropdown -->
 				<LookupDropdown
-					columns={lookups.columns}
-					rows={lookups.rows}
-					bind:value
+					columns={[...lookups.columns]}
+					rows={[...lookups.rows]}
+					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
 					searchTimeout={lookups.search_timeout}

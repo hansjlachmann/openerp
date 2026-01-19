@@ -15,7 +15,7 @@
 	interface Props {
 		columns: LookupColumn[];
 		rows: LookupRow[];
-		value?: string;
+		value: string;
 		fieldName?: string; // Field name for error messages
 		captions?: Record<string, string>; // Field captions for column headers
 		searchTimeout?: number; // Auto-clear search timeout in ms (default 1500)
@@ -29,7 +29,7 @@
 	let {
 		columns,
 		rows,
-		value = $bindable(''),
+		value = '',
 		fieldName = '',
 		captions = {},
 		searchTimeout = 1500,

@@ -469,16 +469,14 @@
 					<div class="section-fields">
 						{#each section.fields as field (field.source)}
 							{@const fieldEditable = field.editable !== false && editMode && !saveBlocked}
-							{@const fieldOptions = options[field.source]}
-							{@const fieldLookups = lookups[field.source]}
 							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
 							<FieldRenderer
 								{field}
 								bind:value={record[field.source]}
 								caption={getFieldCaption(field.source, captions, field.caption)}
 								editable={fieldEditable}
-								options={fieldOptions}
-								lookups={fieldLookups}
+								options={options[field.source]}
+								lookups={lookups[field.source]}
 								fieldCaptions={captions}
 								tabindex={fieldTabIndex}
 								onblur={handleFieldBlur}
