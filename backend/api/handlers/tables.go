@@ -472,6 +472,11 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
+	// Check for empty ID
+	if id == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
+	}
+
 	// Create table instance
 	table, err := h.getTable(tableName, company)
 	if err != nil {
@@ -551,6 +556,11 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
+
+	// Check for empty ID
+	if id == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
+	}
 
 	// Create table instance
 	table, err := h.getTable(tableName, company)
