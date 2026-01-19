@@ -4,6 +4,7 @@ package tables
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -60,6 +61,7 @@ type CustomerBase struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -113,9 +115,14 @@ func (t *CustomerBase) GetTableName() string {
 	return CustomerTableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *CustomerBase) GetTableSchema() string {
 	return GetCustomerTableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *CustomerBase) GetPostgresTableSchema() string {
+	return GetCustomerPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -156,6 +163,27 @@ func GetCustomerTableSchema() string {
 	`
 }
 
+// GetCustomerPostgresTableSchema returns the PostgreSQL schema
+func GetCustomerPostgresTableSchema() string {
+	return `
+		no VARCHAR(20) PRIMARY KEY,
+		name VARCHAR(50),
+		address VARCHAR(50),
+		post_code VARCHAR(20),
+		city VARCHAR(50),
+		phonenumber VARCHAR(30),
+		payment_terms_code VARCHAR(10),
+		status INTEGER CHECK (status >= 0 AND status <= 4),
+		credit_limit NUMERIC,
+		last_order_date DATE,
+		created_at TIMESTAMP,
+		profile_photo BYTEA,
+		balance_lcy NUMERIC,
+		sales_lcy NUMERIC,
+		no_of_ledger_entries INTEGER
+	`
+}
+
 // ========================================
 // Translation Support (BC/NAV CaptionML)
 // ========================================
@@ -178,11 +206,22 @@ func (t *CustomerBase) GetOptionCaption(fieldName, optionValue, language string)
 	return ts.OptionCaption("Customer", fieldName, optionValue, language)
 }
 
-// CreateTable creates the Customer table for the specified company
+// CreateTable creates the Customer table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *CustomerBase) CreateTable(db database.Executor, company string) error {
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the Customer table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *CustomerBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, CustomerTableName)
-	schema := GetCustomerTableSchema()
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = GetCustomerPostgresTableSchema()
+	} else {
+		schema = GetCustomerTableSchema()
+	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -203,8 +242,14 @@ func (t *CustomerBase) CreateTable(db database.Executor, company string) error {
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *CustomerBase) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new Customer record with database context and type
+func (t *CustomerBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 }
 
@@ -224,6 +269,19 @@ func (t *CustomerBase) StoreOldValues() {
 	t.oldValues["last_order_date"] = t.Last_order_date
 	t.oldValues["created_at"] = t.Created_at
 	t.oldValues["profile_photo"] = t.Profile_photo
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *CustomerBase) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -271,10 +329,18 @@ func (t *CustomerBase) GetByPK(no types.Code) bool {
 	var created_atNull sql.NullString
 	var profile_photoVal []byte
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE 1=1 AND no = ?`, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		no,
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&noNull,
 		&nameNull,
 		&addressNull,
@@ -328,10 +394,10 @@ func (t *CustomerBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`INSERT INTO "%s" (no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName),
+
+	// Collect arguments for INSERT
+	args := []interface{}{
 		t.No,
 		t.Name,
 		t.Address,
@@ -344,7 +410,15 @@ func (t *CustomerBase) Insert(runTrigger bool) bool {
 		t.Last_order_date,
 		t.Created_at,
 		t.Profile_photo,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Customer: %v\n", err)
 		return false
@@ -361,7 +435,6 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 
 	// Build dynamic SQL based on field tracking
@@ -449,12 +522,15 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 	values = append(values, t.No)
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(`UPDATE "%s" SET %s WHERE no = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE no = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer: %v\n", err)
 		return false
@@ -543,12 +619,20 @@ func (t *CustomerBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`DELETE FROM "%s" WHERE no = ?`, tableName),
+
+	// Collect arguments for DELETE
+	args := []interface{}{
 		t.No,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE no = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete Customer: %v\n", err)
 		return false
@@ -624,6 +708,9 @@ func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decim
 
 	query := fmt.Sprintf(`SELECT COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
 
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
 	var sumStr string
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
@@ -651,6 +738,9 @@ func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
 
 	query := fmt.Sprintf(`SELECT COALESCE(SUM(sales_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
 
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
 	var sumStr string
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
@@ -677,6 +767,9 @@ func (t *CustomerBase) calcCountCustomerLedgerEntry() int {
 	}
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -863,6 +956,9 @@ func (t *CustomerBase) FindFirst() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var noNull sql.NullString
 	var nameNull sql.NullString
 	var addressNull sql.NullString
@@ -925,6 +1021,9 @@ func (t *CustomerBase) FindLast() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var noNull sql.NullString
 	var nameNull sql.NullString
 	var addressNull sql.NullString
@@ -986,6 +1085,9 @@ func (t *CustomerBase) Count() int {
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
 
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
@@ -1005,13 +1107,15 @@ func (t *CustomerBase) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1146,13 +1250,15 @@ func (t *CustomerBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1167,6 +1273,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 		record := &CustomerBase{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 		var noNull sql.NullString
@@ -1280,6 +1387,9 @@ func (t *CustomerBase) ModifyAll(fieldName string, newValue interface{}) int {
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
 
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
+
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify all Customer: %v\n", err)
@@ -1298,6 +1408,9 @@ func (t *CustomerBase) DeleteAll() int {
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
@@ -1542,10 +1655,24 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		return t.OnValidate_Created_at()
 	case "profile_photo":
 		// Set field value
-		if v, ok := value.([]byte); ok {
+		// Accept nil, []byte, or base64-encoded string
+		if value == nil {
+			t.Profile_photo = nil
+		} else if v, ok := value.([]byte); ok {
 			t.Profile_photo = v
+		} else if s, ok := value.(string); ok {
+			if s == "" {
+				t.Profile_photo = nil
+			} else {
+				// Try base64 decode
+				decoded, err := base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					return fmt.Errorf("invalid base64 value for field profile_photo: %w", err)
+				}
+				t.Profile_photo = decoded
+			}
 		} else {
-			return fmt.Errorf("invalid type for field profile_photo (expected []byte)")
+			return fmt.Errorf("invalid type for field profile_photo (expected []byte, string, or nil)")
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Profile_photo()

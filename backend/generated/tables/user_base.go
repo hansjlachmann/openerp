@@ -14,7 +14,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// UserBase represents Table 2000020000: User
+// UserBase represents Table 5100: User
 // This is the generated base struct - embed in your wrapper struct and override Init
 type UserBase struct {
 	User_id types.Code `db:"user_id,pk"`
@@ -29,6 +29,7 @@ type UserBase struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -50,7 +51,7 @@ type UserBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const UserTableID = 2000020000
+const UserTableID = 5100
 const UserTableName = "User"
 
 // GetTableID returns the table ID (for Object Registry)
@@ -63,9 +64,14 @@ func (t *UserBase) GetTableName() string {
 	return UserTableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *UserBase) GetTableSchema() string {
 	return GetUserTableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *UserBase) GetPostgresTableSchema() string {
+	return GetUserPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -99,6 +105,20 @@ func GetUserTableSchema() string {
 	`
 }
 
+// GetUserPostgresTableSchema returns the PostgreSQL schema
+func GetUserPostgresTableSchema() string {
+	return `
+		user_id VARCHAR(50) PRIMARY KEY,
+		user_name VARCHAR(100),
+		email VARCHAR(100),
+		password_hash TEXT,
+		language VARCHAR(10),
+		active BOOLEAN DEFAULT true,
+		created_at TIMESTAMP,
+		last_login TIMESTAMP
+	`
+}
+
 // ========================================
 // Translation Support (BC/NAV CaptionML)
 // ========================================
@@ -115,11 +135,22 @@ func (t *UserBase) GetFieldCaption(fieldName, language string) string {
 	return ts.FieldCaption("User", fieldName, language)
 }
 
-// CreateTable creates the User table for the specified company
+// CreateTable creates the User table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *UserBase) CreateTable(db database.Executor, company string) error {
-	tableName := fmt.Sprintf("%s$%s", company, UserTableName)
-	schema := GetUserTableSchema()
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the User table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *UserBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := UserTableName
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = GetUserPostgresTableSchema()
+	} else {
+		schema = GetUserTableSchema()
+	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -148,8 +179,14 @@ func (t *UserBase) CreateTable(db database.Executor, company string) error {
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *UserBase) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new User record with database context and type
+func (t *UserBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 	t.Active = true
 }
@@ -166,6 +203,19 @@ func (t *UserBase) StoreOldValues() {
 	t.oldValues["active"] = t.Active
 	t.oldValues["created_at"] = t.Created_at
 	t.oldValues["last_login"] = t.Last_login
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *UserBase) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -199,26 +249,34 @@ func (t *UserBase) Get(primaryKey interface{}) bool {
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
 func (t *UserBase) GetByPK(user_id types.Code) bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	var user_idNull sql.NullString
 	var user_nameNull sql.NullString
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE 1=1 AND user_id = ?`, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		user_id,
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&user_idNull,
 		&user_nameNull,
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
-		&activeInt,
+		&activeBool,
 		&created_atNull,
 		&last_loginNull,
 	)
@@ -239,7 +297,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewText(languageNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
 
@@ -258,10 +316,10 @@ func (t *UserBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
+	tableName := UserTableName
 
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`INSERT INTO "%s" (user_id, user_name, email, password_hash, language, active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName),
+	// Collect arguments for INSERT
+	args := []interface{}{
 		t.User_id,
 		t.User_name,
 		t.Email,
@@ -270,7 +328,15 @@ func (t *UserBase) Insert(runTrigger bool) bool {
 		t.Active,
 		t.Created_at,
 		t.Last_login,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, user_name, email, password_hash, language, active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert User: %v\n", err)
 		return false
@@ -287,8 +353,7 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -351,12 +416,15 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 	values = append(values, t.User_id)
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify User: %v\n", err)
 		return false
@@ -426,12 +494,20 @@ func (t *UserBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
+	tableName := UserTableName
 
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?`, tableName),
+	// Collect arguments for DELETE
+	args := []interface{}{
 		t.User_id,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete User: %v\n", err)
 		return false
@@ -615,17 +691,20 @@ func (t *UserBase) getOrderByClause() string {
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *UserBase) FindFirst() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var user_idNull sql.NullString
 	var user_nameNull sql.NullString
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
 
@@ -635,7 +714,7 @@ func (t *UserBase) FindFirst() bool {
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
-		&activeInt,
+		&activeBool,
 		&created_atNull,
 		&last_loginNull,
 	)
@@ -654,7 +733,7 @@ func (t *UserBase) FindFirst() bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewText(languageNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
 
@@ -667,17 +746,20 @@ func (t *UserBase) FindFirst() bool {
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *UserBase) FindLast() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var user_idNull sql.NullString
 	var user_nameNull sql.NullString
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
 
@@ -687,7 +769,7 @@ func (t *UserBase) FindLast() bool {
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
-		&activeInt,
+		&activeBool,
 		&created_atNull,
 		&last_loginNull,
 	)
@@ -706,7 +788,7 @@ func (t *UserBase) FindLast() bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewText(languageNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
 
@@ -718,10 +800,13 @@ func (t *UserBase) FindLast() bool {
 
 // Count returns the number of records matching current filters (BC/NAV style)
 func (t *UserBase) Count() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -742,13 +827,15 @@ func (t *UserBase) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -817,7 +904,7 @@ func (t *UserBase) Next(steps ...int) bool {
 		var emailNull sql.NullString
 		var password_hashNull sql.NullString
 		var languageNull sql.NullString
-		var activeInt int
+		var activeBool sql.NullBool
 		var created_atNull sql.NullString
 		var last_loginNull sql.NullString
 
@@ -827,7 +914,7 @@ func (t *UserBase) Next(steps ...int) bool {
 			&emailNull,
 			&password_hashNull,
 			&languageNull,
-			&activeInt,
+			&activeBool,
 			&created_atNull,
 			&last_loginNull,
 		)
@@ -845,7 +932,7 @@ func (t *UserBase) Next(steps ...int) bool {
 		t.Email = types.NewText(emailNull.String)
 		t.Password_hash = types.NewText(password_hashNull.String)
 		t.Language = types.NewText(languageNull.String)
-		t.Active = activeInt != 0
+		t.Active = activeBool.Bool
 		t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 		t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
 
@@ -873,13 +960,15 @@ func (t *UserBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -894,6 +983,7 @@ func (t *UserBase) FindSetBuffered() bool {
 		record := &UserBase{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 		var user_idNull sql.NullString
@@ -901,7 +991,7 @@ func (t *UserBase) FindSetBuffered() bool {
 		var emailNull sql.NullString
 		var password_hashNull sql.NullString
 		var languageNull sql.NullString
-		var activeInt int
+		var activeBool sql.NullBool
 		var created_atNull sql.NullString
 		var last_loginNull sql.NullString
 
@@ -911,7 +1001,7 @@ func (t *UserBase) FindSetBuffered() bool {
 			&emailNull,
 			&password_hashNull,
 			&languageNull,
-			&activeInt,
+			&activeBool,
 			&created_atNull,
 			&last_loginNull,
 		)
@@ -927,7 +1017,7 @@ func (t *UserBase) FindSetBuffered() bool {
 		record.Email = types.NewText(emailNull.String)
 		record.Password_hash = types.NewText(password_hashNull.String)
 		record.Language = types.NewText(languageNull.String)
-		record.Active = activeInt != 0
+		record.Active = activeBool.Bool
 		record.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 		record.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
 
@@ -981,7 +1071,7 @@ func (t *UserBase) IsEmpty() bool {
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
 func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -989,6 +1079,9 @@ func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
+
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
@@ -1003,11 +1096,14 @@ func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
 func (t *UserBase) DeleteAll() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserTableName)
+	tableName := UserTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {

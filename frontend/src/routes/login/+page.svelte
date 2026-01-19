@@ -14,6 +14,8 @@
 	let loading = $state(false);
 	let needsInitialSetup = $state(false);
 	let setupMode = $state(false);
+	let showNewCompanyForm = $state(false);
+	let newCompanyName = $state('');
 
 	// Setup form fields
 	let setupUserID = $state('');
@@ -166,9 +168,43 @@
 		if (event.key === 'Enter') {
 			if (setupMode) {
 				handleInitialSetup();
+			} else if (showNewCompanyForm) {
+				handleCreateCompany();
 			} else {
 				handleLogin();
 			}
+		}
+	}
+
+	async function handleCreateCompany() {
+		error = '';
+		if (!newCompanyName.trim()) {
+			error = 'Please enter a company name';
+			return;
+		}
+
+		loading = true;
+		try {
+			const response = await api.createCompany(newCompanyName.trim());
+			if (response.success && response.data) {
+				toast.success(`Company "${response.data.name}" created successfully`);
+				// Refresh companies list
+				const listResponse = await api.listCompanies();
+				if (listResponse.success && listResponse.data) {
+					companies = listResponse.data;
+					company = response.data.name;
+				}
+				showNewCompanyForm = false;
+				newCompanyName = '';
+			} else {
+				error = response.error || 'Failed to create company';
+				toast.error(error);
+			}
+		} catch (err: any) {
+			error = err.message || 'An error occurred';
+			toast.error(error);
+		} finally {
+			loading = false;
 		}
 	}
 </script>
@@ -255,24 +291,57 @@
 			<button class="secondary-button" onclick={() => { setupMode = false; needsInitialSetup = false; }} disabled={loading}>
 				Back to Login
 			</button>
+		{:else if showNewCompanyForm}
+			<!-- New Company Form -->
+			<div class="form-group">
+				<label for="new-company">Company Name</label>
+				<input
+					id="new-company"
+					type="text"
+					bind:value={newCompanyName}
+					placeholder="e.g., my-company"
+					disabled={loading}
+					onkeypress={handleKeyPress}
+					autofocus
+				/>
+				<small class="help-text">Letters, numbers, underscores, and hyphens only</small>
+			</div>
+
+			<button class="login-button" onclick={handleCreateCompany} disabled={loading}>
+				{loading ? 'Creating...' : 'Create Company'}
+			</button>
+
+			<button class="secondary-button" onclick={() => { showNewCompanyForm = false; error = ''; }} disabled={loading}>
+				Back to Login
+			</button>
 		{:else}
 			<!-- Login Form -->
 			<div class="form-group">
 				<label for="company">Company</label>
-				<select
-					id="company"
-					bind:value={company}
-					disabled={loading || companies.length === 0}
-					class="company-select"
-				>
-					{#if companies.length === 0}
-						<option value="">Loading companies...</option>
-					{:else}
-						{#each companies as companyName}
-							<option value={companyName}>{companyName}</option>
-						{/each}
-					{/if}
-				</select>
+				<div class="company-row">
+					<select
+						id="company"
+						bind:value={company}
+						disabled={loading || companies.length === 0}
+						class="company-select"
+					>
+						{#if companies.length === 0}
+							<option value="">Loading companies...</option>
+						{:else}
+							{#each companies as companyName}
+								<option value={companyName}>{companyName}</option>
+							{/each}
+						{/if}
+					</select>
+					<button
+						class="new-company-btn"
+						onclick={() => { showNewCompanyForm = true; error = ''; }}
+						disabled={loading}
+						title="Create new company"
+					>
+						+
+					</button>
+				</div>
 			</div>
 
 			<div class="form-group">
@@ -572,6 +641,53 @@
 	}
 
 	:global(.dark) .setup-prompt p {
+		color: #9ca3af;
+	}
+
+	.company-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.company-row .company-select {
+		flex: 1;
+	}
+
+	.new-company-btn {
+		padding: 0.75rem 1rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 4px;
+		font-size: 1.25rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: transform 0.1s ease-in-out, box-shadow 0.15s ease-in-out;
+		line-height: 1;
+	}
+
+	:global(.dark) .new-company-btn {
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	}
+
+	.new-company-btn:hover:not(:disabled) {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+
+	.new-company-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.help-text {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: 0.75rem;
+		color: #718096;
+	}
+
+	:global(.dark) .help-text {
 		color: #9ca3af;
 	}
 </style>

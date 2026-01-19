@@ -8,10 +8,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Database represents a SQLite database connection with session state
+// DBType represents the type of database backend
+type DBType string
+
+const (
+	DBTypeSQLite   DBType = "sqlite"
+	DBTypePostgres DBType = "postgres"
+)
+
+// Database represents a database connection with session state
 type Database struct {
 	conn           *sql.DB
-	path           string
+	dbType         DBType
+	connString     string // connection string (path for SQLite, connection URL for Postgres)
 	currentCompany string // Per-connection state for thread safety
 }
 
@@ -57,7 +66,8 @@ func CreateDatabase(path string) (*Database, error) {
 
 	db := &Database{
 		conn:           conn,
-		path:           path,
+		dbType:         DBTypeSQLite,
+		connString:     path,
 		currentCompany: "",
 	}
 
@@ -106,7 +116,8 @@ func OpenDatabase(path string) (*Database, error) {
 
 	db := &Database{
 		conn:           conn,
-		path:           path,
+		dbType:         DBTypeSQLite,
+		connString:     path,
 		currentCompany: "",
 	}
 
@@ -148,9 +159,14 @@ func (db *Database) SetCurrentCompany(company string) {
 	db.currentCompany = company
 }
 
-// GetDatabasePath returns the database file path
+// GetDatabasePath returns the database connection string (path for SQLite, connection URL for Postgres)
 func (db *Database) GetDatabasePath() string {
-	return db.path
+	return db.connString
+}
+
+// GetDBType returns the database type (sqlite or postgres)
+func (db *Database) GetDBType() DBType {
+	return db.dbType
 }
 
 // GetFullTableName returns the company-prefixed table name
@@ -169,10 +185,20 @@ func (db *Database) TableExists(tableName string) (bool, error) {
 	}
 
 	var name string
-	err := db.conn.QueryRow(`
-		SELECT name FROM sqlite_master
-		WHERE type='table' AND name=?
-	`, tableName).Scan(&name)
+	var err error
+
+	switch db.dbType {
+	case DBTypePostgres:
+		err = db.conn.QueryRow(`
+			SELECT table_name FROM information_schema.tables
+			WHERE table_schema = 'public' AND table_name = $1
+		`, tableName).Scan(&name)
+	default: // SQLite
+		err = db.conn.QueryRow(`
+			SELECT name FROM sqlite_master
+			WHERE type='table' AND name=?
+		`, tableName).Scan(&name)
+	}
 
 	if err == sql.ErrNoRows {
 		return false, nil

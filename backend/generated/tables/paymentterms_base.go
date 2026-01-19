@@ -23,6 +23,7 @@ type PaymentTermsBase struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -57,9 +58,14 @@ func (t *PaymentTermsBase) GetTableName() string {
 	return PaymentTermsTableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *PaymentTermsBase) GetTableSchema() string {
 	return GetPaymentTermsTableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *PaymentTermsBase) GetPostgresTableSchema() string {
+	return GetPaymentTermsPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -88,6 +94,15 @@ func GetPaymentTermsTableSchema() string {
 	`
 }
 
+// GetPaymentTermsPostgresTableSchema returns the PostgreSQL schema
+func GetPaymentTermsPostgresTableSchema() string {
+	return `
+		code VARCHAR(10) PRIMARY KEY,
+		description VARCHAR(30),
+		active BOOLEAN DEFAULT true
+	`
+}
+
 // ========================================
 // Translation Support (BC/NAV CaptionML)
 // ========================================
@@ -104,11 +119,22 @@ func (t *PaymentTermsBase) GetFieldCaption(fieldName, language string) string {
 	return ts.FieldCaption("Payment Terms", fieldName, language)
 }
 
-// CreateTable creates the Payment Terms table for the specified company
+// CreateTable creates the Payment Terms table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *PaymentTermsBase) CreateTable(db database.Executor, company string) error {
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the Payment Terms table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *PaymentTermsBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, PaymentTermsTableName)
-	schema := GetPaymentTermsTableSchema()
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = GetPaymentTermsPostgresTableSchema()
+	} else {
+		schema = GetPaymentTermsTableSchema()
+	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -129,8 +155,14 @@ func (t *PaymentTermsBase) CreateTable(db database.Executor, company string) err
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *PaymentTermsBase) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new PaymentTerms record with database context and type
+func (t *PaymentTermsBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 	t.Active = true
 }
@@ -142,6 +174,19 @@ func (t *PaymentTermsBase) StoreOldValues() {
 	t.oldValues["code"] = t.Code
 	t.oldValues["description"] = t.Description
 	t.oldValues["active"] = t.Active
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *PaymentTermsBase) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -178,15 +223,23 @@ func (t *PaymentTermsBase) GetByPK(code types.Code) bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 	var codeNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE 1=1 AND code = ?`, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		code,
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&codeNull,
 		&descriptionNull,
-		&activeInt,
+		&activeBool,
 	)
 
 	if err != nil {
@@ -202,7 +255,7 @@ func (t *PaymentTermsBase) GetByPK(code types.Code) bool {
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -219,14 +272,22 @@ func (t *PaymentTermsBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`INSERT INTO "%s" (code, description, active) VALUES (?, ?, ?)`, tableName),
+
+	// Collect arguments for INSERT
+	args := []interface{}{
 		t.Code,
 		t.Description,
 		t.Active,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, active) VALUES (?, ?, ?)`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Payment Terms: %v\n", err)
 		return false
@@ -243,7 +304,6 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 
 	// Build dynamic SQL based on field tracking
@@ -277,12 +337,15 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Code)
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(`UPDATE "%s" SET %s WHERE code = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE code = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Payment Terms: %v\n", err)
 		return false
@@ -327,12 +390,20 @@ func (t *PaymentTermsBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`DELETE FROM "%s" WHERE code = ?`, tableName),
+
+	// Collect arguments for DELETE
+	args := []interface{}{
 		t.Code,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE code = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete Payment Terms: %v\n", err)
 		return false
@@ -521,14 +592,17 @@ func (t *PaymentTermsBase) FindFirst() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var codeNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&codeNull,
 		&descriptionNull,
-		&activeInt,
+		&activeBool,
 	)
 
 	if err != nil {
@@ -542,7 +616,7 @@ func (t *PaymentTermsBase) FindFirst() bool {
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -558,14 +632,17 @@ func (t *PaymentTermsBase) FindLast() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var codeNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeInt int
+	var activeBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&codeNull,
 		&descriptionNull,
-		&activeInt,
+		&activeBool,
 	)
 
 	if err != nil {
@@ -579,7 +656,7 @@ func (t *PaymentTermsBase) FindLast() bool {
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeInt != 0
+	t.Active = activeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -593,6 +670,9 @@ func (t *PaymentTermsBase) Count() int {
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -613,13 +693,15 @@ func (t *PaymentTermsBase) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -685,12 +767,12 @@ func (t *PaymentTermsBase) Next(steps ...int) bool {
 		// Scan the row
 		var codeNull sql.NullString
 		var descriptionNull sql.NullString
-		var activeInt int
+		var activeBool sql.NullBool
 
 		err := t.currentRows.Scan(
 			&codeNull,
 			&descriptionNull,
-			&activeInt,
+			&activeBool,
 		)
 
 		if err != nil {
@@ -703,7 +785,7 @@ func (t *PaymentTermsBase) Next(steps ...int) bool {
 		// Populate fields
 		t.Code = types.NewCode(codeNull.String)
 		t.Description = types.NewText(descriptionNull.String)
-		t.Active = activeInt != 0
+		t.Active = activeBool.Bool
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -729,13 +811,15 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -750,16 +834,17 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 		record := &PaymentTermsBase{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 		var codeNull sql.NullString
 		var descriptionNull sql.NullString
-		var activeInt int
+		var activeBool sql.NullBool
 
 		err := rows.Scan(
 			&codeNull,
 			&descriptionNull,
-			&activeInt,
+			&activeBool,
 		)
 
 		if err != nil {
@@ -770,7 +855,7 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 		// Populate special type fields
 		record.Code = types.NewCode(codeNull.String)
 		record.Description = types.NewText(descriptionNull.String)
-		record.Active = activeInt != 0
+		record.Active = activeBool.Bool
 
 		// Store old values
 		record.StoreOldValues()
@@ -826,6 +911,9 @@ func (t *PaymentTermsBase) ModifyAll(fieldName string, newValue interface{}) int
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
 
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
+
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify all Payment Terms: %v\n", err)
@@ -844,6 +932,9 @@ func (t *PaymentTermsBase) DeleteAll() int {
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {

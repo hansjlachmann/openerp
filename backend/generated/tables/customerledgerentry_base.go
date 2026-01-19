@@ -119,6 +119,7 @@ type CustomerLedgerEntryBase struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -206,9 +207,14 @@ func (t *CustomerLedgerEntryBase) GetTableName() string {
 	return CustomerLedgerEntryTableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *CustomerLedgerEntryBase) GetTableSchema() string {
 	return GetCustomerLedgerEntryTableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *CustomerLedgerEntryBase) GetPostgresTableSchema() string {
+	return GetCustomerLedgerEntryPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -277,6 +283,55 @@ func GetCustomerLedgerEntryTableSchema() string {
 	`
 }
 
+// GetCustomerLedgerEntryPostgresTableSchema returns the PostgreSQL schema
+func GetCustomerLedgerEntryPostgresTableSchema() string {
+	return `
+		entry_no INTEGER PRIMARY KEY,
+		customer_no VARCHAR(20),
+		sell_to_customer_no VARCHAR(20),
+		posting_date DATE,
+		document_date DATE,
+		document_type INTEGER CHECK (document_type >= 0 AND document_type <= 5),
+		document_no VARCHAR(20),
+		external_document_no VARCHAR(20),
+		description VARCHAR(100),
+		currency_code VARCHAR(10),
+		amount NUMERIC,
+		remaining_amount NUMERIC,
+		closed_by_amount NUMERIC,
+		original_amount_lcy NUMERIC,
+		remaining_amt_lcy NUMERIC,
+		amount_lcy NUMERIC,
+		closed_by_amount_lcy NUMERIC,
+		sales_lcy NUMERIC,
+		profit_lcy NUMERIC,
+		inv_discount_lcy NUMERIC,
+		pmt_discount_date DATE,
+		pmt_disc_possible NUMERIC,
+		pmt_disc_given_lcy NUMERIC,
+		customer_posting_group VARCHAR(10),
+		department_code VARCHAR(10),
+		project_code VARCHAR(10),
+		salesperson_code VARCHAR(10),
+		user_id VARCHAR(20),
+		source_code VARCHAR(10),
+		reason_code VARCHAR(10),
+		journal_batch_name VARCHAR(10),
+		transaction_no INTEGER,
+		applies_to_doc_type INTEGER CHECK (applies_to_doc_type >= 0 AND applies_to_doc_type <= 5),
+		applies_to_doc_no VARCHAR(20),
+		applies_to_id VARCHAR(20),
+		open BOOLEAN,
+		positive BOOLEAN,
+		on_hold VARCHAR(3),
+		due_date DATE,
+		closed_by_entry_no INTEGER,
+		closed_at_date DATE,
+		bal_account_type INTEGER CHECK (bal_account_type >= 0 AND bal_account_type <= 4),
+		bal_account_no VARCHAR(20)
+	`
+}
+
 // ========================================
 // Translation Support (BC/NAV CaptionML)
 // ========================================
@@ -299,11 +354,22 @@ func (t *CustomerLedgerEntryBase) GetOptionCaption(fieldName, optionValue, langu
 	return ts.OptionCaption("Customer Ledger Entry", fieldName, optionValue, language)
 }
 
-// CreateTable creates the Customer Ledger Entry table for the specified company
+// CreateTable creates the Customer Ledger Entry table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *CustomerLedgerEntryBase) CreateTable(db database.Executor, company string) error {
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the Customer Ledger Entry table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *CustomerLedgerEntryBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, CustomerLedgerEntryTableName)
-	schema := GetCustomerLedgerEntryTableSchema()
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = GetCustomerLedgerEntryPostgresTableSchema()
+	} else {
+		schema = GetCustomerLedgerEntryTableSchema()
+	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -353,8 +419,14 @@ func (t *CustomerLedgerEntryBase) CreateTable(db database.Executor, company stri
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *CustomerLedgerEntryBase) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new CustomerLedgerEntry record with database context and type
+func (t *CustomerLedgerEntryBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 }
 
@@ -405,6 +477,19 @@ func (t *CustomerLedgerEntryBase) StoreOldValues() {
 	t.oldValues["closed_at_date"] = t.Closed_at_date
 	t.oldValues["bal_account_type"] = t.Bal_account_type
 	t.oldValues["bal_account_no"] = t.Bal_account_no
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *CustomerLedgerEntryBase) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -479,8 +564,8 @@ func (t *CustomerLedgerEntryBase) GetByPK(entry_no int) bool {
 	var applies_to_doc_typeInt int
 	var applies_to_doc_noNull sql.NullString
 	var applies_to_idNull sql.NullString
-	var openInt int
-	var positiveInt int
+	var openBool sql.NullBool
+	var positiveBool sql.NullBool
 	var on_holdNull sql.NullString
 	var due_dateNull sql.NullString
 	var closed_by_entry_noVal int
@@ -488,10 +573,18 @@ func (t *CustomerLedgerEntryBase) GetByPK(entry_no int) bool {
 	var bal_account_typeInt int
 	var bal_account_noNull sql.NullString
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		entry_no,
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&entry_noVal,
 		&customer_noNull,
 		&sell_to_customer_noNull,
@@ -527,8 +620,8 @@ func (t *CustomerLedgerEntryBase) GetByPK(entry_no int) bool {
 		&applies_to_doc_typeInt,
 		&applies_to_doc_noNull,
 		&applies_to_idNull,
-		&openInt,
-		&positiveInt,
+		&openBool,
+		&positiveBool,
 		&on_holdNull,
 		&due_dateNull,
 		&closed_by_entry_noVal,
@@ -583,8 +676,8 @@ func (t *CustomerLedgerEntryBase) GetByPK(entry_no int) bool {
 	t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(applies_to_doc_typeInt)
 	t.Applies_to_doc_no = types.NewCode(applies_to_doc_noNull.String)
 	t.Applies_to_id = types.NewCode(applies_to_idNull.String)
-	t.Open = openInt != 0
-	t.Positive = positiveInt != 0
+	t.Open = openBool.Bool
+	t.Positive = positiveBool.Bool
 	t.On_hold = types.NewCode(on_holdNull.String)
 	t.Due_date, _ = types.NewDateFromString(due_dateNull.String)
 	t.Closed_by_entry_no = closed_by_entry_noVal
@@ -607,10 +700,10 @@ func (t *CustomerLedgerEntryBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`INSERT INTO "%s" (entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName),
+
+	// Collect arguments for INSERT
+	args := []interface{}{
 		t.Entry_no,
 		t.Customer_no,
 		t.Sell_to_customer_no,
@@ -654,7 +747,15 @@ func (t *CustomerLedgerEntryBase) Insert(runTrigger bool) bool {
 		t.Closed_at_date,
 		t.Bal_account_type,
 		t.Bal_account_no,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Customer Ledger Entry: %v\n", err)
 		return false
@@ -671,7 +772,6 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 
 	// Build dynamic SQL based on field tracking
@@ -945,12 +1045,15 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Entry_no)
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(`UPDATE "%s" SET %s WHERE entry_no = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE entry_no = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer Ledger Entry: %v\n", err)
 		return false
@@ -1195,12 +1298,20 @@ func (t *CustomerLedgerEntryBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`DELETE FROM "%s" WHERE entry_no = ?`, tableName),
+
+	// Collect arguments for DELETE
+	args := []interface{}{
 		t.Entry_no,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE entry_no = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete Customer Ledger Entry: %v\n", err)
 		return false
@@ -1389,6 +1500,9 @@ func (t *CustomerLedgerEntryBase) FindFirst() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var customer_noNull sql.NullString
 	var sell_to_customer_noNull sql.NullString
 	var posting_dateNull sql.NullString
@@ -1422,8 +1536,8 @@ func (t *CustomerLedgerEntryBase) FindFirst() bool {
 	var applies_to_doc_typeInt int
 	var applies_to_doc_noNull sql.NullString
 	var applies_to_idNull sql.NullString
-	var openInt int
-	var positiveInt int
+	var openBool sql.NullBool
+	var positiveBool sql.NullBool
 	var on_holdNull sql.NullString
 	var due_dateNull sql.NullString
 	var closed_at_dateNull sql.NullString
@@ -1466,8 +1580,8 @@ func (t *CustomerLedgerEntryBase) FindFirst() bool {
 		&applies_to_doc_typeInt,
 		&applies_to_doc_noNull,
 		&applies_to_idNull,
-		&openInt,
-		&positiveInt,
+		&openBool,
+		&positiveBool,
 		&on_holdNull,
 		&due_dateNull,
 		&t.Closed_by_entry_no,
@@ -1518,8 +1632,8 @@ func (t *CustomerLedgerEntryBase) FindFirst() bool {
 	t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(applies_to_doc_typeInt)
 	t.Applies_to_doc_no = types.NewCode(applies_to_doc_noNull.String)
 	t.Applies_to_id = types.NewCode(applies_to_idNull.String)
-	t.Open = openInt != 0
-	t.Positive = positiveInt != 0
+	t.Open = openBool.Bool
+	t.Positive = positiveBool.Bool
 	t.On_hold = types.NewCode(on_holdNull.String)
 	t.Due_date, _ = types.NewDateFromString(due_dateNull.String)
 	t.Closed_at_date, _ = types.NewDateFromString(closed_at_dateNull.String)
@@ -1540,6 +1654,9 @@ func (t *CustomerLedgerEntryBase) FindLast() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var customer_noNull sql.NullString
 	var sell_to_customer_noNull sql.NullString
 	var posting_dateNull sql.NullString
@@ -1573,8 +1690,8 @@ func (t *CustomerLedgerEntryBase) FindLast() bool {
 	var applies_to_doc_typeInt int
 	var applies_to_doc_noNull sql.NullString
 	var applies_to_idNull sql.NullString
-	var openInt int
-	var positiveInt int
+	var openBool sql.NullBool
+	var positiveBool sql.NullBool
 	var on_holdNull sql.NullString
 	var due_dateNull sql.NullString
 	var closed_at_dateNull sql.NullString
@@ -1617,8 +1734,8 @@ func (t *CustomerLedgerEntryBase) FindLast() bool {
 		&applies_to_doc_typeInt,
 		&applies_to_doc_noNull,
 		&applies_to_idNull,
-		&openInt,
-		&positiveInt,
+		&openBool,
+		&positiveBool,
 		&on_holdNull,
 		&due_dateNull,
 		&t.Closed_by_entry_no,
@@ -1669,8 +1786,8 @@ func (t *CustomerLedgerEntryBase) FindLast() bool {
 	t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(applies_to_doc_typeInt)
 	t.Applies_to_doc_no = types.NewCode(applies_to_doc_noNull.String)
 	t.Applies_to_id = types.NewCode(applies_to_idNull.String)
-	t.Open = openInt != 0
-	t.Positive = positiveInt != 0
+	t.Open = openBool.Bool
+	t.Positive = positiveBool.Bool
 	t.On_hold = types.NewCode(on_holdNull.String)
 	t.Due_date, _ = types.NewDateFromString(due_dateNull.String)
 	t.Closed_at_date, _ = types.NewDateFromString(closed_at_dateNull.String)
@@ -1689,6 +1806,9 @@ func (t *CustomerLedgerEntryBase) Count() int {
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
@@ -1709,13 +1829,15 @@ func (t *CustomerLedgerEntryBase) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1812,8 +1934,8 @@ func (t *CustomerLedgerEntryBase) Next(steps ...int) bool {
 		var applies_to_doc_typeInt int
 		var applies_to_doc_noNull sql.NullString
 		var applies_to_idNull sql.NullString
-		var openInt int
-		var positiveInt int
+		var openBool sql.NullBool
+		var positiveBool sql.NullBool
 		var on_holdNull sql.NullString
 		var due_dateNull sql.NullString
 		var closed_at_dateNull sql.NullString
@@ -1856,8 +1978,8 @@ func (t *CustomerLedgerEntryBase) Next(steps ...int) bool {
 			&applies_to_doc_typeInt,
 			&applies_to_doc_noNull,
 			&applies_to_idNull,
-			&openInt,
-			&positiveInt,
+			&openBool,
+			&positiveBool,
 			&on_holdNull,
 			&due_dateNull,
 			&t.Closed_by_entry_no,
@@ -1907,8 +2029,8 @@ func (t *CustomerLedgerEntryBase) Next(steps ...int) bool {
 		t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(applies_to_doc_typeInt)
 		t.Applies_to_doc_no = types.NewCode(applies_to_doc_noNull.String)
 		t.Applies_to_id = types.NewCode(applies_to_idNull.String)
-		t.Open = openInt != 0
-		t.Positive = positiveInt != 0
+		t.Open = openBool.Bool
+		t.Positive = positiveBool.Bool
 		t.On_hold = types.NewCode(on_holdNull.String)
 		t.Due_date, _ = types.NewDateFromString(due_dateNull.String)
 		t.Closed_at_date, _ = types.NewDateFromString(closed_at_dateNull.String)
@@ -1939,13 +2061,15 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1960,6 +2084,7 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 		record := &CustomerLedgerEntryBase{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 		var customer_noNull sql.NullString
@@ -1995,8 +2120,8 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 		var applies_to_doc_typeInt int
 		var applies_to_doc_noNull sql.NullString
 		var applies_to_idNull sql.NullString
-		var openInt int
-		var positiveInt int
+		var openBool sql.NullBool
+		var positiveBool sql.NullBool
 		var on_holdNull sql.NullString
 		var due_dateNull sql.NullString
 		var closed_at_dateNull sql.NullString
@@ -2039,8 +2164,8 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 			&applies_to_doc_typeInt,
 			&applies_to_doc_noNull,
 			&applies_to_idNull,
-			&openInt,
-			&positiveInt,
+			&openBool,
+			&positiveBool,
 			&on_holdNull,
 			&due_dateNull,
 			&record.Closed_by_entry_no,
@@ -2088,8 +2213,8 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 		record.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(applies_to_doc_typeInt)
 		record.Applies_to_doc_no = types.NewCode(applies_to_doc_noNull.String)
 		record.Applies_to_id = types.NewCode(applies_to_idNull.String)
-		record.Open = openInt != 0
-		record.Positive = positiveInt != 0
+		record.Open = openBool.Bool
+		record.Positive = positiveBool.Bool
 		record.On_hold = types.NewCode(on_holdNull.String)
 		record.Due_date, _ = types.NewDateFromString(due_dateNull.String)
 		record.Closed_at_date, _ = types.NewDateFromString(closed_at_dateNull.String)
@@ -2190,6 +2315,9 @@ func (t *CustomerLedgerEntryBase) ModifyAll(fieldName string, newValue interface
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
 
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
+
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify all Customer Ledger Entry: %v\n", err)
@@ -2208,6 +2336,9 @@ func (t *CustomerLedgerEntryBase) DeleteAll() int {
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {

@@ -14,12 +14,28 @@ type TableDefinition interface {
 	GetTableID() int
 	GetTableName() string
 	GetTableSchema() string
+	GetPostgresTableSchema() string
 	CreateTable(db database.Executor, company string) error
+	CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error
+}
+
+// getSchemaForDBType returns the appropriate schema based on database type
+func getSchemaForDBType(tableDef TableDefinition, dbType database.DBType) string {
+	if dbType == database.DBTypePostgres {
+		return tableDef.GetPostgresTableSchema()
+	}
+	return tableDef.GetTableSchema()
 }
 
 // InitializeCompanyTables creates all registered tables for a new company
 // Also performs schema migration by adding missing columns to existing tables
 func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string) error {
+	return or.InitializeCompanyTablesWithDBType(db, companyName, database.DBTypeSQLite)
+}
+
+// InitializeCompanyTablesWithDBType creates all registered tables for a new company with the given database type
+// Also performs schema migration by adding missing columns to existing tables
+func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error {
 	// Get all registered table IDs
 	tableIDs := or.ListTables()
 
@@ -50,7 +66,7 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 		fullTableName := fmt.Sprintf("%s$%s", companyName, tableDef.GetTableName())
 
 		// Check if table exists
-		exists, err := tableExists(db, fullTableName)
+		exists, err := tableExists(db, fullTableName, dbType)
 		if err != nil {
 			failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to check existence: %v", tableID, tableDef.GetTableName(), err))
 			continue
@@ -58,23 +74,23 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 
 		if exists {
 			// Table exists - perform schema migration (add missing columns)
-			schema := tableDef.GetTableSchema()
+			schema := getSchemaForDBType(tableDef, dbType)
 			schemaColumns := parseSchemaColumns(schema)
-			existingColumns, err := getTableColumns(db, fullTableName)
+			existingColumns, err := getTableColumns(db, fullTableName, dbType)
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to get columns: %v", tableID, tableDef.GetTableName(), err))
 				continue
 			}
 
 			// Add missing columns
-			err = addMissingColumns(db, fullTableName, schemaColumns, existingColumns)
+			err = addMissingColumns(db, fullTableName, schemaColumns, existingColumns, dbType)
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): migration failed: %v", tableID, tableDef.GetTableName(), err))
 				continue
 			}
 
 			// Also fix any existing NULL values in TEXT/INTEGER columns
-			err = fixNullValues(db, fullTableName, schemaColumns, existingColumns)
+			err = fixNullValues(db, fullTableName, schemaColumns, existingColumns, dbType)
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to fix NULL values: %v", tableID, tableDef.GetTableName(), err))
 				continue
@@ -83,7 +99,7 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 			migratedCount++
 		} else {
 			// Table doesn't exist - create it
-			err := tableDef.CreateTable(db, companyName)
+			err := tableDef.CreateTableWithDBType(db, companyName, dbType)
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
 				continue
@@ -116,7 +132,7 @@ func (or *ObjectRegistry) InitializeCompanyTables(db *sql.DB, companyName string
 }
 
 // fixNullValues updates NULL values in existing columns to appropriate defaults
-func fixNullValues(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool) error {
+func fixNullValues(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool, dbType database.DBType) error {
 	for columnName, columnDef := range schemaColumns {
 		// Skip if column doesn't exist yet
 		if !existingColumns[columnName] {
@@ -125,10 +141,23 @@ func fixNullValues(db *sql.DB, tableName string, schemaColumns map[string]string
 
 		// Determine default value based on type
 		var defaultValue string
-		if strings.Contains(strings.ToUpper(columnDef), "TEXT") {
-			defaultValue = "''"
-		} else if strings.Contains(strings.ToUpper(columnDef), "INTEGER") {
+		upperDef := strings.ToUpper(columnDef)
+
+		switch {
+		case strings.Contains(upperDef, "BOOLEAN"):
+			defaultValue = "FALSE"
+		case strings.Contains(upperDef, "INTEGER"):
 			defaultValue = "0"
+		case strings.Contains(upperDef, "NUMERIC") || strings.Contains(upperDef, "DECIMAL") || strings.Contains(upperDef, "DOUBLE") || strings.Contains(upperDef, "REAL"):
+			defaultValue = "0"
+		case strings.Contains(upperDef, "TIMESTAMP") || strings.Contains(upperDef, "DATE"):
+			// For timestamps and dates, we skip fixing NULLs as they may be intentionally NULL
+			continue
+		case strings.Contains(upperDef, "TEXT") || strings.Contains(upperDef, "VARCHAR"):
+			defaultValue = "''"
+		default:
+			// Skip unknown types
+			continue
 		}
 
 		if defaultValue != "" {
@@ -153,12 +182,22 @@ func (or *ObjectRegistry) GetTableCount() int {
 // ========================================
 
 // tableExists checks if a table exists in the database
-func tableExists(db *sql.DB, tableName string) (bool, error) {
+func tableExists(db *sql.DB, tableName string, dbType database.DBType) (bool, error) {
 	var name string
-	err := db.QueryRow(`
-		SELECT name FROM sqlite_master
-		WHERE type='table' AND name=?
-	`, tableName).Scan(&name)
+	var err error
+
+	switch dbType {
+	case database.DBTypePostgres:
+		err = db.QueryRow(`
+			SELECT table_name FROM information_schema.tables
+			WHERE table_schema = 'public' AND table_name = $1
+		`, tableName).Scan(&name)
+	default: // SQLite
+		err = db.QueryRow(`
+			SELECT name FROM sqlite_master
+			WHERE type='table' AND name=?
+		`, tableName).Scan(&name)
+	}
 
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -170,27 +209,48 @@ func tableExists(db *sql.DB, tableName string) (bool, error) {
 }
 
 // getTableColumns returns a map of existing column names in the table
-func getTableColumns(db *sql.DB, tableName string) (map[string]bool, error) {
-	rows, err := db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, tableName))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get table info: %w", err)
-	}
-	defer rows.Close()
-
+func getTableColumns(db *sql.DB, tableName string, dbType database.DBType) (map[string]bool, error) {
 	columns := make(map[string]bool)
-	for rows.Next() {
-		var cid int
-		var name string
-		var dataType string
-		var notNull int
-		var defaultValue sql.NullString
-		var pk int
 
-		err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &pk)
+	switch dbType {
+	case database.DBTypePostgres:
+		rows, err := db.Query(`
+			SELECT column_name FROM information_schema.columns
+			WHERE table_schema = 'public' AND table_name = $1
+		`, tableName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan column info: %w", err)
+			return nil, fmt.Errorf("failed to get table columns: %w", err)
 		}
-		columns[strings.ToLower(name)] = true
+		defer rows.Close()
+
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return nil, fmt.Errorf("failed to scan column name: %w", err)
+			}
+			columns[strings.ToLower(name)] = true
+		}
+	default: // SQLite
+		rows, err := db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, tableName))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get table info: %w", err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var cid int
+			var name string
+			var dataType string
+			var notNull int
+			var defaultValue sql.NullString
+			var pk int
+
+			err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &pk)
+			if err != nil {
+				return nil, fmt.Errorf("failed to scan column info: %w", err)
+			}
+			columns[strings.ToLower(name)] = true
+		}
 	}
 
 	return columns, nil
@@ -236,7 +296,7 @@ func parseSchemaColumns(schema string) map[string]string {
 }
 
 // addMissingColumns adds columns that exist in schema but not in table
-func addMissingColumns(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool) error {
+func addMissingColumns(db *sql.DB, tableName string, schemaColumns map[string]string, existingColumns map[string]bool, dbType database.DBType) error {
 	addedCount := 0
 
 	for columnName, columnDef := range schemaColumns {
@@ -258,17 +318,30 @@ func addMissingColumns(db *sql.DB, tableName string, schemaColumns map[string]st
 
 		// Add DEFAULT value to prevent NULL values in existing rows
 		// This prevents "converting NULL to string is unsupported" errors
-		if !strings.Contains(strings.ToUpper(cleanDef), "DEFAULT") {
+		upperDef := strings.ToUpper(cleanDef)
+		if !strings.Contains(upperDef, "DEFAULT") {
 			// Determine default value based on type
-			if strings.Contains(strings.ToUpper(cleanDef), "TEXT") {
-				cleanDef = cleanDef + " DEFAULT ''"
-			} else if strings.Contains(strings.ToUpper(cleanDef), "INTEGER") {
+			switch {
+			case strings.Contains(upperDef, "BOOLEAN"):
+				cleanDef = cleanDef + " DEFAULT FALSE"
+			case strings.Contains(upperDef, "INTEGER"):
 				cleanDef = cleanDef + " DEFAULT 0"
+			case strings.Contains(upperDef, "NUMERIC") || strings.Contains(upperDef, "DECIMAL") || strings.Contains(upperDef, "DOUBLE") || strings.Contains(upperDef, "REAL"):
+				cleanDef = cleanDef + " DEFAULT 0"
+			case strings.Contains(upperDef, "TEXT") || strings.Contains(upperDef, "VARCHAR"):
+				cleanDef = cleanDef + " DEFAULT ''"
+			// TIMESTAMP and DATE don't get defaults, allowing NULL
 			}
 		}
 
 		// Execute ALTER TABLE ADD COLUMN
-		alterSQL := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN %s`, tableName, cleanDef)
+		var alterSQL string
+		if dbType == database.DBTypePostgres {
+			// PostgreSQL uses ADD COLUMN without the COLUMN keyword issue
+			alterSQL = fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN %s`, tableName, cleanDef)
+		} else {
+			alterSQL = fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN %s`, tableName, cleanDef)
+		}
 		_, err := db.Exec(alterSQL)
 		if err != nil {
 			return fmt.Errorf("failed to add column %s: %w", columnName, err)
@@ -276,10 +349,16 @@ func addMissingColumns(db *sql.DB, tableName string, schemaColumns map[string]st
 
 		// Update existing rows to set default value (ALTER TABLE DEFAULT doesn't update existing rows)
 		var defaultValue string
-		if strings.Contains(strings.ToUpper(cleanDef), "TEXT") {
-			defaultValue = "''"
-		} else if strings.Contains(strings.ToUpper(cleanDef), "INTEGER") {
+		switch {
+		case strings.Contains(upperDef, "BOOLEAN"):
+			defaultValue = "FALSE"
+		case strings.Contains(upperDef, "INTEGER"):
 			defaultValue = "0"
+		case strings.Contains(upperDef, "NUMERIC") || strings.Contains(upperDef, "DECIMAL") || strings.Contains(upperDef, "DOUBLE") || strings.Contains(upperDef, "REAL"):
+			defaultValue = "0"
+		case strings.Contains(upperDef, "TEXT") || strings.Contains(upperDef, "VARCHAR"):
+			defaultValue = "''"
+		// TIMESTAMP and DATE don't get default values
 		}
 
 		if defaultValue != "" {
