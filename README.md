@@ -5,13 +5,13 @@
 ```
 openerp/
 ├── cmd/api-server/      # Go API server entry point
-├── src/
+├── backend/
 │   ├── api/             # HTTP handlers, middleware, server
 │   ├── business-logic/  # Tables, pages, codeunits definitions
 │   └── foundation/      # Core framework (types, database, i18n, etc.)
+├── frontend/            # SvelteKit frontend
 ├── tools/tablegen/      # Code generation tool
-├── translations/        # i18n files (en-US, nb-NO)
-└── web/                 # SvelteKit frontend
+└── translations/        # i18n files (en-US, nb-NO)
 ```
 
 ## Build Commands
@@ -30,7 +30,7 @@ go run ./cmd/api-server
 
 ### Frontend (SvelteKit)
 ```bash
-cd web
+cd frontend
 
 # Install dependencies
 npm install
@@ -47,7 +47,7 @@ npm run build
 cd tools/tablegen && go build -o tablegen .
 
 # Generate table code (from table definitions directory)
-cd src/business-logic/tables
+cd backend/business-logic/tables
 ../../../tools/tablegen/tablegen -input=definitions/customer.yaml -output=.
 ```
 
