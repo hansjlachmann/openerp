@@ -573,51 +573,62 @@
 				throw new Error(result.error || 'Failed to load card page');
 			}
 
-			modalCardPage = result.data;
-			modalCaptions = result.captions?.fields || {};
+			// Deep clone ALL API response data to avoid Svelte reactivity issues
+			const pageData = JSON.parse(JSON.stringify(result.data));
+			const pageCaptions = result.captions?.fields ? JSON.parse(JSON.stringify(result.captions.fields)) : {};
 
 			// Use the card page's source table (more reliable)
-			const sourceTable = modalCardPage?.page?.source_table || page.page.source_table;
+			const sourceTable = pageData?.page?.source_table || page.page.source_table;
 
 			// Load the record data with options and lookups (for enum/lookup dropdowns)
 			const recordId = getRecordId(record);
+
+			let opts: Record<string, Record<string, string>> = {};
+			let lkps: Record<string, LookupData> = {};
+			let recData = { ...record };
+			let origRecord = {};
+			let isNew = false;
+
 			if (recordId) {
+				// Existing record - load it with options/lookups
 				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
-				modalRecord = recordResult.data;
-				modalOptions = recordResult.captions?.options || {};
-				modalLookups = recordResult.captions?.lookups || {};
-				modalOriginalRecord = deepCopy(modalRecord);
-				modalIsNewRecord = false;
+				recData = JSON.parse(JSON.stringify(recordResult.data));
+				// Deep clone to avoid Svelte reactivity issues
+				opts = recordResult.captions?.options ? JSON.parse(JSON.stringify(recordResult.captions.options)) : {};
+				lkps = recordResult.captions?.lookups ? JSON.parse(JSON.stringify(recordResult.captions.lookups)) : {};
+				origRecord = JSON.parse(JSON.stringify(recData));
+				isNew = false;
 			} else {
-				// New record - open modal immediately with empty options/lookups
-				modalRecord = { ...record };
-				modalOriginalRecord = {};
-				modalIsNewRecord = true;
-				modalOptions = {};
-				modalLookups = {};
-				modalOptionsLoaded = false;
+				// New record - load options/lookups for dropdowns
+				isNew = true;
+				origRecord = {};
+				try {
+					const optLkp = await api.getTableOptionsAndLookups(sourceTable);
+					// Deep clone to avoid Svelte reactivity issues
+					opts = optLkp.options ? JSON.parse(JSON.stringify(optLkp.options)) : {};
+					lkps = optLkp.lookups ? JSON.parse(JSON.stringify(optLkp.lookups)) : {};
+				} catch (err) {
+					console.error('Failed to load options/lookups:', err);
+					opts = {};
+					lkps = {};
+				}
 			}
 
-			// Set initial edit mode
-			modalInitialEditMode = editMode || modalIsNewRecord;
-
+			// Set all state at once to minimize re-renders
+			modalCardPage = pageData;
+			modalCaptions = pageCaptions;
+			modalRecord = recData;
+			modalOriginalRecord = origRecord;
+			modalIsNewRecord = isNew;
+			modalOptions = opts;
+			modalLookups = lkps;
+			modalOptionsLoaded = true;
+			modalInitialEditMode = editMode || isNew;
 			modalHadChanges = false;
 			modalRecordDeleted = false;
-			modalOpen = true;
 
-			// For new records, load options/lookups in background after modal is open
-			if (modalIsNewRecord && !modalOptionsLoaded) {
-				api.getTableOptionsAndLookups(sourceTable).then(({ options: opts, lookups: lkps }) => {
-					if (modalOpen) {
-						modalOptions = opts;
-						modalLookups = lkps;
-						modalOptionsLoaded = true;
-					}
-				}).catch(err => {
-					console.error('Failed to load options/lookups:', err);
-					modalOptionsLoaded = true;
-				});
-			}
+			// Open the modal
+			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
 			toast.error('Failed to open card');
