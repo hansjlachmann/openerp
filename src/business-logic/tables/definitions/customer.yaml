@@ -39,9 +39,16 @@ table:
       db_name: payment_terms_code
       length: 10
       table_relation:
-        table: PaymentTerms
+        table: Payment_terms
         field: code
-        display_field: description
+        search_timeout: 2000  # Auto-clear search after 2 seconds
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: description
+            width: 200
+          - source: active
+            width: 60
 
     - name: status
       type: Option

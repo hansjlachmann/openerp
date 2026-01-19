@@ -79,11 +79,19 @@ type FieldInfo struct {
 	FlowField  bool      // Whether this is a computed FlowField
 }
 
+// LookupColumnInfo defines a column to display in the lookup dropdown
+type LookupColumnInfo struct {
+	Source string // Field name to display
+	Width  int    // Column width in pixels (0 = auto)
+}
+
 // TableRelationInfo contains metadata about a field's table relation
 type TableRelationInfo struct {
-	Table        string // Related table name (e.g., "PaymentTerms")
-	Field        string // Field in related table to match (usually primary key)
-	DisplayField string // Field to display in dropdown (e.g., "description"), empty means use Field
+	Table         string             // Related table name (e.g., "PaymentTerms")
+	Field         string             // Field in related table to match (usually primary key)
+	DisplayField  string             // Field to display in dropdown (simple mode)
+	LookupColumns []LookupColumnInfo // Columns to show in dropdown (advanced mode)
+	SearchTimeout int                // Auto-clear search after N milliseconds (0 = use default 1500)
 }
 
 // FieldType represents the BC/NAV field types

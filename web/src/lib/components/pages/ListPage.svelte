@@ -21,12 +21,19 @@
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { getRecordId, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
 
+	// Lookup data structure from API
+	interface LookupData {
+		columns?: Array<{ source: string; width: number }>;
+		rows?: Array<{ _key: string; [key: string]: any }>;
+		simple?: Record<string, string>;
+	}
+
 	interface Props {
 		page: PageDefinition;
 		records?: Array<Record<string, any>>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
-		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
+		lookups?: Record<string, LookupData>; // Table relation lookup values
 		currentFilters?: TableFilter[];
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		onrowclick?: (record: Record<string, any>) => void;
@@ -248,7 +255,7 @@
 	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
 	let modalOptions = $state<Record<string, Record<string, string>>>({}); // Option field values
-	let modalLookups = $state<Record<string, Record<string, string>>>({}); // Table relation lookup values
+	let modalLookups = $state<Record<string, LookupData>>({}); // Table relation lookup values
 	let modalOptionsLoaded = $state(false); // Track if options have been loaded (prevent re-render during editing)
 	let modalSaving = $state(false);
 	let skipNextAutoSave = $state(false);

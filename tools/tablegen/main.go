@@ -58,12 +58,20 @@ type FlowFilter struct {
 	Value     string `yaml:"value"`      // Constant value or field name from current table
 }
 
+// LookupColumn defines a column to display in the lookup dropdown
+type LookupColumn struct {
+	Source string `yaml:"source"` // Field name to display
+	Width  int    `yaml:"width"`  // Column width in pixels (optional)
+}
+
 // TableRelation represents a foreign key relationship to another table
 type TableRelation struct {
-	Table        string `yaml:"table"`
-	Field        string `yaml:"field"`
-	DisplayField string `yaml:"display_field"` // Field to show in dropdown (e.g., "description")
-	Validate     *bool  `yaml:"validate"`      // Whether to validate the relation (default: true)
+	Table         string         `yaml:"table"`
+	Field         string         `yaml:"field"`
+	DisplayField  string         `yaml:"display_field"`  // Field to show in dropdown (e.g., "description") - simple mode
+	LookupColumns []LookupColumn `yaml:"lookup_columns"` // Columns to show in dropdown - advanced mode
+	SearchTimeout int            `yaml:"search_timeout"` // Auto-clear search after N milliseconds (default: 1500)
+	Validate      *bool          `yaml:"validate"`       // Whether to validate the relation (default: true)
 }
 
 // ShouldValidate returns whether this table relation should be validated
@@ -289,6 +297,7 @@ func templateFuncs() template.FuncMap {
 		"sanitizeIdentifier": sanitizeIdentifier,
 		"pkCount":            countPrimaryKeys,
 		"firstPK":            getFirstPK,
+		"toPascalCase":       toPascalCase,
 	}
 }
 
@@ -2149,7 +2158,7 @@ func (t *{{ $.StructName }}) OnValidate_{{ upperFirst .Name }}() error {
 {{- if and .TableRelation .TableRelation.ShouldValidate }}
 	// Table relation validation: {{ .Name }} must exist in {{ .TableRelation.Table }}
 	if t.{{ upperFirst .Name }} != "" && t.{{ upperFirst .Name }} != types.{{ if eq .Type "types.Code" }}Code{{ else }}Text{{ end }}("") {
-		var relatedRecord {{ .TableRelation.Table }}
+		var relatedRecord {{ toPascalCase .TableRelation.Table }}
 		relatedRecord.Init(t.db, t.company)
 		if !relatedRecord.Get(t.{{ upperFirst .Name }}) {
 			return fmt.Errorf("{{ .Name }} '%s' does not exist in {{ .TableRelation.Table }} table", t.{{ upperFirst .Name }})
@@ -2391,6 +2400,14 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 			Table:        "{{ .TableRelation.Table }}",
 			Field:        "{{ .TableRelation.Field }}",
 			DisplayField: "{{ .TableRelation.DisplayField }}",
+{{- if .TableRelation.LookupColumns }}
+			LookupColumns: []tables.LookupColumnInfo{
+{{- range .TableRelation.LookupColumns }}
+				{Source: "{{ .Source }}", Width: {{ .Width }}},
+{{- end }}
+			},
+{{- end }}
+			SearchTimeout: {{ .TableRelation.SearchTimeout }},
 		},
 {{- end }}
 {{- end }}
