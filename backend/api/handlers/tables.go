@@ -436,9 +436,14 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		}
 	}
 
+	// Check for empty primary key
+	pkValue := table.GetPrimaryKeyValue()
+	if pkValue == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
+	}
+
 	// Check if record already exists
 	existingTable, _ := h.getTable(tableName, company)
-	pkValue := table.GetPrimaryKeyValue()
 	if existingTable.Get(pkValue) {
 		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pkValue).Message(language)))
 	}
