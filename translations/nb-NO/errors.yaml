@@ -2,6 +2,7 @@
 # %1, %2, %3 are placeholders for dynamic values
 
 errors:
+  # Record operations
   ERR_DUPLICATE_RECORD: "%1 %2 finnes allerede"
   ERR_RECORD_NOT_FOUND: "%1 %2 ble ikke funnet"
   ERR_VALIDATION_FAILED: "Validering feilet for %1: %2"
@@ -10,6 +11,44 @@ errors:
   ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
   ERR_INSERT_FAILED: "Kunne ikke opprette %1"
   ERR_MODIFY_FAILED: "Kunne ikke endre %1 %2"
-  ERR_NO_ACTIVE_SESSION: "Ingen aktiv sesjon"
-  ERR_TABLE_NOT_FOUND: "Tabell '%1' ble ikke funnet"
   ERR_EMPTY_PRIMARY_KEY: "%1-nummer kan ikke være tomt"
+  ERR_TABLE_NOT_FOUND: "Tabell '%1' ble ikke funnet"
+
+  # Session/Auth
+  ERR_NO_ACTIVE_SESSION: "Ingen aktiv sesjon"
+  ERR_NOT_LOGGED_IN: "Ingen bruker er logget inn"
+  ERR_INVALID_CREDENTIALS: "Ugyldig brukernavn eller passord"
+  ERR_USER_INACTIVE: "Brukerkontoen er inaktiv"
+  ERR_USER_NOT_FOUND: "Bruker ikke funnet"
+  ERR_USER_REQUIRED: "Bruker-ID og passord er påkrevd"
+  ERR_USERS_EXIST: "Brukere finnes allerede. Bruk brukeradministrasjonen."
+  ERR_CREATE_USER_FAILED: "Kunne ikke opprette bruker"
+
+  # Request/Input
+  ERR_INVALID_REQUEST_BODY: "Ugyldig forespørsel"
+  ERR_INVALID_FIELDS: "Ugyldig felt-parameter"
+  ERR_INVALID_FILTERS: "Ugyldig filter-parameter"
+  ERR_INVALID_PAGE_ID: "Ugyldig side-ID"
+  ERR_LANGUAGE_REQUIRED: "Språk er påkrevd"
+  ERR_UNSUPPORTED_LANGUAGE: "Språket støttes ikke: %1"
+
+  # Company
+  ERR_COMPANY_NOT_FOUND: "Selskapet finnes ikke"
+  ERR_COMPANY_VERIFY_FAILED: "Kunne ikke verifisere selskap"
+  ERR_COMPANY_REQUIRED: "Selskapsnavn er påkrevd"
+  ERR_COMPANY_INVALID_NAME: "Selskapsnavn kan kun inneholde bokstaver, tall, understrek og bindestrek"
+  ERR_COMPANY_NAME_LENGTH: "Selskapsnavn må være mellom 2 og 50 tegn"
+  ERR_COMPANY_LIST_FAILED: "Kunne ikke hente selskapsliste"
+  ERR_COMPANY_ALREADY_EXISTS: "Selskapet '%1' finnes allerede"
+  ERR_COMPANY_CREATE_FAILED: "Kunne ikke opprette selskap"
+
+  # Preferences
+  ERR_PREFERENCE_NOT_FOUND: "Innstilling ikke funnet"
+  ERR_PREFERENCE_SERIALIZE: "Kunne ikke serialisere innstillingsdata"
+  ERR_PREFERENCE_UPDATE_FAILED: "Kunne ikke oppdatere innstilling"
+  ERR_PREFERENCE_SAVE_FAILED: "Kunne ikke lagre innstilling"
+  ERR_PREFERENCE_DELETE_FAILED: "Kunne ikke slette innstilling"
+
+  # Menu/Pages
+  ERR_MENU_NOT_FOUND: "Meny ikke funnet"
+  ERR_PAGE_NOT_FOUND: "Side %1 ble ikke funnet"

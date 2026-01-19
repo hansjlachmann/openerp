@@ -247,7 +247,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	fieldsParam := c.Query("fields", "")
 	if fieldsParam != "" {
 		if err := json.Unmarshal([]byte(fieldsParam), &requestedFields); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid fields parameter"))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
 		}
 	}
 
@@ -259,7 +259,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 			Expression string `json:"expression"`
 		}
 		if err := json.Unmarshal([]byte(filtersParam), &apiFilters); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid filters parameter"))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
 		}
 
 		// Apply BC-style filters
@@ -397,7 +397,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	// Parse request body
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
 	// Get FlowFields to skip during validation (they're calculated, not stored)
@@ -491,7 +491,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Parse request body
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
 	// Get FlowFields to skip during validation (they're calculated, not stored)
@@ -601,7 +601,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		Value interface{} `json:"value"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
 	// Create table instance

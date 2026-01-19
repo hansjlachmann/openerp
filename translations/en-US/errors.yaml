@@ -2,6 +2,7 @@
 # %1, %2, %3 are placeholders for dynamic values
 
 errors:
+  # Record operations
   ERR_DUPLICATE_RECORD: "%1 %2 already exists"
   ERR_RECORD_NOT_FOUND: "%1 %2 not found"
   ERR_VALIDATION_FAILED: "Validation failed for %1: %2"
@@ -10,6 +11,44 @@ errors:
   ERR_DELETE_FAILED: "Failed to delete %1 %2"
   ERR_INSERT_FAILED: "Failed to insert %1"
   ERR_MODIFY_FAILED: "Failed to modify %1 %2"
-  ERR_NO_ACTIVE_SESSION: "No active session"
-  ERR_TABLE_NOT_FOUND: "Table '%1' not found"
   ERR_EMPTY_PRIMARY_KEY: "%1 number cannot be empty"
+  ERR_TABLE_NOT_FOUND: "Table '%1' not found"
+
+  # Session/Auth
+  ERR_NO_ACTIVE_SESSION: "No active session"
+  ERR_NOT_LOGGED_IN: "No user logged in"
+  ERR_INVALID_CREDENTIALS: "Invalid credentials"
+  ERR_USER_INACTIVE: "User account is inactive"
+  ERR_USER_NOT_FOUND: "User not found"
+  ERR_USER_REQUIRED: "User ID and password are required"
+  ERR_USERS_EXIST: "Users already exist. Use the user management interface."
+  ERR_CREATE_USER_FAILED: "Failed to create user"
+
+  # Request/Input
+  ERR_INVALID_REQUEST_BODY: "Invalid request body"
+  ERR_INVALID_FIELDS: "Invalid fields parameter"
+  ERR_INVALID_FILTERS: "Invalid filters parameter"
+  ERR_INVALID_PAGE_ID: "Invalid page ID"
+  ERR_LANGUAGE_REQUIRED: "Language is required"
+  ERR_UNSUPPORTED_LANGUAGE: "Unsupported language: %1"
+
+  # Company
+  ERR_COMPANY_NOT_FOUND: "Company does not exist"
+  ERR_COMPANY_VERIFY_FAILED: "Failed to verify company"
+  ERR_COMPANY_REQUIRED: "Company name is required"
+  ERR_COMPANY_INVALID_NAME: "Company name can only contain letters, numbers, underscores, and hyphens"
+  ERR_COMPANY_NAME_LENGTH: "Company name must be between 2 and 50 characters"
+  ERR_COMPANY_LIST_FAILED: "Failed to list companies"
+  ERR_COMPANY_ALREADY_EXISTS: "Company '%1' already exists"
+  ERR_COMPANY_CREATE_FAILED: "Failed to create company"
+
+  # Preferences
+  ERR_PREFERENCE_NOT_FOUND: "Preference not found"
+  ERR_PREFERENCE_SERIALIZE: "Failed to serialize preference data"
+  ERR_PREFERENCE_UPDATE_FAILED: "Failed to update preference"
+  ERR_PREFERENCE_SAVE_FAILED: "Failed to save preference"
+  ERR_PREFERENCE_DELETE_FAILED: "Failed to delete preference"
+
+  # Menu/Pages
+  ERR_MENU_NOT_FOUND: "Menu not found"
+  ERR_PAGE_NOT_FOUND: "Page %1 not found"
