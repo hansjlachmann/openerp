@@ -10,6 +10,7 @@ import (
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -38,12 +39,13 @@ func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	language := getLanguageOrDefault(sess)
 	userID := sess.GetUserID()
 	if userID == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No user logged in"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NotLoggedIn().Message(language)))
 	}
 
 	// Query preferences for this user, page, and type
@@ -83,12 +85,13 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	language := getLanguageOrDefault(sess)
 	userID := sess.GetUserID()
 	if userID == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No user logged in"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NotLoggedIn().Message(language)))
 	}
 
 	// Parse request body
@@ -98,19 +101,19 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
 	// Convert preference data to JSON string
 	dataJSON, err := json.Marshal(requestBody.PreferenceData)
 	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to serialize preference data"))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceSerialize().Message(language)))
 	}
 
 	// Convert page_id string to int
 	pageIDInt, err := strconv.Atoi(pageID)
 	if err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid page_id"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidPageID().Message(language)))
 	}
 
 	// Check if preference already exists
@@ -131,7 +134,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 		pref.Updated_at = now
 
 		if !pref.Modify(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to update preference"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceUpdateFailed().Message(language)))
 		}
 	} else {
 		// Insert new preference
@@ -140,7 +143,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 		pref.Updated_at = now
 
 		if !pref.Insert(true) {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to save preference"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceSaveFailed().Message(language)))
 		}
 	}
 
@@ -159,18 +162,19 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	language := getLanguageOrDefault(sess)
 	userID := sess.GetUserID()
 	if userID == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No user logged in"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NotLoggedIn().Message(language)))
 	}
 
 	// Convert page_id string to int
 	pageIDInt, err := strconv.Atoi(pageID)
 	if err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid page_id"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidPageID().Message(language)))
 	}
 
 	// Find and delete the preference
@@ -183,11 +187,11 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 		types.NewCode(preferenceType),
 		types.NewCode(preferenceName),
 	) {
-		return c.Status(404).JSON(apitypes.NewErrorResponse("Preference not found"))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.PreferenceNotFound().Message(language)))
 	}
 
 	if !pref.Delete(true) {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to delete preference"))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceDeleteFailed().Message(language)))
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
