@@ -225,5 +225,14 @@ export const api = {
 	async listCompanies(): Promise<ApiResponse<string[]>> {
 		const response = await fetch(`${API_BASE}/auth/companies`);
 		return handleApiResponseFull<string[]>(response, 'list companies');
+	},
+
+	async createCompany(name: string): Promise<ApiResponse<{ name: string; message: string }>> {
+		const response = await fetch(`${API_BASE}/auth/companies`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name })
+		});
+		return handleApiResponseFull<{ name: string; message: string }>(response, 'create company');
 	}
 };

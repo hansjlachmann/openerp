@@ -28,6 +28,7 @@ type UserPreferencesBase struct {
 	// Internal context (set by Init)
 	db      database.Executor
 	company string
+	dbType  database.DBType
 
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
@@ -62,9 +63,14 @@ func (t *UserPreferencesBase) GetTableName() string {
 	return UserPreferencesTableName
 }
 
-// GetTableSchema returns the CREATE TABLE schema
+// GetTableSchema returns the CREATE TABLE schema (SQLite)
 func (t *UserPreferencesBase) GetTableSchema() string {
 	return GetUserPreferencesTableSchema()
+}
+
+// GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
+func (t *UserPreferencesBase) GetPostgresTableSchema() string {
+	return GetUserPreferencesPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
@@ -87,13 +93,28 @@ func (t *UserPreferencesBase) GetCompany() string {
 // GetUserPreferencesTableSchema returns the SQLite schema
 func GetUserPreferencesTableSchema() string {
 	return `
-		user_id TEXT(50) PRIMARY KEY,
-		page_id INTEGER PRIMARY KEY,
-		preference_type TEXT(20) PRIMARY KEY,
-		preference_name TEXT(50) PRIMARY KEY,
+		user_id TEXT(50),
+		page_id INTEGER,
+		preference_type TEXT(20),
+		preference_name TEXT(50),
 		preference_data TEXT,
 		created_at TEXT,
-		updated_at TEXT
+		updated_at TEXT,
+		PRIMARY KEY (user_id, page_id, preference_type, preference_name)
+	`
+}
+
+// GetUserPreferencesPostgresTableSchema returns the PostgreSQL schema
+func GetUserPreferencesPostgresTableSchema() string {
+	return `
+		user_id VARCHAR(50),
+		page_id INTEGER,
+		preference_type VARCHAR(20),
+		preference_name VARCHAR(50),
+		preference_data TEXT,
+		created_at TIMESTAMP,
+		updated_at TIMESTAMP,
+		PRIMARY KEY (user_id, page_id, preference_type, preference_name)
 	`
 }
 
@@ -113,11 +134,22 @@ func (t *UserPreferencesBase) GetFieldCaption(fieldName, language string) string
 	return ts.FieldCaption("User_Preferences", fieldName, language)
 }
 
-// CreateTable creates the User_Preferences table for the specified company
+// CreateTable creates the User_Preferences table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *UserPreferencesBase) CreateTable(db database.Executor, company string) error {
+	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// CreateTableWithDBType creates the User_Preferences table for the specified company with the given database type
+// The db parameter can be either *sql.DB or *sql.Tx
+func (t *UserPreferencesBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, UserPreferencesTableName)
-	schema := GetUserPreferencesTableSchema()
+	var schema string
+	if dbType == database.DBTypePostgres {
+		schema = GetUserPreferencesPostgresTableSchema()
+	} else {
+		schema = GetUserPreferencesTableSchema()
+	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
@@ -146,8 +178,14 @@ func (t *UserPreferencesBase) CreateTable(db database.Executor, company string) 
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
 func (t *UserPreferencesBase) Init(db database.Executor, company string) {
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes a new UserPreferences record with database context and type
+func (t *UserPreferencesBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
+	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
 }
 
@@ -162,6 +200,19 @@ func (t *UserPreferencesBase) StoreOldValues() {
 	t.oldValues["preference_data"] = t.Preference_data
 	t.oldValues["created_at"] = t.Created_at
 	t.oldValues["updated_at"] = t.Updated_at
+}
+
+// convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
+// when running on PostgreSQL
+func (t *UserPreferencesBase) convertPlaceholders(sql string, count int) string {
+	if t.dbType != database.DBTypePostgres {
+		return sql
+	}
+	result := sql
+	for i := 1; i <= count; i++ {
+		result = strings.Replace(result, "?", fmt.Sprintf("$%d", i), 1)
+	}
+	return result
 }
 
 // Get retrieves a record from the database by primary key (interface{} for generic API)
@@ -226,13 +277,21 @@ func (t *UserPreferencesBase) GetByPK(user_id types.Code, page_id int, preferenc
 	var created_atNull sql.NullString
 	var updated_atNull sql.NullString
 
-	err := t.db.QueryRow(
-		fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE 1=1 AND user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?`, tableName),
+	// Collect arguments for query
+	args := []interface{}{
 		user_id,
 		page_id,
 		preference_type,
 		preference_name,
-	).Scan(
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE 1=1 AND user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&user_idNull,
 		&page_idVal,
 		&preference_typeNull,
@@ -276,10 +335,10 @@ func (t *UserPreferencesBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`INSERT INTO "%s" (user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName),
+
+	// Collect arguments for INSERT
+	args := []interface{}{
 		t.User_id,
 		t.Page_id,
 		t.Preference_type,
@@ -287,7 +346,15 @@ func (t *UserPreferencesBase) Insert(runTrigger bool) bool {
 		t.Preference_data,
 		t.Created_at,
 		t.Updated_at,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert User_Preferences: %v\n", err)
 		return false
@@ -304,7 +371,6 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
 
 	// Build dynamic SQL based on field tracking
@@ -347,12 +413,15 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Preference_name)
 
 	// Build and execute SQL
-	sql := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
 
-	_, err := t.db.Exec(sql, values...)
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(values))
+
+	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify User_Preferences: %v\n", err)
 		return false
@@ -402,15 +471,23 @@ func (t *UserPreferencesBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
-	_, err := t.db.Exec(
-		fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`, tableName),
+
+	// Collect arguments for DELETE
+	args := []interface{}{
 		t.User_id,
 		t.Page_id,
 		t.Preference_type,
 		t.Preference_name,
-	)
+	}
+
+	// Build SQL with placeholders
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`, tableName)
+
+	// Convert placeholders for PostgreSQL
+	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+
+	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete User_Preferences: %v\n", err)
 		return false
@@ -599,6 +676,9 @@ func (t *UserPreferencesBase) FindFirst() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_idpage_idpreference_typepreference_name ASC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var user_idNull sql.NullString
 	var preference_typeNull sql.NullString
 	var preference_nameNull sql.NullString
@@ -646,6 +726,9 @@ func (t *UserPreferencesBase) FindLast() bool {
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_idpage_idpreference_typepreference_name DESC LIMIT 1`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 	var user_idNull sql.NullString
 	var preference_typeNull sql.NullString
 	var preference_nameNull sql.NullString
@@ -692,6 +775,9 @@ func (t *UserPreferencesBase) Count() int {
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
 
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
@@ -711,13 +797,15 @@ func (t *UserPreferencesBase) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -837,13 +925,15 @@ func (t *UserPreferencesBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -858,6 +948,7 @@ func (t *UserPreferencesBase) FindSetBuffered() bool {
 		record := &UserPreferencesBase{}
 		record.db = t.db
 		record.company = t.company
+		record.dbType = t.dbType
 
 		// Scan the row
 		var user_idNull sql.NullString
@@ -948,6 +1039,9 @@ func (t *UserPreferencesBase) ModifyAll(fieldName string, newValue interface{}) 
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
 
+	// Convert placeholders for PostgreSQL
+	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
+
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify all User_Preferences: %v\n", err)
@@ -966,6 +1060,9 @@ func (t *UserPreferencesBase) DeleteAll() int {
 
 	// Build DELETE SQL
 	deleteSQL := fmt.Sprintf(`DELETE FROM "%s" WHERE %s`, tableName, where)
+
+	// Convert placeholders for PostgreSQL
+	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
