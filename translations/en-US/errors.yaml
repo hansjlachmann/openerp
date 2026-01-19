@@ -12,3 +12,4 @@ errors:
   ERR_MODIFY_FAILED: "Failed to modify %1 %2"
   ERR_NO_ACTIVE_SESSION: "No active session"
   ERR_TABLE_NOT_FOUND: "Table '%1' not found"
+  ERR_EMPTY_PRIMARY_KEY: "%1 number cannot be empty"

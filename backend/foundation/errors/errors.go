@@ -21,6 +21,7 @@ const (
 	ErrModifyFailed     ErrorCode = "ERR_MODIFY_FAILED"
 	ErrNoActiveSession  ErrorCode = "ERR_NO_ACTIVE_SESSION"
 	ErrTableNotFound    ErrorCode = "ERR_TABLE_NOT_FOUND"
+	ErrEmptyPrimaryKey  ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
 )
 
 // AppError represents an application error with translation support
@@ -128,6 +129,14 @@ func NoActiveSession() *AppError {
 func TableNotFound(tableName string) *AppError {
 	return &AppError{
 		Code:   ErrTableNotFound,
+		Params: []string{tableName},
+	}
+}
+
+// EmptyPrimaryKey creates an error for empty primary key value
+func EmptyPrimaryKey(tableName string) *AppError {
+	return &AppError{
+		Code:   ErrEmptyPrimaryKey,
 		Params: []string{tableName},
 	}
 }
