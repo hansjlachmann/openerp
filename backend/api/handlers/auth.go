@@ -9,9 +9,21 @@ import (
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
+
+// getLanguageOrDefault returns the session language or "en-US" as default
+func getLanguageOrDefault(sess *session.Session) string {
+	if sess != nil {
+		lang := sess.GetLanguage()
+		if lang != "" {
+			return lang
+		}
+	}
+	return "en-US"
+}
 
 // AuthHandler handles authentication API requests
 type AuthHandler struct {
@@ -39,11 +51,11 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message("en-US")))
 	}
 
 	if requestBody.UserID == "" || requestBody.Password == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("User ID and password are required"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.UserRequired().Message("en-US")))
 	}
 
 	// Determine company - use provided company, or default to "cronus"
@@ -56,10 +68,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var companyCheck string
 	err := h.db.QueryRow(`SELECT name FROM "Company" WHERE name = $1`, company).Scan(&companyCheck)
 	if err == sql.ErrNoRows {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Company does not exist"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyNotFound().Message("en-US")))
 	}
 	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to verify company"))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyVerifyFailed().Message("en-US")))
 	}
 
 	sess := session.GetCurrent()
@@ -68,17 +80,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(requestBody.UserID)) {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("Invalid credentials"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.InvalidCredentials().Message("en-US")))
 	}
 
 	// Check if user is active
 	if !user.Active {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("User account is inactive"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.UserInactive().Message("en-US")))
 	}
 
 	// Verify password
 	if !user.CheckPassword(requestBody.Password) {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("Invalid credentials"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.InvalidCredentials().Message("en-US")))
 	}
 
 	// Update last login
@@ -132,12 +144,13 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 	if sess == nil {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	language := getLanguageOrDefault(sess)
 	userID := sess.GetUserID()
 	if userID == "" {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("Not logged in"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NotLoggedIn().Message(language)))
 	}
 
 	// Get full user details
@@ -150,7 +163,7 @@ func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(userID)) {
-		return c.Status(404).JSON(apitypes.NewErrorResponse("User not found"))
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.UserNotFound().Message(language)))
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -176,7 +189,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message("en-US")))
 	}
 
 	// Check if any users exist
@@ -187,7 +200,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	count := user.Count()
 
 	if count > 0 {
-		return c.Status(403).JSON(apitypes.NewErrorResponse("Users already exist. Use the user management interface."))
+		return c.Status(403).JSON(apitypes.NewErrorResponse(apperrors.UsersExist().Message("en-US")))
 	}
 
 	// Create the initial user
@@ -205,7 +218,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	}
 
 	if !user.Insert(true) {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to create user"))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CreateUserFailed().Message("en-US")))
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -221,7 +234,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 	rows, err := h.db.Query(`SELECT name FROM "Company" ORDER BY name`)
 	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to list companies"))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 	}
 	defer rows.Close()
 
@@ -229,7 +242,7 @@ func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to read company name"))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 		}
 		companies = append(companies, name)
 	}
@@ -247,11 +260,11 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message("en-US")))
 	}
 
 	if requestBody.Language == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Language is required"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.LanguageRequired().Message("en-US")))
 	}
 
 	// Validate language code (must be one of supported languages)
@@ -264,12 +277,12 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 		}
 	}
 	if !valid {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Unsupported language: " + requestBody.Language))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.UnsupportedLanguage(requestBody.Language).Message("en-US")))
 	}
 
 	sess := session.GetCurrent()
 	if sess == nil {
-		return c.Status(401).JSON(apitypes.NewErrorResponse("No active session"))
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	// Update session language
@@ -316,36 +329,36 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message("en-US")))
 	}
 
 	if requestBody.Name == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Company name is required"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyRequired().Message("en-US")))
 	}
 
 	// Validate company name (alphanumeric, underscores, hyphens only)
 	name := strings.ToLower(strings.TrimSpace(requestBody.Name))
 	for _, r := range name {
 		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-') {
-			return c.Status(400).JSON(apitypes.NewErrorResponse("Company name can only contain letters, numbers, underscores, and hyphens"))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyInvalidName().Message("en-US")))
 		}
 	}
 
 	if len(name) < 2 || len(name) > 50 {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Company name must be between 2 and 50 characters"))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyNameLength().Message("en-US")))
 	}
 
 	// Check if company already exists
 	var existingName string
 	err := h.db.QueryRow(`SELECT name FROM "Company" WHERE name = $1`, name).Scan(&existingName)
 	if err == nil {
-		return c.Status(409).JSON(apitypes.NewErrorResponse("Company '" + name + "' already exists"))
+		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.CompanyAlreadyExists(name).Message("en-US")))
 	}
 
 	// Insert company
 	_, err = h.db.Exec(`INSERT INTO "Company" (name) VALUES ($1)`, name)
 	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to create company: " + err.Error()))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyCreateFailed().Message("en-US")))
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
