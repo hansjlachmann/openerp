@@ -1,62 +1,88 @@
+# OpenERP
 
-#####  Individual commands:
+## Project Structure
+
 ```
-  Build CLI:
-  go build -o openerp-cli main.go
-
-  Build GUI:
-  go build -o openerp-gui ./src/gui/
-
-  Run CLI (without building):
-  go run main.go
-
-  Run GUI (without building):
-  go run ./src/gui/
-
-  Clean binaries:
-  rm openerp-cli openerp-gui
-
-  Format code:
-  go fmt ./...
-
-  Check code:
-  go vet ./...
-
-  Update dependencies:
-  go mod tidy
+openerp/
+├── cmd/api-server/      # Go API server entry point
+├── src/
+│   ├── api/             # HTTP handlers, middleware, server
+│   ├── business-logic/  # Tables, pages, codeunits definitions
+│   └── foundation/      # Core framework (types, database, i18n, etc.)
+├── tools/tablegen/      # Code generation tool
+├── translations/        # i18n files (en-US, nb-NO)
+└── web/                 # SvelteKit frontend
 ```
 
-#####  Connect to the database:
+## Build Commands
 
-  sqlite3 test.db
+### API Server (Go)
+```bash
+# Build
+cd cmd/api-server && go build -o api-server .
 
-  Useful SQLite commands:
+# Run (from project root)
+./cmd/api-server/api-server
 
-  1. List all tables:
-  .tables
+# Run without building
+go run ./cmd/api-server
+```
 
-  2. Show table schema:
-  .schema "cronus$Payment Terms"
+### Frontend (SvelteKit)
+```bash
+cd web
 
-  3. Show all data in Payment Terms table:
-  SELECT * FROM "cronus$Payment Terms";
+# Install dependencies
+npm install
 
-  4. Show data with formatting:
-  .mode column
-  .headers on
-  SELECT * FROM "cronus$Payment Terms";
+# Development server
+npm run dev
 
-  5. Count records:
-  SELECT COUNT(*) FROM "cronus$Payment Terms";
+# Production build
+npm run build
+```
 
-  6. Show specific records:
-  SELECT * FROM "cronus$Payment Terms" WHERE code LIKE 'TEST%';
+### Code Generation (tablegen)
+```bash
+cd tools/tablegen && go build -o tablegen .
 
-  7. Show only modified records:
-  SELECT code, description, active FROM "cronus$Payment Terms" WHERE code BETWEEN 'TEST001' AND 'TEST020' ORDER BY code;
+# Generate table code (from table definitions directory)
+cd src/business-logic/tables
+../../../tools/tablegen/tablegen -input=definitions/customer.yaml -output=.
+```
 
-  8. Exit SQLite:
-  .exit
-  or press Ctrl+D
+### General Go Commands
+```bash
+# Format code
+go fmt ./...
 
+# Check code
+go vet ./...
 
+# Update dependencies
+go mod tidy
+```
+
+## Database
+
+Connect to SQLite database:
+```bash
+sqlite3 test.db
+```
+
+Useful SQLite commands:
+```sql
+-- List all tables
+.tables
+
+-- Show table schema
+.schema "cronus$Payment Terms"
+
+-- Show all data with formatting
+.mode column
+.headers on
+SELECT * FROM "cronus$Payment Terms";
+
+-- Exit
+.exit
+```
