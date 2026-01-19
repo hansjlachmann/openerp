@@ -63,6 +63,9 @@ type Table interface {
 	// GetOptionFields returns Option field names mapped to their option values
 	// Returns map[fieldName][]string where each string is an option value (index = stored int value)
 	GetOptionFields() map[string][]string
+	// GetTableRelationFields returns fields that have table relations (foreign keys)
+	// Returns map[fieldName]TableRelationInfo
+	GetTableRelationFields() map[string]TableRelationInfo
 }
 
 // FieldInfo contains metadata about a table field
@@ -74,6 +77,13 @@ type FieldInfo struct {
 	Editable   bool      // Whether the field can be edited
 	PrimaryKey bool      // Whether this is the primary key
 	FlowField  bool      // Whether this is a computed FlowField
+}
+
+// TableRelationInfo contains metadata about a field's table relation
+type TableRelationInfo struct {
+	Table        string // Related table name (e.g., "PaymentTerms")
+	Field        string // Field in related table to match (usually primary key)
+	DisplayField string // Field to display in dropdown (e.g., "description"), empty means use Field
 }
 
 // FieldType represents the BC/NAV field types

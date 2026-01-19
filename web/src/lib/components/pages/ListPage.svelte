@@ -26,6 +26,7 @@
 		records?: Array<Record<string, any>>;
 		captions?: Record<string, string>;
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
+		lookups?: Record<string, Record<string, string>>; // Table relation lookup values
 		currentFilters?: TableFilter[];
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		onrowclick?: (record: Record<string, any>) => void;
@@ -39,6 +40,7 @@
 		records = [],
 		captions = {},
 		options = {},
+		lookups = {},
 		currentFilters = [],
 		onaction,
 		onrowclick,
@@ -246,6 +248,7 @@
 	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
 	let modalOptions = $state<Record<string, Record<string, string>>>({}); // Option field values
+	let modalLookups = $state<Record<string, Record<string, string>>>({}); // Table relation lookup values
 	let modalOptionsLoaded = $state(false); // Track if options have been loaded (prevent re-render during editing)
 	let modalSaving = $state(false);
 	let skipNextAutoSave = $state(false);
@@ -569,24 +572,26 @@
 			// Use the card page's source table (more reliable)
 			const sourceTable = modalCardPage?.page?.source_table || page.page.source_table;
 
-			// Load the record data with options (for enum dropdowns)
+			// Load the record data with options and lookups (for enum/lookup dropdowns)
 			const recordId = getRecordId(record);
 			if (recordId) {
 				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
 				modalRecord = recordResult.data;
 				modalOptions = recordResult.captions?.options || {};
+				modalLookups = recordResult.captions?.lookups || {};
 				modalOriginalRecord = deepCopy(modalRecord);
 				modalIsNewRecord = false;
 			} else {
-				// New record - open modal immediately, fetch options in background
+				// New record - open modal immediately, fetch options/lookups in background
 				modalRecord = { ...record };
 				modalOriginalRecord = {};
 				modalOptions = {}; // Start with empty options
+				modalLookups = {}; // Start with empty lookups
 				modalOptionsLoaded = false; // Reset the loaded flag
 				modalIsNewRecord = true;
 
-				// Fetch options in background (non-blocking)
-				api.getTableOptions(sourceTable).then(opts => {
+				// Fetch options and lookups in background (non-blocking)
+				api.getTableOptionsAndLookups(sourceTable).then(({ options: opts, lookups: lkps }) => {
 					// Only update if modal is still open and options haven't been loaded yet
 					if (modalOpen && !modalOptionsLoaded) {
 						// Save currently focused element
@@ -594,6 +599,7 @@
 						const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
 
 						modalOptions = opts;
+						modalLookups = lkps;
 						modalOptionsLoaded = true;
 
 						// Restore focus if it was lost during re-render
@@ -607,7 +613,7 @@
 						}
 					}
 				}).catch(err => {
-					console.error('Failed to load options:', err);
+					console.error('Failed to load options/lookups:', err);
 					modalOptionsLoaded = true; // Mark as loaded even on error to prevent retries
 				});
 			}
@@ -634,6 +640,7 @@
 		skipNextAutoSave = false;
 		modalCaptions = {};
 		modalOptions = {};
+		modalLookups = {};
 		modalOptionsLoaded = false;
 		modalHadChanges = false;
 		modalRecordDeleted = false;
@@ -1333,6 +1340,7 @@
 		bind:record={modalRecord}
 		captions={modalCaptions}
 		options={modalOptions}
+		lookups={modalLookups}
 		initialEditMode={modalInitialEditMode}
 		saveBlocked={modalSaveBlocked}
 		saveBlockedMessage={modalSaveBlockedMessage}

@@ -153,17 +153,14 @@ func (t *Customer) CustomValidate_Phonenumber() error {
 
 // CustomValidate_Payment_terms_code - Custom validation for payment_terms_code field
 func (t *Customer) CustomValidate_Payment_terms_code() error {
-	// Table relation validation - payment_terms_code must exist in PaymentTerms
+	// Table relation validation is auto-generated in customer_gen.go
+	// Add additional custom validation here if needed, e.g.:
+
+	// Check if the payment terms is active
 	if t.Payment_terms_code != "" && t.Payment_terms_code != types.Code("") {
 		var relatedRecord PaymentTerms
 		relatedRecord.Init(t.db, t.company)
-		if !relatedRecord.Get(t.Payment_terms_code) {
-			return errors.New("payment_terms_code does not exist in PaymentTerms table")
-		}
-
-		// *** ADD YOUR CUSTOM LOGIC HERE ***
-		// You can access the related record:
-		if !relatedRecord.Active {
+		if relatedRecord.Get(t.Payment_terms_code) && !relatedRecord.Active {
 			return errors.New("payment terms is inactive and cannot be used")
 		}
 	}

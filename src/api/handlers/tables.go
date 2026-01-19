@@ -38,6 +38,50 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 	return table, nil
 }
 
+// getLookupValues fetches lookup values for table relation fields
+func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map[string]map[string]string {
+	lookups := make(map[string]map[string]string)
+
+	for fieldName, relInfo := range table.GetTableRelationFields() {
+		// Get the related table
+		relFactory, ok := tables.GetTableFactory(relInfo.Table)
+		if !ok {
+			continue // Skip if related table not found
+		}
+
+		relTable := relFactory()
+		relTable.Init(h.db, company)
+
+		// Fetch all records from related table
+		lookupMap := make(map[string]string)
+		if relTable.FindSet() {
+			for {
+				// Get the key field value
+				keyValue := relTable.GetPrimaryKeyValue()
+
+				// Get the display value (either display_field or the key itself)
+				displayValue := keyValue
+				if relInfo.DisplayField != "" {
+					recordMap := relTable.ToMap()
+					if dv, ok := recordMap[relInfo.DisplayField]; ok && dv != nil {
+						displayValue = fmt.Sprintf("%v", dv)
+					}
+				}
+
+				lookupMap[keyValue] = displayValue
+
+				if !relTable.Next() {
+					break
+				}
+			}
+		}
+
+		lookups[fieldName] = lookupMap
+	}
+
+	return lookups
+}
+
 // GetOptions returns only the option field metadata (no records)
 // GET /api/tables/:table/options
 func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
@@ -67,8 +111,12 @@ func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 		options[fieldName] = optionMap
 	}
 
+	// Build lookups map for table relation fields
+	lookups := h.getLookupValues(table, company)
+
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"options": options,
+		"lookups": lookups,
 	})
 	return c.JSON(response)
 }
@@ -189,6 +237,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		Table:   ts.TableCaption(tableName, language),
 		Fields:  make(map[string]string),
 		Options: make(map[string]map[string]string),
+		Lookups: h.getLookupValues(table, company),
 	}
 
 	// Add field captions from metadata
@@ -249,6 +298,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		Table:   ts.TableCaption(tableName, language),
 		Fields:  make(map[string]string),
 		Options: make(map[string]map[string]string),
+		Lookups: h.getLookupValues(table, company),
 	}
 
 	for _, field := range table.GetFields() {
@@ -294,8 +344,26 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
 	}
 
-	// Populate table from map
-	table.FromMap(data)
+	// Get FlowFields to skip during validation (they're calculated, not stored)
+	flowFields := make(map[string]bool)
+	for _, ff := range table.GetFlowFields() {
+		flowFields[ff] = true
+	}
+
+	// Validate and set each field (runs OnValidate triggers for table relations, etc.)
+	for fieldName, value := range data {
+		// Skip nil values - frontend may send null for unchanged fields
+		if value == nil {
+			continue
+		}
+		// Skip FlowFields - they're calculated, not validated
+		if flowFields[fieldName] {
+			continue
+		}
+		if err := table.ValidateField(fieldName, value); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+	}
 
 	// Special handling for User table password
 	if tableName == "User" {
@@ -356,8 +424,26 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
 	}
 
-	// Update only provided fields
-	table.UpdateFromMap(data)
+	// Get FlowFields to skip during validation (they're calculated, not stored)
+	flowFields := make(map[string]bool)
+	for _, ff := range table.GetFlowFields() {
+		flowFields[ff] = true
+	}
+
+	// Validate and update each field (runs OnValidate triggers for table relations, etc.)
+	for fieldName, value := range data {
+		// Skip nil values - frontend may send null for unchanged fields
+		if value == nil {
+			continue
+		}
+		// Skip FlowFields - they're calculated, not validated
+		if flowFields[fieldName] {
+			continue
+		}
+		if err := table.ValidateField(fieldName, value); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+	}
 
 	// Special handling for User table password
 	if tableName == "User" {
