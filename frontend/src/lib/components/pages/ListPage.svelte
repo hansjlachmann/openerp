@@ -1406,19 +1406,26 @@
 	}
 
 	.table-container {
-		@apply flex-1 border border-gray-200 rounded-lg bg-white;
-		@apply dark:border-gray-700 dark:bg-gray-900;
 		overflow: auto;
+		max-height: 100%;
+		width: 100%;
 	}
 
 	.table {
 		@apply w-full;
+		@apply border border-gray-200 rounded-lg;
+		@apply dark:border-gray-700;
 		border-collapse: separate;
 		border-spacing: 0;
+		background: transparent;
 	}
 
 	.table thead {
 		@apply z-10;
+	}
+
+	.table tbody {
+		background: transparent;
 	}
 
 	.table th {
