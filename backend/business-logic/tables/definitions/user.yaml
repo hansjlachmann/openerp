@@ -49,6 +49,13 @@ table:
           - source: name
             width: 200
 
+    - name: menu
+      type: types.Code
+      db_name: menu
+      caption: Menu
+      description: Assigned menu profile
+      length: 20
+
     - name: active
       type: bool
       db_name: active

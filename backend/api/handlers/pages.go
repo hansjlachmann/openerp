@@ -131,12 +131,24 @@ func normalizeLanguageCode(code string) string {
 	return strings.ToLower(code)
 }
 
-// GetMenu returns the menu structure
+// GetMenu returns the menu structure based on user's assigned menu
 // GET /api/menu
 func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
-	// Get menu from registry
+	// Get current session to determine user's menu
+	sess := session.GetCurrent()
+	menuName := ""
+	if sess != nil {
+		menuName = sess.GetMenu()
+	}
+
+	// Default to admin if no menu assigned
+	if menuName == "" {
+		menuName = "admin"
+	}
+
+	// Get menu from registry by name
 	registry := pages.GetRegistry()
-	menuDef := registry.GetMenu()
+	menuDef := registry.GetMenuByName(menuName)
 	if menuDef == nil {
 		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(apperrors.MenuNotFound().Message("en-US")))
 	}

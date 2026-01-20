@@ -129,7 +129,7 @@ func main() {
 
 	// Create a default session for API access
 	sess := session.NewSession(db, companyName, nil)
-	sess.SetUser("api-user", "API User", "en-US")
+	sess.SetUser("api-user", "API User", "en-US", "admin")
 	session.SetCurrent(sess)
 
 	fmt.Printf("✓ Session created for API access\n\n")

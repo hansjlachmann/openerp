@@ -17,6 +17,7 @@ type Session struct {
 	UserID      string             // Current user ID/username
 	UserName    string             // Current user full name
 	Language    string             // Application language (e.g., "en-US", "de-DE")
+	Menu        string             // Assigned menu profile (e.g., "admin", "sales")
 	transaction *sql.Tx            // Active transaction (nil if not in transaction)
 	// Future extensions:
 	// DateFormat string
@@ -75,11 +76,17 @@ func (s *Session) GetLanguage() string {
 	return s.Language
 }
 
+// GetMenu returns the assigned menu profile
+func (s *Session) GetMenu() string {
+	return s.Menu
+}
+
 // SetUser sets the current user information
-func (s *Session) SetUser(userID, userName, language string) {
+func (s *Session) SetUser(userID, userName, language, menu string) {
 	s.UserID = userID
 	s.UserName = userName
 	s.Language = language
+	s.Menu = menu
 }
 
 // ========================================
