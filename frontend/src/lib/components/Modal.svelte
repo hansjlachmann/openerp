@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
 	interface Props {
 		open?: boolean;
@@ -10,6 +10,9 @@
 
 	let { open = false, onclose, title, size = 'normal' }: Props = $props();
 
+	// Reference to modal content for focus management
+	let modalContentRef: HTMLDivElement;
+
 	// Handle escape key to close modal
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape' && open) {
@@ -17,10 +20,25 @@
 		}
 	}
 
-	// Prevent background scroll when modal is open
+	// Prevent background scroll when modal is open and manage focus
 	$effect(() => {
 		if (open) {
 			document.body.style.overflow = 'hidden';
+			// Focus the modal after it renders
+			tick().then(() => {
+				if (modalContentRef) {
+					// Find the first focusable element inside the modal
+					const focusable = modalContentRef.querySelector<HTMLElement>(
+						'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+					);
+					if (focusable) {
+						focusable.focus();
+					} else {
+						// If no focusable element, focus the modal itself
+						modalContentRef.focus();
+					}
+				}
+			});
 		} else {
 			document.body.style.overflow = '';
 		}
@@ -48,6 +66,8 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={title ? 'modal-title' : undefined}
+			tabindex="-1"
+			bind:this={modalContentRef}
 		>
 			<slot />
 		</div>
