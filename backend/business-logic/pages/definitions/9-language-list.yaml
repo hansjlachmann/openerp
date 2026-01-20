@@ -1,0 +1,42 @@
+page:
+  id: 9
+  type: List
+  name: Languages
+  source_table: Language
+  caption: Languages
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+          primary_key: true
+
+        - source: name
+          width: 300
+
+  actions:
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

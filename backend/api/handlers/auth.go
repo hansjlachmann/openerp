@@ -217,7 +217,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	user.User_id = types.NewCode(requestBody.UserID)
 	user.User_name = types.NewText(requestBody.UserName)
 	user.Email = types.NewText(requestBody.Email)
-	user.Language = types.NewText("en-US")
+	user.Language = types.NewCode("en-US")
 	user.Active = true
 	user.Created_at = types.NewDateTimeFromTime(now)
 	user.Last_login = types.NewDateTimeFromTime(now) // Initialize to avoid NULL
@@ -306,7 +306,7 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 			var user tables.User
 			user.InitWithDBType(h.db, company, h.dbType)
 			if user.Get(types.NewCode(userID)) {
-				user.Language = types.NewText(requestBody.Language)
+				user.Language = types.NewCode(requestBody.Language)
 				user.Modify(false) // Don't run triggers
 			}
 		}

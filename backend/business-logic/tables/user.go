@@ -21,7 +21,7 @@ type User struct {
 func NewUser() *User {
 	u := &User{}
 	u.Active = true
-	u.Language = types.NewText("en-US")
+	u.Language = types.NewCode("en-US")
 	return u
 }
 

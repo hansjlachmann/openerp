@@ -35,11 +35,19 @@ table:
       description: Hashed password (bcrypt)
 
     - name: language
-      type: types.Text
+      type: types.Code
       db_name: language
       caption: Language
-      description: Preferred language (en-US, de-DE, etc.)
+      description: Preferred language (en-US, nb-NO, etc.)
       length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: name
+            width: 200
 
     - name: active
       type: bool
