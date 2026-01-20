@@ -1,0 +1,43 @@
+# Norwegian (Bokmål) Messages - Success messages, dialogs, and UI text
+
+messages:
+  # Success Messages - Backend
+  MSG_LOGIN_SUCCESS: "Innlogging vellykket"
+  MSG_LOGOUT_SUCCESS: "Utlogging vellykket"
+  MSG_USER_CREATED: "Første bruker opprettet"
+  MSG_LANGUAGE_UPDATED: "Språk oppdatert"
+  MSG_COMPANY_CREATED: "Selskap \"%1\" opprettet"
+  MSG_PREFERENCE_SAVED: "Innstilling lagret"
+  MSG_PREFERENCE_DELETED: "Innstilling slettet"
+
+  # Success Messages - Records
+  MSG_RECORD_CREATED: "Post opprettet"
+  MSG_RECORD_UPDATED: "Post oppdatert"
+  MSG_RECORD_DELETED: "Post slettet"
+  MSG_RECORD_SAVED: "Post lagret"
+  MSG_RECORD_DELETED_SUCCESS: "Post slettet"
+
+  # Welcome Messages
+  MSG_WELCOME_BACK: "Velkommen tilbake, %1"
+
+  # Error Messages
+  ERR_FAILED_DELETE: "Kunne ikke slette post"
+  ERR_FAILED_OPEN_CARD: "Kunne ikke åpne kort"
+  ERR_FIELD_NOT_EXIST: "%1 '%2' finnes ikke"
+
+  # Dialog Titles
+  DLG_DELETE_RECORD_TITLE: "Slett post"
+  DLG_CONFIRM_TITLE: "Bekreft"
+
+  # Dialog Messages
+  DLG_DELETE_RECORD_CONFIRM: "Er du sikker på at du vil slette denne posten?"
+  DLG_DELETE_CONFIRM: "Er du sikker på at du vil slette denne %1?"
+  DLG_CONFIRM_DEFAULT: "Er du sikker?"
+
+  # Button Labels
+  BTN_DELETE: "Slett"
+  BTN_CANCEL: "Avbryt"
+  BTN_CONFIRM: "Bekreft"
+  BTN_OK: "OK"
+  BTN_YES: "Ja"
+  BTN_NO: "Nei"

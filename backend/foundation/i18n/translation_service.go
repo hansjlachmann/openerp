@@ -207,6 +207,24 @@ func (s *TranslationService) CommonTranslation(key, language string) string {
 	return s.Translate(fullKey, language)
 }
 
+// Message returns a message translation (success messages, dialogs, etc.)
+// key is the message code like "MSG_LOGIN_SUCCESS", "DLG_DELETE_RECORD_TITLE"
+func (s *TranslationService) Message(key, language string) string {
+	fullKey := fmt.Sprintf("messages.%s", key)
+	return s.Translate(fullKey, language)
+}
+
+// MessageWithParams returns a message translation with parameter substitution
+// Replaces %1, %2, etc. with provided params
+func (s *TranslationService) MessageWithParams(key, language string, params ...string) string {
+	msg := s.Message(key, language)
+	for i, param := range params {
+		placeholder := fmt.Sprintf("%%%d", i+1)
+		msg = strings.ReplaceAll(msg, placeholder, param)
+	}
+	return msg
+}
+
 // GetSupportedLanguages returns list of available languages
 func (s *TranslationService) GetSupportedLanguages() []string {
 	s.mu.RLock()

@@ -3,6 +3,7 @@
 	import type { TableFilter } from '$lib/types/api';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
+	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
@@ -631,7 +632,7 @@
 			modalOpen = true;
 		} catch (err) {
 			console.error('Error opening modal card:', err);
-			toast.error('Failed to open card');
+			toast.error(t(ERR.FAILED_OPEN_CARD));
 		}
 	}
 
@@ -672,7 +673,7 @@
 	function showSaveToast() {
 		const now = Date.now();
 		if (now - lastSaveToastTime > 500) {
-			toast.success('Record saved successfully');
+			toast.success(t(MSG.RECORD_SAVED));
 			lastSaveToastTime = now;
 		}
 	}
@@ -789,10 +790,10 @@
 						// Close the modal
 						closeModal();
 
-						toast.success('Record deleted successfully');
+						toast.success(t(MSG.RECORD_DELETED_SUCCESS));
 					} catch (err) {
 						console.error('Delete error:', err);
-						toast.error('Failed to delete record');
+						toast.error(t(ERR.FAILED_DELETE));
 						// Reset flag if delete failed
 						modalRecordDeleted = false;
 					}
