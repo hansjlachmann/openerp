@@ -1,0 +1,43 @@
+# English (US) Messages - Success messages, dialogs, and UI text
+
+messages:
+  # Success Messages - Backend
+  MSG_LOGIN_SUCCESS: "Login successful"
+  MSG_LOGOUT_SUCCESS: "Logout successful"
+  MSG_USER_CREATED: "Initial user created successfully"
+  MSG_LANGUAGE_UPDATED: "Language updated successfully"
+  MSG_COMPANY_CREATED: "Company \"%1\" created successfully"
+  MSG_PREFERENCE_SAVED: "Preference saved successfully"
+  MSG_PREFERENCE_DELETED: "Preference deleted successfully"
+
+  # Success Messages - Records
+  MSG_RECORD_CREATED: "Record created"
+  MSG_RECORD_UPDATED: "Record updated"
+  MSG_RECORD_DELETED: "Record deleted"
+  MSG_RECORD_SAVED: "Record saved successfully"
+  MSG_RECORD_DELETED_SUCCESS: "Record deleted successfully"
+
+  # Welcome Messages
+  MSG_WELCOME_BACK: "Welcome back, %1"
+
+  # Error Messages
+  ERR_FAILED_DELETE: "Failed to delete record"
+  ERR_FAILED_OPEN_CARD: "Failed to open card"
+  ERR_FIELD_NOT_EXIST: "%1 '%2' does not exist"
+
+  # Dialog Titles
+  DLG_DELETE_RECORD_TITLE: "Delete Record"
+  DLG_CONFIRM_TITLE: "Confirm"
+
+  # Dialog Messages
+  DLG_DELETE_RECORD_CONFIRM: "Are you sure you want to delete this record?"
+  DLG_DELETE_CONFIRM: "Are you sure you want to delete this %1?"
+  DLG_CONFIRM_DEFAULT: "Are you sure?"
+
+  # Button Labels
+  BTN_DELETE: "Delete"
+  BTN_CANCEL: "Cancel"
+  BTN_CONFIRM: "Confirm"
+  BTN_OK: "OK"
+  BTN_YES: "Yes"
+  BTN_NO: "No"
