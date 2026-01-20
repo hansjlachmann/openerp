@@ -32,6 +32,10 @@ page:
             caption: Language
             table_relation: Language
 
+          - source: menu
+            editable: true
+            caption: Menu
+
           - source: active
             editable: true
             caption: Active

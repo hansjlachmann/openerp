@@ -22,6 +22,7 @@ type UserBase struct {
 	Email types.Text `db:"email"`
 	Password_hash types.Text `db:"password_hash"`
 	Language types.Code `db:"language"`
+	Menu types.Code `db:"menu"`
 	Active bool `db:"active"`
 	Created_at types.DateTime `db:"created_at"`
 	Last_login types.DateTime `db:"last_login"`
@@ -99,6 +100,7 @@ func GetUserTableSchema() string {
 		email TEXT(100),
 		password_hash TEXT,
 		language TEXT(10),
+		menu TEXT(20),
 		active INTEGER DEFAULT true,
 		created_at TEXT,
 		last_login TEXT
@@ -113,6 +115,7 @@ func GetUserPostgresTableSchema() string {
 		email VARCHAR(100),
 		password_hash TEXT,
 		language VARCHAR(10),
+		menu VARCHAR(20),
 		active BOOLEAN DEFAULT true,
 		created_at TIMESTAMP,
 		last_login TIMESTAMP
@@ -200,6 +203,7 @@ func (t *UserBase) StoreOldValues() {
 	t.oldValues["email"] = t.Email
 	t.oldValues["password_hash"] = t.Password_hash
 	t.oldValues["language"] = t.Language
+	t.oldValues["menu"] = t.Menu
 	t.oldValues["active"] = t.Active
 	t.oldValues["created_at"] = t.Created_at
 	t.oldValues["last_login"] = t.Last_login
@@ -255,6 +259,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
+	var menuNull sql.NullString
 	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
@@ -265,7 +270,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, menu, active, created_at, last_login FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -276,6 +281,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
+		&menuNull,
 		&activeBool,
 		&created_atNull,
 		&last_loginNull,
@@ -297,6 +303,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewCode(languageNull.String)
+	t.Menu = types.NewCode(menuNull.String)
 	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
@@ -325,13 +332,14 @@ func (t *UserBase) Insert(runTrigger bool) bool {
 		t.Email,
 		t.Password_hash,
 		t.Language,
+		t.Menu,
 		t.Active,
 		t.Created_at,
 		t.Last_login,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, user_name, email, password_hash, language, active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, user_name, email, password_hash, language, menu, active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -377,6 +385,10 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "language = ?")
 			values = append(values, t.Language)
 		}
+		if t.hasFieldChanged("menu") {
+			setClauses = append(setClauses, "menu = ?")
+			values = append(values, t.Menu)
+		}
 		if t.hasFieldChanged("active") {
 			setClauses = append(setClauses, "active = ?")
 			values = append(values, t.Active)
@@ -404,6 +416,8 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Password_hash)
 		setClauses = append(setClauses, "language = ?")
 		values = append(values, t.Language)
+		setClauses = append(setClauses, "menu = ?")
+		values = append(values, t.Menu)
 		setClauses = append(setClauses, "active = ?")
 		values = append(values, t.Active)
 		setClauses = append(setClauses, "created_at = ?")
@@ -463,6 +477,11 @@ func (t *UserBase) hasFieldChanged(fieldName string) bool {
 	case "language":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Language.Equal(old)
+		}
+		return true // Type mismatch, assume changed
+	case "menu":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Menu.Equal(old)
 		}
 		return true // Type mismatch, assume changed
 	case "active":
@@ -695,7 +714,7 @@ func (t *UserBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, menu, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -704,6 +723,7 @@ func (t *UserBase) FindFirst() bool {
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
+	var menuNull sql.NullString
 	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
@@ -714,6 +734,7 @@ func (t *UserBase) FindFirst() bool {
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
+		&menuNull,
 		&activeBool,
 		&created_atNull,
 		&last_loginNull,
@@ -733,6 +754,7 @@ func (t *UserBase) FindFirst() bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewCode(languageNull.String)
+	t.Menu = types.NewCode(menuNull.String)
 	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
@@ -750,7 +772,7 @@ func (t *UserBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, menu, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -759,6 +781,7 @@ func (t *UserBase) FindLast() bool {
 	var emailNull sql.NullString
 	var password_hashNull sql.NullString
 	var languageNull sql.NullString
+	var menuNull sql.NullString
 	var activeBool sql.NullBool
 	var created_atNull sql.NullString
 	var last_loginNull sql.NullString
@@ -769,6 +792,7 @@ func (t *UserBase) FindLast() bool {
 		&emailNull,
 		&password_hashNull,
 		&languageNull,
+		&menuNull,
 		&activeBool,
 		&created_atNull,
 		&last_loginNull,
@@ -788,6 +812,7 @@ func (t *UserBase) FindLast() bool {
 	t.Email = types.NewText(emailNull.String)
 	t.Password_hash = types.NewText(password_hashNull.String)
 	t.Language = types.NewCode(languageNull.String)
+	t.Menu = types.NewCode(menuNull.String)
 	t.Active = activeBool.Bool
 	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
@@ -832,7 +857,7 @@ func (t *UserBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, menu, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -904,6 +929,7 @@ func (t *UserBase) Next(steps ...int) bool {
 		var emailNull sql.NullString
 		var password_hashNull sql.NullString
 		var languageNull sql.NullString
+		var menuNull sql.NullString
 		var activeBool sql.NullBool
 		var created_atNull sql.NullString
 		var last_loginNull sql.NullString
@@ -914,6 +940,7 @@ func (t *UserBase) Next(steps ...int) bool {
 			&emailNull,
 			&password_hashNull,
 			&languageNull,
+			&menuNull,
 			&activeBool,
 			&created_atNull,
 			&last_loginNull,
@@ -932,6 +959,7 @@ func (t *UserBase) Next(steps ...int) bool {
 		t.Email = types.NewText(emailNull.String)
 		t.Password_hash = types.NewText(password_hashNull.String)
 		t.Language = types.NewCode(languageNull.String)
+		t.Menu = types.NewCode(menuNull.String)
 		t.Active = activeBool.Bool
 		t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 		t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
@@ -965,7 +993,7 @@ func (t *UserBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, menu, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -991,6 +1019,7 @@ func (t *UserBase) FindSetBuffered() bool {
 		var emailNull sql.NullString
 		var password_hashNull sql.NullString
 		var languageNull sql.NullString
+		var menuNull sql.NullString
 		var activeBool sql.NullBool
 		var created_atNull sql.NullString
 		var last_loginNull sql.NullString
@@ -1001,6 +1030,7 @@ func (t *UserBase) FindSetBuffered() bool {
 			&emailNull,
 			&password_hashNull,
 			&languageNull,
+			&menuNull,
 			&activeBool,
 			&created_atNull,
 			&last_loginNull,
@@ -1017,6 +1047,7 @@ func (t *UserBase) FindSetBuffered() bool {
 		record.Email = types.NewText(emailNull.String)
 		record.Password_hash = types.NewText(password_hashNull.String)
 		record.Language = types.NewCode(languageNull.String)
+		record.Menu = types.NewCode(menuNull.String)
 		record.Active = activeBool.Bool
 		record.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
 		record.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
@@ -1053,6 +1084,7 @@ func (t *UserBase) copyFromBuffered(record *UserBase) {
 	t.Email = record.Email
 	t.Password_hash = record.Password_hash
 	t.Language = record.Language
+	t.Menu = record.Menu
 	t.Active = record.Active
 	t.Created_at = record.Created_at
 	t.Last_login = record.Last_login
@@ -1232,6 +1264,17 @@ func (t *UserBase) ValidateField(fieldName string, value interface{}) error {
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Language()
+	case "menu":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Menu = v
+		} else if v, ok := value.(string); ok {
+			t.Menu = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field menu")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Menu()
 	case "active":
 		// Set field value
 		if v, ok := value.(bool); ok {
@@ -1310,6 +1353,12 @@ func (t *UserBase) OnValidate_Language() error {
 	return nil
 }
 
+// OnValidate_Menu is the validation trigger for menu field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *UserBase) OnValidate_Menu() error {
+	return nil
+}
+
 // OnValidate_Active is the validation trigger for active field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
 func (t *UserBase) OnValidate_Active() error {
@@ -1347,6 +1396,7 @@ func (t *UserBase) ToMap() map[string]interface{} {
 		"email": t.Email.String(),
 		"password_hash": t.Password_hash.String(),
 		"language": t.Language.String(),
+		"menu": t.Menu.String(),
 		"active": t.Active,
 		"created_at": t.Created_at.String(),
 		"last_login": t.Last_login.String(),
@@ -1378,6 +1428,11 @@ func (t *UserBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["language"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Language = types.NewCode(s)
+		}
+	}
+	if v, ok := data["menu"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Menu = types.NewCode(s)
 		}
 	}
 	if v, ok := data["active"]; ok && v != nil {
@@ -1456,6 +1511,15 @@ func (t *UserBase) GetFields() []tables.FieldInfo {
 			Name:       "language",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "menu",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,

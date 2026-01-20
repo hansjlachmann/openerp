@@ -111,6 +111,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			user.User_id.String(),
 			user.User_name.String(),
 			user.Language.String(),
+			user.Menu.String(),
 		)
 		sess.SetCompany(company)
 	}
@@ -121,11 +122,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		userLang = "en-US"
 	}
 
+	userMenu := user.Menu.String()
+	if userMenu == "" {
+		userMenu = "admin" // Default menu
+	}
+
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"user_id":   user.User_id.String(),
 		"user_name": user.User_name.String(),
 		"email":     user.Email.String(),
 		"language":  userLang,
+		"menu":      userMenu,
 		"company":   company,
 		"message":   ts.Message("MSG_LOGIN_SUCCESS", userLang),
 	})
@@ -138,7 +145,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 	language := getLanguageOrDefault(sess)
 	if sess != nil {
-		sess.SetUser("", "", "")
+		sess.SetUser("", "", "", "")
 	}
 
 	ts := i18n.GetInstance()
@@ -295,8 +302,8 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
-	// Update session language
-	sess.SetUser(sess.GetUserID(), sess.GetUserName(), requestBody.Language)
+	// Update session language (keep existing menu)
+	sess.SetUser(sess.GetUserID(), sess.GetUserName(), requestBody.Language, sess.GetMenu())
 
 	// Optionally persist to user record
 	if requestBody.Persist {

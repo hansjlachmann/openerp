@@ -159,12 +159,62 @@ func (r *Registry) GetPage(pageID int) (*PageDefinition, error) {
 	return page, nil
 }
 
-// GetMenu returns the menu definition
+// GetMenu returns the default menu definition
 func (r *Registry) GetMenu() *MenuDefinition {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	return r.menu
+}
+
+// GetMenuByName loads and returns a menu by name from the menus folder
+// Falls back to default menu.yaml if named menu not found
+func (r *Registry) GetMenuByName(menuName string) *MenuDefinition {
+	// If no menu name specified, return default
+	if menuName == "" {
+		return r.GetMenu()
+	}
+
+	// Get project root
+	rootPath, err := findProjectRoot()
+	if err != nil {
+		fmt.Printf("Warning: Failed to find project root for menu: %v\n", err)
+		return r.GetMenu()
+	}
+
+	// Try to load from menus folder (e.g., menus/admin.yaml)
+	menuPath := filepath.Join(rootPath, "backend", "business-logic", "pages", "menus", menuName+".yaml")
+
+	// Check if menu file exists
+	if _, err := os.Stat(menuPath); os.IsNotExist(err) {
+		fmt.Printf("Warning: Menu file not found: %s, falling back to default\n", menuPath)
+		return r.GetMenu()
+	}
+
+	data, err := os.ReadFile(menuPath)
+	if err != nil {
+		fmt.Printf("Warning: Failed to read menu file %s: %v\n", menuPath, err)
+		return r.GetMenu()
+	}
+
+	var menuDef MenuDefinition
+	if err := yaml.Unmarshal(data, &menuDef); err != nil {
+		fmt.Printf("Warning: Failed to parse menu YAML %s: %v\n", menuPath, err)
+		return r.GetMenu()
+	}
+
+	// Set default Enabled to true for menu items
+	for i := range menuDef.Menu {
+		for j := range menuDef.Menu[i].Items {
+			if menuDef.Menu[i].Items[j].PageID > 0 && !menuDef.Menu[i].Items[j].Separator {
+				if menuDef.Menu[i].Items[j].Enabled == false {
+					menuDef.Menu[i].Items[j].Enabled = true
+				}
+			}
+		}
+	}
+
+	return &menuDef
 }
 
 // GetAllPages returns all loaded page definitions
