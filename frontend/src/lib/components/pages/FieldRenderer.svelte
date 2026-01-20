@@ -233,15 +233,48 @@
 		<div class="field-label">
 			{fieldCaption}
 		</div>
-		<div class={cn('field-value', fieldStyle)}>
-			{#if isOptionField}
-				{optionDisplayValue()}
-			{:else if isLookupField}
-				{lookupDisplayValue()}
-			{:else}
-				{formatValue(value)}
-			{/if}
-		</div>
+		{#if isAdvancedLookup && lookups.columns && lookups.rows}
+			<!-- Advanced lookup - show dropdown even in non-edit mode -->
+			<div class="input-wrapper">
+				<LookupDropdown
+					columns={[...lookups.columns]}
+					rows={[...lookups.rows]}
+					value={value || ''}
+					fieldName={fieldCaption}
+					captions={fieldCaptions}
+					searchTimeout={lookups.search_timeout}
+					{tabindex}
+					error={false}
+					onselect={handleLookupSelect}
+					onblur={() => onblur?.()}
+				/>
+			</div>
+		{:else if isSimpleLookup && lookups.simple}
+			<!-- Simple lookup - show dropdown even in non-edit mode -->
+			<div class="input-wrapper">
+				<select
+					id={field.source}
+					class={cn('select', fieldStyle)}
+					value={value ?? ''}
+					{tabindex}
+					onchange={handleLookupSelectChange}
+					onblur={() => onblur?.()}
+				>
+					<option value=""></option>
+					{#each Object.entries(lookups.simple) as [lookupCode, lookupDisplay]}
+						<option value={lookupCode} title={lookupDisplay}>{lookupCode}</option>
+					{/each}
+				</select>
+			</div>
+		{:else}
+			<div class={cn('field-value', fieldStyle)}>
+				{#if isOptionField}
+					{optionDisplayValue()}
+				{:else}
+					{formatValue(value)}
+				{/if}
+			</div>
+		{/if}
 	</div>
 {/if}
 
