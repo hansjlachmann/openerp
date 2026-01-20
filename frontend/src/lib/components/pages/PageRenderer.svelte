@@ -7,6 +7,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
+	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
@@ -268,12 +269,12 @@
 				const deleteId = getRecordId(record) || recordid;
 				if (deleteId) {
 					confirm.show(
-						'Delete Record',
-						`Are you sure you want to delete this ${page.page.caption}?`,
+						t(DLG.DELETE_RECORD_TITLE),
+						t(DLG.DELETE_CONFIRM, page.page.caption),
 						async () => {
 							try {
 								await api.deleteRecord(page.page.source_table, deleteId);
-								toast.success('Record deleted successfully');
+								toast.success(t(MSG.RECORD_DELETED_SUCCESS));
 								// Navigate back to the list page if available
 								if (page.page.type === 'Card') {
 									// Try to find the associated list page by convention
@@ -283,7 +284,7 @@
 								}
 							} catch (err) {
 								console.error('Delete error:', err);
-								toast.error('Failed to delete record');
+								toast.error(t(ERR.FAILED_DELETE));
 							}
 						}
 					);
@@ -303,7 +304,7 @@
 			if (isExistingRecord && currentRecordId) {
 				// Update existing record (only if we successfully loaded an existing record)
 				await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
-				toast.success('Record updated');
+				toast.success(t(MSG.RECORD_UPDATED));
 			} else {
 				// Insert new record
 				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
@@ -311,7 +312,7 @@
 				const newRecordId = insertedRecord.no || insertedRecord.code || insertedRecord.id;
 				isExistingRecord = true;
 				currentRecordId = newRecordId;
-				toast.success('Record created');
+				toast.success(t(MSG.RECORD_CREATED));
 				// Navigate to the proper URL with the new record ID
 				if (newRecordId && page.page.id) {
 					// Update URL without full page reload
@@ -347,15 +348,15 @@
 				if (selectedRecord) {
 					const deleteRecordId = getRecordId(selectedRecord);
 					confirm.show(
-						'Delete Record',
-						'Are you sure you want to delete this record?',
+						t(DLG.DELETE_RECORD_TITLE),
+						t(DLG.DELETE_RECORD_CONFIRM),
 						async () => {
 							try {
 								await api.deleteRecord(page.page.source_table, deleteRecordId!);
 								await loadListData();
-								toast.success('Record deleted');
+								toast.success(t(MSG.RECORD_DELETED));
 							} catch (err) {
-								toast.error('Failed to delete record');
+								toast.error(t(ERR.FAILED_DELETE));
 							}
 						}
 					);
@@ -392,9 +393,9 @@
 			const recordId = deletedRecord['no'] || deletedRecord['code'] || deletedRecord['id'];
 			await api.deleteRecord(page.page.source_table, recordId);
 			await loadListData();
-			toast.success('Record deleted');
+			toast.success(t(MSG.RECORD_DELETED));
 		} catch (err) {
-			toast.error('Failed to delete record');
+			toast.error(t(ERR.FAILED_DELETE));
 			console.error('Delete error:', err);
 			throw err;
 		}

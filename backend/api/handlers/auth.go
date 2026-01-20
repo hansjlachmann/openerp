@@ -10,6 +10,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -114,13 +115,19 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		sess.SetCompany(company)
 	}
 
+	ts := i18n.GetInstance()
+	userLang := user.Language.String()
+	if userLang == "" {
+		userLang = "en-US"
+	}
+
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"user_id":   user.User_id.String(),
 		"user_name": user.User_name.String(),
 		"email":     user.Email.String(),
-		"language":  user.Language.String(),
+		"language":  userLang,
 		"company":   company,
-		"message":   "Login successful",
+		"message":   ts.Message("MSG_LOGIN_SUCCESS", userLang),
 	})
 	return c.JSON(response)
 }
@@ -129,12 +136,14 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // POST /api/auth/logout
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
+	language := getLanguageOrDefault(sess)
 	if sess != nil {
 		sess.SetUser("", "", "")
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"message": "Logout successful",
+		"message": ts.Message("MSG_LOGOUT_SUCCESS", language),
 	})
 	return c.JSON(response)
 }
@@ -221,8 +230,9 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CreateUserFailed().Message("en-US")))
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"message":   "Initial user created successfully",
+		"message":   ts.Message("MSG_USER_CREATED", "en-US"),
 		"user_id":   user.User_id.String(),
 		"user_name": user.User_name.String(),
 	})
@@ -302,9 +312,10 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 		}
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"language": requestBody.Language,
-		"message":  "Language updated successfully",
+		"message":  ts.Message("MSG_LANGUAGE_UPDATED", requestBody.Language),
 	})
 	return c.JSON(response)
 }
@@ -361,9 +372,10 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyCreateFailed().Message("en-US")))
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"name":    name,
-		"message": "Company created successfully",
+		"message": ts.Message("MSG_COMPANY_CREATED", "en-US"),
 	})
 	return c.JSON(response)
 }

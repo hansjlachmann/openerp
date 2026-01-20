@@ -6,7 +6,7 @@
 	import MenuGroup from './MenuGroup.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { currentUser } from '$lib/stores/user';
-	import { session } from '$stores/session';
+	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
 
 	let menu: MenuDefinition | null = $state(null);
@@ -150,6 +150,11 @@
 				</svg>
 				<span>Home</span>
 			</a>
+
+			<!-- Company name -->
+			{#if $currentCompany}
+				<span class="text-sm text-white/80 font-medium px-2 border-r border-white/20 mr-2">{$currentCompany}</span>
+			{/if}
 
 			<!-- Menu groups -->
 			<div class="flex items-center gap-2 flex-1">
