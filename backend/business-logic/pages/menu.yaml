@@ -42,3 +42,9 @@ menu:
         icon: user
         description: User management
         enabled: true
+
+      - name: Languages
+        page_id: 9
+        icon: globe
+        description: System languages
+        enabled: true

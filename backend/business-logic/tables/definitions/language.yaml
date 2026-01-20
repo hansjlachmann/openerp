@@ -1,0 +1,26 @@
+table:
+  id: 8
+  name: "Language"
+  caption: Language
+  description: System languages
+  global: true  # Global table - no company prefix
+  fields:
+    - name: code
+      type: types.Code
+      db_name: code
+      caption: Code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: name
+      type: types.Text
+      db_name: name
+      caption: Name
+      description: Language name
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -14,17 +13,11 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// UserBase represents Table 5100: User
+// LanguageBase represents Table 8: Language
 // This is the generated base struct - embed in your wrapper struct and override Init
-type UserBase struct {
-	User_id types.Code `db:"user_id,pk"`
-	User_name types.Text `db:"user_name"`
-	Email types.Text `db:"email"`
-	Password_hash types.Text `db:"password_hash"`
-	Language types.Code `db:"language"`
-	Active bool `db:"active"`
-	Created_at types.DateTime `db:"created_at"`
-	Last_login types.DateTime `db:"last_login"`
+type LanguageBase struct {
+	Code types.Code `db:"code,pk"`
+	Name types.Text `db:"name"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -35,14 +28,14 @@ type UserBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*userBaseFilterCondition
+	filters map[string]*languageBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*UserBase
+	bufferedRecords []*LanguageBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -51,71 +44,59 @@ type UserBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const UserTableID = 5100
-const UserTableName = "User"
+const LanguageTableID = 8
+const LanguageTableName = "Language"
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *UserBase) GetTableID() int {
-	return UserTableID
+func (t *LanguageBase) GetTableID() int {
+	return LanguageTableID
 }
 
 // GetTableName returns the table name
-func (t *UserBase) GetTableName() string {
-	return UserTableName
+func (t *LanguageBase) GetTableName() string {
+	return LanguageTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *UserBase) GetTableSchema() string {
-	return GetUserTableSchema()
+func (t *LanguageBase) GetTableSchema() string {
+	return GetLanguageTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *UserBase) GetPostgresTableSchema() string {
-	return GetUserPostgresTableSchema()
+func (t *LanguageBase) GetPostgresTableSchema() string {
+	return GetLanguagePostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *UserBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *LanguageBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *UserBase) GetDB() database.Executor {
+func (t *LanguageBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *UserBase) GetCompany() string {
+func (t *LanguageBase) GetCompany() string {
 	return t.company
 }
 
-// GetUserTableSchema returns the SQLite schema
-func GetUserTableSchema() string {
+// GetLanguageTableSchema returns the SQLite schema
+func GetLanguageTableSchema() string {
 	return `
-		user_id TEXT(50) PRIMARY KEY,
-		user_name TEXT(100),
-		email TEXT(100),
-		password_hash TEXT,
-		language TEXT(10),
-		active INTEGER DEFAULT true,
-		created_at TEXT,
-		last_login TEXT
+		code TEXT(10) PRIMARY KEY,
+		name TEXT(50)
 	`
 }
 
-// GetUserPostgresTableSchema returns the PostgreSQL schema
-func GetUserPostgresTableSchema() string {
+// GetLanguagePostgresTableSchema returns the PostgreSQL schema
+func GetLanguagePostgresTableSchema() string {
 	return `
-		user_id VARCHAR(50) PRIMARY KEY,
-		user_name VARCHAR(100),
-		email VARCHAR(100),
-		password_hash TEXT,
-		language VARCHAR(10),
-		active BOOLEAN DEFAULT true,
-		created_at TIMESTAMP,
-		last_login TIMESTAMP
+		code VARCHAR(10) PRIMARY KEY,
+		name VARCHAR(50)
 	`
 }
 
@@ -124,44 +105,44 @@ func GetUserPostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *UserBase) GetCaption(language string) string {
+func (t *LanguageBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("User", language)
+	return ts.TableCaption("Language", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *UserBase) GetFieldCaption(fieldName, language string) string {
+func (t *LanguageBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("User", fieldName, language)
+	return ts.FieldCaption("Language", fieldName, language)
 }
 
-// CreateTable creates the User table for the specified company (SQLite)
+// CreateTable creates the Language table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *UserBase) CreateTable(db database.Executor, company string) error {
+func (t *LanguageBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the User table for the specified company with the given database type
+// CreateTableWithDBType creates the Language table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *UserBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := UserTableName
+func (t *LanguageBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := LanguageTableName
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetUserPostgresTableSchema()
+		schema = GetLanguagePostgresTableSchema()
 	} else {
-		schema = GetUserTableSchema()
+		schema = GetLanguageTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create User table: %w", err)
+		return fmt.Errorf("failed to create Language table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
 	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$User$Primary", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id)`,
+	indexName = fmt.Sprintf("%s$Language$Primary", company)
+	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (code)`,
 		indexName, tableName)
 	_, err = db.Exec(indexSQL)
 	if err != nil {
@@ -175,39 +156,32 @@ func (t *UserBase) CreateTableWithDBType(db database.Executor, company string, d
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new User record with database context
+// Init initializes a new Language record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *UserBase) Init(db database.Executor, company string) {
+func (t *LanguageBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new User record with database context and type
-func (t *UserBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new Language record with database context and type
+func (t *LanguageBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
-	t.Active = true
 }
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *UserBase) StoreOldValues() {
+func (t *LanguageBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
-	t.oldValues["user_id"] = t.User_id
-	t.oldValues["user_name"] = t.User_name
-	t.oldValues["email"] = t.Email
-	t.oldValues["password_hash"] = t.Password_hash
-	t.oldValues["language"] = t.Language
-	t.oldValues["active"] = t.Active
-	t.oldValues["created_at"] = t.Created_at
-	t.oldValues["last_login"] = t.Last_login
+	t.oldValues["code"] = t.Code
+	t.oldValues["name"] = t.Name
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *UserBase) convertPlaceholders(sql string, count int) string {
+func (t *LanguageBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -221,19 +195,19 @@ func (t *UserBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *UserBase) Get(primaryKey interface{}) bool {
+func (t *LanguageBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var user_idVal types.Code
-		if v, exists := pkMap["user_id"]; exists {
+		var codeVal types.Code
+		if v, exists := pkMap["code"]; exists {
 			switch val := v.(type) {
 			case types.Code:
-				user_idVal = val
+				codeVal = val
 			case string:
-				user_idVal = types.NewCode(val)
+				codeVal = types.NewCode(val)
 			}
 		}
-		return t.GetByPK(user_idVal)
+		return t.GetByPK(codeVal)
 	}
 	// Handle single primary key (for tables with only one PK field)
 	switch pk := primaryKey.(type) {
@@ -243,42 +217,30 @@ func (t *UserBase) Get(primaryKey interface{}) bool {
 		return t.GetByPK(types.NewCode(pk))
 	}
 
-	fmt.Printf("Error: Invalid primary key type for User.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for Language.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *UserBase) GetByPK(user_id types.Code) bool {
-	tableName := UserTableName
-	var user_idNull sql.NullString
-	var user_nameNull sql.NullString
-	var emailNull sql.NullString
-	var password_hashNull sql.NullString
-	var languageNull sql.NullString
-	var activeBool sql.NullBool
-	var created_atNull sql.NullString
-	var last_loginNull sql.NullString
+func (t *LanguageBase) GetByPK(code types.Code) bool {
+	tableName := LanguageTableName
+	var codeNull sql.NullString
+	var nameNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
-		user_id,
+		code,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
-		&user_idNull,
-		&user_nameNull,
-		&emailNull,
-		&password_hashNull,
-		&languageNull,
-		&activeBool,
-		&created_atNull,
-		&last_loginNull,
+		&codeNull,
+		&nameNull,
 	)
 
 	if err != nil {
@@ -287,19 +249,13 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get User: %v\n", err)
+		fmt.Printf("Error: Failed to get Language: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
-	t.User_name = types.NewText(user_nameNull.String)
-	t.Email = types.NewText(emailNull.String)
-	t.Password_hash = types.NewText(password_hashNull.String)
-	t.Language = types.NewCode(languageNull.String)
-	t.Active = activeBool.Bool
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
+	t.Code = types.NewCode(codeNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -308,7 +264,7 @@ func (t *UserBase) GetByPK(user_id types.Code) bool {
 }
 
 // Insert inserts the record into the database
-func (t *UserBase) Insert(runTrigger bool) bool {
+func (t *LanguageBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
@@ -316,36 +272,30 @@ func (t *UserBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserTableName
+	tableName := LanguageTableName
 
 	// Collect arguments for INSERT
 	args := []interface{}{
-		t.User_id,
-		t.User_name,
-		t.Email,
-		t.Password_hash,
-		t.Language,
-		t.Active,
-		t.Created_at,
-		t.Last_login,
+		t.Code,
+		t.Name,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, user_name, email, password_hash, language, active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name) VALUES (?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert User: %v\n", err)
+		fmt.Printf("Error: Failed to insert Language: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *UserBase) Modify(runTrigger bool) bool {
+func (t *LanguageBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
@@ -353,7 +303,7 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserTableName
+	tableName := LanguageTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -361,33 +311,9 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 
 	// If we have old values (loaded from Get), only update changed fields
 	if t.oldValues != nil {
-		if t.hasFieldChanged("user_name") {
-			setClauses = append(setClauses, "user_name = ?")
-			values = append(values, t.User_name)
-		}
-		if t.hasFieldChanged("email") {
-			setClauses = append(setClauses, "email = ?")
-			values = append(values, t.Email)
-		}
-		if t.hasFieldChanged("password_hash") {
-			setClauses = append(setClauses, "password_hash = ?")
-			values = append(values, t.Password_hash)
-		}
-		if t.hasFieldChanged("language") {
-			setClauses = append(setClauses, "language = ?")
-			values = append(values, t.Language)
-		}
-		if t.hasFieldChanged("active") {
-			setClauses = append(setClauses, "active = ?")
-			values = append(values, t.Active)
-		}
-		if t.hasFieldChanged("created_at") {
-			setClauses = append(setClauses, "created_at = ?")
-			values = append(values, t.Created_at)
-		}
-		if t.hasFieldChanged("last_login") {
-			setClauses = append(setClauses, "last_login = ?")
-			values = append(values, t.Last_login)
+		if t.hasFieldChanged("name") {
+			setClauses = append(setClauses, "name = ?")
+			values = append(values, t.Name)
 		}
 
 		// If nothing changed, skip update
@@ -396,27 +322,15 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 		}
 	} else {
 		// No old values (fresh record), update all fields
-		setClauses = append(setClauses, "user_name = ?")
-		values = append(values, t.User_name)
-		setClauses = append(setClauses, "email = ?")
-		values = append(values, t.Email)
-		setClauses = append(setClauses, "password_hash = ?")
-		values = append(values, t.Password_hash)
-		setClauses = append(setClauses, "language = ?")
-		values = append(values, t.Language)
-		setClauses = append(setClauses, "active = ?")
-		values = append(values, t.Active)
-		setClauses = append(setClauses, "created_at = ?")
-		values = append(values, t.Created_at)
-		setClauses = append(setClauses, "last_login = ?")
-		values = append(values, t.Last_login)
+		setClauses = append(setClauses, "name = ?")
+		values = append(values, t.Name)
 	}
 
 	// Add WHERE clause value (primary key)
-	values = append(values, t.User_id)
+	values = append(values, t.Code)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE code = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -426,14 +340,14 @@ func (t *UserBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify User: %v\n", err)
+		fmt.Printf("Error: Failed to modify Language: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *UserBase) hasFieldChanged(fieldName string) bool {
+func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -445,39 +359,9 @@ func (t *UserBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
-	case "user_name":
+	case "name":
 		if old, ok := oldValue.(types.Text); ok {
-			return !t.User_name.Equal(old)
-		}
-		return true // Type mismatch, assume changed
-	case "email":
-		if old, ok := oldValue.(types.Text); ok {
-			return !t.Email.Equal(old)
-		}
-		return true // Type mismatch, assume changed
-	case "password_hash":
-		if old, ok := oldValue.(types.Text); ok {
-			return !t.Password_hash.Equal(old)
-		}
-		return true // Type mismatch, assume changed
-	case "language":
-		if old, ok := oldValue.(types.Code); ok {
-			return !t.Language.Equal(old)
-		}
-		return true // Type mismatch, assume changed
-	case "active":
-		if old, ok := oldValue.(bool); ok {
-			return t.Active != old
-		}
-		return true // Type mismatch, assume changed
-	case "created_at":
-		if old, ok := oldValue.(types.DateTime); ok {
-			return !t.Created_at.Equal(old)
-		}
-		return true // Type mismatch, assume changed
-	case "last_login":
-		if old, ok := oldValue.(types.DateTime); ok {
-			return !t.Last_login.Equal(old)
+			return !t.Name.Equal(old)
 		}
 		return true // Type mismatch, assume changed
 	}
@@ -486,7 +370,7 @@ func (t *UserBase) hasFieldChanged(fieldName string) bool {
 }
 
 // Delete removes the record from the database
-func (t *UserBase) Delete(runTrigger bool) bool {
+func (t *LanguageBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
@@ -494,22 +378,22 @@ func (t *UserBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserTableName
+	tableName := LanguageTableName
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.User_id,
+		t.Code,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete User: %v\n", err)
+		fmt.Printf("Error: Failed to delete Language: %v\n", err)
 		return false
 	}
 	return true
@@ -517,7 +401,7 @@ func (t *UserBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *UserBase) CalcFields(fieldNames ...string) {
+func (t *LanguageBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -525,8 +409,8 @@ func (t *UserBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// userBaseFilterCondition represents a filter on a field
-type userBaseFilterCondition struct {
+// languageBaseFilterCondition represents a filter on a field
+type languageBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -538,9 +422,9 @@ type userBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *UserBase) SetRange(fieldName string, values ...interface{}) {
+func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*userBaseFilterCondition)
+		t.filters = make(map[string]*languageBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -559,7 +443,7 @@ func (t *UserBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &userBaseFilterCondition{
+	t.filters[fieldName] = &languageBaseFilterCondition{
 		fieldName: fieldName,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -570,11 +454,11 @@ func (t *UserBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *UserBase) SetFilter(fieldName, filterExpr string) {
+func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*userBaseFilterCondition)
+		t.filters = make(map[string]*languageBaseFilterCondition)
 	}
-	t.filters[fieldName] = &userBaseFilterCondition{
+	t.filters[fieldName] = &languageBaseFilterCondition{
 		fieldName:    fieldName,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -583,12 +467,12 @@ func (t *UserBase) SetFilter(fieldName, filterExpr string) {
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *UserBase) SetCurrentKey(fields ...string) {
+func (t *LanguageBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = fields
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *UserBase) Reset() {
+func (t *LanguageBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -599,7 +483,7 @@ func (t *UserBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *UserBase) buildWhereClause() (string, []interface{}) {
+func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -638,7 +522,7 @@ func (t *UserBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *UserBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *LanguageBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -680,62 +564,44 @@ func (t *UserBase) parseFilterExpression(fieldName, expr string) (string, []inte
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *UserBase) getOrderByClause() string {
+func (t *LanguageBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "user_id"
+	return "code"
 }
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *UserBase) FindFirst() bool {
-	tableName := UserTableName
+func (t *LanguageBase) FindFirst() bool {
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var user_idNull sql.NullString
-	var user_nameNull sql.NullString
-	var emailNull sql.NullString
-	var password_hashNull sql.NullString
-	var languageNull sql.NullString
-	var activeBool sql.NullBool
-	var created_atNull sql.NullString
-	var last_loginNull sql.NullString
+	var codeNull sql.NullString
+	var nameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&user_idNull,
-		&user_nameNull,
-		&emailNull,
-		&password_hashNull,
-		&languageNull,
-		&activeBool,
-		&created_atNull,
-		&last_loginNull,
+		&codeNull,
+		&nameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first User: %v\n", err)
+		fmt.Printf("Error: Failed to find first Language: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
-	t.User_name = types.NewText(user_nameNull.String)
-	t.Email = types.NewText(emailNull.String)
-	t.Password_hash = types.NewText(password_hashNull.String)
-	t.Language = types.NewCode(languageNull.String)
-	t.Active = activeBool.Bool
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
+	t.Code = types.NewCode(codeNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -745,52 +611,34 @@ func (t *UserBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *UserBase) FindLast() bool {
-	tableName := UserTableName
+func (t *LanguageBase) FindLast() bool {
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var user_idNull sql.NullString
-	var user_nameNull sql.NullString
-	var emailNull sql.NullString
-	var password_hashNull sql.NullString
-	var languageNull sql.NullString
-	var activeBool sql.NullBool
-	var created_atNull sql.NullString
-	var last_loginNull sql.NullString
+	var codeNull sql.NullString
+	var nameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&user_idNull,
-		&user_nameNull,
-		&emailNull,
-		&password_hashNull,
-		&languageNull,
-		&activeBool,
-		&created_atNull,
-		&last_loginNull,
+		&codeNull,
+		&nameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last User: %v\n", err)
+		fmt.Printf("Error: Failed to find last Language: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
-	t.User_name = types.NewText(user_nameNull.String)
-	t.Email = types.NewText(emailNull.String)
-	t.Password_hash = types.NewText(password_hashNull.String)
-	t.Language = types.NewCode(languageNull.String)
-	t.Active = activeBool.Bool
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-	t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
+	t.Code = types.NewCode(codeNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -799,8 +647,8 @@ func (t *UserBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *UserBase) Count() int {
-	tableName := UserTableName
+func (t *LanguageBase) Count() int {
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -811,7 +659,7 @@ func (t *UserBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count User: %v\n", err)
+		fmt.Printf("Error: Failed to count Language: %v\n", err)
 		return 0
 	}
 
@@ -821,25 +669,25 @@ func (t *UserBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *UserBase) FindSet() bool {
+func (t *LanguageBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := UserTableName
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for User: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for Language: %v\n", err)
 		return false
 	}
 
@@ -857,7 +705,7 @@ func (t *UserBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *UserBase) Next(steps ...int) bool {
+func (t *LanguageBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -899,42 +747,24 @@ func (t *UserBase) Next(steps ...int) bool {
 		}
 
 		// Scan the row
-		var user_idNull sql.NullString
-		var user_nameNull sql.NullString
-		var emailNull sql.NullString
-		var password_hashNull sql.NullString
-		var languageNull sql.NullString
-		var activeBool sql.NullBool
-		var created_atNull sql.NullString
-		var last_loginNull sql.NullString
+		var codeNull sql.NullString
+		var nameNull sql.NullString
 
 		err := t.currentRows.Scan(
-			&user_idNull,
-			&user_nameNull,
-			&emailNull,
-			&password_hashNull,
-			&languageNull,
-			&activeBool,
-			&created_atNull,
-			&last_loginNull,
+			&codeNull,
+			&nameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan User record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
 		}
 
 		// Populate fields
-		t.User_id = types.NewCode(user_idNull.String)
-		t.User_name = types.NewText(user_nameNull.String)
-		t.Email = types.NewText(emailNull.String)
-		t.Password_hash = types.NewText(password_hashNull.String)
-		t.Language = types.NewCode(languageNull.String)
-		t.Active = activeBool.Bool
-		t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-		t.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
+		t.Code = types.NewCode(codeNull.String)
+		t.Name = types.NewText(nameNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -950,7 +780,7 @@ func (t *UserBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *UserBase) FindSetBuffered() bool {
+func (t *LanguageBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -960,19 +790,19 @@ func (t *UserBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := UserTableName
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, user_name, email, password_hash, language, active, created_at, last_login FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for User: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for Language: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -980,46 +810,28 @@ func (t *UserBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &UserBase{}
+		record := &LanguageBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
-		var user_idNull sql.NullString
-		var user_nameNull sql.NullString
-		var emailNull sql.NullString
-		var password_hashNull sql.NullString
-		var languageNull sql.NullString
-		var activeBool sql.NullBool
-		var created_atNull sql.NullString
-		var last_loginNull sql.NullString
+		var codeNull sql.NullString
+		var nameNull sql.NullString
 
 		err := rows.Scan(
-			&user_idNull,
-			&user_nameNull,
-			&emailNull,
-			&password_hashNull,
-			&languageNull,
-			&activeBool,
-			&created_atNull,
-			&last_loginNull,
+			&codeNull,
+			&nameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan User record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
-		record.User_id = types.NewCode(user_idNull.String)
-		record.User_name = types.NewText(user_nameNull.String)
-		record.Email = types.NewText(emailNull.String)
-		record.Password_hash = types.NewText(password_hashNull.String)
-		record.Language = types.NewCode(languageNull.String)
-		record.Active = activeBool.Bool
-		record.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-		record.Last_login, _ = types.NewDateTimeFromString(last_loginNull.String)
+		record.Code = types.NewCode(codeNull.String)
+		record.Name = types.NewText(nameNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -1030,7 +842,7 @@ func (t *UserBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate User records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate Language records: %v\n", err)
 		return false
 	}
 
@@ -1047,15 +859,9 @@ func (t *UserBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *UserBase) copyFromBuffered(record *UserBase) {
-	t.User_id = record.User_id
-	t.User_name = record.User_name
-	t.Email = record.Email
-	t.Password_hash = record.Password_hash
-	t.Language = record.Language
-	t.Active = record.Active
-	t.Created_at = record.Created_at
-	t.Last_login = record.Last_login
+func (t *LanguageBase) copyFromBuffered(record *LanguageBase) {
+	t.Code = record.Code
+	t.Name = record.Name
 	t.StoreOldValues()
 }
 
@@ -1064,14 +870,14 @@ func (t *UserBase) copyFromBuffered(record *UserBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *UserBase) IsEmpty() bool {
+func (t *LanguageBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := UserTableName
+func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -1085,7 +891,7 @@ func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all User: %v\n", err)
+		fmt.Printf("Error: Failed to modify all Language: %v\n", err)
 		return 0
 	}
 
@@ -1095,8 +901,8 @@ func (t *UserBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *UserBase) DeleteAll() int {
-	tableName := UserTableName
+func (t *LanguageBase) DeleteAll() int {
+	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -1107,7 +913,7 @@ func (t *UserBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all User: %v\n", err)
+		fmt.Printf("Error: Failed to delete all Language: %v\n", err)
 		return 0
 	}
 
@@ -1116,16 +922,16 @@ func (t *UserBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *UserBase) CopyFilters(from *UserBase) {
+func (t *LanguageBase) CopyFilters(from *LanguageBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*userBaseFilterCondition)
+	t.filters = make(map[string]*languageBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &userBaseFilterCondition{
+		t.filters[key] = &languageBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -1145,7 +951,7 @@ func (t *UserBase) CopyFilters(from *UserBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *UserBase) GetFilters() string {
+func (t *LanguageBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1173,158 +979,46 @@ func (t *UserBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *UserBase) ValidateField(fieldName string, value interface{}) error {
+func (t *LanguageBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
-	case "user_id":
+	case "code":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
-			t.User_id = v
+			t.Code = v
 		} else if v, ok := value.(string); ok {
-			t.User_id = types.NewCode(v)
+			t.Code = types.NewCode(v)
 		} else {
-			return fmt.Errorf("invalid type for field user_id")
+			return fmt.Errorf("invalid type for field code")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_User_id()
-	case "user_name":
+		return t.OnValidate_Code()
+	case "name":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.User_name = v
+			t.Name = v
 		} else if v, ok := value.(string); ok {
-			t.User_name = types.NewText(v)
+			t.Name = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field user_name")
+			return fmt.Errorf("invalid type for field name")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_User_name()
-	case "email":
-		// Set field value
-		if v, ok := value.(types.Text); ok {
-			t.Email = v
-		} else if v, ok := value.(string); ok {
-			t.Email = types.NewText(v)
-		} else {
-			return fmt.Errorf("invalid type for field email")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Email()
-	case "password_hash":
-		// Set field value
-		if v, ok := value.(types.Text); ok {
-			t.Password_hash = v
-		} else if v, ok := value.(string); ok {
-			t.Password_hash = types.NewText(v)
-		} else {
-			return fmt.Errorf("invalid type for field password_hash")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Password_hash()
-	case "language":
-		// Set field value
-		if v, ok := value.(types.Code); ok {
-			t.Language = v
-		} else if v, ok := value.(string); ok {
-			t.Language = types.NewCode(v)
-		} else {
-			return fmt.Errorf("invalid type for field language")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Language()
-	case "active":
-		// Set field value
-		if v, ok := value.(bool); ok {
-			t.Active = v
-		} else {
-			return fmt.Errorf("invalid type for field active")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Active()
-	case "created_at":
-		// Set field value
-		if v, ok := value.(types.DateTime); ok {
-			t.Created_at = v
-		} else if v, ok := value.(string); ok {
-			var err error
-			t.Created_at, err = types.NewDateTimeFromString(v)
-			if err != nil {
-				return fmt.Errorf("invalid datetime value for field created_at: %w", err)
-			}
-		} else if v, ok := value.(time.Time); ok {
-			t.Created_at = types.NewDateTimeFromTime(v)
-		} else {
-			return fmt.Errorf("invalid type for field created_at (expected DateTime, string, or time.Time)")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Created_at()
-	case "last_login":
-		// Set field value
-		if v, ok := value.(types.DateTime); ok {
-			t.Last_login = v
-		} else if v, ok := value.(string); ok {
-			var err error
-			t.Last_login, err = types.NewDateTimeFromString(v)
-			if err != nil {
-				return fmt.Errorf("invalid datetime value for field last_login: %w", err)
-			}
-		} else if v, ok := value.(time.Time); ok {
-			t.Last_login = types.NewDateTimeFromTime(v)
-		} else {
-			return fmt.Errorf("invalid type for field last_login (expected DateTime, string, or time.Time)")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_Last_login()
+		return t.OnValidate_Name()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-// OnValidate_User_id is the validation trigger for user_id field (BC/NAV style)
+// OnValidate_Code is the validation trigger for code field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_User_id() error {
+func (t *LanguageBase) OnValidate_Code() error {
 	return nil
 }
 
-// OnValidate_User_name is the validation trigger for user_name field (BC/NAV style)
+// OnValidate_Name is the validation trigger for name field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_User_name() error {
-	return nil
-}
-
-// OnValidate_Email is the validation trigger for email field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Email() error {
-	return nil
-}
-
-// OnValidate_Password_hash is the validation trigger for password_hash field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Password_hash() error {
-	return nil
-}
-
-// OnValidate_Language is the validation trigger for language field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Language() error {
-	return nil
-}
-
-// OnValidate_Active is the validation trigger for active field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Active() error {
-	return nil
-}
-
-// OnValidate_Created_at is the validation trigger for created_at field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Created_at() error {
-	return nil
-}
-
-// OnValidate_Last_login is the validation trigger for last_login field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserBase) OnValidate_Last_login() error {
+func (t *LanguageBase) OnValidate_Name() error {
 	return nil
 }
 
@@ -1333,156 +1027,66 @@ func (t *UserBase) OnValidate_Last_login() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *UserBase) ClearFilters() {
+func (t *LanguageBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *UserBase) ToMap() map[string]interface{} {
+func (t *LanguageBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"user_id": t.User_id.String(),
-		"user_name": t.User_name.String(),
-		"email": t.Email.String(),
-		"password_hash": t.Password_hash.String(),
-		"language": t.Language.String(),
-		"active": t.Active,
-		"created_at": t.Created_at.String(),
-		"last_login": t.Last_login.String(),
+		"code": t.Code.String(),
+		"name": t.Name.String(),
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *UserBase) FromMap(data map[string]interface{}) {
-	if v, ok := data["user_id"]; ok && v != nil {
+func (t *LanguageBase) FromMap(data map[string]interface{}) {
+	if v, ok := data["code"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.User_id = types.NewCode(s)
+			t.Code = types.NewCode(s)
 		}
 	}
-	if v, ok := data["user_name"]; ok && v != nil {
+	if v, ok := data["name"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.User_name = types.NewText(s)
-		}
-	}
-	if v, ok := data["email"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Email = types.NewText(s)
-		}
-	}
-	if v, ok := data["password_hash"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Password_hash = types.NewText(s)
-		}
-	}
-	if v, ok := data["language"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Language = types.NewCode(s)
-		}
-	}
-	if v, ok := data["active"]; ok && v != nil {
-		if b, ok := v.(bool); ok {
-			t.Active = b
-		}
-	}
-	if v, ok := data["created_at"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Created_at, _ = types.NewDateTimeFromString(s)
-		}
-	}
-	if v, ok := data["last_login"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Last_login, _ = types.NewDateTimeFromString(s)
+			t.Name = types.NewText(s)
 		}
 	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *UserBase) UpdateFromMap(data map[string]interface{}) {
+func (t *LanguageBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *UserBase) GetPrimaryKeyField() string {
-	return "user_id"
+func (t *LanguageBase) GetPrimaryKeyField() string {
+	return "code"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *UserBase) GetPrimaryKeyValue() string {
-	return t.User_id.String()
+func (t *LanguageBase) GetPrimaryKeyValue() string {
+	return t.Code.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *UserBase) GetFields() []tables.FieldInfo {
+func (t *LanguageBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
-			Name:       "user_id",
+			Name:       "code",
 			Type:       tables.FieldTypeCode,
-			Length:     50,
+			Length:     10,
 			Required:   true,
 			Editable:   false,
 			PrimaryKey: true,
 			FlowField:  false,
 		},
 		{
-			Name:       "user_name",
+			Name:       "name",
 			Type:       tables.FieldTypeText,
-			Length:     100,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "email",
-			Type:       tables.FieldTypeText,
-			Length:     100,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "password_hash",
-			Type:       tables.FieldTypeText,
-			Length:     0,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "language",
-			Type:       tables.FieldTypeCode,
-			Length:     10,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "active",
-			Type:       tables.FieldTypeBoolean,
-			Length:     0,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "created_at",
-			Type:       tables.FieldTypeDateTime,
-			Length:     0,
-			Required:   false,
-			Editable:   true,
-			PrimaryKey: false,
-			FlowField:  false,
-		},
-		{
-			Name:       "last_login",
-			Type:       tables.FieldTypeDateTime,
-			Length:     0,
+			Length:     50,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -1492,29 +1096,19 @@ func (t *UserBase) GetFields() []tables.FieldInfo {
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *UserBase) GetFlowFields() []string {
+func (t *LanguageBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *UserBase) GetOptionFields() map[string][]string {
+func (t *LanguageBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *UserBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *LanguageBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
-		"language": {
-			Table:        "Language",
-			Field:        "code",
-			DisplayField: "",
-			LookupColumns: []tables.LookupColumnInfo{
-				{Source: "code", Width: 80},
-				{Source: "name", Width: 200},
-			},
-			SearchTimeout: 0,
-		},
 	}
 }
