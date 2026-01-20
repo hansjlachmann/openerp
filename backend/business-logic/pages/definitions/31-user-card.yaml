@@ -30,6 +30,7 @@ page:
           - source: language
             editable: true
             caption: Language
+            table_relation: Language
 
           - source: active
             editable: true
