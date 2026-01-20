@@ -7,8 +7,8 @@ messages:
   MSG_USER_CREATED: "Første bruker opprettet"
   MSG_LANGUAGE_UPDATED: "Språk oppdatert"
   MSG_COMPANY_CREATED: "Selskap \"%1\" opprettet"
-  MSG_PREFERENCE_SAVED: "Innstilling lagret"
-  MSG_PREFERENCE_DELETED: "Innstilling slettet"
+  MSG_PREFERENCE_SAVED: "Oppsett lagret"
+  MSG_PREFERENCE_DELETED: "Oppsett slettet"
 
   # Success Messages - Records
   MSG_RECORD_CREATED: "Post opprettet"
