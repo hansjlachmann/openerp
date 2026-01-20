@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
 	import { toast } from '$lib/stores/toast';
+	import { t, ERR } from '$lib/services/i18n';
 
 	interface LookupColumn {
 		source: string;
@@ -155,7 +156,7 @@
 					} else {
 						// No match - show error and revert to previous value
 						const fieldLabel = fieldName || 'Value';
-						toast.error(`${fieldLabel} '${inputValue.trim()}' does not exist`);
+						toast.error(t(ERR.FIELD_NOT_EXIST, fieldLabel, inputValue.trim()));
 						inputValue = value || '';
 					}
 				} else {

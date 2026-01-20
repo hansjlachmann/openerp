@@ -11,6 +11,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -147,8 +148,9 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 		}
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"message": "Preference saved successfully",
+		"message": ts.Message("MSG_PREFERENCE_SAVED", language),
 	})
 	return c.JSON(response)
 }
@@ -194,8 +196,9 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceDeleteFailed().Message(language)))
 	}
 
+	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"message": "Preference deleted successfully",
+		"message": ts.Message("MSG_PREFERENCE_DELETED", language),
 	})
 	return c.JSON(response)
 }
