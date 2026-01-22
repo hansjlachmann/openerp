@@ -372,7 +372,7 @@
 	function handleRowClick(clickedRecord: Record<string, any>) {
 		if (!page || !page.page.card_page_id) return;
 
-		const recordId = clickedRecord['no'] || clickedRecord['code'] || clickedRecord['id'];
+		const recordId = getRecordId(clickedRecord);
 		window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
 	}
 
@@ -390,7 +390,12 @@
 		if (!page) return;
 
 		try {
-			const recordId = deletedRecord['no'] || deletedRecord['code'] || deletedRecord['id'];
+			const recordId = getRecordId(deletedRecord);
+			if (!recordId) {
+				console.error('Cannot delete record: no record ID found', deletedRecord);
+				toast.error('Cannot delete: record has no ID');
+				return;
+			}
 			await api.deleteRecord(page.page.source_table, recordId);
 			await loadListData();
 			toast.success(t(MSG.RECORD_DELETED));
