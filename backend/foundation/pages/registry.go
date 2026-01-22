@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -183,7 +184,10 @@ func (r *Registry) GetMenuByName(menuName string) *MenuDefinition {
 	}
 
 	// Try to load from menus folder (e.g., menus/admin.yaml)
-	menuPath := filepath.Join(rootPath, "backend", "business-logic", "pages", "menus", menuName+".yaml")
+	// Strip .yaml extension if already present (filename may be stored with or without extension)
+	// Convert to lowercase for case-insensitive file matching on Linux
+	cleanName := strings.ToLower(strings.TrimSuffix(menuName, ".yaml"))
+	menuPath := filepath.Join(rootPath, "backend", "business-logic", "pages", "menus", cleanName+".yaml")
 
 	// Check if menu file exists
 	if _, err := os.Stat(menuPath); os.IsNotExist(err) {

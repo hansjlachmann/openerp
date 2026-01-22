@@ -15,6 +15,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/objects"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 func getEnv(key, defaultValue string) string {
@@ -45,6 +46,12 @@ func main() {
 	}
 	if err := registry.RegisterTable(tables.UserPreferencesTableID, &tables.UserPreferences{}); err != nil {
 		log.Printf("Warning: Failed to register UserPreferences: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.LanguageTableID, &tables.Language{}); err != nil {
+		log.Printf("Warning: Failed to register Language: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.MenuTableID, &tables.Menu{}); err != nil {
+		log.Printf("Warning: Failed to register Menu: %v\n", err)
 	}
 
 	var db *database.Database

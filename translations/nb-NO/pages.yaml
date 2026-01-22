@@ -23,3 +23,11 @@ pages:
     caption: "Brukerkort"
   user_list:
     caption: "Brukere"
+
+  # Language pages
+  languages:
+    caption: "Språk"
+
+  # Menu pages
+  menus:
+    caption: "Menyer"

@@ -382,10 +382,21 @@
 		}, 100);
 	}
 
+	// Track saving state to prevent concurrent saves
+	let isSaving = $state(false);
+	let pendingSave: { record: Record<string, any>; rowIndex: number } | null = null;
+
 	// Auto-save when leaving a cell
 	async function handleCellBlur(record: Record<string, any>, rowIndex: number) {
 		if (!page || !editMode) return;
 
+		// If already saving, queue this save for later
+		if (isSaving) {
+			pendingSave = { record, rowIndex };
+			return;
+		}
+
+		isSaving = true;
 		try {
 			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
@@ -433,13 +444,71 @@
 			}
 		} catch (err) {
 			console.error('Error saving cell:', err);
-			// Silently fail - user can see the change didn't save if they refresh
+			const message = err instanceof Error ? err.message : 'Failed to save record';
+			toast.error(message);
+			// Revert the cell to its original value
+			const originalRecord = records.find(r => getRecordId(r) === getRecordId(record));
+			if (originalRecord) {
+				// Existing record - revert to original values but keep temp flags
+				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId };
+				editableRecords[rowIndex] = { ...deepCopy(originalRecord), ...tempFlags };
+			}
+			// For new records without an original, the invalid value stays but won't be saved
+		} finally {
+			isSaving = false;
+			// Process any pending save
+			if (pendingSave) {
+				const { record: pendingRecord, rowIndex: pendingRowIndex } = pendingSave;
+				pendingSave = null;
+				// Use setTimeout to avoid stack overflow
+				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex), 0);
+			}
+		}
+	}
+
+	// Check if a record is empty (only has internal flags, no real data)
+	function isEmptyNewRecord(record: Record<string, any>): boolean {
+		if (!record._isNew) return false;
+		return !Object.keys(record).some(key =>
+			!key.startsWith('_') && record[key] !== undefined && record[key] !== ''
+		);
+	}
+
+	// Remove empty new rows from editableRecords
+	function cleanupEmptyNewRows(exceptRowIndex?: number) {
+		const indicesToRemove: number[] = [];
+		editableRecords.forEach((record, index) => {
+			if (index !== exceptRowIndex && isEmptyNewRecord(record)) {
+				indicesToRemove.push(index);
+			}
+		});
+		if (indicesToRemove.length > 0) {
+			editableRecords = editableRecords.filter((_, index) => !indicesToRemove.includes(index));
+			// Adjust current row if needed
+			const removedBefore = indicesToRemove.filter(i => i < currentCellRow).length;
+			if (removedBefore > 0) {
+				currentCellRow = Math.max(0, currentCellRow - removedBefore);
+			}
 		}
 	}
 
 	// Insert a new row at cursor position
 	function insertNewRow() {
 		if (!editMode) return;
+
+		// Don't create a new row if we're already on an empty new row
+		if (currentCellRow >= 0 && currentCellRow < editableRecords.length) {
+			const currentRecord = editableRecords[currentCellRow];
+			if (isEmptyNewRecord(currentRecord)) {
+				// Already on an empty new row, just focus it
+				currentCellCol = 0;
+				focusCell(currentCellRow, currentCellCol);
+				return;
+			}
+		}
+
+		// Clean up any other empty new rows first
+		cleanupEmptyNewRows();
 
 		// Create a new empty record with temporary flag and stable ID for keying
 		const newRecord: Record<string, any> = {
@@ -478,7 +547,14 @@
 			case 'ArrowUp':
 				event.preventDefault();
 				if (rowIndex > 0) {
-					currentCellRow = rowIndex - 1;
+					// Clean up current row if it's an empty new row
+					const currentRecord = editableRecords[rowIndex];
+					if (isEmptyNewRecord(currentRecord)) {
+						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
+						currentCellRow = rowIndex - 1;
+					} else {
+						currentCellRow = rowIndex - 1;
+					}
 					currentCellCol = colIndex;
 					focusCell(currentCellRow, currentCellCol);
 				}
@@ -486,12 +562,29 @@
 			case 'ArrowDown':
 				event.preventDefault();
 				if (rowIndex < totalRows - 1) {
-					currentCellRow = rowIndex + 1;
-					currentCellCol = colIndex;
-					focusCell(currentCellRow, currentCellCol);
+					// Clean up current row if it's an empty new row
+					const currentRecord = editableRecords[rowIndex];
+					if (isEmptyNewRecord(currentRecord)) {
+						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
+						// Stay at same row index (which is now the next row after removal)
+						currentCellCol = colIndex;
+						focusCell(currentCellRow, currentCellCol);
+					} else {
+						currentCellRow = rowIndex + 1;
+						currentCellCol = colIndex;
+						focusCell(currentCellRow, currentCellCol);
+					}
 				} else {
-					// On last row, create new row below
-					insertNewRow();
+					// On last row - only create new row if current row has data
+					const currentRecord = editableRecords[rowIndex];
+					if (!isEmptyNewRecord(currentRecord)) {
+						insertNewRow();
+						// insertNewRow sets currentCellRow, adjust to be at the end
+						currentCellRow = editableRecords.length - 1;
+						currentCellCol = 0;
+						focusCell(currentCellRow, currentCellCol);
+					}
+					// If already on empty new row, do nothing (stay on current row)
 				}
 				break;
 			case 'ArrowLeft':
@@ -515,12 +608,29 @@
 				event.preventDefault();
 				// Move to next row on Enter
 				if (rowIndex < totalRows - 1) {
-					currentCellRow = rowIndex + 1;
-					currentCellCol = colIndex;
-					focusCell(currentCellRow, currentCellCol);
+					// Clean up current row if it's an empty new row
+					const currentRecord = editableRecords[rowIndex];
+					if (isEmptyNewRecord(currentRecord)) {
+						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
+						// Stay at same row index (which is now the next row after removal)
+						currentCellCol = colIndex;
+						focusCell(currentCellRow, currentCellCol);
+					} else {
+						currentCellRow = rowIndex + 1;
+						currentCellCol = colIndex;
+						focusCell(currentCellRow, currentCellCol);
+					}
 				} else {
-					// On last row, create new row below
-					insertNewRow();
+					// On last row - only create new row if current row has data
+					const currentRecord = editableRecords[rowIndex];
+					if (!isEmptyNewRecord(currentRecord)) {
+						insertNewRow();
+						// insertNewRow sets currentCellRow, adjust to be at the end
+						currentCellRow = editableRecords.length - 1;
+						currentCellCol = 0;
+						focusCell(currentCellRow, currentCellCol);
+					}
+					// If already on empty new row, do nothing (stay on current row)
 				}
 				break;
 		}

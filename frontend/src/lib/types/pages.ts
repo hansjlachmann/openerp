@@ -64,7 +64,8 @@ export interface MenuDefinition {
 export interface MenuGroup {
 	name: string;
 	icon?: string;
-	items: MenuItem[];
+	items?: MenuItem[]; // For grouped menus
+	page_id?: number; // For flat menus (direct link)
 }
 
 export interface MenuItem {

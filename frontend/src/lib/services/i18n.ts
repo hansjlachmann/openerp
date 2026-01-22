@@ -19,6 +19,19 @@ const messages: Record<string, Record<string, string>> = {
 		// Company Messages
 		MSG_COMPANY_CREATED: 'Company "%1" created successfully',
 
+		// Home Page
+		HOME_TITLE: 'Welcome to OpenERP Web',
+		HOME_DESCRIPTION: 'A modern, fast, and keyboard-driven ERP system all open source',
+		HOME_GENERAL: 'General',
+		HOME_SETTINGS: 'Settings',
+
+		// Menu Items
+		MENU_CUSTOMERS: 'Customers',
+		MENU_USERS: 'Users',
+		MENU_LANGUAGES: 'Languages',
+		MENU_PAYMENT_TERMS: 'Payment Terms',
+		MENU_MENUS: 'Menus',
+
 		// Error Messages
 		ERR_FAILED_DELETE: 'Failed to delete record',
 		ERR_FAILED_OPEN_CARD: 'Failed to open card',
@@ -56,6 +69,19 @@ const messages: Record<string, Record<string, string>> = {
 		// Company Messages
 		MSG_COMPANY_CREATED: 'Firma "%1" opprettet',
 
+		// Home Page
+		HOME_TITLE: 'Velkommen til OpenERP Web',
+		HOME_DESCRIPTION: 'Et moderne, raskt og tastatur-drevet ERP-system med åpen kildekode',
+		HOME_GENERAL: 'Generelt',
+		HOME_SETTINGS: 'Innstillinger',
+
+		// Menu Items
+		MENU_CUSTOMERS: 'Kunder',
+		MENU_USERS: 'Brukere',
+		MENU_LANGUAGES: 'Språk',
+		MENU_PAYMENT_TERMS: 'Betalingsbetingelser',
+		MENU_MENUS: 'Menyer',
+
 		// Error Messages
 		ERR_FAILED_DELETE: 'Kunne ikke slette post',
 		ERR_FAILED_OPEN_CARD: 'Kunne ikke åpne kort',
@@ -80,15 +106,26 @@ const messages: Record<string, Record<string, string>> = {
 	}
 };
 
-// Get the current user's language or default to en-US
+// Normalize language code (e.g., "NB-NO" -> "nb-NO")
+function normalizeLanguageCode(lang: string): string {
+	// Handle common formats: "nb-NO", "NB-NO", "nb-no" -> "nb-NO"
+	const parts = lang.toLowerCase().split('-');
+	if (parts.length === 2) {
+		return `${parts[0]}-${parts[1].toUpperCase()}`;
+	}
+	return lang;
+}
+
+// Get the current user's translation key or default to en-US
 function getCurrentLanguage(): string {
 	const user = get(currentUser);
-	return user?.language || 'en-US';
+	// Prefer translation_key if available, otherwise fall back to language
+	return user?.translation_key || user?.language || 'en-US';
 }
 
 // Get a message by key in the current language
 export function t(key: string, ...params: string[]): string {
-	const lang = getCurrentLanguage();
+	const lang = normalizeLanguageCode(getCurrentLanguage());
 	let message = messages[lang]?.[key] || messages['en-US']?.[key] || key;
 
 	// Replace %1, %2, etc. with params
@@ -101,7 +138,8 @@ export function t(key: string, ...params: string[]): string {
 
 // Get a message by key in a specific language
 export function tLang(key: string, lang: string, ...params: string[]): string {
-	let message = messages[lang]?.[key] || messages['en-US']?.[key] || key;
+	const normalizedLang = normalizeLanguageCode(lang);
+	let message = messages[normalizedLang]?.[key] || messages['en-US']?.[key] || key;
 
 	// Replace %1, %2, etc. with params
 	params.forEach((param, index) => {

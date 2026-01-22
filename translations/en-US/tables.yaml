@@ -104,3 +104,32 @@ tables:
         vendor: "Vendor"
         bank_account: "Bank Account"
         fixed_asset: "Fixed Asset"
+
+  # User (Table 5100)
+  user:
+    caption: "User"
+    fields:
+      user_id: "User ID"
+      user_name: "User Name"
+      email: "Email"
+      language: "Language"
+      menu: "Menu"
+      active: "Active"
+      created_at: "Created At"
+      last_login: "Last Login"
+
+  # Language (Table 8)
+  language:
+    caption: "Language"
+    fields:
+      code: "Code"
+      name: "Name"
+      translation_key: "Translation Key"
+
+  # Menu (Table 9)
+  menu:
+    caption: "Menu"
+    fields:
+      code: "Code"
+      description: "Description"
+      filename: "Filename"

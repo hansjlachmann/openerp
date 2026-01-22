@@ -56,8 +56,11 @@
 	});
 
 	// Filter rows based on input value (type-ahead filtering)
+	// Don't filter if input matches the current selected value (user hasn't started searching)
 	const filteredRows = $derived(() => {
 		if (!inputValue) return rows;
+		// If input exactly matches the current value, show all rows (user opened dropdown without typing)
+		if (inputValue === value) return rows;
 		const term = inputValue.toLowerCase();
 		return rows.filter(row => {
 			// Search in _key (code) first, then all columns

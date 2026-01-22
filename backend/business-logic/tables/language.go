@@ -67,6 +67,53 @@ func (t *Language) Validate() error {
 		return errors.New("name cannot exceed 50 characters")
 	}
 
+	// Validate translation_key format
+	if !t.Translation_key.IsEmpty() {
+		if err := t.validateTranslationKey(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateTranslationKey validates the translation key format (xx-XX)
+func (t *Language) validateTranslationKey() error {
+	key := t.Translation_key.String()
+
+	// Must be exactly 5 characters
+	if len(key) != 5 {
+		return errors.New("translation key must be exactly 5 characters (format: xx-XX)")
+	}
+
+	// Position 3 (index 2) must be a dash
+	if key[2] != '-' {
+		return errors.New("translation key must have a dash (-) at position 3 (format: xx-XX)")
+	}
+
+	return nil
+}
+
+// OnValidate_Translation_key validates the translation_key field when changed
+func (t *Language) OnValidate_Translation_key() error {
+	if !t.Translation_key.IsEmpty() {
+		return t.validateTranslationKey()
+	}
+	return nil
+}
+
+// ValidateField overrides the base ValidateField to use custom validation for translation_key
+func (t *Language) ValidateField(fieldName string, value interface{}) error {
+	// Call base validation first (sets the field value)
+	if err := t.LanguageBase.ValidateField(fieldName, value); err != nil {
+		return err
+	}
+
+	// Add custom validation for translation_key
+	if fieldName == "translation_key" || fieldName == "Translation_key" {
+		return t.OnValidate_Translation_key()
+	}
+
 	return nil
 }
 

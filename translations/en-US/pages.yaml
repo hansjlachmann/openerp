@@ -23,3 +23,11 @@ pages:
     caption: "User Card"
   user_list:
     caption: "Users"
+
+  # Language pages
+  languages:
+    caption: "Languages"
+
+  # Menu pages
+  menus:
+    caption: "Menus"

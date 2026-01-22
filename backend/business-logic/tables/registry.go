@@ -29,6 +29,9 @@ func init() {
 	RegisterTableFactory("Language", gtables.LanguageTableID, func() ftables.Table {
 		return &Language{}
 	})
+	RegisterTableFactory("Menu", gtables.MenuTableID, func() ftables.Table {
+		return &Menu{}
+	})
 }
 
 // RegisterTableFactory registers a table factory by name

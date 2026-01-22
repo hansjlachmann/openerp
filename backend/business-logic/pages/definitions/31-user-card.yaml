@@ -35,6 +35,7 @@ page:
           - source: menu
             editable: true
             caption: Menu
+            table_relation: Menu
 
           - source: active
             editable: true
