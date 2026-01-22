@@ -14,7 +14,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
-	import { getRecordId, isNewRecord, deepCopy } from '$lib/utils/recordHelpers';
+	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { toast } from '$lib/stores/toast';
 
 	// Lookup data structure from API
@@ -72,6 +72,9 @@
 		onNavigateLast
 	}: Props = $props();
 
+	// Get primary key field name from page definition
+	const primaryKeyField = $derived(getPrimaryKeyField(page));
+
 	// Customization state
 	let customizeModalOpen = $state(false);
 	let fieldCustomizations = $state<Record<string, ItemCustomization>>({});
@@ -100,7 +103,7 @@
 
 	// Auto-enable edit mode when a new record is loaded (not when field values change)
 	$effect(() => {
-		const id = getRecordId(record);
+		const id = getRecordId(record, primaryKeyField);
 		// Only trigger when the record ID actually changes (not on every field change)
 		if (id !== lastRecordId) {
 			lastRecordId = id;
@@ -151,9 +154,9 @@
 
 	// Update lastSavedRecord when record is loaded from parent
 	$effect(() => {
-		const id = getRecordId(record);
+		const id = getRecordId(record, primaryKeyField);
 		// When a record is first loaded (has ID and we don't have it saved yet)
-		if (id && (!lastSavedRecord || getRecordId(lastSavedRecord) !== id)) {
+		if (id && (!lastSavedRecord || getRecordId(lastSavedRecord, primaryKeyField) !== id)) {
 			lastSavedRecord = deepCopy(record);
 		}
 	});

@@ -1,27 +1,101 @@
 // Record utility functions
+import type { PageDefinition, Field } from '$lib/types/pages';
 
 /**
- * Extract the primary key/ID from a record
- * Records can use 'no', 'code', 'user_id', or 'id' as their primary key field
+ * Get the primary key field name from a page definition
+ * Searches through sections (Card pages) and repeater (List pages) for a field with primary_key: true
  */
-export function getRecordId(record: Record<string, any> | null | undefined): string | undefined {
-	if (!record) return undefined;
-	return record.no || record.code || record.user_id || record.id;
+export function getPrimaryKeyField(page: PageDefinition | null | undefined): string | undefined {
+	if (!page) return undefined;
+
+	// Check repeater fields (List pages)
+	if (page.page.layout.repeater?.fields) {
+		const pkField = page.page.layout.repeater.fields.find((f: Field) => f.primary_key);
+		if (pkField) return pkField.source;
+	}
+
+	// Check section fields (Card pages)
+	if (page.page.layout.sections) {
+		for (const section of page.page.layout.sections) {
+			const pkField = section.fields.find((f: Field) => f.primary_key);
+			if (pkField) return pkField.source;
+		}
+	}
+
+	return undefined;
 }
 
 /**
- * Extract a display label from a record (includes user_id for user records)
+ * Extract the primary key/ID from a record
+ * @param record - The record to extract ID from
+ * @param primaryKeyField - Optional primary key field name (from page definition)
+ *
+ * If primaryKeyField is provided, uses that field directly.
+ * Otherwise falls back to checking common field names: no, code, user_id, id
  */
-export function getRecordLabel(record: Record<string, any> | null | undefined): string | undefined {
+export function getRecordId(
+	record: Record<string, any> | null | undefined,
+	primaryKeyField?: string
+): string | undefined {
 	if (!record) return undefined;
-	return record.no || record.code || record.user_id || record.id;
+
+	// If primary key field is specified, use it directly
+	if (primaryKeyField && record[primaryKeyField] !== undefined && record[primaryKeyField] !== '') {
+		return String(record[primaryKeyField]);
+	}
+
+	// Fallback to common field names for backwards compatibility
+	if (record.no !== undefined && record.no !== '') return String(record.no);
+	if (record.code !== undefined && record.code !== '') return String(record.code);
+	if (record.user_id !== undefined && record.user_id !== '') return String(record.user_id);
+	if (record.id !== undefined && record.id !== '') return String(record.id);
+
+	return undefined;
+}
+
+/**
+ * Extract a display label from a record
+ * @param record - The record to extract label from
+ * @param primaryKeyField - Optional primary key field name (from page definition)
+ */
+export function getRecordLabel(
+	record: Record<string, any> | null | undefined,
+	primaryKeyField?: string
+): string | undefined {
+	return getRecordId(record, primaryKeyField);
 }
 
 /**
  * Check if a record is new (has no ID)
+ * @param record - The record to check
+ * @param primaryKeyField - Optional primary key field name (from page definition)
  */
-export function isNewRecord(record: Record<string, any> | null | undefined): boolean {
-	return !getRecordId(record);
+export function isNewRecord(
+	record: Record<string, any> | null | undefined,
+	primaryKeyField?: string
+): boolean {
+	return !getRecordId(record, primaryKeyField);
+}
+
+/**
+ * Get the record key for Svelte's keyed each blocks
+ * Uses _tempId for new unsaved records, otherwise uses the primary key value
+ * @param record - The record to get key from
+ * @param primaryKeyField - Optional primary key field name (from page definition)
+ */
+export function getRecordKey(
+	record: Record<string, any>,
+	primaryKeyField?: string
+): string {
+	// For new unsaved records, use the temporary ID
+	if (record._tempId) return record._tempId;
+
+	// Use the primary key value
+	const id = getRecordId(record, primaryKeyField);
+	if (id) return id;
+
+	// Last resort fallback - should not happen in practice
+	return `record-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**

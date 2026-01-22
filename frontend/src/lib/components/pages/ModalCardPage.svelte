@@ -5,7 +5,7 @@
 	import type { PageDefinition } from '$lib/types/pages';
 	import { api } from '$lib/services/api';
 	import { onMount } from 'svelte';
-	import { getRecordId } from '$lib/utils/recordHelpers';
+	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 
 	// Lookup data structure from API
 	interface LookupData {
@@ -46,6 +46,9 @@
 		onclearerror
 	}: Props = $props();
 
+	// Get primary key field name from page definition
+	const primaryKeyField = $derived(getPrimaryKeyField(page));
+
 	// Modal size state: normal, expanded, fullscreen
 	let modalSize = $state<'normal' | 'expanded' | 'fullscreen'>('expanded');
 
@@ -75,7 +78,7 @@
 	// Update current record index when record changes
 	$effect(() => {
 		if (recordIdsLoaded && record) {
-			const currentRecordId = getRecordId(record);
+			const currentRecordId = getRecordId(record, primaryKeyField);
 			if (currentRecordId) {
 				currentRecordIndex = recordIds.indexOf(currentRecordId);
 			}
@@ -119,7 +122,7 @@
 			recordIds = await api.getRecordIDs(page.page.source_table);
 
 			// Find current record index
-			const currentRecordId = getRecordId(record);
+			const currentRecordId = getRecordId(record, primaryKeyField);
 			currentRecordIndex = currentRecordId ? recordIds.indexOf(currentRecordId) : -1;
 
 			recordIdsLoaded = true;
@@ -131,7 +134,7 @@
 
 	// Handle pop-out to new window
 	function handlePopOut() {
-		const recordId = getRecordId(record);
+		const recordId = getRecordId(record, primaryKeyField);
 		const url = `/pages/${page.page.id}${recordId ? `/${recordId}` : ''}`;
 		window.open(url, '_blank', 'width=1200,height=800');
 		onclose?.();

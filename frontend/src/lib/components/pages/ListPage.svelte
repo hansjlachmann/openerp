@@ -20,7 +20,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, getFieldStyleClasses, formatValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { getRecordId, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
 
 	// Lookup data structure from API
 	interface LookupData {
@@ -56,6 +56,9 @@
 		ondelete,
 		onfilter
 	}: Props = $props();
+
+	// Get primary key field name from page definition
+	const primaryKeyField = $derived(getPrimaryKeyField(page));
 
 	// Helper to format option field values
 	function formatOptionValue(fieldSource: string, value: any): string {
@@ -400,7 +403,7 @@
 		try {
 			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
-			const recordId = getRecordId(record);
+			const recordId = getRecordId(record, primaryKeyField);
 
 			// Remember current focus position before save
 			const focusRow = currentCellRow;
@@ -447,7 +450,7 @@
 			const message = err instanceof Error ? err.message : 'Failed to save record';
 			toast.error(message);
 			// Revert the cell to its original value
-			const originalRecord = records.find(r => getRecordId(r) === getRecordId(record));
+			const originalRecord = records.find(r => getRecordId(r, primaryKeyField) === getRecordId(record, primaryKeyField));
 			if (originalRecord) {
 				// Existing record - revert to original values but keep temp flags
 				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId };
@@ -692,7 +695,7 @@
 			const sourceTable = pageData?.page?.source_table || page.page.source_table;
 
 			// Load the record data with options and lookups (for enum/lookup dropdowns)
-			const recordId = getRecordId(record);
+			const recordId = getRecordId(record, primaryKeyField);
 
 			let opts: Record<string, Record<string, string>> = {};
 			let lkps: Record<string, LookupData> = {};
@@ -811,7 +814,7 @@
 
 		modalSaving = true;
 		try {
-			const recordId = getRecordId(savedRecord);
+			const recordId = getRecordId(savedRecord, primaryKeyField);
 
 			if (modalIsNewRecord) {
 				// Insert new record
@@ -830,7 +833,7 @@
 				const responseData = await api.modifyRecord(page.page.source_table, recordId!, savedRecord);
 
 				// Update the record in the list without full refresh
-				const index = records.findIndex(r => getRecordId(r) === recordId);
+				const index = records.findIndex(r => getRecordId(r, primaryKeyField) === recordId);
 				if (index !== -1) {
 					records[index] = responseData;
 				}
@@ -886,7 +889,7 @@
 				closeModal();
 				break;
 			case 'Delete':
-				const deleteRecordId = getRecordId(modalRecord);
+				const deleteRecordId = getRecordId(modalRecord, primaryKeyField);
 				if (deleteRecordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
 					// Mark as deleted BEFORE API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
@@ -895,7 +898,7 @@
 						await api.deleteRecord(page.page.source_table, deleteRecordId);
 
 						// Remove the record from the list
-						records = records.filter(r => getRecordId(r) !== deleteRecordId);
+						records = records.filter(r => getRecordId(r, primaryKeyField) !== deleteRecordId);
 
 						// Close the modal
 						closeModal();
@@ -911,7 +914,7 @@
 				break;
 			case 'Refresh':
 				// Reload the modal record with options
-				const refreshRecordId = getRecordId(modalRecord);
+				const refreshRecordId = getRecordId(modalRecord, primaryKeyField);
 				if (refreshRecordId) {
 					try {
 						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, refreshRecordId);
@@ -1358,7 +1361,7 @@
 				</tr>
 			</thead>
 			<tbody bind:this={tableBodyElement}>
-				{#each displayRecords as record, index (record._tempId || record.code || record.no || record.id || index)}
+				{#each displayRecords as record, index (getRecordKey(record, primaryKeyField))}
 					<tr
 						class={cn(
 							editMode ? '' : 'cursor-pointer',
