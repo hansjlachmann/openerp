@@ -373,7 +373,7 @@
 			</div>
 
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
-				{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
+				{@const variant = 'secondary'}
 				<Button
 					variant={variant}
 					size="sm"

@@ -1143,7 +1143,7 @@
 						// Other buttons require selection
 						return !selectedRecord;
 					})()}
-					{@const variant = action.name === 'Delete' ? 'danger' : action.name === 'New' ? 'success' : 'secondary'}
+					{@const variant = 'secondary'}
 					<Button
 						variant={variant}
 						size="sm"
