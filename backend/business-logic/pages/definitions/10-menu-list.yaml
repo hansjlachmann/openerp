@@ -1,9 +1,9 @@
 page:
-  id: 9
+  id: 10
   type: List
-  name: Languages
-  source_table: Language
-  caption: Languages
+  name: Menus
+  source_table: Menu
+  caption: Menus
   editable: true
 
   layout:
@@ -13,11 +13,11 @@ page:
           width: 120
           primary_key: true
 
-        - source: name
+        - source: description
           width: 250
 
-        - source: translation_key
-          width: 120
+        - source: filename
+          width: 200
 
   actions:
     - name: New

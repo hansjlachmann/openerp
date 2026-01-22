@@ -69,11 +69,12 @@ type MenuDefinition struct {
 	Menu []MenuGroup `yaml:"menu" json:"menu"`
 }
 
-// MenuGroup represents a top-level menu group
+// MenuGroup represents a top-level menu group or direct menu item
 type MenuGroup struct {
-	Name  string     `yaml:"name" json:"name"`
-	Icon  string     `yaml:"icon,omitempty" json:"icon,omitempty"`
-	Items []MenuItem `yaml:"items" json:"items"`
+	Name   string     `yaml:"name" json:"name"`
+	Icon   string     `yaml:"icon,omitempty" json:"icon,omitempty"`
+	Items  []MenuItem `yaml:"items,omitempty" json:"items,omitempty"` // For grouped menus
+	PageID int        `yaml:"page_id,omitempty" json:"page_id,omitempty"` // For flat menus (direct item)
 }
 
 // MenuItem represents a menu item

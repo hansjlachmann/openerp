@@ -20,6 +20,13 @@ table:
       description: Language name
       length: 50
 
+    - name: translation_key
+      type: types.Text
+      db_name: translation_key
+      caption: Translation Key
+      description: Case-sensitive key for translations (format xx-XX)
+      length: 5
+
   keys:
     - name: Primary
       fields: [code]

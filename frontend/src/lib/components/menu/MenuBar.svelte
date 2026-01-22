@@ -1,15 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { MenuDefinition } from '$lib/types/pages';
-	import { fetchMenu } from '$lib/services/pages';
-	import MenuGroup from './MenuGroup.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { currentUser } from '$lib/stores/user';
 	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
 
-	let menu: MenuDefinition | null = $state(null);
 	let loading = $state(true);
 	let currentTheme = $state<'light' | 'dark'>('light');
 	let showUserMenu = $state(false);
@@ -31,13 +27,12 @@
 
 	onMount(async () => {
 		try {
-			menu = await fetchMenu();
 			// Load current user info from storage
 			currentUser.loadFromStorage();
 			// Load available languages
 			languages = await api.getLanguages();
 		} catch (err) {
-			console.error('Error loading menu:', err);
+			console.error('Error loading data:', err);
 		} finally {
 			loading = false;
 		}
@@ -123,9 +118,9 @@
 
 {#if loading}
 	<div class="menu-bar bg-nav-blue text-white">
-		<div class="px-4 py-2 text-sm">Loading menu...</div>
+		<div class="px-4 py-2 text-sm">Loading...</div>
 	</div>
-{:else if menu}
+{:else}
 	<nav class="menu-bar bg-nav-blue text-white">
 		<div class="flex items-center gap-2 w-full">
 			<!-- Home button -->
@@ -151,17 +146,21 @@
 				<span>Home</span>
 			</a>
 
-			<!-- Company name -->
-			{#if $currentCompany}
-				<span class="text-sm text-white/80 font-medium px-2 border-r border-white/20 mr-2">{$currentCompany}</span>
-			{/if}
-
-			<!-- Menu groups -->
-			<div class="flex items-center gap-2 flex-1">
-				{#each menu.menu as group}
-					<MenuGroup {group} />
-				{/each}
+			<!-- Session information -->
+			<div class="flex items-center gap-4 text-sm text-white/80 border-r border-white/20 pr-4 mr-2">
+				{#if $currentCompany}
+					<span class="font-medium">{$currentCompany}</span>
+				{/if}
+				{#if $session.userName}
+					<span>User: {$session.userName}</span>
+				{/if}
+				{#if $session.language}
+					<span>Language: {$session.language}</span>
+				{/if}
 			</div>
+
+			<!-- Spacer to push user menu to the right -->
+			<div class="flex-1"></div>
 
 			<!-- User menu -->
 			{#if $currentUser}

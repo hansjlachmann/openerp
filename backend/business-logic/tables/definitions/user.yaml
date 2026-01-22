@@ -55,6 +55,14 @@ table:
       caption: Menu
       description: Assigned menu profile
       length: 20
+      table_relation:
+        table: Menu
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 200
 
     - name: active
       type: bool

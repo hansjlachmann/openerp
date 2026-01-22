@@ -122,19 +122,30 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		userLang = "en-US"
 	}
 
+	// Look up the translation_key from the Language table
+	translationKey := "en-US" // Default
+	var lang tables.Language
+	lang.InitWithDBType(h.db, company, h.dbType)
+	if lang.Get(types.NewCode(userLang)) {
+		if !lang.Translation_key.IsEmpty() {
+			translationKey = lang.Translation_key.String()
+		}
+	}
+
 	userMenu := user.Menu.String()
 	if userMenu == "" {
 		userMenu = "admin" // Default menu
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"user_id":   user.User_id.String(),
-		"user_name": user.User_name.String(),
-		"email":     user.Email.String(),
-		"language":  userLang,
-		"menu":      userMenu,
-		"company":   company,
-		"message":   ts.Message("MSG_LOGIN_SUCCESS", userLang),
+		"user_id":         user.User_id.String(),
+		"user_name":       user.User_name.String(),
+		"email":           user.Email.String(),
+		"language":        userLang,
+		"translation_key": translationKey,
+		"menu":            userMenu,
+		"company":         company,
+		"message":         ts.Message("MSG_LOGIN_SUCCESS", translationKey),
 	})
 	return c.JSON(response)
 }

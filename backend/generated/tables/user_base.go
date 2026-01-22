@@ -1580,5 +1580,15 @@ func (t *UserBase) GetTableRelationFields() map[string]tables.TableRelationInfo 
 			},
 			SearchTimeout: 0,
 		},
+		"menu": {
+			Table:        "Menu",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 200},
+			},
+			SearchTimeout: 0,
+		},
 	}
 }

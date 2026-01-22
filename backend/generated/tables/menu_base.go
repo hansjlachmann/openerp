@@ -13,12 +13,12 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// LanguageBase represents Table 8: Language
+// MenuBase represents Table 9: Menu
 // This is the generated base struct - embed in your wrapper struct and override Init
-type LanguageBase struct {
+type MenuBase struct {
 	Code types.Code `db:"code,pk"`
-	Name types.Text `db:"name"`
-	Translation_key types.Text `db:"translation_key"`
+	Description types.Text `db:"description"`
+	Filename types.Text `db:"filename"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -29,14 +29,14 @@ type LanguageBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*languageBaseFilterCondition
+	filters map[string]*menuBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*LanguageBase
+	bufferedRecords []*MenuBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -45,61 +45,61 @@ type LanguageBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const LanguageTableID = 8
-const LanguageTableName = "Language"
+const MenuTableID = 9
+const MenuTableName = "Menu"
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *LanguageBase) GetTableID() int {
-	return LanguageTableID
+func (t *MenuBase) GetTableID() int {
+	return MenuTableID
 }
 
 // GetTableName returns the table name
-func (t *LanguageBase) GetTableName() string {
-	return LanguageTableName
+func (t *MenuBase) GetTableName() string {
+	return MenuTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *LanguageBase) GetTableSchema() string {
-	return GetLanguageTableSchema()
+func (t *MenuBase) GetTableSchema() string {
+	return GetMenuTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *LanguageBase) GetPostgresTableSchema() string {
-	return GetLanguagePostgresTableSchema()
+func (t *MenuBase) GetPostgresTableSchema() string {
+	return GetMenuPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *LanguageBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *MenuBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *LanguageBase) GetDB() database.Executor {
+func (t *MenuBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *LanguageBase) GetCompany() string {
+func (t *MenuBase) GetCompany() string {
 	return t.company
 }
 
-// GetLanguageTableSchema returns the SQLite schema
-func GetLanguageTableSchema() string {
+// GetMenuTableSchema returns the SQLite schema
+func GetMenuTableSchema() string {
 	return `
-		code TEXT(10) PRIMARY KEY,
-		name TEXT(50),
-		translation_key TEXT(5)
+		code TEXT(20) PRIMARY KEY,
+		description TEXT(50),
+		filename TEXT(50)
 	`
 }
 
-// GetLanguagePostgresTableSchema returns the PostgreSQL schema
-func GetLanguagePostgresTableSchema() string {
+// GetMenuPostgresTableSchema returns the PostgreSQL schema
+func GetMenuPostgresTableSchema() string {
 	return `
-		code VARCHAR(10) PRIMARY KEY,
-		name VARCHAR(50),
-		translation_key VARCHAR(5)
+		code VARCHAR(20) PRIMARY KEY,
+		description VARCHAR(50),
+		filename VARCHAR(50)
 	`
 }
 
@@ -108,43 +108,43 @@ func GetLanguagePostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *LanguageBase) GetCaption(language string) string {
+func (t *MenuBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("Language", language)
+	return ts.TableCaption("Menu", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *LanguageBase) GetFieldCaption(fieldName, language string) string {
+func (t *MenuBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("Language", fieldName, language)
+	return ts.FieldCaption("Menu", fieldName, language)
 }
 
-// CreateTable creates the Language table for the specified company (SQLite)
+// CreateTable creates the Menu table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *LanguageBase) CreateTable(db database.Executor, company string) error {
+func (t *MenuBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the Language table for the specified company with the given database type
+// CreateTableWithDBType creates the Menu table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *LanguageBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := LanguageTableName
+func (t *MenuBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := MenuTableName
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetLanguagePostgresTableSchema()
+		schema = GetMenuPostgresTableSchema()
 	} else {
-		schema = GetLanguageTableSchema()
+		schema = GetMenuTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create Language table: %w", err)
+		return fmt.Errorf("failed to create Menu table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
 	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$Language$Primary", company)
+	indexName = fmt.Sprintf("%s$Menu$Primary", company)
 	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (code)`,
 		indexName, tableName)
 	_, err = db.Exec(indexSQL)
@@ -159,15 +159,15 @@ func (t *LanguageBase) CreateTableWithDBType(db database.Executor, company strin
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new Language record with database context
+// Init initializes a new Menu record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *LanguageBase) Init(db database.Executor, company string) {
+func (t *MenuBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new Language record with database context and type
-func (t *LanguageBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new Menu record with database context and type
+func (t *MenuBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
@@ -176,16 +176,16 @@ func (t *LanguageBase) InitWithDBType(db database.Executor, company string, dbTy
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *LanguageBase) StoreOldValues() {
+func (t *MenuBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
 	t.oldValues["code"] = t.Code
-	t.oldValues["name"] = t.Name
-	t.oldValues["translation_key"] = t.Translation_key
+	t.oldValues["description"] = t.Description
+	t.oldValues["filename"] = t.Filename
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *LanguageBase) convertPlaceholders(sql string, count int) string {
+func (t *MenuBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -199,7 +199,7 @@ func (t *LanguageBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *LanguageBase) Get(primaryKey interface{}) bool {
+func (t *MenuBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
 		var codeVal types.Code
@@ -221,16 +221,16 @@ func (t *LanguageBase) Get(primaryKey interface{}) bool {
 		return t.GetByPK(types.NewCode(pk))
 	}
 
-	fmt.Printf("Error: Invalid primary key type for Language.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for Menu.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *LanguageBase) GetByPK(code types.Code) bool {
-	tableName := LanguageTableName
+func (t *MenuBase) GetByPK(code types.Code) bool {
+	tableName := MenuTableName
 	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+	var descriptionNull sql.NullString
+	var filenameNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -238,15 +238,15 @@ func (t *LanguageBase) GetByPK(code types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, description, filename FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&descriptionNull,
+		&filenameNull,
 	)
 
 	if err != nil {
@@ -255,14 +255,14 @@ func (t *LanguageBase) GetByPK(code types.Code) bool {
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get Language: %v\n", err)
+		fmt.Printf("Error: Failed to get Menu: %v\n", err)
 		return false
 	}
 
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Description = types.NewText(descriptionNull.String)
+	t.Filename = types.NewText(filenameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -271,7 +271,7 @@ func (t *LanguageBase) GetByPK(code types.Code) bool {
 }
 
 // Insert inserts the record into the database
-func (t *LanguageBase) Insert(runTrigger bool) bool {
+func (t *MenuBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
@@ -279,31 +279,31 @@ func (t *LanguageBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := MenuTableName
 
 	// Collect arguments for INSERT
 	args := []interface{}{
 		t.Code,
-		t.Name,
-		t.Translation_key,
+		t.Description,
+		t.Filename,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name, translation_key) VALUES (?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, filename) VALUES (?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert Language: %v\n", err)
+		fmt.Printf("Error: Failed to insert Menu: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *LanguageBase) Modify(runTrigger bool) bool {
+func (t *MenuBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
@@ -311,7 +311,7 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := MenuTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -319,13 +319,13 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 
 	// If we have old values (loaded from Get), only update changed fields
 	if t.oldValues != nil {
-		if t.hasFieldChanged("name") {
-			setClauses = append(setClauses, "name = ?")
-			values = append(values, t.Name)
+		if t.hasFieldChanged("description") {
+			setClauses = append(setClauses, "description = ?")
+			values = append(values, t.Description)
 		}
-		if t.hasFieldChanged("translation_key") {
-			setClauses = append(setClauses, "translation_key = ?")
-			values = append(values, t.Translation_key)
+		if t.hasFieldChanged("filename") {
+			setClauses = append(setClauses, "filename = ?")
+			values = append(values, t.Filename)
 		}
 
 		// If nothing changed, skip update
@@ -334,10 +334,10 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 		}
 	} else {
 		// No old values (fresh record), update all fields
-		setClauses = append(setClauses, "name = ?")
-		values = append(values, t.Name)
-		setClauses = append(setClauses, "translation_key = ?")
-		values = append(values, t.Translation_key)
+		setClauses = append(setClauses, "description = ?")
+		values = append(values, t.Description)
+		setClauses = append(setClauses, "filename = ?")
+		values = append(values, t.Filename)
 	}
 
 	// Add WHERE clause value (primary key)
@@ -354,14 +354,14 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify Language: %v\n", err)
+		fmt.Printf("Error: Failed to modify Menu: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
+func (t *MenuBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -373,14 +373,14 @@ func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
-	case "name":
+	case "description":
 		if old, ok := oldValue.(types.Text); ok {
-			return !t.Name.Equal(old)
+			return !t.Description.Equal(old)
 		}
 		return true // Type mismatch, assume changed
-	case "translation_key":
+	case "filename":
 		if old, ok := oldValue.(types.Text); ok {
-			return !t.Translation_key.Equal(old)
+			return !t.Filename.Equal(old)
 		}
 		return true // Type mismatch, assume changed
 	}
@@ -389,7 +389,7 @@ func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 }
 
 // Delete removes the record from the database
-func (t *LanguageBase) Delete(runTrigger bool) bool {
+func (t *MenuBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
@@ -397,7 +397,7 @@ func (t *LanguageBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := MenuTableName
 
 	// Collect arguments for DELETE
 	args := []interface{}{
@@ -412,7 +412,7 @@ func (t *LanguageBase) Delete(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete Language: %v\n", err)
+		fmt.Printf("Error: Failed to delete Menu: %v\n", err)
 		return false
 	}
 	return true
@@ -420,7 +420,7 @@ func (t *LanguageBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *LanguageBase) CalcFields(fieldNames ...string) {
+func (t *MenuBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -428,8 +428,8 @@ func (t *LanguageBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// languageBaseFilterCondition represents a filter on a field
-type languageBaseFilterCondition struct {
+// menuBaseFilterCondition represents a filter on a field
+type menuBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -441,9 +441,9 @@ type languageBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
+func (t *MenuBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*languageBaseFilterCondition)
+		t.filters = make(map[string]*menuBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -462,7 +462,7 @@ func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &languageBaseFilterCondition{
+	t.filters[fieldName] = &menuBaseFilterCondition{
 		fieldName: fieldName,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -473,11 +473,11 @@ func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
+func (t *MenuBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*languageBaseFilterCondition)
+		t.filters = make(map[string]*menuBaseFilterCondition)
 	}
-	t.filters[fieldName] = &languageBaseFilterCondition{
+	t.filters[fieldName] = &menuBaseFilterCondition{
 		fieldName:    fieldName,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -486,12 +486,12 @@ func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *LanguageBase) SetCurrentKey(fields ...string) {
+func (t *MenuBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = fields
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *LanguageBase) Reset() {
+func (t *MenuBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -502,7 +502,7 @@ func (t *LanguageBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
+func (t *MenuBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -541,7 +541,7 @@ func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *LanguageBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *MenuBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -583,7 +583,7 @@ func (t *LanguageBase) parseFilterExpression(fieldName, expr string) (string, []
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *LanguageBase) getOrderByClause() string {
+func (t *MenuBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
@@ -593,37 +593,37 @@ func (t *LanguageBase) getOrderByClause() string {
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *LanguageBase) FindFirst() bool {
-	tableName := LanguageTableName
+func (t *MenuBase) FindFirst() bool {
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, filename FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+	var descriptionNull sql.NullString
+	var filenameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&descriptionNull,
+		&filenameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first Language: %v\n", err)
+		fmt.Printf("Error: Failed to find first Menu: %v\n", err)
 		return false
 	}
 
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Description = types.NewText(descriptionNull.String)
+	t.Filename = types.NewText(filenameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -633,37 +633,37 @@ func (t *LanguageBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *LanguageBase) FindLast() bool {
-	tableName := LanguageTableName
+func (t *MenuBase) FindLast() bool {
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, filename FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+	var descriptionNull sql.NullString
+	var filenameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&descriptionNull,
+		&filenameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last Language: %v\n", err)
+		fmt.Printf("Error: Failed to find last Menu: %v\n", err)
 		return false
 	}
 
 	// Populate fields
 	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Description = types.NewText(descriptionNull.String)
+	t.Filename = types.NewText(filenameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -672,8 +672,8 @@ func (t *LanguageBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *LanguageBase) Count() int {
-	tableName := LanguageTableName
+func (t *MenuBase) Count() int {
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -684,7 +684,7 @@ func (t *LanguageBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count Language: %v\n", err)
+		fmt.Printf("Error: Failed to count Menu: %v\n", err)
 		return 0
 	}
 
@@ -694,25 +694,25 @@ func (t *LanguageBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *LanguageBase) FindSet() bool {
+func (t *MenuBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := LanguageTableName
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT code, description, filename FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for Language: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for Menu: %v\n", err)
 		return false
 	}
 
@@ -730,7 +730,7 @@ func (t *LanguageBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *LanguageBase) Next(steps ...int) bool {
+func (t *MenuBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -773,17 +773,17 @@ func (t *LanguageBase) Next(steps ...int) bool {
 
 		// Scan the row
 		var codeNull sql.NullString
-		var nameNull sql.NullString
-		var translation_keyNull sql.NullString
+		var descriptionNull sql.NullString
+		var filenameNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&codeNull,
-			&nameNull,
-			&translation_keyNull,
+			&descriptionNull,
+			&filenameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Menu record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
@@ -791,8 +791,8 @@ func (t *LanguageBase) Next(steps ...int) bool {
 
 		// Populate fields
 		t.Code = types.NewCode(codeNull.String)
-		t.Name = types.NewText(nameNull.String)
-		t.Translation_key = types.NewText(translation_keyNull.String)
+		t.Description = types.NewText(descriptionNull.String)
+		t.Filename = types.NewText(filenameNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -808,7 +808,7 @@ func (t *LanguageBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *LanguageBase) FindSetBuffered() bool {
+func (t *MenuBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -818,19 +818,19 @@ func (t *LanguageBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := LanguageTableName
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT code, description, filename FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for Language: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for Menu: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -838,31 +838,31 @@ func (t *LanguageBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &LanguageBase{}
+		record := &MenuBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
 		var codeNull sql.NullString
-		var nameNull sql.NullString
-		var translation_keyNull sql.NullString
+		var descriptionNull sql.NullString
+		var filenameNull sql.NullString
 
 		err := rows.Scan(
 			&codeNull,
-			&nameNull,
-			&translation_keyNull,
+			&descriptionNull,
+			&filenameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Menu record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
 		record.Code = types.NewCode(codeNull.String)
-		record.Name = types.NewText(nameNull.String)
-		record.Translation_key = types.NewText(translation_keyNull.String)
+		record.Description = types.NewText(descriptionNull.String)
+		record.Filename = types.NewText(filenameNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -873,7 +873,7 @@ func (t *LanguageBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate Language records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate Menu records: %v\n", err)
 		return false
 	}
 
@@ -890,10 +890,10 @@ func (t *LanguageBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *LanguageBase) copyFromBuffered(record *LanguageBase) {
+func (t *MenuBase) copyFromBuffered(record *MenuBase) {
 	t.Code = record.Code
-	t.Name = record.Name
-	t.Translation_key = record.Translation_key
+	t.Description = record.Description
+	t.Filename = record.Filename
 	t.StoreOldValues()
 }
 
@@ -902,14 +902,14 @@ func (t *LanguageBase) copyFromBuffered(record *LanguageBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *LanguageBase) IsEmpty() bool {
+func (t *MenuBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := LanguageTableName
+func (t *MenuBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -923,7 +923,7 @@ func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all Language: %v\n", err)
+		fmt.Printf("Error: Failed to modify all Menu: %v\n", err)
 		return 0
 	}
 
@@ -933,8 +933,8 @@ func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *LanguageBase) DeleteAll() int {
-	tableName := LanguageTableName
+func (t *MenuBase) DeleteAll() int {
+	tableName := MenuTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -945,7 +945,7 @@ func (t *LanguageBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all Language: %v\n", err)
+		fmt.Printf("Error: Failed to delete all Menu: %v\n", err)
 		return 0
 	}
 
@@ -954,16 +954,16 @@ func (t *LanguageBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *LanguageBase) CopyFilters(from *LanguageBase) {
+func (t *MenuBase) CopyFilters(from *MenuBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*languageBaseFilterCondition)
+	t.filters = make(map[string]*menuBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &languageBaseFilterCondition{
+		t.filters[key] = &menuBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -983,7 +983,7 @@ func (t *LanguageBase) CopyFilters(from *LanguageBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *LanguageBase) GetFilters() string {
+func (t *MenuBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1011,7 +1011,7 @@ func (t *LanguageBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *LanguageBase) ValidateField(fieldName string, value interface{}) error {
+func (t *MenuBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
@@ -1026,28 +1026,28 @@ func (t *LanguageBase) ValidateField(fieldName string, value interface{}) error 
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Code()
-	case "name":
+	case "description":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.Name = v
+			t.Description = v
 		} else if v, ok := value.(string); ok {
-			t.Name = types.NewText(v)
+			t.Description = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field name")
+			return fmt.Errorf("invalid type for field description")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Name()
-	case "translation_key":
+		return t.OnValidate_Description()
+	case "filename":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.Translation_key = v
+			t.Filename = v
 		} else if v, ok := value.(string); ok {
-			t.Translation_key = types.NewText(v)
+			t.Filename = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field translation_key")
+			return fmt.Errorf("invalid type for field filename")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Translation_key()
+		return t.OnValidate_Filename()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -1055,19 +1055,19 @@ func (t *LanguageBase) ValidateField(fieldName string, value interface{}) error 
 
 // OnValidate_Code is the validation trigger for code field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Code() error {
+func (t *MenuBase) OnValidate_Code() error {
 	return nil
 }
 
-// OnValidate_Name is the validation trigger for name field (BC/NAV style)
+// OnValidate_Description is the validation trigger for description field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Name() error {
+func (t *MenuBase) OnValidate_Description() error {
 	return nil
 }
 
-// OnValidate_Translation_key is the validation trigger for translation_key field (BC/NAV style)
+// OnValidate_Filename is the validation trigger for filename field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Translation_key() error {
+func (t *MenuBase) OnValidate_Filename() error {
 	return nil
 }
 
@@ -1076,70 +1076,70 @@ func (t *LanguageBase) OnValidate_Translation_key() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *LanguageBase) ClearFilters() {
+func (t *MenuBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *LanguageBase) ToMap() map[string]interface{} {
+func (t *MenuBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"code": t.Code.String(),
-		"name": t.Name.String(),
-		"translation_key": t.Translation_key.String(),
+		"description": t.Description.String(),
+		"filename": t.Filename.String(),
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *LanguageBase) FromMap(data map[string]interface{}) {
+func (t *MenuBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["code"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Code = types.NewCode(s)
 		}
 	}
-	if v, ok := data["name"]; ok && v != nil {
+	if v, ok := data["description"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Name = types.NewText(s)
+			t.Description = types.NewText(s)
 		}
 	}
-	if v, ok := data["translation_key"]; ok && v != nil {
+	if v, ok := data["filename"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Translation_key = types.NewText(s)
+			t.Filename = types.NewText(s)
 		}
 	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *LanguageBase) UpdateFromMap(data map[string]interface{}) {
+func (t *MenuBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *LanguageBase) GetPrimaryKeyField() string {
+func (t *MenuBase) GetPrimaryKeyField() string {
 	return "code"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *LanguageBase) GetPrimaryKeyValue() string {
+func (t *MenuBase) GetPrimaryKeyValue() string {
 	return t.Code.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *LanguageBase) GetFields() []tables.FieldInfo {
+func (t *MenuBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
-			Length:     10,
+			Length:     20,
 			Required:   true,
 			Editable:   false,
 			PrimaryKey: true,
 			FlowField:  false,
 		},
 		{
-			Name:       "name",
+			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     50,
 			Required:   false,
@@ -1148,9 +1148,9 @@ func (t *LanguageBase) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			Name:       "translation_key",
+			Name:       "filename",
 			Type:       tables.FieldTypeText,
-			Length:     5,
+			Length:     50,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -1160,19 +1160,19 @@ func (t *LanguageBase) GetFields() []tables.FieldInfo {
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *LanguageBase) GetFlowFields() []string {
+func (t *MenuBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *LanguageBase) GetOptionFields() map[string][]string {
+func (t *MenuBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *LanguageBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *MenuBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
 	}
 }

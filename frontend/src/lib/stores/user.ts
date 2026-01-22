@@ -5,6 +5,7 @@ interface User {
 	user_name: string;
 	email?: string;
 	language?: string;
+	translation_key?: string;
 }
 
 function createUserStore() {

@@ -1,0 +1,32 @@
+table:
+  id: 9
+  name: "Menu"
+  caption: Menu
+  description: Menu profiles for users
+  global: true  # Global table - no company prefix
+  fields:
+    - name: code
+      type: types.Code
+      db_name: code
+      caption: Code
+      primary_key: true
+      length: 20
+      required: true
+
+    - name: description
+      type: types.Text
+      db_name: description
+      caption: Description
+      length: 50
+
+    - name: filename
+      type: types.Text
+      db_name: filename
+      caption: Filename
+      description: YAML filename in menus folder (without .yaml extension)
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

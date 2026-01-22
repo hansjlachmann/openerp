@@ -1,36 +1,20 @@
 menu:
-  - name: Sales & Marketing
-    icon: shopping-cart
-    items:
-      - name: Customers
-        page_id: 22
-        icon: users
-        description: View and manage customers
+  - name: Customers
+    page_id: 22
+    icon: users
 
-      - separator: true
+  - name: Users
+    page_id: 30
+    icon: user
 
-      - name: Customer Ledger Entries
-        page_id: 25
-        icon: file-text
-        description: View customer ledger entries
+  - name: Languages
+    page_id: 9
+    icon: globe
 
-  - name: Financial Management
-    icon: dollar-sign
-    items:
-      - name: Payment Terms
-        page_id: 26
-        icon: calendar
-        description: Manage payment terms
+  - name: Payment Terms
+    page_id: 26
+    icon: calendar
 
-  - name: Setup
-    icon: settings
-    items:
-      - name: Users
-        page_id: 30
-        icon: user
-        description: User management
-
-      - name: Languages
-        page_id: 9
-        icon: globe
-        description: System languages
+  - name: Menus
+    page_id: 10
+    icon: menu

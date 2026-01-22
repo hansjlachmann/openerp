@@ -103,3 +103,32 @@ tables:
         vendor: "Leverandør"
         bank_account: "Bankkonto"
         fixed_asset: "Aktivum"
+
+  # User (Table 5100)
+  user:
+    caption: "Bruker"
+    fields:
+      user_id: "Bruker-ID"
+      user_name: "Brukernavn"
+      email: "E-post"
+      language: "Språk"
+      menu: "Meny"
+      active: "Aktiv"
+      created_at: "Opprettet den"
+      last_login: "Siste pålogging"
+
+  # Language (Table 8)
+  language:
+    caption: "Språk"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      translation_key: "Oversettelsesnøkkel"
+
+  # Menu (Table 9)
+  menu:
+    caption: "Meny"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      filename: "Filnavn"
