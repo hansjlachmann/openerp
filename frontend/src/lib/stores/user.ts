@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { getJson, setJson, remove } from '$lib/utils/storage';
 
 interface User {
 	user_id: string;
@@ -8,6 +9,8 @@ interface User {
 	translation_key?: string;
 }
 
+const USER_STORAGE_KEY = 'currentUser';
+
 function createUserStore() {
 	const { subscribe, set, update } = writable<User | null>(null);
 
@@ -15,27 +18,18 @@ function createUserStore() {
 		subscribe,
 		setUser: (user: User | null) => {
 			if (user) {
-				localStorage.setItem('currentUser', JSON.stringify(user));
+				setJson(USER_STORAGE_KEY, user);
 			} else {
-				localStorage.removeItem('currentUser');
+				remove(USER_STORAGE_KEY);
 			}
 			set(user);
 		},
 		loadFromStorage: () => {
-			const stored = localStorage.getItem('currentUser');
-			if (stored) {
-				try {
-					const user = JSON.parse(stored);
-					set(user);
-				} catch (e) {
-					set(null);
-				}
-			} else {
-				set(null);
-			}
+			const user = getJson<User | null>(USER_STORAGE_KEY, null);
+			set(user);
 		},
 		clear: () => {
-			localStorage.removeItem('currentUser');
+			remove(USER_STORAGE_KEY);
 			set(null);
 		}
 	};

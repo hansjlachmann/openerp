@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PageDefinition } from '$lib/types/pages';
+	import type { LookupData } from '$lib/types/api';
 	import { fetchPage } from '$lib/services/pages';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
@@ -14,6 +15,8 @@
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import { getRecordId, getRecordLabel, getPrimaryKeyField } from '$lib/utils/recordHelpers';
+	import { createNavigationActions } from '$lib/utils/navigationHelpers';
+	import { getJson } from '$lib/utils/storage';
 
 	interface Props {
 		pageid: number;
@@ -21,13 +24,6 @@
 	}
 
 	let { pageid, recordid }: Props = $props();
-
-	// Lookup data structure from API
-	interface LookupData {
-		columns?: Array<{ source: string; width: number }>;
-		rows?: Array<{ _key: string; [key: string]: any }>;
-		simple?: Record<string, string>;
-	}
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -223,23 +219,14 @@
 	function getVisibleFields(): string[] {
 		if (!page || !page.page.layout.repeater?.fields) return [];
 
-		// Load user customizations from localStorage (user-specific)
+		// Load user customizations from storage (user-specific)
 		let userId: string;
 		currentUser.subscribe(user => {
 			userId = user?.user_id || 'anonymous';
 		})();
 
 		const key = `page-customization-${userId}-${page.page.id}`;
-		const stored = localStorage.getItem(key);
-		let customizations: Record<string, { visible: boolean }> = {};
-
-		if (stored) {
-			try {
-				customizations = JSON.parse(stored);
-			} catch (e) {
-				console.error('Failed to load page customizations:', e);
-			}
-		}
+		const customizations = getJson<Record<string, { visible: boolean }>>(key, {});
 
 		// Filter to visible fields only
 		return page.page.layout.repeater.fields
@@ -420,29 +407,11 @@
 		window.location.href = `/pages/${page.page.id}/${targetRecordId}`;
 	}
 
-	function navigateFirst() {
-		if (recordIds.length > 0) {
-			navigateToRecord(recordIds[0]);
-		}
-	}
-
-	function navigatePrevious() {
-		if (currentRecordIndex > 0) {
-			navigateToRecord(recordIds[currentRecordIndex - 1]);
-		}
-	}
-
-	function navigateNext() {
-		if (currentRecordIndex < recordIds.length - 1) {
-			navigateToRecord(recordIds[currentRecordIndex + 1]);
-		}
-	}
-
-	function navigateLast() {
-		if (recordIds.length > 0) {
-			navigateToRecord(recordIds[recordIds.length - 1]);
-		}
-	}
+	// Create navigation actions using shared helper
+	const navigationActions = createNavigationActions(
+		() => ({ recordIds, currentRecordIndex }),
+		navigateToRecord
+	);
 
 	// Handle closing the card page
 	function handleCardClose() {
@@ -489,10 +458,10 @@
 			canNavigatePrevious={currentRecordIndex > 0}
 			canNavigateNext={currentRecordIndex >= 0 && currentRecordIndex < recordIds.length - 1}
 			canNavigateLast={currentRecordIndex >= 0 && currentRecordIndex < recordIds.length - 1}
-			onNavigateFirst={navigateFirst}
-			onNavigatePrevious={navigatePrevious}
-			onNavigateNext={navigateNext}
-			onNavigateLast={navigateLast}
+			onNavigateFirst={navigationActions.navigateFirst}
+			onNavigatePrevious={navigationActions.navigatePrevious}
+			onNavigateNext={navigationActions.navigateNext}
+			onNavigateLast={navigationActions.navigateLast}
 		/>
 	{:else if page.page.type === 'List'}
 		<ListPage

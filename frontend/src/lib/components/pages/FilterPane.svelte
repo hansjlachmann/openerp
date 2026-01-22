@@ -6,6 +6,7 @@
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption as getFieldCaptionUtil } from '$lib/utils/fieldHelpers';
+	import { getJson, setJson } from '$lib/utils/storage';
 
 	interface Props {
 		page: PageDefinition;
@@ -45,16 +46,7 @@
 	$effect(() => {
 		const userId = $currentUser?.user_id || 'anonymous';
 		const key = `filter-preset-${userId}-${page.page.id}`;
-		const stored = localStorage.getItem(key);
-
-		if (stored) {
-			try {
-				const presets = JSON.parse(stored);
-				savedPresets = presets;
-			} catch (e) {
-				console.error('Failed to load filter presets:', e);
-			}
-		}
+		savedPresets = getJson(key, {});
 	});
 
 	// Get all fields from page definition
@@ -152,7 +144,7 @@
 			filters: [...activeFilters]
 		};
 
-		localStorage.setItem(key, JSON.stringify(savedPresets));
+		setJson(key, savedPresets);
 		activePresetName = presetName;
 	}
 
@@ -193,7 +185,7 @@
 			activePresetName = newName;
 		}
 
-		localStorage.setItem(key, JSON.stringify(savedPresets));
+		setJson(key, savedPresets);
 		editingPresetName = null;
 	}
 
@@ -223,7 +215,7 @@
 			activePresetName = null;
 		}
 
-		localStorage.setItem(key, JSON.stringify(savedPresets));
+		setJson(key, savedPresets);
 		confirmModalOpen = false;
 		presetToDelete = null;
 	}

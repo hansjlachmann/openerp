@@ -3,16 +3,11 @@
 	import CardPage from './CardPage.svelte';
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import type { PageDefinition } from '$lib/types/pages';
+	import type { LookupData } from '$lib/types/api';
 	import { api } from '$lib/services/api';
 	import { onMount } from 'svelte';
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
-
-	// Lookup data structure from API
-	interface LookupData {
-		columns?: Array<{ source: string; width: number }>;
-		rows?: Array<{ _key: string; [key: string]: any }>;
-		simple?: Record<string, string>;
-	}
+	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
 
 	interface Props {
 		open?: boolean;
@@ -57,11 +52,9 @@
 	let currentRecordIndex = $state(-1);
 	let recordIdsLoaded = $state(false);
 
-	// Computed navigation button states
-	const canNavigatePrevious = $derived(recordIdsLoaded && currentRecordIndex > 0);
-	const canNavigateNext = $derived(
-		recordIdsLoaded && currentRecordIndex >= 0 && currentRecordIndex < recordIds.length - 1
-	);
+	// Computed navigation button states using helper functions
+	const canGoPrevious = $derived(canNavigatePrevious({ recordIds, currentRecordIndex }, recordIdsLoaded));
+	const canGoNext = $derived(canNavigateNext({ recordIds, currentRecordIndex }, recordIdsLoaded));
 
 	// Load record IDs for navigation when modal opens
 	$effect(() => {
@@ -93,22 +86,22 @@
 			// Ctrl+ArrowUp or Ctrl+Up - Previous
 			if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'Up')) {
 				e.preventDefault();
-				if (canNavigatePrevious) navigatePrevious();
+				if (canGoPrevious) navigationActions.navigatePrevious();
 			}
 			// Ctrl+ArrowDown or Ctrl+Down - Next
 			else if (e.ctrlKey && (e.key === 'ArrowDown' || e.key === 'Down')) {
 				e.preventDefault();
-				if (canNavigateNext) navigateNext();
+				if (canGoNext) navigationActions.navigateNext();
 			}
 			// Ctrl+Home - First
 			else if (e.ctrlKey && e.key === 'Home') {
 				e.preventDefault();
-				if (recordIdsLoaded && recordIds.length > 0) navigateFirst();
+				if (recordIdsLoaded && recordIds.length > 0) navigationActions.navigateFirst();
 			}
 			// Ctrl+End - Last
 			else if (e.ctrlKey && e.key === 'End') {
 				e.preventDefault();
-				if (recordIdsLoaded && recordIds.length > 0) navigateLast();
+				if (recordIdsLoaded && recordIds.length > 0) navigationActions.navigateLast();
 			}
 		}
 
@@ -156,39 +149,21 @@
 		}
 	}
 
-	function navigateFirst() {
-		if (recordIds.length > 0) {
-			navigateToRecord(recordIds[0]);
-		}
-	}
-
-	function navigatePrevious() {
-		if (currentRecordIndex > 0) {
-			navigateToRecord(recordIds[currentRecordIndex - 1]);
-		}
-	}
-
-	function navigateNext() {
-		if (currentRecordIndex < recordIds.length - 1) {
-			navigateToRecord(recordIds[currentRecordIndex + 1]);
-		}
-	}
-
-	function navigateLast() {
-		if (recordIds.length > 0) {
-			navigateToRecord(recordIds[recordIds.length - 1]);
-		}
-	}
+	// Create navigation actions using shared helper
+	const navigationActions = createNavigationActions(
+		() => ({ recordIds, currentRecordIndex }),
+		navigateToRecord
+	);
 </script>
 
 <Modal {open} onclose={onclose} size={modalSize}>
 	<!-- Edge Navigation Buttons (Business Central style) -->
 	{#if page.page.enable_navigation && recordIdsLoaded}
 		<NavigationButtons
-			onPrevious={navigatePrevious}
-			onNext={navigateNext}
-			canNavigatePrevious={canNavigatePrevious}
-			canNavigateNext={canNavigateNext}
+			onPrevious={navigationActions.navigatePrevious}
+			onNext={navigationActions.navigateNext}
+			canNavigatePrevious={canGoPrevious}
+			canNavigateNext={canGoNext}
 		/>
 	{/if}
 

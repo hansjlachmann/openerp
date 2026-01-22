@@ -10,6 +10,20 @@ export interface CaptionData {
 	table?: string;
 	fields?: Record<string, string>;
 	options?: Record<string, Record<string, string>>;
+	lookups?: Record<string, LookupData>;
+}
+
+// Lookup data structures (for table relations / dropdowns)
+export interface LookupColumn {
+	source: string;
+	width: number;
+}
+
+export interface LookupData {
+	columns?: LookupColumn[];
+	rows?: Array<{ _key: string; [key: string]: any }>;
+	simple?: Record<string, string>;
+	search_timeout?: number;
 }
 
 // Table record type (generic)

@@ -1,21 +1,9 @@
 <script lang="ts">
 	import type { Field } from '$lib/types/pages';
+	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
 	import { getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
 	import LookupDropdown from './LookupDropdown.svelte';
-
-	// Lookup data structure from API
-	interface LookupColumn {
-		source: string;
-		width: number;
-	}
-
-	interface LookupData {
-		columns?: LookupColumn[];
-		rows?: Array<{ _key: string; [key: string]: any }>;
-		simple?: Record<string, string>;
-		search_timeout?: number;
-	}
 
 	interface Props {
 		field: Field;

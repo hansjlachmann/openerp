@@ -1,18 +1,13 @@
 // API response handling utilities
 
-import type { ApiResponse } from '$types/api';
+import type { ApiResponse, CaptionData } from '$types/api';
 
 /**
  * Result type for API calls that need both data and captions
  */
 export interface DataWithCaptions<T> {
 	data: T;
-	captions?: {
-		table?: string;
-		fields?: Record<string, string>;
-		options?: Record<string, Record<string, string>>;
-		lookups?: Record<string, Record<string, string>>;
-	};
+	captions?: CaptionData;
 }
 
 /**

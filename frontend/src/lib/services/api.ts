@@ -2,24 +2,12 @@ import type {
 	ApiResponse,
 	ListResponse,
 	ListOptions,
-	TableRecord
+	TableRecord,
+	LookupData
 } from '$types/api';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 
 const API_BASE = '/api';
-
-// Lookup data structure (matches backend LookupData)
-interface LookupColumn {
-	source: string;
-	width: number;
-}
-
-interface LookupData {
-	columns?: LookupColumn[];
-	rows?: Array<{ _key: string; [key: string]: any }>;
-	simple?: Record<string, string>;
-	search_timeout?: number;
-}
 
 // Helper to build query string from filters
 function buildQueryString(options?: ListOptions): string {
