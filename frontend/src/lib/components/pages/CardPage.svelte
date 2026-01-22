@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
+	import type { LookupData } from '$lib/types/api';
 	import FieldRenderer from './FieldRenderer.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -16,13 +17,6 @@
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { toast } from '$lib/stores/toast';
-
-	// Lookup data structure from API
-	interface LookupData {
-		columns?: Array<{ source: string; width: number }>;
-		rows?: Array<{ _key: string; [key: string]: any }>;
-		simple?: Record<string, string>;
-	}
 
 	interface Props {
 		page: PageDefinition;

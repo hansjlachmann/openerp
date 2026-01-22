@@ -1,13 +1,16 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { getString, setString } from '$lib/utils/storage';
 
 type Theme = 'light' | 'dark';
+
+const THEME_STORAGE_KEY = 'theme';
 
 // Get initial theme from localStorage or system preference
 function getInitialTheme(): Theme {
 	if (!browser) return 'light';
 
-	const stored = localStorage.getItem('theme') as Theme;
+	const stored = getString(THEME_STORAGE_KEY) as Theme | null;
 	if (stored) return stored;
 
 	// Check system preference
@@ -27,7 +30,7 @@ function createThemeStore() {
 			update((currentTheme) => {
 				const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 				if (browser) {
-					localStorage.setItem('theme', newTheme);
+					setString(THEME_STORAGE_KEY, newTheme);
 					document.documentElement.classList.toggle('dark', newTheme === 'dark');
 				}
 				return newTheme;
@@ -36,7 +39,7 @@ function createThemeStore() {
 		set: (theme: Theme) => {
 			set(theme);
 			if (browser) {
-				localStorage.setItem('theme', theme);
+				setString(THEME_STORAGE_KEY, theme);
 				document.documentElement.classList.toggle('dark', theme === 'dark');
 			}
 		}

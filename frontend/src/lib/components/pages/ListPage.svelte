@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
-	import type { TableFilter } from '$lib/types/api';
+	import type { TableFilter, LookupData } from '$lib/types/api';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
@@ -21,13 +21,6 @@
 	import { getFieldCaption, getFieldStyleClasses, formatValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
-
-	// Lookup data structure from API
-	interface LookupData {
-		columns?: Array<{ source: string; width: number }>;
-		rows?: Array<{ _key: string; [key: string]: any }>;
-		simple?: Record<string, string>;
-	}
 
 	interface Props {
 		page: PageDefinition;
@@ -688,8 +681,8 @@
 			}
 
 			// Deep clone ALL API response data to avoid Svelte reactivity issues
-			const pageData = JSON.parse(JSON.stringify(result.data));
-			const pageCaptions = result.captions?.fields ? JSON.parse(JSON.stringify(result.captions.fields)) : {};
+			const pageData = deepCopy(result.data);
+			const pageCaptions = result.captions?.fields ? deepCopy(result.captions.fields) : {};
 
 			// Use the card page's source table (more reliable)
 			const sourceTable = pageData?.page?.source_table || page.page.source_table;
@@ -706,11 +699,10 @@
 			if (recordId) {
 				// Existing record - load it with options/lookups
 				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
-				recData = JSON.parse(JSON.stringify(recordResult.data));
-				// Deep clone to avoid Svelte reactivity issues
-				opts = recordResult.captions?.options ? JSON.parse(JSON.stringify(recordResult.captions.options)) : {};
-				lkps = recordResult.captions?.lookups ? JSON.parse(JSON.stringify(recordResult.captions.lookups)) : {};
-				origRecord = JSON.parse(JSON.stringify(recData));
+				recData = deepCopy(recordResult.data);
+				opts = recordResult.captions?.options ? deepCopy(recordResult.captions.options) : {};
+				lkps = recordResult.captions?.lookups ? deepCopy(recordResult.captions.lookups) : {};
+				origRecord = deepCopy(recData);
 				isNew = false;
 			} else {
 				// New record - load options/lookups for dropdowns
@@ -718,9 +710,8 @@
 				origRecord = {};
 				try {
 					const optLkp = await api.getTableOptionsAndLookups(sourceTable);
-					// Deep clone to avoid Svelte reactivity issues
-					opts = optLkp.options ? JSON.parse(JSON.stringify(optLkp.options)) : {};
-					lkps = optLkp.lookups ? JSON.parse(JSON.stringify(optLkp.lookups)) : {};
+					opts = optLkp.options ? deepCopy(optLkp.options) : {};
+					lkps = optLkp.lookups ? deepCopy(optLkp.lookups) : {};
 				} catch (err) {
 					console.error('Failed to load options/lookups:', err);
 					opts = {};

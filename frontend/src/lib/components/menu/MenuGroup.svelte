@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MenuGroup as MenuGroupType } from '$lib/types/pages';
+	import { clickOutside } from '$lib/actions/clickOutside';
 
 	interface Props {
 		group: MenuGroupType;
@@ -30,23 +31,6 @@
 			window.location.href = `/pages/${group.page_id}`;
 		}
 	}
-
-	// Close menu when clicking outside
-	function handleClickOutside(event: MouseEvent) {
-		const target = event.target as HTMLElement;
-		if (!target.closest('.menu-group')) {
-			closeMenu();
-		}
-	}
-
-	$effect(() => {
-		if (isOpen) {
-			document.addEventListener('click', handleClickOutside);
-			return () => {
-				document.removeEventListener('click', handleClickOutside);
-			};
-		}
-	});
 </script>
 
 {#if isFlatItem}
@@ -62,7 +46,7 @@
 	</button>
 {:else}
 	<!-- Grouped menu item - has dropdown -->
-	<div class="menu-group relative">
+	<div class="menu-group relative" use:clickOutside={{ callback: closeMenu, enabled: isOpen }}>
 		<button
 			class="menu-button px-4 py-2 hover:bg-white/10 rounded transition-colors flex items-center gap-2"
 			onclick={toggleMenu}

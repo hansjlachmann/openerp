@@ -2,11 +2,8 @@
 	import { cn } from '$lib/utils/cn';
 	import { toast } from '$lib/stores/toast';
 	import { t, ERR } from '$lib/services/i18n';
-
-	interface LookupColumn {
-		source: string;
-		width: number;
-	}
+	import type { LookupColumn } from '$lib/types/api';
+	import { clickOutside } from '$lib/actions/clickOutside';
 
 	interface LookupRow {
 		_key: string;
@@ -219,20 +216,12 @@
 		}
 	}
 
-	function handleClickOutside(e: MouseEvent) {
-		if (containerRef && !containerRef.contains(e.target as Node)) {
-			isOpen = false;
-			// Revert input to actual value
-			inputValue = value || '';
-		}
+	// Handle click outside - close dropdown and revert input
+	function handleClickOutside() {
+		isOpen = false;
+		// Revert input to actual value
+		inputValue = value || '';
 	}
-
-	$effect(() => {
-		if (isOpen) {
-			document.addEventListener('click', handleClickOutside);
-			return () => document.removeEventListener('click', handleClickOutside);
-		}
-	});
 
 	// Calculate total width
 	const totalWidth = $derived(columns.reduce((sum, col) => sum + (col.width || 100), 0));
@@ -242,6 +231,7 @@
 	class="lookup-dropdown"
 	bind:this={containerRef}
 	style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
+	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen }}
 >
 	<div class="lookup-input-wrapper">
 		<input
