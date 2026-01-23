@@ -4,18 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-	"github.com/hansjlachmann/openerp/backend/foundation/filters"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
-	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 // TablesHandler handles table-related API requests
@@ -635,35 +632,3 @@ func containsAny(slice []string, items []string) bool {
 	return false
 }
 
-// Legacy field captions helper (kept for backward compatibility, uses metadata now)
-func (h *TablesHandler) addFieldCaptions(tableName, language string, captions *apitypes.CaptionData) {
-	ts := i18n.GetInstance()
-
-	// Get field names from a temporary table instance
-	factory, ok := tables.GetTableFactory(tableName)
-	if !ok {
-		return
-	}
-
-	table := factory()
-	for _, field := range table.GetFields() {
-		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
-	}
-}
-
-// applyFilters applies BC-style filters to a table (utility function)
-func applyFilters(table ftables.Table, filterExpressions []filters.FilterExpression) {
-	for _, f := range filterExpressions {
-		table.SetFilter(f.Field, f.Expression)
-	}
-}
-
-// getTableForTimestamps provides timestamp initialization for User tables
-// This is a table-specific hook that can't be fully generic
-func initializeUserTimestamps(table ftables.Table) {
-	if userTable, ok := table.(*tables.User); ok {
-		now := time.Now()
-		userTable.Created_at = types.NewDateTimeFromTime(now)
-		userTable.Last_login = types.NewDateTimeFromTime(now)
-	}
-}

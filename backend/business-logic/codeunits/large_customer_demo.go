@@ -13,8 +13,6 @@ import (
 // CreateLargeCustomerDataset creates a large dataset of 100,000+ ledger entries for customer CUST-001
 // Codeunit ID: 50011
 func CreateLargeCustomerDataset(db *sql.DB, company string) {
-	rand.Seed(time.Now().UnixNano())
-
 	fmt.Println("========================================")
 	fmt.Println("Codeunit 50011 - Create Large Dataset")
 	fmt.Println("========================================")
@@ -66,7 +64,7 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 	commitBatchSize := 1000 // Commit transaction every N inserts
 
 	// Enable WAL mode for better concurrent write performance
-	db.Exec("PRAGMA journal_mode=WAL")
+	_, _ = db.Exec("PRAGMA journal_mode=WAL")
 
 	// Start transaction for batch inserts
 	_, err = db.Exec("BEGIN TRANSACTION")
@@ -155,7 +153,7 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 
 		if !entry.Insert(false) {
 			fmt.Printf("\n✗ Failed to insert entry %d\n", entryNo)
-			db.Exec("ROLLBACK")
+			_, _ = db.Exec("ROLLBACK")
 			return
 		}
 

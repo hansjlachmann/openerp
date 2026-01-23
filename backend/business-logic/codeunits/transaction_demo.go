@@ -69,7 +69,7 @@ func demo1SuccessfulCommit(sess *session.Session, company string) {
 
 	if !cust.Insert(false) {
 		fmt.Println("✗ Failed to insert customer")
-		sess.Rollback()
+		_ = sess.Rollback()
 		return
 	}
 	fmt.Printf("✓ Customer %s created (not yet committed)\n", cust.No.String())
@@ -119,7 +119,7 @@ func demo2FailedRollback(sess *session.Session, company string) {
 
 	if !cust.Insert(false) {
 		fmt.Println("✗ Failed to insert customer")
-		sess.Rollback()
+		_ = sess.Rollback()
 		return
 	}
 	fmt.Printf("✓ Customer %s created (in transaction)\n", cust.No.String())
@@ -179,7 +179,7 @@ func demo3MultipleOperations(sess *session.Session, company string) {
 		if !cust.Insert(false) {
 			fmt.Printf("✗ Failed to insert customer %s\n", custData.code)
 			fmt.Println("  Rolling back all changes...")
-			sess.Rollback()
+			_ = sess.Rollback()
 			return
 		}
 		fmt.Printf("  ✓ Created %s\n", custData.code)

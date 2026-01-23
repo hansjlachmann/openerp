@@ -94,12 +94,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.InvalidCredentials().Message("en-US")))
 	}
 
-	// Update last login
+	// Update last login (ignore failure - non-critical)
 	user.UpdateLastLogin()
-	if !user.Modify(false) {
-		// Don't fail login if last login update fails
-		// Just log it (in production, use proper logging)
-	}
+	_ = user.Modify(false)
 
 	// Create/update session
 	if sess == nil {

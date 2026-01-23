@@ -202,7 +202,7 @@ func (s *Session) WithTransaction(fn func() error) error {
 	// Will NOT execute if Commit succeeds (transaction is nil after commit)
 	defer func() {
 		if s.InTransaction() {
-			s.Rollback()
+			_ = s.Rollback()
 		}
 	}()
 
