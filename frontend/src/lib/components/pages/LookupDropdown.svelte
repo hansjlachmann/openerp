@@ -39,12 +39,13 @@
 	}: Props = $props();
 
 	let isOpen = $state(false);
-	let containerRef: HTMLDivElement;
-	let inputRef: HTMLInputElement;
-	let bodyRef: HTMLDivElement;
+	let containerRef = $state<HTMLDivElement | null>(null);
+	let inputRef = $state<HTMLInputElement | null>(null);
+	let bodyRef = $state<HTMLDivElement | null>(null);
 	let selectedIndex = $state(-1);
 
 	// Track input value separately from actual value (for typing)
+	// svelte-ignore state_referenced_locally - synced via $effect below
 	let inputValue = $state(value || '');
 
 	// Sync inputValue when value changes externally
@@ -245,8 +246,10 @@
 			onkeydown={handleKeydown}
 			onblur={handleBlur}
 			onfocus={openDropdown}
+			role="combobox"
 			aria-haspopup="listbox"
 			aria-expanded={isOpen}
+			aria-controls={isOpen ? 'lookup-listbox' : undefined}
 			autocomplete="off"
 		/>
 		<button
@@ -262,7 +265,7 @@
 	</div>
 
 	{#if isOpen}
-		<div class="lookup-panel" role="listbox">
+		<div class="lookup-panel" role="listbox" id="lookup-listbox">
 			<!-- Column headers -->
 			<div class="lookup-header">
 				{#each columns as col}
@@ -278,9 +281,11 @@
 			<!-- Rows -->
 			<div class="lookup-body" bind:this={bodyRef}>
 				{#each filteredRows() as row, i}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class={cn('lookup-row', row._key === value && 'selected', i === selectedIndex && 'focused')}
 						role="option"
+						tabindex="-1"
 						aria-selected={row._key === value}
 						onclick={() => handleSelect(row)}
 						onmouseenter={() => selectedIndex = i}

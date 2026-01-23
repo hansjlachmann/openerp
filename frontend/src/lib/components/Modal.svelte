@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		open?: boolean;
 		onclose?: () => void;
 		title?: string;
 		size?: 'normal' | 'expanded' | 'fullscreen';
+		children: Snippet;
 	}
 
-	let { open = false, onclose, title, size = 'normal' }: Props = $props();
+	let { open = false, onclose, title, size = 'normal', children }: Props = $props();
 
 	// Reference to modal content for focus management
-	let modalContentRef: HTMLDivElement;
+	let modalContentRef = $state<HTMLDivElement | null>(null);
 
 	// Handle escape key to close modal
 	function handleKeydown(event: KeyboardEvent) {
@@ -59,17 +61,24 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="modal-backdrop" onclick={onclose}>
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="modal-backdrop"
+		onclick={onclose}
+		onkeydown={(e) => e.key === 'Escape' && onclose?.()}
+		role="presentation"
+	>
 		<div
 			class="modal-content {sizeClasses[size]}"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={title ? 'modal-title' : undefined}
 			tabindex="-1"
 			bind:this={modalContentRef}
 		>
-			<slot />
+			{@render children()}
 		</div>
 	</div>
 {/if}

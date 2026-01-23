@@ -22,6 +22,7 @@
 	let { open = false, page, customizations, mode, onclose, onsave }: Props = $props();
 
 	// Local copy of customizations for editing
+	// svelte-ignore state_referenced_locally - synced via $effect below
 	let localCustomizations = $state<Record<string, ItemCustomization>>({ ...customizations });
 
 	// Sync when customizations prop changes
@@ -144,7 +145,7 @@
 		</div>
 
 		<div class="customize-body">
-			<div class="fields-list">
+			<div class="fields-list" role="list">
 				{#each allItems() as item, idx}
 					{@const isVisible = getEffectiveVisibility(item.field)}
 					{@const currentSection = mode === 'card' ? getEffectiveSection(item.field, item.data.section) : ''}
@@ -155,6 +156,7 @@
 						class:dragging={isDragging}
 						class:drag-over={isDragOver}
 						draggable="true"
+						role="listitem"
 						ondragstart={(e) => drag.handleDragStart(e, item)}
 						ondragover={(e) => drag.handleDragOver(e, idx)}
 						ondragleave={drag.handleDragLeave}

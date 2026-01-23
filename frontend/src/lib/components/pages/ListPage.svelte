@@ -1126,7 +1126,8 @@
 	}
 </script>
 
-<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut}>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
+<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="region" aria-label={page.page.caption}>
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="leftActions">
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
@@ -1343,8 +1344,11 @@
 								</button>
 							</div>
 							<!-- Resize handle -->
+							<!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
 							<div
 								class="resize-handle"
+								role="separator"
+								aria-orientation="vertical"
 								onmousedown={(e) => handleResizeStart(e, field.source, getColumnWidth(field))}
 							></div>
 						</th>

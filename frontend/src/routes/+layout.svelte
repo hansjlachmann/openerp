@@ -8,6 +8,13 @@
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
+	import type { Snippet } from 'svelte';
+
+	interface Props {
+		children: Snippet;
+	}
+
+	let { children }: Props = $props();
 
 	// Subscribe to theme to ensure it stays in sync
 	let currentTheme = $state<'light' | 'dark'>('light');
@@ -31,7 +38,7 @@
 	<MenuBar />
 	<Breadcrumb />
 	<main class="flex-1 overflow-hidden">
-		<slot />
+		{@render children()}
 	</main>
 </div>
 

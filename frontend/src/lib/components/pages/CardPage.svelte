@@ -87,6 +87,7 @@
 	}
 
 	// Edit mode state - start in edit mode for new records or if initialEditMode is true
+	// svelte-ignore state_referenced_locally - initialEditMode is intentionally only used for initialization
 	let editMode = $state(initialEditMode ?? checkIsNewRecord());
 
 	// Track if we've already focused the initial field (to avoid refocusing on every state change)
@@ -590,11 +591,6 @@
 	:global(.dark) .empty-state-text {
 		color: #9ca3af; /* gray-400 */
 	}
-
-	.nav-buttons {
-		@apply flex items-center gap-1;
-	}
-
 
 	.card-page :global(.edge-nav-btn:not(:disabled):hover) {
 		@apply shadow-xl;

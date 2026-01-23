@@ -38,6 +38,7 @@
 
 <div class={cn('card', className)}>
 	{#if title || header}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 		<div
 			class="card-header"
 			class:collapsible
