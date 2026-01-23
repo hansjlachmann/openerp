@@ -592,7 +592,7 @@
 	}
 
 	.preset-menu-btn {
-		@apply p-1 rounded opacity-0 group-hover:opacity-100;
+		@apply p-1 rounded opacity-0;
 		@apply hover:bg-gray-200 dark:hover:bg-gray-600;
 		@apply text-gray-500 dark:text-gray-400;
 		@apply transition-opacity;
