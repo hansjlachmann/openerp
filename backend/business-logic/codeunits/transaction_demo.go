@@ -21,7 +21,7 @@ func TransactionDemo(db *sql.DB, company string) {
 
 	fmt.Println("========================================")
 	fmt.Println("Codeunit 50013 - Transaction Demo")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	// Demo 1: Successful transaction with COMMIT
 	fmt.Println("Demo 1: Successful Transaction (COMMIT)")

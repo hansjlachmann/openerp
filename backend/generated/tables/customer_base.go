@@ -604,7 +604,6 @@ func (t *CustomerBase) hasFieldChanged(fieldName string) bool {
 	case "profile_photo":
 		// Skip comparison for BLOB fields (too large, use always modified)
 		return true
-		return true // Type mismatch, assume changed
 	}
 
 	return false

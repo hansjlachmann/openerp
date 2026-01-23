@@ -1342,20 +1342,14 @@ func (t *UserPreferencesBase) UpdateFromMap(data map[string]interface{}) {
 	t.FromMap(data)
 }
 
-// GetPrimaryKeyField returns the name of the primary key field
+// GetPrimaryKeyField returns the name of the first primary key field (composite key)
 func (t *UserPreferencesBase) GetPrimaryKeyField() string {
 	return "user_id"
-	return "page_id"
-	return "preference_type"
-	return "preference_name"
 }
 
-// GetPrimaryKeyValue returns the current primary key value as a string
+// GetPrimaryKeyValue returns the current primary key value as a string (first key of composite)
 func (t *UserPreferencesBase) GetPrimaryKeyValue() string {
 	return t.User_id.String()
-	return fmt.Sprintf("%d", t.Page_id)
-	return t.Preference_type.String()
-	return t.Preference_name.String()
 }
 
 // GetFields returns metadata about all fields

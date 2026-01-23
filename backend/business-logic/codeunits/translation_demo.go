@@ -13,7 +13,7 @@ import (
 func TranslationDemo(db *sql.DB, company string) {
 	fmt.Println("\n========================================")
 	fmt.Println("Translation Demo (Codeunit 50014)")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	ts := i18n.GetInstance()
 

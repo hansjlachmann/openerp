@@ -26,7 +26,7 @@ func getEnv(key, defaultValue string) string {
 }
 
 func main() {
-	fmt.Println("=== OpenERP API Server ===\n")
+	fmt.Println("=== OpenERP API Server ===")
 
 	// Initialize object registry
 	registry := objects.NewObjectRegistry()
@@ -165,7 +165,7 @@ func main() {
 
 	fmt.Println("\n✅ API Server is running!")
 	fmt.Printf("📡 Listening on port %s\n", port)
-	fmt.Println("📝 Press Ctrl+C to stop the server\n")
+	fmt.Println("📝 Press Ctrl+C to stop the server")
 	fmt.Println("Available endpoints:")
 	fmt.Println("  GET    /health")
 	fmt.Println("  GET    /api/session")

@@ -61,7 +61,7 @@ func FlowFieldDemo(db *sql.DB, company string) {
 
 	fmt.Println("\n========================================")
 	fmt.Println("FlowField Demo Complete!")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 }
 
 // showDetailedCustomerBreakdown shows how FlowFields relate to actual ledger entries
