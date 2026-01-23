@@ -6,8 +6,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --diagnostic-sources js,svelte",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --diagnostic-sources js,svelte --watch"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.0.1",
