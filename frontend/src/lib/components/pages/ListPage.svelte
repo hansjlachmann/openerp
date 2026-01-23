@@ -1126,8 +1126,7 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
-<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="region" aria-label={page.page.caption}>
+<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
 	<PageHeader title={page.page.caption}>
 		<svelte:fragment slot="leftActions">
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
@@ -1344,13 +1343,13 @@
 								</button>
 							</div>
 							<!-- Resize handle -->
-							<!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-							<div
+							<button
+								type="button"
 								class="resize-handle"
-								role="separator"
-								aria-orientation="vertical"
+								aria-label="Resize column"
+								tabindex="-1"
 								onmousedown={(e) => handleResizeStart(e, field.source, getColumnWidth(field))}
-							></div>
+							></button>
 						</th>
 					{/each}
 				</tr>
@@ -1585,6 +1584,10 @@
 		cursor: col-resize;
 		background: transparent;
 		z-index: 1;
+		border: none;
+		padding: 0;
+		margin: 0;
+		outline: none;
 	}
 
 	.resize-handle:hover {
