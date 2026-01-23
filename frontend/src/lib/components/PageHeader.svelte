@@ -1,18 +1,31 @@
 <script lang="ts">
 	import Button from './Button.svelte';
+	import type { Snippet } from 'svelte';
 
-	export let title: string;
-	export let subtitle: string | undefined = undefined;
-	export let onclose: (() => void) | undefined = undefined;
-
-	export interface Action {
+	interface Action {
 		label: string;
 		onClick: () => void;
 		variant?: 'primary' | 'secondary' | 'danger';
 		shortcut?: string;
 	}
 
-	export let actions: Action[] = [];
+	interface Props {
+		title: string;
+		subtitle?: string;
+		onclose?: () => void;
+		actions?: Action[];
+		leftActions?: Snippet;
+		rightActions?: Snippet;
+	}
+
+	let {
+		title,
+		subtitle,
+		onclose,
+		actions = [],
+		leftActions,
+		rightActions
+	}: Props = $props();
 </script>
 
 <div class="page-header">
@@ -25,26 +38,22 @@
 				{/if}
 			</div>
 
-			{#if $$slots.leftActions}
+			{#if leftActions}
 				<div class="flex gap-3">
-					<slot name="leftActions" />
+					{@render leftActions()}
 				</div>
 			{/if}
 		</div>
 
 		<div class="flex items-center gap-3">
-			{#if $$slots.actions || $$slots.rightActions}
+			{#if rightActions}
 				<div class="flex gap-3">
-					{#if $$slots.rightActions}
-						<slot name="rightActions" />
-					{:else}
-						<slot name="actions" />
-					{/if}
+					{@render rightActions()}
 				</div>
 			{:else if actions.length > 0}
 				<div class="flex gap-3">
 					{#each actions as action}
-						<Button variant={action.variant || 'secondary'} on:click={action.onClick}>
+						<Button variant={action.variant || 'secondary'} onclick={action.onClick}>
 							{action.label}
 							{#if action.shortcut}
 								<span class="ml-2 text-xs opacity-70">({action.shortcut})</span>

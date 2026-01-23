@@ -7,6 +7,7 @@
 		disabled?: boolean;
 		type?: 'button' | 'submit' | 'reset';
 		tabindex?: number;
+		title?: string;
 		onclick?: (event: MouseEvent) => void;
 		icon?: import('svelte').Snippet;
 		children?: import('svelte').Snippet;
@@ -19,6 +20,7 @@
 		disabled = false,
 		type = 'button',
 		tabindex,
+		title,
 		onclick,
 		icon,
 		children,
@@ -49,6 +51,7 @@
 	{type}
 	{disabled}
 	{tabindex}
+	{title}
 	onclick={handleClick}
 	class={cn('btn', variants[variant], sizes[size], className)}
 >

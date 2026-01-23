@@ -165,7 +165,7 @@
 						<option value={optValue}>{optLabel}</option>
 					{/each}
 				</select>
-			{:else if isAdvancedLookup && lookups.columns && lookups.rows}
+			{:else if isAdvancedLookup && lookups?.columns && lookups?.rows}
 				<!-- Advanced lookup with columns - render as table-style dropdown -->
 				<LookupDropdown
 					columns={[...lookups.columns]}
@@ -179,7 +179,7 @@
 					onselect={handleLookupSelect}
 					onblur={() => onblur?.()}
 				/>
-			{:else if isSimpleLookup && lookups.simple}
+			{:else if isSimpleLookup && lookups?.simple}
 				<!-- Simple lookup - render as basic dropdown -->
 				<select
 					id={field.source}
@@ -192,7 +192,7 @@
 					aria-describedby={error ? `${field.source}-error` : undefined}
 				>
 					<option value=""></option>
-					{#each Object.entries(lookups.simple) as [lookupCode, lookupDisplay]}
+					{#each Object.entries(lookups!.simple!) as [lookupCode, lookupDisplay]}
 						<option value={lookupCode} title={lookupDisplay}>{lookupCode}</option>
 					{/each}
 				</select>
@@ -221,7 +221,7 @@
 		<div class="field-label">
 			{fieldCaption}
 		</div>
-		{#if isAdvancedLookup && lookups.columns && lookups.rows}
+		{#if isAdvancedLookup && lookups?.columns && lookups?.rows}
 			<!-- Advanced lookup - show dropdown even in non-edit mode -->
 			<div class="input-wrapper">
 				<LookupDropdown
@@ -237,7 +237,7 @@
 					onblur={() => onblur?.()}
 				/>
 			</div>
-		{:else if isSimpleLookup && lookups.simple}
+		{:else if isSimpleLookup && lookups?.simple}
 			<!-- Simple lookup - show dropdown even in non-edit mode -->
 			<div class="input-wrapper">
 				<select
@@ -249,7 +249,7 @@
 					onblur={() => onblur?.()}
 				>
 					<option value=""></option>
-					{#each Object.entries(lookups.simple) as [lookupCode, lookupDisplay]}
+					{#each Object.entries(lookups!.simple!) as [lookupCode, lookupDisplay]}
 						<option value={lookupCode} title={lookupDisplay}>{lookupCode}</option>
 					{/each}
 				</select>

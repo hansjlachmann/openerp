@@ -47,8 +47,8 @@ function createConfirmStore() {
 				return { ...state, open: false };
 			});
 
-			if (actionToExecute) {
-				await actionToExecute();
+			if (actionToExecute !== null) {
+				await (actionToExecute as () => Promise<void>)();
 			}
 
 			set(initialState);
