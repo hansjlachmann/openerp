@@ -114,7 +114,7 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 		for _, failure := range failedTables {
 			errorMsg += "  - " + failure + "\n"
 		}
-		return fmt.Errorf(errorMsg)
+		return fmt.Errorf("%s", errorMsg)
 	}
 
 	if successCount == 0 && migratedCount == 0 {

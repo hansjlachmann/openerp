@@ -124,7 +124,7 @@ func CustLedgerEntryDemo(db *sql.DB, company string) {
 
 	fmt.Println("\n========================================")
 	fmt.Println("Demo Complete!")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 }
 
 // createTestCustomers creates test customers if they don't exist

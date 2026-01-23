@@ -141,5 +141,5 @@ func NewTypesDemo(db *sql.DB, company string) {
 
 	fmt.Println("\n========================================")
 	fmt.Println("Demo Complete!")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 }

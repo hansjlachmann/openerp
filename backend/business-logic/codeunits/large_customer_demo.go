@@ -17,7 +17,7 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 
 	fmt.Println("========================================")
 	fmt.Println("Codeunit 50011 - Create Large Dataset")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	// Check if customer CUST-001 exists, if not create it
 	fmt.Println("Checking for customer CUST-001...")
@@ -37,9 +37,9 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 			fmt.Println("✗ Failed to create customer CUST-001")
 			return
 		}
-		fmt.Println("✓ Customer CUST-001 created\n")
+		fmt.Println("✓ Customer CUST-001 created")
 	} else {
-		fmt.Println("✓ Customer CUST-001 already exists\n")
+		fmt.Println("✓ Customer CUST-001 already exists")
 	}
 
 	// Find the maximum entry_no currently in the table
@@ -59,7 +59,7 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 	numEntries := 100000
 	fmt.Printf("Creating %d ledger entries with random amounts...\n", numEntries)
 	fmt.Printf("Entry numbers will range from %d to %d\n", startEntryNo, startEntryNo+numEntries-1)
-	fmt.Println("(This may take a few minutes...)\n")
+	fmt.Println("(This may take a few minutes...)")
 
 	start := time.Now()
 	batchSize := 1000
@@ -203,7 +203,7 @@ func CreateLargeCustomerDataset(db *sql.DB, company string) {
 func CalcFieldsLargeCustomer(db *sql.DB, company string) {
 	fmt.Println("========================================")
 	fmt.Println("Codeunit 50012 - Calculate FlowFields")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	fmt.Println("Loading customer CUST-001...")
 	customer := tables.NewCustomer()
@@ -229,7 +229,7 @@ func CalcFieldsLargeCustomer(db *sql.DB, company string) {
 	// Display results
 	fmt.Println("========================================")
 	fmt.Println("Results")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	fmt.Printf("Customer: %s - %s\n\n", customer.No.String(), customer.Name.String())
 	fmt.Printf("FlowField Values:\n")
@@ -247,7 +247,7 @@ func CalcFieldsLargeCustomer(db *sql.DB, company string) {
 	// Verify by manual calculation
 	fmt.Println("========================================")
 	fmt.Println("Verification (Manual Count)")
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 
 	verifyStart := time.Now()
 
