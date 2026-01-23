@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/hansjlachmann/openerp/compare/v0.1.1...v0.1.2) (2026-01-23)
+
+
+### CI/CD
+
+* add code coverage with Codecov and frontend tests ([8c0a6f5](https://github.com/hansjlachmann/openerp/commit/8c0a6f51d67d597ef5209f892a6a45cdc1140639))
+* added "needs" to release-please ([c1d89d3](https://github.com/hansjlachmann/openerp/commit/c1d89d383d6206949404b8a5cb2df8e5e8ff6d95))
+
 ## [0.1.1](https://github.com/hansjlachmann/openerp/compare/v0.1.0...v0.1.1) (2026-01-23)
 
 
