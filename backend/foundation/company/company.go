@@ -57,7 +57,7 @@ func (m *Manager) CreateCompany(name string) error {
 			err = m.registry.InitializeCompanyTablesWithDBType(m.db.GetConnection(), name, m.db.GetDBType())
 			if err != nil {
 				// Rollback: delete the company if table initialization fails
-				m.db.GetConnection().Exec(`DELETE FROM "Company" WHERE name = $1`, name)
+				_, _ = m.db.GetConnection().Exec(`DELETE FROM "Company" WHERE name = $1`, name)
 				return fmt.Errorf("failed to initialize tables for company '%s': %w", name, err)
 			}
 		}

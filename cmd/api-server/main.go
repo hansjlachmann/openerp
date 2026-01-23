@@ -110,7 +110,7 @@ func main() {
 		port = "8080"
 	}
 
-	defer db.CloseDatabase()
+	defer func() { _ = db.CloseDatabase() }()
 
 	// Enter company (auto-create if it doesn't exist in Docker mode)
 	companyMgr := company.NewManager(db, registry)
