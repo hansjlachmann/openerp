@@ -67,3 +67,6 @@ backend/foundation/openerp-gui
 *.db-shm
 *.db-wal
 *.db-journal
+
+# claude
+.claude/settings.local.json
