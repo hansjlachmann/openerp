@@ -37,6 +37,8 @@ ENV/
 .coverage
 htmlcov/
 coverage/
+playwright-report/
+test-results/
 
 # Node.js
 node_modules/
