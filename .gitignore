@@ -36,6 +36,10 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage/
+
+# Node.js
+node_modules/
 
 # Database
 *.db
