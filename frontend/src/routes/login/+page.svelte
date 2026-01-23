@@ -296,6 +296,7 @@
 			<!-- New Company Form -->
 			<div class="form-group">
 				<label for="new-company">Company Name</label>
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					id="new-company"
 					type="text"
@@ -347,6 +348,7 @@
 
 			<div class="form-group">
 				<label for="userid">User ID</label>
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					id="userid"
 					type="text"

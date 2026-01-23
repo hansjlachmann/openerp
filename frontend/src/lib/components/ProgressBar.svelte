@@ -68,7 +68,7 @@
 	});
 
 	const displayPercent = $derived(Math.round(progress));
-	const heightClass = size === 'sm' ? 'h-1.5' : 'h-2.5';
+	const heightClass = $derived(size === 'sm' ? 'h-1.5' : 'h-2.5');
 </script>
 
 <div class="progress-container">

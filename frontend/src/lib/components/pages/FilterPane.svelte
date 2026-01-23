@@ -308,6 +308,7 @@
 			{#each Object.keys(savedPresets) as presetName}
 				{#if editingPresetName === presetName}
 					<div class="view-item-editing">
+						<!-- svelte-ignore a11y_autofocus -->
 						<input
 							type="text"
 							class="rename-input"
@@ -487,6 +488,7 @@
 					</button>
 
 					{#if selectedFieldToAdd === 'show'}
+						<!-- svelte-ignore a11y_autofocus -->
 						<select
 							class="field-selector-inline"
 							bind:value={selectedFieldToAdd}
