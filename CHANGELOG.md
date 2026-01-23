@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/hansjlachmann/openerp/compare/v0.1.2...v0.1.3) (2026-01-23)
+
+
+### CI/CD
+
+* add Playwright E2E testing ([e7ebae5](https://github.com/hansjlachmann/openerp/commit/e7ebae5fee99f943d20f31bc6a3b4a6e6d6662e2))
+
 ## [0.1.2](https://github.com/hansjlachmann/openerp/compare/v0.1.1...v0.1.2) (2026-01-23)
 
 
