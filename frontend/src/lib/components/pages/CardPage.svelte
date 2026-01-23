@@ -355,7 +355,7 @@
 	{/if}
 
 	<PageHeader title={page.page.caption} {onclose}>
-		<svelte:fragment slot="leftActions">
+		{#snippet leftActions()}
 			<!-- Save state indicator - fixed width container to prevent layout shift -->
 			<div class="save-state-container">
 				<div class="saving-indicator" class:visible={saveState === 'saving'}>
@@ -405,9 +405,9 @@
 					{/if}
 				</Button>
 			{/each}
-		</svelte:fragment>
+		{/snippet}
 
-		<svelte:fragment slot="rightActions">
+		{#snippet rightActions()}
 			<!-- Customize button -->
 			<Button variant="secondary" size="sm" tabindex={-1} onclick={handleCustomize} title="Customize page">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -416,7 +416,7 @@
 				<span class="ml-1">Customize</span>
 			</Button>
 
-		</svelte:fragment>
+		{/snippet}
 	</PageHeader>
 
 	<!-- Error banner when save is blocked -->

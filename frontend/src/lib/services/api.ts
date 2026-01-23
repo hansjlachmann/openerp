@@ -49,7 +49,7 @@ export const api = {
 	async listRecordsWithOptions<T = TableRecord>(
 		tableName: string,
 		listOptions?: ListOptions
-	): Promise<{ list: ListResponse<T>; options: Record<string, Record<string, string>>; lookups: Record<string, Record<string, string>> }> {
+	): Promise<{ list: ListResponse<T>; options: Record<string, Record<string, string>>; lookups: Record<string, LookupData> }> {
 		const query = buildQueryString(listOptions);
 		const url = `${API_BASE}/tables/${tableName}/list${query ? '?' + query : ''}`;
 		const response = await fetch(url);

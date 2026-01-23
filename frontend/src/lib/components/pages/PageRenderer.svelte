@@ -76,6 +76,10 @@
 			navigation = result.navigation || {};
 			pageLoading = false;
 
+			if (!page) {
+				throw new Error('Page data is null');
+			}
+
 			// Now show skeleton while loading data
 			dataLoading = true;
 
@@ -220,7 +224,7 @@
 		if (!page || !page.page.layout.repeater?.fields) return [];
 
 		// Load user customizations from storage (user-specific)
-		let userId: string;
+		let userId = 'anonymous';
 		currentUser.subscribe(user => {
 			userId = user?.user_id || 'anonymous';
 		})();
@@ -262,13 +266,13 @@
 						t(DLG.DELETE_CONFIRM, page.page.caption),
 						async () => {
 							try {
-								await api.deleteRecord(page.page.source_table, deleteId);
+								await api.deleteRecord(page!.page.source_table, deleteId);
 								toast.success(t(MSG.RECORD_DELETED_SUCCESS));
 								// Navigate back to the list page if available
-								if (page.page.type === 'Card') {
+								if (page!.page.type === 'Card') {
 									// Try to find the associated list page by convention
 									// Customer Card (21) -> Customer List (22)
-									const listPageId = page.page.id + 1;
+									const listPageId = page!.page.id + 1;
 									window.location.href = `/pages/${listPageId}`;
 								}
 							} catch (err) {
@@ -341,7 +345,7 @@
 						t(DLG.DELETE_RECORD_CONFIRM),
 						async () => {
 							try {
-								await api.deleteRecord(page.page.source_table, deleteRecordId!);
+								await api.deleteRecord(page!.page.source_table, deleteRecordId!);
 								await loadListData();
 								toast.success(t(MSG.RECORD_DELETED));
 							} catch (err) {

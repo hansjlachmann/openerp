@@ -119,9 +119,10 @@
 		const sourceRecords = filteredRecords();
 		if (!sortField) return sourceRecords;
 
+		const field = sortField; // TypeScript now knows field is non-null
 		return [...sourceRecords].sort((a, b) => {
-			const aVal = a[sortField];
-			const bVal = b[sortField];
+			const aVal = a[field];
+			const bVal = b[field];
 
 			// Handle null/undefined
 			if (aVal == null && bVal == null) return 0;
@@ -881,7 +882,7 @@
 				break;
 			case 'Delete':
 				const deleteRecordId = getRecordId(modalRecord, primaryKeyField);
-				if (deleteRecordId && confirm(`Delete this ${modalCardPage.page.caption}?`)) {
+				if (deleteRecordId && window.confirm(`Delete this ${modalCardPage.page.caption}?`)) {
 					// Mark as deleted BEFORE API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
 
@@ -1128,7 +1129,7 @@
 
 <div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
 	<PageHeader title={page.page.caption}>
-		<svelte:fragment slot="leftActions">
+		{#snippet leftActions()}
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
 					{@const isDisabled = (() => {
 						// New and Refresh are always enabled
@@ -1215,9 +1216,9 @@
 						</button>
 					{/if}
 				</div>
-		</svelte:fragment>
+		{/snippet}
 
-		<svelte:fragment slot="rightActions">
+		{#snippet rightActions()}
 			<!-- Row Numbers toggle button -->
 			<Button
 					variant={showRowNumbers ? 'primary' : 'secondary'}
@@ -1289,7 +1290,7 @@
 						</span>
 					{/if}
 				</Button>
-		</svelte:fragment>
+		{/snippet}
 	</PageHeader>
 
 	<div class="list-content">
