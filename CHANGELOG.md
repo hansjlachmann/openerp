@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/hansjlachmann/openerp/compare/v0.1.3...v0.1.4) (2026-01-24)
+
+
+### CI/CD
+
+* add multi-arch Docker builds (AMD64 + ARM64) ([50091e6](https://github.com/hansjlachmann/openerp/commit/50091e622b65d8629f86ffd4c4f456b9f2ef7d7c))
+
 ## [0.1.3](https://github.com/hansjlachmann/openerp/compare/v0.1.2...v0.1.3) (2026-01-23)
 
 
