@@ -162,7 +162,7 @@ export const api = {
 		};
 	},
 
-	// Run codeunit
+	// Run codeunit by ID
 	async runCodeunit(codeunitId: number, params?: any): Promise<any> {
 		const response = await fetch(`${API_BASE}/codeunits/${codeunitId}/run`, {
 			method: 'POST',
@@ -170,6 +170,16 @@ export const api = {
 			body: JSON.stringify(params || {})
 		});
 		return handleApiResponse<any>(response, `run codeunit ${codeunitId}`);
+	},
+
+	// Run codeunit by name
+	async runCodeunitByName(codeunitName: string, params?: any): Promise<any> {
+		const response = await fetch(`${API_BASE}/codeunits/${codeunitName}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(params || {})
+		});
+		return handleApiResponse<any>(response, `run codeunit ${codeunitName}`);
 	},
 
 	// Authentication

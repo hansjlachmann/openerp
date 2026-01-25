@@ -55,6 +55,7 @@ func (s *Server) Setup() {
 	pagesHandler := handlers.NewPagesHandler()
 	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
 	authHandler := handlers.NewAuthHandlerWithDBType(s.db, s.dbType)
+	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
 
 	// Auth routes
 	api.Post("/auth/login", authHandler.Login)
@@ -89,6 +90,9 @@ func (s *Server) Setup() {
 	api.Get("/preferences/:page_id/:type", preferencesHandler.GetPreferences)
 	api.Post("/preferences/:page_id/:type", preferencesHandler.SavePreference)
 	api.Delete("/preferences/:page_id/:type/:name", preferencesHandler.DeletePreference)
+
+	// Codeunit routes
+	api.Post("/codeunits/generate-cust-ledger-entries", codeunitsHandler.GenerateCustLedgerEntries)
 
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {
