@@ -6,12 +6,18 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 // CustLedgerEntryGenerate - Codeunit 50010: Generate Random Customer Ledger Entries
 const CustLedgerEntryGenerateID = 50010
+const CustLedgerEntryGenerateName = "generate-cust-ledger-entries"
+
+func init() {
+	Register(CustLedgerEntryGenerateID, CustLedgerEntryGenerateName, NewCustLedgerEntryGenerate)
+}
 
 type CustLedgerEntryGenerate struct {
 	db      database.Executor
@@ -20,7 +26,7 @@ type CustLedgerEntryGenerate struct {
 }
 
 // NewCustLedgerEntryGenerate creates a new instance of the codeunit
-func NewCustLedgerEntryGenerate(db database.Executor, company string, dbType database.DBType) *CustLedgerEntryGenerate {
+func NewCustLedgerEntryGenerate(db database.Executor, company string, dbType database.DBType) fcodeunits.Codeunit {
 	return &CustLedgerEntryGenerate{
 		db:      db,
 		company: company,
@@ -28,23 +34,52 @@ func NewCustLedgerEntryGenerate(db database.Executor, company string, dbType dat
 	}
 }
 
-// Run generates random customer ledger entries for the specified customer
-func (c *CustLedgerEntryGenerate) Run(customerNo string, count int) (int, error) {
+// ID returns the codeunit ID
+func (c *CustLedgerEntryGenerate) ID() int {
+	return CustLedgerEntryGenerateID
+}
+
+// Name returns the codeunit name
+func (c *CustLedgerEntryGenerate) Name() string {
+	return CustLedgerEntryGenerateName
+}
+
+// SourceTable returns the table this codeunit operates on
+func (c *CustLedgerEntryGenerate) SourceTable() string {
+	return "Customer"
+}
+
+// Run executes the codeunit with the given record
+func (c *CustLedgerEntryGenerate) Run(record interface{}) (fcodeunits.Result, error) {
+	customer, ok := record.(*tables.Customer)
+	if !ok {
+		return fcodeunits.Result{}, fmt.Errorf("expected *Customer record, got %T", record)
+	}
+
+	customerNo := customer.No.String()
 	if customerNo == "" {
-		return 0, fmt.Errorf("customer number is required")
+		return fcodeunits.Result{}, fmt.Errorf("customer number is required")
 	}
 
-	if count <= 0 {
-		count = 5 // Default to 5 entries
+	count := 5 // Default count
+
+	inserted, err := c.generate(customerNo, count)
+	if err != nil {
+		return fcodeunits.Result{}, err
 	}
 
-	// Verify customer exists
-	var customer tables.Customer
-	customer.InitWithDBType(c.db, c.company, c.dbType)
-	if !customer.Get(types.NewCode(customerNo)) {
-		return 0, fmt.Errorf("customer '%s' not found", customerNo)
-	}
+	return fcodeunits.Result{
+		Success: true,
+		Message: fmt.Sprintf("Generated %d ledger entries for customer %s", inserted, customerNo),
+		Data: map[string]interface{}{
+			"inserted":    inserted,
+			"customer_no": customerNo,
+		},
+	}, nil
+}
 
+// generate creates random customer ledger entries
+func (c *CustLedgerEntryGenerate) generate(customerNo string, count int) (int, error) {
 	// Get next entry number
 	var ledgerEntry tables.CustomerLedgerEntry
 	ledgerEntry.InitWithDBType(c.db, c.company, c.dbType)

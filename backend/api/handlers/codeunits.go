@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
@@ -27,9 +28,9 @@ func NewCodeunitsHandlerWithDBType(db *sql.DB, dbType database.DBType) *Codeunit
 	return &CodeunitsHandler{db: db, dbType: dbType}
 }
 
-// GenerateCustLedgerEntries generates random customer ledger entries
-// POST /api/codeunits/generate-cust-ledger-entries
-func (h *CodeunitsHandler) GenerateCustLedgerEntries(c *fiber.Ctx) error {
+// RunCodeunit executes a codeunit by ID with the provided record
+// POST /api/codeunits/run
+func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 	sess := session.GetCurrent()
 
 	if sess == nil {
@@ -41,32 +42,49 @@ func (h *CodeunitsHandler) GenerateCustLedgerEntries(c *fiber.Ctx) error {
 
 	// Parse request body
 	var req struct {
-		CustomerNo string `json:"customer_no"`
-		Count      int    `json:"count"`
+		CodeunitID int                    `json:"codeunit_id"`
+		Record     map[string]interface{} `json:"record"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	if req.CustomerNo == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("Customer number is required"))
+	if req.CodeunitID == 0 {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Codeunit ID is required"))
 	}
 
-	// Default count
-	if req.Count <= 0 {
-		req.Count = 5
+	// Get codeunit factory from registry
+	factory, ok := codeunits.Get(req.CodeunitID)
+	if !ok {
+		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
 	}
 
-	// Create and run codeunit
-	codeunit := codeunits.NewCustLedgerEntryGenerate(h.db, company, h.dbType)
-	inserted, err := codeunit.Run(req.CustomerNo, req.Count)
+	// Create codeunit instance
+	codeunit := factory(h.db, company, h.dbType)
+
+	// Get the source table name and create a typed record
+	tableName := codeunit.SourceTable()
+	tableFactory, ok := tables.GetTableFactory(tableName)
+	if !ok {
+		return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
+	}
+
+	// Create table instance and populate from request
+	table := tableFactory()
+	table.InitWithDBType(h.db, company, h.dbType)
+
+	// Populate table fields from the record map
+	table.FromMap(req.Record)
+
+	// Run the codeunit with the typed record
+	result, err := codeunit.Run(table)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
-		"inserted":    inserted,
-		"customer_no": req.CustomerNo,
-		"message":     "Ledger entries generated successfully",
+		"success": result.Success,
+		"message": result.Message,
+		"data":    result.Data,
 	}))
 }

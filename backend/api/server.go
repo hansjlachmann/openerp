@@ -91,8 +91,8 @@ func (s *Server) Setup() {
 	api.Post("/preferences/:page_id/:type", preferencesHandler.SavePreference)
 	api.Delete("/preferences/:page_id/:type/:name", preferencesHandler.DeletePreference)
 
-	// Codeunit routes
-	api.Post("/codeunits/generate-cust-ledger-entries", codeunitsHandler.GenerateCustLedgerEntries)
+	// Codeunit routes (generic handler)
+	api.Post("/codeunits/run", codeunitsHandler.RunCodeunit)
 
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {

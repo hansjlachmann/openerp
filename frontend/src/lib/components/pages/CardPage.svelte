@@ -238,32 +238,29 @@
 
 	// Handle run_object actions (codeunits)
 	async function handleRunObject(runObject: string) {
-		// Parse the run_object string (format: "codeunit:name")
-		const [objectType, objectName] = runObject.split(':');
+		// Parse the run_object string (format: "codeunit:ID")
+		const [objectType, objectId] = runObject.split(':');
 
 		if (objectType !== 'codeunit') {
 			toast.error(`Unknown object type: ${objectType}`);
 			return;
 		}
 
-		// Get the primary key value from the current record
-		const pkValue = getRecordId(record, primaryKeyField);
-		if (!pkValue) {
+		const codeunitId = parseInt(objectId, 10);
+		if (isNaN(codeunitId)) {
+			toast.error(`Invalid codeunit ID: ${objectId}`);
+			return;
+		}
+
+		// Check if we have a record
+		if (!record || Object.keys(record).length === 0) {
 			toast.error('No record selected');
 			return;
 		}
 
 		try {
-			// Build params based on the codeunit
-			const params: Record<string, any> = {};
-
-			// For customer-related codeunits, pass customer_no
-			if (objectName === 'generate-cust-ledger-entries') {
-				params.customer_no = pkValue;
-				params.count = 5; // Default count
-			}
-
-			const result = await api.runCodeunitByName(objectName, params);
+			// Send the full record to the generic codeunit endpoint
+			const result = await api.runCodeunit(codeunitId, record);
 			toast.success(result.message || 'Operation completed successfully');
 
 			// Trigger refresh to show updated data

@@ -53,3 +53,10 @@ export interface ListOptions {
 	page_size?: number;
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
+
+// Codeunit execution result
+export interface CodeunitResult {
+	success: boolean;
+	message: string;
+	data?: Record<string, any>;
+}

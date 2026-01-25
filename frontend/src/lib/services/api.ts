@@ -3,7 +3,8 @@ import type {
 	ListResponse,
 	ListOptions,
 	TableRecord,
-	LookupData
+	LookupData,
+	CodeunitResult
 } from '$types/api';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 
@@ -162,24 +163,14 @@ export const api = {
 		};
 	},
 
-	// Run codeunit by ID
-	async runCodeunit(codeunitId: number, params?: any): Promise<any> {
-		const response = await fetch(`${API_BASE}/codeunits/${codeunitId}/run`, {
+	// Run codeunit by ID with record data
+	async runCodeunit(codeunitId: number, record: Record<string, any>): Promise<CodeunitResult> {
+		const response = await fetch(`${API_BASE}/codeunits/run`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(params || {})
+			body: JSON.stringify({ codeunit_id: codeunitId, record })
 		});
-		return handleApiResponse<any>(response, `run codeunit ${codeunitId}`);
-	},
-
-	// Run codeunit by name
-	async runCodeunitByName(codeunitName: string, params?: any): Promise<any> {
-		const response = await fetch(`${API_BASE}/codeunits/${codeunitName}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(params || {})
-		});
-		return handleApiResponse<any>(response, `run codeunit ${codeunitName}`);
+		return handleApiResponse<CodeunitResult>(response, `run codeunit ${codeunitId}`);
 	},
 
 	// Authentication
