@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/hansjlachmann/openerp/compare/v0.1.4...v0.1.5) (2026-01-25)
+
+
+### Features
+
+* make menu groups data-driven from YAML ([6c26ce4](https://github.com/hansjlachmann/openerp/commit/6c26ce4d4ebbdc50f9186610f8fc9097799ddb9d))
+
 ## [0.1.4](https://github.com/hansjlachmann/openerp/compare/v0.1.3...v0.1.4) (2026-01-24)
 
 
