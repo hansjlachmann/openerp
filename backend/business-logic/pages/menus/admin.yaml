@@ -1,20 +1,26 @@
 menu:
-  - name: Customers
-    page_id: 22
-    icon: users
+  - name: General
+    icon: home
+    items:
+      - name: Customers
+        page_id: 22
+        icon: users
 
-  - name: Users
-    page_id: 30
-    icon: user
+  - name: Settings
+    icon: settings
+    items:
+      - name: Users
+        page_id: 30
+        icon: user
 
-  - name: Languages
-    page_id: 9
-    icon: globe
+      - name: Languages
+        page_id: 9
+        icon: globe
 
-  - name: Payment Terms
-    page_id: 26
-    icon: calendar
+      - name: Payment Terms
+        page_id: 26
+        icon: calendar
 
-  - name: Menus
-    page_id: 10
-    icon: menu
+      - name: Menus
+        page_id: 10
+        icon: menu

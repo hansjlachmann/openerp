@@ -26,14 +26,26 @@
 	const translations = $derived({
 		homeTitle: tLang('HOME_TITLE', translationKey),
 		homeDescription: tLang('HOME_DESCRIPTION', translationKey),
-		homeGeneral: tLang('HOME_GENERAL', translationKey),
-		homeSettings: tLang('HOME_SETTINGS', translationKey),
+		// Group names
+		groupGeneral: tLang('HOME_GENERAL', translationKey),
+		groupSettings: tLang('HOME_SETTINGS', translationKey),
+		// Menu items
 		menuCustomers: tLang('MENU_CUSTOMERS', translationKey),
 		menuUsers: tLang('MENU_USERS', translationKey),
 		menuLanguages: tLang('MENU_LANGUAGES', translationKey),
 		menuPaymentTerms: tLang('MENU_PAYMENT_TERMS', translationKey),
 		menuMenus: tLang('MENU_MENUS', translationKey)
 	});
+
+	// Get translated group name
+	function getGroupName(name: string): string {
+		const groupNameToKey: Record<string, string> = {
+			'General': 'groupGeneral',
+			'Settings': 'groupSettings'
+		};
+		const key = groupNameToKey[name] as keyof typeof translations;
+		return key ? translations[key] : name;
+	}
 
 	// Get translated menu item name
 	function getMenuItemName(name: string): string {
@@ -84,39 +96,36 @@
 			<div class="text-red-500">{error}</div>
 		{:else if menu && menu.menu && menu.menu.length > 0}
 			<div class="space-y-6">
-				<!-- General -->
-				<div>
-					<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.homeGeneral}</h3>
-					<div class="ml-4 space-y-1">
-						{#each menu.menu as item}
-							{#if item.page_id && item.name === 'Customers'}
+				{#each menu.menu as group}
+					<div>
+						<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+							{getGroupName(group.name)}
+						</h3>
+						<div class="ml-4 space-y-1">
+							{#if group.items && group.items.length > 0}
+								<!-- Grouped menu -->
+								{#each group.items as item}
+									{#if item.page_id && item.name}
+										<button
+											onclick={() => navigateToPage(item.page_id!)}
+											class="block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
+										>
+											{getMenuItemName(item.name)}
+										</button>
+									{/if}
+								{/each}
+							{:else if group.page_id}
+								<!-- Flat menu item (no sub-items) -->
 								<button
-									onclick={() => navigateToPage(item.page_id!)}
+									onclick={() => navigateToPage(group.page_id!)}
 									class="block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
 								>
-									{getMenuItemName(item.name)}
+									{getMenuItemName(group.name)}
 								</button>
 							{/if}
-						{/each}
+						</div>
 					</div>
-				</div>
-
-				<!-- Settings -->
-				<div>
-					<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.homeSettings}</h3>
-					<div class="ml-4 space-y-1">
-						{#each menu.menu as item}
-							{#if item.page_id && item.name !== 'Customers'}
-								<button
-									onclick={() => navigateToPage(item.page_id!)}
-									class="block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
-								>
-									{getMenuItemName(item.name)}
-								</button>
-							{/if}
-						{/each}
-					</div>
-				</div>
+				{/each}
 			</div>
 		{:else}
 			<div class="text-gray-500">No menu items available</div>
