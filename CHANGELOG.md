@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.6](https://github.com/hansjlachmann/openerp/compare/v0.1.5...v0.1.6) (2026-01-25)
+
+
+### Features
+
+* add codeunit to generate random customer ledger entries ([bed58b8](https://github.com/hansjlachmann/openerp/commit/bed58b8dae35f99712f76c90188c0f99fb52736e))
+* implement generic codeunit registry pattern ([a1dc552](https://github.com/hansjlachmann/openerp/commit/a1dc552dd7b77dff87efe36e9154d2a958e713cf))
+
+
+### Bug Fixes
+
+* pass database type to codeunit for PostgreSQL compatibility ([85fd8e5](https://github.com/hansjlachmann/openerp/commit/85fd8e57168024f199aa046507f632a6673162eb))
+
 ## [0.1.5](https://github.com/hansjlachmann/openerp/compare/v0.1.4...v0.1.5) (2026-01-25)
 
 
