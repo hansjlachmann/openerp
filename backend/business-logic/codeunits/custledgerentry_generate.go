@@ -16,13 +16,15 @@ const CustLedgerEntryGenerateID = 50010
 type CustLedgerEntryGenerate struct {
 	db      database.Executor
 	company string
+	dbType  database.DBType
 }
 
 // NewCustLedgerEntryGenerate creates a new instance of the codeunit
-func NewCustLedgerEntryGenerate(db database.Executor, company string) *CustLedgerEntryGenerate {
+func NewCustLedgerEntryGenerate(db database.Executor, company string, dbType database.DBType) *CustLedgerEntryGenerate {
 	return &CustLedgerEntryGenerate{
 		db:      db,
 		company: company,
+		dbType:  dbType,
 	}
 }
 
@@ -38,14 +40,14 @@ func (c *CustLedgerEntryGenerate) Run(customerNo string, count int) (int, error)
 
 	// Verify customer exists
 	var customer tables.Customer
-	customer.Init(c.db, c.company)
+	customer.InitWithDBType(c.db, c.company, c.dbType)
 	if !customer.Get(types.NewCode(customerNo)) {
 		return 0, fmt.Errorf("customer '%s' not found", customerNo)
 	}
 
 	// Get next entry number
 	var ledgerEntry tables.CustomerLedgerEntry
-	ledgerEntry.Init(c.db, c.company)
+	ledgerEntry.InitWithDBType(c.db, c.company, c.dbType)
 
 	nextEntryNo := 1
 	if ledgerEntry.FindLast() {
@@ -70,7 +72,7 @@ func (c *CustLedgerEntryGenerate) Run(customerNo string, count int) (int, error)
 	inserted := 0
 	for i := 0; i < count; i++ {
 		var entry tables.CustomerLedgerEntry
-		entry.Init(c.db, c.company)
+		entry.InitWithDBType(c.db, c.company, c.dbType)
 
 		entry.Entry_no = nextEntryNo + i
 		entry.Customer_no = types.NewCode(customerNo)

@@ -58,7 +58,7 @@ func (h *CodeunitsHandler) GenerateCustLedgerEntries(c *fiber.Ctx) error {
 	}
 
 	// Create and run codeunit
-	codeunit := codeunits.NewCustLedgerEntryGenerate(h.db, company)
+	codeunit := codeunits.NewCustLedgerEntryGenerate(h.db, company, h.dbType)
 	inserted, err := codeunit.Run(req.CustomerNo, req.Count)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
