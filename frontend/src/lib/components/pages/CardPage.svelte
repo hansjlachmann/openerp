@@ -17,6 +17,7 @@
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { toast } from '$lib/stores/toast';
+	import { api } from '$lib/services/api';
 
 	interface Props {
 		page: PageDefinition;
@@ -235,6 +236,44 @@
 		onaction?.(actionName);
 	}
 
+	// Handle run_object actions (codeunits)
+	async function handleRunObject(runObject: string) {
+		// Parse the run_object string (format: "codeunit:name")
+		const [objectType, objectName] = runObject.split(':');
+
+		if (objectType !== 'codeunit') {
+			toast.error(`Unknown object type: ${objectType}`);
+			return;
+		}
+
+		// Get the primary key value from the current record
+		const pkValue = getRecordId(record, primaryKeyField);
+		if (!pkValue) {
+			toast.error('No record selected');
+			return;
+		}
+
+		try {
+			// Build params based on the codeunit
+			const params: Record<string, any> = {};
+
+			// For customer-related codeunits, pass customer_no
+			if (objectName === 'generate-cust-ledger-entries') {
+				params.customer_no = pkValue;
+				params.count = 5; // Default count
+			}
+
+			const result = await api.runCodeunitByName(objectName, params);
+			toast.success(result.message || 'Operation completed successfully');
+
+			// Trigger refresh to show updated data
+			onaction?.('Refresh');
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : 'Operation failed';
+			toast.error(errorMessage);
+		}
+	}
+
 	function handleNew() {
 		record = {};
 	}
@@ -382,6 +421,8 @@
 					onclick={() => {
 						if (action.run_page) {
 							window.location.href = `/pages/${action.run_page}`;
+						} else if (action.run_object) {
+							handleRunObject(action.run_object);
 						} else {
 							handleAction(action.name);
 						}
