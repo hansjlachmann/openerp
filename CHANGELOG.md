@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/hansjlachmann/openerp/compare/v0.1.10...v0.1.11) (2026-01-27)
+
+
+### Features
+
+* add extension support with extmerge tool ([5022860](https://github.com/hansjlachmann/openerp/commit/5022860c146ad0c653650a40c19db84628b80eb4))
+
 ## [0.1.10](https://github.com/hansjlachmann/openerp/compare/v0.1.9...v0.1.10) (2026-01-27)
 
 
