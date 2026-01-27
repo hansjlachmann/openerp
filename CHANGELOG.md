@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.15](https://github.com/hansjlachmann/openerp/compare/v0.1.14...v0.1.15) (2026-01-27)
+
+
+### Features
+
+* add codeunit helper functions Message() and Error() ([bf963e1](https://github.com/hansjlachmann/openerp/commit/bf963e18636dc1353f9b9a8e2c433ee9b74185a0))
+
 ## [0.1.14](https://github.com/hansjlachmann/openerp/compare/v0.1.13...v0.1.14) (2026-01-27)
 
 
