@@ -172,6 +172,15 @@ jobs:
           fi
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ needs.release.outputs.release_created }}" == "true" ]; then
+            echo "version=${{ needs.release.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
@@ -180,6 +189,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags-backend.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

@@ -13,6 +13,7 @@
 	let languages = $state<{ code: string; name: string }[]>([]);
 	let currentLanguage = $state('en-US');
 	let changingLanguage = $state(false);
+	let version = $state('...');
 
 	theme.subscribe((value) => {
 		currentTheme = value;
@@ -29,8 +30,13 @@
 		try {
 			// Load current user info from storage
 			currentUser.loadFromStorage();
-			// Load available languages
-			languages = await api.getLanguages();
+			// Load available languages and version in parallel
+			const [langs, ver] = await Promise.all([
+				api.getLanguages(),
+				api.getVersion()
+			]);
+			languages = langs;
+			version = ver;
 		} catch (err) {
 			console.error('Error loading data:', err);
 		} finally {
@@ -360,6 +366,9 @@
 					</svg>
 				{/if}
 			</button>
+
+			<!-- Version -->
+			<span class="text-xs text-white/50 pl-2 border-l border-white/20">v{version}</span>
 		</div>
 	</nav>
 {/if}

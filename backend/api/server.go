@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -11,6 +12,16 @@ import (
 	"github.com/hansjlachmann/openerp/backend/api/middleware"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 )
+
+// Version is set at build time via -ldflags
+var Version = "dev"
+
+func init() {
+	// Allow override via environment variable
+	if v := os.Getenv("APP_VERSION"); v != "" {
+		Version = v
+	}
+}
 
 // Server represents the API server
 type Server struct {
@@ -97,8 +108,15 @@ func (s *Server) Setup() {
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ok",
+			"status":  "ok",
 			"service": "openerp-api",
+		})
+	})
+
+	// Version endpoint
+	s.app.Get("/api/version", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"version": Version,
 		})
 	})
 

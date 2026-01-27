@@ -1,6 +1,9 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
 
+# Version passed at build time
+ARG VERSION=dev
+
 WORKDIR /app
 
 # Install build dependencies
@@ -13,8 +16,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o api-server ./cmd/api-server
+# Build the application with version embedded
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-X github.com/hansjlachmann/openerp/backend/api.Version=${VERSION}" -o api-server ./cmd/api-server
 
 # Runtime stage
 FROM alpine:3.21
