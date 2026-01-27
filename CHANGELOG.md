@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/hansjlachmann/openerp/compare/v0.1.9...v0.1.10) (2026-01-27)
+
+
+### CI/CD
+
+* only build Docker images on release ([8961ef1](https://github.com/hansjlachmann/openerp/commit/8961ef108a920a9fcd8c2954e7b280148fd41799))
+
 ## [0.1.9](https://github.com/hansjlachmann/openerp/compare/v0.1.8...v0.1.9) (2026-01-27)
 
 
