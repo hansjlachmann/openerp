@@ -236,5 +236,17 @@ export const api = {
 			body: JSON.stringify({ name })
 		});
 		return handleApiResponseFull<{ name: string; message: string }>(response, 'create company');
+	},
+
+	// Version
+	async getVersion(): Promise<string> {
+		try {
+			const response = await fetch(`${API_BASE}/version`);
+			if (!response.ok) return 'unknown';
+			const result = await response.json();
+			return result.version || 'unknown';
+		} catch {
+			return 'unknown';
+		}
 	}
 };
