@@ -447,17 +447,14 @@ func (t *UserPreferencesBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Preference_data.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "created_at":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Created_at.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "updated_at":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Updated_at.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	}
 
 	return false
@@ -1357,17 +1354,11 @@ func (t *UserPreferencesBase) UpdateFromMap(data map[string]interface{}) {
 // GetPrimaryKeyField returns the name of the primary key field
 func (t *UserPreferencesBase) GetPrimaryKeyField() string {
 	return "user_id"
-	return "page_id"
-	return "preference_type"
-	return "preference_name"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
 func (t *UserPreferencesBase) GetPrimaryKeyValue() string {
 	return t.User_id.String()
-	return fmt.Sprintf("%d", t.Page_id)
-	return t.Preference_type.String()
-	return t.Preference_name.String()
 }
 
 // GetFields returns metadata about all fields

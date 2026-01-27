@@ -370,7 +370,6 @@ func (t *PaymentTermsBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "active":
 		if old, ok := oldValue.(bool); ok {
 			return t.Active != old

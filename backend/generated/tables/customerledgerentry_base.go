@@ -1079,152 +1079,122 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Customer_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "sell_to_customer_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Sell_to_customer_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "posting_date":
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Posting_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "document_date":
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Document_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "document_type":
 		if old, ok := oldValue.(CustomerLedgerEntryDocument_type); ok {
 			return t.Document_type != old
 		}
-		return true // Type mismatch, assume changed
 	case "document_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Document_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "external_document_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.External_document_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "description":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "currency_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Currency_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "amount":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Amount.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "remaining_amount":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Remaining_amount.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "closed_by_amount":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Closed_by_amount.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "original_amount_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Original_amount_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "remaining_amt_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Remaining_amt_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "amount_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Amount_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "closed_by_amount_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Closed_by_amount_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "sales_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Sales_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "profit_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Profit_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "inv_discount_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Inv_discount_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "pmt_discount_date":
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Pmt_discount_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "pmt_disc_possible":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Pmt_disc_possible.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "pmt_disc_given_lcy":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Pmt_disc_given_lcy.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "customer_posting_group":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Customer_posting_group.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "department_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Department_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "project_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Project_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "salesperson_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Salesperson_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "user_id":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.User_id.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "source_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Source_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "reason_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Reason_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "journal_batch_name":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Journal_batch_name.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "transaction_no":
 		if old, ok := oldValue.(int); ok {
 			return t.Transaction_no != old
@@ -1234,17 +1204,14 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(CustomerLedgerEntryApplies_to_doc_type); ok {
 			return t.Applies_to_doc_type != old
 		}
-		return true // Type mismatch, assume changed
 	case "applies_to_doc_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Applies_to_doc_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "applies_to_id":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Applies_to_id.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "open":
 		if old, ok := oldValue.(bool); ok {
 			return t.Open != old
@@ -1259,12 +1226,10 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.On_hold.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "due_date":
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Due_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "closed_by_entry_no":
 		if old, ok := oldValue.(int); ok {
 			return t.Closed_by_entry_no != old
@@ -1274,17 +1239,14 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Closed_at_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "bal_account_type":
 		if old, ok := oldValue.(CustomerLedgerEntryBal_account_type); ok {
 			return t.Bal_account_type != old
 		}
-		return true // Type mismatch, assume changed
 	case "bal_account_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Bal_account_no.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	}
 
 	return false
