@@ -24,3 +24,7 @@ menu:
       - name: Menus
         page_id: 10
         icon: menu
+
+      - name: Job Queue
+        page_id: 672
+        icon: clock

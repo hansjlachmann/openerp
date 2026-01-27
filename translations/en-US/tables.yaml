@@ -133,3 +133,23 @@ tables:
       code: "Code"
       description: "Description"
       filename: "Filename"
+
+  # Job Queue (Table 472)
+  job_queue:
+    caption: "Job Queue"
+    fields:
+      no: "No."
+      description: "Description"
+      description_2: "Description 2"
+      status: "Status"
+      object_id_to_run: "Object ID to Run"
+      next_start: "Next Start"
+      minutes_between_run: "Minutes between Run"
+      recurring_job: "Recurring Job"
+
+    # Option field values
+    options:
+      status:
+        on_hold: "On Hold"
+        ready: "Ready"
+        error: "Error"

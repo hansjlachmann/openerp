@@ -1,0 +1,41 @@
+table:
+  id: 472
+  name: "Job_Queue"
+  fields:
+    - name: no
+      type: types.Code
+      db_name: no
+      primary_key: true
+      length: 20
+      required: true
+
+    - name: description
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: description_2
+      type: types.Text
+      db_name: description_2
+      length: 100
+
+    - name: status
+      type: Option
+      db_name: status
+      options: ["On Hold", "Ready", "Error"]
+
+    - name: object_id_to_run
+      type: int
+      db_name: object_id_to_run
+
+    - name: next_start
+      type: types.DateTime
+      db_name: next_start
+
+    - name: minutes_between_run
+      type: int
+      db_name: minutes_between_run
+
+    - name: recurring_job
+      type: bool
+      db_name: recurring_job

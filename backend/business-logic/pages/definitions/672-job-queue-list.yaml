@@ -1,0 +1,66 @@
+page:
+  id: 672
+  type: List
+  name: Job Queue List
+  source_table: Job_Queue
+  caption: Job Queue
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 80
+
+        - source: description
+          width: 200
+
+        - source: description_2
+          width: 200
+
+        - source: status
+          width: 100
+
+        - source: object_id_to_run
+          width: 120
+
+        - source: next_start
+          width: 150
+
+        - source: minutes_between_run
+          width: 130
+
+        - source: recurring_job
+          width: 100
+
+  actions:
+    - name: Run
+      caption: Run
+      shortcut: F9
+      promoted: true
+      enabled: true
+      run_object: field:object_id_to_run
+
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

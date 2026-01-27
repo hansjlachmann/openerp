@@ -32,6 +32,9 @@ func init() {
 	RegisterTableFactory("Menu", gtables.MenuTableID, func() ftables.Table {
 		return &Menu{}
 	})
+	RegisterTableFactory("Job_Queue", gtables.JobQueueTableID, func() ftables.Table {
+		return &JobQueue{}
+	})
 }
 
 // RegisterTableFactory registers a table factory by name

@@ -104,6 +104,7 @@ type TemplateData struct {
 	HasDateTimeField bool
 	HasFlowField     bool
 	HasBlobField     bool
+	HasIntField      bool
 }
 
 func main() {
@@ -243,6 +244,9 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		}
 		if field.Type == "[]byte" || field.Type == "BLOB" {
 			data.HasBlobField = true
+		}
+		if field.Type == "int" && !field.FlowField {
+			data.HasIntField = true
 		}
 	}
 
@@ -556,6 +560,9 @@ import (
 	"encoding/base64"
 {{- end }}
 	"fmt"
+{{- if .HasIntField }}
+	"strconv"
+{{- end }}
 	"strings"
 {{- if or .HasTimeField .HasDateField .HasDateTimeField }}
 	"time"
@@ -2345,6 +2352,9 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 {{- else if eq .Type "bool" }}
 		if v, ok := value.(bool); ok {
 			t.{{ upperFirst .Name }} = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.{{ upperFirst .Name }} = v == "true" || v == "1"
 		} else {
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
@@ -2383,9 +2393,20 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 			return fmt.Errorf("invalid type for field {{ .Name }} (expected {{ $.StructName }}{{ upperFirst .Name }}, int, or string)")
 		}
 {{- else if eq .Type "int" }}
-		if v, ok := value.(int); ok {
+		switch v := value.(type) {
+		case int:
 			t.{{ upperFirst .Name }} = v
-		} else {
+		case float64:
+			t.{{ upperFirst .Name }} = int(v)
+		case string:
+			if v == "" {
+				t.{{ upperFirst .Name }} = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.{{ upperFirst .Name }} = i
+			} else {
+				return fmt.Errorf("invalid integer value for field {{ .Name }}: %s", v)
+			}
+		default:
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
 {{- else if eq .Type "time.Time" }}

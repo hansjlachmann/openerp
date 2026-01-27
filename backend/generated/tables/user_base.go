@@ -1279,6 +1279,9 @@ func (t *UserBase) ValidateField(fieldName string, value interface{}) error {
 		// Set field value
 		if v, ok := value.(bool); ok {
 			t.Active = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Active = v == "true" || v == "1"
 		} else {
 			return fmt.Errorf("invalid type for field active")
 		}

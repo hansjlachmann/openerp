@@ -31,3 +31,7 @@ pages:
   # Menu pages
   menus:
     caption: "Menyer"
+
+  # Job Queue pages
+  job_queue_list:
+    caption: "Jobbkø"

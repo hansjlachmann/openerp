@@ -5,7 +5,9 @@ package tables
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -13,12 +15,38 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// PaymentTermsBase represents Table 3: Payment Terms
+// ========================================
+// Option Field Type Definitions (BC/NAV style)
+// ========================================
+
+// JobQueueStatus represents the status option field
+type JobQueueStatus int
+
+// String returns the text representation of JobQueueStatus
+func (o JobQueueStatus) String() string {
+	options := []string{"On Hold", "Ready", "Error" }
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the JobQueueStatus value is within valid range
+func (o JobQueueStatus) IsValid() bool {
+	return o >= 0 && o < 3
+}
+
+// JobQueueBase represents Table 472: Job_Queue
 // This is the generated base struct - embed in your wrapper struct and override Init
-type PaymentTermsBase struct {
-	Code types.Code `db:"code,pk"`
+type JobQueueBase struct {
+	No types.Code `db:"no,pk"`
 	Description types.Text `db:"description"`
-	Active bool `db:"active"`
+	Description_2 types.Text `db:"description_2"`
+	Status JobQueueStatus `db:"status"`
+	Object_id_to_run int `db:"object_id_to_run"`
+	Next_start types.DateTime `db:"next_start"`
+	Minutes_between_run int `db:"minutes_between_run"`
+	Recurring_job bool `db:"recurring_job"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -29,14 +57,14 @@ type PaymentTermsBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*paymentTermsBaseFilterCondition
+	filters map[string]*jobQueueBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*PaymentTermsBase
+	bufferedRecords []*JobQueueBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -45,61 +73,86 @@ type PaymentTermsBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const PaymentTermsTableID = 3
-const PaymentTermsTableName = "Payment Terms"
+const JobQueueTableID = 472
+const JobQueueTableName = "Job_Queue"
+
+// ========================================
+// Option Field Namespaces (BC/NAV style)
+// ========================================
+
+// JobQueue_Status provides named constants for the status option field (FieldName.OptionValue syntax)
+var JobQueue_Status = struct {
+	OnHold    JobQueueStatus
+	Ready    JobQueueStatus
+	Error    JobQueueStatus
+}{
+	OnHold:    0,
+	Ready:    1,
+	Error:    2,
+}
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *PaymentTermsBase) GetTableID() int {
-	return PaymentTermsTableID
+func (t *JobQueueBase) GetTableID() int {
+	return JobQueueTableID
 }
 
 // GetTableName returns the table name
-func (t *PaymentTermsBase) GetTableName() string {
-	return PaymentTermsTableName
+func (t *JobQueueBase) GetTableName() string {
+	return JobQueueTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *PaymentTermsBase) GetTableSchema() string {
-	return GetPaymentTermsTableSchema()
+func (t *JobQueueBase) GetTableSchema() string {
+	return GetJobQueueTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *PaymentTermsBase) GetPostgresTableSchema() string {
-	return GetPaymentTermsPostgresTableSchema()
+func (t *JobQueueBase) GetPostgresTableSchema() string {
+	return GetJobQueuePostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *PaymentTermsBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *JobQueueBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *PaymentTermsBase) GetDB() database.Executor {
+func (t *JobQueueBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *PaymentTermsBase) GetCompany() string {
+func (t *JobQueueBase) GetCompany() string {
 	return t.company
 }
 
-// GetPaymentTermsTableSchema returns the SQLite schema
-func GetPaymentTermsTableSchema() string {
+// GetJobQueueTableSchema returns the SQLite schema
+func GetJobQueueTableSchema() string {
 	return `
-		code TEXT(10) PRIMARY KEY,
-		description TEXT(30),
-		active INTEGER DEFAULT true
+		no TEXT(20) PRIMARY KEY,
+		description TEXT(100),
+		description_2 TEXT(100),
+		status INTEGER CHECK (status >= 0 AND status <= 2),
+		object_id_to_run INTEGER,
+		next_start TEXT,
+		minutes_between_run INTEGER,
+		recurring_job INTEGER
 	`
 }
 
-// GetPaymentTermsPostgresTableSchema returns the PostgreSQL schema
-func GetPaymentTermsPostgresTableSchema() string {
+// GetJobQueuePostgresTableSchema returns the PostgreSQL schema
+func GetJobQueuePostgresTableSchema() string {
 	return `
-		code VARCHAR(10) PRIMARY KEY,
-		description VARCHAR(30),
-		active BOOLEAN DEFAULT true
+		no VARCHAR(20) PRIMARY KEY,
+		description VARCHAR(100),
+		description_2 VARCHAR(100),
+		status INTEGER CHECK (status >= 0 AND status <= 2),
+		object_id_to_run INTEGER,
+		next_start TIMESTAMP,
+		minutes_between_run INTEGER,
+		recurring_job BOOLEAN
 	`
 }
 
@@ -108,38 +161,44 @@ func GetPaymentTermsPostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *PaymentTermsBase) GetCaption(language string) string {
+func (t *JobQueueBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("Payment Terms", language)
+	return ts.TableCaption("Job_Queue", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *PaymentTermsBase) GetFieldCaption(fieldName, language string) string {
+func (t *JobQueueBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("Payment Terms", fieldName, language)
+	return ts.FieldCaption("Job_Queue", fieldName, language)
 }
 
-// CreateTable creates the Payment Terms table for the specified company (SQLite)
+// GetOptionCaption returns the option field value caption in the specified language
+func (t *JobQueueBase) GetOptionCaption(fieldName, optionValue, language string) string {
+	ts := i18n.GetInstance()
+	return ts.OptionCaption("Job_Queue", fieldName, optionValue, language)
+}
+
+// CreateTable creates the Job_Queue table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *PaymentTermsBase) CreateTable(db database.Executor, company string) error {
+func (t *JobQueueBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the Payment Terms table for the specified company with the given database type
+// CreateTableWithDBType creates the Job_Queue table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *PaymentTermsBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := fmt.Sprintf("%s$%s", company, PaymentTermsTableName)
+func (t *JobQueueBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, JobQueueTableName)
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetPaymentTermsPostgresTableSchema()
+		schema = GetJobQueuePostgresTableSchema()
 	} else {
-		schema = GetPaymentTermsTableSchema()
+		schema = GetJobQueueTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create Payment Terms table: %w", err)
+		return fmt.Errorf("failed to create Job_Queue table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
@@ -151,34 +210,38 @@ func (t *PaymentTermsBase) CreateTableWithDBType(db database.Executor, company s
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new PaymentTerms record with database context
+// Init initializes a new JobQueue record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *PaymentTermsBase) Init(db database.Executor, company string) {
+func (t *JobQueueBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new PaymentTerms record with database context and type
-func (t *PaymentTermsBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new JobQueue record with database context and type
+func (t *JobQueueBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
-	t.Active = true
 }
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *PaymentTermsBase) StoreOldValues() {
+func (t *JobQueueBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
-	t.oldValues["code"] = t.Code
+	t.oldValues["no"] = t.No
 	t.oldValues["description"] = t.Description
-	t.oldValues["active"] = t.Active
+	t.oldValues["description_2"] = t.Description_2
+	t.oldValues["status"] = t.Status
+	t.oldValues["object_id_to_run"] = t.Object_id_to_run
+	t.oldValues["next_start"] = t.Next_start
+	t.oldValues["minutes_between_run"] = t.Minutes_between_run
+	t.oldValues["recurring_job"] = t.Recurring_job
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *PaymentTermsBase) convertPlaceholders(sql string, count int) string {
+func (t *JobQueueBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -192,19 +255,19 @@ func (t *PaymentTermsBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *PaymentTermsBase) Get(primaryKey interface{}) bool {
+func (t *JobQueueBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var codeVal types.Code
-		if v, exists := pkMap["code"]; exists {
+		var noVal types.Code
+		if v, exists := pkMap["no"]; exists {
 			switch val := v.(type) {
 			case types.Code:
-				codeVal = val
+				noVal = val
 			case string:
-				codeVal = types.NewCode(val)
+				noVal = types.NewCode(val)
 			}
 		}
-		return t.GetByPK(codeVal)
+		return t.GetByPK(noVal)
 	}
 	// Handle single primary key (for tables with only one PK field)
 	switch pk := primaryKey.(type) {
@@ -214,32 +277,42 @@ func (t *PaymentTermsBase) Get(primaryKey interface{}) bool {
 		return t.GetByPK(types.NewCode(pk))
 	}
 
-	fmt.Printf("Error: Invalid primary key type for Payment Terms.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for Job_Queue.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *PaymentTermsBase) GetByPK(code types.Code) bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
-	var codeNull sql.NullString
+func (t *JobQueueBase) GetByPK(no types.Code) bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
+	var noNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeBool sql.NullBool
+	var description_2Null sql.NullString
+	var statusInt int
+	var object_id_to_runVal int
+	var next_startNull sql.NullString
+	var minutes_between_runVal int
+	var recurring_jobBool sql.NullBool
 
 	// Collect arguments for query
 	args := []interface{}{
-		code,
+		no,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
-		&codeNull,
+		&noNull,
 		&descriptionNull,
-		&activeBool,
+		&description_2Null,
+		&statusInt,
+		&object_id_to_runVal,
+		&next_startNull,
+		&minutes_between_runVal,
+		&recurring_jobBool,
 	)
 
 	if err != nil {
@@ -248,14 +321,19 @@ func (t *PaymentTermsBase) GetByPK(code types.Code) bool {
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to get Job_Queue: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
+	t.No = types.NewCode(noNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeBool.Bool
+	t.Description_2 = types.NewText(description_2Null.String)
+	t.Status = JobQueueStatus(statusInt)
+	t.Object_id_to_run = object_id_to_runVal
+	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
+	t.Minutes_between_run = minutes_between_runVal
+	t.Recurring_job = recurring_jobBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -264,7 +342,7 @@ func (t *PaymentTermsBase) GetByPK(code types.Code) bool {
 }
 
 // Insert inserts the record into the database
-func (t *PaymentTermsBase) Insert(runTrigger bool) bool {
+func (t *JobQueueBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
@@ -272,31 +350,36 @@ func (t *PaymentTermsBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 
 	// Collect arguments for INSERT
 	args := []interface{}{
-		t.Code,
+		t.No,
 		t.Description,
-		t.Active,
+		t.Description_2,
+		t.Status,
+		t.Object_id_to_run,
+		t.Next_start,
+		t.Minutes_between_run,
+		t.Recurring_job,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, active) VALUES (?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to insert Job_Queue: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
+func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
@@ -304,7 +387,7 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -316,9 +399,29 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "description = ?")
 			values = append(values, t.Description)
 		}
-		if t.hasFieldChanged("active") {
-			setClauses = append(setClauses, "active = ?")
-			values = append(values, t.Active)
+		if t.hasFieldChanged("description_2") {
+			setClauses = append(setClauses, "description_2 = ?")
+			values = append(values, t.Description_2)
+		}
+		if t.hasFieldChanged("status") {
+			setClauses = append(setClauses, "status = ?")
+			values = append(values, t.Status)
+		}
+		if t.hasFieldChanged("object_id_to_run") {
+			setClauses = append(setClauses, "object_id_to_run = ?")
+			values = append(values, t.Object_id_to_run)
+		}
+		if t.hasFieldChanged("next_start") {
+			setClauses = append(setClauses, "next_start = ?")
+			values = append(values, t.Next_start)
+		}
+		if t.hasFieldChanged("minutes_between_run") {
+			setClauses = append(setClauses, "minutes_between_run = ?")
+			values = append(values, t.Minutes_between_run)
+		}
+		if t.hasFieldChanged("recurring_job") {
+			setClauses = append(setClauses, "recurring_job = ?")
+			values = append(values, t.Recurring_job)
 		}
 
 		// If nothing changed, skip update
@@ -329,15 +432,25 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 		// No old values (fresh record), update all fields
 		setClauses = append(setClauses, "description = ?")
 		values = append(values, t.Description)
-		setClauses = append(setClauses, "active = ?")
-		values = append(values, t.Active)
+		setClauses = append(setClauses, "description_2 = ?")
+		values = append(values, t.Description_2)
+		setClauses = append(setClauses, "status = ?")
+		values = append(values, t.Status)
+		setClauses = append(setClauses, "object_id_to_run = ?")
+		values = append(values, t.Object_id_to_run)
+		setClauses = append(setClauses, "next_start = ?")
+		values = append(values, t.Next_start)
+		setClauses = append(setClauses, "minutes_between_run = ?")
+		values = append(values, t.Minutes_between_run)
+		setClauses = append(setClauses, "recurring_job = ?")
+		values = append(values, t.Recurring_job)
 	}
 
 	// Add WHERE clause value (primary key)
-	values = append(values, t.Code)
+	values = append(values, t.No)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE code = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE no = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -347,14 +460,14 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to modify Job_Queue: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *PaymentTermsBase) hasFieldChanged(fieldName string) bool {
+func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -371,9 +484,34 @@ func (t *PaymentTermsBase) hasFieldChanged(fieldName string) bool {
 			return !t.Description.Equal(old)
 		}
 		return true // Type mismatch, assume changed
-	case "active":
+	case "description_2":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Description_2.Equal(old)
+		}
+		return true // Type mismatch, assume changed
+	case "status":
+		if old, ok := oldValue.(JobQueueStatus); ok {
+			return t.Status != old
+		}
+		return true // Type mismatch, assume changed
+	case "object_id_to_run":
+		if old, ok := oldValue.(int); ok {
+			return t.Object_id_to_run != old
+		}
+		return true // Type mismatch, assume changed
+	case "next_start":
+		if old, ok := oldValue.(types.DateTime); ok {
+			return !t.Next_start.Equal(old)
+		}
+		return true // Type mismatch, assume changed
+	case "minutes_between_run":
+		if old, ok := oldValue.(int); ok {
+			return t.Minutes_between_run != old
+		}
+		return true // Type mismatch, assume changed
+	case "recurring_job":
 		if old, ok := oldValue.(bool); ok {
-			return t.Active != old
+			return t.Recurring_job != old
 		}
 		return true // Type mismatch, assume changed
 	}
@@ -382,7 +520,7 @@ func (t *PaymentTermsBase) hasFieldChanged(fieldName string) bool {
 }
 
 // Delete removes the record from the database
-func (t *PaymentTermsBase) Delete(runTrigger bool) bool {
+func (t *JobQueueBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
@@ -390,22 +528,22 @@ func (t *PaymentTermsBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.Code,
+		t.No,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to delete Job_Queue: %v\n", err)
 		return false
 	}
 	return true
@@ -413,7 +551,7 @@ func (t *PaymentTermsBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *PaymentTermsBase) CalcFields(fieldNames ...string) {
+func (t *JobQueueBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -421,8 +559,8 @@ func (t *PaymentTermsBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// paymentTermsBaseFilterCondition represents a filter on a field
-type paymentTermsBaseFilterCondition struct {
+// jobQueueBaseFilterCondition represents a filter on a field
+type jobQueueBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -434,9 +572,9 @@ type paymentTermsBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *PaymentTermsBase) SetRange(fieldName string, values ...interface{}) {
+func (t *JobQueueBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*paymentTermsBaseFilterCondition)
+		t.filters = make(map[string]*jobQueueBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -455,7 +593,7 @@ func (t *PaymentTermsBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &paymentTermsBaseFilterCondition{
+	t.filters[fieldName] = &jobQueueBaseFilterCondition{
 		fieldName: fieldName,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -466,11 +604,11 @@ func (t *PaymentTermsBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *PaymentTermsBase) SetFilter(fieldName, filterExpr string) {
+func (t *JobQueueBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*paymentTermsBaseFilterCondition)
+		t.filters = make(map[string]*jobQueueBaseFilterCondition)
 	}
-	t.filters[fieldName] = &paymentTermsBaseFilterCondition{
+	t.filters[fieldName] = &jobQueueBaseFilterCondition{
 		fieldName:    fieldName,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -479,12 +617,12 @@ func (t *PaymentTermsBase) SetFilter(fieldName, filterExpr string) {
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *PaymentTermsBase) SetCurrentKey(fields ...string) {
+func (t *JobQueueBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = fields
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *PaymentTermsBase) Reset() {
+func (t *JobQueueBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -495,7 +633,7 @@ func (t *PaymentTermsBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *PaymentTermsBase) buildWhereClause() (string, []interface{}) {
+func (t *JobQueueBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -534,7 +672,7 @@ func (t *PaymentTermsBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *PaymentTermsBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *JobQueueBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -576,47 +714,58 @@ func (t *PaymentTermsBase) parseFilterExpression(fieldName, expr string) (string
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *PaymentTermsBase) getOrderByClause() string {
+func (t *JobQueueBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "code"
+	return "no"
 }
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *PaymentTermsBase) FindFirst() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+func (t *JobQueueBase) FindFirst() bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var codeNull sql.NullString
+	var noNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeBool sql.NullBool
+	var description_2Null sql.NullString
+	var statusInt int
+	var next_startNull sql.NullString
+	var recurring_jobBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&codeNull,
+		&noNull,
 		&descriptionNull,
-		&activeBool,
+		&description_2Null,
+		&statusInt,
+		&t.Object_id_to_run,
+		&next_startNull,
+		&t.Minutes_between_run,
+		&recurring_jobBool,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to find first Job_Queue: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
+	t.No = types.NewCode(noNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeBool.Bool
+	t.Description_2 = types.NewText(description_2Null.String)
+	t.Status = JobQueueStatus(statusInt)
+	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
+	t.Recurring_job = recurring_jobBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -626,37 +775,48 @@ func (t *PaymentTermsBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *PaymentTermsBase) FindLast() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+func (t *JobQueueBase) FindLast() bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var codeNull sql.NullString
+	var noNull sql.NullString
 	var descriptionNull sql.NullString
-	var activeBool sql.NullBool
+	var description_2Null sql.NullString
+	var statusInt int
+	var next_startNull sql.NullString
+	var recurring_jobBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&codeNull,
+		&noNull,
 		&descriptionNull,
-		&activeBool,
+		&description_2Null,
+		&statusInt,
+		&t.Object_id_to_run,
+		&next_startNull,
+		&t.Minutes_between_run,
+		&recurring_jobBool,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to find last Job_Queue: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
+	t.No = types.NewCode(noNull.String)
 	t.Description = types.NewText(descriptionNull.String)
-	t.Active = activeBool.Bool
+	t.Description_2 = types.NewText(description_2Null.String)
+	t.Status = JobQueueStatus(statusInt)
+	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
+	t.Recurring_job = recurring_jobBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -665,8 +825,8 @@ func (t *PaymentTermsBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *PaymentTermsBase) Count() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+func (t *JobQueueBase) Count() int {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -677,7 +837,7 @@ func (t *PaymentTermsBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to count Job_Queue: %v\n", err)
 		return 0
 	}
 
@@ -687,25 +847,25 @@ func (t *PaymentTermsBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *PaymentTermsBase) FindSet() bool {
+func (t *JobQueueBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for Job_Queue: %v\n", err)
 		return false
 	}
 
@@ -723,7 +883,7 @@ func (t *PaymentTermsBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *PaymentTermsBase) Next(steps ...int) bool {
+func (t *JobQueueBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -765,27 +925,38 @@ func (t *PaymentTermsBase) Next(steps ...int) bool {
 		}
 
 		// Scan the row
-		var codeNull sql.NullString
+		var noNull sql.NullString
 		var descriptionNull sql.NullString
-		var activeBool sql.NullBool
+		var description_2Null sql.NullString
+		var statusInt int
+		var next_startNull sql.NullString
+		var recurring_jobBool sql.NullBool
 
 		err := t.currentRows.Scan(
-			&codeNull,
+			&noNull,
 			&descriptionNull,
-			&activeBool,
+			&description_2Null,
+			&statusInt,
+			&t.Object_id_to_run,
+			&next_startNull,
+			&t.Minutes_between_run,
+			&recurring_jobBool,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Payment Terms record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Job_Queue record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
 		}
 
 		// Populate fields
-		t.Code = types.NewCode(codeNull.String)
+		t.No = types.NewCode(noNull.String)
 		t.Description = types.NewText(descriptionNull.String)
-		t.Active = activeBool.Bool
+		t.Description_2 = types.NewText(description_2Null.String)
+		t.Status = JobQueueStatus(statusInt)
+		t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
+		t.Recurring_job = recurring_jobBool.Bool
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -801,7 +972,7 @@ func (t *PaymentTermsBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *PaymentTermsBase) FindSetBuffered() bool {
+func (t *JobQueueBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -811,19 +982,19 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, active FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for Job_Queue: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -831,31 +1002,42 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &PaymentTermsBase{}
+		record := &JobQueueBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
-		var codeNull sql.NullString
+		var noNull sql.NullString
 		var descriptionNull sql.NullString
-		var activeBool sql.NullBool
+		var description_2Null sql.NullString
+		var statusInt int
+		var next_startNull sql.NullString
+		var recurring_jobBool sql.NullBool
 
 		err := rows.Scan(
-			&codeNull,
+			&noNull,
 			&descriptionNull,
-			&activeBool,
+			&description_2Null,
+			&statusInt,
+			&record.Object_id_to_run,
+			&next_startNull,
+			&record.Minutes_between_run,
+			&recurring_jobBool,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Payment Terms record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Job_Queue record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
-		record.Code = types.NewCode(codeNull.String)
+		record.No = types.NewCode(noNull.String)
 		record.Description = types.NewText(descriptionNull.String)
-		record.Active = activeBool.Bool
+		record.Description_2 = types.NewText(description_2Null.String)
+		record.Status = JobQueueStatus(statusInt)
+		record.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
+		record.Recurring_job = recurring_jobBool.Bool
 
 		// Store old values
 		record.StoreOldValues()
@@ -866,7 +1048,7 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate Payment Terms records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate Job_Queue records: %v\n", err)
 		return false
 	}
 
@@ -883,10 +1065,15 @@ func (t *PaymentTermsBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *PaymentTermsBase) copyFromBuffered(record *PaymentTermsBase) {
-	t.Code = record.Code
+func (t *JobQueueBase) copyFromBuffered(record *JobQueueBase) {
+	t.No = record.No
 	t.Description = record.Description
-	t.Active = record.Active
+	t.Description_2 = record.Description_2
+	t.Status = record.Status
+	t.Object_id_to_run = record.Object_id_to_run
+	t.Next_start = record.Next_start
+	t.Minutes_between_run = record.Minutes_between_run
+	t.Recurring_job = record.Recurring_job
 	t.StoreOldValues()
 }
 
@@ -895,14 +1082,14 @@ func (t *PaymentTermsBase) copyFromBuffered(record *PaymentTermsBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *PaymentTermsBase) IsEmpty() bool {
+func (t *JobQueueBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *PaymentTermsBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+func (t *JobQueueBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -916,7 +1103,7 @@ func (t *PaymentTermsBase) ModifyAll(fieldName string, newValue interface{}) int
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to modify all Job_Queue: %v\n", err)
 		return 0
 	}
 
@@ -926,8 +1113,8 @@ func (t *PaymentTermsBase) ModifyAll(fieldName string, newValue interface{}) int
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *PaymentTermsBase) DeleteAll() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+func (t *JobQueueBase) DeleteAll() int {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -938,7 +1125,7 @@ func (t *PaymentTermsBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all Payment Terms: %v\n", err)
+		fmt.Printf("Error: Failed to delete all Job_Queue: %v\n", err)
 		return 0
 	}
 
@@ -947,16 +1134,16 @@ func (t *PaymentTermsBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *PaymentTermsBase) CopyFilters(from *PaymentTermsBase) {
+func (t *JobQueueBase) CopyFilters(from *JobQueueBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*paymentTermsBaseFilterCondition)
+	t.filters = make(map[string]*jobQueueBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &paymentTermsBaseFilterCondition{
+		t.filters[key] = &jobQueueBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -976,7 +1163,7 @@ func (t *PaymentTermsBase) CopyFilters(from *PaymentTermsBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *PaymentTermsBase) GetFilters() string {
+func (t *JobQueueBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1004,21 +1191,21 @@ func (t *PaymentTermsBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *PaymentTermsBase) ValidateField(fieldName string, value interface{}) error {
+func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
-	case "code":
+	case "no":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
-			t.Code = v
+			t.No = v
 		} else if v, ok := value.(string); ok {
-			t.Code = types.NewCode(v)
+			t.No = types.NewCode(v)
 		} else {
-			return fmt.Errorf("invalid type for field code")
+			return fmt.Errorf("invalid type for field no")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Code()
+		return t.OnValidate_No()
 	case "description":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
@@ -1030,38 +1217,173 @@ func (t *PaymentTermsBase) ValidateField(fieldName string, value interface{}) er
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Description()
-	case "active":
+	case "description_2":
 		// Set field value
-		if v, ok := value.(bool); ok {
-			t.Active = v
+		if v, ok := value.(types.Text); ok {
+			t.Description_2 = v
 		} else if v, ok := value.(string); ok {
-			// Handle string boolean values from JSON/frontend
-			t.Active = v == "true" || v == "1"
+			t.Description_2 = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field active")
+			return fmt.Errorf("invalid type for field description_2")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Active()
+		return t.OnValidate_Description_2()
+	case "status":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(JobQueueStatus); ok {
+			t.Status = v
+		// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 3 {
+				return fmt.Errorf("invalid option value %d for field status (valid range: 0-%d)", v, 3-1)
+			}
+			t.Status = JobQueueStatus(v)
+		// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 3 {
+				return fmt.Errorf("invalid option value %d for field status (valid range: 0-%d)", intVal, 3-1)
+			}
+			t.Status = JobQueueStatus(intVal)
+		// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			options := []string{"On Hold", "Ready", "Error" }
+			found := false
+			for i, opt := range options {
+				if opt == v {
+					t.Status = JobQueueStatus(i)
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+			}
+		} else {
+			return fmt.Errorf("invalid type for field status (expected JobQueueStatus, int, or string)")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Status()
+	case "object_id_to_run":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Object_id_to_run = v
+		case float64:
+			t.Object_id_to_run = int(v)
+		case string:
+			if v == "" {
+				t.Object_id_to_run = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Object_id_to_run = i
+			} else {
+				return fmt.Errorf("invalid integer value for field object_id_to_run: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field object_id_to_run")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Object_id_to_run()
+	case "next_start":
+		// Set field value
+		if v, ok := value.(types.DateTime); ok {
+			t.Next_start = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Next_start, err = types.NewDateTimeFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid datetime value for field next_start: %w", err)
+			}
+		} else if v, ok := value.(time.Time); ok {
+			t.Next_start = types.NewDateTimeFromTime(v)
+		} else {
+			return fmt.Errorf("invalid type for field next_start (expected DateTime, string, or time.Time)")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Next_start()
+	case "minutes_between_run":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Minutes_between_run = v
+		case float64:
+			t.Minutes_between_run = int(v)
+		case string:
+			if v == "" {
+				t.Minutes_between_run = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Minutes_between_run = i
+			} else {
+				return fmt.Errorf("invalid integer value for field minutes_between_run: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field minutes_between_run")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Minutes_between_run()
+	case "recurring_job":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Recurring_job = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Recurring_job = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field recurring_job")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Recurring_job()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-// OnValidate_Code is the validation trigger for code field (BC/NAV style)
+// OnValidate_No is the validation trigger for no field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *PaymentTermsBase) OnValidate_Code() error {
+func (t *JobQueueBase) OnValidate_No() error {
 	return nil
 }
 
 // OnValidate_Description is the validation trigger for description field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *PaymentTermsBase) OnValidate_Description() error {
+func (t *JobQueueBase) OnValidate_Description() error {
 	return nil
 }
 
-// OnValidate_Active is the validation trigger for active field (BC/NAV style)
+// OnValidate_Description_2 is the validation trigger for description_2 field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *PaymentTermsBase) OnValidate_Active() error {
+func (t *JobQueueBase) OnValidate_Description_2() error {
+	return nil
+}
+
+// OnValidate_Status is the validation trigger for status field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Status() error {
+	return nil
+}
+
+// OnValidate_Object_id_to_run is the validation trigger for object_id_to_run field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Object_id_to_run() error {
+	return nil
+}
+
+// OnValidate_Next_start is the validation trigger for next_start field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Next_start() error {
+	return nil
+}
+
+// OnValidate_Minutes_between_run is the validation trigger for minutes_between_run field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Minutes_between_run() error {
+	return nil
+}
+
+// OnValidate_Recurring_job is the validation trigger for recurring_job field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Recurring_job() error {
 	return nil
 }
 
@@ -1070,26 +1392,31 @@ func (t *PaymentTermsBase) OnValidate_Active() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *PaymentTermsBase) ClearFilters() {
+func (t *JobQueueBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *PaymentTermsBase) ToMap() map[string]interface{} {
+func (t *JobQueueBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"code": t.Code.String(),
+		"no": t.No.String(),
 		"description": t.Description.String(),
-		"active": t.Active,
+		"description_2": t.Description_2.String(),
+		"status": int(t.Status),
+		"object_id_to_run": t.Object_id_to_run,
+		"next_start": t.Next_start.String(),
+		"minutes_between_run": t.Minutes_between_run,
+		"recurring_job": t.Recurring_job,
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *PaymentTermsBase) FromMap(data map[string]interface{}) {
-	if v, ok := data["code"]; ok && v != nil {
+func (t *JobQueueBase) FromMap(data map[string]interface{}) {
+	if v, ok := data["no"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Code = types.NewCode(s)
+			t.No = types.NewCode(s)
 		}
 	}
 	if v, ok := data["description"]; ok && v != nil {
@@ -1097,36 +1424,79 @@ func (t *PaymentTermsBase) FromMap(data map[string]interface{}) {
 			t.Description = types.NewText(s)
 		}
 	}
-	if v, ok := data["active"]; ok && v != nil {
+	if v, ok := data["description_2"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Description_2 = types.NewText(s)
+		}
+	}
+	if v, ok := data["status"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Status = JobQueueStatus(int(val))
+		case int:
+			t.Status = JobQueueStatus(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"On Hold", "Ready", "Error" }
+			for i, opt := range options {
+				if opt == val {
+					t.Status = JobQueueStatus(i)
+					break
+				}
+			}
+		}
+	}
+	if v, ok := data["object_id_to_run"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Object_id_to_run = int(val)
+		case int:
+			t.Object_id_to_run = val
+		}
+	}
+	if v, ok := data["next_start"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Next_start, _ = types.NewDateTimeFromString(s)
+		}
+	}
+	if v, ok := data["minutes_between_run"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Minutes_between_run = int(val)
+		case int:
+			t.Minutes_between_run = val
+		}
+	}
+	if v, ok := data["recurring_job"]; ok && v != nil {
 		if b, ok := v.(bool); ok {
-			t.Active = b
+			t.Recurring_job = b
 		}
 	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *PaymentTermsBase) UpdateFromMap(data map[string]interface{}) {
+func (t *JobQueueBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *PaymentTermsBase) GetPrimaryKeyField() string {
-	return "code"
+func (t *JobQueueBase) GetPrimaryKeyField() string {
+	return "no"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *PaymentTermsBase) GetPrimaryKeyValue() string {
-	return t.Code.String()
+func (t *JobQueueBase) GetPrimaryKeyValue() string {
+	return t.No.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *PaymentTermsBase) GetFields() []tables.FieldInfo {
+func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
-			Name:       "code",
+			Name:       "no",
 			Type:       tables.FieldTypeCode,
-			Length:     10,
+			Length:     20,
 			Required:   true,
 			Editable:   false,
 			PrimaryKey: true,
@@ -1135,14 +1505,59 @@ func (t *PaymentTermsBase) GetFields() []tables.FieldInfo {
 		{
 			Name:       "description",
 			Type:       tables.FieldTypeText,
-			Length:     30,
+			Length:     100,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
 			FlowField:  false,
 		},
 		{
-			Name:       "active",
+			Name:       "description_2",
+			Type:       tables.FieldTypeText,
+			Length:     100,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "status",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "object_id_to_run",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "next_start",
+			Type:       tables.FieldTypeDateTime,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "minutes_between_run",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "recurring_job",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
 			Required:   false,
@@ -1154,19 +1569,20 @@ func (t *PaymentTermsBase) GetFields() []tables.FieldInfo {
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *PaymentTermsBase) GetFlowFields() []string {
+func (t *JobQueueBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *PaymentTermsBase) GetOptionFields() map[string][]string {
+func (t *JobQueueBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
+		"status": {"On Hold", "Ready", "Error" },
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *PaymentTermsBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *JobQueueBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
 	}
 }

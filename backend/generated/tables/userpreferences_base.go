@@ -5,6 +5,7 @@ package tables
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1149,9 +1150,20 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		return t.OnValidate_User_id()
 	case "page_id":
 		// Set field value
-		if v, ok := value.(int); ok {
+		switch v := value.(type) {
+		case int:
 			t.Page_id = v
-		} else {
+		case float64:
+			t.Page_id = int(v)
+		case string:
+			if v == "" {
+				t.Page_id = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Page_id = i
+			} else {
+				return fmt.Errorf("invalid integer value for field page_id: %s", v)
+			}
+		default:
 			return fmt.Errorf("invalid type for field page_id")
 		}
 		// Call OnValidate trigger
@@ -1342,14 +1354,20 @@ func (t *UserPreferencesBase) UpdateFromMap(data map[string]interface{}) {
 	t.FromMap(data)
 }
 
-// GetPrimaryKeyField returns the name of the first primary key field (composite key)
+// GetPrimaryKeyField returns the name of the primary key field
 func (t *UserPreferencesBase) GetPrimaryKeyField() string {
 	return "user_id"
+	return "page_id"
+	return "preference_type"
+	return "preference_name"
 }
 
-// GetPrimaryKeyValue returns the current primary key value as a string (first key of composite)
+// GetPrimaryKeyValue returns the current primary key value as a string
 func (t *UserPreferencesBase) GetPrimaryKeyValue() string {
 	return t.User_id.String()
+	return fmt.Sprintf("%d", t.Page_id)
+	return t.Preference_type.String()
+	return t.Preference_name.String()
 }
 
 // GetFields returns metadata about all fields
