@@ -377,12 +377,10 @@ func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Name.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "translation_key":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Translation_key.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	}
 
 	return false

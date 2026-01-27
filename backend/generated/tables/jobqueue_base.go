@@ -483,17 +483,14 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "description_2":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description_2.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "status":
 		if old, ok := oldValue.(JobQueueStatus); ok {
 			return t.Status != old
 		}
-		return true // Type mismatch, assume changed
 	case "object_id_to_run":
 		if old, ok := oldValue.(int); ok {
 			return t.Object_id_to_run != old
@@ -503,7 +500,6 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Next_start.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "minutes_between_run":
 		if old, ok := oldValue.(int); ok {
 			return t.Minutes_between_run != old

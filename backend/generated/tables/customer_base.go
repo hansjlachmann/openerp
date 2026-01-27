@@ -555,56 +555,45 @@ func (t *CustomerBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Name.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "address":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Address.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "post_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Post_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "city":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.City.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "phonenumber":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Phonenumber.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "payment_terms_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Payment_terms_code.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "status":
 		if old, ok := oldValue.(CustomerStatus); ok {
 			return t.Status != old
 		}
-		return true // Type mismatch, assume changed
 	case "credit_limit":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Credit_limit.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "last_order_date":
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Last_order_date.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "created_at":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Created_at.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "profile_photo":
 		// Skip comparison for BLOB fields (too large, use always modified)
 		return true
-		return true // Type mismatch, assume changed
 	}
 
 	return false

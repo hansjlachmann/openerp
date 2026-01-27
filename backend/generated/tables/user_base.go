@@ -463,27 +463,22 @@ func (t *UserBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.User_name.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "email":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Email.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "password_hash":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Password_hash.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "language":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Language.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "menu":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Menu.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "active":
 		if old, ok := oldValue.(bool); ok {
 			return t.Active != old
@@ -493,12 +488,10 @@ func (t *UserBase) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Created_at.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	case "last_login":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Last_login.Equal(old)
 		}
-		return true // Type mismatch, assume changed
 	}
 
 	return false

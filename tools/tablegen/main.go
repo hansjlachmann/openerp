@@ -105,6 +105,7 @@ type TemplateData struct {
 	HasFlowField     bool
 	HasBlobField     bool
 	HasIntField      bool
+	FirstPrimaryKey  *Field // First primary key field (for GetPrimaryKeyField/Value)
 }
 
 func main() {
@@ -216,8 +217,9 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		GeneratedPkg:   "gtables",
 	}
 
-	// Check which imports are needed
-	for _, field := range def.Table.Fields {
+	// Check which imports are needed and find first primary key
+	for i := range def.Table.Fields {
+		field := &def.Table.Fields[i]
 		if field.Type == "time.Time" {
 			data.HasTimeField = true
 		}
@@ -247,6 +249,10 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		}
 		if field.Type == "int" && !field.FlowField {
 			data.HasIntField = true
+		}
+		// Track first primary key field (for tables with composite keys)
+		if field.PrimaryKey && data.FirstPrimaryKey == nil {
+			data.FirstPrimaryKey = field
 		}
 	}
 
@@ -1216,8 +1222,8 @@ func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.({{ .Type }}); ok {
 			return t.{{ upperFirst .Name }} != old
 		}
-{{- end }}
 		return true // Type mismatch, assume changed
+{{- end }}
 {{- end }}
 {{- end }}
 	}
@@ -2565,31 +2571,31 @@ func (t *{{ .BaseStructName }}) UpdateFromMap(data map[string]interface{}) {
 
 // GetPrimaryKeyField returns the name of the primary key field
 func (t *{{ .BaseStructName }}) GetPrimaryKeyField() string {
-{{- range .Table.Fields }}
-{{- if .PrimaryKey }}
-	return "{{ .DBName }}"
-{{- end }}
+{{- if .FirstPrimaryKey }}
+	return "{{ .FirstPrimaryKey.DBName }}"
+{{- else }}
+	return ""
 {{- end }}
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
 func (t *{{ .BaseStructName }}) GetPrimaryKeyValue() string {
-{{- range .Table.Fields }}
-{{- if .PrimaryKey }}
-{{- if eq .Type "types.Code" }}
-	return t.{{ upperFirst .Name }}.String()
-{{- else if eq .Type "types.Text" }}
-	return t.{{ upperFirst .Name }}.String()
-{{- else if eq .Type "int" }}
-	return fmt.Sprintf("%d", t.{{ upperFirst .Name }})
-{{- else if eq .Type "int64" }}
-	return fmt.Sprintf("%d", t.{{ upperFirst .Name }})
-{{- else if eq .Type "string" }}
-	return t.{{ upperFirst .Name }}
+{{- if .FirstPrimaryKey }}
+{{- if eq .FirstPrimaryKey.Type "types.Code" }}
+	return t.{{ upperFirst .FirstPrimaryKey.Name }}.String()
+{{- else if eq .FirstPrimaryKey.Type "types.Text" }}
+	return t.{{ upperFirst .FirstPrimaryKey.Name }}.String()
+{{- else if eq .FirstPrimaryKey.Type "int" }}
+	return fmt.Sprintf("%d", t.{{ upperFirst .FirstPrimaryKey.Name }})
+{{- else if eq .FirstPrimaryKey.Type "int64" }}
+	return fmt.Sprintf("%d", t.{{ upperFirst .FirstPrimaryKey.Name }})
+{{- else if eq .FirstPrimaryKey.Type "string" }}
+	return t.{{ upperFirst .FirstPrimaryKey.Name }}
 {{- else }}
-	return fmt.Sprintf("%v", t.{{ upperFirst .Name }})
+	return fmt.Sprintf("%v", t.{{ upperFirst .FirstPrimaryKey.Name }})
 {{- end }}
-{{- end }}
+{{- else }}
+	return ""
 {{- end }}
 }
 
