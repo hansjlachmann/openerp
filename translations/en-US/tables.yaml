@@ -153,3 +153,22 @@ tables:
         on_hold: "On Hold"
         ready: "Ready"
         error: "Error"
+
+  # Job Queue Entry (Table 473)
+  job_queue_entry:
+    caption: "Job Queue Entry"
+    fields:
+      entry_no: "Entry No."
+      job_queue_no: "Job Queue No."
+      status: "Status"
+      user_id: "User ID"
+      description: "Description"
+      start_date_time: "Start Date/Time"
+      end_date_time: "End Date/Time"
+
+    # Option field values
+    options:
+      status:
+        success: "Success"
+        in_process: "In Process"
+        error: "Error"

@@ -1,0 +1,39 @@
+page:
+  id: 673
+  type: List
+  name: Job Queue Entries List
+  source_table: Job_Queue_Entry
+  caption: Job Queue Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+          primary_key: true
+
+        - source: job_queue_no
+          width: 120
+
+        - source: status
+          width: 100
+
+        - source: user_id
+          width: 100
+
+        - source: description
+          width: 250
+
+        - source: start_date_time
+          width: 150
+
+        - source: end_date_time
+          width: 150
+
+  actions:
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

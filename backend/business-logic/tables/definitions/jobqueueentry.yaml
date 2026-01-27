@@ -1,0 +1,50 @@
+table:
+  id: 473
+  name: "Job_Queue_Entry"
+  fields:
+    - name: entry_no
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+      auto_increment: true
+
+    - name: job_queue_no
+      type: types.Code
+      db_name: job_queue_no
+      length: 20
+      table_relation:
+        table: Job_Queue
+        field: no
+
+    - name: status
+      type: Option
+      db_name: status
+      options: ["Success", "In Process", "Error"]
+
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      length: 20
+
+    - name: description
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: start_date_time
+      type: types.DateTime
+      db_name: start_date_time
+
+    - name: end_date_time
+      type: types.DateTime
+      db_name: end_date_time
+
+  keys:
+    - name: job_queue
+      fields:
+        - job_queue_no
+
+    - name: status
+      fields:
+        - status
