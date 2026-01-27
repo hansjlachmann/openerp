@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/hansjlachmann/openerp/backend/api"
+	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -113,7 +114,8 @@ func main() {
 	defer func() { _ = db.CloseDatabase() }()
 
 	// Enter company (auto-create if it doesn't exist in Docker mode)
-	companyMgr := company.NewManager(db, registry)
+	// Use NewManagerWithMigrations to enable versioned migrations
+	companyMgr := company.NewManagerWithMigrations(db, registry, blmigrations.GetAll())
 	if err := companyMgr.EnterCompany(companyName); err != nil {
 		// In Docker mode, auto-create the company if it doesn't exist
 		if dbHost != "" && strings.Contains(err.Error(), "does not exist") {
