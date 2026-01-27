@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.16](https://github.com/hansjlachmann/openerp/compare/v0.1.15...v0.1.16) (2026-01-27)
+
+
+### Features
+
+* add session helper functions to codeunits package ([f94ecc0](https://github.com/hansjlachmann/openerp/commit/f94ecc0be3b901c97e9b4453d53c73ff131ebff4))
+
 ## [0.1.15](https://github.com/hansjlachmann/openerp/compare/v0.1.14...v0.1.15) (2026-01-27)
 
 
