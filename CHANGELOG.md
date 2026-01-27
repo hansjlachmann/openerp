@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.12](https://github.com/hansjlachmann/openerp/compare/v0.1.11...v0.1.12) (2026-01-27)
+
+
+### Features
+
+* add Job Queue table with Run action and code optimizations ([71a4ed5](https://github.com/hansjlachmann/openerp/commit/71a4ed5ca0172955a994fb1a2fd161465bbcfbd6))
+
+
+### Bug Fixes
+
+* resolve unreachable code errors in generated table files ([61eb6a1](https://github.com/hansjlachmann/openerp/commit/61eb6a1c39d97c21d981e2fedd360c6ee48760e1))
+
 ## [0.1.11](https://github.com/hansjlachmann/openerp/compare/v0.1.10...v0.1.11) (2026-01-27)
 
 
