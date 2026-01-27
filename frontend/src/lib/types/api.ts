@@ -54,9 +54,17 @@ export interface ListOptions {
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
 
+// Dialog result from codeunit
+export interface DialogResult {
+	title: string;
+	message: string;
+	type: 'info' | 'success' | 'warning' | 'error';
+}
+
 // Codeunit execution result
 export interface CodeunitResult {
 	success: boolean;
 	message: string;
 	data?: Record<string, any>;
+	dialog?: DialogResult;
 }

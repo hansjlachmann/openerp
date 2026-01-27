@@ -82,9 +82,13 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
-	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
+	response := map[string]interface{}{
 		"success": result.Success,
 		"message": result.Message,
 		"data":    result.Data,
-	}))
+	}
+	if result.Dialog != nil {
+		response["dialog"] = result.Dialog
+	}
+	return c.JSON(apitypes.NewSuccessResponse(response))
 }

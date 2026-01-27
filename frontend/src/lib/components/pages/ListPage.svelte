@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
-	import type { TableFilter, LookupData } from '$lib/types/api';
+	import type { TableFilter, LookupData, DialogResult } from '$lib/types/api';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
@@ -10,6 +10,7 @@
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
+	import Modal from '../Modal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
@@ -85,6 +86,9 @@
 	// Prevent rapid toggling
 	let isToggling = false;
 
+	// Dialog state (for codeunit results)
+	let dialogOpen = $state(false);
+	let dialogData = $state<DialogResult | null>(null);
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
@@ -294,7 +298,13 @@
 		try {
 			const result = await api.runCodeunit(codeunitId, selectedRecord || {});
 			if (result.success) {
-				toast.success(result.message || 'Codeunit executed successfully');
+				// Check if a dialog should be shown
+				if (result.dialog) {
+					dialogData = result.dialog;
+					dialogOpen = true;
+				} else {
+					toast.success(result.message || 'Codeunit executed successfully');
+				}
 			} else {
 				toast.error(result.message || 'Codeunit execution failed');
 			}
@@ -1541,6 +1551,53 @@
 	onconfirm={confirm.confirm}
 	oncancel={confirm.cancel}
 />
+
+<!-- Codeunit Dialog Modal -->
+{#if dialogOpen && dialogData}
+	<Modal open={dialogOpen} onclose={() => { dialogOpen = false; dialogData = null; }}>
+		<div class="p-6">
+			<div class="flex items-start gap-4">
+				{#if dialogData.type === 'info'}
+					<div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+						<svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</div>
+				{:else if dialogData.type === 'success'}
+					<div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+						<svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						</svg>
+					</div>
+				{:else if dialogData.type === 'warning'}
+					<div class="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+						<svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+						</svg>
+					</div>
+				{:else if dialogData.type === 'error'}
+					<div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+						<svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</div>
+				{/if}
+				<div class="flex-1">
+					<h3 class="text-lg font-semibold text-gray-900 dark:text-white">{dialogData.title}</h3>
+					<p class="mt-2 text-gray-600 dark:text-gray-300">{dialogData.message}</p>
+				</div>
+			</div>
+			<div class="mt-6 flex justify-end">
+				<button
+					class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+					onclick={() => { dialogOpen = false; dialogData = null; }}
+				>
+					OK
+				</button>
+			</div>
+		</div>
+	</Modal>
+{/if}
 
 <style>
 	.list-page {

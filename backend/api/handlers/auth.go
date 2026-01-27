@@ -335,6 +335,48 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// SetCompany changes the current session company
+// POST /api/auth/company
+func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
+	var requestBody struct {
+		Company string `json:"company"`
+	}
+
+	if err := c.BodyParser(&requestBody); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message("en-US")))
+	}
+
+	if requestBody.Company == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyRequired().Message("en-US")))
+	}
+
+	// Verify company exists
+	var companyCheck string
+	err := h.db.QueryRow(`SELECT name FROM "Company" WHERE name = $1`, requestBody.Company).Scan(&companyCheck)
+	if err == sql.ErrNoRows {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyNotFound().Message("en-US")))
+	}
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyVerifyFailed().Message("en-US")))
+	}
+
+	sess := session.GetCurrent()
+	if sess == nil {
+		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+
+	// Update session company
+	sess.SetCompany(requestBody.Company)
+
+	ts := i18n.GetInstance()
+	language := getLanguageOrDefault(sess)
+	response := apitypes.NewSuccessResponse(map[string]interface{}{
+		"company": requestBody.Company,
+		"message": ts.Message("MSG_COMPANY_CHANGED", language),
+	})
+	return c.JSON(response)
+}
+
 // GetLanguages returns supported languages
 // GET /api/auth/languages
 func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {

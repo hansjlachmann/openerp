@@ -229,6 +229,21 @@ export const api = {
 		return handleApiResponseFull<string[]>(response, 'list companies');
 	},
 
+	async getCompanies(): Promise<string[]> {
+		const response = await fetch(`${API_BASE}/auth/companies`);
+		const result = await handleApiResponseFull<string[]>(response, 'get companies');
+		return result.data || [];
+	},
+
+	async setCompany(company: string): Promise<ApiResponse> {
+		const response = await fetch(`${API_BASE}/auth/company`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ company })
+		});
+		return handleApiResponseFull(response, 'set company');
+	},
+
 	async createCompany(name: string): Promise<ApiResponse<{ name: string; message: string }>> {
 		const response = await fetch(`${API_BASE}/auth/companies`, {
 			method: 'POST',

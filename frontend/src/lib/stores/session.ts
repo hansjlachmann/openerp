@@ -50,6 +50,11 @@ function createSessionStore() {
 			update(s => ({ ...s, language }));
 		},
 
+		// Set company
+		setCompany(company: string) {
+			update(s => ({ ...s, company }));
+		},
+
 		// Clear session (logout)
 		clear() {
 			set({

@@ -6,6 +6,7 @@ messages:
   MSG_LOGOUT_SUCCESS: "Logout successful"
   MSG_USER_CREATED: "Initial user created successfully"
   MSG_LANGUAGE_UPDATED: "Language updated successfully"
+  MSG_COMPANY_CHANGED: "Company changed successfully"
   MSG_COMPANY_CREATED: "Company \"%1\" created successfully"
   MSG_PREFERENCE_SAVED: "Preference saved successfully"
   MSG_PREFERENCE_DELETED: "Preference deleted successfully"

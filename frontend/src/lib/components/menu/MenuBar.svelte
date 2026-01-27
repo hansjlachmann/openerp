@@ -10,19 +10,26 @@
 	let currentTheme = $state<'light' | 'dark'>('light');
 	let showUserMenu = $state(false);
 	let showLanguageMenu = $state(false);
+	let showCompanyMenu = $state(false);
 	let languages = $state<{ code: string; name: string }[]>([]);
+	let companies = $state<string[]>([]);
 	let currentLanguage = $state('en-US');
+	let currentCompanyName = $state('');
 	let changingLanguage = $state(false);
+	let changingCompany = $state(false);
 	let version = $state('...');
 
 	theme.subscribe((value) => {
 		currentTheme = value;
 	});
 
-	// Subscribe to session for language updates
+	// Subscribe to session for language and company updates
 	session.subscribe((sess) => {
 		if (sess.language) {
 			currentLanguage = sess.language;
+		}
+		if (sess.company) {
+			currentCompanyName = sess.company;
 		}
 	});
 
@@ -30,12 +37,14 @@
 		try {
 			// Load current user info from storage
 			currentUser.loadFromStorage();
-			// Load available languages and version in parallel
-			const [langs, ver] = await Promise.all([
+			// Load available languages, companies and version in parallel
+			const [langs, comps, ver] = await Promise.all([
 				api.getLanguages(),
+				api.getCompanies(),
 				api.getVersion()
 			]);
 			languages = langs;
+			companies = comps;
 			version = ver;
 		} catch (err) {
 			console.error('Error loading data:', err);
@@ -65,10 +74,17 @@
 	function toggleUserMenu() {
 		showUserMenu = !showUserMenu;
 		showLanguageMenu = false;
+		showCompanyMenu = false;
 	}
 
 	function toggleLanguageMenu() {
 		showLanguageMenu = !showLanguageMenu;
+		showCompanyMenu = false;
+	}
+
+	function toggleCompanyMenu() {
+		showCompanyMenu = !showCompanyMenu;
+		showLanguageMenu = false;
 	}
 
 	async function handleLanguageChange(langCode: string) {
@@ -91,6 +107,26 @@
 		}
 	}
 
+	async function handleCompanyChange(companyName: string) {
+		if (companyName === currentCompanyName || changingCompany) return;
+
+		changingCompany = true;
+		try {
+			await api.setCompany(companyName);
+			currentCompanyName = companyName;
+			session.setCompany(companyName);
+			showCompanyMenu = false;
+			showUserMenu = false;
+
+			// Reload the page to apply company change
+			window.location.reload();
+		} catch (err) {
+			console.error('Error changing company:', err);
+		} finally {
+			changingCompany = false;
+		}
+	}
+
 	// Close dropdown when clicking outside
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
@@ -100,6 +136,7 @@
 		if (!userMenuButton && !userMenuDropdown && showUserMenu) {
 			showUserMenu = false;
 			showLanguageMenu = false;
+			showCompanyMenu = false;
 		}
 	}
 
@@ -294,6 +331,87 @@
 										</div>
 									{/if}
 								</div>
+
+								<!-- Company selector -->
+								{#if companies.length > 1}
+									<div class="relative">
+										<button
+											onclick={toggleCompanyMenu}
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+										>
+											<span class="flex items-center gap-2">
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													class="h-4 w-4"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+													/>
+												</svg>
+												Company
+											</span>
+											<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+												{currentCompanyName || '—'}
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													class="h-3 w-3"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M9 5l7 7-7 7"
+													/>
+												</svg>
+											</span>
+										</button>
+
+										<!-- Company submenu -->
+										{#if showCompanyMenu}
+											<div class="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+												{#each companies as company}
+													<button
+														onclick={() => handleCompanyChange(company)}
+														disabled={changingCompany}
+														class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between disabled:opacity-50"
+														class:text-blue-600={company === currentCompanyName}
+														class:dark:text-blue-400={company === currentCompanyName}
+														class:font-medium={company === currentCompanyName}
+														class:text-gray-700={company !== currentCompanyName}
+														class:dark:text-gray-300={company !== currentCompanyName}
+													>
+														{company}
+														{#if company === currentCompanyName}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																class="h-4 w-4"
+																fill="none"
+																viewBox="0 0 24 24"
+																stroke="currentColor"
+															>
+																<path
+																	stroke-linecap="round"
+																	stroke-linejoin="round"
+																	stroke-width="2"
+																	d="M5 13l4 4L19 7"
+																/>
+															</svg>
+														{/if}
+													</button>
+												{/each}
+											</div>
+										{/if}
+									</div>
+								{/if}
 
 								<!-- Divider -->
 								<div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
