@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/hansjlachmann/openerp/compare/v0.1.12...v0.1.13) (2026-01-27)
+
+
+### Features
+
+* add Job Queue Entry table and list page ([c3698b7](https://github.com/hansjlachmann/openerp/commit/c3698b75a503039f4be94144493f0cab59b7c816))
+
 ## [0.1.12](https://github.com/hansjlachmann/openerp/compare/v0.1.11...v0.1.12) (2026-01-27)
 
 
