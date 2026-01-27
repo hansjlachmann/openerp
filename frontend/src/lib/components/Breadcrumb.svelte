@@ -9,12 +9,12 @@
 </script>
 
 {#if items.length > 1}
-	<nav class="breadcrumb" aria-label="Breadcrumb">
-		<ol class="breadcrumb-list">
+	<nav class="bg-gray-100 dark:bg-gray-800 px-6 py-2 border-b border-gray-200 dark:border-gray-700" aria-label="Breadcrumb">
+		<ol class="flex items-center gap-1 text-sm">
 			{#each items as item, index}
-				<li class="breadcrumb-item">
+				<li class="flex items-center">
 					{#if index < items.length - 1}
-						<a href={item.href} class="breadcrumb-link">
+						<a href={item.href} class="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors">
 							{#if index === 0}
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -34,7 +34,7 @@
 							{item.label}
 						</a>
 						<svg
-							class="breadcrumb-separator"
+							class="h-4 w-4 mx-2 text-gray-400 dark:text-gray-500"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -48,7 +48,7 @@
 							/>
 						</svg>
 					{:else}
-						<span class="breadcrumb-current">{item.label}</span>
+						<span class="text-gray-700 dark:text-gray-300 font-medium">{item.label}</span>
 					{/if}
 				</li>
 			{/each}
@@ -56,28 +56,3 @@
 	</nav>
 {/if}
 
-<style>
-	.breadcrumb {
-		@apply bg-gray-100 dark:bg-gray-800 px-6 py-2 border-b border-gray-200 dark:border-gray-700;
-	}
-
-	.breadcrumb-list {
-		@apply flex items-center gap-1 text-sm;
-	}
-
-	.breadcrumb-item {
-		@apply flex items-center;
-	}
-
-	.breadcrumb-link {
-		@apply flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors;
-	}
-
-	.breadcrumb-separator {
-		@apply h-4 w-4 mx-2 text-gray-400 dark:text-gray-500;
-	}
-
-	.breadcrumb-current {
-		@apply text-gray-700 dark:text-gray-300 font-medium;
-	}
-</style>

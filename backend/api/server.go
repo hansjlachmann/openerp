@@ -77,6 +77,7 @@ func (s *Server) Setup() {
 	api.Post("/auth/companies", authHandler.CreateCompany)
 	api.Post("/auth/language", authHandler.SetLanguage)
 	api.Get("/auth/languages", authHandler.GetLanguages)
+	api.Post("/auth/company", authHandler.SetCompany)
 
 	// Session routes
 	api.Get("/session", sessionHandler.GetSession)

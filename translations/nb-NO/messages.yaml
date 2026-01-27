@@ -6,6 +6,7 @@ messages:
   MSG_LOGOUT_SUCCESS: "Utlogging vellykket"
   MSG_USER_CREATED: "Første bruker opprettet"
   MSG_LANGUAGE_UPDATED: "Språk oppdatert"
+  MSG_COMPANY_CHANGED: "Selskap endret"
   MSG_COMPANY_CREATED: "Selskap \"%1\" opprettet"
   MSG_PREFERENCE_SAVED: "Oppsett lagret"
   MSG_PREFERENCE_DELETED: "Oppsett slettet"

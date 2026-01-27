@@ -47,6 +47,11 @@ func (c *HelloWorld) SourceTable() string {
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	return fcodeunits.Result{
 		Success: true,
-		Message: "Hello World",
+		Message: "Codeunit executed",
+		Dialog: &fcodeunits.DialogResult{
+			Title:   "Hello World",
+			Message: "Hello World!",
+			Type:    "info",
+		},
 	}, nil
 }

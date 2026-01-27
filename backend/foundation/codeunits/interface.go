@@ -23,6 +23,14 @@ type Result struct {
 	Success bool                   `json:"success"`
 	Message string                 `json:"message"`
 	Data    map[string]interface{} `json:"data,omitempty"`
+	Dialog  *DialogResult          `json:"dialog,omitempty"` // Optional dialog to show
+}
+
+// DialogResult represents a dialog/message box to display
+type DialogResult struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+	Type    string `json:"type"` // "info", "success", "warning", "error"
 }
 
 // Factory is a function that creates a new codeunit instance
