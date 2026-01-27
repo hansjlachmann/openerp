@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.9](https://github.com/hansjlachmann/openerp/compare/v0.1.8...v0.1.9) (2026-01-27)
+
+
+### Bug Fixes
+
+* add Back to List action to User Card ([e9478f0](https://github.com/hansjlachmann/openerp/commit/e9478f0cd314415a98bb404d0836e59772c770b6))
+* card page keyboard shortcuts and dark mode default ([ac738a0](https://github.com/hansjlachmann/openerp/commit/ac738a034c22d4e2ef79e3cb72d145930be114ba))
+
 ## [0.1.8](https://github.com/hansjlachmann/openerp/compare/v0.1.7...v0.1.8) (2026-01-27)
 
 
