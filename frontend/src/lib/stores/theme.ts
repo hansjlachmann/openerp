@@ -6,19 +6,15 @@ type Theme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'theme';
 
-// Get initial theme from localStorage or system preference
+// Get initial theme from localStorage or default to dark
 function getInitialTheme(): Theme {
-	if (!browser) return 'light';
+	if (!browser) return 'dark';
 
 	const stored = getString(THEME_STORAGE_KEY) as Theme | null;
 	if (stored) return stored;
 
-	// Check system preference
-	if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		return 'dark';
-	}
-
-	return 'light';
+	// Default to dark mode for first-time users
+	return 'dark';
 }
 
 function createThemeStore() {
