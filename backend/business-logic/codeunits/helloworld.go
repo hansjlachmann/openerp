@@ -1,8 +1,10 @@
 package codeunits
 
 import (
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 // HelloWorld - Codeunit 50020: Hello World Test
@@ -45,13 +47,23 @@ func (c *HelloWorld) SourceTable() string {
 
 // Run executes the codeunit with the given record
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
-	return fcodeunits.Result{
-		Success: true,
-		Message: "Codeunit executed",
-		Dialog: &fcodeunits.DialogResult{
-			Title:   "Hello World",
-			Message: "Hello World!",
-			Type:    "info",
-		},
-	}, nil
+	var LogQueueEntries tables.JobQueueEntry
+	LogQueueEntries.InitWithDBType(c.db, c.company, c.dbType)
+
+	nextEntryNo := 1
+	if LogQueueEntries.FindLast() {
+		nextEntryNo = LogQueueEntries.Entry_no + 1
+	}
+	LogQueueEntries.Entry_no = nextEntryNo
+	LogQueueEntries.Status = 1
+	LogQueueEntries.User_id = "ADMIN"
+	LogQueueEntries.Description = "Hello World"
+	LogQueueEntries.Job_queue_no = "J001"
+	LogQueueEntries.Start_date_time = types.Now()
+	LogQueueEntries.End_date_time = types.Now()
+	if !LogQueueEntries.Insert(true) {
+		return fcodeunits.Message("failed to insert ledger entry"), nil
+	}
+
+	return fcodeunits.Message("Hello World!"), nil
 }
