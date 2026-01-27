@@ -3,6 +3,8 @@ FROM golang:1.24-alpine AS builder
 
 # Version passed at build time
 ARG VERSION=dev
+# Optional: path to extensions directory (for child repos)
+ARG EXTENSIONS_PATH=""
 
 WORKDIR /app
 
@@ -15,6 +17,20 @@ RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Build the extmerge tool
+RUN CGO_ENABLED=0 GOOS=linux go build -o extmerge ./tools/extmerge
+
+# If EXTENSIONS_PATH is provided, merge extensions into business-logic
+RUN if [ -n "$EXTENSIONS_PATH" ] && [ -d "$EXTENSIONS_PATH" ]; then \
+      echo "Merging extensions from $EXTENSIONS_PATH..."; \
+      mkdir -p /tmp/merged; \
+      ./extmerge --core ./backend/business-logic --extensions "$EXTENSIONS_PATH" --output /tmp/merged --verbose; \
+      rm -rf ./backend/business-logic; \
+      mv /tmp/merged ./backend/business-logic; \
+    else \
+      echo "No extensions path provided, using core business-logic"; \
+    fi
 
 # Build the application with version embedded
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-X github.com/hansjlachmann/openerp/backend/api.Version=${VERSION}" -o api-server ./cmd/api-server
