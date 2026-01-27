@@ -368,7 +368,7 @@
 			</button>
 
 			<!-- Version -->
-			<span class="text-xs text-white/50 pl-2 border-l border-white/20">v{version}</span>
+			<span class="text-xs text-white/70 pl-2 border-l border-white/20">v{version}</span>
 		</div>
 	</nav>
 {/if}
