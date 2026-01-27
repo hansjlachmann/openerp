@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.8](https://github.com/hansjlachmann/openerp/compare/v0.1.7...v0.1.8) (2026-01-27)
+
+
+### Features
+
+* display version in menu bar ([6b0efad](https://github.com/hansjlachmann/openerp/commit/6b0efaddab92f208956ce5f2c4b71856b34b70a5))
+
+
+### Bug Fixes
+
+* improve version text visibility in menu bar ([71cdc8a](https://github.com/hansjlachmann/openerp/commit/71cdc8a04cc93122cb763fc9b5addb9ee9e473bf))
+
 ## [0.1.7](https://github.com/hansjlachmann/openerp/compare/v0.1.6...v0.1.7) (2026-01-27)
 
 
