@@ -132,3 +132,23 @@ tables:
       code: "Kode"
       description: "Beskrivelse"
       filename: "Filnavn"
+
+  # Job Queue (Table 472)
+  job_queue:
+    caption: "Jobbkø"
+    fields:
+      no: "Nr."
+      description: "Beskrivelse"
+      description_2: "Beskrivelse 2"
+      status: "Status"
+      object_id_to_run: "Objekt-ID som skal kjøres"
+      next_start: "Neste start"
+      minutes_between_run: "Minutter mellom kjøring"
+      recurring_job: "Gjentakende jobb"
+
+    # Option field values
+    options:
+      status:
+        on_hold: "Avvent"
+        ready: "Klar"
+        error: "Feil"

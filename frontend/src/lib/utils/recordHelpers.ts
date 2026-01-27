@@ -107,6 +107,26 @@ export function deepCopy<T>(obj: T): T {
 }
 
 /**
+ * Check if a record is empty (contains no user data, only internal flags)
+ * @param record - The record to check
+ */
+export function isEmptyRecord(record: Record<string, any>): boolean {
+	return !Object.keys(record).some(key =>
+		!key.startsWith('_') && record[key] !== undefined && record[key] !== ''
+	);
+}
+
+/**
+ * Check if a record has any user-entered data (ignoring internal flags)
+ * @param record - The record to check
+ */
+export function hasRecordData(record: Record<string, any>): boolean {
+	return Object.keys(record).some(key =>
+		!key.startsWith('_') && record[key] !== undefined && record[key] !== ''
+	);
+}
+
+/**
  * Check if a record has changed from its original state
  * Handles type coercion for number/string comparisons
  */

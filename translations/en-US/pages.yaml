@@ -31,3 +31,7 @@ pages:
   # Menu pages
   menus:
     caption: "Menus"
+
+  # Job Queue pages
+  job_queue_list:
+    caption: "Job Queue"

@@ -2,7 +2,7 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue } from '$lib/utils/fieldHelpers';
 	import LookupDropdown from './LookupDropdown.svelte';
 
 	interface Props {
@@ -91,35 +91,10 @@
 	}
 
 	// Get display value for option field (convert stored integer to display text)
-	const optionDisplayValue = $derived(() => {
-		if (!options || value === undefined || value === null) return '';
-		const stringValue = String(value);
-		return options[stringValue] || stringValue;
-	});
+	const optionDisplayValue = $derived(() => formatOptionValue(value, options));
 
 	// Get display value for lookup field (show "code - description" or just description)
-	const lookupDisplayValue = $derived(() => {
-		if (!lookups || value === undefined || value === null || value === '') return '';
-		const stringValue = String(value);
-
-		// For advanced lookup, get description from first non-key column
-		if (isAdvancedLookup && lookups.rows) {
-			const row = lookups.rows.find(r => r._key === stringValue);
-			if (row && lookups.columns && lookups.columns.length > 0) {
-				// Return first column value
-				return row[lookups.columns[0].source] ?? stringValue;
-			}
-		}
-
-		// For simple lookup
-		if (lookups.simple) {
-			const description = lookups.simple[stringValue];
-			if (description && description !== stringValue) {
-				return `${stringValue} - ${description}`;
-			}
-		}
-		return stringValue;
-	});
+	const lookupDisplayValue = $derived(() => formatLookupValue(value, lookups, !isAdvancedLookup));
 
 	// Handle lookup selection from LookupDropdown
 	function handleLookupSelect(key: string) {

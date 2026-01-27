@@ -18,9 +18,9 @@
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, deepCopy, hasRecordChanged } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, deepCopy, hasRecordChanged, isEmptyRecord, hasRecordData } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -52,16 +52,6 @@
 
 	// Get primary key field name from page definition
 	const primaryKeyField = $derived(getPrimaryKeyField(page));
-
-	// Helper to format option field values
-	function formatOptionValue(fieldSource: string, value: any): string {
-		const fieldOptions = options[fieldSource];
-		if (fieldOptions && value !== undefined && value !== null) {
-			const stringValue = String(value);
-			return fieldOptions[stringValue] || String(value);
-		}
-		return formatValue(value);
-	}
 
 	// Customization state
 	let customizeModalOpen = $state(false);
@@ -269,8 +259,61 @@
 		selectedIndex >= 0 && selectedIndex < records.length ? records[selectedIndex] : null
 	);
 
+	// Handle running a codeunit
+	async function handleRunObject(runObject: string) {
+		let codeunitId: number;
+
+		// Check if it's a field reference (format: "field:fieldname")
+		if (runObject.startsWith('field:')) {
+			const fieldName = runObject.substring(6); // Remove "field:" prefix
+			if (!selectedRecord) {
+				toast.error('No record selected');
+				return;
+			}
+			const fieldValue = selectedRecord[fieldName];
+			if (fieldValue === undefined || fieldValue === null || fieldValue === 0) {
+				toast.error(`No codeunit specified in ${fieldName}`);
+				return;
+			}
+			codeunitId = typeof fieldValue === 'number' ? fieldValue : parseInt(String(fieldValue), 10);
+		} else {
+			// Parse the run_object string (format: "codeunit:ID")
+			const [objectType, objectId] = runObject.split(':');
+			if (objectType !== 'codeunit') {
+				toast.error(`Unknown object type: ${objectType}`);
+				return;
+			}
+			codeunitId = parseInt(objectId, 10);
+		}
+
+		if (isNaN(codeunitId) || codeunitId <= 0) {
+			toast.error('Invalid codeunit ID');
+			return;
+		}
+
+		try {
+			const result = await api.runCodeunit(codeunitId, selectedRecord || {});
+			if (result.success) {
+				toast.success(result.message || 'Codeunit executed successfully');
+			} else {
+				toast.error(result.message || 'Codeunit execution failed');
+			}
+		} catch (err) {
+			console.error('Error running codeunit:', err);
+			const message = err instanceof Error ? err.message : 'Failed to run codeunit';
+			toast.error(message);
+		}
+	}
+
 	// Handle action clicks
 	async function handleAction(actionName: string) {
+		// Check if the action has a run_object
+		const action = page.page.actions?.find(a => a.name === actionName);
+		if (action?.run_object) {
+			await handleRunObject(action.run_object);
+			return;
+		}
+
 		// Handle Edit action - open card page in edit mode
 		if (actionName === 'Edit') {
 			if (page.page.card_page_id && selectedRecord) {
@@ -405,8 +448,7 @@
 
 			if (isNew) {
 				// New record - only save if user has entered some data
-				const hasData = Object.keys(record).some(key => !key.startsWith('_') && record[key] !== undefined && record[key] !== '');
-				if (hasData) {
+				if (hasRecordData(record)) {
 					// Remove temporary flags before saving
 					const { _isNew, _tempId, ...recordToSave } = record;
 					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
@@ -463,12 +505,9 @@
 		}
 	}
 
-	// Check if a record is empty (only has internal flags, no real data)
+	// Check if a record is an empty new record (marked as new and has no user data)
 	function isEmptyNewRecord(record: Record<string, any>): boolean {
-		if (!record._isNew) return false;
-		return !Object.keys(record).some(key =>
-			!key.startsWith('_') && record[key] !== undefined && record[key] !== ''
-		);
+		return record._isNew === true && isEmptyRecord(record);
 	}
 
 	// Remove empty new rows from editableRecords
@@ -1434,7 +1473,7 @@
 												{/each}
 											</select>
 										{:else}
-											{formatOptionValue(field.source, record[field.source])}
+											{formatOptionValue(record[field.source], options[field.source])}
 										{/if}
 									</div>
 								{/if}
@@ -1522,12 +1561,12 @@
 	}
 
 	.table {
-		@apply w-full;
-		@apply border border-gray-200 rounded-lg;
+		@apply w-full border border-gray-200 rounded-lg;
 		@apply dark:border-gray-700;
 		border-collapse: separate;
 		border-spacing: 0;
 		background: transparent;
+		table-layout: fixed;
 	}
 
 	.table thead {
@@ -1580,13 +1619,13 @@
 
 	.resize-handle {
 		position: absolute;
-		right: 0;
+		right: -3px;
 		top: 0;
 		bottom: 0;
-		width: 6px;
+		width: 8px;
 		cursor: col-resize;
 		background: transparent;
-		z-index: 1;
+		z-index: 20;
 		border: none;
 		padding: 0;
 		margin: 0;
@@ -1594,7 +1633,11 @@
 	}
 
 	.resize-handle:hover {
-		background: rgba(255, 255, 255, 0.3);
+		background: rgba(59, 130, 246, 0.5);
+	}
+
+	.resize-handle:active {
+		background: rgba(59, 130, 246, 0.8);
 	}
 
 	.th-content {

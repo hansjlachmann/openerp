@@ -63,6 +63,69 @@ export function formatValue(val: any): string {
 }
 
 /**
+ * Format an option field value (convert stored integer to display text)
+ * @param value - The stored value (typically an integer index)
+ * @param options - Map of option values to display labels
+ * @returns The display label or formatted value
+ */
+export function formatOptionValue(
+	value: any,
+	options?: Record<string, string>
+): string {
+	if (value === undefined || value === null) {
+		return '';
+	}
+	if (options) {
+		const stringValue = String(value);
+		return options[stringValue] || stringValue;
+	}
+	return formatValue(value);
+}
+
+/**
+ * Format a lookup field value for display
+ * @param value - The stored key value
+ * @param lookups - Lookup data with simple map or rows/columns
+ * @param showKeyWithDescription - Whether to show "key - description" format
+ * @returns The display value
+ */
+export function formatLookupValue(
+	value: any,
+	lookups?: { simple?: Record<string, string>; rows?: any[]; columns?: { source: string }[] },
+	showKeyWithDescription: boolean = true
+): string {
+	if (value === undefined || value === null || value === '') {
+		return '';
+	}
+	if (!lookups) {
+		return String(value);
+	}
+
+	const stringValue = String(value);
+
+	// For advanced lookup with rows, get description from first column
+	if (lookups.rows && lookups.columns && lookups.columns.length > 0) {
+		const row = lookups.rows.find(r => r._key === stringValue);
+		if (row) {
+			return row[lookups.columns[0].source] ?? stringValue;
+		}
+	}
+
+	// For simple lookup
+	if (lookups.simple) {
+		const description = lookups.simple[stringValue];
+		if (description && description !== stringValue && showKeyWithDescription) {
+			return `${stringValue} - ${description}`;
+		}
+		if (description) {
+			return description;
+		}
+	}
+
+	return stringValue;
+}
+
+/**
  * Item customization type for visibility checks
  */
 export interface ItemCustomization {

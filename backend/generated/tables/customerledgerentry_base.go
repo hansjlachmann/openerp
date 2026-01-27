@@ -5,6 +5,7 @@ package tables
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2414,9 +2415,20 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 	switch fieldNameLower {
 	case "entry_no":
 		// Set field value
-		if v, ok := value.(int); ok {
+		switch v := value.(type) {
+		case int:
 			t.Entry_no = v
-		} else {
+		case float64:
+			t.Entry_no = int(v)
+		case string:
+			if v == "" {
+				t.Entry_no = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Entry_no = i
+			} else {
+				return fmt.Errorf("invalid integer value for field entry_no: %s", v)
+			}
+		default:
 			return fmt.Errorf("invalid type for field entry_no")
 		}
 		// Call OnValidate trigger
@@ -2917,9 +2929,20 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		return t.OnValidate_Journal_batch_name()
 	case "transaction_no":
 		// Set field value
-		if v, ok := value.(int); ok {
+		switch v := value.(type) {
+		case int:
 			t.Transaction_no = v
-		} else {
+		case float64:
+			t.Transaction_no = int(v)
+		case string:
+			if v == "" {
+				t.Transaction_no = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Transaction_no = i
+			} else {
+				return fmt.Errorf("invalid integer value for field transaction_no: %s", v)
+			}
+		default:
 			return fmt.Errorf("invalid type for field transaction_no")
 		}
 		// Call OnValidate trigger
@@ -2987,6 +3010,9 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		// Set field value
 		if v, ok := value.(bool); ok {
 			t.Open = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Open = v == "true" || v == "1"
 		} else {
 			return fmt.Errorf("invalid type for field open")
 		}
@@ -2996,6 +3022,9 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		// Set field value
 		if v, ok := value.(bool); ok {
 			t.Positive = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Positive = v == "true" || v == "1"
 		} else {
 			return fmt.Errorf("invalid type for field positive")
 		}
@@ -3031,9 +3060,20 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		return t.OnValidate_Due_date()
 	case "closed_by_entry_no":
 		// Set field value
-		if v, ok := value.(int); ok {
+		switch v := value.(type) {
+		case int:
 			t.Closed_by_entry_no = v
-		} else {
+		case float64:
+			t.Closed_by_entry_no = int(v)
+		case string:
+			if v == "" {
+				t.Closed_by_entry_no = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Closed_by_entry_no = i
+			} else {
+				return fmt.Errorf("invalid integer value for field closed_by_entry_no: %s", v)
+			}
+		default:
 			return fmt.Errorf("invalid type for field closed_by_entry_no")
 		}
 		// Call OnValidate trigger
