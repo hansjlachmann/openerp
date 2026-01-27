@@ -48,6 +48,8 @@ func (c *HelloWorld) SourceTable() string {
 // Run executes the codeunit with the given record
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	var LogQueueEntries tables.JobQueueEntry
+	jobQueue := record.(*tables.JobQueue)
+
 	LogQueueEntries.InitWithDBType(c.db, c.company, c.dbType)
 
 	nextEntryNo := 1
@@ -56,9 +58,9 @@ func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	}
 	LogQueueEntries.Entry_no = nextEntryNo
 	LogQueueEntries.Status = 1
-	LogQueueEntries.User_id = "ADMIN"
+	LogQueueEntries.User_id = types.NewCode(fcodeunits.CurrentUserID())
 	LogQueueEntries.Description = "Hello World"
-	LogQueueEntries.Job_queue_no = "J001"
+	LogQueueEntries.Job_queue_no = jobQueue.No
 	LogQueueEntries.Start_date_time = types.Now()
 	LogQueueEntries.End_date_time = types.Now()
 	if !LogQueueEntries.Insert(true) {
