@@ -66,6 +66,7 @@ Thumbs.db
 api-server
 cmd/api-server/api-server
 tools/tablegen/tablegen
+tools/extmerge/extmerge
 backend/foundation/openerp-foundation
 backend/foundation/openerp-gui
 
