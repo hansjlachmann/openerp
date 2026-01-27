@@ -152,3 +152,22 @@ tables:
         on_hold: "Avvent"
         ready: "Klar"
         error: "Feil"
+
+  # Job Queue Entry (Table 473)
+  job_queue_entry:
+    caption: "Jobbkøpost"
+    fields:
+      entry_no: "Løpenr."
+      job_queue_no: "Jobbkønr."
+      status: "Status"
+      user_id: "Bruker-ID"
+      description: "Beskrivelse"
+      start_date_time: "Startdato/-klokkeslett"
+      end_date_time: "Sluttdato/-klokkeslett"
+
+    # Option field values
+    options:
+      status:
+        success: "Fullført"
+        in_process: "Behandles"
+        error: "Feil"

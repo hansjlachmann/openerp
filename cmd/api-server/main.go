@@ -57,6 +57,9 @@ func main() {
 	if err := registry.RegisterTable(gtables.JobQueueTableID, &tables.JobQueue{}); err != nil {
 		log.Printf("Warning: Failed to register Job_Queue: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.JobQueueEntryTableID, &tables.JobQueueEntry{}); err != nil {
+		log.Printf("Warning: Failed to register Job_Queue_Entry: %v\n", err)
+	}
 
 	var db *database.Database
 	var companyName string

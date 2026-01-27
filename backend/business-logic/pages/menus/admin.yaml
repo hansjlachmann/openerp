@@ -28,3 +28,7 @@ menu:
       - name: Job Queue
         page_id: 672
         icon: clock
+
+      - name: Job Queue Entries
+        page_id: 673
+        icon: list
