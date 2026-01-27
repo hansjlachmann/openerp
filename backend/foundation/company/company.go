@@ -6,16 +6,23 @@ import (
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/migrations"
 )
+
+// MigrationRunner interface for running migrations
+type MigrationRunner interface {
+	Run() error
+}
 
 // Manager handles company operations
 type Manager struct {
-	db       *database.Database
-	registry interface {
+	db              *database.Database
+	registry        interface {
 		InitializeCompanyTables(db *sql.DB, companyName string) error
 		InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error
 		GetTableCount() int
 	}
+	migrationRunner MigrationRunner
 }
 
 // NewManager creates a new company manager
@@ -28,6 +35,30 @@ func NewManager(db *database.Database, registry interface {
 		db:       db,
 		registry: registry,
 	}
+}
+
+// NewManagerWithMigrations creates a new company manager with migration support
+func NewManagerWithMigrations(db *database.Database, registry interface {
+	InitializeCompanyTables(db *sql.DB, companyName string) error
+	InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error
+	GetTableCount() int
+}, migrationsList []migrations.Migration) *Manager {
+	m := &Manager{
+		db:       db,
+		registry: registry,
+	}
+
+	// Create migration runner if migrations are provided
+	if len(migrationsList) > 0 {
+		m.migrationRunner = migrations.NewRunner(
+			db.GetConnection(),
+			db.GetDBType(),
+			migrationsList,
+			m.ListCompanies,
+		)
+	}
+
+	return m
 }
 
 // CreateCompany creates a new company in the database and initializes all tables
@@ -91,8 +122,18 @@ func (m *Manager) EnterCompany(name string) error {
 		return fmt.Errorf("failed to verify company: %w", err)
 	}
 
+	// Run versioned migrations BEFORE table sync
+	// This handles complex schema changes (renames, drops, data transformations)
+	if m.migrationRunner != nil {
+		fmt.Println("\nRunning database migrations...")
+		if err := m.migrationRunner.Run(); err != nil {
+			return fmt.Errorf("migration failed: %w", err)
+		}
+	}
+
 	// Auto-sync: Create any missing tables for ALL companies
 	// This ensures new tables are automatically created across all companies (BC/NAV style)
+	// This handles additive changes (new tables, new columns)
 	if m.registry != nil {
 		tableCount := m.registry.GetTableCount()
 		if tableCount > 0 {
