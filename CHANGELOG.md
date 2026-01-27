@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/hansjlachmann/openerp/compare/v0.1.13...v0.1.14) (2026-01-27)
+
+
+### Features
+
+* add company switcher and codeunit dialog support ([a3cf6e0](https://github.com/hansjlachmann/openerp/commit/a3cf6e09232c9d93499a657e19b90bbea5b05ec6))
+
 ## [0.1.13](https://github.com/hansjlachmann/openerp/compare/v0.1.12...v0.1.13) (2026-01-27)
 
 
