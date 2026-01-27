@@ -74,6 +74,9 @@
 	let customizeModalOpen = $state(false);
 	let fieldCustomizations = $state<Record<string, ItemCustomization>>({});
 
+	// Reference to the card page element for focus management
+	let cardPageElement = $state<HTMLDivElement | null>(null);
+
 
 	// Check if record is empty (no data loaded)
 	const isEmptyRecord = $derived(() => {
@@ -111,7 +114,7 @@
 		}
 	});
 
-	// Focus the configured field when page opens in edit mode (only once per new record)
+	// Focus the configured field when page opens in edit mode, or focus the card page for keyboard shortcuts
 	$effect(() => {
 		if (!page?.page) return; // Guard during cleanup
 		if (editMode && page.page.focus_field && !initialFocusDone) {
@@ -127,6 +130,12 @@
 					}
 				}
 			}, 250);
+		} else if (!editMode && !initialFocusDone && cardPageElement) {
+			// In non-edit mode, focus the card page element so keyboard shortcuts work
+			initialFocusDone = true;
+			setTimeout(() => {
+				cardPageElement?.focus();
+			}, 100);
 		}
 	});
 
@@ -290,7 +299,16 @@
 			if (action.shortcut && action.enabled !== false) {
 				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
 				const normalizedShortcut = normalizeShortcut(action.shortcut);
-				map[normalizedShortcut] = () => handleAction(action.name);
+				map[normalizedShortcut] = () => {
+					// Handle run_page, run_object, or regular action (same as button click)
+					if (action.run_page) {
+						window.location.href = `/pages/${action.run_page}`;
+					} else if (action.run_object) {
+						handleRunObject(action.run_object);
+					} else {
+						handleAction(action.name);
+					}
+				};
 			}
 		});
 
@@ -370,7 +388,7 @@
 	}
 </script>
 
-<div class="card-page" use:shortcuts={shortcutMap()}>
+<div class="card-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={cardPageElement}>
 	<!-- Keyboard shortcuts hint -->
 	{#if navigationEnabled}
 		<div class="keyboard-hint">
