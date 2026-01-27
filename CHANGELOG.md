@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/hansjlachmann/openerp/compare/v0.1.6...v0.1.7) (2026-01-27)
+
+
+### Features
+
+* add versioned database migration system ([c9b0837](https://github.com/hansjlachmann/openerp/commit/c9b0837ef007a7f01d1d2caf85bf34fbae0226ea))
+
 ## [0.1.6](https://github.com/hansjlachmann/openerp/compare/v0.1.5...v0.1.6) (2026-01-25)
 
 
