@@ -13,11 +13,22 @@ interface ToastStore {
 	toasts: Toast[];
 }
 
+// Generate unique ID - fallback for non-secure contexts (HTTP without localhost)
+function generateId(): string {
+	if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+		return crypto.randomUUID();
+	}
+	// Fallback for non-secure contexts
+	return 'xxxx-xxxx-xxxx-xxxx'.replace(/x/g, () =>
+		Math.floor(Math.random() * 16).toString(16)
+	);
+}
+
 function createToastStore() {
 	const { subscribe, update } = writable<ToastStore>({ toasts: [] });
 
 	function addToast(message: string, type: ToastType = 'info', duration: number = 4000) {
-		const id = crypto.randomUUID();
+		const id = generateId();
 		const toast: Toast = { id, message, type, duration };
 
 		update(state => ({
