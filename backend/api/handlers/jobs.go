@@ -42,8 +42,11 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	// Capture session context for use in codeunit
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
+	userID := sess.GetUserID()
+	userName := sess.GetUserName()
 
 	// Parse request body
 	var req struct {
@@ -81,6 +84,10 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 
 	// Check if codeunit uses progress - if not, run synchronously
 	if !codeunit.UsesProgress() {
+		// Set context for sync execution (same goroutine)
+		fcodeunits.SetCurrentContext(userID, userName, company, language)
+		defer fcodeunits.ClearCurrentContext()
+
 		// Run synchronously and return result directly
 		result, err := codeunit.Run(table)
 		if err != nil {
@@ -112,6 +119,10 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 				dialog.CloseWithError(fmt.Errorf("panic: %v", r))
 			}
 		}()
+
+		// Set context for async execution (new goroutine)
+		fcodeunits.SetCurrentContext(userID, userName, company, language)
+		defer fcodeunits.ClearCurrentContext()
 
 		// Set dialog in context for the codeunit to use
 		fcodeunits.SetCurrentDialog(dialog)
