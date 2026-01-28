@@ -36,8 +36,7 @@ type Dialog struct {
 	cancel         context.CancelFunc
 	closed         bool
 	mu             sync.Mutex
-	confirmChan    chan bool              // Channel for receiving confirm responses
-	pendingConfirm map[string]chan bool   // Map of confirm ID to response channel
+	pendingConfirm map[string]chan bool // Map of confirm ID to response channel
 	confirmMu      sync.Mutex
 }
 
