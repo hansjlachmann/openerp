@@ -200,3 +200,18 @@ jobs:
           tags: ${{ steps.tags-frontend.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Update .env with version
+        run: |
+          echo "# OpenERP Environment Configuration" > .env
+          echo "# This file is automatically updated by CI on each release" >> .env
+          echo "" >> .env
+          echo "APP_VERSION=${{ needs.release.outputs.version }}" >> .env
+
+      - name: Commit .env file
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .env
+          git diff --staged --quiet || git commit -m "chore: update .env to version ${{ needs.release.outputs.version }}"
+          git push
