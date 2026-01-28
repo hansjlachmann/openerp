@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
+	import Button from './Button.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -7,21 +8,54 @@
 		message?: string;
 		progress?: number;
 		error?: string;
+		confirmMode?: boolean;
+		confirmMessage?: string;
+		onConfirmResponse?: (response: boolean) => void;
 	}
 
-	let { open = false, title = 'Processing...', message = '', progress = 0, error = '' }: Props = $props();
+	let {
+		open = false,
+		title = 'Processing...',
+		message = '',
+		progress = 0,
+		error = '',
+		confirmMode = false,
+		confirmMessage = '',
+		onConfirmResponse
+	}: Props = $props();
 
 	const displayPercent = $derived(Math.round(progress));
+
+	function handleYes() {
+		onConfirmResponse?.(true);
+	}
+
+	function handleNo() {
+		onConfirmResponse?.(false);
+	}
 </script>
 
 <Modal {open}>
 	<div class="progress-modal">
 		<div class="progress-header">
-			<h3 class="progress-title">{title}</h3>
+			<h3 class="progress-title">{confirmMode ? 'Confirm' : title}</h3>
 		</div>
 
 		<div class="progress-body">
-			{#if error}
+			{#if confirmMode}
+				<div class="confirm-container">
+					<svg class="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<path d="M12 16v-4" />
+						<path d="M12 8h.01" />
+					</svg>
+					<p class="confirm-message">{confirmMessage}</p>
+				</div>
+				<div class="confirm-buttons">
+					<Button variant="secondary" onclick={handleNo}>No</Button>
+					<Button variant="primary" onclick={handleYes}>Yes</Button>
+				</div>
+			{:else if error}
 				<div class="error-container">
 					<svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="12" r="10" />
@@ -117,5 +151,29 @@
 
 	:global(.dark) .error-message {
 		color: #fca5a5;
+	}
+
+	.confirm-container {
+		@apply flex items-start gap-3 p-3 bg-blue-50 rounded-lg;
+	}
+
+	:global(.dark) .confirm-container {
+		background-color: rgba(59, 130, 246, 0.1);
+	}
+
+	.confirm-icon {
+		@apply w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5;
+	}
+
+	.confirm-message {
+		@apply text-sm text-gray-700;
+	}
+
+	:global(.dark) .confirm-message {
+		color: #d1d5db;
+	}
+
+	.confirm-buttons {
+		@apply flex justify-end gap-3 mt-4;
 	}
 </style>

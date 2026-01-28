@@ -98,6 +98,9 @@
 	let progressValue = $state(0);
 	let progressMessage = $state('');
 	let progressError = $state('');
+	let progressConfirmMode = $state(false);
+	let progressConfirmMessage = $state('');
+	let confirmResponseCallback: ((response: boolean) => void) | undefined = undefined;
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
@@ -311,23 +314,41 @@
 		progressValue = 0;
 		progressMessage = '';
 		progressError = '';
+		progressConfirmMode = false;
+		progressConfirmMessage = '';
+		confirmResponseCallback = undefined;
 
 		try {
 			const result = await startJob(codeunitId, selectedRecord || {}, {
 				onProgress: (event) => {
+					// When receiving progress, exit confirm mode
+					progressConfirmMode = false;
 					progressValue = event.value;
 					if (event.message) {
 						progressMessage = event.message;
 					}
 				},
 				onComplete: (event) => {
+					progressConfirmMode = false;
 					progressValue = 100;
 					if (event.message) {
 						progressMessage = event.message;
 					}
 				},
 				onError: (err) => {
+					progressConfirmMode = false;
 					progressError = err;
+				},
+				onConfirm: (event, respond) => {
+					// Show confirm dialog
+					progressConfirmMode = true;
+					progressConfirmMessage = event.message;
+					confirmResponseCallback = (response: boolean) => {
+						// Reset confirm mode before sending response
+						progressConfirmMode = false;
+						progressConfirmMessage = '';
+						respond(response);
+					};
 				},
 				onSyncResult: (syncResult) => {
 					// Sync result - close progress modal immediately and show dialog/toast
@@ -1605,6 +1626,9 @@
 	message={progressMessage}
 	progress={progressValue}
 	error={progressError}
+	confirmMode={progressConfirmMode}
+	confirmMessage={progressConfirmMessage}
+	onConfirmResponse={confirmResponseCallback}
 />
 
 <!-- Codeunit Dialog Modal -->

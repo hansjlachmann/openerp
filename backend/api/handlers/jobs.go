@@ -191,8 +191,8 @@ func (h *JobsHandler) GetJobEvents(c *fiber.Ctx) error {
 				}
 
 				// Send progress event
-				data := fmt.Sprintf(`{"job_id":"%s","field":%d,"value":%d,"message":"%s","completed":%t,"error":"%s","timestamp":%d}`,
-					event.JobID, event.Field, event.Value, escapeJSON(event.Message), event.Completed, escapeJSON(event.Error), event.Timestamp)
+				data := fmt.Sprintf(`{"job_id":"%s","field":%d,"value":%d,"message":"%s","completed":%t,"error":"%s","timestamp":%d,"event_type":"%s","confirm_id":"%s"}`,
+					event.JobID, event.Field, event.Value, escapeJSON(event.Message), event.Completed, escapeJSON(event.Error), event.Timestamp, event.EventType, event.ConfirmID)
 				fmt.Fprintf(w, "event: progress\ndata: %s\n\n", data)
 				w.Flush()
 
@@ -215,6 +215,42 @@ func (h *JobsHandler) GetJobEvents(c *fiber.Ctx) error {
 	})
 
 	return nil
+}
+
+// RespondToConfirm handles confirm dialog responses from the frontend
+// POST /api/jobs/:id/confirm
+func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
+	jobID := c.Params("id")
+	if jobID == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Job ID is required"))
+	}
+
+	var req struct {
+		ConfirmID string `json:"confirm_id"`
+		Response  bool   `json:"response"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
+	}
+
+	if req.ConfirmID == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Confirm ID is required"))
+	}
+
+	// Get the job from registry
+	dialog, ok := fcodeunits.GetJobRegistry().Get(jobID)
+	if !ok {
+		return c.Status(404).JSON(apitypes.NewErrorResponse("Job not found"))
+	}
+
+	// Send the response
+	if !dialog.RespondToConfirm(req.ConfirmID, req.Response) {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("No pending confirm with that ID"))
+	}
+
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
+		"acknowledged": true,
+	}))
 }
 
 // escapeJSON escapes special characters for JSON string

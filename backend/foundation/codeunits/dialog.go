@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// ProgressEvent represents a progress update
+// ProgressEvent represents a progress update or dialog event
 type ProgressEvent struct {
 	JobID      string `json:"job_id"`
 	Field      int    `json:"field"`      // Field number (1-based, like NAV)
@@ -17,6 +17,8 @@ type ProgressEvent struct {
 	Completed  bool   `json:"completed"`  // Job completed
 	Error      string `json:"error"`      // Error message if failed
 	Timestamp  int64  `json:"timestamp"`
+	EventType  string `json:"event_type,omitempty"` // "progress", "confirm", etc.
+	ConfirmID  string `json:"confirm_id,omitempty"` // Unique ID for confirm dialogs
 }
 
 // Dialog represents a NAV-style dialog with progress bar support
@@ -27,13 +29,16 @@ type ProgressEvent struct {
 //       dialog.Update(1, i)
 //   }
 type Dialog struct {
-	jobID     string
-	template  string
-	events    chan ProgressEvent
-	ctx       context.Context
-	cancel    context.CancelFunc
-	closed    bool
-	mu        sync.Mutex
+	jobID          string
+	template       string
+	events         chan ProgressEvent
+	ctx            context.Context
+	cancel         context.CancelFunc
+	closed         bool
+	mu             sync.Mutex
+	confirmChan    chan bool              // Channel for receiving confirm responses
+	pendingConfirm map[string]chan bool   // Map of confirm ID to response channel
+	confirmMu      sync.Mutex
 }
 
 // Update sends a progress update for a field
@@ -149,6 +154,76 @@ func (d *Dialog) Events() <-chan ProgressEvent {
 // Context returns the context for this dialog
 func (d *Dialog) Context() context.Context {
 	return d.ctx
+}
+
+// Confirm shows a confirmation dialog and waits for user response
+// Returns true if user clicks Yes, false if No
+// Similar to NAV/BC: Confirm('Are you sure?')
+func (d *Dialog) Confirm(message string) bool {
+	d.mu.Lock()
+	if d.closed {
+		d.mu.Unlock()
+		return false
+	}
+	d.mu.Unlock()
+
+	// Create unique confirm ID and response channel
+	confirmID := uuid.New().String()
+	responseChan := make(chan bool, 1)
+
+	// Register the pending confirm
+	d.confirmMu.Lock()
+	if d.pendingConfirm == nil {
+		d.pendingConfirm = make(map[string]chan bool)
+	}
+	d.pendingConfirm[confirmID] = responseChan
+	d.confirmMu.Unlock()
+
+	// Clean up on completion
+	defer func() {
+		d.confirmMu.Lock()
+		delete(d.pendingConfirm, confirmID)
+		d.confirmMu.Unlock()
+	}()
+
+	// Send confirm event to frontend
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		EventType: "confirm",
+		ConfirmID: confirmID,
+		Message:   message,
+		Timestamp: time.Now().UnixMilli(),
+	}:
+	case <-d.ctx.Done():
+		return false
+	}
+
+	// Wait for response
+	select {
+	case response := <-responseChan:
+		return response
+	case <-d.ctx.Done():
+		return false
+	case <-time.After(5 * time.Minute): // Timeout after 5 minutes
+		return false
+	}
+}
+
+// RespondToConfirm handles a confirm response from the frontend
+func (d *Dialog) RespondToConfirm(confirmID string, response bool) bool {
+	d.confirmMu.Lock()
+	defer d.confirmMu.Unlock()
+
+	if ch, ok := d.pendingConfirm[confirmID]; ok {
+		select {
+		case ch <- response:
+			return true
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // JobRegistry tracks running jobs with dialogs

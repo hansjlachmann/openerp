@@ -110,6 +110,7 @@ func (s *Server) Setup() {
 	jobsHandler := handlers.NewJobsHandlerWithDBType(s.db, s.dbType)
 	api.Post("/jobs/start", jobsHandler.StartJob)
 	api.Get("/jobs/:id/events", jobsHandler.GetJobEvents)
+	api.Post("/jobs/:id/confirm", jobsHandler.RespondToConfirm)
 
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {

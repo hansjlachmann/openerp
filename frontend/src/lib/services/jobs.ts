@@ -11,6 +11,8 @@ export interface ProgressEvent {
 	completed: boolean;
 	error: string;
 	timestamp: number;
+	event_type?: string;
+	confirm_id?: string;
 }
 
 export interface DialogResult {
@@ -31,6 +33,7 @@ export interface JobCallbacks {
 	onComplete?: (event: ProgressEvent) => void;
 	onError?: (error: string) => void;
 	onSyncResult?: (result: SyncJobResult) => void;
+	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
 }
 
 /**
@@ -87,6 +90,23 @@ export async function startJob(
 							callbacks.onComplete?.(event);
 							resolve(event);
 						}
+					} else if (event.event_type === 'confirm') {
+						// Handle confirm dialog
+						const respond = async (response: boolean) => {
+							try {
+								await fetch(`/api/jobs/${jobId}/confirm`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										confirm_id: event.confirm_id,
+										response
+									})
+								});
+							} catch (err) {
+								console.error('Failed to send confirm response:', err);
+							}
+						};
+						callbacks.onConfirm?.(event, respond);
 					} else {
 						callbacks.onProgress?.(event);
 					}
