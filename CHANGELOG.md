@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.18](https://github.com/hansjlachmann/openerp/compare/v0.1.17...v0.1.18) (2026-01-28)
+
+
+### Features
+
+* add APP_VERSION support to docker-compose ([aa0833f](https://github.com/hansjlachmann/openerp/commit/aa0833f89875cc6a136045fdbf279c84065cbe47))
+* add NAV-style progress dialog for codeunits ([bf2c859](https://github.com/hansjlachmann/openerp/commit/bf2c8593675b850a2dcc5f5c297cefe94f9c2ee4))
+* auto-update .env with version on release ([efb3462](https://github.com/hansjlachmann/openerp/commit/efb3462fc6f107cb7d4d33601bdc47b4d791e20a))
+* codeunits self-declare progress support via UsesProgress() ([c0dff60](https://github.com/hansjlachmann/openerp/commit/c0dff606a2fc3713a2ecd52142cc1760b7d7b6dc))
+
+
+### Bug Fixes
+
+* allow CORS from all origins in production ([81bac7a](https://github.com/hansjlachmann/openerp/commit/81bac7a8e6d9ddadec475b35a6fe98aa4d4233ec))
+* use per-goroutine session context for codeunit execution ([aec5208](https://github.com/hansjlachmann/openerp/commit/aec52080c09d27fc818631a05400bb2051f06cb1))
+
 ## [0.1.17](https://github.com/hansjlachmann/openerp/compare/v0.1.16...v0.1.17) (2026-01-27)
 
 
