@@ -13,6 +13,42 @@ import (
 // currentDialogs holds the dialog for each goroutine
 var currentDialogs sync.Map
 
+// goroutineContext holds per-goroutine session context
+type goroutineContext struct {
+	UserID   string
+	UserName string
+	Company  string
+	Language string
+}
+
+// currentContexts holds the context for each goroutine
+var currentContexts sync.Map
+
+// SetCurrentContext sets the session context for the current goroutine
+// This should be called at the start of a goroutine that runs codeunits
+func SetCurrentContext(userID, userName, company, language string) {
+	ctx := &goroutineContext{
+		UserID:   userID,
+		UserName: userName,
+		Company:  company,
+		Language: language,
+	}
+	currentContexts.Store(getGoroutineID(), ctx)
+}
+
+// GetCurrentContext returns the context for the current goroutine
+func GetCurrentContext() *goroutineContext {
+	if ctx, ok := currentContexts.Load(getGoroutineID()); ok {
+		return ctx.(*goroutineContext)
+	}
+	return nil
+}
+
+// ClearCurrentContext clears the context for the current goroutine
+func ClearCurrentContext() {
+	currentContexts.Delete(getGoroutineID())
+}
+
 // SetCurrentDialog sets the dialog for the current goroutine
 func SetCurrentDialog(d *Dialog) {
 	currentDialogs.Store(getGoroutineID(), d)
@@ -42,8 +78,14 @@ func getGoroutineID() uint64 {
 	return n
 }
 
-// CurrentUserID returns the current session user ID
+// CurrentUserID returns the current user ID
+// First checks goroutine-specific context, then falls back to global session
 func CurrentUserID() string {
+	// Check goroutine-specific context first
+	if ctx := GetCurrentContext(); ctx != nil {
+		return ctx.UserID
+	}
+	// Fall back to global session
 	sess := session.GetCurrent()
 	if sess != nil {
 		return sess.GetUserID()
@@ -51,8 +93,14 @@ func CurrentUserID() string {
 	return ""
 }
 
-// CurrentCompany returns the current session company name
+// CurrentCompany returns the current company name
+// First checks goroutine-specific context, then falls back to global session
 func CurrentCompany() string {
+	// Check goroutine-specific context first
+	if ctx := GetCurrentContext(); ctx != nil {
+		return ctx.Company
+	}
+	// Fall back to global session
 	sess := session.GetCurrent()
 	if sess != nil {
 		return sess.GetCompany()
