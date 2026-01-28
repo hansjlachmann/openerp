@@ -146,6 +146,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	pollInterval := 5 * time.Second
 	maxWaitTime := 15 * time.Minute
 	startTime := time.Now()
+	firstPoll := true
 
 	for {
 		// Check if we've exceeded max wait time
@@ -153,8 +154,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			return fcodeunits.Error("Report generation timed out after 15 minutes"), nil
 		}
 
-		// Wait before polling
-		time.Sleep(pollInterval)
+		// Wait before polling (skip wait on first poll)
+		if !firstPoll {
+			time.Sleep(pollInterval)
+		}
+		firstPoll = false
 
 		// Check job status
 		checkResp, err := c.client.Get(baseURL + "/api/nav/checkjob/" + jobID)
@@ -256,12 +260,22 @@ func parseProgressResponse(body string) CheckJobResponse {
 }
 
 // extractProgress extracts the progress number from "Progress X" string
+// Handles various formats: "Progress 45", "Progress: 45", "progress 45", etc.
 func extractProgress(s string) int {
-	re := regexp.MustCompile(`Progress\s+(\d+)`)
-	matches := re.FindStringSubmatch(s)
-	if len(matches) >= 2 {
-		if p, err := strconv.Atoi(matches[1]); err == nil {
-			return p
+	// Try multiple patterns
+	patterns := []string{
+		`[Pp]rogress[:\s]+(\d+)`,  // "Progress 45" or "Progress: 45"
+		`(\d+)\s*%`,               // "45%" or "45 %"
+		`(\d+)`,                   // Just a number
+	}
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(s)
+		if len(matches) >= 2 {
+			if p, err := strconv.Atoi(matches[1]); err == nil {
+				return p
+			}
 		}
 	}
 	return 0
