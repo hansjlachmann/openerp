@@ -275,3 +275,25 @@ func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
 		"acknowledged": true,
 	}))
 }
+
+// CancelJob cancels a running job
+// POST /api/jobs/:id/cancel
+func (h *JobsHandler) CancelJob(c *fiber.Ctx) error {
+	jobID := c.Params("id")
+	if jobID == "" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse("Job ID is required"))
+	}
+
+	// Get the job from registry
+	dialog, ok := fcodeunits.GetJobRegistry().Get(jobID)
+	if !ok {
+		return c.Status(404).JSON(apitypes.NewErrorResponse("Job not found"))
+	}
+
+	// Cancel the job
+	dialog.Cancel()
+
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
+		"cancelled": true,
+	}))
+}

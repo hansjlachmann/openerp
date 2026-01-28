@@ -174,6 +174,33 @@ func (d *Dialog) JobID() string {
 	return d.jobID
 }
 
+// Cancel cancels the running job
+func (d *Dialog) Cancel() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.closed {
+		return
+	}
+	d.closed = true
+
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		Completed: true,
+		Error:     "Cancelled by user",
+		EventType: "cancelled",
+		Timestamp: time.Now().UnixMilli(),
+	}:
+	case <-d.ctx.Done():
+	default:
+	}
+
+	// Cancel the context immediately to stop the codeunit
+	d.cancel()
+	jobRegistry.Remove(d.jobID)
+}
+
 // Events returns the channel for progress events (used by SSE handler)
 func (d *Dialog) Events() <-chan ProgressEvent {
 	return d.events
