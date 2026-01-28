@@ -1,0 +1,44 @@
+# Danish (Denmark) Messages - Success messages, dialogs, and UI text
+
+messages:
+  # Success Messages - Backend
+  MSG_LOGIN_SUCCESS: "Login lykkedes"
+  MSG_LOGOUT_SUCCESS: "Logout lykkedes"
+  MSG_USER_CREATED: "Første bruger oprettet"
+  MSG_LANGUAGE_UPDATED: "Sprog opdateret"
+  MSG_COMPANY_CHANGED: "Virksomhed ændret"
+  MSG_COMPANY_CREATED: "Virksomhed \"%1\" oprettet"
+  MSG_PREFERENCE_SAVED: "Præference gemt"
+  MSG_PREFERENCE_DELETED: "Præference slettet"
+
+  # Success Messages - Records
+  MSG_RECORD_CREATED: "Post oprettet"
+  MSG_RECORD_UPDATED: "Post opdateret"
+  MSG_RECORD_DELETED: "Post slettet"
+  MSG_RECORD_SAVED: "Post gemt"
+  MSG_RECORD_DELETED_SUCCESS: "Post slettet"
+
+  # Welcome Messages
+  MSG_WELCOME_BACK: "Velkommen tilbage, %1"
+
+  # Error Messages
+  ERR_FAILED_DELETE: "Kunne ikke slette post"
+  ERR_FAILED_OPEN_CARD: "Kunne ikke åbne kort"
+  ERR_FIELD_NOT_EXIST: "%1 '%2' findes ikke"
+
+  # Dialog Titles
+  DLG_DELETE_RECORD_TITLE: "Slet post"
+  DLG_CONFIRM_TITLE: "Bekræft"
+
+  # Dialog Messages
+  DLG_DELETE_RECORD_CONFIRM: "Er du sikker på, at du vil slette denne post?"
+  DLG_DELETE_CONFIRM: "Er du sikker på, at du vil slette denne %1?"
+  DLG_CONFIRM_DEFAULT: "Er du sikker?"
+
+  # Button Labels
+  BTN_DELETE: "Slet"
+  BTN_CANCEL: "Annuller"
+  BTN_CONFIRM: "Bekræft"
+  BTN_OK: "OK"
+  BTN_YES: "Ja"
+  BTN_NO: "Nej"

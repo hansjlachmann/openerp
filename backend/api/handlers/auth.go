@@ -293,7 +293,7 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 	}
 
 	// Validate language code (must be one of supported languages)
-	supportedLanguages := []string{"en-US", "nb-NO"}
+	supportedLanguages := []string{"en-US", "nb-NO", "da-DK"}
 	valid := false
 	for _, lang := range supportedLanguages {
 		if lang == requestBody.Language {
@@ -382,6 +382,7 @@ func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
 func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {
 	languages := []map[string]string{
 		{"code": "en-US", "name": "English (US)"},
+		{"code": "da-DK", "name": "Dansk"},
 		{"code": "nb-NO", "name": "Norsk (Bokmål)"},
 	}
 

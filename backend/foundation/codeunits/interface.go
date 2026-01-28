@@ -16,6 +16,11 @@ type Codeunit interface {
 	// Run executes the codeunit with the given record
 	// The record should be a pointer to the appropriate table struct
 	Run(record interface{}) (Result, error)
+
+	// UsesProgress returns true if this codeunit uses progress dialog updates
+	// If true, the codeunit will be run async with SSE progress streaming
+	// If false, the codeunit runs synchronously and returns result directly
+	UsesProgress() bool
 }
 
 // Result represents the result of a codeunit execution

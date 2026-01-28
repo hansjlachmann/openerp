@@ -1,0 +1,54 @@
+# Danish (Denmark) error messages
+# %1, %2, %3 are placeholders for dynamic values
+
+errors:
+  # Record operations
+  ERR_DUPLICATE_RECORD: "%1 %2 findes allerede"
+  ERR_RECORD_NOT_FOUND: "%1 %2 blev ikke fundet"
+  ERR_VALIDATION_FAILED: "Validering mislykkedes for %1: %2"
+  ERR_REQUIRED_FIELD: "%1 er påkrævet"
+  ERR_INVALID_VALUE: "Ugyldig værdi '%2' for %1"
+  ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
+  ERR_INSERT_FAILED: "Kunne ikke indsætte %1"
+  ERR_MODIFY_FAILED: "Kunne ikke ændre %1 %2"
+  ERR_EMPTY_PRIMARY_KEY: "%1-nummer kan ikke være tomt"
+  ERR_TABLE_NOT_FOUND: "Tabel '%1' blev ikke fundet"
+
+  # Session/Auth
+  ERR_NO_ACTIVE_SESSION: "Ingen aktiv session"
+  ERR_NOT_LOGGED_IN: "Ingen bruger logget ind"
+  ERR_INVALID_CREDENTIALS: "Ugyldige legitimationsoplysninger"
+  ERR_USER_INACTIVE: "Brugerkonto er inaktiv"
+  ERR_USER_NOT_FOUND: "Bruger ikke fundet"
+  ERR_USER_REQUIRED: "Bruger-ID og adgangskode er påkrævet"
+  ERR_USERS_EXIST: "Brugere findes allerede. Brug brugeradministrationen."
+  ERR_CREATE_USER_FAILED: "Kunne ikke oprette bruger"
+
+  # Request/Input
+  ERR_INVALID_REQUEST_BODY: "Ugyldig forespørgsel"
+  ERR_INVALID_FIELDS: "Ugyldig feltparameter"
+  ERR_INVALID_FILTERS: "Ugyldig filterparameter"
+  ERR_INVALID_PAGE_ID: "Ugyldigt side-ID"
+  ERR_LANGUAGE_REQUIRED: "Sprog er påkrævet"
+  ERR_UNSUPPORTED_LANGUAGE: "Ikke-understøttet sprog: %1"
+
+  # Company
+  ERR_COMPANY_NOT_FOUND: "Virksomhed findes ikke"
+  ERR_COMPANY_VERIFY_FAILED: "Kunne ikke verificere virksomhed"
+  ERR_COMPANY_REQUIRED: "Virksomhedsnavn er påkrævet"
+  ERR_COMPANY_INVALID_NAME: "Virksomhedsnavn må kun indeholde bogstaver, tal, understreger og bindestreger"
+  ERR_COMPANY_NAME_LENGTH: "Virksomhedsnavn skal være mellem 2 og 50 tegn"
+  ERR_COMPANY_LIST_FAILED: "Kunne ikke hente virksomhedsliste"
+  ERR_COMPANY_ALREADY_EXISTS: "Virksomhed '%1' findes allerede"
+  ERR_COMPANY_CREATE_FAILED: "Kunne ikke oprette virksomhed"
+
+  # Preferences
+  ERR_PREFERENCE_NOT_FOUND: "Præference ikke fundet"
+  ERR_PREFERENCE_SERIALIZE: "Kunne ikke serialisere præferencedata"
+  ERR_PREFERENCE_UPDATE_FAILED: "Kunne ikke opdatere præference"
+  ERR_PREFERENCE_SAVE_FAILED: "Kunne ikke gemme præference"
+  ERR_PREFERENCE_DELETE_FAILED: "Kunne ikke slette præference"
+
+  # Menu/Pages
+  ERR_MENU_NOT_FOUND: "Menu ikke fundet"
+  ERR_PAGE_NOT_FOUND: "Side %1 ikke fundet"

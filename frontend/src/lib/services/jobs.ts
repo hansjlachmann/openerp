@@ -13,21 +13,36 @@ export interface ProgressEvent {
 	timestamp: number;
 }
 
+export interface DialogResult {
+	title: string;
+	message: string;
+	type: 'info' | 'success' | 'warning' | 'error';
+}
+
+export interface SyncJobResult {
+	success: boolean;
+	message: string;
+	data?: Record<string, unknown>;
+	dialog?: DialogResult;
+}
+
 export interface JobCallbacks {
 	onProgress?: (event: ProgressEvent) => void;
 	onComplete?: (event: ProgressEvent) => void;
 	onError?: (error: string) => void;
+	onSyncResult?: (result: SyncJobResult) => void;
 }
 
 /**
- * Start a job (codeunit with progress tracking)
+ * Start a job (codeunit execution)
+ * The backend decides whether to run sync or async based on UsesProgress()
  * Returns a promise that resolves when the job completes
  */
 export async function startJob(
 	codeunitId: number,
 	record: Record<string, unknown>,
 	callbacks: JobCallbacks = {}
-): Promise<ProgressEvent | null> {
+): Promise<ProgressEvent | SyncJobResult | null> {
 	// Start the job
 	const response = await fetch('/api/jobs/start', {
 		method: 'POST',
@@ -45,55 +60,68 @@ export async function startJob(
 	}
 
 	const result = await response.json();
-	const jobId = result.data.job_id;
 
-	// Connect to SSE for progress updates
-	return new Promise((resolve, reject) => {
-		const eventSource = new EventSource(`/api/jobs/${jobId}/events`);
-		let lastEvent: ProgressEvent | null = null;
+	// Check if this is a sync result (no job_id) or async job (has job_id)
+	if (result.data.job_id) {
+		// Async job - connect to SSE for progress updates
+		const jobId = result.data.job_id;
+		return new Promise((resolve, reject) => {
+			const eventSource = new EventSource(`/api/jobs/${jobId}/events`);
+			let lastEvent: ProgressEvent | null = null;
 
-		eventSource.addEventListener('connected', () => {
-			// Connection established
-		});
+			eventSource.addEventListener('connected', () => {
+				// Connection established
+			});
 
-		eventSource.addEventListener('progress', (e: MessageEvent) => {
-			try {
-				const event: ProgressEvent = JSON.parse(e.data);
-				lastEvent = event;
+			eventSource.addEventListener('progress', (e: MessageEvent) => {
+				try {
+					const event: ProgressEvent = JSON.parse(e.data);
+					lastEvent = event;
 
-				if (event.completed) {
-					eventSource.close();
-					if (event.error) {
-						callbacks.onError?.(event.error);
-						reject(new Error(event.error));
+					if (event.completed) {
+						eventSource.close();
+						if (event.error) {
+							callbacks.onError?.(event.error);
+							reject(new Error(event.error));
+						} else {
+							callbacks.onComplete?.(event);
+							resolve(event);
+						}
 					} else {
-						callbacks.onComplete?.(event);
-						resolve(event);
+						callbacks.onProgress?.(event);
 					}
-				} else {
-					callbacks.onProgress?.(event);
+				} catch (err) {
+					console.error('Failed to parse progress event:', err);
 				}
-			} catch (err) {
-				console.error('Failed to parse progress event:', err);
-			}
-		});
+			});
 
-		eventSource.addEventListener('close', () => {
-			eventSource.close();
-			if (lastEvent) {
-				resolve(lastEvent);
-			} else {
-				resolve(null);
-			}
-		});
+			eventSource.addEventListener('close', () => {
+				eventSource.close();
+				if (lastEvent) {
+					resolve(lastEvent);
+				} else {
+					resolve(null);
+				}
+			});
 
-		eventSource.onerror = () => {
-			eventSource.close();
-			const error = 'Connection lost';
-			callbacks.onError?.(error);
-			reject(new Error(error));
+			eventSource.onerror = () => {
+				eventSource.close();
+				const error = 'Connection lost';
+				callbacks.onError?.(error);
+				reject(new Error(error));
+			};
+		});
+	} else {
+		// Sync result - return immediately
+		const syncResult: SyncJobResult = {
+			success: result.data.success,
+			message: result.data.message,
+			data: result.data.data,
+			dialog: result.data.dialog
 		};
-	});
+		callbacks.onSyncResult?.(syncResult);
+		return syncResult;
+	}
 }
 
 /**

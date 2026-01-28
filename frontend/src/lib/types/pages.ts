@@ -55,7 +55,6 @@ export interface Action {
 	run_page?: number;
 	run_object?: string;
 	enabled?: boolean;
-	with_progress?: boolean; // Show progress modal for long-running codeunits
 }
 
 export interface MenuDefinition {
