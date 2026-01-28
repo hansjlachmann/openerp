@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.21](https://github.com/hansjlachmann/openerp/compare/v0.1.20...v0.1.21) (2026-01-28)
+
+
+### Features
+
+* add Confirm() helper function for codeunits ([cf7ebb2](https://github.com/hansjlachmann/openerp/commit/cf7ebb26eae0f2e1be21ed673feb32c348b32b13))
+
+
+### Bug Fixes
+
+* remove unused confirmChan field from Dialog struct ([4aa14fc](https://github.com/hansjlachmann/openerp/commit/4aa14fc09b6bd6a791f2a7c635a31cafabd3aecb))
+
 ## [0.1.20](https://github.com/hansjlachmann/openerp/compare/v0.1.19...v0.1.20) (2026-01-28)
 
 
