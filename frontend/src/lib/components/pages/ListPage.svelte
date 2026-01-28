@@ -609,7 +609,7 @@
 	}
 
 	// Insert a new row at cursor position
-	function insertNewRow() {
+	function insertNewRow(atEnd: boolean = false) {
 		if (!editMode) return;
 
 		// Don't create a new row if we're already on an empty new row
@@ -632,8 +632,8 @@
 			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 		};
 
-		// Insert at current cursor position (or at the end if no cursor)
-		const insertIndex = currentCellRow >= 0 ? currentCellRow : editableRecords.length;
+		// Insert at end, or at current cursor position
+		const insertIndex = atEnd ? editableRecords.length : (currentCellRow >= 0 ? currentCellRow : editableRecords.length);
 		editableRecords = [
 			...editableRecords.slice(0, insertIndex),
 			newRecord,
@@ -694,10 +694,8 @@
 					// On last row - only create new row if current row has data
 					const currentRecord = editableRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
-						insertNewRow();
-						// insertNewRow sets currentCellRow, adjust to be at the end
-						currentCellRow = editableRecords.length - 1;
-						currentCellCol = 0;
+						insertNewRow(true); // Append at end
+						currentCellCol = colIndex;
 						focusCell(currentCellRow, currentCellCol);
 					}
 					// If already on empty new row, do nothing (stay on current row)
@@ -767,6 +765,32 @@
 					}
 				}
 				break;
+			case 'F8':
+				// F8 copies value from the cell above (NAV/BC behavior)
+				{
+					event.preventDefault();
+					if (rowIndex > 0) {
+						const field = cols[colIndex];
+						const aboveRecord = editableRecords[rowIndex - 1];
+						const currentRecord = editableRecords[rowIndex];
+						const valueToCopy = aboveRecord[field.source];
+
+						// Copy the value
+						currentRecord[field.source] = valueToCopy;
+
+						// Update the input element directly for immediate visual feedback
+						const input = event.target as HTMLInputElement;
+						if (input.type === 'checkbox') {
+							input.checked = !!valueToCopy;
+						} else {
+							input.value = valueToCopy ?? '';
+						}
+
+						// Trigger reactivity
+						editableRecords = [...editableRecords];
+					}
+				}
+				break;
 			case 'Enter':
 				event.preventDefault();
 				// Move to next row on Enter
@@ -787,9 +811,7 @@
 					// On last row - only create new row if current row has data
 					const currentRecord = editableRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
-						insertNewRow();
-						// insertNewRow sets currentCellRow, adjust to be at the end
-						currentCellRow = editableRecords.length - 1;
+						insertNewRow(true); // Append at end
 						currentCellCol = 0;
 						focusCell(currentCellRow, currentCellCol);
 					}
