@@ -55,13 +55,14 @@ type Field struct {
 
 // Action represents a page action/button
 type Action struct {
-	Name      string `yaml:"name" json:"name"`
-	Caption   string `yaml:"caption" json:"caption"`
-	Shortcut  string `yaml:"shortcut,omitempty" json:"shortcut,omitempty"`
-	Promoted  bool   `yaml:"promoted,omitempty" json:"promoted,omitempty"`
-	RunPage   int    `yaml:"run_page,omitempty" json:"run_page,omitempty"`       // Open another page
-	RunObject string `yaml:"run_object,omitempty" json:"run_object,omitempty"`   // Run codeunit, report, etc.
-	Enabled   bool   `yaml:"enabled,omitempty" json:"enabled"`                   // Default true
+	Name         string `yaml:"name" json:"name"`
+	Caption      string `yaml:"caption" json:"caption"`
+	Shortcut     string `yaml:"shortcut,omitempty" json:"shortcut,omitempty"`
+	Promoted     bool   `yaml:"promoted,omitempty" json:"promoted,omitempty"`
+	RunPage      int    `yaml:"run_page,omitempty" json:"run_page,omitempty"`             // Open another page
+	RunObject    string `yaml:"run_object,omitempty" json:"run_object,omitempty"`         // Run codeunit, report, etc.
+	Enabled      bool   `yaml:"enabled,omitempty" json:"enabled"`                         // Default true
+	WithProgress bool   `yaml:"with_progress,omitempty" json:"with_progress,omitempty"`   // Show progress modal for long-running codeunits
 }
 
 // MenuDefinition represents the menu structure
