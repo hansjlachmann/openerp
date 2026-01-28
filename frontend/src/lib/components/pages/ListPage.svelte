@@ -12,7 +12,7 @@
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import Modal from '../Modal.svelte';
 	import ProgressModal from '../ProgressModal.svelte';
-	import { startJob } from '$lib/services/jobs';
+	import { startJob, type SyncJobResult } from '$lib/services/jobs';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
@@ -273,7 +273,8 @@
 	);
 
 	// Handle running a codeunit
-	async function handleRunObject(runObject: string, withProgress: boolean = false) {
+	// The backend decides whether to use progress based on codeunit.UsesProgress()
+	async function handleRunObject(runObject: string) {
 		let codeunitId: number;
 
 		// Check if it's a field reference (format: "field:fieldname")
@@ -304,67 +305,59 @@
 			return;
 		}
 
-		// Run with progress modal (for long-running codeunits)
-		if (withProgress) {
-			progressModalOpen = true;
-			progressTitle = 'Processing...';
-			progressValue = 0;
-			progressMessage = '';
-			progressError = '';
+		// Show progress modal initially - backend decides if it's actually used
+		progressModalOpen = true;
+		progressTitle = 'Processing...';
+		progressValue = 0;
+		progressMessage = '';
+		progressError = '';
 
-			try {
-				await startJob(codeunitId, selectedRecord || {}, {
-					onProgress: (event) => {
-						progressValue = event.value;
-						if (event.message) {
-							progressMessage = event.message;
-						}
-					},
-					onComplete: (event) => {
-						progressValue = 100;
-						if (event.message) {
-							progressMessage = event.message;
-						}
-					},
-					onError: (err) => {
-						progressError = err;
+		try {
+			const result = await startJob(codeunitId, selectedRecord || {}, {
+				onProgress: (event) => {
+					progressValue = event.value;
+					if (event.message) {
+						progressMessage = event.message;
 					}
-				});
+				},
+				onComplete: (event) => {
+					progressValue = 100;
+					if (event.message) {
+						progressMessage = event.message;
+					}
+				},
+				onError: (err) => {
+					progressError = err;
+				},
+				onSyncResult: (syncResult) => {
+					// Sync result - close progress modal immediately and show dialog/toast
+					progressModalOpen = false;
+					if (syncResult.success) {
+						if (syncResult.dialog) {
+							dialogData = syncResult.dialog;
+							dialogOpen = true;
+						} else {
+							toast.success(syncResult.message || 'Codeunit executed successfully');
+						}
+					} else {
+						toast.error(syncResult.message || 'Codeunit execution failed');
+					}
+				}
+			});
 
-				// Keep modal open briefly to show 100%
+			// For async jobs, keep modal open briefly to show 100%
+			if (result && 'job_id' in result) {
 				await new Promise((resolve) => setTimeout(resolve, 500));
 				progressModalOpen = false;
-
 				if (!progressError) {
 					toast.success('Job completed successfully');
 				}
-			} catch (err) {
-				progressError = err instanceof Error ? err.message : 'Unknown error';
-				// Keep modal open to show error
-				await new Promise((resolve) => setTimeout(resolve, 2000));
-				progressModalOpen = false;
-			}
-			return;
-		}
-
-		// Run synchronously (original behavior)
-		try {
-			const result = await api.runCodeunit(codeunitId, selectedRecord || {});
-			if (result.success) {
-				// Check if a dialog should be shown
-				if (result.dialog) {
-					dialogData = result.dialog;
-					dialogOpen = true;
-				} else {
-					toast.success(result.message || 'Codeunit executed successfully');
-				}
-			} else {
-				toast.error(result.message || 'Codeunit execution failed');
 			}
 		} catch (err) {
-			console.error('Error running codeunit:', err);
-			const message = err instanceof Error ? err.message : 'Failed to run codeunit';
-			toast.error(message);
+			progressError = err instanceof Error ? err.message : 'Unknown error';
+			// Keep modal open to show error
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+			progressModalOpen = false;
 		}
 	}
 
@@ -373,7 +366,7 @@
 		// Check if the action has a run_object
 		const action = page.page.actions?.find(a => a.name === actionName);
 		if (action?.run_object) {
-			await handleRunObject(action.run_object, action.with_progress === true);
+			await handleRunObject(action.run_object);
 			return;
 		}
 

@@ -45,6 +45,11 @@ func (c *HelloWorld) SourceTable() string {
 	return "Job_Queue"
 }
 
+// UsesProgress returns false - HelloWorld shows a message dialog, not progress
+func (c *HelloWorld) UsesProgress() bool {
+	return false
+}
+
 // Run executes the codeunit with the given record
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	var LogQueueEntries tables.JobQueueEntry
@@ -57,9 +62,9 @@ func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 		nextEntryNo = LogQueueEntries.Entry_no + 1
 	}
 	LogQueueEntries.Entry_no = nextEntryNo
-	LogQueueEntries.Status = 1
+	LogQueueEntries.Status = 0
 	LogQueueEntries.User_id = types.NewCode(fcodeunits.CurrentUserID())
-	LogQueueEntries.Description = "Hello World"
+	LogQueueEntries.Description = jobQueue.Description
 	LogQueueEntries.Job_queue_no = jobQueue.No
 	LogQueueEntries.Start_date_time = types.Now()
 	LogQueueEntries.End_date_time = types.Now()

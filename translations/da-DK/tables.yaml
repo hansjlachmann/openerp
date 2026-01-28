@@ -1,0 +1,174 @@
+# Danish (Denmark) translations for tables
+# Table captions and field captions
+
+tables:
+  # Payment Terms (Table 3)
+  payment_terms:
+    caption: "Betalingsbetingelser"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      active: "Aktiv"
+      due_date_calculation: "Forfaldsdatoberegning"
+      discount_date_calculation: "Kontantrabatdatoberegning"
+      discount_percent: "Rabat %"
+
+  # Customer (Table 18)
+  customer:
+    caption: "Debitor"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      address: "Adresse"
+      post_code: "Postnr."
+      city: "By"
+      phonenumber: "Telefonnr."
+      email: "E-mail"
+      payment_terms_code: "Betalingsbetingelseskode"
+      credit_limit: "Kreditmaksimum (RV)"
+      balance_lcy: "Saldo (RV)"
+      sales_lcy: "Salg (RV)"
+      no_of_ledger_entries: "Antal poster"
+      last_order_date: "Sidste ordredato"
+      created_at: "Oprettet"
+      status: "Status"
+
+    # Option field values
+    options:
+      status:
+        open: "Åben"
+        blocked: "Spærret"
+        closed: "Lukket"
+
+  # Customer Ledger Entry (Table 21)
+  customer_ledger_entry:
+    caption: "Debitorpost"
+    fields:
+      entry_no: "Løbenr."
+      customer_no: "Debitornr."
+      sell_to_customer_no: "Kundenr."
+      posting_date: "Bogføringsdato"
+      document_date: "Bilagsdato"
+      document_type: "Bilagstype"
+      document_no: "Bilagsnr."
+      external_document_no: "Eksternt bilagsnr."
+      description: "Beskrivelse"
+      currency_code: "Valutakode"
+      amount: "Beløb"
+      remaining_amount: "Restbeløb"
+      closed_by_amount: "Lukket af beløb"
+      original_amount_lcy: "Oprindeligt beløb (RV)"
+      remaining_amt_lcy: "Restbeløb (RV)"
+      amount_lcy: "Beløb (RV)"
+      closed_by_amount_lcy: "Lukket af beløb (RV)"
+      sales_lcy: "Salg (RV)"
+      profit_lcy: "Avance (RV)"
+      inv_discount_lcy: "Fakturarabat (RV)"
+      pmt_discount_date: "Kontantrabatdato"
+      pmt_disc_possible: "Kontantrabat mulig"
+      pmt_disc_given_lcy: "Kontantrabat givet (RV)"
+      customer_posting_group: "Debitorbogføringsgruppe"
+      department_code: "Afdelingskode"
+      project_code: "Sagskode"
+      salesperson_code: "Sælgerkode"
+      user_id: "Bruger-id"
+      source_code: "Kildekode"
+      reason_code: "Årsagskode"
+      journal_batch_name: "Kladdenavn"
+      transaction_no: "Transaktionsnr."
+      applies_to_doc_type: "Udligningsbilagstype"
+      applies_to_doc_no: "Udligningsbilagsnr."
+      applies_to_id: "Udlignings-id"
+      open: "Åben"
+      positive: "Positiv"
+      on_hold: "Afvent"
+      due_date: "Forfaldsdato"
+      closed_by_entry_no: "Lukket af løbenr."
+      closed_at_date: "Lukket den"
+      bal_account_type: "Modkontotype"
+      bal_account_no: "Modkontonr."
+
+    # Option field values
+    options:
+      document_type:
+        " ": " "
+        payment: "Betaling"
+        invoice: "Faktura"
+        credit_memo: "Kreditnota"
+        finance_charge_memo: "Rentenota"
+        reminder: "Rykker"
+
+      bal_account_type:
+        g_l_account: "Finanskonto"
+        customer: "Debitor"
+        vendor: "Kreditor"
+        bank_account: "Bankkonto"
+        fixed_asset: "Anlægsaktiv"
+
+  # User (Table 5100)
+  user:
+    caption: "Bruger"
+    fields:
+      user_id: "Bruger-id"
+      user_name: "Brugernavn"
+      email: "E-mail"
+      language: "Sprog"
+      menu: "Menu"
+      active: "Aktiv"
+      created_at: "Oprettet"
+      last_login: "Seneste login"
+
+  # Language (Table 8)
+  language:
+    caption: "Sprog"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      translation_key: "Oversættelsesnøgle"
+
+  # Menu (Table 9)
+  menu:
+    caption: "Menu"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      filename: "Filnavn"
+
+  # Job Queue (Table 472)
+  job_queue:
+    caption: "Opgavekø"
+    fields:
+      no: "Nr."
+      description: "Beskrivelse"
+      description_2: "Beskrivelse 2"
+      status: "Status"
+      object_id_to_run: "Objekt-id til kørsel"
+      next_start: "Næste start"
+      minutes_between_run: "Minutter mellem kørsel"
+      recurring_job: "Tilbagevendende opgave"
+
+    # Option field values
+    options:
+      status:
+        on_hold: "Afvent"
+        ready: "Klar"
+        error: "Fejl"
+
+  # Job Queue Entry (Table 473)
+  job_queue_entry:
+    caption: "Opgavekøpost"
+    fields:
+      entry_no: "Løbenr."
+      job_queue_no: "Opgavekønr."
+      status: "Status"
+      user_id: "Bruger-id"
+      description: "Beskrivelse"
+      start_date_time: "Startdato/-tidspunkt"
+      end_date_time: "Slutdato/-tidspunkt"
+
+    # Option field values
+    options:
+      status:
+        success: "Udført"
+        in_process: "Igangværende"
+        error: "Fejl"

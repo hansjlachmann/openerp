@@ -79,7 +79,29 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	table.InitWithDBType(h.db, company, h.dbType)
 	table.FromMap(req.Record)
 
-	// Create a dialog for progress tracking
+	// Check if codeunit uses progress - if not, run synchronously
+	if !codeunit.UsesProgress() {
+		// Run synchronously and return result directly
+		result, err := codeunit.Run(table)
+		if err != nil {
+			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+
+		// Return the result with dialog info if present
+		response := map[string]interface{}{
+			"success": result.Success,
+			"message": result.Message,
+		}
+		if result.Data != nil {
+			response["data"] = result.Data
+		}
+		if result.Dialog != nil {
+			response["dialog"] = result.Dialog
+		}
+		return c.JSON(apitypes.NewSuccessResponse(response))
+	}
+
+	// Codeunit uses progress - run async with SSE
 	dialog := fcodeunits.OpenDialog("Processing...")
 	jobID := dialog.JobID()
 

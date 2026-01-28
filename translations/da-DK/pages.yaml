@@ -1,0 +1,39 @@
+# Danish (Denmark) translations for pages
+# Page captions
+
+pages:
+  # Customer pages
+  customer_card:
+    caption: "Debitorkort"
+  customer_list:
+    caption: "Debitoroversigt"
+
+  # Customer Ledger Entry pages
+  customer_ledger_entries:
+    caption: "Debitorposter"
+
+  # Payment Terms pages
+  payment_terms_card:
+    caption: "Betalingsbetingelseskort"
+  payment_terms_list:
+    caption: "Betalingsbetingelser"
+
+  # User pages
+  user_card:
+    caption: "Brugerkort"
+  user_list:
+    caption: "Brugere"
+
+  # Language pages
+  languages:
+    caption: "Sprog"
+
+  # Menu pages
+  menus:
+    caption: "Menuer"
+
+  # Job Queue pages
+  job_queue_list:
+    caption: "Opgavekø"
+  job_queue_entries_list:
+    caption: "Opgavekøposter"

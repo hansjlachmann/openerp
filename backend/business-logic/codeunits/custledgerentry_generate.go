@@ -49,6 +49,11 @@ func (c *CustLedgerEntryGenerate) SourceTable() string {
 	return "Customer"
 }
 
+// UsesProgress returns false - this codeunit returns a direct result
+func (c *CustLedgerEntryGenerate) UsesProgress() bool {
+	return false
+}
+
 // Run executes the codeunit with the given record
 func (c *CustLedgerEntryGenerate) Run(record interface{}) (fcodeunits.Result, error) {
 	customer, ok := record.(*tables.Customer)

@@ -1,0 +1,49 @@
+# Danish (Denmark) common translations
+# Shared terms across all objects
+
+common:
+  # Navigation
+  navigation:
+    home: "Hjem"
+
+  # Common actions
+  actions:
+    new: "Ny"
+    edit: "Rediger"
+    delete: "Slet"
+    post: "Bogfør"
+    ok: "OK"
+    cancel: "Annuller"
+    close: "Luk"
+    save: "Gem"
+    refresh: "Opdater"
+    search: "Søg"
+    filter: "Filtrer"
+    print: "Udskriv"
+    export: "Eksporter"
+    import: "Importer"
+
+  # Common messages
+  messages:
+    confirm_delete: "Er du sikker på, at du vil slette?"
+    record_saved: "Post gemt"
+    record_deleted: "Post slettet"
+    no_records_found: "Ingen poster fundet"
+    please_wait: "Vent venligst..."
+    loading: "Indlæser..."
+    error_occurred: "Der opstod en fejl"
+
+  # Common terms
+  terms:
+    lcy: "RV"  # Regnskabsvaluta (Local Currency)
+    yes: "Ja"
+    no: "Nej"
+    total: "Total"
+    subtotal: "Subtotal"
+    quantity: "Antal"
+    unit_price: "Enhedspris"
+    amount: "Beløb"
+    date: "Dato"
+    time: "Tid"
+    user: "Bruger"
+    status: "Status"
