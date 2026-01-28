@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -97,8 +98,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// NAV proxy service URL (hardcoded for customer environment)
 	baseURL := "http://10.217.10.86:5009"
 
-	// Generate a unique job ID for this run
-	jobID := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+	// Generate a unique job ID (exactly 20 alphanumeric characters)
+	// Format: YYMMDDHHMMSS (12 chars) + random alphanumeric (8 chars)
+	jobID := generateJobID()
 
 	// Build the input JSON from job queue parameters
 	// For now, we expect the job queue description to contain the report ID
@@ -263,4 +265,22 @@ func extractProgress(s string) int {
 		}
 	}
 	return 0
+}
+
+// generateJobID generates a unique 20-character alphanumeric job ID
+// Format: YYMMDDHHMMSS (12 chars) + random alphanumeric (8 chars)
+func generateJobID() string {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	now := time.Now()
+	// YYMMDDHHMMSS = 12 characters
+	timestamp := now.Format("060102150405")
+
+	// Generate 8 random alphanumeric characters
+	random := make([]byte, 8)
+	for i := range random {
+		random[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return timestamp + string(random)
 }
