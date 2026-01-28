@@ -40,6 +40,7 @@ page:
       promoted: true
       enabled: true
       run_object: field:object_id_to_run
+      with_progress: true
 
     - name: New
       caption: New

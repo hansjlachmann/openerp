@@ -106,6 +106,11 @@ func (s *Server) Setup() {
 	// Codeunit routes (generic handler)
 	api.Post("/codeunits/run", codeunitsHandler.RunCodeunit)
 
+	// Jobs routes (codeunits with progress)
+	jobsHandler := handlers.NewJobsHandlerWithDBType(s.db, s.dbType)
+	api.Post("/jobs/start", jobsHandler.StartJob)
+	api.Get("/jobs/:id/events", jobsHandler.GetJobEvents)
+
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
