@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.24](https://github.com/hansjlachmann/openerp/compare/v0.1.23...v0.1.24) (2026-01-28)
+
+
+### Features
+
+* add cancel button to progress modal for long-running jobs ([de5f16a](https://github.com/hansjlachmann/openerp/commit/de5f16a069f224504871d95996ae6a1f7dc573a6))
+
+
+### Bug Fixes
+
+* improve progress polling - poll immediately and robust parsing ([853a9e9](https://github.com/hansjlachmann/openerp/commit/853a9e909178c029977bbc3390b7b2ff37b64052))
+
 ## [0.1.23](https://github.com/hansjlachmann/openerp/compare/v0.1.22...v0.1.23) (2026-01-28)
 
 
