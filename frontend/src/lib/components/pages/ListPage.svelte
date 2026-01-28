@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import type { TableFilter, LookupData, DialogResult } from '$lib/types/api';
+	import { goto } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
@@ -167,8 +168,24 @@
 	// Window-level keyboard shortcuts (to capture before browser handles them)
 	$effect(() => {
 		function handleGlobalKeydown(event: KeyboardEvent) {
-			// Skip if modal is open or we're in an input field
+			// Skip if modal is open
 			if (modalOpen) return;
+
+			// Handle Escape specially - works even in input fields (NAV/BC behavior)
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				event.stopPropagation();
+				if (editMode) {
+					// Exit edit mode
+					toggleEditMode();
+				} else {
+					// Navigate back to main menu
+					goto('/');
+				}
+				return;
+			}
+
+			// Skip other shortcuts if we're in an input field
 			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
 			// Build shortcut key string
