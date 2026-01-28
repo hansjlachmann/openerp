@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -135,10 +136,19 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		}
 
 		// Send final result through dialog
-		if result.Dialog != nil {
+		if result.Data != nil {
+			// Close with data (e.g., PDF base64)
+			message := result.Message
+			if result.Dialog != nil {
+				message = result.Dialog.Message
+			}
+			dialog.CloseWithData(result.Data, message)
+		} else if result.Dialog != nil {
 			dialog.UpdateWithMessage(0, 100, result.Dialog.Message)
+			dialog.Close()
+		} else {
+			dialog.Close()
 		}
-		dialog.Close()
 	}()
 
 	// Return job ID immediately
@@ -190,10 +200,23 @@ func (h *JobsHandler) GetJobEvents(c *fiber.Ctx) error {
 					return
 				}
 
-				// Send progress event
-				data := fmt.Sprintf(`{"job_id":"%s","field":%d,"value":%d,"message":"%s","completed":%t,"error":"%s","timestamp":%d,"event_type":"%s","confirm_id":"%s"}`,
-					event.JobID, event.Field, event.Value, escapeJSON(event.Message), event.Completed, escapeJSON(event.Error), event.Timestamp, event.EventType, event.ConfirmID)
-				fmt.Fprintf(w, "event: progress\ndata: %s\n\n", data)
+				// Send progress event - use JSON marshal to include Data field
+				eventData := map[string]interface{}{
+					"job_id":     event.JobID,
+					"field":      event.Field,
+					"value":      event.Value,
+					"message":    event.Message,
+					"completed":  event.Completed,
+					"error":      event.Error,
+					"timestamp":  event.Timestamp,
+					"event_type": event.EventType,
+					"confirm_id": event.ConfirmID,
+				}
+				if event.Data != nil {
+					eventData["data"] = event.Data
+				}
+				jsonData, _ := json.Marshal(eventData)
+				fmt.Fprintf(w, "event: progress\ndata: %s\n\n", string(jsonData))
 				w.Flush()
 
 				if event.Completed {

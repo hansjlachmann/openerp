@@ -10,15 +10,16 @@ import (
 
 // ProgressEvent represents a progress update or dialog event
 type ProgressEvent struct {
-	JobID      string `json:"job_id"`
-	Field      int    `json:"field"`      // Field number (1-based, like NAV)
-	Value      int    `json:"value"`      // Current value (0-100 for progress)
-	Message    string `json:"message"`    // Optional message
-	Completed  bool   `json:"completed"`  // Job completed
-	Error      string `json:"error"`      // Error message if failed
-	Timestamp  int64  `json:"timestamp"`
-	EventType  string `json:"event_type,omitempty"` // "progress", "confirm", etc.
-	ConfirmID  string `json:"confirm_id,omitempty"` // Unique ID for confirm dialogs
+	JobID      string                 `json:"job_id"`
+	Field      int                    `json:"field"`                  // Field number (1-based, like NAV)
+	Value      int                    `json:"value"`                  // Current value (0-100 for progress)
+	Message    string                 `json:"message"`                // Optional message
+	Completed  bool                   `json:"completed"`              // Job completed
+	Error      string                 `json:"error"`                  // Error message if failed
+	Timestamp  int64                  `json:"timestamp"`
+	EventType  string                 `json:"event_type,omitempty"`   // "progress", "confirm", etc.
+	ConfirmID  string                 `json:"confirm_id,omitempty"`   // Unique ID for confirm dialogs
+	Data       map[string]interface{} `json:"data,omitempty"`         // Result data (e.g., PDF base64)
 }
 
 // Dialog represents a NAV-style dialog with progress bar support
@@ -128,6 +129,34 @@ func (d *Dialog) CloseWithError(err error) {
 		JobID:     d.jobID,
 		Completed: true,
 		Error:     err.Error(),
+		Timestamp: time.Now().UnixMilli(),
+	}:
+	case <-d.ctx.Done():
+	default:
+	}
+
+	time.AfterFunc(500*time.Millisecond, func() {
+		d.cancel()
+		jobRegistry.Remove(d.jobID)
+	})
+}
+
+// CloseWithData closes the dialog with result data (e.g., PDF base64)
+func (d *Dialog) CloseWithData(data map[string]interface{}, message string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.closed {
+		return
+	}
+	d.closed = true
+
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		Completed: true,
+		Message:   message,
+		Data:      data,
 		Timestamp: time.Now().UnixMilli(),
 	}:
 	case <-d.ctx.Done():
