@@ -1940,10 +1940,11 @@
 	.edit-cell-input {
 		display: block !important;
 		width: 100%;
-		height: auto !important;
+		height: 1.3em !important;
 		min-height: 0 !important;
-		padding: 2px 6px;
-		line-height: 1.3;
+		max-height: 1.3em !important;
+		padding: 2px 6px !important;
+		line-height: 1.3 !important;
 		font-size: 0.875rem;
 		background: transparent !important;
 		border: 0 !important;
@@ -1953,6 +1954,7 @@
 		-moz-appearance: none !important;
 		appearance: none !important;
 		margin: 0 !important;
+		box-sizing: content-box !important;
 	}
 
 	.edit-cell-input:focus {
@@ -1989,11 +1991,15 @@
 	.read-cell-content {
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 1.3em;
+		min-height: 1.3em;
+		max-height: 1.3em;
 		padding: 2px 6px;
 		line-height: 1.3;
 		font-size: 0.875rem;
 		margin: 0;
+		box-sizing: content-box;
+		overflow: hidden;
 	}
 
 	/* Primary key link - looks like a hyperlink */
