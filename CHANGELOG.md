@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.23](https://github.com/hansjlachmann/openerp/compare/v0.1.22...v0.1.23) (2026-01-28)
+
+
+### Features
+
+* add NavReportRunner codeunit for external report generation ([2f68dba](https://github.com/hansjlachmann/openerp/commit/2f68dba280c7f0119b1750266630e4b9eaad43fc))
+* generate 20-char alphanumeric JobId with timestamp ([7158b91](https://github.com/hansjlachmann/openerp/commit/7158b9154f3189699f92a0628f6adc3d45684342))
+* update NavReportRunner to use dedicated PDF endpoint ([a525860](https://github.com/hansjlachmann/openerp/commit/a525860d1bb55908b5b91d8605679aa5bf2c22e6))
+
+
+### Bug Fixes
+
+* remove unused escapeJSON function ([d351735](https://github.com/hansjlachmann/openerp/commit/d35173518a9286964ec3516d732c69e832131b66))
+
 ## [0.1.22](https://github.com/hansjlachmann/openerp/compare/v0.1.21...v0.1.22) (2026-01-28)
 
 
