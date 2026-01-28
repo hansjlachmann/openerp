@@ -194,12 +194,8 @@
 		return () => window.removeEventListener('keydown', handleGlobalKeydown, true);
 	});
 
-	// Auto-focus first cell when entering edit mode
-	$effect(() => {
-		if (editMode && currentCellRow >= 0 && currentCellCol >= 0) {
-			focusCell(currentCellRow, currentCellCol);
-		}
-	});
+	// Note: Focus is handled explicitly in toggleEditMode(), handleCellKeyDown(), and insertNewRow()
+	// No auto-focus effect needed - it interferes with user clicks
 
 	// Load customizations from localStorage on mount
 	$effect(() => {
@@ -485,6 +481,8 @@
 				// Start at the currently selected row, or first row if none selected
 				currentCellRow = selectedIndex >= 0 ? selectedIndex : 0;
 				currentCellCol = 0;
+				// Explicitly focus the cell (no effect needed)
+				focusCell(currentCellRow, currentCellCol);
 			}
 		} else {
 			// Exiting edit mode - reset state
@@ -519,10 +517,6 @@
 			const isNew = record._isNew === true;
 			const recordId = getRecordId(record, primaryKeyField);
 
-			// Remember current focus position before save
-			const focusRow = currentCellRow;
-			const focusCol = currentCellCol;
-
 			if (isNew) {
 				// New record - only save if user has entered some data
 				if (hasRecordData(record)) {
@@ -533,10 +527,6 @@
 					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering
 					Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
 					delete editableRecords[rowIndex]._isNew;
-					// Re-focus after save to maintain cursor position
-					if (focusRow >= 0 && focusCol >= 0) {
-						focusCell(focusRow, focusCol);
-					}
 					// Trigger parent update if callback exists
 					if (onsave) {
 						await onsave(savedRecord, true);
@@ -549,10 +539,6 @@
 				// Update record in place to preserve any _tempId
 				Object.assign(editableRecords[rowIndex], savedRecord);
 				if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
-				// Re-focus after save to maintain cursor position
-				if (focusRow >= 0 && focusCol >= 0) {
-					focusCell(focusRow, focusCol);
-				}
 				// Trigger parent update if callback exists
 				if (onsave) {
 					await onsave(savedRecord, false);
@@ -701,20 +687,67 @@
 				}
 				break;
 			case 'ArrowLeft':
-				event.preventDefault();
-				if (colIndex > 0) {
-					currentCellRow = rowIndex;
-					currentCellCol = colIndex - 1;
-					focusCell(currentCellRow, currentCellCol);
+				// Navigate to previous cell if: cursor at start OR entire text is selected (NAV/BC behavior)
+				// For non-text inputs (checkbox, etc.), always navigate
+				{
+					const input = event.target as HTMLInputElement;
+					const isTextInput = input.type === 'text' || input.type === 'number';
+					let shouldNavigate = !isTextInput; // Non-text inputs always navigate
+
+					if (isTextInput) {
+						const textLength = input.value?.length || 0;
+						const allSelected = input.selectionStart === 0 && input.selectionEnd === textLength && textLength > 0;
+						const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
+						shouldNavigate = allSelected || atStart;
+					}
+
+					if (shouldNavigate && colIndex > 0) {
+						event.preventDefault();
+						currentCellRow = rowIndex;
+						currentCellCol = colIndex - 1;
+						focusCell(currentCellRow, currentCellCol);
+					}
 				}
 				break;
 			case 'ArrowRight':
+				// Navigate to next cell if: cursor at end OR entire text is selected (NAV/BC behavior)
+				// For non-text inputs (checkbox, etc.), always navigate
+				{
+					const input = event.target as HTMLInputElement;
+					const isTextInput = input.type === 'text' || input.type === 'number';
+					let shouldNavigate = !isTextInput; // Non-text inputs always navigate
+
+					if (isTextInput) {
+						const textLength = input.value?.length || 0;
+						const allSelected = input.selectionStart === 0 && input.selectionEnd === textLength && textLength > 0;
+						const atEnd = input.selectionStart === textLength && input.selectionEnd === textLength;
+						shouldNavigate = allSelected || atEnd;
+					}
+
+					if (shouldNavigate && colIndex < cols.length - 1) {
+						event.preventDefault();
+						currentCellRow = rowIndex;
+						currentCellCol = colIndex + 1;
+						focusCell(currentCellRow, currentCellCol);
+					}
+				}
+				break;
 			case 'Tab':
 				event.preventDefault();
 				if (colIndex < cols.length - 1) {
 					currentCellRow = rowIndex;
 					currentCellCol = colIndex + 1;
 					focusCell(currentCellRow, currentCellCol);
+				}
+				break;
+			case 'F2':
+				// F2 enters edit mode: place cursor at start of text (NAV/BC behavior)
+				{
+					event.preventDefault();
+					const input = event.target as HTMLInputElement;
+					if (input.type === 'text' || input.type === 'number') {
+						input.setSelectionRange(0, 0);
+					}
 				}
 				break;
 			case 'Enter':
@@ -1497,6 +1530,10 @@
 												data-row={index}
 												data-col={colIndex}
 												bind:checked={record[field.source]}
+												onfocus={() => {
+													currentCellRow = index;
+													currentCellCol = colIndex;
+												}}
 												onchange={async () => {
 													await handleCellBlur(record, index);
 												}}
@@ -1510,6 +1547,10 @@
 											data-col={colIndex}
 											class="edit-cell-input"
 											bind:value={record[field.source]}
+											onfocus={() => {
+												currentCellRow = index;
+												currentCellCol = colIndex;
+											}}
 											onblur={async () => {
 												await handleCellBlur(record, index);
 											}}
