@@ -11,6 +11,8 @@
 		confirmMode?: boolean;
 		confirmMessage?: string;
 		onConfirmResponse?: (response: boolean) => void;
+		showCancel?: boolean;
+		onCancel?: () => void;
 	}
 
 	let {
@@ -21,7 +23,9 @@
 		error = '',
 		confirmMode = false,
 		confirmMessage = '',
-		onConfirmResponse
+		onConfirmResponse,
+		showCancel = false,
+		onCancel
 	}: Props = $props();
 
 	const displayPercent = $derived(Math.round(progress));
@@ -32,6 +36,10 @@
 
 	function handleNo() {
 		onConfirmResponse?.(false);
+	}
+
+	function handleCancel() {
+		onCancel?.();
 	}
 </script>
 
@@ -75,6 +83,12 @@
 					</div>
 					<span class="progress-percent">{displayPercent}%</span>
 				</div>
+
+				{#if showCancel}
+					<div class="cancel-container">
+						<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	</div>
@@ -175,5 +189,9 @@
 
 	.confirm-buttons {
 		@apply flex justify-end gap-3 mt-4;
+	}
+
+	.cancel-container {
+		@apply flex justify-end mt-4;
 	}
 </style>

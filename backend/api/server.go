@@ -111,6 +111,7 @@ func (s *Server) Setup() {
 	api.Post("/jobs/start", jobsHandler.StartJob)
 	api.Get("/jobs/:id/events", jobsHandler.GetJobEvents)
 	api.Post("/jobs/:id/confirm", jobsHandler.RespondToConfirm)
+	api.Post("/jobs/:id/cancel", jobsHandler.CancelJob)
 
 	// Health check
 	s.app.Get("/health", func(c *fiber.Ctx) error {

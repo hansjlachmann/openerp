@@ -36,6 +36,7 @@ export interface JobCallbacks {
 	onSyncResult?: (result: SyncJobResult) => void;
 	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
 	onData?: (data: Record<string, unknown>) => void; // Called when job returns data (e.g., PDF)
+	onJobStarted?: (jobId: string) => void; // Called when async job starts with job ID for cancellation
 }
 
 /**
@@ -63,6 +64,21 @@ export function downloadBase64PDF(base64Data: string, filename: string = 'docume
 	link.click();
 	document.body.removeChild(link);
 	URL.revokeObjectURL(url);
+}
+
+/**
+ * Cancel a running job
+ */
+export async function cancelJob(jobId: string): Promise<boolean> {
+	try {
+		const response = await fetch(`/api/jobs/${jobId}/cancel`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' }
+		});
+		return response.ok;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -97,6 +113,10 @@ export async function startJob(
 	if (result.data.job_id) {
 		// Async job - connect to SSE for progress updates
 		const jobId = result.data.job_id;
+
+		// Notify caller of job ID for potential cancellation
+		callbacks.onJobStarted?.(jobId);
+
 		return new Promise((resolve, reject) => {
 			const eventSource = new EventSource(`/api/jobs/${jobId}/events`);
 			let lastEvent: ProgressEvent | null = null;
