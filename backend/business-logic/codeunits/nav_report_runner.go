@@ -78,7 +78,13 @@ type StartJobResponse struct {
 type CheckJobResponse struct {
 	Result   string `json:"result"`
 	Progress int    `json:"progress,omitempty"`
-	PDF      string `json:"pdf,omitempty"`
+}
+
+// GetJobPdfResponse is the response from the PDF endpoint
+type GetJobPdfResponse struct {
+	JobID    string `json:"JobId"`
+	FileName string `json:"FileName"`
+	Base64   string `json:"Base64"`
 }
 
 // Run executes the codeunit - calls external NAV service and tracks progress
@@ -188,22 +194,40 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		// Check if job is complete
 		if progress >= 100 || checkResult.Result == "Completed" {
-			// Job complete - get the PDF
-			if checkResult.PDF != "" {
-				// PDF is included in response
-				return fcodeunits.Result{
-					Success: true,
-					Message: "Report generated successfully",
-					Data: map[string]interface{}{
-						"pdf":      checkResult.PDF,
-						"filename": fmt.Sprintf("Report_%s.pdf", jobID),
-					},
-				}, nil
+			// Job complete - fetch the PDF from dedicated endpoint
+			if dialog != nil {
+				dialog.UpdateWithMessage(1, 100, "Downloading PDF...")
 			}
 
-			// If no PDF in response, the service might return it differently
-			// For now, return success without PDF
-			return fcodeunits.Message("Report generation completed"), nil
+			pdfResp, err := c.client.Get(baseURL + "/api/nav/job/" + jobID + "/pdf")
+			if err != nil {
+				return fcodeunits.Error("Failed to download PDF: " + err.Error()), nil
+			}
+			defer pdfResp.Body.Close()
+
+			if pdfResp.StatusCode != http.StatusOK {
+				pdfBody, _ := io.ReadAll(pdfResp.Body)
+				return fcodeunits.Error(fmt.Sprintf("PDF download failed (status %d): %s", pdfResp.StatusCode, string(pdfBody))), nil
+			}
+
+			pdfBody, err := io.ReadAll(pdfResp.Body)
+			if err != nil {
+				return fcodeunits.Error("Failed to read PDF response: " + err.Error()), nil
+			}
+
+			var pdfResult GetJobPdfResponse
+			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
+				return fcodeunits.Error("Failed to parse PDF response: " + err.Error()), nil
+			}
+
+			return fcodeunits.Result{
+				Success: true,
+				Message: "Report generated successfully",
+				Data: map[string]interface{}{
+					"pdf":      pdfResult.Base64,
+					"filename": pdfResult.FileName,
+				},
+			}, nil
 		}
 	}
 }
