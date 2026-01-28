@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.20](https://github.com/hansjlachmann/openerp/compare/v0.1.19...v0.1.20) (2026-01-28)
+
+
+### Bug Fixes
+
+* support HTTP (non-secure) contexts for toast notifications ([3c55da2](https://github.com/hansjlachmann/openerp/commit/3c55da21f722d94c7f18b20f15f426864ada6b1d))
+
 ## [0.1.19](https://github.com/hansjlachmann/openerp/compare/v0.1.18...v0.1.19) (2026-01-28)
 
 
