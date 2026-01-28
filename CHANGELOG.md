@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.19](https://github.com/hansjlachmann/openerp/compare/v0.1.18...v0.1.19) (2026-01-28)
+
+
+### Features
+
+* add production docker-compose with pre-built images ([39a36cf](https://github.com/hansjlachmann/openerp/commit/39a36cfbb5fb9def3a0d6323e536d09bc701110b))
+
 ## [0.1.18](https://github.com/hansjlachmann/openerp/compare/v0.1.17...v0.1.18) (2026-01-28)
 
 
