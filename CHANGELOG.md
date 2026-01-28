@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.22](https://github.com/hansjlachmann/openerp/compare/v0.1.21...v0.1.22) (2026-01-28)
+
+
+### Features
+
+* add Escape key navigation in list pages (NAV/BC behavior) ([2e71d20](https://github.com/hansjlachmann/openerp/commit/2e71d200bbfb0ba73abd9a288af395d82c5265e8))
+* add F8 to copy value from cell above (NAV/BC behavior) ([422ded6](https://github.com/hansjlachmann/openerp/commit/422ded6494de75c06b3336c0c9ea2ab56b2a1915))
+* improve list page edit mode keyboard navigation (NAV/BC behavior) ([a1293e4](https://github.com/hansjlachmann/openerp/commit/a1293e4540215f7ee35c5fa714e53ce6a28ac7eb))
+
+
+### Bug Fixes
+
+* consistent row height between edit and view mode in list pages ([0aa0278](https://github.com/hansjlachmann/openerp/commit/0aa02785859fdecbc10c052d9ab8562cb80e53df))
+
 ## [0.1.21](https://github.com/hansjlachmann/openerp/compare/v0.1.20...v0.1.21) (2026-01-28)
 
 
