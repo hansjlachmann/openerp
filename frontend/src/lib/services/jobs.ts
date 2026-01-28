@@ -13,6 +13,7 @@ export interface ProgressEvent {
 	timestamp: number;
 	event_type?: string;
 	confirm_id?: string;
+	data?: Record<string, unknown>; // Result data (e.g., PDF base64)
 }
 
 export interface DialogResult {
@@ -34,6 +35,34 @@ export interface JobCallbacks {
 	onError?: (error: string) => void;
 	onSyncResult?: (result: SyncJobResult) => void;
 	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
+	onData?: (data: Record<string, unknown>) => void; // Called when job returns data (e.g., PDF)
+}
+
+/**
+ * Download a base64 PDF as a file
+ */
+export function downloadBase64PDF(base64Data: string, filename: string = 'document.pdf') {
+	// Remove data URL prefix if present
+	const base64Clean = base64Data.replace(/^data:application\/pdf;base64,/, '');
+
+	// Convert base64 to blob
+	const byteCharacters = atob(base64Clean);
+	const byteNumbers = new Array(byteCharacters.length);
+	for (let i = 0; i < byteCharacters.length; i++) {
+		byteNumbers[i] = byteCharacters.charCodeAt(i);
+	}
+	const byteArray = new Uint8Array(byteNumbers);
+	const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+	// Create download link
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = filename;
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
 }
 
 /**
@@ -87,6 +116,17 @@ export async function startJob(
 							callbacks.onError?.(event.error);
 							reject(new Error(event.error));
 						} else {
+							// Handle result data (e.g., PDF download)
+							if (event.data) {
+								callbacks.onData?.(event.data);
+
+								// Auto-download PDF if present
+								if (event.data.pdf && typeof event.data.pdf === 'string') {
+									const filename =
+										(event.data.filename as string) || 'document.pdf';
+									downloadBase64PDF(event.data.pdf, filename);
+								}
+							}
 							callbacks.onComplete?.(event);
 							resolve(event);
 						}
