@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -89,11 +88,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// Get the dialog for progress updates
 	dialog := fcodeunits.GetCurrentDialog()
 
-	// Get NAV proxy service URL from environment (default to localhost)
-	baseURL := os.Getenv("NAV_PROXY_URL")
-	if baseURL == "" {
-		baseURL = "http://localhost:5009"
-	}
+	// NAV proxy service URL (hardcoded for customer environment)
+	baseURL := "http://10.217.10.86:5009"
 
 	// Generate a unique job ID for this run
 	jobID := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
