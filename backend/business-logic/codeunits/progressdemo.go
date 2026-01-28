@@ -54,6 +54,11 @@ func (c *ProgressDemo) UsesProgress() bool {
 
 // Run executes the codeunit with progress updates
 func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
+	// Ask user to confirm before starting
+	if !fcodeunits.Confirm("Start progress demo?") {
+		return fcodeunits.Message("Progress demo cancelled."), nil
+	}
+
 	var LogQueueEntries tables.JobQueueEntry
 	jobQueue := record.(*tables.JobQueue)
 
