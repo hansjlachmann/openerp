@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
@@ -101,10 +102,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// Generate a unique job ID (exactly 20 alphanumeric characters)
 	// Format: YYMMDDHHMMSS (12 chars) + random alphanumeric (8 chars)
 	jobID := generateJobID()
+	log.Printf("[NavReportRunner] Generated job ID: %s", jobID)
 
 	// Build the input JSON from job queue parameters
 	// For now, we expect the job queue description to contain the report ID
 	inputJSON := fmt.Sprintf(`{"reportId":%s,"format":"PDF"}`, jobQueue.Description.String())
+	log.Printf("[NavReportRunner] Input JSON: %s", inputJSON)
 
 	// Update progress: Starting
 	if dialog != nil {
@@ -148,9 +151,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	startTime := time.Now()
 	firstPoll := true
 
+	log.Printf("[NavReportRunner] Starting progress polling for job %s", jobID)
+
 	for {
 		// Check if we've exceeded max wait time
 		if time.Since(startTime) > maxWaitTime {
+			log.Printf("[NavReportRunner] Job %s timed out", jobID)
 			return fcodeunits.Error("Report generation timed out after 15 minutes"), nil
 		}
 
@@ -161,8 +167,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		firstPoll = false
 
 		// Check job status
-		checkResp, err := c.client.Get(baseURL + "/api/nav/checkjob/" + jobID)
+		checkURL := baseURL + "/api/nav/checkjob/" + jobID
+		log.Printf("[NavReportRunner] Polling: GET %s", checkURL)
+
+		checkResp, err := c.client.Get(checkURL)
 		if err != nil {
+			log.Printf("[NavReportRunner] Poll error: %v", err)
 			// Log error but continue polling
 			if dialog != nil {
 				dialog.UpdateWithMessage(1, -1, "Connection error, retrying...")
@@ -174,21 +184,30 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		checkResp.Body.Close()
 
 		if err != nil {
+			log.Printf("[NavReportRunner] Failed to read response body: %v", err)
 			continue
 		}
 
+		log.Printf("[NavReportRunner] Poll response (status %d): %s", checkResp.StatusCode, string(body))
+
 		var checkResult CheckJobResponse
 		if err := json.Unmarshal(body, &checkResult); err != nil {
+			log.Printf("[NavReportRunner] JSON unmarshal failed, trying parseProgressResponse: %v", err)
 			// Try to parse the simple "Progress X" format
 			checkResult = parseProgressResponse(string(body))
 		}
+
+		log.Printf("[NavReportRunner] Parsed result: Result=%q, Progress=%d", checkResult.Result, checkResult.Progress)
 
 		// Update progress bar
 		progress := checkResult.Progress
 		if progress == 0 {
 			// Try to extract progress from result string "Progress X"
 			progress = extractProgress(checkResult.Result)
+			log.Printf("[NavReportRunner] Extracted progress from Result string: %d", progress)
 		}
+
+		log.Printf("[NavReportRunner] Updating dialog with progress: %d", progress)
 
 		if dialog != nil {
 			msg := fmt.Sprintf("Generating report... %d%%", progress)
@@ -196,10 +215,14 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				msg = "Report complete, downloading..."
 			}
 			dialog.UpdateWithMessage(1, progress, msg)
+			log.Printf("[NavReportRunner] Dialog updated: field=1, progress=%d, msg=%q", progress, msg)
+		} else {
+			log.Printf("[NavReportRunner] WARNING: dialog is nil, cannot update progress!")
 		}
 
 		// Check if job is complete
 		if progress >= 100 || checkResult.Result == "Completed" {
+			log.Printf("[NavReportRunner] Job %s complete, fetching PDF", jobID)
 			// Job complete - fetch the PDF from dedicated endpoint
 			if dialog != nil {
 				dialog.UpdateWithMessage(1, 100, "Downloading PDF...")
