@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.26](https://github.com/hansjlachmann/openerp/compare/v0.1.25...v0.1.26) (2026-01-29)
+
+
+### Features
+
+* add logging for POST request to NAV service ([f0f82d3](https://github.com/hansjlachmann/openerp/commit/f0f82d3801ebb40e2c4ae7a00a0f703c702b0975))
+* fire-and-forget POST to NAV service, poll immediately ([f78bc4c](https://github.com/hansjlachmann/openerp/commit/f78bc4c2b1db0f380e317373c5467f652304ea21))
+* improve report polling - check PDF endpoint every 5 seconds ([c963f3f](https://github.com/hansjlachmann/openerp/commit/c963f3fbba8edb3faba1dc827e0d75c8025343bd))
+
+
+### Bug Fixes
+
+* hardcode report ID to 121 for NAV proxy service ([40b6d4c](https://github.com/hansjlachmann/openerp/commit/40b6d4c0201bacc40bcd3f9d150c1dcf86f6021e))
+* reduce progress polling interval to 1 second ([df033b4](https://github.com/hansjlachmann/openerp/commit/df033b49b9fce8c70603840e45fca99ab5440d90))
+
 ## [0.1.25](https://github.com/hansjlachmann/openerp/compare/v0.1.24...v0.1.25) (2026-01-29)
 
 
