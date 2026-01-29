@@ -122,22 +122,29 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 	reqBody, err := json.Marshal(startReq)
 	if err != nil {
+		log.Printf("[NavReportRunner] Failed to marshal request: %v", err)
 		return fcodeunits.Error("Failed to marshal request: " + err.Error()), nil
 	}
 
+	startURL := baseURL + "/api/nav/startjob"
+	log.Printf("[NavReportRunner] POST %s with body: %s", startURL, string(reqBody))
+
 	resp, err := c.client.Post(
-		baseURL+"/api/nav/startjob",
+		startURL,
 		"application/json",
 		bytes.NewReader(reqBody),
 	)
 	if err != nil {
+		log.Printf("[NavReportRunner] POST failed: %v", err)
 		return fcodeunits.Error("Failed to start job: " + err.Error()), nil
 	}
 	defer resp.Body.Close()
 
+	startRespBody, _ := io.ReadAll(resp.Body)
+	log.Printf("[NavReportRunner] POST response (status %d): %s", resp.StatusCode, string(startRespBody))
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fcodeunits.Error(fmt.Sprintf("Start job failed (status %d): %s", resp.StatusCode, string(body))), nil
+		return fcodeunits.Error(fmt.Sprintf("Start job failed (status %d): %s", resp.StatusCode, string(startRespBody))), nil
 	}
 
 	// Update progress: Job started
