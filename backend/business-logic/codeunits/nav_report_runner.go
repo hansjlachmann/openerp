@@ -91,7 +91,7 @@ type GetJobPdfResponse struct {
 
 // Run executes the codeunit - calls external NAV service and tracks progress
 func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
-	jobQueue := record.(*tables.JobQueue)
+	_ = record.(*tables.JobQueue) // Not used for now - report ID is hardcoded
 
 	// Get the dialog for progress updates
 	dialog := fcodeunits.GetCurrentDialog()
@@ -104,9 +104,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	jobID := generateJobID()
 	log.Printf("[NavReportRunner] Generated job ID: %s", jobID)
 
-	// Build the input JSON from job queue parameters
-	// For now, we expect the job queue description to contain the report ID
-	inputJSON := fmt.Sprintf(`{"reportId":%s,"format":"PDF"}`, jobQueue.Description.String())
+	// Build the input JSON with hardcoded report ID (for now)
+	reportID := 121
+	inputJSON := fmt.Sprintf(`{"reportId":%d,"format":"PDF"}`, reportID)
 	log.Printf("[NavReportRunner] Input JSON: %s", inputJSON)
 
 	// Update progress: Starting
