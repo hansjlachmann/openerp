@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.25](https://github.com/hansjlachmann/openerp/compare/v0.1.24...v0.1.25) (2026-01-29)
+
+
+### Features
+
+* add detailed logging to NavReportRunner for debugging ([ae15a6f](https://github.com/hansjlachmann/openerp/commit/ae15a6fec6344e3e663189b33ce3d70f1a856eb0))
+
 ## [0.1.24](https://github.com/hansjlachmann/openerp/compare/v0.1.23...v0.1.24) (2026-01-28)
 
 
