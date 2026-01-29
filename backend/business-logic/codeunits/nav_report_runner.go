@@ -151,8 +151,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		dialog.UpdateWithMessage(1, 5, "Report job started, waiting for completion...")
 	}
 
-	// Step 2: Poll PDF endpoint every 5 seconds to check if ready
-	pollInterval := 5 * time.Second
+	// Step 2: Poll PDF endpoint every 1 second to check if ready
+	pollInterval := 1 * time.Second
 	maxWaitTime := 15 * time.Minute
 	startTime := time.Now()
 	firstPoll := true
