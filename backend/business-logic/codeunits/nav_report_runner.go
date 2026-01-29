@@ -114,7 +114,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		dialog.UpdateWithMessage(1, 0, "Starting report generation...")
 	}
 
-	// Step 1: Start the job via POST
+	// Step 1: Start the job via POST (fire-and-forget)
+	// The NAV service POST is synchronous and can take minutes, so we don't wait for it
 	startReq := StartJobRequest{
 		JobID:     jobID,
 		InputJSON: inputJSON,
@@ -127,25 +128,23 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	}
 
 	startURL := baseURL + "/api/nav/startjob"
-	log.Printf("[NavReportRunner] POST %s with body: %s", startURL, string(reqBody))
+	log.Printf("[NavReportRunner] POST %s (fire-and-forget) with body: %s", startURL, string(reqBody))
 
-	resp, err := c.client.Post(
-		startURL,
-		"application/json",
-		bytes.NewReader(reqBody),
-	)
-	if err != nil {
-		log.Printf("[NavReportRunner] POST failed: %v", err)
-		return fcodeunits.Error("Failed to start job: " + err.Error()), nil
-	}
-	defer resp.Body.Close()
-
-	startRespBody, _ := io.ReadAll(resp.Body)
-	log.Printf("[NavReportRunner] POST response (status %d): %s", resp.StatusCode, string(startRespBody))
-
-	if resp.StatusCode != http.StatusOK {
-		return fcodeunits.Error(fmt.Sprintf("Start job failed (status %d): %s", resp.StatusCode, string(startRespBody))), nil
-	}
+	// Fire POST in background goroutine - don't wait for response
+	go func() {
+		resp, err := c.client.Post(
+			startURL,
+			"application/json",
+			bytes.NewReader(reqBody),
+		)
+		if err != nil {
+			log.Printf("[NavReportRunner] Background POST failed: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		log.Printf("[NavReportRunner] Background POST response (status %d): %s", resp.StatusCode, string(respBody))
+	}()
 
 	// Update progress: Job started
 	if dialog != nil {
