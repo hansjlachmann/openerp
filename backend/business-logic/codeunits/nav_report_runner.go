@@ -40,7 +40,7 @@ func NewNavReportRunner(db database.Executor, company string, dbType database.DB
 		company: company,
 		dbType:  dbType,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 10 * time.Minute, // Long timeout for report generation
 		},
 	}
 }
@@ -152,13 +152,13 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		dialog.UpdateWithMessage(1, 5, "Report job started, waiting for completion...")
 	}
 
-	// Step 2: Poll for progress every 5 seconds
+	// Step 2: Poll PDF endpoint every 5 seconds to check if ready
 	pollInterval := 5 * time.Second
 	maxWaitTime := 15 * time.Minute
 	startTime := time.Now()
 	firstPoll := true
 
-	log.Printf("[NavReportRunner] Starting progress polling for job %s", jobID)
+	log.Printf("[NavReportRunner] Starting PDF polling for job %s", jobID)
 
 	for {
 		// Check if we've exceeded max wait time
@@ -173,87 +173,41 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 		firstPoll = false
 
-		// Check job status
-		checkURL := baseURL + "/api/nav/checkjob/" + jobID
-		log.Printf("[NavReportRunner] Polling: GET %s", checkURL)
+		// Check if PDF is ready
+		pdfURL := baseURL + "/api/nav/job/" + jobID + "/pdf"
+		log.Printf("[NavReportRunner] Polling PDF: GET %s", pdfURL)
 
-		checkResp, err := c.client.Get(checkURL)
+		pdfResp, err := c.client.Get(pdfURL)
 		if err != nil {
-			log.Printf("[NavReportRunner] Poll error: %v", err)
-			// Log error but continue polling
+			log.Printf("[NavReportRunner] PDF poll error: %v", err)
 			if dialog != nil {
 				dialog.UpdateWithMessage(1, -1, "Connection error, retrying...")
 			}
 			continue
 		}
 
-		body, err := io.ReadAll(checkResp.Body)
-		checkResp.Body.Close()
+		pdfBody, err := io.ReadAll(pdfResp.Body)
+		pdfResp.Body.Close()
 
 		if err != nil {
-			log.Printf("[NavReportRunner] Failed to read response body: %v", err)
+			log.Printf("[NavReportRunner] Failed to read PDF response body: %v", err)
 			continue
 		}
 
-		log.Printf("[NavReportRunner] Poll response (status %d): %s", checkResp.StatusCode, string(body))
+		log.Printf("[NavReportRunner] PDF poll response (status %d): %d bytes", pdfResp.StatusCode, len(pdfBody))
 
-		var checkResult CheckJobResponse
-		if err := json.Unmarshal(body, &checkResult); err != nil {
-			log.Printf("[NavReportRunner] JSON unmarshal failed, trying parseProgressResponse: %v", err)
-			// Try to parse the simple "Progress X" format
-			checkResult = parseProgressResponse(string(body))
-		}
-
-		log.Printf("[NavReportRunner] Parsed result: Result=%q, Progress=%d", checkResult.Result, checkResult.Progress)
-
-		// Update progress bar
-		progress := checkResult.Progress
-		if progress == 0 {
-			// Try to extract progress from result string "Progress X"
-			progress = extractProgress(checkResult.Result)
-			log.Printf("[NavReportRunner] Extracted progress from Result string: %d", progress)
-		}
-
-		log.Printf("[NavReportRunner] Updating dialog with progress: %d", progress)
-
-		if dialog != nil {
-			msg := fmt.Sprintf("Generating report... %d%%", progress)
-			if progress >= 100 {
-				msg = "Report complete, downloading..."
-			}
-			dialog.UpdateWithMessage(1, progress, msg)
-			log.Printf("[NavReportRunner] Dialog updated: field=1, progress=%d, msg=%q", progress, msg)
-		} else {
-			log.Printf("[NavReportRunner] WARNING: dialog is nil, cannot update progress!")
-		}
-
-		// Check if job is complete
-		if progress >= 100 || checkResult.Result == "Completed" {
-			log.Printf("[NavReportRunner] Job %s complete, fetching PDF", jobID)
-			// Job complete - fetch the PDF from dedicated endpoint
-			if dialog != nil {
-				dialog.UpdateWithMessage(1, 100, "Downloading PDF...")
-			}
-
-			pdfResp, err := c.client.Get(baseURL + "/api/nav/job/" + jobID + "/pdf")
-			if err != nil {
-				return fcodeunits.Error("Failed to download PDF: " + err.Error()), nil
-			}
-			defer pdfResp.Body.Close()
-
-			if pdfResp.StatusCode != http.StatusOK {
-				pdfBody, _ := io.ReadAll(pdfResp.Body)
-				return fcodeunits.Error(fmt.Sprintf("PDF download failed (status %d): %s", pdfResp.StatusCode, string(pdfBody))), nil
-			}
-
-			pdfBody, err := io.ReadAll(pdfResp.Body)
-			if err != nil {
-				return fcodeunits.Error("Failed to read PDF response: " + err.Error()), nil
-			}
+		// If PDF is ready (status 200), return it
+		if pdfResp.StatusCode == http.StatusOK {
+			log.Printf("[NavReportRunner] PDF is ready for job %s", jobID)
 
 			var pdfResult GetJobPdfResponse
 			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
+				log.Printf("[NavReportRunner] Failed to parse PDF response: %v", err)
 				return fcodeunits.Error("Failed to parse PDF response: " + err.Error()), nil
+			}
+
+			if dialog != nil {
+				dialog.UpdateWithMessage(1, 100, "PDF ready, downloading...")
 			}
 
 			return fcodeunits.Result{
@@ -264,6 +218,48 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 					"filename": pdfResult.FileName,
 				},
 			}, nil
+		}
+
+		// PDF not ready - get progress from checkjob endpoint
+		checkURL := baseURL + "/api/nav/checkjob/" + jobID
+		log.Printf("[NavReportRunner] PDF not ready, checking progress: GET %s", checkURL)
+
+		checkResp, err := c.client.Get(checkURL)
+		if err != nil {
+			log.Printf("[NavReportRunner] Progress check error: %v", err)
+			continue
+		}
+
+		checkBody, err := io.ReadAll(checkResp.Body)
+		checkResp.Body.Close()
+
+		if err != nil {
+			continue
+		}
+
+		log.Printf("[NavReportRunner] Progress response: %s", string(checkBody))
+
+		// Parse progress
+		var checkResult CheckJobResponse
+		if err := json.Unmarshal(checkBody, &checkResult); err != nil {
+			checkResult = parseProgressResponse(string(checkBody))
+		}
+
+		progress := checkResult.Progress
+		if progress == 0 {
+			progress = extractProgress(checkResult.Result)
+		}
+
+		// Cap progress at 99 until PDF is actually ready
+		if progress >= 100 {
+			progress = 99
+		}
+
+		log.Printf("[NavReportRunner] Progress: %d%%", progress)
+
+		if dialog != nil {
+			msg := fmt.Sprintf("Generating report... %d%%", progress)
+			dialog.UpdateWithMessage(1, progress, msg)
 		}
 	}
 }
