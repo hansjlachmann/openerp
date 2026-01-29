@@ -2,11 +2,11 @@ package codeunits
 
 import (
 	"bytes"
+	cryptorand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -130,7 +130,10 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	startURL := baseURL + "/api/nav/startjob"
 	log.Printf("[NavReportRunner] POST %s (fire-and-forget) with body: %s", startURL, string(reqBody))
 
-	// Fire POST in background goroutine - don't wait for response
+	// Channel to communicate POST result - buffered so goroutine doesn't block
+	postResultCh := make(chan error, 1)
+
+	// Fire POST in background goroutine
 	go func() {
 		resp, err := c.client.Post(
 			startURL,
@@ -139,11 +142,21 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		)
 		if err != nil {
 			log.Printf("[NavReportRunner] Background POST failed: %v", err)
+			postResultCh <- err
 			return
 		}
 		defer resp.Body.Close()
 		respBody, _ := io.ReadAll(resp.Body)
 		log.Printf("[NavReportRunner] Background POST response (status %d): %s", resp.StatusCode, string(respBody))
+
+		// Check for non-success status codes
+		if resp.StatusCode >= 400 {
+			postResultCh <- fmt.Errorf("NAV service returned status %d: %s", resp.StatusCode, string(respBody))
+			return
+		}
+
+		// Signal success (nil error)
+		postResultCh <- nil
 	}()
 
 	// Update progress: Job started
@@ -164,6 +177,19 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if time.Since(startTime) > maxWaitTime {
 			log.Printf("[NavReportRunner] Job %s timed out", jobID)
 			return fcodeunits.Error("Report generation timed out after 15 minutes"), nil
+		}
+
+		// Check for POST errors (non-blocking)
+		select {
+		case postErr := <-postResultCh:
+			if postErr != nil {
+				log.Printf("[NavReportRunner] POST failed, stopping poll: %v", postErr)
+				return fcodeunits.Error("Failed to start report job: " + postErr.Error()), nil
+			}
+			// POST succeeded, continue polling
+			log.Printf("[NavReportRunner] POST succeeded, continuing to poll for PDF")
+		default:
+			// No result yet, continue polling
 		}
 
 		// Wait before polling (skip wait on first poll)
@@ -315,10 +341,17 @@ func generateJobID() string {
 	// YYMMDDHHMMSS = 12 characters
 	timestamp := now.Format("060102150405")
 
-	// Generate 8 random alphanumeric characters
+	// Generate 8 random alphanumeric characters using crypto/rand
+	randomBytes := make([]byte, 8)
+	if _, err := cryptorand.Read(randomBytes); err != nil {
+		// Fallback to timestamp-based uniqueness if crypto/rand fails
+		log.Printf("[NavReportRunner] crypto/rand failed: %v, using timestamp fallback", err)
+		return timestamp + "00000000"
+	}
+
 	random := make([]byte, 8)
 	for i := range random {
-		random[i] = charset[rand.Intn(len(charset))]
+		random[i] = charset[int(randomBytes[i])%len(charset)]
 	}
 
 	return timestamp + string(random)
