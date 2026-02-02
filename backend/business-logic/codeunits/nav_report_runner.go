@@ -164,13 +164,13 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		dialog.UpdateWithMessage(1, 5, "Report job started, waiting for completion...")
 	}
 
-	// Step 2: Poll PDF endpoint every 1 second to check if ready
+	// Step 2: Poll checkjob endpoint until progress reaches 100%
 	pollInterval := 1 * time.Second
 	maxWaitTime := 15 * time.Minute
 	startTime := time.Now()
 	firstPoll := true
 
-	log.Printf("[NavReportRunner] Starting PDF polling for job %s", jobID)
+	log.Printf("[NavReportRunner] Starting progress polling for job %s", jobID)
 
 	for {
 		// Check if we've exceeded max wait time
@@ -187,7 +187,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				return fcodeunits.Error("Failed to start report job: " + postErr.Error()), nil
 			}
 			// POST succeeded, continue polling
-			log.Printf("[NavReportRunner] POST succeeded, continuing to poll for PDF")
+			log.Printf("[NavReportRunner] POST succeeded, continuing to poll for progress")
 		default:
 			// No result yet, continue polling
 		}
@@ -198,60 +198,16 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 		firstPoll = false
 
-		// Check if PDF is ready
-		pdfURL := baseURL + "/api/nav/job/" + jobID + "/pdf"
-		log.Printf("[NavReportRunner] Polling PDF: GET %s", pdfURL)
-
-		pdfResp, err := c.client.Get(pdfURL)
-		if err != nil {
-			log.Printf("[NavReportRunner] PDF poll error: %v", err)
-			if dialog != nil {
-				dialog.UpdateWithMessage(1, -1, "Connection error, retrying...")
-			}
-			continue
-		}
-
-		pdfBody, err := io.ReadAll(pdfResp.Body)
-		pdfResp.Body.Close()
-
-		if err != nil {
-			log.Printf("[NavReportRunner] Failed to read PDF response body: %v", err)
-			continue
-		}
-
-		log.Printf("[NavReportRunner] PDF poll response (status %d): %d bytes", pdfResp.StatusCode, len(pdfBody))
-
-		// If PDF is ready (status 200), return it
-		if pdfResp.StatusCode == http.StatusOK {
-			log.Printf("[NavReportRunner] PDF is ready for job %s", jobID)
-
-			var pdfResult GetJobPdfResponse
-			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
-				log.Printf("[NavReportRunner] Failed to parse PDF response: %v", err)
-				return fcodeunits.Error("Failed to parse PDF response: " + err.Error()), nil
-			}
-
-			if dialog != nil {
-				dialog.UpdateWithMessage(1, 100, "PDF ready, downloading...")
-			}
-
-			return fcodeunits.Result{
-				Success: true,
-				Message: "Report generated successfully",
-				Data: map[string]interface{}{
-					"pdf":      pdfResult.Base64,
-					"filename": pdfResult.FileName,
-				},
-			}, nil
-		}
-
-		// PDF not ready - get progress from checkjob endpoint
+		// Check progress via checkjob endpoint
 		checkURL := baseURL + "/api/nav/checkjob/" + jobID
-		log.Printf("[NavReportRunner] PDF not ready, checking progress: GET %s", checkURL)
+		log.Printf("[NavReportRunner] Checking progress: GET %s", checkURL)
 
 		checkResp, err := c.client.Get(checkURL)
 		if err != nil {
 			log.Printf("[NavReportRunner] Progress check error: %v", err)
+			if dialog != nil {
+				dialog.UpdateWithMessage(1, -1, "Connection error, retrying...")
+			}
 			continue
 		}
 
@@ -259,6 +215,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		checkResp.Body.Close()
 
 		if err != nil {
+			log.Printf("[NavReportRunner] Failed to read progress response body: %v", err)
 			continue
 		}
 
@@ -275,16 +232,59 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			progress = extractProgress(checkResult.Result)
 		}
 
-		// Cap progress at 99 until PDF is actually ready
-		if progress >= 100 {
-			progress = 99
-		}
-
 		log.Printf("[NavReportRunner] Progress: %d%%", progress)
 
 		if dialog != nil {
 			msg := fmt.Sprintf("Generating report... %d%%", progress)
 			dialog.UpdateWithMessage(1, progress, msg)
+		}
+
+		// Only fetch PDF when progress reaches 100%
+		if progress >= 100 {
+			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
+
+			pdfURL := baseURL + "/api/nav/job/" + jobID + "/pdf"
+			log.Printf("[NavReportRunner] Fetching PDF: GET %s", pdfURL)
+
+			pdfResp, err := c.client.Get(pdfURL)
+			if err != nil {
+				log.Printf("[NavReportRunner] PDF fetch error: %v", err)
+				return fcodeunits.Error("Failed to fetch PDF: " + err.Error()), nil
+			}
+
+			pdfBody, err := io.ReadAll(pdfResp.Body)
+			pdfResp.Body.Close()
+
+			if err != nil {
+				log.Printf("[NavReportRunner] Failed to read PDF response body: %v", err)
+				return fcodeunits.Error("Failed to read PDF response: " + err.Error()), nil
+			}
+
+			log.Printf("[NavReportRunner] PDF response (status %d): %d bytes", pdfResp.StatusCode, len(pdfBody))
+
+			if pdfResp.StatusCode != http.StatusOK {
+				log.Printf("[NavReportRunner] PDF fetch returned status %d", pdfResp.StatusCode)
+				return fcodeunits.Error(fmt.Sprintf("PDF fetch failed with status %d", pdfResp.StatusCode)), nil
+			}
+
+			var pdfResult GetJobPdfResponse
+			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
+				log.Printf("[NavReportRunner] Failed to parse PDF response: %v", err)
+				return fcodeunits.Error("Failed to parse PDF response: " + err.Error()), nil
+			}
+
+			if dialog != nil {
+				dialog.UpdateWithMessage(1, 100, "PDF ready!")
+			}
+
+			return fcodeunits.Result{
+				Success: true,
+				Message: "Report generated successfully",
+				Data: map[string]interface{}{
+					"pdf":      pdfResult.Base64,
+					"filename": pdfResult.FileName,
+				},
+			}, nil
 		}
 	}
 }
