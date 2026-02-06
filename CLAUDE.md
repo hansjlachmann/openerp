@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OpenERP is a full-stack ERP system inspired by Microsoft Dynamics NAV/Business Central. Go backend (Fiber) + SvelteKit frontend + PostgreSQL/SQLite.
 
+**Required runtimes**: Go 1.24, Node.js 22. Always target these versions.
+
 ## Build & Run Commands
 
 ### Backend (Go 1.24)
