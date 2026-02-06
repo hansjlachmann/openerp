@@ -32,10 +32,10 @@ go run ./cmd/api-server
 ```bash
 cd frontend
 
-# Install dependencies.
+# Install dependencies
 npm install
 
-# Development server
+# Development server    
 npm run dev
 
 # Production build
