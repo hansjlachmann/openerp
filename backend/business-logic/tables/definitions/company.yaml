@@ -1,0 +1,19 @@
+table:
+  id: 10
+  name: "Company"
+  caption: Company
+  description: Company definitions
+  global: true  # Global table - no company prefix
+  fields:
+    - name: name
+      type: types.Code
+      db_name: name
+      caption: Name
+      primary_key: true
+      length: 100
+      required: true
+
+  keys:
+    - name: Primary
+      fields: [name]
+      clustered: true
