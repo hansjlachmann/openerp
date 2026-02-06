@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.29](https://github.com/hansjlachmann/openerp/compare/v0.1.28...v0.1.29) (2026-02-06)
+
+
+### Documentation
+
+* add CLAUDE.md with project rules and conventions ([7ebba1c](https://github.com/hansjlachmann/openerp/commit/7ebba1cbbc5f6d136dcdfa21d6944459ce683274))
+* add required runtimes Go 1.24 and Node.js 22 to CLAUDE.md ([1bf564f](https://github.com/hansjlachmann/openerp/commit/1bf564fcd680bfd6778141c4d97f4c2f1315c29f))
+* add Svelte 5 runes and i18n rules to CLAUDE.md ([8e82fc4](https://github.com/hansjlachmann/openerp/commit/8e82fc4cb67ee9f125c01fd5abc2e78e11c57b76))
+
 ## [0.1.28](https://github.com/hansjlachmann/openerp/compare/v0.1.27...v0.1.28) (2026-02-06)
 
 
