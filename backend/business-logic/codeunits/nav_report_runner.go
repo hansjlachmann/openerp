@@ -235,7 +235,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		log.Printf("[NavReportRunner] Progress: %d%%", progress)
 
 		if dialog != nil {
-			msg := fmt.Sprintf("Generating report... %d%%", progress)
+			msg := fmt.Sprintf("Generating report.... %d%%", progress)
 			dialog.UpdateWithMessage(1, progress, msg)
 		}
 
@@ -315,9 +315,9 @@ func parseProgressResponse(body string) CheckJobResponse {
 func extractProgress(s string) int {
 	// Try multiple patterns
 	patterns := []string{
-		`[Pp]rogress[:\s]+(\d+)`,  // "Progress 45" or "Progress: 45"
-		`(\d+)\s*%`,               // "45%" or "45 %"
-		`(\d+)`,                   // Just a number
+		`[Pp]rogress[:\s]+(\d+)`, // "Progress 45" or "Progress: 45"
+		`(\d+)\s*%`,              // "45%" or "45 %"
+		`(\d+)`,                  // Just a number
 	}
 
 	for _, pattern := range patterns {
