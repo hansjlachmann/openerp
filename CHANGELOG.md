@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.28](https://github.com/hansjlachmann/openerp/compare/v0.1.27...v0.1.28) (2026-02-06)
+
+
+### Bug Fixes
+
+* readme ([380234a](https://github.com/hansjlachmann/openerp/commit/380234a1612bbebd214d1f6f3a420216f909fc06))
+* readme ([a9d5f5e](https://github.com/hansjlachmann/openerp/commit/a9d5f5e8a2a79f4392f9397758bdd4079b2603e6))
+
 ## [0.1.27](https://github.com/hansjlachmann/openerp/compare/v0.1.26...v0.1.27) (2026-02-02)
 
 
