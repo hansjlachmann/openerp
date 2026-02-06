@@ -102,6 +102,8 @@ translations/            i18n JSON files
 - **TypeScript strict mode** with `checkJs` enabled
 - **Suppressed Svelte warnings**: `a11y_no_noninteractive_tabindex`, `a11y_no_noninteractive_element_interactions` (intentional tabindex patterns), `css_unused_selector` (Tailwind `@apply`)
 - **Tailwind with BC/NAV color scheme**: `text-nav-blue` (#002050), `text-nav-lightblue` (#4472c4), font: Segoe UI. Dark mode via `class` strategy.
+- **Svelte 5 runes**: Always use runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`) — never legacy Svelte 4 patterns (`export let`, `$:`, `$store` syntax).
+- **i18n**: All labels and field captions in the frontend must come from backend translation files — never hardcode display text in Svelte components.
 - **BC/NAV keyboard shortcuts**: Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
 
 ## API Response Format
