@@ -1,0 +1,25 @@
+table:
+  id: 5130
+  name: "User_Role"
+  caption: User Role
+  description: User roles for permission management
+  global: true  # Global table - no company prefix
+  fields:
+    - name: code
+      type: types.Code
+      db_name: code
+      caption: Code
+      primary_key: true
+      length: 20
+      required: true
+
+    - name: description
+      type: types.Text
+      db_name: description
+      caption: Description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

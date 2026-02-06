@@ -1,0 +1,57 @@
+table:
+  id: 5140
+  name: "User_Member"
+  caption: User Member
+  description: User role membership per company
+  global: true  # Global table - no company prefix
+  fields:
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      caption: User ID
+      primary_key: true
+      length: 50
+      required: true
+      table_relation:
+        table: User
+        field: user_id
+        lookup_columns:
+          - source: user_id
+            width: 150
+          - source: user_name
+            width: 200
+
+    - name: role_id
+      type: types.Code
+      db_name: role_id
+      caption: Role ID
+      primary_key: true
+      length: 20
+      required: true
+      table_relation:
+        table: User_Role
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 200
+
+    - name: company
+      type: types.Code
+      db_name: company
+      caption: Company
+      description: Leave blank for access to all companies
+      primary_key: true
+      length: 100
+      table_relation:
+        table: Company
+        field: name
+        lookup_columns:
+          - source: name
+            width: 200
+
+  keys:
+    - name: Primary
+      fields: [user_id, role_id, company]
+      clustered: true

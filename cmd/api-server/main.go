@@ -60,6 +60,15 @@ func main() {
 	if err := registry.RegisterTable(gtables.JobQueueEntryTableID, &tables.JobQueueEntry{}); err != nil {
 		log.Printf("Warning: Failed to register Job_Queue_Entry: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.CompanyTableID, &tables.Company{}); err != nil {
+		log.Printf("Warning: Failed to register Company: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.UserRoleTableID, &tables.UserRole{}); err != nil {
+		log.Printf("Warning: Failed to register User_Role: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.UserMemberTableID, &tables.UserMember{}); err != nil {
+		log.Printf("Warning: Failed to register User_Member: %v\n", err)
+	}
 
 	var db *database.Database
 	var companyName string

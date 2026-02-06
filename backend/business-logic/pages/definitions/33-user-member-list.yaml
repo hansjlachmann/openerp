@@ -1,0 +1,44 @@
+page:
+  id: 33
+  type: List
+  name: User Members
+  source_table: User_Member
+  caption: User Members
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: user_id
+          width: 200
+
+        - source: role_id
+          width: 150
+
+        - source: company
+          width: 200
+
+  actions:
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true
