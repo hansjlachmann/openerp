@@ -32,3 +32,11 @@ menu:
       - name: Job Queue Entries
         page_id: 673
         icon: list
+
+      - name: User Roles
+        page_id: 32
+        icon: shield
+
+      - name: User Members
+        page_id: 33
+        icon: users
