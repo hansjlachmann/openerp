@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.27](https://github.com/hansjlachmann/openerp/compare/v0.1.26...v0.1.27) (2026-02-02)
+
+
+### Bug Fixes
+
+* use crypto/rand for job IDs and propagate POST errors ([bd6dc5c](https://github.com/hansjlachmann/openerp/commit/bd6dc5c0ccdcf3368b361001e333a1e1bb7e602e))
+* wait for CheckJob 100% before fetching PDF ([2a48cd8](https://github.com/hansjlachmann/openerp/commit/2a48cd8de72c5ab601ca8bbbe51396190c04e3ff))
+
 ## [0.1.26](https://github.com/hansjlachmann/openerp/compare/v0.1.25...v0.1.26) (2026-01-29)
 
 
