@@ -99,7 +99,7 @@ translations/            i18n JSON files
 - **Global session**: The backend uses a single global `session.Session` variable (not per-request). All concurrent requests share the same session state. The `MenuBar` component is mounted once in the root layout and does NOT re-mount on client-side navigation — use `$effect` watching stores to reload data after login/logout.
 - **Migration ordering**: Migrations run BEFORE table sync in `EnterCompany`. If a migration needs to INSERT into a table, it must first ensure the table exists with `CREATE TABLE IF NOT EXISTS`. Use idempotent inserts (`ON CONFLICT DO NOTHING` for PostgreSQL, `INSERT OR IGNORE` for SQLite).
 - **Case-sensitive DB comparisons**: PostgreSQL string comparison is case-sensitive. Always use the canonical (uppercase) user ID from the database (e.g., `user.User_id.String()`) for permission and lookup queries — never use raw user input directly.
-- **Composite primary keys / delayed insert**: Tables can have composite primary keys (e.g., `User_Member` has `user_id + role_id + company`). `TableMetadata` stores `map[string][]string` for all PK fields. On the frontend, list pages with composite PKs delay `insertRecord` until all PK fields have values — matching NAV's `DelayedInsert` behavior.
+- **Composite primary keys**: Tables can have composite primary keys (e.g., `User_Member` has `user_id + role_id + company`). `TableMetadata` stores `map[string][]string` for all PK fields. The API uses comma-separated PK values in URLs (e.g., `/delete/HANS2,READER,TEST-COMPANY`), parsed by `parseRecordKey()` in the backend.
 
 ## Frontend Conventions
 
@@ -110,6 +110,17 @@ translations/            i18n JSON files
 - **i18n**: All labels and field captions in the frontend must come from backend translation files — never hardcode display text in Svelte components.
 - **BC/NAV keyboard shortcuts**: Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
 - **Code field behavior (ABSOLUTE RULE)**: Fields with `types.Code` must allow typing in any case, then auto-uppercase the value on blur (when the field loses focus). This matches standard NAV/BC behavior. Never force uppercase while typing — only convert on exit. Apply this everywhere Code fields are rendered: login forms, list page edit cells, card page fields, modal dialogs, and any other input bound to a Code field.
+
+## Generic List Page Behaviors
+
+All list page behaviors are driven by page metadata — never add table-specific logic in `ListPage.svelte` or `PageRenderer.svelte`.
+
+- **New record initialization**: When clicking New, all repeater fields are initialized to `""` (empty string). This ensures composite PK fields are defined from creation. Only one empty new row can exist at a time — clicking New again focuses the existing empty row.
+- **Delayed insert (NAV `DelayedInsert`)**: New records are not inserted until all **required** PK fields have non-empty values. Optional PK fields (e.g., `company` without `required: true`) can remain blank. The `required` flag is sent from the backend via table YAML metadata → `TableMetadata` → page field definitions.
+- **Lookup fields in edit mode**: Fields with `table_relation` render as `<input>` + `<datalist>` in edit mode — allowing both free text typing and dropdown selection. Never use `<select>` for lookup fields (it blocks typing). Saves on blur like regular text inputs.
+- **Composite key encoding**: `getRecordId()` joins all PK values with commas for composite keys. Empty string is a valid PK value (e.g., blank company = all companies access). The function accepts `primaryKeyFields` array for composite support.
+- **Cell blur auto-save**: On blur, existing records call `modifyRecord`, new records with all required PKs filled call `insertRecord`. Failed saves revert to original values.
+- **Keyboard navigation**: Arrow keys move between cells, Tab/Shift+Tab move horizontally, Enter on the last row creates a new row. Escape exits edit mode.
 
 ## API Response Format
 
