@@ -1,0 +1,57 @@
+page:
+  id: 34
+  type: Card
+  name: User Role Card
+  source_table: User_Role
+  caption: User Role Card
+  list_page_id: 32
+  enable_navigation: true
+  editable: true
+  focus_field: "code"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+            editable: true
+            caption: Code
+            importance: Promoted
+
+          - source: description
+            editable: true
+            caption: Description
+            importance: Promoted
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 32
+
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

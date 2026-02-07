@@ -40,3 +40,7 @@ menu:
       - name: User Members
         page_id: 33
         icon: users
+
+      - name: Permissions
+        page_id: 35
+        icon: lock
