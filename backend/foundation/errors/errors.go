@@ -50,6 +50,7 @@ const (
 	ErrCompanyListFailed    ErrorCode = "ERR_COMPANY_LIST_FAILED"
 	ErrCompanyAlreadyExists ErrorCode = "ERR_COMPANY_ALREADY_EXISTS"
 	ErrCompanyCreateFailed  ErrorCode = "ERR_COMPANY_CREATE_FAILED"
+	ErrCompanyAccessDenied  ErrorCode = "ERR_COMPANY_ACCESS_DENIED"
 
 	// Preferences
 	ErrPreferenceNotFound     ErrorCode = "ERR_PREFERENCE_NOT_FOUND"
@@ -292,6 +293,14 @@ func CompanyAlreadyExists(companyName string) *AppError {
 // CompanyCreateFailed creates an error for failed company creation
 func CompanyCreateFailed() *AppError {
 	return &AppError{Code: ErrCompanyCreateFailed}
+}
+
+// CompanyAccessDenied creates an error when user is not allowed to access a company
+func CompanyAccessDenied(companyName string) *AppError {
+	return &AppError{
+		Code:   ErrCompanyAccessDenied,
+		Params: []string{companyName},
+	}
 }
 
 // PreferenceNotFound creates an error for preference not found

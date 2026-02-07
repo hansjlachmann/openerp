@@ -27,6 +27,11 @@ func (m *Migration002SeedRoles) Description() string {
 }
 
 func (m *Migration002SeedRoles) Up(ctx *fmigrations.Context) error {
+	// Ensure tables exist (migrations run before table sync)
+	if err := m.ensureTables(ctx); err != nil {
+		return err
+	}
+
 	// Insert SUPER role (bypasses all permission checks via IsSuper flag)
 	if err := m.insertRole(ctx, "SUPER", "Full access - bypasses all permission checks"); err != nil {
 		return fmt.Errorf("failed to insert SUPER role: %w", err)
@@ -63,31 +68,58 @@ func (m *Migration002SeedRoles) Up(ctx *fmigrations.Context) error {
 }
 
 func (m *Migration002SeedRoles) insertRole(ctx *fmigrations.Context, code, description string) error {
-	query := `INSERT INTO "User_Role" (code, description) VALUES (%s, %s)`
-	p1, p2 := m.placeholders(ctx, 1, 2)
-	return ctx.ExecuteSQL(fmt.Sprintf(query, p1, p2), code, description)
+	var query string
+	if ctx.DBType == database.DBTypePostgres {
+		query = `INSERT INTO "User_Role" (code, description) VALUES ($1, $2) ON CONFLICT (code) DO NOTHING`
+	} else {
+		query = `INSERT OR IGNORE INTO "User_Role" (code, description) VALUES (?, ?)`
+	}
+	return ctx.ExecuteSQL(query, code, description)
 }
 
 func (m *Migration002SeedRoles) insertPermission(ctx *fmigrations.Context, roleID, tableName string, canRead, canInsert, canModify, canDelete bool) error {
-	query := `INSERT INTO "Permission" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES (%s, %s, %s, %s, %s, %s)`
-	p := make([]string, 6)
-	for i := range p {
-		p[i] = m.placeholder(ctx, i+1)
-	}
-	return ctx.ExecuteSQL(fmt.Sprintf(query, p[0], p[1], p[2], p[3], p[4], p[5]), roleID, tableName, canRead, canInsert, canModify, canDelete)
-}
-
-func (m *Migration002SeedRoles) placeholder(ctx *fmigrations.Context, n int) string {
+	var query string
 	if ctx.DBType == database.DBTypePostgres {
-		return fmt.Sprintf("$%d", n)
+		query = `INSERT INTO "Permission" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (role_id, table_name) DO NOTHING`
+	} else {
+		query = `INSERT OR IGNORE INTO "Permission" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES (?, ?, ?, ?, ?, ?)`
 	}
-	return "?"
+	return ctx.ExecuteSQL(query, roleID, tableName, canRead, canInsert, canModify, canDelete)
 }
 
-func (m *Migration002SeedRoles) placeholders(ctx *fmigrations.Context, nums ...int) (string, string) {
-	results := make([]string, len(nums))
-	for i, n := range nums {
-		results[i] = m.placeholder(ctx, n)
+
+func (m *Migration002SeedRoles) ensureTables(ctx *fmigrations.Context) error {
+	userRoleSQL := `CREATE TABLE IF NOT EXISTS "User_Role" (
+		code VARCHAR(20) NOT NULL DEFAULT '',
+		description VARCHAR(50) NOT NULL DEFAULT '',
+		PRIMARY KEY (code)
+	)`
+	if err := ctx.ExecuteSQL(userRoleSQL); err != nil {
+		return fmt.Errorf("failed to ensure User_Role table: %w", err)
 	}
-	return results[0], results[1]
+
+	userMemberSQL := `CREATE TABLE IF NOT EXISTS "User_Member" (
+		user_id VARCHAR(50) NOT NULL DEFAULT '',
+		role_id VARCHAR(20) NOT NULL DEFAULT '',
+		company VARCHAR(100) NOT NULL DEFAULT '',
+		PRIMARY KEY (user_id, role_id, company)
+	)`
+	if err := ctx.ExecuteSQL(userMemberSQL); err != nil {
+		return fmt.Errorf("failed to ensure User_Member table: %w", err)
+	}
+
+	permissionSQL := `CREATE TABLE IF NOT EXISTS "Permission" (
+		role_id VARCHAR(20) NOT NULL DEFAULT '',
+		table_name VARCHAR(100) NOT NULL DEFAULT '',
+		can_read BOOLEAN NOT NULL DEFAULT FALSE,
+		can_insert BOOLEAN NOT NULL DEFAULT FALSE,
+		can_modify BOOLEAN NOT NULL DEFAULT FALSE,
+		can_delete BOOLEAN NOT NULL DEFAULT FALSE,
+		PRIMARY KEY (role_id, table_name)
+	)`
+	if err := ctx.ExecuteSQL(permissionSQL); err != nil {
+		return fmt.Errorf("failed to ensure Permission table: %w", err)
+	}
+
+	return nil
 }

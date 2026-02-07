@@ -33,6 +33,22 @@
 		}
 	});
 
+	// Track previous user ID to detect login/logout changes
+	let prevUserID: string | null = null;
+
+	// Reload companies when user changes (login/logout/switch)
+	$effect(() => {
+		const user = $currentUser;
+		const userID = user?.user_id ?? null;
+		if (userID !== prevUserID) {
+			prevUserID = userID;
+			if (userID) {
+				// User just logged in - reload companies (filtered by access)
+				api.getCompanies().then(comps => { companies = comps; }).catch(() => {});
+			}
+		}
+	});
+
 	onMount(async () => {
 		try {
 			// Load current user info from storage

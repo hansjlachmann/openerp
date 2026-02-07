@@ -335,14 +335,6 @@
 							{/each}
 						{/if}
 					</select>
-					<button
-						class="new-company-btn"
-						onclick={() => { showNewCompanyForm = true; error = ''; }}
-						disabled={loading}
-						title="Create new company"
-					>
-						+
-					</button>
 				</div>
 			</div>
 
@@ -356,6 +348,7 @@
 					placeholder="Enter your user ID"
 					disabled={loading}
 					onkeypress={handleKeyPress}
+					onblur={() => { userID = userID.toUpperCase(); }}
 					autofocus
 				/>
 			</div>
