@@ -58,6 +58,9 @@ const (
 	ErrPreferenceSaveFailed   ErrorCode = "ERR_PREFERENCE_SAVE_FAILED"
 	ErrPreferenceDeleteFailed ErrorCode = "ERR_PREFERENCE_DELETE_FAILED"
 
+	// Permissions
+	ErrPermissionDenied ErrorCode = "ERR_PERMISSION_DENIED"
+
 	// Menu/Pages
 	ErrMenuNotFound  ErrorCode = "ERR_MENU_NOT_FOUND"
 	ErrPageNotFound  ErrorCode = "ERR_PAGE_NOT_FOUND"
@@ -314,6 +317,14 @@ func PreferenceSaveFailed() *AppError {
 // PreferenceDeleteFailed creates an error for failed preference deletion
 func PreferenceDeleteFailed() *AppError {
 	return &AppError{Code: ErrPreferenceDeleteFailed}
+}
+
+// PermissionDenied creates an error for permission denied on a table operation
+func PermissionDenied(operation, tableName string) *AppError {
+	return &AppError{
+		Code:   ErrPermissionDenied,
+		Params: []string{operation, tableName},
+	}
 }
 
 // MenuNotFound creates an error for menu not found
