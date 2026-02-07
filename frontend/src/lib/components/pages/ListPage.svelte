@@ -22,9 +22,9 @@
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, deepCopy, hasRecordChanged, isEmptyRecord, hasRecordData } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, isEmptyRecord, hasRecordData } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -56,6 +56,8 @@
 
 	// Get primary key field name from page definition
 	const primaryKeyField = $derived(getPrimaryKeyField(page));
+	// Get all primary key fields (supports composite keys for delayed insert)
+	const primaryKeyFieldsList = $derived(getPrimaryKeyFields(page));
 
 	// Customization state
 	let customizeModalOpen = $state(false);
@@ -535,8 +537,11 @@
 			const recordId = getRecordId(record, primaryKeyField);
 
 			if (isNew) {
-				// New record - only save if user has entered some data
-				if (hasRecordData(record)) {
+				// Delayed insert: only save when all primary key fields have values
+				const allPKsFilled = primaryKeyFieldsList.length === 0 || primaryKeyFieldsList.every(
+					pk => record[pk] !== undefined && record[pk] !== ''
+				);
+				if (hasRecordData(record) && allPKsFilled) {
 					// Remove temporary flags before saving
 					const { _isNew, _tempId, ...recordToSave } = record;
 					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
@@ -1579,6 +1584,28 @@
 												onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
 											/>
 										</div>
+									{:else if lookups[field.source]?.rows?.length}
+										<select
+											data-row={index}
+											data-col={colIndex}
+											class="edit-cell-input"
+											value={record[field.source] ?? ''}
+											onfocus={() => {
+												currentCellRow = index;
+												currentCellCol = colIndex;
+											}}
+											onchange={async (e) => {
+												const target = e.target as HTMLSelectElement;
+												record[field.source] = target.value;
+												await handleCellBlur(record, index);
+											}}
+											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+										>
+											<option value=""></option>
+											{#each lookups[field.source].rows as row}
+												<option value={row._key}>{row._key}</option>
+											{/each}
+										</select>
 									{:else}
 										<input
 											type="text"
@@ -1629,6 +1656,8 @@
 													<option value={optValue}>{optLabel}</option>
 												{/each}
 											</select>
+										{:else if lookups[field.source]?.rows?.length}
+											{formatLookupValue(record[field.source], lookups[field.source])}
 										{:else}
 											{formatOptionValue(record[field.source], options[field.source])}
 										{/if}

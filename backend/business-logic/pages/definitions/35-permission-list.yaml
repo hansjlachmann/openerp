@@ -11,6 +11,7 @@ page:
       fields:
         - source: role_id
           width: 150
+          table_relation: User_Role
 
         - source: table_name
           width: 200

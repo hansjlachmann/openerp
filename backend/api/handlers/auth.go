@@ -95,6 +95,12 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.InvalidCredentials().Message("en-US")))
 	}
 
+	// Check company access before proceeding (use canonical user ID from DB, not raw input)
+	allowed, _ := h.userHasCompanyAccess(user.User_id.String(), company)
+	if !allowed {
+		return c.Status(403).JSON(apitypes.NewErrorResponse(apperrors.CompanyAccessDenied(company).Message("en-US")))
+	}
+
 	// Update last login (ignore failure - non-critical)
 	user.UpdateLastLogin()
 	_ = user.Modify(false)
@@ -114,8 +120,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		sess.SetCompany(company)
 
 		// Load permissions for this user/company
-		isSuper, perms := h.loadUserPermissions(user.User_id.String(), company)
-		sess.SetPermissions(isSuper, perms)
+		hasRoles, isSuper, perms := h.loadUserPermissions(user.User_id.String(), company)
+		sess.SetPermissions(hasRoles, isSuper, perms)
 	}
 
 	ts := i18n.GetInstance()
@@ -259,25 +265,51 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// ListCompanies returns all available companies
+// ListCompanies returns available companies for the current user.
+// If the user is logged in and has role memberships, only returns companies they have access to.
+// If not logged in (login screen) or user has no roles, returns all companies.
 // GET /api/auth/companies
 func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
+	// Get all companies first
 	rows, err := h.db.Query(`SELECT name FROM "Company" ORDER BY name`)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 	}
 	defer rows.Close()
 
-	var companies []string
+	var allCompanies []string
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
 			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 		}
-		companies = append(companies, name)
+		allCompanies = append(allCompanies, name)
 	}
 
-	response := apitypes.NewSuccessResponse(companies)
+	// If user is logged in, filter by allowed companies
+	sess := session.GetCurrent()
+	if sess != nil && sess.GetUserID() != "" {
+		allowedCompanies, hasRoles := h.getUserAllowedCompanies(sess.GetUserID())
+		if hasRoles && allowedCompanies != nil {
+			// Filter to only allowed companies
+			filtered := make([]string, 0, len(allowedCompanies))
+			allowedSet := make(map[string]bool, len(allowedCompanies))
+			for _, c := range allowedCompanies {
+				allowedSet[strings.ToLower(c)] = true
+			}
+			for _, c := range allCompanies {
+				if allowedSet[strings.ToLower(c)] {
+					filtered = append(filtered, c)
+				}
+			}
+			response := apitypes.NewSuccessResponse(filtered)
+			return c.JSON(response)
+		}
+		// hasRoles=true but allowedCompanies=nil means blank company (all access)
+		// hasRoles=false means no roles configured, show all
+	}
+
+	response := apitypes.NewSuccessResponse(allCompanies)
 	return c.JSON(response)
 }
 
@@ -370,14 +402,23 @@ func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
+	// Check company access
+	userID := sess.GetUserID()
+	if userID != "" {
+		allowed, _ := h.userHasCompanyAccess(userID, requestBody.Company)
+		if !allowed {
+			language := getLanguageOrDefault(sess)
+			return c.Status(403).JSON(apitypes.NewErrorResponse(apperrors.CompanyAccessDenied(requestBody.Company).Message(language)))
+		}
+	}
+
 	// Update session company
 	sess.SetCompany(requestBody.Company)
 
 	// Reload permissions for the new company context
-	userID := sess.GetUserID()
 	if userID != "" {
-		isSuper, perms := h.loadUserPermissions(userID, requestBody.Company)
-		sess.SetPermissions(isSuper, perms)
+		hasRoles, isSuper, perms := h.loadUserPermissions(userID, requestBody.Company)
+		sess.SetPermissions(hasRoles, isSuper, perms)
 	}
 
 	ts := i18n.GetInstance()
@@ -450,10 +491,74 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// getUserAllowedCompanies returns the list of companies a user is allowed to access.
+// If the user has no User_Member records at all, returns (nil, false) — meaning the permission
+// system is not configured for this user and all companies are allowed.
+// If the user has memberships, returns the distinct company names (blank company = all companies).
+func (h *AuthHandler) getUserAllowedCompanies(userID string) ([]string, bool) {
+	var query string
+	if h.dbType == database.DBTypePostgres {
+		query = `SELECT DISTINCT company FROM "User_Member" WHERE user_id = $1`
+	} else {
+		query = `SELECT DISTINCT company FROM "User_Member" WHERE user_id = ?`
+	}
+
+	rows, err := h.db.Query(query, userID)
+	if err != nil {
+		return nil, false
+	}
+	defer rows.Close()
+
+	var companies []string
+	hasBlank := false
+	for rows.Next() {
+		var company string
+		if err := rows.Scan(&company); err != nil {
+			continue
+		}
+		if company == "" {
+			hasBlank = true
+		} else {
+			companies = append(companies, company)
+		}
+	}
+
+	// No memberships at all — permission system not configured for this user
+	if len(companies) == 0 && !hasBlank {
+		return nil, false
+	}
+
+	// Blank company means access to all companies
+	if hasBlank {
+		return nil, true
+	}
+
+	return companies, true
+}
+
+// userHasCompanyAccess checks if a user can access a specific company.
+// Returns (allowed, hasRoles). If hasRoles is false, all companies are allowed.
+func (h *AuthHandler) userHasCompanyAccess(userID, company string) (bool, bool) {
+	allowedCompanies, hasRoles := h.getUserAllowedCompanies(userID)
+	if !hasRoles {
+		return true, false // No roles = all access
+	}
+	if allowedCompanies == nil {
+		return true, true // Blank company = all companies
+	}
+	for _, c := range allowedCompanies {
+		if strings.EqualFold(c, company) {
+			return true, true
+		}
+	}
+	return false, true
+}
+
 // loadUserPermissions loads and merges all permissions for a user in a company.
 // Queries User_Member for the user's roles (matching the company or blank company = all companies),
 // then queries Permission for each role, merging with OR logic across roles.
-func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[string]session.TablePermission) {
+// loadUserPermissions returns (hasRoles, isSuper, permissions).
+func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, bool, map[string]session.TablePermission) {
 	permissions := make(map[string]session.TablePermission)
 
 	// Query User_Member for this user's roles
@@ -471,7 +576,7 @@ func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[str
 	rows, err := h.db.Query(query, args...)
 	if err != nil {
 		fmt.Printf("Warning: Failed to load user roles: %v\n", err)
-		return false, permissions
+		return false, false, permissions
 	}
 	defer rows.Close()
 
@@ -488,14 +593,14 @@ func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[str
 		}
 	}
 
-	// SUPER bypasses all checks — no need to load individual permissions
-	if isSuper {
-		return true, nil
+	// No roles assigned = permission system not configured for this user
+	if len(roleIDs) == 0 {
+		return false, false, permissions
 	}
 
-	// No roles assigned = deny everything
-	if len(roleIDs) == 0 {
-		return false, permissions
+	// SUPER bypasses all checks — no need to load individual permissions
+	if isSuper {
+		return true, true, nil
 	}
 
 	// Query Permission table for all assigned roles
@@ -518,7 +623,7 @@ func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[str
 	permRows, err := h.db.Query(permQuery, permArgs...)
 	if err != nil {
 		fmt.Printf("Warning: Failed to load permissions: %v\n", err)
-		return false, permissions
+		return true, false, permissions
 	}
 	defer permRows.Close()
 
@@ -538,5 +643,5 @@ func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[str
 		permissions[tableName] = existing
 	}
 
-	return false, permissions
+	return true, false, permissions
 }

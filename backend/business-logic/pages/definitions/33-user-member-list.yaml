@@ -11,12 +11,15 @@ page:
       fields:
         - source: user_id
           width: 200
+          table_relation: User
 
         - source: role_id
           width: 150
+          table_relation: User_Role
 
         - source: company
           width: 200
+          table_relation: Company
 
   actions:
     - name: New

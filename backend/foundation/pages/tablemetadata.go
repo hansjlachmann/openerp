@@ -11,7 +11,7 @@ import (
 
 // TableMetadata holds metadata about tables for page rendering
 type TableMetadata struct {
-	primaryKeys map[string]string // table name -> primary key field name
+	primaryKeys map[string][]string // table name -> primary key field names (supports composite keys)
 	mu          sync.RWMutex
 }
 
@@ -38,7 +38,7 @@ var (
 func GetTableMetadata() *TableMetadata {
 	tableMetadataOnce.Do(func() {
 		tableMetadata = &TableMetadata{
-			primaryKeys: make(map[string]string),
+			primaryKeys: make(map[string][]string),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -89,19 +89,32 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		return err
 	}
 
-	// Find the primary key field
+	// Find all primary key fields (supports composite keys)
+	var pkFields []string
 	for _, field := range tableDef.Table.Fields {
 		if field.PrimaryKey {
-			tm.primaryKeys[tableDef.Table.Name] = field.Name
-			break
+			pkFields = append(pkFields, field.Name)
 		}
+	}
+	if len(pkFields) > 0 {
+		tm.primaryKeys[tableDef.Table.Name] = pkFields
 	}
 
 	return nil
 }
 
-// GetPrimaryKeyField returns the primary key field name for a table
+// GetPrimaryKeyField returns the first primary key field name for a table
 func (tm *TableMetadata) GetPrimaryKeyField(tableName string) string {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	if fields := tm.primaryKeys[tableName]; len(fields) > 0 {
+		return fields[0]
+	}
+	return ""
+}
+
+// GetPrimaryKeyFields returns all primary key field names for a table (supports composite keys)
+func (tm *TableMetadata) GetPrimaryKeyFields(tableName string) []string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.primaryKeys[tableName]

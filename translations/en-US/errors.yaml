@@ -41,6 +41,7 @@ errors:
   ERR_COMPANY_LIST_FAILED: "Failed to list companies"
   ERR_COMPANY_ALREADY_EXISTS: "Company '%1' already exists"
   ERR_COMPANY_CREATE_FAILED: "Failed to create company"
+  ERR_COMPANY_ACCESS_DENIED: "You do not have access to company '%1'"
 
   # Preferences
   ERR_PREFERENCE_NOT_FOUND: "Preference not found"

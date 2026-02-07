@@ -65,11 +65,25 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 		// Build full table name (Company$TableName)
 		fullTableName := fmt.Sprintf("%s$%s", companyName, tableDef.GetTableName())
 
-		// Check if table exists
+		// Check if table exists (company-scoped: "company$Table")
 		exists, err := tableExists(db, fullTableName, dbType)
 		if err != nil {
 			failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to check existence: %v", tableID, tableDef.GetTableName(), err))
 			continue
+		}
+
+		// If company-prefixed table doesn't exist, check for global table (no prefix)
+		// Global tables (User, User_Role, etc.) use just the table name without company prefix
+		if !exists {
+			globalExists, globalErr := tableExists(db, tableDef.GetTableName(), dbType)
+			if globalErr != nil {
+				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to check global existence: %v", tableID, tableDef.GetTableName(), globalErr))
+				continue
+			}
+			if globalExists {
+				exists = true
+				fullTableName = tableDef.GetTableName() // Use non-prefixed name for schema sync
+			}
 		}
 
 		if exists {

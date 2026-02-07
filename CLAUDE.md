@@ -96,6 +96,10 @@ translations/            i18n JSON files
 - **Generic pages**: All frontend pages (list and card) must be fully generic — driven by page metadata from the backend, not hardcoded per table. Never create table-specific page components.
 - **Menu assignment**: The main menu is determined per user via `User.menu` → `Menu.code` (FK). The Menu table defines a `filename` pointing to a YAML menu definition. Main menu items must always be defined in backend YAML files — never hardcode menu items in the frontend.
 - **Frontend proxy**: Vite dev server proxies `/api` to the Go backend at `localhost:8080`.
+- **Global session**: The backend uses a single global `session.Session` variable (not per-request). All concurrent requests share the same session state. The `MenuBar` component is mounted once in the root layout and does NOT re-mount on client-side navigation — use `$effect` watching stores to reload data after login/logout.
+- **Migration ordering**: Migrations run BEFORE table sync in `EnterCompany`. If a migration needs to INSERT into a table, it must first ensure the table exists with `CREATE TABLE IF NOT EXISTS`. Use idempotent inserts (`ON CONFLICT DO NOTHING` for PostgreSQL, `INSERT OR IGNORE` for SQLite).
+- **Case-sensitive DB comparisons**: PostgreSQL string comparison is case-sensitive. Always use the canonical (uppercase) user ID from the database (e.g., `user.User_id.String()`) for permission and lookup queries — never use raw user input directly.
+- **Composite primary keys / delayed insert**: Tables can have composite primary keys (e.g., `User_Member` has `user_id + role_id + company`). `TableMetadata` stores `map[string][]string` for all PK fields. On the frontend, list pages with composite PKs delay `insertRecord` until all PK fields have values — matching NAV's `DelayedInsert` behavior.
 
 ## Frontend Conventions
 
@@ -105,6 +109,7 @@ translations/            i18n JSON files
 - **Svelte 5 runes**: Always use runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`) — never legacy Svelte 4 patterns (`export let`, `$:`, `$store` syntax).
 - **i18n**: All labels and field captions in the frontend must come from backend translation files — never hardcode display text in Svelte components.
 - **BC/NAV keyboard shortcuts**: Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
+- **Code field behavior (ABSOLUTE RULE)**: Fields with `types.Code` must allow typing in any case, then auto-uppercase the value on blur (when the field loses focus). This matches standard NAV/BC behavior. Never force uppercase while typing — only convert on exit. Apply this everywhere Code fields are rendered: login forms, list page edit cells, card page fields, modal dialogs, and any other input bound to a Code field.
 
 ## API Response Format
 

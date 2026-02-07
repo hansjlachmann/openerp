@@ -26,6 +26,34 @@ export function getPrimaryKeyField(page: PageDefinition | null | undefined): str
 }
 
 /**
+ * Get all primary key field names from a page definition (supports composite keys)
+ * Searches through sections (Card pages) and repeater (List pages) for fields with primary_key: true
+ */
+export function getPrimaryKeyFields(page: PageDefinition | null | undefined): string[] {
+	if (!page) return [];
+
+	const pkFields: string[] = [];
+
+	// Check repeater fields (List pages)
+	if (page.page.layout.repeater?.fields) {
+		for (const f of page.page.layout.repeater.fields) {
+			if (f.primary_key) pkFields.push(f.source);
+		}
+	}
+
+	// Check section fields (Card pages)
+	if (page.page.layout.sections) {
+		for (const section of page.page.layout.sections) {
+			for (const f of section.fields) {
+				if (f.primary_key) pkFields.push(f.source);
+			}
+		}
+	}
+
+	return pkFields;
+}
+
+/**
  * Extract the primary key/ID from a record
  * @param record - The record to extract ID from
  * @param primaryKeyField - Optional primary key field name (from page definition)

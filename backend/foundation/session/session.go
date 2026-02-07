@@ -37,6 +37,7 @@ type Session struct {
 	Language    string                     // Application language (e.g., "en-US", "de-DE")
 	Menu        string                     // Assigned menu profile (e.g., "admin", "sales")
 	IsSuper     bool                       // True if user has SUPER role (bypasses all permission checks)
+	HasRoles    bool                       // True if user has any role memberships assigned
 	Permissions map[string]TablePermission // Effective permissions per table name
 	transaction *sql.Tx                    // Active transaction (nil if not in transaction)
 }
@@ -107,14 +108,19 @@ func (s *Session) SetUser(userID, userName, language, menu string) {
 }
 
 // SetPermissions sets the effective permissions for the user
-func (s *Session) SetPermissions(isSuper bool, permissions map[string]TablePermission) {
+func (s *Session) SetPermissions(hasRoles, isSuper bool, permissions map[string]TablePermission) {
+	s.HasRoles = hasRoles
 	s.IsSuper = isSuper
 	s.Permissions = permissions
 }
 
-// HasPermission checks if the current user has the specified permission on a table
+// HasPermission checks if the current user has the specified permission on a table.
+// If the user has no roles assigned, all access is allowed (permission system not configured).
 func (s *Session) HasPermission(tableName string, op PermissionOperation) bool {
 	if s.IsSuper {
+		return true
+	}
+	if !s.HasRoles {
 		return true
 	}
 	if s.Permissions == nil {
