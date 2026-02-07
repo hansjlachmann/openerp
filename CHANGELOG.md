@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.29](https://github.com/hansjlachmann/openerp/compare/v0.1.28...v0.1.29) (2026-02-07)
+
+
+### Features
+
+* add permission enforcement middleware for table API routes ([8f1a455](https://github.com/hansjlachmann/openerp/commit/8f1a455c7309248cfc4ae1e518f1add5cb67ebe7))
+* add Permission table and session-based RBAC ([85d8c89](https://github.com/hansjlachmann/openerp/commit/85d8c8921652ffd422018cac785c14b98aabb718))
+* add translations for permission tables and seed default roles ([a4e93b0](https://github.com/hansjlachmann/openerp/commit/a4e93b05064d1eaee48e445ada4fea494de04d4a))
+* add User Role and User Member permission tables ([40b0cc3](https://github.com/hansjlachmann/openerp/commit/40b0cc3f5e528a562e129b0e6257f6e27c479642))
+* add User Role card page and Permission list page ([86ef6f0](https://github.com/hansjlachmann/openerp/commit/86ef6f0212f40cf1e25269e435a709dc755bdac1))
+
+
+### Documentation
+
+* add CLAUDE.md with project rules and conventions ([7ebba1c](https://github.com/hansjlachmann/openerp/commit/7ebba1cbbc5f6d136dcdfa21d6944459ce683274))
+* add required runtimes Go 1.24 and Node.js 22 to CLAUDE.md ([1bf564f](https://github.com/hansjlachmann/openerp/commit/1bf564fcd680bfd6778141c4d97f4c2f1315c29f))
+* add Svelte 5 runes and i18n rules to CLAUDE.md ([8e82fc4](https://github.com/hansjlachmann/openerp/commit/8e82fc4cb67ee9f125c01fd5abc2e78e11c57b76))
+
 ## [0.1.28](https://github.com/hansjlachmann/openerp/compare/v0.1.27...v0.1.28) (2026-02-06)
 
 
