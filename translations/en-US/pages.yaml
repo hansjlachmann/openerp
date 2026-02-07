@@ -32,6 +32,20 @@ pages:
   menus:
     caption: "Menus"
 
+  # User Role pages
+  user_role_card:
+    caption: "User Role Card"
+  user_role_list:
+    caption: "User Roles"
+
+  # User Member pages
+  user_member_list:
+    caption: "User Members"
+
+  # Permission pages
+  permission_list:
+    caption: "Permissions"
+
   # Job Queue pages
   job_queue_list:
     caption: "Job Queue"

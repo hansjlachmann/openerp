@@ -133,6 +133,38 @@ tables:
       description: "Beskrivelse"
       filename: "Filnavn"
 
+  # Company (Table 10)
+  company:
+    caption: "Selskap"
+    fields:
+      name: "Navn"
+
+  # User Role (Table 5130)
+  user_role:
+    caption: "Brukerrolle"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # User Member (Table 5140)
+  user_member:
+    caption: "Brukermedlem"
+    fields:
+      user_id: "Bruker-ID"
+      role_id: "Rolle-ID"
+      company: "Selskap"
+
+  # Permission (Table 5150)
+  permission:
+    caption: "Tillatelse"
+    fields:
+      role_id: "Rolle-ID"
+      table_name: "Tabellnavn"
+      can_read: "Les"
+      can_insert: "Opprett"
+      can_modify: "Endre"
+      can_delete: "Slett"
+
   # Job Queue (Table 472)
   job_queue:
     caption: "Jobbkø"

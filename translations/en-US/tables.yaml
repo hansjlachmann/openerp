@@ -134,6 +134,38 @@ tables:
       description: "Description"
       filename: "Filename"
 
+  # Company (Table 10)
+  company:
+    caption: "Company"
+    fields:
+      name: "Name"
+
+  # User Role (Table 5130)
+  user_role:
+    caption: "User Role"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # User Member (Table 5140)
+  user_member:
+    caption: "User Member"
+    fields:
+      user_id: "User ID"
+      role_id: "Role ID"
+      company: "Company"
+
+  # Permission (Table 5150)
+  permission:
+    caption: "Permission"
+    fields:
+      role_id: "Role ID"
+      table_name: "Table Name"
+      can_read: "Read"
+      can_insert: "Insert"
+      can_modify: "Modify"
+      can_delete: "Delete"
+
   # Job Queue (Table 472)
   job_queue:
     caption: "Job Queue"
