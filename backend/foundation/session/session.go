@@ -8,20 +8,37 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 )
 
+// PermissionOperation represents a CRUD operation type
+type PermissionOperation string
+
+const (
+	PermRead   PermissionOperation = "read"
+	PermInsert PermissionOperation = "insert"
+	PermModify PermissionOperation = "modify"
+	PermDelete PermissionOperation = "delete"
+)
+
+// TablePermission represents the effective permissions for a single table
+type TablePermission struct {
+	Read   bool
+	Insert bool
+	Modify bool
+	Delete bool
+}
+
 // Session represents a user session (similar to BC/NAV SESSION variable)
 // Contains database connection, current company, and other session state
 type Session struct {
-	DB          *database.Database // Database connection
-	Company     string             // Current company context
-	Scanner     *bufio.Scanner     // Input scanner (for CLI)
-	UserID      string             // Current user ID/username
-	UserName    string             // Current user full name
-	Language    string             // Application language (e.g., "en-US", "de-DE")
-	Menu        string             // Assigned menu profile (e.g., "admin", "sales")
-	transaction *sql.Tx            // Active transaction (nil if not in transaction)
-	// Future extensions:
-	// DateFormat string
-	// Permissions map[string]bool
+	DB          *database.Database         // Database connection
+	Company     string                     // Current company context
+	Scanner     *bufio.Scanner             // Input scanner (for CLI)
+	UserID      string                     // Current user ID/username
+	UserName    string                     // Current user full name
+	Language    string                     // Application language (e.g., "en-US", "de-DE")
+	Menu        string                     // Assigned menu profile (e.g., "admin", "sales")
+	IsSuper     bool                       // True if user has SUPER role (bypasses all permission checks)
+	Permissions map[string]TablePermission // Effective permissions per table name
+	transaction *sql.Tx                    // Active transaction (nil if not in transaction)
 }
 
 // Global current session (like BC/NAV SESSION global variable)
@@ -87,6 +104,37 @@ func (s *Session) SetUser(userID, userName, language, menu string) {
 	s.UserName = userName
 	s.Language = language
 	s.Menu = menu
+}
+
+// SetPermissions sets the effective permissions for the user
+func (s *Session) SetPermissions(isSuper bool, permissions map[string]TablePermission) {
+	s.IsSuper = isSuper
+	s.Permissions = permissions
+}
+
+// HasPermission checks if the current user has the specified permission on a table
+func (s *Session) HasPermission(tableName string, op PermissionOperation) bool {
+	if s.IsSuper {
+		return true
+	}
+	if s.Permissions == nil {
+		return false
+	}
+	perm, exists := s.Permissions[tableName]
+	if !exists {
+		return false
+	}
+	switch op {
+	case PermRead:
+		return perm.Read
+	case PermInsert:
+		return perm.Insert
+	case PermModify:
+		return perm.Modify
+	case PermDelete:
+		return perm.Delete
+	}
+	return false
 }
 
 // ========================================

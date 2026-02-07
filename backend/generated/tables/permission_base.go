@@ -13,12 +13,15 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// UserMemberBase represents Table 5140: User_Member
+// PermissionBase represents Table 5150: Permission
 // This is the generated base struct - embed in your wrapper struct and override Init
-type UserMemberBase struct {
-	User_id types.Code `db:"user_id,pk"`
+type PermissionBase struct {
 	Role_id types.Code `db:"role_id,pk"`
-	Company types.Code `db:"company,pk"`
+	Table_name types.Code `db:"table_name,pk"`
+	Can_read bool `db:"can_read"`
+	Can_insert bool `db:"can_insert"`
+	Can_modify bool `db:"can_modify"`
+	Can_delete bool `db:"can_delete"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -29,14 +32,14 @@ type UserMemberBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*userMemberBaseFilterCondition
+	filters map[string]*permissionBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*UserMemberBase
+	bufferedRecords []*PermissionBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -45,63 +48,69 @@ type UserMemberBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const UserMemberTableID = 5140
-const UserMemberTableName = "User_Member"
+const PermissionTableID = 5150
+const PermissionTableName = "Permission"
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *UserMemberBase) GetTableID() int {
-	return UserMemberTableID
+func (t *PermissionBase) GetTableID() int {
+	return PermissionTableID
 }
 
 // GetTableName returns the table name
-func (t *UserMemberBase) GetTableName() string {
-	return UserMemberTableName
+func (t *PermissionBase) GetTableName() string {
+	return PermissionTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *UserMemberBase) GetTableSchema() string {
-	return GetUserMemberTableSchema()
+func (t *PermissionBase) GetTableSchema() string {
+	return GetPermissionTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *UserMemberBase) GetPostgresTableSchema() string {
-	return GetUserMemberPostgresTableSchema()
+func (t *PermissionBase) GetPostgresTableSchema() string {
+	return GetPermissionPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *UserMemberBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *PermissionBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *UserMemberBase) GetDB() database.Executor {
+func (t *PermissionBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *UserMemberBase) GetCompany() string {
+func (t *PermissionBase) GetCompany() string {
 	return t.company
 }
 
-// GetUserMemberTableSchema returns the SQLite schema
-func GetUserMemberTableSchema() string {
+// GetPermissionTableSchema returns the SQLite schema
+func GetPermissionTableSchema() string {
 	return `
-		user_id TEXT(50),
 		role_id TEXT(20),
-		company TEXT(100),
-		PRIMARY KEY (user_id, role_id, company)
+		table_name TEXT(100),
+		can_read INTEGER,
+		can_insert INTEGER,
+		can_modify INTEGER,
+		can_delete INTEGER,
+		PRIMARY KEY (role_id, table_name)
 	`
 }
 
-// GetUserMemberPostgresTableSchema returns the PostgreSQL schema
-func GetUserMemberPostgresTableSchema() string {
+// GetPermissionPostgresTableSchema returns the PostgreSQL schema
+func GetPermissionPostgresTableSchema() string {
 	return `
-		user_id VARCHAR(50),
 		role_id VARCHAR(20),
-		company VARCHAR(100),
-		PRIMARY KEY (user_id, role_id, company)
+		table_name VARCHAR(100),
+		can_read BOOLEAN,
+		can_insert BOOLEAN,
+		can_modify BOOLEAN,
+		can_delete BOOLEAN,
+		PRIMARY KEY (role_id, table_name)
 	`
 }
 
@@ -110,44 +119,44 @@ func GetUserMemberPostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *UserMemberBase) GetCaption(language string) string {
+func (t *PermissionBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("User_Member", language)
+	return ts.TableCaption("Permission", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *UserMemberBase) GetFieldCaption(fieldName, language string) string {
+func (t *PermissionBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("User_Member", fieldName, language)
+	return ts.FieldCaption("Permission", fieldName, language)
 }
 
-// CreateTable creates the User_Member table for the specified company (SQLite)
+// CreateTable creates the Permission table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *UserMemberBase) CreateTable(db database.Executor, company string) error {
+func (t *PermissionBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the User_Member table for the specified company with the given database type
+// CreateTableWithDBType creates the Permission table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *UserMemberBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := UserMemberTableName
+func (t *PermissionBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := PermissionTableName
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetUserMemberPostgresTableSchema()
+		schema = GetPermissionPostgresTableSchema()
 	} else {
-		schema = GetUserMemberTableSchema()
+		schema = GetPermissionTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create User_Member table: %w", err)
+		return fmt.Errorf("failed to create Permission table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
 	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$User_Member$Primary", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id, role_id, company)`,
+	indexName = fmt.Sprintf("%s$Permission$Primary", company)
+	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (role_id, table_name)`,
 		indexName, tableName)
 	_, err = db.Exec(indexSQL)
 	if err != nil {
@@ -161,15 +170,15 @@ func (t *UserMemberBase) CreateTableWithDBType(db database.Executor, company str
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new UserMember record with database context
+// Init initializes a new Permission record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *UserMemberBase) Init(db database.Executor, company string) {
+func (t *PermissionBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new UserMember record with database context and type
-func (t *UserMemberBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new Permission record with database context and type
+func (t *PermissionBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
@@ -178,16 +187,19 @@ func (t *UserMemberBase) InitWithDBType(db database.Executor, company string, db
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *UserMemberBase) StoreOldValues() {
+func (t *PermissionBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
-	t.oldValues["user_id"] = t.User_id
 	t.oldValues["role_id"] = t.Role_id
-	t.oldValues["company"] = t.Company
+	t.oldValues["table_name"] = t.Table_name
+	t.oldValues["can_read"] = t.Can_read
+	t.oldValues["can_insert"] = t.Can_insert
+	t.oldValues["can_modify"] = t.Can_modify
+	t.oldValues["can_delete"] = t.Can_delete
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *UserMemberBase) convertPlaceholders(sql string, count int) string {
+func (t *PermissionBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -201,18 +213,9 @@ func (t *UserMemberBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *UserMemberBase) Get(primaryKey interface{}) bool {
+func (t *PermissionBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var user_idVal types.Code
-		if v, exists := pkMap["user_id"]; exists {
-			switch val := v.(type) {
-			case types.Code:
-				user_idVal = val
-			case string:
-				user_idVal = types.NewCode(val)
-			}
-		}
 		var role_idVal types.Code
 		if v, exists := pkMap["role_id"]; exists {
 			switch val := v.(type) {
@@ -222,48 +225,53 @@ func (t *UserMemberBase) Get(primaryKey interface{}) bool {
 				role_idVal = types.NewCode(val)
 			}
 		}
-		var companyVal types.Code
-		if v, exists := pkMap["company"]; exists {
+		var table_nameVal types.Code
+		if v, exists := pkMap["table_name"]; exists {
 			switch val := v.(type) {
 			case types.Code:
-				companyVal = val
+				table_nameVal = val
 			case string:
-				companyVal = types.NewCode(val)
+				table_nameVal = types.NewCode(val)
 			}
 		}
-		return t.GetByPK(user_idVal, role_idVal, companyVal)
+		return t.GetByPK(role_idVal, table_nameVal)
 	}
 	// For tables with composite keys, direct value is not supported
 	// Use a map[string]interface{} with field names as keys
 
-	fmt.Printf("Error: Invalid primary key type for User_Member.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for Permission.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company types.Code) bool {
-	tableName := UserMemberTableName
-	var user_idNull sql.NullString
+func (t *PermissionBase) GetByPK(role_id types.Code, table_name types.Code) bool {
+	tableName := PermissionTableName
 	var role_idNull sql.NullString
-	var companyNull sql.NullString
+	var table_nameNull sql.NullString
+	var can_readBool sql.NullBool
+	var can_insertBool sql.NullBool
+	var can_modifyBool sql.NullBool
+	var can_deleteBool sql.NullBool
 
 	// Collect arguments for query
 	args := []interface{}{
-		user_id,
 		role_id,
-		company,
+		table_name,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT user_id, role_id, company FROM "%s" WHERE 1=1 AND user_id = ? AND role_id = ? AND company = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE 1=1 AND role_id = ? AND table_name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
-		&user_idNull,
 		&role_idNull,
-		&companyNull,
+		&table_nameNull,
+		&can_readBool,
+		&can_insertBool,
+		&can_modifyBool,
+		&can_deleteBool,
 	)
 
 	if err != nil {
@@ -272,14 +280,17 @@ func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to get Permission: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Table_name = types.NewCode(table_nameNull.String)
+	t.Can_read = can_readBool.Bool
+	t.Can_insert = can_insertBool.Bool
+	t.Can_modify = can_modifyBool.Bool
+	t.Can_delete = can_deleteBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -288,7 +299,7 @@ func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company
 }
 
 // Insert inserts the record into the database
-func (t *UserMemberBase) Insert(runTrigger bool) bool {
+func (t *PermissionBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
@@ -296,31 +307,34 @@ func (t *UserMemberBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserMemberTableName
+	tableName := PermissionTableName
 
 	// Collect arguments for INSERT
 	args := []interface{}{
-		t.User_id,
 		t.Role_id,
-		t.Company,
+		t.Table_name,
+		t.Can_read,
+		t.Can_insert,
+		t.Can_modify,
+		t.Can_delete,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, role_id, company) VALUES (?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES (?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to insert Permission: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *UserMemberBase) Modify(runTrigger bool) bool {
+func (t *PermissionBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
@@ -328,7 +342,7 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserMemberTableName
+	tableName := PermissionTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -336,6 +350,22 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 
 	// If we have old values (loaded from Get), only update changed fields
 	if t.oldValues != nil {
+		if t.hasFieldChanged("can_read") {
+			setClauses = append(setClauses, "can_read = ?")
+			values = append(values, t.Can_read)
+		}
+		if t.hasFieldChanged("can_insert") {
+			setClauses = append(setClauses, "can_insert = ?")
+			values = append(values, t.Can_insert)
+		}
+		if t.hasFieldChanged("can_modify") {
+			setClauses = append(setClauses, "can_modify = ?")
+			values = append(values, t.Can_modify)
+		}
+		if t.hasFieldChanged("can_delete") {
+			setClauses = append(setClauses, "can_delete = ?")
+			values = append(values, t.Can_delete)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -343,15 +373,22 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 		}
 	} else {
 		// No old values (fresh record), update all fields
+		setClauses = append(setClauses, "can_read = ?")
+		values = append(values, t.Can_read)
+		setClauses = append(setClauses, "can_insert = ?")
+		values = append(values, t.Can_insert)
+		setClauses = append(setClauses, "can_modify = ?")
+		values = append(values, t.Can_modify)
+		setClauses = append(setClauses, "can_delete = ?")
+		values = append(values, t.Can_delete)
 	}
 
 	// Add WHERE clause value (primary key)
-	values = append(values, t.User_id)
 	values = append(values, t.Role_id)
-	values = append(values, t.Company)
+	values = append(values, t.Table_name)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ? AND role_id = ? AND company = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE role_id = ? AND table_name = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -361,14 +398,14 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to modify Permission: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *UserMemberBase) hasFieldChanged(fieldName string) bool {
+func (t *PermissionBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -377,17 +414,36 @@ func (t *UserMemberBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
-	_ = oldValue // No non-PK fields to compare
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "can_read":
+		if old, ok := oldValue.(bool); ok {
+			return t.Can_read != old
+		}
+		return true // Type mismatch, assume changed
+	case "can_insert":
+		if old, ok := oldValue.(bool); ok {
+			return t.Can_insert != old
+		}
+		return true // Type mismatch, assume changed
+	case "can_modify":
+		if old, ok := oldValue.(bool); ok {
+			return t.Can_modify != old
+		}
+		return true // Type mismatch, assume changed
+	case "can_delete":
+		if old, ok := oldValue.(bool); ok {
+			return t.Can_delete != old
+		}
+		return true // Type mismatch, assume changed
 	}
 
 	return false
 }
 
 // Delete removes the record from the database
-func (t *UserMemberBase) Delete(runTrigger bool) bool {
+func (t *PermissionBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
@@ -395,24 +451,23 @@ func (t *UserMemberBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := UserMemberTableName
+	tableName := PermissionTableName
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.User_id,
 		t.Role_id,
-		t.Company,
+		t.Table_name,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ? AND role_id = ? AND company = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE role_id = ? AND table_name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to delete Permission: %v\n", err)
 		return false
 	}
 	return true
@@ -420,7 +475,7 @@ func (t *UserMemberBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *UserMemberBase) CalcFields(fieldNames ...string) {
+func (t *PermissionBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -428,8 +483,8 @@ func (t *UserMemberBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// userMemberBaseFilterCondition represents a filter on a field
-type userMemberBaseFilterCondition struct {
+// permissionBaseFilterCondition represents a filter on a field
+type permissionBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -441,9 +496,9 @@ type userMemberBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *UserMemberBase) SetRange(fieldName string, values ...interface{}) {
+func (t *PermissionBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*userMemberBaseFilterCondition)
+		t.filters = make(map[string]*permissionBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -462,7 +517,7 @@ func (t *UserMemberBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &userMemberBaseFilterCondition{
+	t.filters[fieldName] = &permissionBaseFilterCondition{
 		fieldName: fieldName,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -473,11 +528,11 @@ func (t *UserMemberBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *UserMemberBase) SetFilter(fieldName, filterExpr string) {
+func (t *PermissionBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*userMemberBaseFilterCondition)
+		t.filters = make(map[string]*permissionBaseFilterCondition)
 	}
-	t.filters[fieldName] = &userMemberBaseFilterCondition{
+	t.filters[fieldName] = &permissionBaseFilterCondition{
 		fieldName:    fieldName,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -486,12 +541,12 @@ func (t *UserMemberBase) SetFilter(fieldName, filterExpr string) {
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *UserMemberBase) SetCurrentKey(fields ...string) {
+func (t *PermissionBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = fields
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *UserMemberBase) Reset() {
+func (t *PermissionBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -502,7 +557,7 @@ func (t *UserMemberBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *UserMemberBase) buildWhereClause() (string, []interface{}) {
+func (t *PermissionBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -541,7 +596,7 @@ func (t *UserMemberBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *UserMemberBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *PermissionBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -583,47 +638,56 @@ func (t *UserMemberBase) parseFilterExpression(fieldName, expr string) (string, 
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *UserMemberBase) getOrderByClause() string {
+func (t *PermissionBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "user_id, role_id, company"
+	return "role_id, table_name"
 }
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *UserMemberBase) FindFirst() bool {
-	tableName := UserMemberTableName
+func (t *PermissionBase) FindFirst() bool {
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, role_id, company FROM "%s" WHERE %s ORDER BY user_id, role_id, company ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY role_id, table_name ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var user_idNull sql.NullString
 	var role_idNull sql.NullString
-	var companyNull sql.NullString
+	var table_nameNull sql.NullString
+	var can_readBool sql.NullBool
+	var can_insertBool sql.NullBool
+	var can_modifyBool sql.NullBool
+	var can_deleteBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&user_idNull,
 		&role_idNull,
-		&companyNull,
+		&table_nameNull,
+		&can_readBool,
+		&can_insertBool,
+		&can_modifyBool,
+		&can_deleteBool,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to find first Permission: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Table_name = types.NewCode(table_nameNull.String)
+	t.Can_read = can_readBool.Bool
+	t.Can_insert = can_insertBool.Bool
+	t.Can_modify = can_modifyBool.Bool
+	t.Can_delete = can_deleteBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -633,37 +697,46 @@ func (t *UserMemberBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *UserMemberBase) FindLast() bool {
-	tableName := UserMemberTableName
+func (t *PermissionBase) FindLast() bool {
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, role_id, company FROM "%s" WHERE %s ORDER BY user_id, role_id, company DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY role_id, table_name DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var user_idNull sql.NullString
 	var role_idNull sql.NullString
-	var companyNull sql.NullString
+	var table_nameNull sql.NullString
+	var can_readBool sql.NullBool
+	var can_insertBool sql.NullBool
+	var can_modifyBool sql.NullBool
+	var can_deleteBool sql.NullBool
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&user_idNull,
 		&role_idNull,
-		&companyNull,
+		&table_nameNull,
+		&can_readBool,
+		&can_insertBool,
+		&can_modifyBool,
+		&can_deleteBool,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to find last Permission: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Table_name = types.NewCode(table_nameNull.String)
+	t.Can_read = can_readBool.Bool
+	t.Can_insert = can_insertBool.Bool
+	t.Can_modify = can_modifyBool.Bool
+	t.Can_delete = can_deleteBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -672,8 +745,8 @@ func (t *UserMemberBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *UserMemberBase) Count() int {
-	tableName := UserMemberTableName
+func (t *PermissionBase) Count() int {
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -684,7 +757,7 @@ func (t *UserMemberBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to count Permission: %v\n", err)
 		return 0
 	}
 
@@ -694,25 +767,25 @@ func (t *UserMemberBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *UserMemberBase) FindSet() bool {
+func (t *PermissionBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := UserMemberTableName
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, role_id, company FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for Permission: %v\n", err)
 		return false
 	}
 
@@ -730,7 +803,7 @@ func (t *UserMemberBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *UserMemberBase) Next(steps ...int) bool {
+func (t *PermissionBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -772,27 +845,36 @@ func (t *UserMemberBase) Next(steps ...int) bool {
 		}
 
 		// Scan the row
-		var user_idNull sql.NullString
 		var role_idNull sql.NullString
-		var companyNull sql.NullString
+		var table_nameNull sql.NullString
+		var can_readBool sql.NullBool
+		var can_insertBool sql.NullBool
+		var can_modifyBool sql.NullBool
+		var can_deleteBool sql.NullBool
 
 		err := t.currentRows.Scan(
-			&user_idNull,
 			&role_idNull,
-			&companyNull,
+			&table_nameNull,
+			&can_readBool,
+			&can_insertBool,
+			&can_modifyBool,
+			&can_deleteBool,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan User_Member record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Permission record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
 		}
 
 		// Populate fields
-		t.User_id = types.NewCode(user_idNull.String)
 		t.Role_id = types.NewCode(role_idNull.String)
-		t.Company = types.NewCode(companyNull.String)
+		t.Table_name = types.NewCode(table_nameNull.String)
+		t.Can_read = can_readBool.Bool
+		t.Can_insert = can_insertBool.Bool
+		t.Can_modify = can_modifyBool.Bool
+		t.Can_delete = can_deleteBool.Bool
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -808,7 +890,7 @@ func (t *UserMemberBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *UserMemberBase) FindSetBuffered() bool {
+func (t *PermissionBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -818,19 +900,19 @@ func (t *UserMemberBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := UserMemberTableName
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, role_id, company FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for Permission: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -838,31 +920,40 @@ func (t *UserMemberBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &UserMemberBase{}
+		record := &PermissionBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
-		var user_idNull sql.NullString
 		var role_idNull sql.NullString
-		var companyNull sql.NullString
+		var table_nameNull sql.NullString
+		var can_readBool sql.NullBool
+		var can_insertBool sql.NullBool
+		var can_modifyBool sql.NullBool
+		var can_deleteBool sql.NullBool
 
 		err := rows.Scan(
-			&user_idNull,
 			&role_idNull,
-			&companyNull,
+			&table_nameNull,
+			&can_readBool,
+			&can_insertBool,
+			&can_modifyBool,
+			&can_deleteBool,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan User_Member record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Permission record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
-		record.User_id = types.NewCode(user_idNull.String)
 		record.Role_id = types.NewCode(role_idNull.String)
-		record.Company = types.NewCode(companyNull.String)
+		record.Table_name = types.NewCode(table_nameNull.String)
+		record.Can_read = can_readBool.Bool
+		record.Can_insert = can_insertBool.Bool
+		record.Can_modify = can_modifyBool.Bool
+		record.Can_delete = can_deleteBool.Bool
 
 		// Store old values
 		record.StoreOldValues()
@@ -873,7 +964,7 @@ func (t *UserMemberBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate User_Member records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate Permission records: %v\n", err)
 		return false
 	}
 
@@ -890,10 +981,13 @@ func (t *UserMemberBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *UserMemberBase) copyFromBuffered(record *UserMemberBase) {
-	t.User_id = record.User_id
+func (t *PermissionBase) copyFromBuffered(record *PermissionBase) {
 	t.Role_id = record.Role_id
-	t.Company = record.Company
+	t.Table_name = record.Table_name
+	t.Can_read = record.Can_read
+	t.Can_insert = record.Can_insert
+	t.Can_modify = record.Can_modify
+	t.Can_delete = record.Can_delete
 	t.StoreOldValues()
 }
 
@@ -902,14 +996,14 @@ func (t *UserMemberBase) copyFromBuffered(record *UserMemberBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *UserMemberBase) IsEmpty() bool {
+func (t *PermissionBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *UserMemberBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := UserMemberTableName
+func (t *PermissionBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -923,7 +1017,7 @@ func (t *UserMemberBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to modify all Permission: %v\n", err)
 		return 0
 	}
 
@@ -933,8 +1027,8 @@ func (t *UserMemberBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *UserMemberBase) DeleteAll() int {
-	tableName := UserMemberTableName
+func (t *PermissionBase) DeleteAll() int {
+	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -945,7 +1039,7 @@ func (t *UserMemberBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all User_Member: %v\n", err)
+		fmt.Printf("Error: Failed to delete all Permission: %v\n", err)
 		return 0
 	}
 
@@ -954,16 +1048,16 @@ func (t *UserMemberBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *UserMemberBase) CopyFilters(from *UserMemberBase) {
+func (t *PermissionBase) CopyFilters(from *PermissionBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*userMemberBaseFilterCondition)
+	t.filters = make(map[string]*permissionBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &userMemberBaseFilterCondition{
+		t.filters[key] = &permissionBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -983,7 +1077,7 @@ func (t *UserMemberBase) CopyFilters(from *UserMemberBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *UserMemberBase) GetFilters() string {
+func (t *PermissionBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1011,21 +1105,10 @@ func (t *UserMemberBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) error {
+func (t *PermissionBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
-	case "user_id":
-		// Set field value
-		if v, ok := value.(types.Code); ok {
-			t.User_id = v
-		} else if v, ok := value.(string); ok {
-			t.User_id = types.NewCode(v)
-		} else {
-			return fmt.Errorf("invalid type for field user_id")
-		}
-		// Call OnValidate trigger
-		return t.OnValidate_User_id()
 	case "role_id":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
@@ -1037,37 +1120,103 @@ func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) erro
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Role_id()
-	case "company":
+	case "table_name":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
-			t.Company = v
+			t.Table_name = v
 		} else if v, ok := value.(string); ok {
-			t.Company = types.NewCode(v)
+			t.Table_name = types.NewCode(v)
 		} else {
-			return fmt.Errorf("invalid type for field company")
+			return fmt.Errorf("invalid type for field table_name")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Company()
+		return t.OnValidate_Table_name()
+	case "can_read":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Can_read = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Can_read = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field can_read")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Can_read()
+	case "can_insert":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Can_insert = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Can_insert = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field can_insert")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Can_insert()
+	case "can_modify":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Can_modify = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Can_modify = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field can_modify")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Can_modify()
+	case "can_delete":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Can_delete = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Can_delete = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field can_delete")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Can_delete()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-// OnValidate_User_id is the validation trigger for user_id field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *UserMemberBase) OnValidate_User_id() error {
-	return nil
-}
-
 // OnValidate_Role_id is the validation trigger for role_id field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *UserMemberBase) OnValidate_Role_id() error {
+func (t *PermissionBase) OnValidate_Role_id() error {
 	return nil
 }
 
-// OnValidate_Company is the validation trigger for company field (BC/NAV style)
+// OnValidate_Table_name is the validation trigger for table_name field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *UserMemberBase) OnValidate_Company() error {
+func (t *PermissionBase) OnValidate_Table_name() error {
+	return nil
+}
+
+// OnValidate_Can_read is the validation trigger for can_read field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *PermissionBase) OnValidate_Can_read() error {
+	return nil
+}
+
+// OnValidate_Can_insert is the validation trigger for can_insert field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *PermissionBase) OnValidate_Can_insert() error {
+	return nil
+}
+
+// OnValidate_Can_modify is the validation trigger for can_modify field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *PermissionBase) OnValidate_Can_modify() error {
+	return nil
+}
+
+// OnValidate_Can_delete is the validation trigger for can_delete field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *PermissionBase) OnValidate_Can_delete() error {
 	return nil
 }
 
@@ -1076,68 +1225,77 @@ func (t *UserMemberBase) OnValidate_Company() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *UserMemberBase) ClearFilters() {
+func (t *PermissionBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *UserMemberBase) ToMap() map[string]interface{} {
+func (t *PermissionBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"user_id": t.User_id.String(),
 		"role_id": t.Role_id.String(),
-		"company": t.Company.String(),
+		"table_name": t.Table_name.String(),
+		"can_read": t.Can_read,
+		"can_insert": t.Can_insert,
+		"can_modify": t.Can_modify,
+		"can_delete": t.Can_delete,
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *UserMemberBase) FromMap(data map[string]interface{}) {
-	if v, ok := data["user_id"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.User_id = types.NewCode(s)
-		}
-	}
+func (t *PermissionBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["role_id"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Role_id = types.NewCode(s)
 		}
 	}
-	if v, ok := data["company"]; ok && v != nil {
+	if v, ok := data["table_name"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Company = types.NewCode(s)
+			t.Table_name = types.NewCode(s)
+		}
+	}
+	if v, ok := data["can_read"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Can_read = b
+		}
+	}
+	if v, ok := data["can_insert"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Can_insert = b
+		}
+	}
+	if v, ok := data["can_modify"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Can_modify = b
+		}
+	}
+	if v, ok := data["can_delete"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Can_delete = b
 		}
 	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *UserMemberBase) UpdateFromMap(data map[string]interface{}) {
+func (t *PermissionBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *UserMemberBase) GetPrimaryKeyField() string {
-	return "user_id"
+func (t *PermissionBase) GetPrimaryKeyField() string {
+	return "role_id"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *UserMemberBase) GetPrimaryKeyValue() string {
-	return t.User_id.String()
+func (t *PermissionBase) GetPrimaryKeyValue() string {
+	return t.Role_id.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *UserMemberBase) GetFields() []tables.FieldInfo {
+func (t *PermissionBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
-		{
-			Name:       "user_id",
-			Type:       tables.FieldTypeCode,
-			Length:     50,
-			Required:   true,
-			Editable:   false,
-			PrimaryKey: true,
-			FlowField:  false,
-		},
 		{
 			Name:       "role_id",
 			Type:       tables.FieldTypeCode,
@@ -1148,42 +1306,68 @@ func (t *UserMemberBase) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			Name:       "company",
+			Name:       "table_name",
 			Type:       tables.FieldTypeCode,
 			Length:     100,
-			Required:   false,
+			Required:   true,
 			Editable:   false,
 			PrimaryKey: true,
+			FlowField:  false,
+		},
+		{
+			Name:       "can_read",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "can_insert",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "can_modify",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "can_delete",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
 			FlowField:  false,
 		},
 	}
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *UserMemberBase) GetFlowFields() []string {
+func (t *PermissionBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *UserMemberBase) GetOptionFields() map[string][]string {
+func (t *PermissionBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *UserMemberBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *PermissionBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
-		"user_id": {
-			Table:        "User",
-			Field:        "user_id",
-			DisplayField: "",
-			LookupColumns: []tables.LookupColumnInfo{
-				{Source: "user_id", Width: 150},
-				{Source: "user_name", Width: 200},
-			},
-			SearchTimeout: 0,
-		},
 		"role_id": {
 			Table:        "User_Role",
 			Field:        "code",
@@ -1191,15 +1375,6 @@ func (t *UserMemberBase) GetTableRelationFields() map[string]tables.TableRelatio
 			LookupColumns: []tables.LookupColumnInfo{
 				{Source: "code", Width: 100},
 				{Source: "description", Width: 200},
-			},
-			SearchTimeout: 0,
-		},
-		"company": {
-			Table:        "Company",
-			Field:        "name",
-			DisplayField: "",
-			LookupColumns: []tables.LookupColumnInfo{
-				{Source: "name", Width: 200},
 			},
 			SearchTimeout: 0,
 		},

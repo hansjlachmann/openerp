@@ -1,0 +1,55 @@
+table:
+  id: 5150
+  name: "Permission"
+  caption: Permission
+  description: Table-level permissions per role
+  global: true  # Global table - no company prefix
+  fields:
+    - name: role_id
+      type: types.Code
+      db_name: role_id
+      caption: Role ID
+      primary_key: true
+      length: 20
+      required: true
+      table_relation:
+        table: User_Role
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 200
+
+    - name: table_name
+      type: types.Code
+      db_name: table_name
+      caption: Table Name
+      primary_key: true
+      length: 100
+      required: true
+
+    - name: can_read
+      type: bool
+      db_name: can_read
+      caption: Read
+
+    - name: can_insert
+      type: bool
+      db_name: can_insert
+      caption: Insert
+
+    - name: can_modify
+      type: bool
+      db_name: can_modify
+      caption: Modify
+
+    - name: can_delete
+      type: bool
+      db_name: can_delete
+      caption: Delete
+
+  keys:
+    - name: Primary
+      fields: [role_id, table_name]
+      clustered: true
