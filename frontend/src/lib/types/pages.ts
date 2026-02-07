@@ -45,6 +45,7 @@ export interface Field {
 	table_relation?: string;
 	width?: number;
 	primary_key?: boolean;
+	required?: boolean;
 }
 
 export interface Action {

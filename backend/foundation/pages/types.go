@@ -51,6 +51,7 @@ type Field struct {
 	TableRelation string `yaml:"table_relation,omitempty" json:"table_relation,omitempty"` // Lookup table
 	Width         int    `yaml:"width,omitempty" json:"width,omitempty"`                 // Column width (for List pages)
 	PrimaryKey    bool   `yaml:"-" json:"primary_key,omitempty"`                         // Is this the primary key field (populated at runtime)
+	Required      bool   `yaml:"-" json:"required,omitempty"`                            // Is this field required (populated at runtime)
 }
 
 // Action represents a page action/button

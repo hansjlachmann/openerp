@@ -67,7 +67,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		// Build field captions map
 		fieldCaptions := make(map[string]string)
 
-		// Get captions for card page sections and mark primary key fields
+		// Get captions for card page sections and mark primary key / required fields
 		for i := range pageDef.Page.Layout.Sections {
 			for j := range pageDef.Page.Layout.Sections[i].Fields {
 				field := &pageDef.Page.Layout.Sections[i].Fields[j]
@@ -75,16 +75,22 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
 				}
+				if tableMeta.IsFieldRequired(pageDef.Page.SourceTable, field.Source) {
+					field.Required = true
+				}
 			}
 		}
 
-		// Get captions for list page repeater and mark primary key fields
+		// Get captions for list page repeater and mark primary key / required fields
 		if pageDef.Page.Layout.Repeater != nil {
 			for i := range pageDef.Page.Layout.Repeater.Fields {
 				field := &pageDef.Page.Layout.Repeater.Fields[i]
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
+				}
+				if tableMeta.IsFieldRequired(pageDef.Page.SourceTable, field.Source) {
+					field.Required = true
 				}
 			}
 		}
