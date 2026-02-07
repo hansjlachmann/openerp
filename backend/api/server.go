@@ -83,7 +83,7 @@ func (s *Server) Setup() {
 	api.Get("/session", sessionHandler.GetSession)
 
 	// Table routes
-	tables := api.Group("/tables/:table")
+	tables := api.Group("/tables/:table", middleware.PermissionCheck())
 	tables.Get("/ids", tablesHandler.GetRecordIDs)        // Lightweight IDs-only endpoint
 	tables.Get("/options", tablesHandler.GetOptions)      // Fast options metadata only
 	tables.Get("/list", tablesHandler.ListRecords)

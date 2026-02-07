@@ -49,6 +49,9 @@ errors:
   ERR_PREFERENCE_SAVE_FAILED: "Kunne ikke gemme præference"
   ERR_PREFERENCE_DELETE_FAILED: "Kunne ikke slette præference"
 
+  # Permissions
+  ERR_PERMISSION_DENIED: "Du har ikke tilladelse til at %1 tabel '%2'"
+
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Menu ikke fundet"
   ERR_PAGE_NOT_FOUND: "Side %1 ikke fundet"

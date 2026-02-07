@@ -49,6 +49,9 @@ errors:
   ERR_PREFERENCE_SAVE_FAILED: "Kunne ikke lagre oppsett"
   ERR_PREFERENCE_DELETE_FAILED: "Kunne ikke slette oppsett"
 
+  # Permissions
+  ERR_PERMISSION_DENIED: "Du har ikke tillatelse til å %1 tabell '%2'"
+
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Meny ikke funnet"
   ERR_PAGE_NOT_FOUND: "Side %1 ble ikke funnet"

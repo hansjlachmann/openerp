@@ -49,6 +49,9 @@ errors:
   ERR_PREFERENCE_SAVE_FAILED: "Failed to save preference"
   ERR_PREFERENCE_DELETE_FAILED: "Failed to delete preference"
 
+  # Permissions
+  ERR_PERMISSION_DENIED: "You do not have permission to %1 table '%2'"
+
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Menu not found"
   ERR_PAGE_NOT_FOUND: "Page %1 not found"
