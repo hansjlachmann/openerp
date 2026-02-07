@@ -461,6 +461,16 @@
 			editMode = true;
 		}
 
+		// If an empty new row already exists, just focus it instead of creating another
+		const existingNewRowIndex = editableRecords.findIndex(r => isEmptyNewRecord(r));
+		if (existingNewRowIndex >= 0) {
+			selectedIndex = existingNewRowIndex;
+			currentCellRow = existingNewRowIndex;
+			currentCellCol = 0;
+			focusCell(currentCellRow, currentCellCol);
+			return;
+		}
+
 		// Create a new empty record with all fields initialized to empty strings
 		// This ensures all PK fields are defined (important for delayed insert with composite keys)
 		const newRecord: Record<string, any> = {
@@ -1601,27 +1611,27 @@
 											/>
 										</div>
 									{:else if lookups[field.source]?.rows?.length}
-										<select
+										<input
+											type="text"
 											data-row={index}
 											data-col={colIndex}
 											class="edit-cell-input"
-											value={record[field.source] ?? ''}
+											list="lookup-{field.source}-{index}"
+											bind:value={record[field.source]}
 											onfocus={() => {
 												currentCellRow = index;
 												currentCellCol = colIndex;
 											}}
-											onchange={async (e) => {
-												const target = e.target as HTMLSelectElement;
-												record[field.source] = target.value;
+											onblur={async () => {
 												await handleCellBlur(record, index);
 											}}
 											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
-										>
-											<option value=""></option>
+										/>
+										<datalist id="lookup-{field.source}-{index}">
 											{#each lookups[field.source].rows as row}
-												<option value={row._key}>{row._key}</option>
+												<option value={row._key}></option>
 											{/each}
-										</select>
+										</datalist>
 									{:else}
 										<input
 											type="text"
