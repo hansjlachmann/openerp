@@ -32,6 +32,20 @@ pages:
   menus:
     caption: "Menuer"
 
+  # User Role pages
+  user_role_card:
+    caption: "Brugerrollekort"
+  user_role_list:
+    caption: "Brugerroller"
+
+  # User Member pages
+  user_member_list:
+    caption: "Brugermedlemmer"
+
+  # Permission pages
+  permission_list:
+    caption: "Tilladelser"
+
   # Job Queue pages
   job_queue_list:
     caption: "Opgavekø"
