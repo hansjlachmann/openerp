@@ -57,15 +57,28 @@ export function getPrimaryKeyFields(page: PageDefinition | null | undefined): st
  * Extract the primary key/ID from a record
  * @param record - The record to extract ID from
  * @param primaryKeyField - Optional primary key field name (from page definition)
+ * @param primaryKeyFields - Optional array of PK field names for composite keys
  *
- * If primaryKeyField is provided, uses that field directly.
+ * For composite keys: joins all PK values with comma (e.g., "HANS2,READER,TEST-COMPANY")
+ * For single keys: returns the PK value directly
  * Otherwise falls back to checking common field names: no, code, user_id, id
  */
 export function getRecordId(
 	record: Record<string, any> | null | undefined,
-	primaryKeyField?: string
+	primaryKeyField?: string,
+	primaryKeyFields?: string[]
 ): string | undefined {
 	if (!record) return undefined;
+
+	// Composite key: join all PK values with comma
+	// Note: empty strings are valid PK values (e.g., blank company = all companies)
+	if (primaryKeyFields && primaryKeyFields.length > 1) {
+		const values = primaryKeyFields.map(f => record[f]);
+		if (values.every(v => v !== undefined)) {
+			return values.map(v => String(v ?? '')).join(',');
+		}
+		return undefined;
+	}
 
 	// If primary key field is specified, use it directly
 	if (primaryKeyField && record[primaryKeyField] !== undefined && record[primaryKeyField] !== '') {

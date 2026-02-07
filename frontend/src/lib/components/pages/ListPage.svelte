@@ -534,7 +534,7 @@
 		try {
 			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
-			const recordId = getRecordId(record, primaryKeyField);
+			const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			if (isNew) {
 				// Delayed insert: only save when all primary key fields have values
@@ -571,7 +571,7 @@
 			const message = err instanceof Error ? err.message : 'Failed to save record';
 			toast.error(message);
 			// Revert the cell to its original value
-			const originalRecord = records.find(r => getRecordId(r, primaryKeyField) === getRecordId(record, primaryKeyField));
+			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === getRecordId(record, primaryKeyField, primaryKeyFieldsList));
 			if (originalRecord) {
 				// Existing record - revert to original values but keep temp flags
 				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId };
@@ -882,7 +882,7 @@
 			const sourceTable = pageData?.page?.source_table || page.page.source_table;
 
 			// Load the record data with options and lookups (for enum/lookup dropdowns)
-			const recordId = getRecordId(record, primaryKeyField);
+			const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			let opts: Record<string, Record<string, string>> = {};
 			let lkps: Record<string, LookupData> = {};
@@ -999,7 +999,7 @@
 
 		modalSaving = true;
 		try {
-			const recordId = getRecordId(savedRecord, primaryKeyField);
+			const recordId = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
 
 			if (modalIsNewRecord) {
 				// Insert new record
@@ -1018,7 +1018,7 @@
 				const responseData = await api.modifyRecord(page.page.source_table, recordId!, savedRecord);
 
 				// Update the record in the list without full refresh
-				const index = records.findIndex(r => getRecordId(r, primaryKeyField) === recordId);
+				const index = records.findIndex(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === recordId);
 				if (index !== -1) {
 					records[index] = responseData;
 				}
@@ -1074,7 +1074,7 @@
 				closeModal();
 				break;
 			case 'Delete':
-				const deleteRecordId = getRecordId(modalRecord, primaryKeyField);
+				const deleteRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
 				if (deleteRecordId && window.confirm(`Delete this ${modalCardPage.page.caption}?`)) {
 					// Mark as deleted BEFORE API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
@@ -1083,7 +1083,7 @@
 						await api.deleteRecord(page.page.source_table, deleteRecordId);
 
 						// Remove the record from the list
-						records = records.filter(r => getRecordId(r, primaryKeyField) !== deleteRecordId);
+						records = records.filter(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) !== deleteRecordId);
 
 						// Close the modal
 						closeModal();
@@ -1099,7 +1099,7 @@
 				break;
 			case 'Refresh':
 				// Reload the modal record with options
-				const refreshRecordId = getRecordId(modalRecord, primaryKeyField);
+				const refreshRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
 				if (refreshRecordId) {
 					try {
 						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, refreshRecordId);
