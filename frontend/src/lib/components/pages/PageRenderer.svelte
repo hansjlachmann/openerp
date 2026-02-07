@@ -14,7 +14,7 @@
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 
@@ -53,6 +53,7 @@
 
 	// Get primary key field name from page definition
 	const primaryKeyField = $derived(getPrimaryKeyField(page));
+	const primaryKeyFieldsList = $derived(getPrimaryKeyFields(page));
 
 	// Load page definition and data
 	onMount(async () => {
@@ -259,7 +260,7 @@
 				break;
 			case 'Delete':
 				// Get record ID from record object or recordid prop
-				const deleteId = getRecordId(record, primaryKeyField) || recordid;
+				const deleteId = getRecordId(record, primaryKeyField, primaryKeyFieldsList) || recordid;
 				if (deleteId) {
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
@@ -302,7 +303,7 @@
 				// Insert new record
 				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
 				// After successful insert, mark as existing for future saves
-				const newRecordId = getRecordId(insertedRecord, primaryKeyField);
+				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);
 				isExistingRecord = true;
 				currentRecordId = newRecordId;
 				toast.success(t(MSG.RECORD_CREATED));
@@ -333,13 +334,13 @@
 			case 'Edit':
 				if (selectedRecord && page.page.card_page_id) {
 					// Navigate to card page with record ID
-					const editRecordId = getRecordId(selectedRecord, primaryKeyField);
+					const editRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
 					window.location.href = `/pages/${page.page.card_page_id}/${editRecordId}`;
 				}
 				break;
 			case 'Delete':
 				if (selectedRecord) {
-					const deleteRecordId = getRecordId(selectedRecord, primaryKeyField);
+					const deleteRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
 						t(DLG.DELETE_RECORD_CONFIRM),
@@ -365,7 +366,7 @@
 	function handleRowClick(clickedRecord: Record<string, any>) {
 		if (!page || !page.page.card_page_id) return;
 
-		const recordId = getRecordId(clickedRecord, primaryKeyField);
+		const recordId = getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList);
 		window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
 	}
 
@@ -383,7 +384,7 @@
 		if (!page) return;
 
 		try {
-			const recordId = getRecordId(deletedRecord, primaryKeyField);
+			const recordId = getRecordId(deletedRecord, primaryKeyField, primaryKeyFieldsList);
 			if (!recordId) {
 				console.error('Cannot delete record: no record ID found', deletedRecord);
 				toast.error('Cannot delete: record has no ID');

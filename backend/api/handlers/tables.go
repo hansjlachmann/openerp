@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
@@ -40,6 +41,35 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 	table := factory()
 	table.InitWithDBType(h.db, company, h.dbType)
 	return table, nil
+}
+
+// parseRecordKey parses a URL record ID into the appropriate type for table.Get()
+// For single PK tables: returns the string as-is
+// For composite PK tables: splits comma-separated values and returns map[string]interface{}
+func parseRecordKey(id string, table ftables.Table) interface{} {
+	fields := table.GetFields()
+	var pkFields []string
+	for _, f := range fields {
+		if f.PrimaryKey {
+			pkFields = append(pkFields, f.Name)
+		}
+	}
+
+	if len(pkFields) <= 1 {
+		return id
+	}
+
+	// Composite PK: split by comma and build map
+	parts := strings.Split(id, ",")
+	if len(parts) != len(pkFields) {
+		return id // Mismatch — fall back to string
+	}
+
+	pkMap := make(map[string]interface{})
+	for i, field := range pkFields {
+		pkMap[field] = parts[i]
+	}
+	return pkMap
 }
 
 // LookupData represents structured lookup data for a field
@@ -337,8 +367,8 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Get record by primary key
-	if !table.Get(id) {
+	// Get record by primary key (supports composite keys via comma-separated values)
+	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
@@ -480,8 +510,8 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Get existing record
-	if !table.Get(id) {
+	// Get existing record (supports composite keys via comma-separated values)
+	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
@@ -565,8 +595,8 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Get existing record
-	if !table.Get(id) {
+	// Get existing record (supports composite keys via comma-separated values)
+	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
