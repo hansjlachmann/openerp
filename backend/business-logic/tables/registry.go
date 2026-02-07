@@ -47,6 +47,9 @@ func init() {
 	RegisterTableFactory("User_Member", gtables.UserMemberTableID, func() ftables.Table {
 		return &UserMember{}
 	})
+	RegisterTableFactory("Permission", gtables.PermissionTableID, func() ftables.Table {
+		return &Permission{}
+	})
 }
 
 // RegisterTableFactory registers a table factory by name

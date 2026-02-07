@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -111,6 +112,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			user.Menu.String(),
 		)
 		sess.SetCompany(company)
+
+		// Load permissions for this user/company
+		isSuper, perms := h.loadUserPermissions(user.User_id.String(), company)
+		sess.SetPermissions(isSuper, perms)
 	}
 
 	ts := i18n.GetInstance()
@@ -368,6 +373,13 @@ func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
 	// Update session company
 	sess.SetCompany(requestBody.Company)
 
+	// Reload permissions for the new company context
+	userID := sess.GetUserID()
+	if userID != "" {
+		isSuper, perms := h.loadUserPermissions(userID, requestBody.Company)
+		sess.SetPermissions(isSuper, perms)
+	}
+
 	ts := i18n.GetInstance()
 	language := getLanguageOrDefault(sess)
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -436,4 +448,95 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 		"message": ts.Message("MSG_COMPANY_CREATED", "en-US"),
 	})
 	return c.JSON(response)
+}
+
+// loadUserPermissions loads and merges all permissions for a user in a company.
+// Queries User_Member for the user's roles (matching the company or blank company = all companies),
+// then queries Permission for each role, merging with OR logic across roles.
+func (h *AuthHandler) loadUserPermissions(userID, company string) (bool, map[string]session.TablePermission) {
+	permissions := make(map[string]session.TablePermission)
+
+	// Query User_Member for this user's roles
+	// Include memberships where company matches OR company is blank (all companies)
+	var query string
+	var args []interface{}
+	if h.dbType == database.DBTypePostgres {
+		query = `SELECT role_id FROM "User_Member" WHERE user_id = $1 AND (company = $2 OR company = '')`
+		args = []interface{}{userID, company}
+	} else {
+		query = `SELECT role_id FROM "User_Member" WHERE user_id = ? AND (company = ? OR company = '')`
+		args = []interface{}{userID, company}
+	}
+
+	rows, err := h.db.Query(query, args...)
+	if err != nil {
+		fmt.Printf("Warning: Failed to load user roles: %v\n", err)
+		return false, permissions
+	}
+	defer rows.Close()
+
+	var roleIDs []string
+	isSuper := false
+	for rows.Next() {
+		var roleID string
+		if err := rows.Scan(&roleID); err != nil {
+			continue
+		}
+		roleIDs = append(roleIDs, roleID)
+		if strings.ToUpper(roleID) == "SUPER" {
+			isSuper = true
+		}
+	}
+
+	// SUPER bypasses all checks — no need to load individual permissions
+	if isSuper {
+		return true, nil
+	}
+
+	// No roles assigned = deny everything
+	if len(roleIDs) == 0 {
+		return false, permissions
+	}
+
+	// Query Permission table for all assigned roles
+	placeholders := make([]string, len(roleIDs))
+	permArgs := make([]interface{}, len(roleIDs))
+	for i, id := range roleIDs {
+		if h.dbType == database.DBTypePostgres {
+			placeholders[i] = fmt.Sprintf("$%d", i+1)
+		} else {
+			placeholders[i] = "?"
+		}
+		permArgs[i] = id
+	}
+
+	permQuery := fmt.Sprintf(
+		`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "Permission" WHERE role_id IN (%s)`,
+		strings.Join(placeholders, ", "),
+	)
+
+	permRows, err := h.db.Query(permQuery, permArgs...)
+	if err != nil {
+		fmt.Printf("Warning: Failed to load permissions: %v\n", err)
+		return false, permissions
+	}
+	defer permRows.Close()
+
+	// Merge permissions with OR logic across roles
+	for permRows.Next() {
+		var roleID, tableName string
+		var canRead, canInsert, canModify, canDelete bool
+		if err := permRows.Scan(&roleID, &tableName, &canRead, &canInsert, &canModify, &canDelete); err != nil {
+			continue
+		}
+
+		existing := permissions[tableName]
+		existing.Read = existing.Read || canRead
+		existing.Insert = existing.Insert || canInsert
+		existing.Modify = existing.Modify || canModify
+		existing.Delete = existing.Delete || canDelete
+		permissions[tableName] = existing
+	}
+
+	return false, permissions
 }

@@ -69,6 +69,9 @@ func main() {
 	if err := registry.RegisterTable(gtables.UserMemberTableID, &tables.UserMember{}); err != nil {
 		log.Printf("Warning: Failed to register User_Member: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.PermissionTableID, &tables.Permission{}); err != nil {
+		log.Printf("Warning: Failed to register Permission: %v\n", err)
+	}
 
 	var db *database.Database
 	var companyName string
