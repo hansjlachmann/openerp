@@ -1,22 +1,31 @@
 page:
-  id: 32
+  id: 35
   type: List
-  name: User Roles
-  source_table: User_Role
-  caption: User Roles
-  card_page_id: 34
-  modal_card: true
+  name: Permissions
+  source_table: Permission
+  caption: Permissions
   editable: true
 
   layout:
     repeater:
       fields:
-        - source: code
+        - source: role_id
           width: 150
-          primary_key: true
 
-        - source: description
-          width: 300
+        - source: table_name
+          width: 200
+
+        - source: can_read
+          width: 80
+
+        - source: can_insert
+          width: 80
+
+        - source: can_modify
+          width: 80
+
+        - source: can_delete
+          width: 80
 
   actions:
     - name: New
