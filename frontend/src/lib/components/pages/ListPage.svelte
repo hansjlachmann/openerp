@@ -461,11 +461,17 @@
 			editMode = true;
 		}
 
-		// Create a new empty record with temporary flag and stable ID for keying
+		// Create a new empty record with all fields initialized to empty strings
+		// This ensures all PK fields are defined (important for delayed insert with composite keys)
 		const newRecord: Record<string, any> = {
 			_isNew: true,
 			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 		};
+		if (page.page.layout.repeater?.fields) {
+			for (const f of page.page.layout.repeater.fields) {
+				newRecord[f.source] = '';
+			}
+		}
 
 		// Insert below the currently selected row (or at end if none selected)
 		const insertIndex = selectedIndex >= 0 ? selectedIndex + 1 : editableRecords.length;
@@ -537,10 +543,15 @@
 			const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			if (isNew) {
-				// Delayed insert: only save when all primary key fields have values
-				const allPKsFilled = primaryKeyFieldsList.length === 0 || primaryKeyFieldsList.every(
-					pk => record[pk] !== undefined && record[pk] !== ''
-				);
+				// Delayed insert: required PK fields must be non-empty,
+				// optional PK fields can be blank (e.g., blank company = all companies)
+				const allPKsFilled = primaryKeyFieldsList.length === 0 || primaryKeyFieldsList.every(pk => {
+					const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === pk);
+					if (fieldDef?.required) {
+						return record[pk] !== undefined && record[pk] !== '';
+					}
+					return record[pk] !== undefined;
+				});
 				if (hasRecordData(record) && allPKsFilled) {
 					// Remove temporary flags before saving
 					const { _isNew, _tempId, ...recordToSave } = record;
@@ -631,11 +642,16 @@
 		// Clean up any other empty new rows first
 		cleanupEmptyNewRows();
 
-		// Create a new empty record with temporary flag and stable ID for keying
+		// Create a new empty record with all fields initialized to empty strings
 		const newRecord: Record<string, any> = {
 			_isNew: true,
 			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 		};
+		if (page.page.layout.repeater?.fields) {
+			for (const f of page.page.layout.repeater.fields) {
+				newRecord[f.source] = '';
+			}
+		}
 
 		// Insert at end, or at current cursor position
 		const insertIndex = atEnd ? editableRecords.length : (currentCellRow >= 0 ? currentCellRow : editableRecords.length);

@@ -11,8 +11,9 @@ import (
 
 // TableMetadata holds metadata about tables for page rendering
 type TableMetadata struct {
-	primaryKeys map[string][]string // table name -> primary key field names (supports composite keys)
-	mu          sync.RWMutex
+	primaryKeys    map[string][]string // table name -> primary key field names (supports composite keys)
+	requiredFields map[string]map[string]bool // table name -> field name -> required
+	mu             sync.RWMutex
 }
 
 // tableDefYAML represents the structure of table YAML files
@@ -27,6 +28,7 @@ type tableDefYAML struct {
 type tableFieldDef struct {
 	Name       string `yaml:"name"`
 	PrimaryKey bool   `yaml:"primary_key"`
+	Required   bool   `yaml:"required"`
 }
 
 var (
@@ -38,7 +40,8 @@ var (
 func GetTableMetadata() *TableMetadata {
 	tableMetadataOnce.Do(func() {
 		tableMetadata = &TableMetadata{
-			primaryKeys: make(map[string][]string),
+			primaryKeys:    make(map[string][]string),
+			requiredFields: make(map[string]map[string]bool),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -89,15 +92,22 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		return err
 	}
 
-	// Find all primary key fields (supports composite keys)
+	// Find all primary key fields and required fields
 	var pkFields []string
+	reqFields := make(map[string]bool)
 	for _, field := range tableDef.Table.Fields {
 		if field.PrimaryKey {
 			pkFields = append(pkFields, field.Name)
 		}
+		if field.Required {
+			reqFields[field.Name] = true
+		}
 	}
 	if len(pkFields) > 0 {
 		tm.primaryKeys[tableDef.Table.Name] = pkFields
+	}
+	if len(reqFields) > 0 {
+		tm.requiredFields[tableDef.Table.Name] = reqFields
 	}
 
 	return nil
@@ -118,4 +128,14 @@ func (tm *TableMetadata) GetPrimaryKeyFields(tableName string) []string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.primaryKeys[tableName]
+}
+
+// IsFieldRequired returns whether a field is required for a table
+func (tm *TableMetadata) IsFieldRequired(tableName, fieldName string) bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	if reqFields, ok := tm.requiredFields[tableName]; ok {
+		return reqFields[fieldName]
+	}
+	return false
 }
