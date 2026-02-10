@@ -67,8 +67,9 @@ func (c *NavReportRunner) UsesProgress() bool {
 
 // StartJobRequest is the request body for starting a NAV job
 type StartJobRequest struct {
-	JobID     string `json:"JobId"`
-	InputJSON string `json:"InputJson"`
+	JobID       string `json:"JobId"`
+	CompanyName string `json:"CompanyName"`
+	InputJSON   string `json:"InputJson"`
 }
 
 // StartJobResponse is the response from the start job endpoint
@@ -117,8 +118,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// Step 1: Start the job via POST (fire-and-forget)
 	// The NAV service POST is synchronous and can take minutes, so we don't wait for it
 	startReq := StartJobRequest{
-		JobID:     jobID,
-		InputJSON: inputJSON,
+		JobID:       jobID,
+		CompanyName: c.company,
+		InputJSON:   inputJSON,
 	}
 
 	reqBody, err := json.Marshal(startReq)
