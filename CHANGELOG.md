@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.32](https://github.com/hansjlachmann/openerp/compare/v0.1.31...v0.1.32) (2026-02-10)
+
+
+### Features
+
+* send company name in NavReportRunner startjob request ([1614a61](https://github.com/hansjlachmann/openerp/commit/1614a614432cd4267d0a8bce1ca7d0ce0dbbe030))
+
 ## [0.1.31](https://github.com/hansjlachmann/openerp/compare/v0.1.30...v0.1.31) (2026-02-10)
 
 
