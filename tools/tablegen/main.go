@@ -2384,17 +2384,22 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{ {{- range $i, $opt := .Options }}{{- if $i }}, {{ end }}"{{ $opt }}"{{- end }} }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.{{ upperFirst .Name }} = 0
+			} else {
+				options := []string{ {{- range $i, $opt := .Options }}{{- if $i }}, {{ end }}"{{ $opt }}"{{- end }} }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field {{ .Name }} (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field {{ .Name }} (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field {{ .Name }} (expected {{ $.StructName }}{{ upperFirst .Name }}, int, or string)")

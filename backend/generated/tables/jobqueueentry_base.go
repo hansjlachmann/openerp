@@ -1237,17 +1237,22 @@ func (t *JobQueueEntryBase) ValidateField(fieldName string, value interface{}) e
 			t.Status = JobQueueEntryStatus(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{"Success", "In Process", "Error" }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.Status = JobQueueEntryStatus(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.Status = 0
+			} else {
+				options := []string{"Success", "In Process", "Error" }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Status = JobQueueEntryStatus(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field status (expected JobQueueEntryStatus, int, or string)")

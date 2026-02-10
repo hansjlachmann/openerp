@@ -1571,17 +1571,22 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 			t.Status = CustomerStatus(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{" ", "Open", "Released", "Posted", "Blocked" }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.Status = CustomerStatus(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.Status = 0
+			} else {
+				options := []string{" ", "Open", "Released", "Posted", "Blocked" }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Status = CustomerStatus(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field status (expected CustomerStatus, int, or string)")
