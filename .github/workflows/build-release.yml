@@ -214,4 +214,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add .env
           git diff --staged --quiet || git commit -m "chore: update .env to version ${{ needs.release.outputs.version }}"
+          git pull --rebase origin main
           git push
