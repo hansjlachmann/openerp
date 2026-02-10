@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.31](https://github.com/hansjlachmann/openerp/compare/v0.1.30...v0.1.31) (2026-02-10)
+
+
+### Bug Fixes
+
+* update .env version and prevent CI race condition in .env commit step ([7a64f62](https://github.com/hansjlachmann/openerp/commit/7a64f62958feadae9e018683520a2bb6ce55e636))
+
 ## [0.1.30](https://github.com/hansjlachmann/openerp/compare/v0.1.29...v0.1.30) (2026-02-10)
 
 
