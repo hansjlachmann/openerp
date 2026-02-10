@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.33](https://github.com/hansjlachmann/openerp/compare/v0.1.32...v0.1.33) (2026-02-10)
+
+
+### Bug Fixes
+
+* default empty string to first option for Option fields (NAV/BC behavior) ([9e0b75e](https://github.com/hansjlachmann/openerp/commit/9e0b75e7a5ac0fb1c4989ab270a4d92e999f8a0b))
+
 ## [0.1.32](https://github.com/hansjlachmann/openerp/compare/v0.1.31...v0.1.32) (2026-02-10)
 
 
