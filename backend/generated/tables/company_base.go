@@ -16,7 +16,7 @@ import (
 // CompanyBase represents Table 10: Company
 // This is the generated base struct - embed in your wrapper struct and override Init
 type CompanyBase struct {
-	Name types.Code `db:"name,pk"`
+	Name types.Text `db:"name,pk"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -194,23 +194,23 @@ func (t *CompanyBase) convertPlaceholders(sql string, count int) string {
 func (t *CompanyBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var nameVal types.Code
+		var nameVal types.Text
 		if v, exists := pkMap["name"]; exists {
 			switch val := v.(type) {
-			case types.Code:
+			case types.Text:
 				nameVal = val
 			case string:
-				nameVal = types.NewCode(val)
+				nameVal = types.NewText(val)
 			}
 		}
 		return t.GetByPK(nameVal)
 	}
 	// Handle single primary key (for tables with only one PK field)
 	switch pk := primaryKey.(type) {
-	case types.Code:
+	case types.Text:
 		return t.GetByPK(pk)
 	case string:
-		return t.GetByPK(types.NewCode(pk))
+		return t.GetByPK(types.NewText(pk))
 	}
 
 	fmt.Printf("Error: Invalid primary key type for Company.Get: %T (use map for composite keys)\n", primaryKey)
@@ -218,7 +218,7 @@ func (t *CompanyBase) Get(primaryKey interface{}) bool {
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *CompanyBase) GetByPK(name types.Code) bool {
+func (t *CompanyBase) GetByPK(name types.Text) bool {
 	tableName := CompanyTableName
 	var nameNull sql.NullString
 
@@ -248,7 +248,7 @@ func (t *CompanyBase) GetByPK(name types.Code) bool {
 	}
 
 	// Populate fields
-	t.Name = types.NewCode(nameNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -316,7 +316,7 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Name)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE name = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND name = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -342,7 +342,7 @@ func (t *CompanyBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
-	_ = oldValue // No non-PK fields to compare
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -368,7 +368,7 @@ func (t *CompanyBase) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -580,7 +580,7 @@ func (t *CompanyBase) FindFirst() bool {
 	}
 
 	// Populate fields
-	t.Name = types.NewCode(nameNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -614,7 +614,7 @@ func (t *CompanyBase) FindLast() bool {
 	}
 
 	// Populate fields
-	t.Name = types.NewCode(nameNull.String)
+	t.Name = types.NewText(nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -737,7 +737,7 @@ func (t *CompanyBase) Next(steps ...int) bool {
 		}
 
 		// Populate fields
-		t.Name = types.NewCode(nameNull.String)
+		t.Name = types.NewText(nameNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -801,7 +801,7 @@ func (t *CompanyBase) FindSetBuffered() bool {
 		}
 
 		// Populate special type fields
-		record.Name = types.NewCode(nameNull.String)
+		record.Name = types.NewText(nameNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -954,10 +954,10 @@ func (t *CompanyBase) ValidateField(fieldName string, value interface{}) error {
 	switch fieldNameLower {
 	case "name":
 		// Set field value
-		if v, ok := value.(types.Code); ok {
+		if v, ok := value.(types.Text); ok {
 			t.Name = v
 		} else if v, ok := value.(string); ok {
-			t.Name = types.NewCode(v)
+			t.Name = types.NewText(v)
 		} else {
 			return fmt.Errorf("invalid type for field name")
 		}
@@ -996,7 +996,7 @@ func (t *CompanyBase) ToMap() map[string]interface{} {
 func (t *CompanyBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["name"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Name = types.NewCode(s)
+			t.Name = types.NewText(s)
 		}
 	}
 }
@@ -1022,7 +1022,7 @@ func (t *CompanyBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
 			Name:       "name",
-			Type:       tables.FieldTypeCode,
+			Type:       tables.FieldTypeText,
 			Length:     100,
 			Required:   true,
 			Editable:   false,

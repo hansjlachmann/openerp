@@ -29,8 +29,9 @@ func getLanguageOrDefault(sess *session.Session) string {
 
 // AuthHandler handles authentication API requests
 type AuthHandler struct {
-	db     *sql.DB
-	dbType database.DBType
+	db          *sql.DB
+	dbType      database.DBType
+	companyInit CompanyInitializer
 }
 
 // NewAuthHandler creates a new auth handler (defaults to SQLite)
@@ -41,6 +42,11 @@ func NewAuthHandler(db *sql.DB) *AuthHandler {
 // NewAuthHandlerWithDBType creates a new auth handler with explicit database type
 func NewAuthHandlerWithDBType(db *sql.DB, dbType database.DBType) *AuthHandler {
 	return &AuthHandler{db: db, dbType: dbType}
+}
+
+// NewAuthHandlerFull creates an auth handler with company initializer support
+func NewAuthHandlerFull(db *sql.DB, dbType database.DBType, companyInit CompanyInitializer) *AuthHandler {
+	return &AuthHandler{db: db, dbType: dbType, companyInit: companyInit}
 }
 
 // Login authenticates a user and creates a session
@@ -481,6 +487,13 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 	_, err = h.db.Exec(`INSERT INTO "Company" (name) VALUES ($1)`, name)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyCreateFailed().Message("en-US")))
+	}
+
+	// Initialize company-scoped tables for the new company
+	if h.companyInit != nil {
+		if initErr := h.companyInit.InitializeCompanyTablesWithDBType(h.db, name, h.dbType); initErr != nil {
+			fmt.Printf("Warning: Failed to initialize tables for company '%s': %v\n", name, initErr)
+		}
 	}
 
 	ts := i18n.GetInstance()

@@ -1,0 +1,39 @@
+page:
+  id: 11
+  type: List
+  name: Companies
+  source_table: Company
+  caption: Companies
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: name
+          width: 300
+          primary_key: true
+
+  actions:
+    - name: New
+      caption: New
+      shortcut: Ctrl+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

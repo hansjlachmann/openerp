@@ -16,10 +16,16 @@ import (
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
+// CompanyInitializer can create company-scoped tables for a newly inserted company.
+type CompanyInitializer interface {
+	InitializeCompanyTablesWithDBType(db *sql.DB, companyName string, dbType database.DBType) error
+}
+
 // TablesHandler handles table-related API requests
 type TablesHandler struct {
-	db     *sql.DB
-	dbType database.DBType
+	db          *sql.DB
+	dbType      database.DBType
+	companyInit CompanyInitializer
 }
 
 // NewTablesHandler creates a new tables handler (defaults to SQLite)
@@ -30,6 +36,11 @@ func NewTablesHandler(db *sql.DB) *TablesHandler {
 // NewTablesHandlerWithDBType creates a new tables handler with explicit database type
 func NewTablesHandlerWithDBType(db *sql.DB, dbType database.DBType) *TablesHandler {
 	return &TablesHandler{db: db, dbType: dbType}
+}
+
+// NewTablesHandlerFull creates a tables handler with company initializer support
+func NewTablesHandlerFull(db *sql.DB, dbType database.DBType, companyInit CompanyInitializer) *TablesHandler {
+	return &TablesHandler{db: db, dbType: dbType, companyInit: companyInit}
 }
 
 // getTable creates a table instance by name using the registry
@@ -480,6 +491,14 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 	}
 
+	// Initialize company-scoped tables when a new Company is created
+	if tableName == "Company" && h.companyInit != nil {
+		companyName := table.GetPrimaryKeyValue()
+		if err := h.companyInit.InitializeCompanyTablesWithDBType(h.db, companyName, h.dbType); err != nil {
+			fmt.Printf("Warning: Failed to initialize tables for company '%s': %v\n", companyName, err)
+		}
+	}
+
 	response := apitypes.NewSuccessResponse(table.ToMap())
 	return c.JSON(response)
 }
@@ -600,9 +619,22 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
+	// Capture company name before delete for table cleanup
+	var deletedCompanyName string
+	if tableName == "Company" {
+		deletedCompanyName = table.GetPrimaryKeyValue()
+	}
+
 	// Delete record
 	if !table.Delete(true) {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
+	}
+
+	// Drop company-scoped tables after a Company is deleted
+	if deletedCompanyName != "" && h.dbType == database.DBTypePostgres {
+		h.dropCompanyTables(deletedCompanyName)
+	} else if deletedCompanyName != "" {
+		h.dropCompanyTablesSQLite(deletedCompanyName)
 	}
 
 	response := apitypes.NewSuccessResponse(nil)
@@ -637,7 +669,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Validate field
+	// Validate field (runs OnValidate trigger)
 	if err := table.ValidateField(req.Field, req.Value); err != nil {
 		return c.JSON(apitypes.APIResponse{
 			Success: false,
@@ -645,9 +677,79 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check table relation: verify the value exists in the related table
+	if valueStr, ok := req.Value.(string); ok && valueStr != "" {
+		relFields := table.GetTableRelationFields()
+		if relInfo, hasRelation := relFields[req.Field]; hasRelation {
+			relTable, relErr := h.getTable(relInfo.Table, company)
+			if relErr == nil {
+				if !relTable.Get(valueStr) {
+					relCaption := i18n.GetInstance().TableCaption(relInfo.Table, language)
+					return c.JSON(apitypes.APIResponse{
+						Success: false,
+						Error:   fmt.Sprintf("%s '%s' does not exist", relCaption, valueStr),
+					})
+				}
+			}
+		}
+	}
+
 	return c.JSON(apitypes.APIResponse{
 		Success: true,
 	})
+}
+
+// dropCompanyTables drops all "companyName$*" tables from PostgreSQL
+func (h *TablesHandler) dropCompanyTables(companyName string) {
+	rows, err := h.db.Query(`
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = 'public'
+		AND table_name LIKE $1
+	`, companyName+"$%")
+	if err != nil {
+		fmt.Printf("Warning: Failed to find company tables for '%s': %v\n", companyName, err)
+		return
+	}
+	defer rows.Close()
+
+	var tablesToDrop []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err == nil {
+			tablesToDrop = append(tablesToDrop, name)
+		}
+	}
+
+	for _, name := range tablesToDrop {
+		if _, err := h.db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)); err != nil {
+			fmt.Printf("Warning: Failed to drop table '%s': %v\n", name, err)
+		}
+	}
+}
+
+// dropCompanyTablesSQLite drops all "companyName$*" tables from SQLite
+func (h *TablesHandler) dropCompanyTablesSQLite(companyName string) {
+	rows, err := h.db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?`, companyName+"$%")
+	if err != nil {
+		fmt.Printf("Warning: Failed to find company tables for '%s': %v\n", companyName, err)
+		return
+	}
+	defer rows.Close()
+
+	var tablesToDrop []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err == nil {
+			tablesToDrop = append(tablesToDrop, name)
+		}
+	}
+
+	for _, name := range tablesToDrop {
+		if _, err := h.db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)); err != nil {
+			fmt.Printf("Warning: Failed to drop table '%s': %v\n", name, err)
+		}
+	}
 }
 
 // containsAny checks if slice contains any of the items
