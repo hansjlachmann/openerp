@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.30](https://github.com/hansjlachmann/openerp/compare/v0.1.29...v0.1.30) (2026-02-07)
+## [0.1.30](https://github.com/hansjlachmann/openerp/compare/v0.1.29...v0.1.30) (2026-02-10)
 
 
 ### Features
@@ -69,6 +69,7 @@
 * smart auto-save with change detection and UI improvements ([e56250c](https://github.com/hansjlachmann/openerp/commit/e56250c3d9bcba6c804c59e140751a4fcd41f0db))
 * UI components, multi-language support, and editable list improvements ([#17](https://github.com/hansjlachmann/openerp/issues/17)) ([e8faa99](https://github.com/hansjlachmann/openerp/commit/e8faa993df6c01cc39f47917c70c38baf3f45d7e))
 * update NavReportRunner to use dedicated PDF endpoint ([a525860](https://github.com/hansjlachmann/openerp/commit/a525860d1bb55908b5b91d8605679aa5bf2c22e6))
+* use LookupDropdown in list page edit cells, fix composite PK SQL ([30f3ed4](https://github.com/hansjlachmann/openerp/commit/30f3ed4cc150e4b64aede3fccd9f137004df12b9))
 
 
 ### Bug Fixes
