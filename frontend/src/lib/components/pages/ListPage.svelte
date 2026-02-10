@@ -8,6 +8,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
+	import LookupDropdown from './LookupDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
@@ -537,22 +538,54 @@
 	let pendingSave: { record: Record<string, any>; rowIndex: number } | null = null;
 
 	// Auto-save when leaving a cell
-	async function handleCellBlur(record: Record<string, any>, rowIndex: number) {
+	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string) {
 		if (!page || !editMode) return;
 
-		// If already saving, queue this save for later
+		// If already saving, queue this save for later (must check before async validation)
 		if (isSaving) {
 			pendingSave = { record, rowIndex };
 			return;
 		}
 
 		isSaving = true;
+
+		// Validate table_relation fields: check if the value exists in the related table
+		// Skip validation for fields using LookupDropdown (it validates internally)
+		if (fieldName) {
+			const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === fieldName);
+			const hasAdvancedLookup = lookups[fieldName]?.columns && lookups[fieldName]?.rows?.length;
+			const value = record[fieldName];
+			if (fieldDef?.table_relation && !hasAdvancedLookup && value && value !== '') {
+				try {
+					const result = await api.validateField(page.page.source_table, fieldName, value);
+					if (!result.valid) {
+						toast.error(result.error || `Invalid value for ${fieldName}`);
+						record[fieldName] = '';
+						isSaving = false;
+						return;
+					}
+				} catch {
+					// Validation endpoint failed — skip validation, don't block
+				}
+			}
+		}
 		try {
 			// Check if this is a new record (has _isNew flag)
 			const isNew = record._isNew === true;
 			const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			if (isNew) {
+				// NAV/BC delayed insert: only insert when the user LEAVES THE ROW.
+				// If focus moved to another cell in the same row, defer the insert
+				// so the user can fill all fields (including optional PKs) first.
+				const activeEl = document.activeElement;
+				const activeRowStr = activeEl?.getAttribute('data-row') ||
+					activeEl?.closest('[data-row]')?.getAttribute('data-row');
+				if (activeRowStr === String(rowIndex)) {
+					// Still on same row — user is still filling fields, defer insert
+					return;
+				}
+
 				// Delayed insert: required PK fields must be non-empty,
 				// optional PK fields can be blank (e.g., blank company = all companies)
 				const allPKsFilled = primaryKeyFieldsList.length === 0 || primaryKeyFieldsList.every(pk => {
@@ -856,12 +889,25 @@
 	function focusCell(rowIndex: number, colIndex: number) {
 		// Use a longer timeout to ensure Svelte has finished any re-renders
 		setTimeout(() => {
+			// Try direct input/select first (regular inputs and simple lookups)
 			const input = document.querySelector(
-				`input[data-row="${rowIndex}"][data-col="${colIndex}"]`
-			) as HTMLInputElement;
+				`input[data-row="${rowIndex}"][data-col="${colIndex}"], select[data-row="${rowIndex}"][data-col="${colIndex}"]`
+			) as HTMLInputElement | HTMLSelectElement | null;
 			if (input) {
 				input.focus();
-				input.select();
+				if (input instanceof HTMLInputElement) input.select();
+				return;
+			}
+			// Try container div (LookupDropdown wrapper) and focus the input inside
+			const container = document.querySelector(
+				`div[data-row="${rowIndex}"][data-col="${colIndex}"]`
+			);
+			if (container) {
+				const innerInput = container.querySelector('input') as HTMLInputElement | null;
+				if (innerInput) {
+					innerInput.focus();
+					innerInput.select();
+				}
 			}
 		}, 50);
 	}
@@ -1577,7 +1623,7 @@
 				</tr>
 			</thead>
 			<tbody bind:this={tableBodyElement}>
-				{#each displayRecords as record, index (getRecordKey(record, primaryKeyField))}
+				{#each displayRecords as record, index (getRecordKey(record, primaryKeyField, primaryKeyFieldsList))}
 					<tr
 						class={cn(
 							editMode ? '' : 'cursor-pointer',
@@ -1610,28 +1656,48 @@
 												onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
 											/>
 										</div>
-									{:else if lookups[field.source]?.rows?.length}
-										<input
-											type="text"
+									{:else if lookups[field.source]?.columns && lookups[field.source]?.rows?.length}
+										<!-- Advanced lookup with columns - LookupDropdown -->
+										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper">
+											<LookupDropdown
+												columns={lookups[field.source].columns ?? []}
+												rows={lookups[field.source].rows ?? []}
+												value={record[field.source] || ''}
+												fieldName={getFieldCaption(field.source, captions, field.caption)}
+												captions={captions}
+												compact={true}
+												onselect={(key) => {
+													record[field.source] = key;
+													currentCellRow = index;
+													currentCellCol = colIndex;
+												}}
+												onblur={() => {
+													handleCellBlur(record, index, field.source);
+												}}
+											/>
+										</div>
+									{:else if lookups[field.source]?.simple}
+										<!-- Simple lookup - select dropdown -->
+										<select
 											data-row={index}
 											data-col={colIndex}
 											class="edit-cell-input"
-											list="lookup-{field.source}-{index}"
-											bind:value={record[field.source]}
+											value={record[field.source] || ''}
 											onfocus={() => {
 												currentCellRow = index;
 												currentCellCol = colIndex;
 											}}
-											onblur={async () => {
-												await handleCellBlur(record, index);
+											onchange={(e) => {
+												record[field.source] = (e.target as HTMLSelectElement).value;
+												handleCellBlur(record, index, field.source);
 											}}
 											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
-										/>
-										<datalist id="lookup-{field.source}-{index}">
-											{#each lookups[field.source].rows as row}
-												<option value={row._key}></option>
+										>
+											<option value="">—</option>
+											{#each Object.entries(lookups[field.source].simple ?? {}) as [key, label]}
+												<option value={key}>{label}</option>
 											{/each}
-										</datalist>
+										</select>
 									{:else}
 										<input
 											type="text"
@@ -1644,7 +1710,7 @@
 												currentCellCol = colIndex;
 											}}
 											onblur={async () => {
-												await handleCellBlur(record, index);
+												await handleCellBlur(record, index, field.source);
 											}}
 											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
 										/>
@@ -2012,6 +2078,10 @@
 		background-color: #1f2937; /* gray-800 */
 		border-color: #374151; /* gray-700 */
 		color: #d1d5db; /* gray-300 */
+	}
+
+	.lookup-cell-wrapper {
+		width: 100%;
 	}
 
 	.edit-cell-input {

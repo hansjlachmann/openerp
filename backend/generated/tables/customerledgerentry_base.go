@@ -1046,7 +1046,7 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Entry_no)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE entry_no = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND entry_no = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -1072,6 +1072,7 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -1269,7 +1270,7 @@ func (t *CustomerLedgerEntryBase) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE entry_no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))

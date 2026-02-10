@@ -38,7 +38,7 @@ table:
             width: 200
 
     - name: company
-      type: types.Code
+      type: types.Text
       db_name: company
       caption: Company
       description: Leave blank for access to all companies

@@ -20,6 +20,7 @@
 		tabindex?: number;
 		disabled?: boolean;
 		error?: boolean;
+		compact?: boolean; // Compact mode for list page edit cells (no border, tight padding)
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -34,6 +35,7 @@
 		tabindex,
 		disabled = false,
 		error = false,
+		compact = false,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -116,18 +118,27 @@
 		}
 	}
 
+	// Track whether handleSelect already set the value (prevents handleBlur from re-validating)
+	let selectHandled = false;
+
 	function handleSelect(row: LookupRow) {
 		value = row._key;
 		inputValue = row._key;
 		isOpen = false;
+		selectHandled = true;
 		onselect?.(row._key);
-		onblur?.();
+		// Re-focus the input — user can Tab to next field naturally.
+		// Do NOT call onblur here; the save should only fire when focus leaves the component.
+		inputRef?.focus();
 	}
 
 	// Handle input change (user typing)
 	function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		inputValue = target.value;
+
+		// User typed after a selection — need to re-validate on blur
+		selectHandled = false;
 
 		// Open dropdown when typing
 		if (!isOpen && inputValue) {
@@ -142,33 +153,43 @@
 	function handleBlur() {
 		// Small delay to allow click on dropdown to register
 		setTimeout(() => {
-			if (!containerRef?.contains(document.activeElement)) {
-				isOpen = false;
-
-				// Validate input - find matching row
-				const trimmedInput = inputValue.trim().toUpperCase();
-				if (trimmedInput) {
-					// Find exact match by key (case-insensitive)
-					const matchingRow = rows.find(r => r._key.toUpperCase() === trimmedInput);
-					if (matchingRow) {
-						value = matchingRow._key;
-						inputValue = matchingRow._key;
-						onselect?.(matchingRow._key);
-					} else {
-						// No match - show error and revert to previous value
-						const fieldLabel = fieldName || 'Value';
-						toast.error(t(ERR.FIELD_NOT_EXIST, fieldLabel, inputValue.trim()));
-						inputValue = value || '';
-					}
-				} else {
-					// Empty input - clear value
-					value = '';
-					inputValue = '';
-					onselect?.('');
-				}
-
-				onblur?.();
+			// Focus still inside the component (e.g. input re-focused after handleSelect) — do nothing
+			if (containerRef?.contains(document.activeElement)) {
+				return;
 			}
+
+			isOpen = false;
+
+			// If handleSelect already set the value, skip re-validation but still fire onblur
+			if (selectHandled) {
+				selectHandled = false;
+				onblur?.();
+				return;
+			}
+
+			// Validate input - find matching row
+			const trimmedInput = inputValue.trim().toUpperCase();
+			if (trimmedInput) {
+				// Find exact match by key (case-insensitive)
+				const matchingRow = rows.find(r => r._key.toUpperCase() === trimmedInput);
+				if (matchingRow) {
+					value = matchingRow._key;
+					inputValue = matchingRow._key;
+					onselect?.(matchingRow._key);
+				} else {
+					// No match - show error and revert to previous value
+					const fieldLabel = fieldName || 'Value';
+					toast.error(t(ERR.FIELD_NOT_EXIST, fieldLabel, inputValue.trim()));
+					inputValue = value || '';
+				}
+			} else {
+				// Empty input - clear value
+				value = '';
+				inputValue = '';
+				onselect?.('');
+			}
+
+			onblur?.();
 		}, 150);
 	}
 
@@ -237,7 +258,7 @@
 	<div class="lookup-input-wrapper">
 		<input
 			type="text"
-			class={cn('lookup-input', error && 'input-error')}
+			class={cn('lookup-input', compact && 'lookup-input-compact', error && 'input-error')}
 			bind:this={inputRef}
 			value={inputValue}
 			{tabindex}
@@ -254,13 +275,13 @@
 		/>
 		<button
 			type="button"
-			class="lookup-arrow-btn"
+			class={cn('lookup-arrow-btn', compact && 'lookup-arrow-btn-compact')}
 			tabindex={-1}
 			{disabled}
 			onclick={handleToggle}
 			aria-label="Toggle dropdown"
 		>
-			<span class="lookup-arrow">{isOpen ? '▲' : '▼'}</span>
+			<span class={cn('lookup-arrow', compact && 'lookup-arrow-compact')}>{isOpen ? '▲' : '▼'}</span>
 		</button>
 	</div>
 
@@ -350,6 +371,43 @@
 
 	.lookup-arrow {
 		@apply text-xs text-gray-400;
+	}
+
+	/* Compact mode styles (for list page edit cells) */
+	.lookup-input-compact {
+		border: 0 !important;
+		background: transparent !important;
+		border-radius: 0 !important;
+		min-height: 0 !important;
+		height: 1.3em !important;
+		max-height: 1.3em !important;
+		padding: 2px 18px 2px 6px !important;
+		line-height: 1.3 !important;
+		font-size: 0.875rem;
+		box-shadow: none !important;
+		outline: none !important;
+	}
+
+	.lookup-input-compact:focus {
+		outline: none !important;
+		box-shadow: none !important;
+		ring: 0 !important;
+		border: 0 !important;
+		background: transparent !important;
+	}
+
+	:global(.dark) .lookup-input-compact,
+	:global(.dark) .lookup-input-compact:focus {
+		background: transparent !important;
+		color: white;
+	}
+
+	.lookup-arrow-btn-compact {
+		@apply px-1;
+	}
+
+	.lookup-arrow-compact {
+		font-size: 0.5rem;
 	}
 
 	.lookup-panel {

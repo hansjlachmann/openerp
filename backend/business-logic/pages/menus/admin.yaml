@@ -21,6 +21,10 @@ menu:
         page_id: 26
         icon: calendar
 
+      - name: Companies
+        page_id: 11
+        icon: building
+
       - name: Menus
         page_id: 10
         icon: menu

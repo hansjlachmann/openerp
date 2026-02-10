@@ -25,9 +25,10 @@ func init() {
 
 // Server represents the API server
 type Server struct {
-	app    *fiber.App
-	db     *sql.DB
-	dbType database.DBType
+	app         *fiber.App
+	db          *sql.DB
+	dbType      database.DBType
+	companyInit handlers.CompanyInitializer
 }
 
 // NewServer creates a new API server (defaults to SQLite)
@@ -37,6 +38,11 @@ func NewServer(db *sql.DB) *Server {
 
 // NewServerWithDBType creates a new API server with explicit database type
 func NewServerWithDBType(db *sql.DB, dbType database.DBType) *Server {
+	return NewServerFull(db, dbType, nil)
+}
+
+// NewServerFull creates a new API server with company initializer support
+func NewServerFull(db *sql.DB, dbType database.DBType, companyInit handlers.CompanyInitializer) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:      "OpenERP API v1.0",
 		ServerHeader: "OpenERP",
@@ -44,9 +50,10 @@ func NewServerWithDBType(db *sql.DB, dbType database.DBType) *Server {
 	})
 
 	return &Server{
-		app:    app,
-		db:     db,
-		dbType: dbType,
+		app:         app,
+		db:          db,
+		dbType:      dbType,
+		companyInit: companyInit,
 	}
 }
 
@@ -62,10 +69,10 @@ func (s *Server) Setup() {
 
 	// Initialize handlers
 	sessionHandler := handlers.NewSessionHandler()
-	tablesHandler := handlers.NewTablesHandlerWithDBType(s.db, s.dbType)
+	tablesHandler := handlers.NewTablesHandlerFull(s.db, s.dbType, s.companyInit)
 	pagesHandler := handlers.NewPagesHandler()
 	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
-	authHandler := handlers.NewAuthHandlerWithDBType(s.db, s.dbType)
+	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit)
 	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
 
 	// Auth routes

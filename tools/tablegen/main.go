@@ -1159,7 +1159,7 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 {{- end }}
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `,
+	sqlStr := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s WHERE 1=1{{ range .Table.Fields }}{{ if .PrimaryKey }} AND {{ .DBName }} = ?{{ end }}{{ end }}`" + `,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -1185,6 +1185,7 @@ func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -1257,7 +1258,7 @@ func (t *{{ .BaseStructName }}) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(` + "`DELETE FROM \"%s\" WHERE {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName)
+	sqlStr := fmt.Sprintf(` + "`DELETE FROM \"%s\" WHERE 1=1{{ range .Table.Fields }}{{ if .PrimaryKey }} AND {{ .DBName }} = ?{{ end }}{{ end }}`" + `, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1586,7 +1587,7 @@ func (t *{{ .BaseStructName }}) getOrderByClause() string {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "{{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}{{ end }}{{ end }}"
+	return "{{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}"
 }
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
@@ -1600,7 +1601,7 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}{{ end }}{{ end }} ASC LIMIT 1`" + `, tableName, where)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} ASC LIMIT 1`" + `, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1701,7 +1702,7 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range .Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}{{ end }}{{ end }} DESC LIMIT 1`" + `, tableName, where)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} DESC LIMIT 1`" + `, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

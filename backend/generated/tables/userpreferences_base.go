@@ -414,7 +414,7 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Preference_name)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -440,6 +440,7 @@ func (t *UserPreferencesBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -480,7 +481,7 @@ func (t *UserPreferencesBase) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?page_id = ?preference_type = ?preference_name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -663,7 +664,7 @@ func (t *UserPreferencesBase) getOrderByClause() string {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "user_idpage_idpreference_typepreference_name"
+	return "user_id, page_id, preference_type, preference_name"
 }
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
@@ -673,7 +674,7 @@ func (t *UserPreferencesBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_idpage_idpreference_typepreference_name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_id, page_id, preference_type, preference_name ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -723,7 +724,7 @@ func (t *UserPreferencesBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_idpage_idpreference_typepreference_name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_id, page_id, preference_type, preference_name DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -165,10 +165,10 @@ func main() {
 	var server *api.Server
 	if dbHost != "" {
 		// PostgreSQL mode
-		server = api.NewServerWithDBType(db.GetConnection(), database.DBTypePostgres)
+		server = api.NewServerFull(db.GetConnection(), database.DBTypePostgres, registry)
 	} else {
 		// SQLite mode
-		server = api.NewServer(db.GetConnection())
+		server = api.NewServerFull(db.GetConnection(), database.DBTypeSQLite, registry)
 	}
 	server.Setup()
 

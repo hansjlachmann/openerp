@@ -123,16 +123,18 @@ export function isNewRecord(
  * Uses _tempId for new unsaved records, otherwise uses the primary key value
  * @param record - The record to get key from
  * @param primaryKeyField - Optional primary key field name (from page definition)
+ * @param primaryKeyFields - Optional array of PK field names for composite keys
  */
 export function getRecordKey(
 	record: Record<string, any>,
-	primaryKeyField?: string
+	primaryKeyField?: string,
+	primaryKeyFields?: string[]
 ): string {
 	// For new unsaved records, use the temporary ID
 	if (record._tempId) return record._tempId;
 
-	// Use the primary key value
-	const id = getRecordId(record, primaryKeyField);
+	// Use the composite or single primary key value
+	const id = getRecordId(record, primaryKeyField, primaryKeyFields);
 	if (id) return id;
 
 	// Last resort fallback - should not happen in practice

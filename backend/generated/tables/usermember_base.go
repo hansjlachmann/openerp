@@ -18,7 +18,7 @@ import (
 type UserMemberBase struct {
 	User_id types.Code `db:"user_id,pk"`
 	Role_id types.Code `db:"role_id,pk"`
-	Company types.Code `db:"company,pk"`
+	Company types.Text `db:"company,pk"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -222,13 +222,13 @@ func (t *UserMemberBase) Get(primaryKey interface{}) bool {
 				role_idVal = types.NewCode(val)
 			}
 		}
-		var companyVal types.Code
+		var companyVal types.Text
 		if v, exists := pkMap["company"]; exists {
 			switch val := v.(type) {
-			case types.Code:
+			case types.Text:
 				companyVal = val
 			case string:
-				companyVal = types.NewCode(val)
+				companyVal = types.NewText(val)
 			}
 		}
 		return t.GetByPK(user_idVal, role_idVal, companyVal)
@@ -241,7 +241,7 @@ func (t *UserMemberBase) Get(primaryKey interface{}) bool {
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company types.Code) bool {
+func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company types.Text) bool {
 	tableName := UserMemberTableName
 	var user_idNull sql.NullString
 	var role_idNull sql.NullString
@@ -279,7 +279,7 @@ func (t *UserMemberBase) GetByPK(user_id types.Code, role_id types.Code, company
 	// Populate fields
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Company = types.NewText(companyNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -351,7 +351,7 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Company)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE user_id = ? AND role_id = ? AND company = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND user_id = ? AND role_id = ? AND company = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -377,7 +377,7 @@ func (t *UserMemberBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
-	_ = oldValue // No non-PK fields to compare
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -405,7 +405,7 @@ func (t *UserMemberBase) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ? AND role_id = ? AND company = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND user_id = ? AND role_id = ? AND company = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -623,7 +623,7 @@ func (t *UserMemberBase) FindFirst() bool {
 	// Populate fields
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Company = types.NewText(companyNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -663,7 +663,7 @@ func (t *UserMemberBase) FindLast() bool {
 	// Populate fields
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Role_id = types.NewCode(role_idNull.String)
-	t.Company = types.NewCode(companyNull.String)
+	t.Company = types.NewText(companyNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -792,7 +792,7 @@ func (t *UserMemberBase) Next(steps ...int) bool {
 		// Populate fields
 		t.User_id = types.NewCode(user_idNull.String)
 		t.Role_id = types.NewCode(role_idNull.String)
-		t.Company = types.NewCode(companyNull.String)
+		t.Company = types.NewText(companyNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -862,7 +862,7 @@ func (t *UserMemberBase) FindSetBuffered() bool {
 		// Populate special type fields
 		record.User_id = types.NewCode(user_idNull.String)
 		record.Role_id = types.NewCode(role_idNull.String)
-		record.Company = types.NewCode(companyNull.String)
+		record.Company = types.NewText(companyNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -1039,10 +1039,10 @@ func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) erro
 		return t.OnValidate_Role_id()
 	case "company":
 		// Set field value
-		if v, ok := value.(types.Code); ok {
+		if v, ok := value.(types.Text); ok {
 			t.Company = v
 		} else if v, ok := value.(string); ok {
-			t.Company = types.NewCode(v)
+			t.Company = types.NewText(v)
 		} else {
 			return fmt.Errorf("invalid type for field company")
 		}
@@ -1105,7 +1105,7 @@ func (t *UserMemberBase) FromMap(data map[string]interface{}) {
 	}
 	if v, ok := data["company"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Company = types.NewCode(s)
+			t.Company = types.NewText(s)
 		}
 	}
 }
@@ -1149,7 +1149,7 @@ func (t *UserMemberBase) GetFields() []tables.FieldInfo {
 		},
 		{
 			Name:       "company",
-			Type:       tables.FieldTypeCode,
+			Type:       tables.FieldTypeText,
 			Length:     100,
 			Required:   false,
 			Editable:   false,

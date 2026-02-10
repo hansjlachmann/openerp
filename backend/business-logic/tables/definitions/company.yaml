@@ -6,7 +6,7 @@ table:
   global: true  # Global table - no company prefix
   fields:
     - name: name
-      type: types.Code
+      type: types.Text
       db_name: name
       caption: Name
       primary_key: true

@@ -388,7 +388,7 @@ func (t *PermissionBase) Modify(runTrigger bool) bool {
 	values = append(values, t.Table_name)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE role_id = ? AND table_name = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND role_id = ? AND table_name = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -414,6 +414,7 @@ func (t *PermissionBase) hasFieldChanged(fieldName string) bool {
 	if !exists {
 		return true // Field not in old values, assume changed
 	}
+	_ = oldValue // Suppress unused variable when all fields are PKs
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
@@ -460,7 +461,7 @@ func (t *PermissionBase) Delete(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE role_id = ? AND table_name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND role_id = ? AND table_name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
