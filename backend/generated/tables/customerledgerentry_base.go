@@ -2472,17 +2472,22 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 			t.Document_type = CustomerLedgerEntryDocument_type(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder" }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.Document_type = CustomerLedgerEntryDocument_type(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.Document_type = 0
+			} else {
+				options := []string{" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder" }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Document_type = CustomerLedgerEntryDocument_type(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field document_type (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field document_type (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field document_type (expected CustomerLedgerEntryDocument_type, int, or string)")
@@ -2930,17 +2935,22 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 			t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder" }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.Applies_to_doc_type = 0
+			} else {
+				options := []string{" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder" }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field applies_to_doc_type (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field applies_to_doc_type (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field applies_to_doc_type (expected CustomerLedgerEntryApplies_to_doc_type, int, or string)")
@@ -3078,17 +3088,22 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 			t.Bal_account_type = CustomerLedgerEntryBal_account_type(intVal)
 		// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
-			options := []string{"G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset" }
-			found := false
-			for i, opt := range options {
-				if opt == v {
-					t.Bal_account_type = CustomerLedgerEntryBal_account_type(i)
-					found = true
-					break
+			if v == "" {
+				// Empty string defaults to first option (NAV/BC behavior)
+				t.Bal_account_type = 0
+			} else {
+				options := []string{"G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset" }
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Bal_account_type = CustomerLedgerEntryBal_account_type(i)
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				return fmt.Errorf("invalid option '%s' for field bal_account_type (valid options: %v)", v, options)
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field bal_account_type (valid options: %v)", v, options)
+				}
 			}
 		} else {
 			return fmt.Errorf("invalid type for field bal_account_type (expected CustomerLedgerEntryBal_account_type, int, or string)")
