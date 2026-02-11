@@ -44,11 +44,11 @@ common:
     payment_terms: "Betalingsbetingelser"
     companies: "Selskaper"
     menus: "Menyer"
-    job_queue: "Jobbkø"
-    job_queue_entries: "Jobbkøposter"
+    job_queue: "Oppgavekø"
+    job_queue_entries: "Oppgavekøposter"
     user_roles: "Brukerroller"
-    user_members: "Brukermedlemmer"
-    permissions: "Tillatelser"
+    user_members: "Brukertilganger"
+    permissions: "Rettigheter"
 
   # Common terms
   terms:
