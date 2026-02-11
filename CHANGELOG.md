@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.35](https://github.com/hansjlachmann/openerp/compare/v0.1.34...v0.1.35) (2026-02-11)
+
+
+### Features
+
+* move all frontend translations to backend YAML files ([d441ee7](https://github.com/hansjlachmann/openerp/commit/d441ee7b0a4594846b5b746d5cbafc226d317061))
+* render boolean fields as checkboxes on card pages ([8f30c55](https://github.com/hansjlachmann/openerp/commit/8f30c55963af15c7e63d0a6e4779716fec6d4fa7))
+
+
+### Bug Fixes
+
+* correct Norwegian menu item translations ([533fab5](https://github.com/hansjlachmann/openerp/commit/533fab59c88434aa243a9bbe195a8e79e5970f26))
+* update E2E test to accept translation keys when backend is unavailable ([c6d3eb9](https://github.com/hansjlachmann/openerp/commit/c6d3eb9ad148312cc72d60345738400a3f13f244))
+* use full page reload after login to apply user's language ([688fbbd](https://github.com/hansjlachmann/openerp/commit/688fbbd0521510d189ed22244371ee13ddde5c70))
+
 ## [0.1.34](https://github.com/hansjlachmann/openerp/compare/v0.1.33...v0.1.34) (2026-02-11)
 
 
