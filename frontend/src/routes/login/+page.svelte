@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/services/api';
-	import { t, MSG } from '$lib/services/i18n';
+	import { t, MSG, ERR, LOGIN, PLC, loadTranslations } from '$lib/services/i18n.svelte';
 	import { currentUser } from '$lib/stores/user';
 	import { session } from '$stores/session';
 	import { toast } from '$lib/stores/toast';
@@ -26,6 +26,9 @@
 	let setupPasswordConfirm = $state('');
 
 	onMount(async () => {
+		// Load translations (login page may load before layout's onMount)
+		await loadTranslations();
+
 		// Load companies
 		try {
 			const response = await api.listCompanies();
@@ -76,12 +79,12 @@
 	async function handleLogin() {
 		error = '';
 		if (!userID || !password) {
-			error = 'Please enter both User ID and Password';
+			error = t(ERR.LOGIN_MISSING_CREDENTIALS);
 			return;
 		}
 
 		if (!company) {
-			error = 'Please select a company';
+			error = t(ERR.LOGIN_NO_COMPANY);
 			return;
 		}
 
@@ -96,7 +99,7 @@
 				// Full page reload to apply the new user's language and menu
 				window.location.href = '/';
 			} else {
-				error = response.error || 'Login failed';
+				error = response.error || t(ERR.LOGIN_FAILED);
 				toast.error(error);
 				// Check if it's because no users exist
 				if (error.includes('Invalid credentials')) {
@@ -106,9 +109,9 @@
 			}
 		} catch (err: any) {
 			if (err.status === 401) {
-				error = 'Invalid credentials';
+				error = t(ERR.INVALID_CREDENTIALS);
 			} else {
-				error = 'An error occurred. Please try again.';
+				error = t(ERR.GENERIC_RETRY);
 			}
 			toast.error(error);
 		} finally {
@@ -121,17 +124,17 @@
 
 		// Validation
 		if (!setupUserID || !setupUserName || !setupPassword) {
-			error = 'Please fill in all required fields';
+			error = t(ERR.SETUP_MISSING_FIELDS);
 			return;
 		}
 
 		if (setupPassword !== setupPasswordConfirm) {
-			error = 'Passwords do not match';
+			error = t(ERR.PASSWORD_MISMATCH);
 			return;
 		}
 
 		if (setupPassword.length < 6) {
-			error = 'Password must be at least 6 characters';
+			error = t(ERR.PASSWORD_TOO_SHORT);
 			return;
 		}
 
@@ -153,11 +156,11 @@
 				needsInitialSetup = false;
 				await handleLogin();
 			} else {
-				error = response.error || 'Failed to create user';
+				error = response.error || t(ERR.FAILED_CREATE_USER);
 				toast.error(error);
 			}
 		} catch (err: any) {
-			error = err.message || 'An error occurred during setup';
+			error = err.message || t(ERR.SETUP_ERROR);
 			toast.error(error);
 		} finally {
 			loading = false;
@@ -179,7 +182,7 @@
 	async function handleCreateCompany() {
 		error = '';
 		if (!newCompanyName.trim()) {
-			error = 'Please enter a company name';
+			error = t(ERR.COMPANY_NAME_REQUIRED);
 			return;
 		}
 
@@ -197,11 +200,11 @@
 				showNewCompanyForm = false;
 				newCompanyName = '';
 			} else {
-				error = response.error || 'Failed to create company';
+				error = response.error || t(ERR.FAILED_CREATE_COMPANY);
 				toast.error(error);
 			}
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			error = err.message || t(ERR.GENERIC);
 			toast.error(error);
 		} finally {
 			loading = false;
@@ -213,7 +216,7 @@
 	<div class="login-card">
 		<div class="login-header">
 			<h1>OpenERP</h1>
-			<p>{setupMode ? 'Initial Setup' : 'Sign In'}</p>
+			<p>{setupMode ? t(LOGIN.INITIAL_SETUP) : t(LOGIN.SIGN_IN)}</p>
 		</div>
 
 		{#if error}
@@ -225,7 +228,7 @@
 		{#if setupMode}
 			<!-- Initial Setup Form -->
 			<div class="form-group">
-				<label for="setup-userid">User ID *</label>
+				<label for="setup-userid">{t(LOGIN.USER_ID)} *</label>
 				<input
 					id="setup-userid"
 					type="text"
@@ -237,7 +240,7 @@
 			</div>
 
 			<div class="form-group">
-				<label for="setup-username">Full Name *</label>
+				<label for="setup-username">{t(LOGIN.FULL_NAME)} *</label>
 				<input
 					id="setup-username"
 					type="text"
@@ -249,7 +252,7 @@
 			</div>
 
 			<div class="form-group">
-				<label for="setup-email">Email</label>
+				<label for="setup-email">{t(LOGIN.EMAIL)}</label>
 				<input
 					id="setup-email"
 					type="email"
@@ -261,7 +264,7 @@
 			</div>
 
 			<div class="form-group">
-				<label for="setup-password">Password *</label>
+				<label for="setup-password">{t(LOGIN.PASSWORD)} *</label>
 				<input
 					id="setup-password"
 					type="password"
@@ -273,7 +276,7 @@
 			</div>
 
 			<div class="form-group">
-				<label for="setup-password-confirm">Confirm Password *</label>
+				<label for="setup-password-confirm">{t(LOGIN.CONFIRM_PASSWORD)} *</label>
 				<input
 					id="setup-password-confirm"
 					type="password"
@@ -285,40 +288,40 @@
 			</div>
 
 			<button class="login-button" onclick={handleInitialSetup} disabled={loading}>
-				{loading ? 'Creating...' : 'Create Initial User'}
+				{loading ? t(LOGIN.CREATING) : t(LOGIN.CREATE_INITIAL_USER)}
 			</button>
 
 			<button class="secondary-button" onclick={() => { setupMode = false; needsInitialSetup = false; }} disabled={loading}>
-				Back to Login
+				{t(LOGIN.BACK_TO_LOGIN)}
 			</button>
 		{:else if showNewCompanyForm}
 			<!-- New Company Form -->
 			<div class="form-group">
-				<label for="new-company">Company Name</label>
+				<label for="new-company">{t(LOGIN.COMPANY_NAME)}</label>
 				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					id="new-company"
 					type="text"
 					bind:value={newCompanyName}
-					placeholder="e.g., my-company"
+					placeholder={t(PLC.COMPANY_NAME_EXAMPLE)}
 					disabled={loading}
 					onkeypress={handleKeyPress}
 					autofocus
 				/>
-				<small class="help-text">Letters, numbers, underscores, and hyphens only</small>
+				<small class="help-text">{t(LOGIN.COMPANY_NAME_HELP)}</small>
 			</div>
 
 			<button class="login-button" onclick={handleCreateCompany} disabled={loading}>
-				{loading ? 'Creating...' : 'Create Company'}
+				{loading ? t(LOGIN.CREATING) : t(LOGIN.CREATE_COMPANY)}
 			</button>
 
 			<button class="secondary-button" onclick={() => { showNewCompanyForm = false; error = ''; }} disabled={loading}>
-				Back to Login
+				{t(LOGIN.BACK_TO_LOGIN)}
 			</button>
 		{:else}
 			<!-- Login Form -->
 			<div class="form-group">
-				<label for="company">Company</label>
+				<label for="company">{t(LOGIN.COMPANY)}</label>
 				<div class="company-row">
 					<select
 						id="company"
@@ -327,7 +330,7 @@
 						class="company-select"
 					>
 						{#if companies.length === 0}
-							<option value="">Loading companies...</option>
+							<option value="">{t(LOGIN.LOADING_COMPANIES)}</option>
 						{:else}
 							{#each companies as companyName}
 								<option value={companyName}>{companyName}</option>
@@ -338,13 +341,13 @@
 			</div>
 
 			<div class="form-group">
-				<label for="userid">User ID</label>
+				<label for="userid">{t(LOGIN.USER_ID)}</label>
 				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					id="userid"
 					type="text"
 					bind:value={userID}
-					placeholder="Enter your user ID"
+					placeholder={t(PLC.ENTER_USER_ID)}
 					disabled={loading}
 					onkeypress={handleKeyPress}
 					onblur={() => { userID = userID.toUpperCase(); }}
@@ -353,26 +356,26 @@
 			</div>
 
 			<div class="form-group">
-				<label for="password">Password</label>
+				<label for="password">{t(LOGIN.PASSWORD)}</label>
 				<input
 					id="password"
 					type="password"
 					bind:value={password}
-					placeholder="Enter your password"
+					placeholder={t(PLC.ENTER_PASSWORD)}
 					disabled={loading}
 					onkeypress={handleKeyPress}
 				/>
 			</div>
 
 			<button class="login-button" onclick={handleLogin} disabled={loading}>
-				{loading ? 'Signing in...' : 'Sign In'}
+				{loading ? t(LOGIN.SIGNING_IN) : t(LOGIN.SIGN_IN)}
 			</button>
 
 			{#if needsInitialSetup}
 				<div class="setup-prompt">
-					<p>No users found in the system.</p>
+					<p>{t(LOGIN.NO_USERS_FOUND)}</p>
 					<button class="secondary-button" onclick={() => setupMode = true}>
-						Create Initial User
+						{t(LOGIN.CREATE_INITIAL_USER)}
 					</button>
 				</div>
 			{/if}

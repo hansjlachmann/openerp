@@ -5,6 +5,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
 	import { theme } from '$lib/stores/theme';
+	import { loadTranslations } from '$lib/services/i18n.svelte';
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
@@ -23,9 +24,12 @@
 	});
 
 	// Initialize session and user on app load
-	onMount(() => {
+	onMount(async () => {
 		session.initialize();
 		currentUser.loadFromStorage();
+
+		// Load translations from backend API
+		await loadTranslations();
 
 		// Expose toast to console for testing (development only)
 		if (typeof window !== 'undefined') {

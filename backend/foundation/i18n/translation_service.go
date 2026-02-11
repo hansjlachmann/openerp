@@ -258,6 +258,41 @@ func (s *TranslationService) GetDefaultLanguage() string {
 	return s.defaultLang
 }
 
+// GetAllMessages returns all message translations for a given language.
+// Keys are returned without the "messages." prefix (e.g., "MSG_RECORD_CREATED").
+// Falls back to default language for missing keys.
+func (s *TranslationService) GetAllMessages(language string) map[string]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make(map[string]string)
+	prefix := "messages."
+
+	// First, populate with default language messages
+	if langMap, ok := s.translations[s.defaultLang]; ok {
+		for key, value := range langMap {
+			if strings.HasPrefix(key, prefix) {
+				shortKey := strings.TrimPrefix(key, prefix)
+				result[shortKey] = value
+			}
+		}
+	}
+
+	// Then override with requested language (if different from default)
+	if language != s.defaultLang {
+		if langMap, ok := s.translations[language]; ok {
+			for key, value := range langMap {
+				if strings.HasPrefix(key, prefix) {
+					shortKey := strings.TrimPrefix(key, prefix)
+					result[shortKey] = value
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 // findProjectRoot finds the project root directory
 func findProjectRoot() (string, error) {
 	// Start from current working directory

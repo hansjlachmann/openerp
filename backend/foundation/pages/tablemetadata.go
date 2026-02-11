@@ -11,8 +11,9 @@ import (
 
 // TableMetadata holds metadata about tables for page rendering
 type TableMetadata struct {
-	primaryKeys    map[string][]string // table name -> primary key field names (supports composite keys)
-	requiredFields map[string]map[string]bool // table name -> field name -> required
+	primaryKeys    map[string][]string         // table name -> primary key field names (supports composite keys)
+	requiredFields map[string]map[string]bool   // table name -> field name -> required
+	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
 	mu             sync.RWMutex
 }
 
@@ -27,6 +28,7 @@ type tableDefYAML struct {
 // tableFieldDef represents a field in the table definition
 type tableFieldDef struct {
 	Name       string `yaml:"name"`
+	Type       string `yaml:"type"`
 	PrimaryKey bool   `yaml:"primary_key"`
 	Required   bool   `yaml:"required"`
 }
@@ -42,6 +44,7 @@ func GetTableMetadata() *TableMetadata {
 		tableMetadata = &TableMetadata{
 			primaryKeys:    make(map[string][]string),
 			requiredFields: make(map[string]map[string]bool),
+			fieldTypes:     make(map[string]map[string]string),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -92,9 +95,10 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		return err
 	}
 
-	// Find all primary key fields and required fields
+	// Find all primary key fields, required fields, and field types
 	var pkFields []string
 	reqFields := make(map[string]bool)
+	fTypes := make(map[string]string)
 	for _, field := range tableDef.Table.Fields {
 		if field.PrimaryKey {
 			pkFields = append(pkFields, field.Name)
@@ -102,12 +106,18 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		if field.Required {
 			reqFields[field.Name] = true
 		}
+		if field.Type != "" {
+			fTypes[field.Name] = field.Type
+		}
 	}
 	if len(pkFields) > 0 {
 		tm.primaryKeys[tableDef.Table.Name] = pkFields
 	}
 	if len(reqFields) > 0 {
 		tm.requiredFields[tableDef.Table.Name] = reqFields
+	}
+	if len(fTypes) > 0 {
+		tm.fieldTypes[tableDef.Table.Name] = fTypes
 	}
 
 	return nil
@@ -128,6 +138,16 @@ func (tm *TableMetadata) GetPrimaryKeyFields(tableName string) []string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.primaryKeys[tableName]
+}
+
+// GetFieldType returns the YAML type for a field (e.g., "bool", "code", "text")
+func (tm *TableMetadata) GetFieldType(tableName, fieldName string) string {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	if types, ok := tm.fieldTypes[tableName]; ok {
+		return types[fieldName]
+	}
+	return ""
 }
 
 // IsFieldRequired returns whether a field is required for a table

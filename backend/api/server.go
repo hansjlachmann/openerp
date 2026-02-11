@@ -75,6 +75,10 @@ func (s *Server) Setup() {
 	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit)
 	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
 
+	// Translation routes
+	translationsHandler := handlers.NewTranslationsHandler()
+	api.Get("/translations", translationsHandler.GetTranslations)
+
 	// Auth routes
 	api.Post("/auth/login", authHandler.Login)
 	api.Post("/auth/logout", authHandler.Logout)

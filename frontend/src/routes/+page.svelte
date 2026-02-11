@@ -2,63 +2,12 @@
 	import { onMount } from 'svelte';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
 	import { fetchMenu, clearMenuCache } from '$lib/services/pages';
-	import { tLang } from '$lib/services/i18n';
-	import { currentUser } from '$lib/stores/user';
+	import { t, HOME, MSG } from '$lib/services/i18n.svelte';
 	import type { MenuDefinition } from '$lib/types/pages';
 
 	let menu: MenuDefinition | null = $state(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-
-	// Track user's translation key with local state updated via effect
-	let translationKey = $state('en-US');
-
-	// Update translation key when user store changes
-	$effect(() => {
-		const unsubscribe = currentUser.subscribe((user) => {
-			// Use translation_key if available, otherwise fall back to language
-			translationKey = user?.translation_key || user?.language || 'en-US';
-		});
-		return unsubscribe;
-	});
-
-	// Reactive translations that update when translationKey changes
-	const translations = $derived({
-		homeTitle: tLang('HOME_TITLE', translationKey),
-		homeDescription: tLang('HOME_DESCRIPTION', translationKey),
-		// Group names
-		groupGeneral: tLang('HOME_GENERAL', translationKey),
-		groupSettings: tLang('HOME_SETTINGS', translationKey),
-		// Menu items
-		menuCustomers: tLang('MENU_CUSTOMERS', translationKey),
-		menuUsers: tLang('MENU_USERS', translationKey),
-		menuLanguages: tLang('MENU_LANGUAGES', translationKey),
-		menuPaymentTerms: tLang('MENU_PAYMENT_TERMS', translationKey),
-		menuMenus: tLang('MENU_MENUS', translationKey)
-	});
-
-	// Get translated group name
-	function getGroupName(name: string): string {
-		const groupNameToKey: Record<string, string> = {
-			'General': 'groupGeneral',
-			'Settings': 'groupSettings'
-		};
-		const key = groupNameToKey[name] as keyof typeof translations;
-		return key ? translations[key] : name;
-	}
-
-	// Get translated menu item name
-	function getMenuItemName(name: string): string {
-		const menuNameToKey: Record<string, string> = {
-			'Customers': 'menuCustomers',
-			'Users': 'menuUsers',
-			'Languages': 'menuLanguages',
-			'Payment Terms': 'menuPaymentTerms',
-			'Menus': 'menuMenus'
-		};
-		const key = menuNameToKey[name] as keyof typeof translations;
-		return key ? translations[key] : name;
-	}
 
 	// Clear breadcrumb on home page
 	onMount(async () => {
@@ -83,15 +32,15 @@
 <div class="container mx-auto px-4 py-8">
 	<div class="max-w-4xl mx-auto">
 		<div class="text-center mb-8">
-			<h1 class="text-3xl font-bold text-nav-blue dark:text-blue-400 mb-2">{translations.homeTitle}</h1>
+			<h1 class="text-3xl font-bold text-nav-blue dark:text-blue-400 mb-2">{t(HOME.TITLE)}</h1>
 			<p class="text-gray-600 dark:text-gray-400">
-				{translations.homeDescription}
+				{t(HOME.DESCRIPTION)}
 			</p>
 		</div>
 
 		<!-- Menu Items -->
 		{#if loading}
-			<div class="text-gray-500">Loading menu...</div>
+			<div class="text-gray-500">{t(MSG.LOADING_MENU)}</div>
 		{:else if error}
 			<div class="text-red-500">{error}</div>
 		{:else if menu && menu.menu && menu.menu.length > 0}
@@ -99,7 +48,7 @@
 				{#each menu.menu as group}
 					<div>
 						<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-							{getGroupName(group.name)}
+							{group.name}
 						</h3>
 						<div class="ml-4 space-y-1">
 							{#if group.items && group.items.length > 0}
@@ -110,7 +59,7 @@
 											onclick={() => navigateToPage(item.page_id!)}
 											class="block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
 										>
-											{getMenuItemName(item.name)}
+											{item.name}
 										</button>
 									{/if}
 								{/each}
@@ -120,7 +69,7 @@
 									onclick={() => navigateToPage(group.page_id!)}
 									class="block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
 								>
-									{getMenuItemName(group.name)}
+									{group.name}
 								</button>
 							{/if}
 						</div>
@@ -128,7 +77,7 @@
 				{/each}
 			</div>
 		{:else}
-			<div class="text-gray-500">No menu items available</div>
+			<div class="text-gray-500">{t(MSG.NO_MENU_ITEMS)}</div>
 		{/if}
 	</div>
 </div>

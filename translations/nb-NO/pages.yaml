@@ -23,6 +23,8 @@ pages:
     caption: "Brukerkort"
   user_list:
     caption: "Brukere"
+  users:
+    caption: "Brukere"
 
   # Language pages
   languages:
@@ -32,18 +34,28 @@ pages:
   menus:
     caption: "Menyer"
 
+  # Company pages
+  companies:
+    caption: "Selskaper"
+
   # User Role pages
   user_role_card:
     caption: "Brukerrollekort"
   user_role_list:
     caption: "Brukerroller"
+  user_roles:
+    caption: "Brukerroller"
 
   # User Member pages
   user_member_list:
     caption: "Brukermedlemmer"
+  user_members:
+    caption: "Brukermedlemmer"
 
   # Permission pages
   permission_list:
+    caption: "Tillatelser"
+  permissions:
     caption: "Tillatelser"
 
   # Job Queue pages

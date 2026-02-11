@@ -7,6 +7,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption as getFieldCaptionUtil } from '$lib/utils/fieldHelpers';
 	import { getJson, setJson } from '$lib/utils/storage';
+	import { t, BTN, FILTER as FLT } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		page: PageDefinition;
@@ -271,7 +272,7 @@
 	<Card>
 		{#snippet header()}
 			<div class="filter-header">
-				<h3 class="filter-title">Filter {page.page.caption}</h3>
+				<h3 class="filter-title">{t(FLT.TITLE, page.page.caption)}</h3>
 				<button onclick={onClose} class="close-btn" title="Close filter pane">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -293,7 +294,7 @@
 
 		<!-- Views Section -->
 		<div class="views-section">
-			<h4 class="section-title">Views</h4>
+			<h4 class="section-title">{t(FLT.VIEWS)}</h4>
 
 			<!-- All (default view) -->
 			<button
@@ -301,7 +302,7 @@
 				class:active={activePresetName === null}
 				onclick={() => handleClearAll()}
 			>
-				<span class="view-name">*All</span>
+				<span class="view-name">{t(FLT.ALL)}</span>
 			</button>
 
 			<!-- Saved presets -->
@@ -368,7 +369,7 @@
 											d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
 										/>
 									</svg>
-									Rename
+									{t(FLT.RENAME)}
 								</button>
 								<button
 									class="preset-menu-item delete"
@@ -388,7 +389,7 @@
 											d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
 										/>
 									</svg>
-									Delete
+									{t(FLT.DELETE)}
 								</button>
 							</div>
 						{/if}
@@ -413,14 +414,14 @@
 							d="M12 4v16m8-8H4"
 						/>
 					</svg>
-					<span class="view-name">Save as new view</span>
+					<span class="view-name">{t(FLT.SAVE_VIEW)}</span>
 				</button>
 			{/if}
 		</div>
 
 		<!-- Filter list by Section -->
 		<div class="filter-section">
-			<h4 class="section-title">Filter list by:</h4>
+			<h4 class="section-title">{t(FLT.LIST_BY)}</h4>
 
 			<!-- Active filters -->
 			{#if activeFilters.length > 0}
@@ -459,7 +460,7 @@
 								oninput={(e) => handleFilterChange(index, e.currentTarget.value)}
 								onkeydown={handleKeyDown}
 								onblur={applyFilters}
-								placeholder="Enter filter expression..."
+								placeholder={t(FLT.ENTER_EXPRESSION)}
 							/>
 						</div>
 					{/each}
@@ -484,7 +485,7 @@
 								d="M12 4v16m8-8H4"
 							/>
 						</svg>
-						<span>Filter...</span>
+						<span>{t(FLT.ADD)}</span>
 					</button>
 
 					{#if selectedFieldToAdd === 'show'}
@@ -495,7 +496,7 @@
 							onchange={handleAddField}
 							autofocus
 						>
-							<option value="">Select field...</option>
+							<option value="">{t(FLT.SELECT_FIELD)}</option>
 							{#each availableFields() as field}
 								<option value={field.source}>{getFieldCaption(field)}</option>
 							{/each}
@@ -518,9 +519,9 @@
 <!-- Confirm Delete View Modal -->
 <ConfirmModal
 	open={confirmModalOpen}
-	title="Delete View"
-	message={`Are you sure you want to delete the view "${presetToDelete}"?`}
-	confirmText="Delete"
+	title={t(FLT.DELETE_VIEW)}
+	message={t(FLT.DELETE_VIEW_CONFIRM, presetToDelete || '')}
+	confirmText={t(BTN.DELETE)}
 	variant="danger"
 	onconfirm={confirmDeletePreset}
 	oncancel={cancelDeletePreset}

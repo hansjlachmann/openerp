@@ -23,6 +23,8 @@ pages:
     caption: "User Card"
   user_list:
     caption: "Users"
+  users:
+    caption: "Users"
 
   # Language pages
   languages:
@@ -32,18 +34,28 @@ pages:
   menus:
     caption: "Menus"
 
+  # Company pages
+  companies:
+    caption: "Companies"
+
   # User Role pages
   user_role_card:
     caption: "User Role Card"
   user_role_list:
     caption: "User Roles"
+  user_roles:
+    caption: "User Roles"
 
   # User Member pages
   user_member_list:
     caption: "User Members"
+  user_members:
+    caption: "User Members"
 
   # Permission pages
   permission_list:
+    caption: "Permissions"
+  permissions:
     caption: "Permissions"
 
   # Job Queue pages

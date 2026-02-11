@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
 	import { toast } from '$lib/stores/toast';
-	import { t, ERR } from '$lib/services/i18n';
+	import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 	import type { LookupColumn } from '$lib/types/api';
 	import { clickOutside } from '$lib/actions/clickOutside';
 
@@ -322,7 +322,7 @@
 					</div>
 				{/each}
 				{#if filteredRows().length === 0}
-					<div class="lookup-empty">{inputValue ? 'No matches found' : 'No records found'}</div>
+					<div class="lookup-empty">{inputValue ? t(MSG.NO_MATCHES) : t(MSG.NO_RECORDS)}</div>
 				{/if}
 			</div>
 		</div>

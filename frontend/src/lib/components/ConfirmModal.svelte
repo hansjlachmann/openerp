@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
+	import { t, DLG, BTN } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -14,10 +15,10 @@
 
 	let {
 		open = false,
-		title = 'Confirm',
-		message = 'Are you sure?',
-		confirmText = 'Confirm',
-		cancelText = 'Cancel',
+		title = t(DLG.CONFIRM_TITLE),
+		message = t(DLG.CONFIRM_DEFAULT),
+		confirmText = t(BTN.CONFIRM),
+		cancelText = t(BTN.CANCEL),
 		variant = 'danger',
 		onconfirm,
 		oncancel

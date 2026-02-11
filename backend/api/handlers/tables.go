@@ -328,15 +328,17 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// Get captions
 	ts := i18n.GetInstance()
 	captions := &apitypes.CaptionData{
-		Table:   ts.TableCaption(tableName, language),
-		Fields:  make(map[string]string),
-		Options: make(map[string]map[string]string),
-		Lookups: h.getLookupValuesAsInterface(table, company),
+		Table:      ts.TableCaption(tableName, language),
+		Fields:     make(map[string]string),
+		FieldTypes: make(map[string]string),
+		Options:    make(map[string]map[string]string),
+		Lookups:    h.getLookupValuesAsInterface(table, company),
 	}
 
-	// Add field captions from metadata
+	// Add field captions and types from metadata
 	for _, field := range table.GetFields() {
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
+		captions.FieldTypes[field.Name] = string(field.Type)
 	}
 
 	// Add option field values
@@ -389,14 +391,16 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	// Get captions
 	ts := i18n.GetInstance()
 	captions := &apitypes.CaptionData{
-		Table:   ts.TableCaption(tableName, language),
-		Fields:  make(map[string]string),
-		Options: make(map[string]map[string]string),
-		Lookups: h.getLookupValuesAsInterface(table, company),
+		Table:      ts.TableCaption(tableName, language),
+		Fields:     make(map[string]string),
+		FieldTypes: make(map[string]string),
+		Options:    make(map[string]map[string]string),
+		Lookups:    h.getLookupValuesAsInterface(table, company),
 	}
 
 	for _, field := range table.GetFields() {
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
+		captions.FieldTypes[field.Name] = string(field.Type)
 	}
 
 	// Add option field values

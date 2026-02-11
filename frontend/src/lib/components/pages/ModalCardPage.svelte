@@ -8,12 +8,14 @@
 	import { onMount } from 'svelte';
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
+	import { t, MODAL } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		open?: boolean;
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
+		fieldTypes?: Record<string, string>; // Field type metadata (e.g., "bool", "code", "text")
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		initialEditMode?: boolean;
@@ -30,6 +32,7 @@
 		page,
 		record = $bindable({}),
 		captions = {},
+		fieldTypes = {},
 		options = {},
 		lookups = {},
 		initialEditMode,
@@ -176,8 +179,8 @@
 				onclick={toggleFullscreen}
 				class="control-btn"
 				tabindex="-1"
-				title={modalSize === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen'}
-				aria-label={modalSize === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen'}
+				title={modalSize === 'fullscreen' ? t(MODAL.EXIT_FULLSCREEN) : t(MODAL.FULLSCREEN)}
+				aria-label={modalSize === 'fullscreen' ? t(MODAL.EXIT_FULLSCREEN) : t(MODAL.FULLSCREEN)}
 			>
 				{#if modalSize === 'fullscreen'}
 					<!-- Exit fullscreen icon -->
@@ -219,8 +222,8 @@
 				onclick={handlePopOut}
 				class="control-btn"
 				tabindex="-1"
-				title="Open in new window"
-				aria-label="Open in new window"
+				title={t(MODAL.OPEN_NEW_WINDOW)}
+				aria-label={t(MODAL.OPEN_NEW_WINDOW)}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -239,7 +242,7 @@
 			</button>
 
 			<!-- Close button -->
-			<button onclick={onclose} class="control-btn" tabindex="-1" title="Close" aria-label="Close">
+			<button onclick={onclose} class="control-btn" tabindex="-1" title={t(MODAL.CLOSE)} aria-label={t(MODAL.CLOSE)}>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-5 w-5"
@@ -272,6 +275,7 @@
 			{page}
 			bind:record
 			{captions}
+			{fieldTypes}
 			{options}
 			{lookups}
 			{initialEditMode}
