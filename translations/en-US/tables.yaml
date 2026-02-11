@@ -116,6 +116,7 @@ tables:
       menu: "Menu"
       active: "Active"
       created_at: "Created At"
+      password: "Password"
       last_login: "Last Login"
 
   # Language (Table 8)

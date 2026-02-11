@@ -33,6 +33,23 @@ common:
     loading: "Loading..."
     error_occurred: "An error occurred"
 
+  # Menu items
+  menu:
+    general: "General"
+    settings: "Settings"
+    jobs: "Jobs"
+    customers: "Customers"
+    users: "Users"
+    languages: "Languages"
+    payment_terms: "Payment Terms"
+    companies: "Companies"
+    menus: "Menus"
+    job_queue: "Job Queue"
+    job_queue_entries: "Job Queue Entries"
+    user_roles: "User Roles"
+    user_members: "User Members"
+    permissions: "Permissions"
+
   # Common terms
   terms:
     lcy: "LCY"  # Local Currency

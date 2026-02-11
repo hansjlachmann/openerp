@@ -15,6 +15,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // NavReportRunner - Codeunit 50022: NAV Report Runner
@@ -92,7 +93,7 @@ type GetJobPdfResponse struct {
 
 // Run executes the codeunit - calls external NAV service and tracks progress
 func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
-	_ = record.(*tables.JobQueue) // Not used for now - report ID is hardcoded
+	jobQueue := record.(*tables.JobQueue)
 
 	// Get the dialog for progress updates
 	dialog := fcodeunits.GetCurrentDialog()
@@ -277,6 +278,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 			if dialog != nil {
 				dialog.UpdateWithMessage(1, 100, "PDF ready!")
+			}
+
+			// Log successful execution to Job Queue Entries
+			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success); err != nil {
+				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 			}
 
 			return fcodeunits.Result{

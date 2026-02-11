@@ -116,6 +116,7 @@ tables:
       menu: "Menu"
       active: "Aktiv"
       created_at: "Oprettet"
+      password: "Adgangskode"
       last_login: "Seneste login"
 
   # Language (Table 8)

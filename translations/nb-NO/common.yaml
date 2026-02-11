@@ -33,6 +33,23 @@ common:
     loading: "Laster..."
     error_occurred: "En feil oppstod"
 
+  # Menu items
+  menu:
+    general: "Generelt"
+    settings: "Innstillinger"
+    jobs: "Jobber"
+    customers: "Kunder"
+    users: "Brukere"
+    languages: "Språk"
+    payment_terms: "Betalingsbetingelser"
+    companies: "Selskaper"
+    menus: "Menyer"
+    job_queue: "Jobbkø"
+    job_queue_entries: "Jobbkøposter"
+    user_roles: "Brukerroller"
+    user_members: "Brukermedlemmer"
+    permissions: "Tillatelser"
+
   # Common terms
   terms:
     lcy: "NOK"  # Local Currency (Norwegian Kroner)
