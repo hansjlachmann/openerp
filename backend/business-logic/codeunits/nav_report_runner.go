@@ -78,6 +78,12 @@ type StartJobResponse struct {
 	Result string `json:"result"`
 }
 
+// CheckJobRequest is the request body for checking a NAV job
+type CheckJobRequest struct {
+	JobID       string `json:"JobId"`
+	CompanyName string `json:"CompanyName"`
+}
+
 // CheckJobResponse is the response from the check job endpoint
 type CheckJobResponse struct {
 	Result   string `json:"result"`
@@ -201,11 +207,20 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 		firstPoll = false
 
-		// Check progress via checkjob endpoint
-		checkURL := baseURL + "/api/nav/checkjob/" + jobID
-		log.Printf("[NavReportRunner] Checking progress: GET %s", checkURL)
+		// Check progress via checkjob endpoint (POST with JobId + CompanyName)
+		checkURL := baseURL + "/api/nav/checkjob"
+		checkReq := CheckJobRequest{
+			JobID:       jobID,
+			CompanyName: c.company,
+		}
+		checkReqBody, err := json.Marshal(checkReq)
+		if err != nil {
+			log.Printf("[NavReportRunner] Failed to marshal check request: %v", err)
+			continue
+		}
+		log.Printf("[NavReportRunner] Checking progress: POST %s with body: %s", checkURL, string(checkReqBody))
 
-		checkResp, err := c.client.Get(checkURL)
+		checkResp, err := c.client.Post(checkURL, "application/json", bytes.NewReader(checkReqBody))
 		if err != nil {
 			log.Printf("[NavReportRunner] Progress check error: %v", err)
 			if dialog != nil {
