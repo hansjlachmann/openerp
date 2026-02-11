@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
 	import Button from './Button.svelte';
+	import { t, MSG, DLG, BTN } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -17,7 +18,7 @@
 
 	let {
 		open = false,
-		title = 'Processing...',
+		title = t(MSG.PROCESSING),
 		message = '',
 		progress = 0,
 		error = '',
@@ -46,7 +47,7 @@
 <Modal {open}>
 	<div class="progress-modal">
 		<div class="progress-header">
-			<h3 class="progress-title">{confirmMode ? 'Confirm' : title}</h3>
+			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : title}</h3>
 		</div>
 
 		<div class="progress-body">
@@ -60,8 +61,8 @@
 					<p class="confirm-message">{confirmMessage}</p>
 				</div>
 				<div class="confirm-buttons">
-					<Button variant="secondary" onclick={handleNo}>No</Button>
-					<Button variant="primary" onclick={handleYes}>Yes</Button>
+					<Button variant="secondary" onclick={handleNo}>{t(BTN.NO)}</Button>
+					<Button variant="primary" onclick={handleYes}>{t(BTN.YES)}</Button>
 				</div>
 			{:else if error}
 				<div class="error-container">
@@ -86,7 +87,7 @@
 
 				{#if showCancel}
 					<div class="cancel-container">
-						<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+						<Button variant="secondary" onclick={handleCancel}>{t(BTN.CANCEL)}</Button>
 					</div>
 				{/if}
 			{/if}

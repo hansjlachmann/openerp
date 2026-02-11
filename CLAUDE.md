@@ -100,6 +100,7 @@ translations/            i18n JSON files
 - **Migration ordering**: Migrations run BEFORE table sync in `EnterCompany`. If a migration needs to INSERT into a table, it must first ensure the table exists with `CREATE TABLE IF NOT EXISTS`. Use idempotent inserts (`ON CONFLICT DO NOTHING` for PostgreSQL, `INSERT OR IGNORE` for SQLite).
 - **Case-sensitive DB comparisons**: PostgreSQL string comparison is case-sensitive. Always use the canonical (uppercase) user ID from the database (e.g., `user.User_id.String()`) for permission and lookup queries — never use raw user input directly.
 - **Composite primary keys**: Tables can have composite primary keys (e.g., `User_Member` has `user_id + role_id + company`). `TableMetadata` stores `map[string][]string` for all PK fields. The API uses comma-separated PK values in URLs (e.g., `/delete/HANS2,READER,TEST-COMPANY`), parsed by `parseRecordKey()` in the backend.
+- **Field type metadata**: The backend sends `field_types` (a `map[field_name]type_string`) in API captions for both page definitions and table record responses. The page endpoint (`/api/pages/:id`) reads types from YAML table definitions via `TableMetadata.GetFieldType()` (returns lowercase YAML types like `"bool"`, `"code"`, `"text"`). The table endpoints (`/api/tables/...`) use the Go `FieldType` constants (returns `"Boolean"`, `"Code"`, `"Text"`). The frontend uses the page endpoint's `field_types` for rendering decisions (e.g., boolean checkbox detection).
 
 ## Frontend Conventions
 
@@ -110,6 +111,7 @@ translations/            i18n JSON files
 - **i18n**: All labels and field captions in the frontend must come from backend translation files — never hardcode display text in Svelte components.
 - **BC/NAV keyboard shortcuts**: Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
 - **Code field behavior (ABSOLUTE RULE)**: Fields with `types.Code` must allow typing in any case, then auto-uppercase the value on blur (when the field loses focus). This matches standard NAV/BC behavior. Never force uppercase while typing — only convert on exit. Apply this everywhere Code fields are rendered: login forms, list page edit cells, card page fields, modal dialogs, and any other input bound to a Code field.
+- **Boolean field rendering (ABSOLUTE RULE)**: Fields with YAML `type: bool` must always render as checkboxes — on card pages, list pages (edit and read-only mode), and modal card pages. Detection uses two complementary checks: `typeof value === 'boolean'` (works for existing records) OR `fieldTypes[field.source] === 'bool'` (works for new/empty records where value is `undefined`). The `fieldTypes` metadata flows from backend YAML → `TableMetadata` → page API response `captions.field_types` → `PageRenderer` → `CardPage`/`ListPage`/`ModalCardPage` → `FieldRenderer`. Never rely solely on `typeof` — new records have no value yet, so the backend metadata is essential. This is fully generic: any table field with `type: bool` in its YAML definition automatically gets checkbox rendering everywhere.
 
 ## Generic List Page Behaviors (ABSOLUTE RULES)
 
@@ -122,15 +124,18 @@ All list page behaviors are driven by page metadata — never add table-specific
 - **Composite key encoding**: `getRecordId()` joins all PK values with commas for composite keys. Empty string is a valid PK value (e.g., blank company = all companies access). The function accepts `primaryKeyFields` array for composite support.
 - **Cell blur auto-save**: On blur, existing records call `modifyRecord`. New records are only saved when the user has left the row (see delayed insert above). The `isSaving` guard must be set **before** any async validation to prevent race conditions from concurrent blur events. Fields using `LookupDropdown` (advanced lookup) skip server-side validation in `handleCellBlur` since the component validates internally. Failed saves revert to original values.
 - **Focus management**: `focusCell()` must handle three cell types: direct `<input>` elements, `<select>` elements, and `LookupDropdown` wrapper `<div>` containers. It tries `input[data-row][data-col]` and `select[data-row][data-col]` first, then falls back to `div[data-row][data-col]` and focuses the `<input>` inside it.
+- **Boolean fields in list**: Boolean fields render as checkboxes in both edit mode and read-only mode. Detection uses `typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'` — the `fieldTypes` check is essential for new rows where values are initialized as empty strings.
 - **Keyboard navigation**: Arrow keys move between cells, Tab/Shift+Tab move horizontally, Enter on the last row creates a new row. Escape exits edit mode.
 
 ## API Response Format
 
 ```
-Success: { "success": true, "data": { ... }, "captions": { "table": "...", "fields": { ... } } }
+Success: { "success": true, "data": { ... }, "captions": { "table": "...", "fields": { ... }, "field_types": { ... } } }
 Error:   { "success": false, "error": "..." }
 List:    { "success": true, "data": { "records": [...], "total": N, "page": N, "page_size": N }, "captions": { ... } }
 ```
+
+The `captions` object may include: `table` (translated table name), `fields` (field name → caption), `field_types` (field name → type like `"bool"`, `"code"`, `"text"`), `options` (enum field values), `lookups` (table relation data).
 
 ## API Client Usage
 

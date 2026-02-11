@@ -3,6 +3,8 @@
  * Uses Server-Sent Events (SSE) for real-time progress updates
  */
 
+import { t, ERR, MSG } from '$lib/services/i18n.svelte';
+
 export interface ProgressEvent {
 	job_id: string;
 	field: number;
@@ -103,8 +105,8 @@ export async function startJob(
 
 	if (!response.ok) {
 		const error = await response.json();
-		callbacks.onError?.(error.error || 'Failed to start job');
-		throw new Error(error.error || 'Failed to start job');
+		callbacks.onError?.(error.error || t(ERR.FAILED_START_JOB));
+		throw new Error(error.error || t(ERR.FAILED_START_JOB));
 	}
 
 	const result = await response.json();
@@ -186,9 +188,9 @@ export async function startJob(
 
 			eventSource.onerror = () => {
 				eventSource.close();
-				const error = 'Connection lost';
-				callbacks.onError?.(error);
-				reject(new Error(error));
+				const errMsg = t(ERR.CONNECTION_LOST);
+				callbacks.onError?.(errMsg);
+				reject(new Error(errMsg));
 			};
 		});
 	} else {
@@ -213,12 +215,12 @@ export function createJobRunner() {
 	let progress = $state(0);
 	let message = $state('');
 	let error = $state('');
-	let title = $state('Processing...');
+	let title = $state(t(MSG.PROCESSING));
 
 	async function run(
 		codeunitId: number,
 		record: Record<string, unknown>,
-		jobTitle: string = 'Processing...'
+		jobTitle: string = t(MSG.PROCESSING)
 	): Promise<boolean> {
 		isRunning = true;
 		progress = 0;

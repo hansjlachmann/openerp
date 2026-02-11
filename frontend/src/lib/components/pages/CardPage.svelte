@@ -18,11 +18,13 @@
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
+	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		page: PageDefinition;
 		record?: Record<string, any>;
 		captions?: Record<string, string>;
+		fieldTypes?: Record<string, string>; // Field type metadata (e.g., "bool", "code", "text")
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		onaction?: (actionName: string) => void;
@@ -47,6 +49,7 @@
 		page,
 		record = $bindable({}),
 		captions = {},
+		fieldTypes = {},
 		options = {},
 		lookups = {},
 		onaction,
@@ -208,7 +211,7 @@
 			} catch (err) {
 				saveState = 'idle';
 				// Validation error - revert to last saved state
-				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+				const errorMessage = err instanceof Error ? err.message : t(ERR.VALIDATION_FAILED);
 				toast.error(errorMessage);
 
 				// Revert record to last saved state
@@ -251,31 +254,31 @@
 		const [objectType, objectId] = runObject.split(':');
 
 		if (objectType !== 'codeunit') {
-			toast.error(`Unknown object type: ${objectType}`);
+			toast.error(t(ERR.UNKNOWN_OBJECT_TYPE, objectType));
 			return;
 		}
 
 		const codeunitId = parseInt(objectId, 10);
 		if (isNaN(codeunitId)) {
-			toast.error(`Invalid codeunit ID: ${objectId}`);
+			toast.error(t(ERR.INVALID_CODEUNIT_ID));
 			return;
 		}
 
 		// Check if we have a record
 		if (!record || Object.keys(record).length === 0) {
-			toast.error('No record selected');
+			toast.error(t(ERR.NO_RECORD_SELECTED));
 			return;
 		}
 
 		try {
 			// Send the full record to the generic codeunit endpoint
 			const result = await api.runCodeunit(codeunitId, record);
-			toast.success(result.message || 'Operation completed successfully');
+			toast.success(result.message || t(MSG.CODEUNIT_SUCCESS));
 
 			// Trigger refresh to show updated data
 			onaction?.('Refresh');
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : 'Operation failed';
+			const errorMessage = err instanceof Error ? err.message : t(ERR.CODEUNIT_FAILED);
 			toast.error(errorMessage);
 		}
 	}
@@ -417,13 +420,13 @@
 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 					</svg>
-					<span class="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
+					<span class="text-sm text-gray-600 dark:text-gray-400">{t(MSG.SAVING)}</span>
 				</div>
 				<div class="saved-indicator" class:visible={saveState === 'saved'}>
 					<svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span class="text-sm text-green-600 dark:text-green-400 font-medium">Saved</span>
+					<span class="text-sm text-green-600 dark:text-green-400 font-medium">{t(MSG.SAVED)}</span>
 				</div>
 			</div>
 
@@ -465,11 +468,11 @@
 
 		{#snippet rightActions()}
 			<!-- Customize button -->
-			<Button variant="secondary" size="sm" tabindex={-1} onclick={handleCustomize} title="Customize page">
+			<Button variant="secondary" size="sm" tabindex={-1} onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)}>
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
 				</svg>
-				<span class="ml-1">Customize</span>
+				<span class="ml-1">{t(LIST.CUSTOMIZE)}</span>
 			</Button>
 
 		{/snippet}
@@ -482,11 +485,11 @@
 				<svg class="error-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
 				</svg>
-				<span class="error-message">{saveBlockedMessage || 'Save failed. Please correct the error before continuing.'}</span>
+				<span class="error-message">{saveBlockedMessage || t(ERR.SAVE_BLOCKED)}</span>
 			</div>
 			<div class="error-actions">
 				<button class="error-clear-btn" onclick={() => onclearerror?.()}>
-					Clear Form
+					{t(CARD.CLEAR_FORM)}
 				</button>
 			</div>
 		</div>
@@ -501,13 +504,13 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 					</svg>
 				</div>
-				<h3 class="empty-state-title">No record loaded</h3>
-				<p class="empty-state-text">Select a record from the list or create a new one.</p>
+				<h3 class="empty-state-title">{t(CARD.NO_RECORD)}</h3>
+				<p class="empty-state-text">{t(CARD.SELECT_OR_CREATE)}</p>
 				<Button variant="primary" onclick={() => handleAction('New')}>
 					{#snippet icon()}
 						<PlusIcon size={16} color="currentColor" />
 					{/snippet}
-					Create New
+					{t(CARD.CREATE_NEW)}
 				</Button>
 			</div>
 		{:else}
@@ -529,6 +532,7 @@
 								bind:value={record[field.source]}
 								caption={getFieldCaption(field.source, captions, field.caption)}
 								editable={fieldEditable}
+								fieldType={fieldTypes[field.source]}
 								options={options[field.source]}
 								lookups={lookups[field.source]}
 								fieldCaptions={captions}

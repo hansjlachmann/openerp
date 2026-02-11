@@ -21,10 +21,117 @@ messages:
   # Welcome Messages
   MSG_WELCOME_BACK: "Velkommen tilbage, %1"
 
+  # General Messages
+  MSG_LOADING: "Indlæser..."
+  MSG_PROCESSING: "Behandler..."
+  MSG_SAVING: "Gemmer..."
+  MSG_SAVED: "Gemt"
+  MSG_NO_MATCHES: "Ingen match fundet"
+  MSG_NO_RECORDS: "Ingen poster fundet"
+  MSG_LOADING_MENU: "Indlæser menu..."
+  MSG_NO_MENU_ITEMS: "Ingen menupunkter tilgængelige"
+  MSG_CODEUNIT_SUCCESS: "Handling gennemført"
+  MSG_JOB_COMPLETED: "Job gennemført"
+
   # Error Messages
   ERR_FAILED_DELETE: "Kunne ikke slette post"
   ERR_FAILED_OPEN_CARD: "Kunne ikke åbne kort"
   ERR_FIELD_NOT_EXIST: "%1 '%2' findes ikke"
+  ERR_NO_RECORD_SELECTED: "Ingen post valgt"
+  ERR_UNKNOWN_OBJECT_TYPE: "Ukendt objekttype: %1"
+  ERR_INVALID_CODEUNIT_ID: "Ugyldig codeunit-ID"
+  ERR_FAILED_SAVE_RECORD: "Kunne ikke gemme post"
+  ERR_FAILED_LOAD_CARD_PAGE: "Kunne ikke indlæse kortside"
+  ERR_FAILED_START_JOB: "Kunne ikke starte job"
+  ERR_CODEUNIT_FAILED: "Handling fejlede"
+  ERR_FAILED_LOAD_MENU: "Kunne ikke indlæse menu"
+  ERR_SAVE_BLOCKED: "Gemning fejlede. Ret venligst fejlen før du fortsætter."
+  ERR_VALIDATION_FAILED: "Validering fejlede"
+  ERR_CONNECTION_LOST: "Forbindelse mistet"
+
+  # Login/Setup
+  LOGIN_SIGN_IN: "Log ind"
+  LOGIN_INITIAL_SETUP: "Førstegangsopsætning"
+  LOGIN_SIGNING_IN: "Logger ind..."
+  LOGIN_CREATING: "Opretter..."
+  LOGIN_USER_ID: "Bruger-ID"
+  LOGIN_FULL_NAME: "Fulde navn"
+  LOGIN_EMAIL: "E-mail"
+  LOGIN_PASSWORD: "Adgangskode"
+  LOGIN_CONFIRM_PASSWORD: "Bekræft adgangskode"
+  LOGIN_COMPANY: "Virksomhed"
+  LOGIN_COMPANY_NAME: "Virksomhedsnavn"
+  LOGIN_CREATE_INITIAL_USER: "Opret første bruger"
+  LOGIN_CREATE_COMPANY: "Opret virksomhed"
+  LOGIN_BACK_TO_LOGIN: "Tilbage til login"
+  LOGIN_SIGN_OUT: "Log ud"
+  LOGIN_LOADING_COMPANIES: "Indlæser virksomheder..."
+  LOGIN_NO_USERS_FOUND: "Ingen brugere fundet i systemet."
+  LOGIN_COMPANY_NAME_HELP: "Kun bogstaver, tal, understreg og bindestreg"
+  ERR_LOGIN_MISSING_CREDENTIALS: "Indtast venligst både bruger-ID og adgangskode"
+  ERR_LOGIN_NO_COMPANY: "Vælg venligst en virksomhed"
+  ERR_LOGIN_FAILED: "Login fejlede"
+  ERR_INVALID_CREDENTIALS: "Ugyldige legitimationsoplysninger"
+  ERR_GENERIC_RETRY: "Der opstod en fejl. Prøv venligst igen."
+  ERR_SETUP_MISSING_FIELDS: "Udfyld venligst alle obligatoriske felter"
+  ERR_PASSWORD_MISMATCH: "Adgangskoderne stemmer ikke overens"
+  ERR_PASSWORD_TOO_SHORT: "Adgangskoden skal være mindst 6 tegn"
+  ERR_FAILED_CREATE_USER: "Kunne ikke oprette bruger"
+  ERR_SETUP_ERROR: "Der opstod en fejl under opsætningen"
+  ERR_COMPANY_NAME_REQUIRED: "Indtast venligst et virksomhedsnavn"
+  ERR_FAILED_CREATE_COMPANY: "Kunne ikke oprette virksomhed"
+  ERR_GENERIC: "Der opstod en fejl"
+
+  # Home Page
+  HOME_TITLE: "Velkommen til OpenERP Web"
+  HOME_DESCRIPTION: "Et moderne, hurtigt og tastaturdrevet ERP-system med åben kildekode"
+
+  # MenuBar
+  MENU_HOME: "Hjem"
+  MENU_LANGUAGE: "Sprog"
+  MENU_COMPANY: "Virksomhed"
+  MENU_USER_MENU: "Brugermenu"
+  MENU_SIGN_OUT: "Log ud"
+
+  # Card Page
+  CARD_NO_RECORD: "Ingen post indlæst"
+  CARD_SELECT_OR_CREATE: "Vælg en post fra listen eller opret en ny."
+  CARD_CREATE_NEW: "Opret ny"
+  CARD_CLEAR_FORM: "Ryd formular"
+
+  # List Page
+  LIST_SEARCH_PLACEHOLDER: "Søg... (Ctrl+F)"
+  LIST_CLEAR_SEARCH: "Ryd søgning"
+  LIST_TOGGLE_ROW_NUMBERS: "Vis/skjul rækkenumre"
+  LIST_CUSTOMIZE_COLUMNS: "Tilpas kolonner"
+  LIST_TOGGLE_FILTERS: "Vis/skjul filterrude"
+  LIST_CUSTOMIZE: "Tilpas"
+  LIST_FILTER: "Filter"
+
+  # Filter Pane
+  FILTER_TITLE: "Filtrer %1"
+  FILTER_VIEWS: "Visninger"
+  FILTER_ALL: "*Alle"
+  FILTER_SAVE_VIEW: "Gem som ny visning"
+  FILTER_LIST_BY: "Filtrer liste efter:"
+  FILTER_ADD: "Filter..."
+  FILTER_SELECT_FIELD: "Vælg felt..."
+  FILTER_ENTER_EXPRESSION: "Indtast filterudtryk..."
+  FILTER_DELETE_VIEW: "Slet visning"
+  FILTER_DELETE_VIEW_CONFIRM: "Er du sikker på, at du vil slette visningen \"%1\"?"
+  FILTER_RENAME: "Omdøb"
+  FILTER_DELETE: "Slet"
+
+  # Modal Card Page
+  MODAL_FULLSCREEN: "Fuldskærm"
+  MODAL_EXIT_FULLSCREEN: "Afslut fuldskærm"
+  MODAL_OPEN_NEW_WINDOW: "Åbn i nyt vindue"
+  MODAL_CLOSE: "Luk"
+
+  # Placeholders
+  PLC_ENTER_USER_ID: "Indtast dit bruger-ID"
+  PLC_ENTER_PASSWORD: "Indtast din adgangskode"
+  PLC_COMPANY_NAME_EXAMPLE: "f.eks. min-virksomhed"
 
   # Dialog Titles
   DLG_DELETE_RECORD_TITLE: "Slet post"

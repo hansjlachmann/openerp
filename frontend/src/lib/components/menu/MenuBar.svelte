@@ -5,6 +5,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
+	import { t, MSG, MENU } from '$lib/services/i18n.svelte';
 
 	let loading = $state(true);
 	let currentTheme = $state<'light' | 'dark'>('light');
@@ -177,7 +178,7 @@
 
 {#if loading}
 	<div class="menu-bar bg-nav-blue text-white">
-		<div class="px-4 py-2 text-sm">Loading...</div>
+		<div class="px-4 py-2 text-sm">{t(MSG.LOADING)}</div>
 	</div>
 {:else}
 	<nav class="menu-bar bg-nav-blue text-white">
@@ -186,7 +187,7 @@
 			<a
 				href="/"
 				class="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded transition-colors font-semibold border-r border-white/20 mr-2"
-				title="Home"
+				title={t(MENU.HOME)}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +203,7 @@
 						d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
 					/>
 				</svg>
-				<span>Home</span>
+				<span>{t(MENU.HOME)}</span>
 			</a>
 
 			<!-- Session information -->
@@ -228,7 +229,7 @@
 						data-user-menu
 						onclick={toggleUserMenu}
 						class="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded transition-colors"
-						title="User menu"
+						title={t(MENU.USER_MENU)}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -290,7 +291,7 @@
 													d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
 												/>
 											</svg>
-											Language
+											{t(MENU.LANGUAGE)}
 										</span>
 										<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
 											{getShortCode(currentLanguage)}
@@ -370,7 +371,7 @@
 														d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
 													/>
 												</svg>
-												Company
+												{t(MENU.COMPANY)}
 											</span>
 											<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
 												{currentCompanyName || '—'}
@@ -451,7 +452,7 @@
 											d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
 										/>
 									</svg>
-									Sign Out
+									{t(MENU.SIGN_OUT)}
 								</button>
 							</div>
 						</div>

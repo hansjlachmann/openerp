@@ -12,6 +12,7 @@
 		editable?: boolean;
 		required?: boolean;
 		error?: string;
+		fieldType?: string; // Field type from backend metadata (e.g., "bool", "code", "text")
 		options?: Record<string, string>; // Option field values (key = stored value, value = display text)
 		lookups?: LookupData; // Lookup values (advanced or simple mode)
 		fieldCaptions?: Record<string, string>; // Field captions for lookup column headers
@@ -27,6 +28,7 @@
 		editable = false,
 		required = false,
 		error,
+		fieldType,
 		options,
 		lookups,
 		fieldCaptions = {},
@@ -38,8 +40,8 @@
 	// Determine if field is editable
 	const isEditable = $derived(editable);
 
-	// Check if this is a boolean field (detected from actual value type)
-	const isBooleanField = $derived(typeof value === 'boolean');
+	// Check if this is a boolean field (detected from actual value type or backend metadata)
+	const isBooleanField = $derived(typeof value === 'boolean' || fieldType === 'bool');
 
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);

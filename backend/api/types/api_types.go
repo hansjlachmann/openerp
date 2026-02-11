@@ -12,10 +12,11 @@ type APIResponse struct {
 
 // CaptionData contains translated captions for tables and fields
 type CaptionData struct {
-	Table   string                       `json:"table,omitempty"`
-	Fields  map[string]string            `json:"fields,omitempty"`
-	Options map[string]map[string]string `json:"options,omitempty"` // Option field values (enum)
-	Lookups map[string]interface{}       `json:"lookups,omitempty"` // Table relation lookup values (LookupData)
+	Table      string                       `json:"table,omitempty"`
+	Fields     map[string]string            `json:"fields,omitempty"`
+	FieldTypes map[string]string            `json:"field_types,omitempty"` // Field type metadata (e.g., "Boolean", "Code", "Text")
+	Options    map[string]map[string]string `json:"options,omitempty"`     // Option field values (enum)
+	Lookups    map[string]interface{}       `json:"lookups,omitempty"`     // Table relation lookup values (LookupData)
 }
 
 // ListRequest represents a list query with filters and pagination

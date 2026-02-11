@@ -8,7 +8,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
-	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
+	import { t, MSG, ERR, DLG } from '$lib/services/i18n.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
@@ -28,6 +28,7 @@
 	// State
 	let page: PageDefinition | null = $state(null);
 	let captions: Record<string, string> = $state({});
+	let fieldTypes: Record<string, string> = $state({}); // Field type metadata (e.g., "bool", "code", "text")
 	let options: Record<string, Record<string, string>> = $state({}); // Option field values (enum lookups)
 	let lookups: Record<string, LookupData> = $state({}); // Table relation lookup values
 	let navigation: Record<string, string> = $state({}); // Navigation translations
@@ -74,6 +75,7 @@
 
 			page = result.data;
 			captions = result.captions?.fields || {};
+			fieldTypes = result.captions?.field_types || {};
 			navigation = result.navigation || {};
 			pageLoading = false;
 
@@ -453,6 +455,7 @@
 			{page}
 			bind:record
 			{captions}
+			{fieldTypes}
 			{options}
 			{lookups}
 			onaction={handleCardAction}
@@ -473,6 +476,7 @@
 			{page}
 			{records}
 			{captions}
+			{fieldTypes}
 			{options}
 			{lookups}
 			{currentFilters}

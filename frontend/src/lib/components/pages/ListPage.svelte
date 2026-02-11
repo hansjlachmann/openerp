@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
-	import { t, MSG, ERR, DLG } from '$lib/services/i18n';
+	import { t, MSG, ERR, DLG, BTN, LIST } from '$lib/services/i18n.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
@@ -31,6 +31,7 @@
 		page: PageDefinition;
 		records?: Array<Record<string, any>>;
 		captions?: Record<string, string>;
+		fieldTypes?: Record<string, string>; // Field type metadata (e.g., "bool", "code", "text")
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		currentFilters?: TableFilter[];
@@ -45,6 +46,7 @@
 		page,
 		records = [],
 		captions = {},
+		fieldTypes = {},
 		options = {},
 		lookups = {},
 		currentFilters = [],
@@ -98,7 +100,7 @@
 
 	// Progress modal state (for codeunits with progress)
 	let progressModalOpen = $state(false);
-	let progressTitle = $state('Processing...');
+	let progressTitle = $state(t(MSG.PROCESSING));
 	let progressValue = $state(0);
 	let progressMessage = $state('');
 	let progressError = $state('');
@@ -274,6 +276,7 @@
 	let modalOriginalRecord = $state<Record<string, any>>({}); // Track original for change detection
 	let modalIsNewRecord = $state(false);
 	let modalCaptions = $state<Record<string, string>>({});
+	let modalFieldTypes = $state<Record<string, string>>({}); // Field type metadata for modal card
 	let modalOptions = $state<Record<string, Record<string, string>>>({}); // Option field values
 	let modalLookups = $state<Record<string, LookupData>>({}); // Table relation lookup values
 	let modalOptionsLoaded = $state(false); // Track if options have been loaded (prevent re-render during editing)
@@ -300,7 +303,7 @@
 		if (runObject.startsWith('field:')) {
 			const fieldName = runObject.substring(6); // Remove "field:" prefix
 			if (!selectedRecord) {
-				toast.error('No record selected');
+				toast.error(t(ERR.NO_RECORD_SELECTED));
 				return;
 			}
 			const fieldValue = selectedRecord[fieldName];
@@ -313,20 +316,20 @@
 			// Parse the run_object string (format: "codeunit:ID")
 			const [objectType, objectId] = runObject.split(':');
 			if (objectType !== 'codeunit') {
-				toast.error(`Unknown object type: ${objectType}`);
+				toast.error(t(ERR.UNKNOWN_OBJECT_TYPE, objectType));
 				return;
 			}
 			codeunitId = parseInt(objectId, 10);
 		}
 
 		if (isNaN(codeunitId) || codeunitId <= 0) {
-			toast.error('Invalid codeunit ID');
+			toast.error(t(ERR.INVALID_CODEUNIT_ID));
 			return;
 		}
 
 		// Show progress modal initially - backend decides if it's actually used
 		progressModalOpen = true;
-		progressTitle = 'Processing...';
+		progressTitle = t(MSG.PROCESSING);
 		progressValue = 0;
 		progressMessage = '';
 		progressError = '';
@@ -374,10 +377,10 @@
 							dialogData = syncResult.dialog;
 							dialogOpen = true;
 						} else {
-							toast.success(syncResult.message || 'Codeunit executed successfully');
+							toast.success(syncResult.message || t(MSG.CODEUNIT_SUCCESS));
 						}
 					} else {
-						toast.error(syncResult.message || 'Codeunit execution failed');
+						toast.error(syncResult.message || t(ERR.CODEUNIT_FAILED));
 					}
 				}
 			});
@@ -387,7 +390,7 @@
 				await new Promise((resolve) => setTimeout(resolve, 500));
 				progressModalOpen = false;
 				if (!progressError) {
-					toast.success('Job completed successfully');
+					toast.success(t(MSG.JOB_COMPLETED));
 				}
 			}
 		} catch (err) {
@@ -622,7 +625,7 @@
 			}
 		} catch (err) {
 			console.error('Error saving cell:', err);
-			const message = err instanceof Error ? err.message : 'Failed to save record';
+			const message = err instanceof Error ? err.message : t(ERR.FAILED_SAVE_RECORD);
 			toast.error(message);
 			// Revert the cell to its original value
 			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === getRecordId(record, primaryKeyField, primaryKeyFieldsList));
@@ -916,8 +919,8 @@
 	async function handleDelete() {
 		if (selectedRecord) {
 			confirm.show(
-				'Delete Record',
-				'Are you sure you want to delete this record?',
+				t(DLG.DELETE_RECORD_TITLE),
+				t(DLG.DELETE_RECORD_CONFIRM),
 				async () => {
 					await ondelete?.(selectedRecord);
 				}
@@ -938,17 +941,18 @@
 			// Fetch the card page definition
 			const response = await fetch(`/api/pages/${page.page.card_page_id}`);
 			if (!response.ok) {
-				throw new Error(`Failed to load card page: ${response.statusText}`);
+				throw new Error(t(ERR.FAILED_LOAD_CARD_PAGE));
 			}
 
 			const result = await response.json();
 			if (!result.success) {
-				throw new Error(result.error || 'Failed to load card page');
+				throw new Error(result.error || t(ERR.FAILED_LOAD_CARD_PAGE));
 			}
 
 			// Deep clone ALL API response data to avoid Svelte reactivity issues
 			const pageData = deepCopy(result.data);
 			const pageCaptions = result.captions?.fields ? deepCopy(result.captions.fields) : {};
+			const pageFieldTypes = result.captions?.field_types ? deepCopy(result.captions.field_types) : {};
 
 			// Use the card page's source table (more reliable)
 			const sourceTable = pageData?.page?.source_table || page.page.source_table;
@@ -988,6 +992,7 @@
 			// Set all state at once to minimize re-renders
 			modalCardPage = pageData;
 			modalCaptions = pageCaptions;
+			modalFieldTypes = pageFieldTypes;
 			modalRecord = recData;
 			modalOriginalRecord = origRecord;
 			modalIsNewRecord = isNew;
@@ -1017,6 +1022,7 @@
 		modalIsNewRecord = false;
 		skipNextAutoSave = false;
 		modalCaptions = {};
+		modalFieldTypes = {};
 		modalOptions = {};
 		modalLookups = {};
 		modalOptionsLoaded = false;
@@ -1115,7 +1121,7 @@
 			return true; // Save happened
 		} catch (err) {
 			console.error('Error saving modal record:', err);
-			const message = err instanceof Error ? err.message : 'Failed to save record';
+			const message = err instanceof Error ? err.message : t(ERR.FAILED_SAVE_RECORD);
 			toast.error(message);
 
 			// Block further edits if this was a new record that failed to save
@@ -1455,7 +1461,7 @@
 					<input
 						type="text"
 						class="search-input"
-						placeholder="Search... (Ctrl+F)"
+						placeholder={t(LIST.SEARCH_PLACEHOLDER)}
 						bind:value={searchQuery}
 						bind:this={searchInputElement}
 					/>
@@ -1464,7 +1470,7 @@
 							type="button"
 							class="clear-search-btn"
 							onclick={clearSearch}
-							title="Clear search"
+							title={t(LIST.CLEAR_SEARCH)}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -1491,7 +1497,7 @@
 					variant={showRowNumbers ? 'primary' : 'secondary'}
 					size="sm"
 					onclick={handleToggleRowNumbers}
-					title="Toggle row numbers"
+					title={t(LIST.TOGGLE_ROW_NUMBERS)}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -1511,7 +1517,7 @@
 				</Button>
 
 				<!-- Customize button -->
-				<Button variant="secondary" size="sm" onclick={handleCustomize} title="Customize columns">
+				<Button variant="secondary" size="sm" onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-4 w-4"
@@ -1526,7 +1532,7 @@
 							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
 						/>
 					</svg>
-					<span class="ml-1">Customize</span>
+					<span class="ml-1">{t(LIST.CUSTOMIZE)}</span>
 				</Button>
 
 				<!-- Filter button -->
@@ -1534,7 +1540,7 @@
 					variant={filterPaneOpen ? 'primary' : 'secondary'}
 					size="sm"
 					onclick={handleToggleFilters}
-					title="Toggle filter pane"
+					title={t(LIST.TOGGLE_FILTERS)}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -1550,7 +1556,7 @@
 							d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
 						/>
 					</svg>
-					<span class="ml-1">Filter</span>
+					<span class="ml-1">{t(LIST.FILTER)}</span>
 					{#if currentFilters.length > 0}
 						<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-600 text-white rounded-full">
 							{currentFilters.length}
@@ -1639,7 +1645,7 @@
 							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
 								{#if editMode}
 									<!-- Edit Mode - Editable inputs -->
-									{#if typeof record[field.source] === 'boolean'}
+									{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 										<div class="edit-cell-input flex items-center">
 											<input
 												type="checkbox"
@@ -1718,7 +1724,7 @@
 								{:else}
 									<!-- Normal Mode - Read-only -->
 									<div class={cn('read-cell-content', getFieldStyleClasses(field))}>
-										{#if typeof record[field.source] === 'boolean'}
+										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 											<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
 										{:else if field.primary_key && page.page.card_page_id}
 											<button
@@ -1785,6 +1791,7 @@
 		page={modalCardPage}
 		bind:record={modalRecord}
 		captions={modalCaptions}
+		fieldTypes={modalFieldTypes}
 		options={modalOptions}
 		lookups={modalLookups}
 		initialEditMode={modalInitialEditMode}
@@ -1814,7 +1821,7 @@
 	open={$confirm.open}
 	title={$confirm.title}
 	message={$confirm.message}
-	confirmText="Delete"
+	confirmText={t(BTN.DELETE)}
 	variant="danger"
 	onconfirm={confirm.confirm}
 	oncancel={confirm.cancel}
@@ -1872,7 +1879,7 @@
 					class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
 					onclick={() => { dialogOpen = false; dialogData = null; }}
 				>
-					OK
+					{t(BTN.OK)}
 				</button>
 			</div>
 		</div>

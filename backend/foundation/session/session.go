@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 )
@@ -100,11 +101,25 @@ func (s *Session) GetMenu() string {
 }
 
 // SetUser sets the current user information
+// Language is normalized to BCP-47 format (e.g., "NB-NO" → "nb-NO")
 func (s *Session) SetUser(userID, userName, language, menu string) {
 	s.UserID = userID
 	s.UserName = userName
-	s.Language = language
+	s.Language = normalizeLanguage(language)
 	s.Menu = menu
+}
+
+// normalizeLanguage converts language codes to proper BCP-47 format
+// e.g., "NB-NO" → "nb-NO", "EN-US" → "en-US"
+func normalizeLanguage(code string) string {
+	if code == "" {
+		return ""
+	}
+	parts := strings.Split(code, "-")
+	if len(parts) == 2 {
+		return strings.ToLower(parts[0]) + "-" + strings.ToUpper(parts[1])
+	}
+	return strings.ToLower(code)
 }
 
 // SetPermissions sets the effective permissions for the user

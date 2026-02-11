@@ -21,10 +21,117 @@ messages:
   # Welcome Messages
   MSG_WELCOME_BACK: "Welcome back, %1"
 
+  # General Messages
+  MSG_LOADING: "Loading..."
+  MSG_PROCESSING: "Processing..."
+  MSG_SAVING: "Saving..."
+  MSG_SAVED: "Saved"
+  MSG_NO_MATCHES: "No matches found"
+  MSG_NO_RECORDS: "No records found"
+  MSG_LOADING_MENU: "Loading menu..."
+  MSG_NO_MENU_ITEMS: "No menu items available"
+  MSG_CODEUNIT_SUCCESS: "Operation completed successfully"
+  MSG_JOB_COMPLETED: "Job completed successfully"
+
   # Error Messages
   ERR_FAILED_DELETE: "Failed to delete record"
   ERR_FAILED_OPEN_CARD: "Failed to open card"
   ERR_FIELD_NOT_EXIST: "%1 '%2' does not exist"
+  ERR_NO_RECORD_SELECTED: "No record selected"
+  ERR_UNKNOWN_OBJECT_TYPE: "Unknown object type: %1"
+  ERR_INVALID_CODEUNIT_ID: "Invalid codeunit ID"
+  ERR_FAILED_SAVE_RECORD: "Failed to save record"
+  ERR_FAILED_LOAD_CARD_PAGE: "Failed to load card page"
+  ERR_FAILED_START_JOB: "Failed to start job"
+  ERR_CODEUNIT_FAILED: "Operation failed"
+  ERR_FAILED_LOAD_MENU: "Failed to load menu"
+  ERR_SAVE_BLOCKED: "Save failed. Please correct the error before continuing."
+  ERR_VALIDATION_FAILED: "Validation failed"
+  ERR_CONNECTION_LOST: "Connection lost"
+
+  # Login/Setup
+  LOGIN_SIGN_IN: "Sign In"
+  LOGIN_INITIAL_SETUP: "Initial Setup"
+  LOGIN_SIGNING_IN: "Signing in..."
+  LOGIN_CREATING: "Creating..."
+  LOGIN_USER_ID: "User ID"
+  LOGIN_FULL_NAME: "Full Name"
+  LOGIN_EMAIL: "Email"
+  LOGIN_PASSWORD: "Password"
+  LOGIN_CONFIRM_PASSWORD: "Confirm Password"
+  LOGIN_COMPANY: "Company"
+  LOGIN_COMPANY_NAME: "Company Name"
+  LOGIN_CREATE_INITIAL_USER: "Create Initial User"
+  LOGIN_CREATE_COMPANY: "Create Company"
+  LOGIN_BACK_TO_LOGIN: "Back to Login"
+  LOGIN_SIGN_OUT: "Sign Out"
+  LOGIN_LOADING_COMPANIES: "Loading companies..."
+  LOGIN_NO_USERS_FOUND: "No users found in the system."
+  LOGIN_COMPANY_NAME_HELP: "Letters, numbers, underscores, and hyphens only"
+  ERR_LOGIN_MISSING_CREDENTIALS: "Please enter both User ID and Password"
+  ERR_LOGIN_NO_COMPANY: "Please select a company"
+  ERR_LOGIN_FAILED: "Login failed"
+  ERR_INVALID_CREDENTIALS: "Invalid credentials"
+  ERR_GENERIC_RETRY: "An error occurred. Please try again."
+  ERR_SETUP_MISSING_FIELDS: "Please fill in all required fields"
+  ERR_PASSWORD_MISMATCH: "Passwords do not match"
+  ERR_PASSWORD_TOO_SHORT: "Password must be at least 6 characters"
+  ERR_FAILED_CREATE_USER: "Failed to create user"
+  ERR_SETUP_ERROR: "An error occurred during setup"
+  ERR_COMPANY_NAME_REQUIRED: "Please enter a company name"
+  ERR_FAILED_CREATE_COMPANY: "Failed to create company"
+  ERR_GENERIC: "An error occurred"
+
+  # Home Page
+  HOME_TITLE: "Welcome to OpenERP Web"
+  HOME_DESCRIPTION: "A modern, fast, and keyboard-driven ERP system all open source"
+
+  # MenuBar
+  MENU_HOME: "Home"
+  MENU_LANGUAGE: "Language"
+  MENU_COMPANY: "Company"
+  MENU_USER_MENU: "User menu"
+  MENU_SIGN_OUT: "Sign Out"
+
+  # Card Page
+  CARD_NO_RECORD: "No record loaded"
+  CARD_SELECT_OR_CREATE: "Select a record from the list or create a new one."
+  CARD_CREATE_NEW: "Create New"
+  CARD_CLEAR_FORM: "Clear Form"
+
+  # List Page
+  LIST_SEARCH_PLACEHOLDER: "Search... (Ctrl+F)"
+  LIST_CLEAR_SEARCH: "Clear search"
+  LIST_TOGGLE_ROW_NUMBERS: "Toggle row numbers"
+  LIST_CUSTOMIZE_COLUMNS: "Customize columns"
+  LIST_TOGGLE_FILTERS: "Toggle filter pane"
+  LIST_CUSTOMIZE: "Customize"
+  LIST_FILTER: "Filter"
+
+  # Filter Pane
+  FILTER_TITLE: "Filter %1"
+  FILTER_VIEWS: "Views"
+  FILTER_ALL: "*All"
+  FILTER_SAVE_VIEW: "Save as new view"
+  FILTER_LIST_BY: "Filter list by:"
+  FILTER_ADD: "Filter..."
+  FILTER_SELECT_FIELD: "Select field..."
+  FILTER_ENTER_EXPRESSION: "Enter filter expression..."
+  FILTER_DELETE_VIEW: "Delete View"
+  FILTER_DELETE_VIEW_CONFIRM: "Are you sure you want to delete the view \"%1\"?"
+  FILTER_RENAME: "Rename"
+  FILTER_DELETE: "Delete"
+
+  # Modal Card Page
+  MODAL_FULLSCREEN: "Fullscreen"
+  MODAL_EXIT_FULLSCREEN: "Exit fullscreen"
+  MODAL_OPEN_NEW_WINDOW: "Open in new window"
+  MODAL_CLOSE: "Close"
+
+  # Placeholders
+  PLC_ENTER_USER_ID: "Enter your user ID"
+  PLC_ENTER_PASSWORD: "Enter your password"
+  PLC_COMPANY_NAME_EXAMPLE: "e.g., my-company"
 
   # Dialog Titles
   DLG_DELETE_RECORD_TITLE: "Delete Record"

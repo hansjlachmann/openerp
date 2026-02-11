@@ -64,14 +64,18 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 
 	var captions *apitypes.CaptionData
 	if pageDef.Page.SourceTable != "" {
-		// Build field captions map
+		// Build field captions and types maps
 		fieldCaptions := make(map[string]string)
+		fieldTypes := make(map[string]string)
 
 		// Get captions for card page sections and mark primary key / required fields
 		for i := range pageDef.Page.Layout.Sections {
 			for j := range pageDef.Page.Layout.Sections[i].Fields {
 				field := &pageDef.Page.Layout.Sections[i].Fields[j]
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
+					fieldTypes[field.Source] = ft
+				}
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
 				}
@@ -86,6 +90,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 			for i := range pageDef.Page.Layout.Repeater.Fields {
 				field := &pageDef.Page.Layout.Repeater.Fields[i]
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
+					fieldTypes[field.Source] = ft
+				}
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
 				}
@@ -96,8 +103,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		}
 
 		captions = &apitypes.CaptionData{
-			Table:  ts.TableCaption(pageDef.Page.SourceTable, lang),
-			Fields: fieldCaptions,
+			Table:      ts.TableCaption(pageDef.Page.SourceTable, lang),
+			Fields:     fieldCaptions,
+			FieldTypes: fieldTypes,
 		}
 	}
 
@@ -166,8 +174,11 @@ func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
 
 	// Translate menu item names based on user's language
 	language := "en-US"
-	if sess != nil && sess.GetLanguage() != "" {
-		language = sess.GetLanguage()
+	if sess != nil {
+		lang := normalizeLanguageCode(sess.GetLanguage())
+		if lang != "" {
+			language = lang
+		}
 	}
 	ts := i18n.GetInstance()
 
