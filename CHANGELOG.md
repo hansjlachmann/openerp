@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.34](https://github.com/hansjlachmann/openerp/compare/v0.1.33...v0.1.34) (2026-02-11)
+
+
+### Features
+
+* add JOBQUEUE menu profile and fix nb-NO translation gaps ([c2c01e6](https://github.com/hansjlachmann/openerp/commit/c2c01e653c58f94294c6da9c56ed94ea3d82a10d))
+* extract CreateJobQueueEntry helper, add menu i18n, and fix missing translations ([5f3a327](https://github.com/hansjlachmann/openerp/commit/5f3a327377d75c40d7ff86a771cb8707db263b77))
+
 ## [0.1.33](https://github.com/hansjlachmann/openerp/compare/v0.1.32...v0.1.33) (2026-02-10)
 
 
