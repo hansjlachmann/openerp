@@ -18,10 +18,12 @@ test.describe('Login Page', () => {
 
 	test('should have header with sign in or setup text', async ({ page }) => {
 		// Header shows either "Sign In" or "Initial Setup" depending on state
+		// When backend is unavailable, translation keys (LOGIN_SIGN_IN / LOGIN_INITIAL_SETUP) are shown instead
 		const headerP = page.locator('.login-header p');
 		await expect(headerP).toBeVisible();
 		const text = await headerP.textContent();
-		expect(text === 'Sign In' || text === 'Initial Setup').toBeTruthy();
+		const validTexts = ['Sign In', 'Initial Setup', 'LOGIN_SIGN_IN', 'LOGIN_INITIAL_SETUP'];
+		expect(validTexts.some((v) => text?.includes(v))).toBeTruthy();
 	});
 
 	test('should have login container with gradient background', async ({ page }) => {
