@@ -200,6 +200,22 @@ func (s *TranslationService) PageCaption(pageName, language string) string {
 	return s.Translate(key, language)
 }
 
+// MenuItemCaption returns a translated menu item name.
+// menuName is the English menu item name (e.g., "Job Queue").
+// The lookup key is derived by lowercasing and replacing spaces with underscores.
+// Falls back to the original name if no translation is found.
+func (s *TranslationService) MenuItemCaption(menuName, language string) string {
+	normalized := strings.ToLower(menuName)
+	normalized = strings.ReplaceAll(normalized, " ", "_")
+	key := fmt.Sprintf("common.menu.%s", normalized)
+	translated := s.Translate(key, language)
+	// If Translate returns the key itself, fall back to original name
+	if translated == key {
+		return menuName
+	}
+	return translated
+}
+
 // CommonTranslation returns a common translation by key
 // key is the dot-notation path like "navigation.home", "actions.save"
 func (s *TranslationService) CommonTranslation(key, language string) string {

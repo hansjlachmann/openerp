@@ -33,6 +33,23 @@ common:
     loading: "Indlæser..."
     error_occurred: "Der opstod en fejl"
 
+  # Menu items
+  menu:
+    general: "Generelt"
+    settings: "Indstillinger"
+    jobs: "Opgaver"
+    customers: "Debitorer"
+    users: "Brugere"
+    languages: "Sprog"
+    payment_terms: "Betalingsbetingelser"
+    companies: "Regnskaber"
+    menus: "Menuer"
+    job_queue: "Opgavekø"
+    job_queue_entries: "Opgavekøposter"
+    user_roles: "Brugerroller"
+    user_members: "Brugermedlemmer"
+    permissions: "Tilladelser"
+
   # Common terms
   terms:
     lcy: "RV"  # Regnskabsvaluta (Local Currency)

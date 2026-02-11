@@ -164,7 +164,30 @@ func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(apperrors.MenuNotFound().Message("en-US")))
 	}
 
-	return c.JSON(apitypes.NewSuccessResponse(menuDef))
+	// Translate menu item names based on user's language
+	language := "en-US"
+	if sess != nil && sess.GetLanguage() != "" {
+		language = sess.GetLanguage()
+	}
+	ts := i18n.GetInstance()
+
+	// Build a translated copy so we don't mutate the cached definition
+	translated := pages.MenuDefinition{
+		Menu: make([]pages.MenuGroup, len(menuDef.Menu)),
+	}
+	for i, group := range menuDef.Menu {
+		translated.Menu[i] = group
+		translated.Menu[i].Name = ts.MenuItemCaption(group.Name, language)
+		if len(group.Items) > 0 {
+			translated.Menu[i].Items = make([]pages.MenuItem, len(group.Items))
+			for j, item := range group.Items {
+				translated.Menu[i].Items[j] = item
+				translated.Menu[i].Items[j].Name = ts.MenuItemCaption(item.Name, language)
+			}
+		}
+	}
+
+	return c.JSON(apitypes.NewSuccessResponse(&translated))
 }
 
 // GetAllPages returns all loaded page definitions

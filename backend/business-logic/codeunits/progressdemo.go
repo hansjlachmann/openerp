@@ -6,7 +6,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // ProgressDemo - Codeunit 50021: Progress Bar Demo
@@ -59,7 +59,6 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Message("Progress demo cancelled."), nil
 	}
 
-	var LogQueueEntries tables.JobQueueEntry
 	jobQueue := record.(*tables.JobQueue)
 
 	// Get the current dialog (set by job handler)
@@ -80,21 +79,8 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	LogQueueEntries.InitWithDBType(c.db, c.company, c.dbType)
-
-	nextEntryNo := 1
-	if LogQueueEntries.FindLast() {
-		nextEntryNo = LogQueueEntries.Entry_no + 1
-	}
-	LogQueueEntries.Entry_no = nextEntryNo
-	LogQueueEntries.Status = 0
-	LogQueueEntries.User_id = types.NewCode(fcodeunits.CurrentUserID())
-	LogQueueEntries.Description = jobQueue.Description
-	LogQueueEntries.Job_queue_no = jobQueue.No
-	LogQueueEntries.Start_date_time = types.Now()
-	LogQueueEntries.End_date_time = types.Now()
-	if !LogQueueEntries.Insert(true) {
-		return fcodeunits.Message("failed to insert ledger entry"), nil
+	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success); err != nil {
+		return fcodeunits.Message(err.Error()), nil
 	}
 
 	return fcodeunits.Message("Processing completed successfully!"), nil
