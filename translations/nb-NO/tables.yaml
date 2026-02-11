@@ -8,6 +8,7 @@ tables:
     fields:
       code: "Kode"
       description: "Beskrivelse"
+      active: "Aktiv"
       due_date_calculation: "Beregning av forfallsdato"
       discount_date_calculation: "Beregning av kontantrabattdato"
       discount_percent: "Kontantrabatt-%"
@@ -21,7 +22,7 @@ tables:
       address: "Adresse"
       post_code: "Postnr."
       city: "Poststed"
-      phone_number: "Telefonnr."
+      phonenumber: "Telefonnr."
       email: "E-post"
       payment_terms_code: "Betalingsbeting.kode"
       credit_limit: "Kredittgrense (NOK)"
