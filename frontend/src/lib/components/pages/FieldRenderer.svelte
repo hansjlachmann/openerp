@@ -38,6 +38,9 @@
 	// Determine if field is editable
 	const isEditable = $derived(editable);
 
+	// Check if this is a boolean field (detected from actual value type)
+	const isBooleanField = $derived(typeof value === 'boolean');
+
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
 
@@ -59,6 +62,15 @@
 
 	// Determine field style classes based on metadata
 	const fieldStyle = $derived(getFieldStyleClasses(field));
+
+	// Handle value change for checkbox (boolean fields)
+	function handleCheckboxChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const newValue = target.checked;
+		value = newValue;
+		onchange?.(newValue);
+		onblur?.();
+	}
 
 	// Handle value change for text inputs
 	function handleChange(e: Event) {
@@ -124,7 +136,18 @@
 			{/if}
 		</label>
 		<div class="input-wrapper">
-			{#if isOptionField && options}
+			{#if isBooleanField}
+				<!-- Boolean field - render as checkbox -->
+				<div class="checkbox-wrapper">
+					<input
+						id={field.source}
+						type="checkbox"
+						checked={value}
+						{tabindex}
+						onchange={handleCheckboxChange}
+					/>
+				</div>
+			{:else if isOptionField && options}
 				<!-- Option/Enum field - render as dropdown -->
 				<select
 					id={field.source}
@@ -196,7 +219,16 @@
 		<div class="field-label">
 			{fieldCaption}
 		</div>
-		{#if isAdvancedLookup && lookups?.columns && lookups?.rows}
+		{#if isBooleanField}
+			<!-- Boolean field - read-only checkbox -->
+			<div class="checkbox-wrapper readonly">
+				<input
+					type="checkbox"
+					checked={value}
+					disabled
+				/>
+			</div>
+		{:else if isAdvancedLookup && lookups?.columns && lookups?.rows}
 			<!-- Advanced lookup - show dropdown even in non-edit mode -->
 			<div class="input-wrapper">
 				<LookupDropdown
@@ -332,6 +364,20 @@
 
 	:global(.dark) .field-group :global(input.input::placeholder) {
 		color: var(--color-text-muted);
+	}
+
+	.checkbox-wrapper {
+		@apply flex items-center py-2 px-3;
+		min-height: 2.5rem;
+	}
+
+	.checkbox-wrapper input[type="checkbox"] {
+		@apply w-5 h-5 cursor-pointer;
+		accent-color: #3b82f6;
+	}
+
+	.checkbox-wrapper.readonly input[type="checkbox"] {
+		@apply cursor-not-allowed opacity-70;
 	}
 
 	.error-message {
