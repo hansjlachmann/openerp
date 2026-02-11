@@ -93,9 +93,8 @@
 				currentUser.setUser(response.data);
 				// Re-initialize session to get updated language from backend
 				await session.initialize();
-				toast.success(t(MSG.WELCOME_BACK, response.data.user_name || userID));
-				// Redirect to home
-				goto('/');
+				// Full page reload to apply the new user's language and menu
+				window.location.href = '/';
 			} else {
 				error = response.error || 'Login failed';
 				toast.error(error);
