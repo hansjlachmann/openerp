@@ -90,6 +90,13 @@ type CheckJobResponse struct {
 	Progress int    `json:"progress,omitempty"`
 }
 
+// GetJobPdfRequest is the request body for fetching a job's PDF
+type GetJobPdfRequest struct {
+	JobID       string `json:"JobId"`
+	CompanyName string `json:"CompanyName"`
+	PdfPath     string `json:"PdfPath"`
+}
+
 // GetJobPdfResponse is the response from the PDF endpoint
 type GetJobPdfResponse struct {
 	JobID    string `json:"JobId"`
@@ -257,10 +264,15 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if progress >= 100 {
 			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
 
-			pdfURL := baseURL + "/api/nav/getjobpdf"
-			pdfReq := CheckJobRequest{
+			// The CheckJob result at 100% contains the PDF file path
+			pdfPath := extractPdfPath(checkResult.Result)
+			log.Printf("[NavReportRunner] Extracted PDF path: %s (from result: %s)", pdfPath, checkResult.Result)
+
+			pdfURL := baseURL + "/api/nav/job/pdf"
+			pdfReq := GetJobPdfRequest{
 				JobID:       jobID,
 				CompanyName: c.company,
+				PdfPath:     pdfPath,
 			}
 			pdfReqBody, err := json.Marshal(pdfReq)
 			if err != nil {
@@ -361,6 +373,37 @@ func extractProgress(s string) int {
 		}
 	}
 	return 0
+}
+
+// extractPdfPath extracts a file path from the CheckJob result string at 100%
+// The result may contain the path directly, or in a format like "100;C:\path\to\file.pdf"
+func extractPdfPath(result string) string {
+	// Try to find a Windows file path pattern (e.g., C:\...\file.pdf or \\server\share\file.pdf)
+	winPathRe := regexp.MustCompile(`([A-Za-z]:\\[^\s"]+\.pdf|\\\\[^\s"]+\.pdf)`)
+	if matches := winPathRe.FindStringSubmatch(result); len(matches) >= 1 {
+		return matches[1]
+	}
+
+	// Try to find a Unix file path pattern
+	unixPathRe := regexp.MustCompile(`(/[^\s"]+\.pdf)`)
+	if matches := unixPathRe.FindStringSubmatch(result); len(matches) >= 1 {
+		return matches[1]
+	}
+
+	// If result contains a semicolon delimiter (e.g., "100;path"), take the part after the last semicolon
+	if idx := len(result) - 1; idx > 0 {
+		for i := idx; i >= 0; i-- {
+			if result[i] == ';' {
+				path := result[i+1:]
+				if len(path) > 0 {
+					return path
+				}
+			}
+		}
+	}
+
+	// Fall back to the entire result string (it might just be the path)
+	return result
 }
 
 // generateJobID generates a unique 20-character alphanumeric job ID
