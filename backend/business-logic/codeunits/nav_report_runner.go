@@ -189,7 +189,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 	// Update progress: Job started
 	if dialog != nil {
-		dialog.UpdateWithMessage(1, 5, "Report job started, waiting for completion...")
+		dialog.UpdateWithMessage(1, 0, "Report job started, waiting for completion...")
 	}
 
 	// Step 2: Poll checkjob endpoint until progress reaches 100%
