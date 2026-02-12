@@ -120,8 +120,15 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	jobID := generateJobID()
 	log.Printf("[NavReportRunner] Generated job ID: %s", jobID)
 
-	// Build the input JSON with hardcoded report ID (for now)
-	reportID := 121
+	// Read report ID from the Parameter field on the Job Queue record
+	paramStr := strings.TrimSpace(jobQueue.Parameter.String())
+	if paramStr == "" {
+		return fcodeunits.Error("Parameter is empty - specify the report ID in the Parameter field"), nil
+	}
+	reportID, err := strconv.Atoi(paramStr)
+	if err != nil {
+		return fcodeunits.Error("Invalid report ID in Parameter field: " + paramStr), nil
+	}
 	inputJSON := fmt.Sprintf(`{"reportId":%d,"format":"PDF"}`, reportID)
 	log.Printf("[NavReportRunner] Input JSON: %s", inputJSON)
 

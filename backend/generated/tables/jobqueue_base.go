@@ -44,6 +44,7 @@ type JobQueueBase struct {
 	Description_2 types.Text `db:"description_2"`
 	Status JobQueueStatus `db:"status"`
 	Object_id_to_run int `db:"object_id_to_run"`
+	Parameter types.Text `db:"parameter"`
 	Next_start types.DateTime `db:"next_start"`
 	Minutes_between_run int `db:"minutes_between_run"`
 	Recurring_job bool `db:"recurring_job"`
@@ -136,6 +137,7 @@ func GetJobQueueTableSchema() string {
 		description_2 TEXT(100),
 		status INTEGER CHECK (status >= 0 AND status <= 2),
 		object_id_to_run INTEGER,
+		parameter TEXT(250),
 		next_start TEXT,
 		minutes_between_run INTEGER,
 		recurring_job INTEGER
@@ -150,6 +152,7 @@ func GetJobQueuePostgresTableSchema() string {
 		description_2 VARCHAR(100),
 		status INTEGER CHECK (status >= 0 AND status <= 2),
 		object_id_to_run INTEGER,
+		parameter VARCHAR(250),
 		next_start TIMESTAMP,
 		minutes_between_run INTEGER,
 		recurring_job BOOLEAN
@@ -234,6 +237,7 @@ func (t *JobQueueBase) StoreOldValues() {
 	t.oldValues["description_2"] = t.Description_2
 	t.oldValues["status"] = t.Status
 	t.oldValues["object_id_to_run"] = t.Object_id_to_run
+	t.oldValues["parameter"] = t.Parameter
 	t.oldValues["next_start"] = t.Next_start
 	t.oldValues["minutes_between_run"] = t.Minutes_between_run
 	t.oldValues["recurring_job"] = t.Recurring_job
@@ -289,6 +293,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	var description_2Null sql.NullString
 	var statusInt int
 	var object_id_to_runVal int
+	var parameterNull sql.NullString
 	var next_startNull sql.NullString
 	var minutes_between_runVal int
 	var recurring_jobBool sql.NullBool
@@ -299,7 +304,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -310,6 +315,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 		&description_2Null,
 		&statusInt,
 		&object_id_to_runVal,
+		&parameterNull,
 		&next_startNull,
 		&minutes_between_runVal,
 		&recurring_jobBool,
@@ -331,6 +337,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	t.Description_2 = types.NewText(description_2Null.String)
 	t.Status = JobQueueStatus(statusInt)
 	t.Object_id_to_run = object_id_to_runVal
+	t.Parameter = types.NewText(parameterNull.String)
 	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
 	t.Minutes_between_run = minutes_between_runVal
 	t.Recurring_job = recurring_jobBool.Bool
@@ -359,13 +366,14 @@ func (t *JobQueueBase) Insert(runTrigger bool) bool {
 		t.Description_2,
 		t.Status,
 		t.Object_id_to_run,
+		t.Parameter,
 		t.Next_start,
 		t.Minutes_between_run,
 		t.Recurring_job,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -411,6 +419,10 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "object_id_to_run = ?")
 			values = append(values, t.Object_id_to_run)
 		}
+		if t.hasFieldChanged("parameter") {
+			setClauses = append(setClauses, "parameter = ?")
+			values = append(values, t.Parameter)
+		}
 		if t.hasFieldChanged("next_start") {
 			setClauses = append(setClauses, "next_start = ?")
 			values = append(values, t.Next_start)
@@ -438,6 +450,8 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Status)
 		setClauses = append(setClauses, "object_id_to_run = ?")
 		values = append(values, t.Object_id_to_run)
+		setClauses = append(setClauses, "parameter = ?")
+		values = append(values, t.Parameter)
 		setClauses = append(setClauses, "next_start = ?")
 		values = append(values, t.Next_start)
 		setClauses = append(setClauses, "minutes_between_run = ?")
@@ -497,6 +511,10 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 			return t.Object_id_to_run != old
 		}
 		return true // Type mismatch, assume changed
+	case "parameter":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Parameter.Equal(old)
+		}
 	case "next_start":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Next_start.Equal(old)
@@ -726,7 +744,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -734,6 +752,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	var descriptionNull sql.NullString
 	var description_2Null sql.NullString
 	var statusInt int
+	var parameterNull sql.NullString
 	var next_startNull sql.NullString
 	var recurring_jobBool sql.NullBool
 
@@ -743,6 +762,7 @@ func (t *JobQueueBase) FindFirst() bool {
 		&description_2Null,
 		&statusInt,
 		&t.Object_id_to_run,
+		&parameterNull,
 		&next_startNull,
 		&t.Minutes_between_run,
 		&recurring_jobBool,
@@ -761,6 +781,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	t.Description = types.NewText(descriptionNull.String)
 	t.Description_2 = types.NewText(description_2Null.String)
 	t.Status = JobQueueStatus(statusInt)
+	t.Parameter = types.NewText(parameterNull.String)
 	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
 	t.Recurring_job = recurring_jobBool.Bool
 
@@ -777,7 +798,7 @@ func (t *JobQueueBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -785,6 +806,7 @@ func (t *JobQueueBase) FindLast() bool {
 	var descriptionNull sql.NullString
 	var description_2Null sql.NullString
 	var statusInt int
+	var parameterNull sql.NullString
 	var next_startNull sql.NullString
 	var recurring_jobBool sql.NullBool
 
@@ -794,6 +816,7 @@ func (t *JobQueueBase) FindLast() bool {
 		&description_2Null,
 		&statusInt,
 		&t.Object_id_to_run,
+		&parameterNull,
 		&next_startNull,
 		&t.Minutes_between_run,
 		&recurring_jobBool,
@@ -812,6 +835,7 @@ func (t *JobQueueBase) FindLast() bool {
 	t.Description = types.NewText(descriptionNull.String)
 	t.Description_2 = types.NewText(description_2Null.String)
 	t.Status = JobQueueStatus(statusInt)
+	t.Parameter = types.NewText(parameterNull.String)
 	t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
 	t.Recurring_job = recurring_jobBool.Bool
 
@@ -855,7 +879,7 @@ func (t *JobQueueBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -926,6 +950,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 		var descriptionNull sql.NullString
 		var description_2Null sql.NullString
 		var statusInt int
+		var parameterNull sql.NullString
 		var next_startNull sql.NullString
 		var recurring_jobBool sql.NullBool
 
@@ -935,6 +960,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 			&description_2Null,
 			&statusInt,
 			&t.Object_id_to_run,
+			&parameterNull,
 			&next_startNull,
 			&t.Minutes_between_run,
 			&recurring_jobBool,
@@ -952,6 +978,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 		t.Description = types.NewText(descriptionNull.String)
 		t.Description_2 = types.NewText(description_2Null.String)
 		t.Status = JobQueueStatus(statusInt)
+		t.Parameter = types.NewText(parameterNull.String)
 		t.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
 		t.Recurring_job = recurring_jobBool.Bool
 
@@ -984,7 +1011,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1009,6 +1036,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 		var descriptionNull sql.NullString
 		var description_2Null sql.NullString
 		var statusInt int
+		var parameterNull sql.NullString
 		var next_startNull sql.NullString
 		var recurring_jobBool sql.NullBool
 
@@ -1018,6 +1046,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 			&description_2Null,
 			&statusInt,
 			&record.Object_id_to_run,
+			&parameterNull,
 			&next_startNull,
 			&record.Minutes_between_run,
 			&recurring_jobBool,
@@ -1033,6 +1062,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 		record.Description = types.NewText(descriptionNull.String)
 		record.Description_2 = types.NewText(description_2Null.String)
 		record.Status = JobQueueStatus(statusInt)
+		record.Parameter = types.NewText(parameterNull.String)
 		record.Next_start, _ = types.NewDateTimeFromString(next_startNull.String)
 		record.Recurring_job = recurring_jobBool.Bool
 
@@ -1068,6 +1098,7 @@ func (t *JobQueueBase) copyFromBuffered(record *JobQueueBase) {
 	t.Description_2 = record.Description_2
 	t.Status = record.Status
 	t.Object_id_to_run = record.Object_id_to_run
+	t.Parameter = record.Parameter
 	t.Next_start = record.Next_start
 	t.Minutes_between_run = record.Minutes_between_run
 	t.Recurring_job = record.Recurring_job
@@ -1287,6 +1318,17 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Object_id_to_run()
+	case "parameter":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Parameter = v
+		} else if v, ok := value.(string); ok {
+			t.Parameter = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field parameter")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Parameter()
 	case "next_start":
 		// Set field value
 		if v, ok := value.(types.DateTime); ok {
@@ -1371,6 +1413,12 @@ func (t *JobQueueBase) OnValidate_Object_id_to_run() error {
 	return nil
 }
 
+// OnValidate_Parameter is the validation trigger for parameter field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Parameter() error {
+	return nil
+}
+
 // OnValidate_Next_start is the validation trigger for next_start field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
 func (t *JobQueueBase) OnValidate_Next_start() error {
@@ -1408,6 +1456,7 @@ func (t *JobQueueBase) ToMap() map[string]interface{} {
 		"description_2": t.Description_2.String(),
 		"status": int(t.Status),
 		"object_id_to_run": t.Object_id_to_run,
+		"parameter": t.Parameter.String(),
 		"next_start": t.Next_start.String(),
 		"minutes_between_run": t.Minutes_between_run,
 		"recurring_job": t.Recurring_job,
@@ -1454,6 +1503,11 @@ func (t *JobQueueBase) FromMap(data map[string]interface{}) {
 			t.Object_id_to_run = int(val)
 		case int:
 			t.Object_id_to_run = val
+		}
+	}
+	if v, ok := data["parameter"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Parameter = types.NewText(s)
 		}
 	}
 	if v, ok := data["next_start"]; ok && v != nil {
@@ -1535,6 +1589,15 @@ func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 			Name:       "object_id_to_run",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "parameter",
+			Type:       tables.FieldTypeText,
+			Length:     250,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,

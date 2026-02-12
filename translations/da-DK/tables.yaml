@@ -176,6 +176,7 @@ tables:
       description_2: "Beskrivelse 2"
       status: "Status"
       object_id_to_run: "Objekt-id til kørsel"
+      parameter: "Parameter"
       next_start: "Næste start"
       minutes_between_run: "Minutter mellem kørsel"
       recurring_job: "Tilbagevendende opgave"

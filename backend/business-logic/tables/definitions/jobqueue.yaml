@@ -28,6 +28,11 @@ table:
       type: int
       db_name: object_id_to_run
 
+    - name: parameter
+      type: types.Text
+      db_name: parameter
+      length: 250
+
     - name: next_start
       type: types.DateTime
       db_name: next_start
