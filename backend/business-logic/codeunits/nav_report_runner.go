@@ -42,7 +42,7 @@ func NewNavReportRunner(db database.Executor, company string, dbType database.DB
 		company: company,
 		dbType:  dbType,
 		client: &http.Client{
-			Timeout: 10 * time.Minute, // Long timeout for report generation
+			Timeout: 60 * time.Minute, // Match NAV proxy WCF timeout for heavy reports
 		},
 	}
 }
@@ -209,7 +209,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 	// Step 2: Poll checkjob endpoint until progress reaches 100%
 	pollInterval := 1 * time.Second
-	maxWaitTime := 15 * time.Minute
+	maxWaitTime := 60 * time.Minute
 	startTime := time.Now()
 
 	log.Printf("[NavReportRunner] Starting progress polling for job %s", jobID)
