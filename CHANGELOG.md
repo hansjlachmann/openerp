@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.38](https://github.com/hansjlachmann/openerp/compare/v0.1.37...v0.1.38) (2026-02-12)
+
+
+### Bug Fixes
+
+* extract PDF path from StartJob response, not CheckJob ([76c02a1](https://github.com/hansjlachmann/openerp/commit/76c02a1d57dc62fb540a654df2f9c96ae8487377))
+
 ## [0.1.37](https://github.com/hansjlachmann/openerp/compare/v0.1.36...v0.1.37) (2026-02-12)
 
 
