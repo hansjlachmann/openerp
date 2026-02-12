@@ -212,6 +212,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	var startJobResultStr string // Captures the StartJob response result (contains PDF path)
 	var postDone bool           // Whether the POST goroutine has completed
 	var postFailed bool         // Whether the POST returned an error (e.g. timeout)
+	var postErrorMsg string     // The original POST error message
+	var everSeenProgress bool   // Whether we've ever seen progress > 0
+	zeroProgressPolls := 0      // Consecutive polls with 0% after POST failure
 
 	for {
 		// Check if we've exceeded max wait time
@@ -226,9 +229,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			case postResult := <-postResultCh:
 				postDone = true
 				if postResult.err != nil {
-					// POST failed (likely timeout), but the NAV job may still be running.
-					// Don't stop — continue polling progress.
+					// POST failed — could be a timeout (job still running) or a real error.
+					// Continue polling to check: if progress appears, it's a timeout;
+					// if it stays at 0%, the job never started.
 					postFailed = true
+					postErrorMsg = postResult.err.Error()
 					log.Printf("[NavReportRunner] POST failed (continuing to poll): %v", postResult.err)
 				} else {
 					// POST succeeded, capture the result string (contains PDF path)
@@ -284,6 +289,20 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 
 		log.Printf("[NavReportRunner] Progress: %d%%", progress)
+
+		if progress > 0 {
+			everSeenProgress = true
+		}
+
+		// If POST already failed and we've never seen any progress, the job never
+		// started (e.g. invalid parameters). Stop after a few polls to confirm.
+		if postFailed && !everSeenProgress {
+			zeroProgressPolls++
+			if zeroProgressPolls >= 5 {
+				log.Printf("[NavReportRunner] POST failed and no progress after %d polls — job never started", zeroProgressPolls)
+				return fcodeunits.Error("NAV service error: " + postErrorMsg), nil
+			}
+		}
 
 		if dialog != nil {
 			msg := fmt.Sprintf("Generating report.... %d%%", progress)
