@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.37](https://github.com/hansjlachmann/openerp/compare/v0.1.36...v0.1.37) (2026-02-12)
+
+
+### Bug Fixes
+
+* correct PDF endpoint URL and add PdfPath parameter ([51ae017](https://github.com/hansjlachmann/openerp/commit/51ae017386e72dc0113844b97f6e285d86314099))
+
 ## [0.1.36](https://github.com/hansjlachmann/openerp/compare/v0.1.35...v0.1.36) (2026-02-12)
 
 
