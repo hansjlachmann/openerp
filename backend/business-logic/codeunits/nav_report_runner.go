@@ -303,10 +303,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 					dialog.UpdateWithMessage(1, 100, "Report complete, waiting for PDF path...")
 				}
 				postResult := <-postResultCh
-				postDone = true
 				if postResult.err != nil {
 					log.Printf("[NavReportRunner] POST failed: %v", postResult.err)
-					postFailed = true
 				} else {
 					startJobResultStr = postResult.result
 					log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
