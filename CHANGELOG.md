@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.41](https://github.com/hansjlachmann/openerp/compare/v0.1.40...v0.1.41) (2026-02-12)
+
+
+### Bug Fixes
+
+* show NAV errors as toast instead of briefly-visible modal ([dae05b0](https://github.com/hansjlachmann/openerp/commit/dae05b0a7966c32b1961b87042317e9fbe9bdca8))
+
 ## [0.1.40](https://github.com/hansjlachmann/openerp/compare/v0.1.39...v0.1.40) (2026-02-12)
 
 
