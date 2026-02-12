@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.36](https://github.com/hansjlachmann/openerp/compare/v0.1.35...v0.1.36) (2026-02-12)
+
+
+### Bug Fixes
+
+* add initial delay before checkjob poll and fix PDF download endpoint ([bd92f7c](https://github.com/hansjlachmann/openerp/commit/bd92f7c987b38ff078c816867cf7adcf8d427dc7))
+* update CheckJob call to POST with CompanyName parameter ([f120093](https://github.com/hansjlachmann/openerp/commit/f1200937316c1c9ec4194c3c982da59edb786a45))
+
 ## [0.1.35](https://github.com/hansjlachmann/openerp/compare/v0.1.34...v0.1.35) (2026-02-11)
 
 
