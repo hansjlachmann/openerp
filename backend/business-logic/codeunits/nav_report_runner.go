@@ -210,6 +210,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	time.Sleep(2 * time.Second)
 
 	var startJobResultStr string // Captures the StartJob response result (contains PDF path)
+	var postDone bool           // Whether the POST goroutine has completed
+	var postFailed bool         // Whether the POST returned an error (e.g. timeout)
 
 	for {
 		// Check if we've exceeded max wait time
@@ -219,17 +221,23 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 
 		// Check for POST result (non-blocking)
-		select {
-		case postResult := <-postResultCh:
-			if postResult.err != nil {
-				log.Printf("[NavReportRunner] POST failed, stopping poll: %v", postResult.err)
-				return fcodeunits.Error("Failed to start report job: " + postResult.err.Error()), nil
+		if !postDone {
+			select {
+			case postResult := <-postResultCh:
+				postDone = true
+				if postResult.err != nil {
+					// POST failed (likely timeout), but the NAV job may still be running.
+					// Don't stop — continue polling progress.
+					postFailed = true
+					log.Printf("[NavReportRunner] POST failed (continuing to poll): %v", postResult.err)
+				} else {
+					// POST succeeded, capture the result string (contains PDF path)
+					startJobResultStr = postResult.result
+					log.Printf("[NavReportRunner] POST succeeded, result: %s", startJobResultStr)
+				}
+			default:
+				// No result yet, continue polling
 			}
-			// POST succeeded, capture the result string (contains PDF path)
-			startJobResultStr = postResult.result
-			log.Printf("[NavReportRunner] POST succeeded, result: %s", startJobResultStr)
-		default:
-			// No result yet, continue polling
 		}
 
 		// Check progress via checkjob endpoint (POST with JobId + CompanyName)
@@ -286,23 +294,34 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if progress >= 100 {
 			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
 
-			// The PDF path comes from the StartJob response, not CheckJob.
-			// If we haven't received it yet, wait for it (blocking).
-			if startJobResultStr == "" {
+			// Try to get the PDF path. Prefer the StartJob response, but fall back
+			// to the CheckJob result (which may contain the path at 100%).
+			if startJobResultStr == "" && !postFailed {
+				// POST hasn't returned yet — wait for it
 				log.Printf("[NavReportRunner] Waiting for StartJob response to get PDF path...")
 				if dialog != nil {
 					dialog.UpdateWithMessage(1, 100, "Report complete, waiting for PDF path...")
 				}
 				postResult := <-postResultCh
+				postDone = true
 				if postResult.err != nil {
 					log.Printf("[NavReportRunner] POST failed: %v", postResult.err)
-					return fcodeunits.Error("Failed to start report job: " + postResult.err.Error()), nil
+					postFailed = true
+				} else {
+					startJobResultStr = postResult.result
+					log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
 				}
-				startJobResultStr = postResult.result
-				log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
 			}
 
-			pdfPath := extractPdfPath(startJobResultStr)
+			// Determine PDF path: from startjob result, or from checkjob result at 100%
+			var pdfPath string
+			if startJobResultStr != "" {
+				pdfPath = extractPdfPath(startJobResultStr)
+			} else {
+				// StartJob timed out — try the checkjob result string
+				log.Printf("[NavReportRunner] StartJob unavailable, trying checkjob result: %s", checkResult.Result)
+				pdfPath = extractPdfPath(checkResult.Result)
+			}
 			log.Printf("[NavReportRunner] Extracted PDF path: %s (from StartJob result: %s)", pdfPath, startJobResultStr)
 
 			pdfURL := baseURL + "/api/nav/job/pdf"
