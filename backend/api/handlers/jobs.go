@@ -136,7 +136,14 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		}
 
 		// Send final result through dialog
-		if result.Data != nil {
+		if !result.Success {
+			// Codeunit reported an error — send it as an error event
+			errMsg := result.Message
+			if result.Dialog != nil {
+				errMsg = result.Dialog.Message
+			}
+			dialog.CloseWithError(fmt.Errorf("%s", errMsg))
+		} else if result.Data != nil {
 			// Close with data (e.g., PDF base64)
 			message := result.Message
 			if result.Dialog != nil {
