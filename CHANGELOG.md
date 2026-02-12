@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.43](https://github.com/hansjlachmann/openerp/compare/v0.1.42...v0.1.43) (2026-02-12)
+
+
+### Bug Fixes
+
+* handle missing PDF path when startjob times out on heavy reports ([6f5ca4c](https://github.com/hansjlachmann/openerp/commit/6f5ca4c633f474fb5d3b3c8e31e237cf4bfd94b9))
+* increase HTTP client and poll timeout to 60 minutes for heavy reports ([fbda9b3](https://github.com/hansjlachmann/openerp/commit/fbda9b32fd9148a3153b5f7f42cf0aae08c86343))
+
 ## [0.1.42](https://github.com/hansjlachmann/openerp/compare/v0.1.41...v0.1.42) (2026-02-12)
 
 
