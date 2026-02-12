@@ -324,18 +324,30 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			// Try to get the PDF path. Prefer the StartJob response, but fall back
 			// to the CheckJob result (which may contain the path at 100%).
 			if startJobResultStr == "" && !postFailed {
-				// POST hasn't returned yet — wait for it
+				// POST hasn't returned yet — poll with animated progress while waiting
 				log.Printf("[NavReportRunner] Waiting for StartJob response to get PDF path...")
-				if dialog != nil {
-					dialog.UpdateWithMessage(1, 100, "Report complete, waiting for PDF path...")
+				dots := 0
+				for {
+					select {
+					case postResult := <-postResultCh:
+						if postResult.err != nil {
+							log.Printf("[NavReportRunner] POST failed: %v", postResult.err)
+						} else {
+							startJobResultStr = postResult.result
+							log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
+						}
+						goto postDoneWaiting
+					default:
+						// Animate: "Saving PDF.", "Saving PDF..", "Saving PDF..."
+						dots = (dots % 3) + 1
+						if dialog != nil {
+							msg := "Saving PDF" + strings.Repeat(".", dots)
+							dialog.UpdateWithMessage(1, 100, msg)
+						}
+						time.Sleep(500 * time.Millisecond)
+					}
 				}
-				postResult := <-postResultCh
-				if postResult.err != nil {
-					log.Printf("[NavReportRunner] POST failed: %v", postResult.err)
-				} else {
-					startJobResultStr = postResult.result
-					log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
-				}
+			postDoneWaiting:
 			}
 
 			// Determine PDF path: from startjob result, or from checkjob result at 100%
