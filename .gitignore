@@ -77,3 +77,6 @@ backend/foundation/openerp-gui
 
 # claude
 .claude/settings.local.json
+
+
+instant-build-script
