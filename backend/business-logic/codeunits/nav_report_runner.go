@@ -177,9 +177,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	pollInterval := 1 * time.Second
 	maxWaitTime := 15 * time.Minute
 	startTime := time.Now()
-	firstPoll := true
 
 	log.Printf("[NavReportRunner] Starting progress polling for job %s", jobID)
+
+	// Wait before first poll to give the NAV service time to register the job
+	time.Sleep(2 * time.Second)
 
 	for {
 		// Check if we've exceeded max wait time
@@ -200,12 +202,6 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		default:
 			// No result yet, continue polling
 		}
-
-		// Wait before polling (skip wait on first poll)
-		if !firstPoll {
-			time.Sleep(pollInterval)
-		}
-		firstPoll = false
 
 		// Check progress via checkjob endpoint (POST with JobId + CompanyName)
 		checkURL := baseURL + "/api/nav/checkjob"
@@ -261,10 +257,19 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if progress >= 100 {
 			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
 
-			pdfURL := baseURL + "/api/nav/job/" + jobID + "/pdf"
-			log.Printf("[NavReportRunner] Fetching PDF: GET %s", pdfURL)
+			pdfURL := baseURL + "/api/nav/getjobpdf"
+			pdfReq := CheckJobRequest{
+				JobID:       jobID,
+				CompanyName: c.company,
+			}
+			pdfReqBody, err := json.Marshal(pdfReq)
+			if err != nil {
+				log.Printf("[NavReportRunner] Failed to marshal PDF request: %v", err)
+				return fcodeunits.Error("Failed to marshal PDF request: " + err.Error()), nil
+			}
+			log.Printf("[NavReportRunner] Fetching PDF: POST %s with body: %s", pdfURL, string(pdfReqBody))
 
-			pdfResp, err := c.client.Get(pdfURL)
+			pdfResp, err := c.client.Post(pdfURL, "application/json", bytes.NewReader(pdfReqBody))
 			if err != nil {
 				log.Printf("[NavReportRunner] PDF fetch error: %v", err)
 				return fcodeunits.Error("Failed to fetch PDF: " + err.Error()), nil
@@ -309,6 +314,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				},
 			}, nil
 		}
+
+		// Wait before next poll
+		time.Sleep(pollInterval)
 	}
 }
 
