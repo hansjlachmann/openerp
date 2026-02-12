@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.40](https://github.com/hansjlachmann/openerp/compare/v0.1.39...v0.1.40) (2026-02-12)
+
+
+### Features
+
+* add parameter field to Job Queue for generic report runner ([f2b7034](https://github.com/hansjlachmann/openerp/commit/f2b7034f538f349bec6ea45550012053df8d5c5e))
+
+
+### Bug Fixes
+
+* don't stop polling when startjob POST times out on heavy reports ([62aae27](https://github.com/hansjlachmann/openerp/commit/62aae2787e3538a2a71bc03048edbc36b8a44a45))
+* remove ineffectual assignments flagged by golangci-lint ([86ac26c](https://github.com/hansjlachmann/openerp/commit/86ac26ce30db824d928a70f07b5ad62d598f5dfd))
+* stop polling when startjob fails and no progress is ever seen ([6426dad](https://github.com/hansjlachmann/openerp/commit/6426dadfad4915773c5c39afaced294af1c9042b))
+
 ## [0.1.39](https://github.com/hansjlachmann/openerp/compare/v0.1.38...v0.1.39) (2026-02-12)
 
 
