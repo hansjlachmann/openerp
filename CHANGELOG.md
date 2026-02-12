@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.42](https://github.com/hansjlachmann/openerp/compare/v0.1.41...v0.1.42) (2026-02-12)
+
+
+### Bug Fixes
+
+* send codeunit errors as error events instead of success completion ([60d18a7](https://github.com/hansjlachmann/openerp/commit/60d18a7a22ceb60b22e0e0cad0e78d3d518c21bf))
+
 ## [0.1.41](https://github.com/hansjlachmann/openerp/compare/v0.1.40...v0.1.41) (2026-02-12)
 
 
