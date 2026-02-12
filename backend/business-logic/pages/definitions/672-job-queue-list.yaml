@@ -24,6 +24,9 @@ page:
         - source: object_id_to_run
           width: 120
 
+        - source: parameter
+          width: 200
+
         - source: next_start
           width: 150
 
