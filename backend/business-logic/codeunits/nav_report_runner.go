@@ -181,7 +181,15 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		// Check for non-success status codes
 		if resp.StatusCode >= 400 {
-			postResultCh <- startJobResult{err: fmt.Errorf("NAV service returned status %d: %s", resp.StatusCode, string(respBody))}
+			// Try to extract the "details" field for a clean error message
+			var navErr struct {
+				Details string `json:"details"`
+			}
+			if json.Unmarshal(respBody, &navErr) == nil && navErr.Details != "" {
+				postResultCh <- startJobResult{err: fmt.Errorf("%s", navErr.Details)}
+			} else {
+				postResultCh <- startJobResult{err: fmt.Errorf("NAV service returned status %d: %s", resp.StatusCode, string(respBody))}
+			}
 			return
 		}
 

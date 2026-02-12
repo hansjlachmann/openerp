@@ -394,10 +394,9 @@
 				}
 			}
 		} catch (err) {
-			progressError = err instanceof Error ? err.message : 'Unknown error';
-			// Keep modal open to show error
-			await new Promise((resolve) => setTimeout(resolve, 2000));
+			const errMsg = err instanceof Error ? err.message : 'Unknown error';
 			progressModalOpen = false;
+			toast.error(errMsg);
 		}
 	}
 
