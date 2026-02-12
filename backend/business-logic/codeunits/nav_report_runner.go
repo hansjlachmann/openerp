@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
@@ -146,8 +147,14 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	startURL := baseURL + "/api/nav/startjob"
 	log.Printf("[NavReportRunner] POST %s (fire-and-forget) with body: %s", startURL, string(reqBody))
 
+	// startJobResult carries both error and response from the StartJob POST
+	type startJobResult struct {
+		err    error
+		result string // The "result" field from the response JSON
+	}
+
 	// Channel to communicate POST result - buffered so goroutine doesn't block
-	postResultCh := make(chan error, 1)
+	postResultCh := make(chan startJobResult, 1)
 
 	// Fire POST in background goroutine
 	go func() {
@@ -158,7 +165,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		)
 		if err != nil {
 			log.Printf("[NavReportRunner] Background POST failed: %v", err)
-			postResultCh <- err
+			postResultCh <- startJobResult{err: err}
 			return
 		}
 		defer resp.Body.Close()
@@ -167,12 +174,17 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		// Check for non-success status codes
 		if resp.StatusCode >= 400 {
-			postResultCh <- fmt.Errorf("NAV service returned status %d: %s", resp.StatusCode, string(respBody))
+			postResultCh <- startJobResult{err: fmt.Errorf("NAV service returned status %d: %s", resp.StatusCode, string(respBody))}
 			return
 		}
 
-		// Signal success (nil error)
-		postResultCh <- nil
+		// Parse the result field from response
+		var startResp StartJobResponse
+		if err := json.Unmarshal(respBody, &startResp); err != nil {
+			log.Printf("[NavReportRunner] Failed to parse StartJob response: %v", err)
+		}
+
+		postResultCh <- startJobResult{result: startResp.Result}
 	}()
 
 	// Update progress: Job started
@@ -190,6 +202,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// Wait before first poll to give the NAV service time to register the job
 	time.Sleep(2 * time.Second)
 
+	var startJobResultStr string // Captures the StartJob response result (contains PDF path)
+
 	for {
 		// Check if we've exceeded max wait time
 		if time.Since(startTime) > maxWaitTime {
@@ -197,15 +211,16 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			return fcodeunits.Error("Report generation timed out after 15 minutes"), nil
 		}
 
-		// Check for POST errors (non-blocking)
+		// Check for POST result (non-blocking)
 		select {
-		case postErr := <-postResultCh:
-			if postErr != nil {
-				log.Printf("[NavReportRunner] POST failed, stopping poll: %v", postErr)
-				return fcodeunits.Error("Failed to start report job: " + postErr.Error()), nil
+		case postResult := <-postResultCh:
+			if postResult.err != nil {
+				log.Printf("[NavReportRunner] POST failed, stopping poll: %v", postResult.err)
+				return fcodeunits.Error("Failed to start report job: " + postResult.err.Error()), nil
 			}
-			// POST succeeded, continue polling
-			log.Printf("[NavReportRunner] POST succeeded, continuing to poll for progress")
+			// POST succeeded, capture the result string (contains PDF path)
+			startJobResultStr = postResult.result
+			log.Printf("[NavReportRunner] POST succeeded, result: %s", startJobResultStr)
 		default:
 			// No result yet, continue polling
 		}
@@ -264,9 +279,24 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if progress >= 100 {
 			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
 
-			// The CheckJob result at 100% contains the PDF file path
-			pdfPath := extractPdfPath(checkResult.Result)
-			log.Printf("[NavReportRunner] Extracted PDF path: %s (from result: %s)", pdfPath, checkResult.Result)
+			// The PDF path comes from the StartJob response, not CheckJob.
+			// If we haven't received it yet, wait for it (blocking).
+			if startJobResultStr == "" {
+				log.Printf("[NavReportRunner] Waiting for StartJob response to get PDF path...")
+				if dialog != nil {
+					dialog.UpdateWithMessage(1, 100, "Report complete, waiting for PDF path...")
+				}
+				postResult := <-postResultCh
+				if postResult.err != nil {
+					log.Printf("[NavReportRunner] POST failed: %v", postResult.err)
+					return fcodeunits.Error("Failed to start report job: " + postResult.err.Error()), nil
+				}
+				startJobResultStr = postResult.result
+				log.Printf("[NavReportRunner] StartJob result received: %s", startJobResultStr)
+			}
+
+			pdfPath := extractPdfPath(startJobResultStr)
+			log.Printf("[NavReportRunner] Extracted PDF path: %s (from StartJob result: %s)", pdfPath, startJobResultStr)
 
 			pdfURL := baseURL + "/api/nav/job/pdf"
 			pdfReq := GetJobPdfRequest{
@@ -375,34 +405,28 @@ func extractProgress(s string) int {
 	return 0
 }
 
-// extractPdfPath extracts a file path from the CheckJob result string at 100%
-// The result may contain the path directly, or in a format like "100;C:\path\to\file.pdf"
+// extractPdfPath extracts the PDF file path from the StartJob result string.
+// Expected format: "Job completed duration:  ms. PDF: C:\...\file.pdf"
 func extractPdfPath(result string) string {
-	// Try to find a Windows file path pattern (e.g., C:\...\file.pdf or \\server\share\file.pdf)
-	winPathRe := regexp.MustCompile(`([A-Za-z]:\\[^\s"]+\.pdf|\\\\[^\s"]+\.pdf)`)
-	if matches := winPathRe.FindStringSubmatch(result); len(matches) >= 1 {
-		return matches[1]
+	// Look for "PDF: " marker (the standard format from NAV proxy)
+	pdfMarkerRe := regexp.MustCompile(`(?i)PDF:\s*(.+\.pdf)`)
+	if matches := pdfMarkerRe.FindStringSubmatch(result); len(matches) >= 2 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	// Try to find a Windows file path pattern (path may contain spaces)
+	winPathRe := regexp.MustCompile(`([A-Za-z]:\\.+\.pdf)`)
+	if matches := winPathRe.FindStringSubmatch(result); len(matches) >= 2 {
+		return strings.TrimSpace(matches[1])
 	}
 
 	// Try to find a Unix file path pattern
-	unixPathRe := regexp.MustCompile(`(/[^\s"]+\.pdf)`)
-	if matches := unixPathRe.FindStringSubmatch(result); len(matches) >= 1 {
-		return matches[1]
+	unixPathRe := regexp.MustCompile(`(/.+\.pdf)`)
+	if matches := unixPathRe.FindStringSubmatch(result); len(matches) >= 2 {
+		return strings.TrimSpace(matches[1])
 	}
 
-	// If result contains a semicolon delimiter (e.g., "100;path"), take the part after the last semicolon
-	if idx := len(result) - 1; idx > 0 {
-		for i := idx; i >= 0; i-- {
-			if result[i] == ';' {
-				path := result[i+1:]
-				if len(path) > 0 {
-					return path
-				}
-			}
-		}
-	}
-
-	// Fall back to the entire result string (it might just be the path)
+	// Fall back to the entire result string
 	return result
 }
 
