@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.39](https://github.com/hansjlachmann/openerp/compare/v0.1.38...v0.1.39) (2026-02-12)
+
+
+### Bug Fixes
+
+* show 0% progress when report job starts ([159bbd3](https://github.com/hansjlachmann/openerp/commit/159bbd3e254f9e182cb572a5919ef9bed2204100))
+
 ## [0.1.38](https://github.com/hansjlachmann/openerp/compare/v0.1.37...v0.1.38) (2026-02-12)
 
 
