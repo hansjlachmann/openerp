@@ -349,6 +349,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			}
 			log.Printf("[NavReportRunner] Extracted PDF path: %s (from StartJob result: %s)", pdfPath, startJobResultStr)
 
+			if pdfPath == "" {
+				log.Printf("[NavReportRunner] No PDF path available — StartJob likely timed out")
+				return fcodeunits.Error("Report completed but PDF path unavailable — the NAV proxy timed out. Try increasing the WCF SendTimeout on the proxy."), nil
+			}
+
 			pdfURL := baseURL + "/api/nav/job/pdf"
 			pdfReq := GetJobPdfRequest{
 				JobID:       jobID,
@@ -477,8 +482,8 @@ func extractPdfPath(result string) string {
 		return strings.TrimSpace(matches[1])
 	}
 
-	// Fall back to the entire result string
-	return result
+	// No PDF path found
+	return ""
 }
 
 // generateJobID generates a unique 20-character alphanumeric job ID
