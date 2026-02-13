@@ -75,6 +75,9 @@ backend/foundation/openerp-gui
 *.db-wal
 *.db-journal
 
+# SSL certificates
+certs/
+
 # claude
 .claude/settings.local.json
 
