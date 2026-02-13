@@ -32,10 +32,8 @@ func GetRegistry() *Registry {
 		if err := instance.LoadPages(); err != nil {
 			fmt.Printf("Warning: Failed to load page definitions: %v\n", err)
 		}
-		// Load default menu (optional — menus are typically loaded per-user via GetMenuByName)
-		if err := instance.LoadMenu(); err != nil {
-			// Not a problem: per-user menus are loaded from pages/menus/ folder
-		}
+		// Load default menu (optional — per-user menus are loaded from pages/menus/ folder)
+		_ = instance.LoadMenu()
 	})
 	return instance
 }
