@@ -66,6 +66,9 @@ func (t *JobQueueEntry) Validate() error {
 	if len(t.Description) > 100 {
 		return errors.New("description cannot exceed 100 characters")
 	}
+	if len(t.Error_message) > 250 {
+		return errors.New("error_message cannot exceed 250 characters")
+	}
 
 	return nil
 }

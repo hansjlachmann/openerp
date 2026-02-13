@@ -44,6 +44,7 @@ type JobQueueEntryBase struct {
 	Status JobQueueEntryStatus `db:"status"`
 	User_id types.Code `db:"user_id"`
 	Description types.Text `db:"description"`
+	Error_message types.Text `db:"error_message"`
 	Start_date_time types.DateTime `db:"start_date_time"`
 	End_date_time types.DateTime `db:"end_date_time"`
 
@@ -135,6 +136,7 @@ func GetJobQueueEntryTableSchema() string {
 		status INTEGER CHECK (status >= 0 AND status <= 2),
 		user_id TEXT(20),
 		description TEXT(100),
+		error_message TEXT(250),
 		start_date_time TEXT,
 		end_date_time TEXT
 	`
@@ -148,6 +150,7 @@ func GetJobQueueEntryPostgresTableSchema() string {
 		status INTEGER CHECK (status >= 0 AND status <= 2),
 		user_id VARCHAR(20),
 		description VARCHAR(100),
+		error_message VARCHAR(250),
 		start_date_time TIMESTAMP,
 		end_date_time TIMESTAMP
 	`
@@ -246,6 +249,7 @@ func (t *JobQueueEntryBase) StoreOldValues() {
 	t.oldValues["status"] = t.Status
 	t.oldValues["user_id"] = t.User_id
 	t.oldValues["description"] = t.Description
+	t.oldValues["error_message"] = t.Error_message
 	t.oldValues["start_date_time"] = t.Start_date_time
 	t.oldValues["end_date_time"] = t.End_date_time
 }
@@ -305,6 +309,7 @@ func (t *JobQueueEntryBase) GetByPK(entry_no int) bool {
 	var statusInt int
 	var user_idNull sql.NullString
 	var descriptionNull sql.NullString
+	var error_messageNull sql.NullString
 	var start_date_timeNull sql.NullString
 	var end_date_timeNull sql.NullString
 
@@ -314,7 +319,7 @@ func (t *JobQueueEntryBase) GetByPK(entry_no int) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -325,6 +330,7 @@ func (t *JobQueueEntryBase) GetByPK(entry_no int) bool {
 		&statusInt,
 		&user_idNull,
 		&descriptionNull,
+		&error_messageNull,
 		&start_date_timeNull,
 		&end_date_timeNull,
 	)
@@ -345,6 +351,7 @@ func (t *JobQueueEntryBase) GetByPK(entry_no int) bool {
 	t.Status = JobQueueEntryStatus(statusInt)
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Description = types.NewText(descriptionNull.String)
+	t.Error_message = types.NewText(error_messageNull.String)
 	t.Start_date_time, _ = types.NewDateTimeFromString(start_date_timeNull.String)
 	t.End_date_time, _ = types.NewDateTimeFromString(end_date_timeNull.String)
 
@@ -372,12 +379,13 @@ func (t *JobQueueEntryBase) Insert(runTrigger bool) bool {
 		t.Status,
 		t.User_id,
 		t.Description,
+		t.Error_message,
 		t.Start_date_time,
 		t.End_date_time,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -423,6 +431,10 @@ func (t *JobQueueEntryBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "description = ?")
 			values = append(values, t.Description)
 		}
+		if t.hasFieldChanged("error_message") {
+			setClauses = append(setClauses, "error_message = ?")
+			values = append(values, t.Error_message)
+		}
 		if t.hasFieldChanged("start_date_time") {
 			setClauses = append(setClauses, "start_date_time = ?")
 			values = append(values, t.Start_date_time)
@@ -446,6 +458,8 @@ func (t *JobQueueEntryBase) Modify(runTrigger bool) bool {
 		values = append(values, t.User_id)
 		setClauses = append(setClauses, "description = ?")
 		values = append(values, t.Description)
+		setClauses = append(setClauses, "error_message = ?")
+		values = append(values, t.Error_message)
 		setClauses = append(setClauses, "start_date_time = ?")
 		values = append(values, t.Start_date_time)
 		setClauses = append(setClauses, "end_date_time = ?")
@@ -501,6 +515,10 @@ func (t *JobQueueEntryBase) hasFieldChanged(fieldName string) bool {
 	case "description":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
+		}
+	case "error_message":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Error_message.Equal(old)
 		}
 	case "start_date_time":
 		if old, ok := oldValue.(types.DateTime); ok {
@@ -725,7 +743,7 @@ func (t *JobQueueEntryBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -733,6 +751,7 @@ func (t *JobQueueEntryBase) FindFirst() bool {
 	var statusInt int
 	var user_idNull sql.NullString
 	var descriptionNull sql.NullString
+	var error_messageNull sql.NullString
 	var start_date_timeNull sql.NullString
 	var end_date_timeNull sql.NullString
 
@@ -742,6 +761,7 @@ func (t *JobQueueEntryBase) FindFirst() bool {
 		&statusInt,
 		&user_idNull,
 		&descriptionNull,
+		&error_messageNull,
 		&start_date_timeNull,
 		&end_date_timeNull,
 	)
@@ -759,6 +779,7 @@ func (t *JobQueueEntryBase) FindFirst() bool {
 	t.Status = JobQueueEntryStatus(statusInt)
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Description = types.NewText(descriptionNull.String)
+	t.Error_message = types.NewText(error_messageNull.String)
 	t.Start_date_time, _ = types.NewDateTimeFromString(start_date_timeNull.String)
 	t.End_date_time, _ = types.NewDateTimeFromString(end_date_timeNull.String)
 
@@ -775,7 +796,7 @@ func (t *JobQueueEntryBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -783,6 +804,7 @@ func (t *JobQueueEntryBase) FindLast() bool {
 	var statusInt int
 	var user_idNull sql.NullString
 	var descriptionNull sql.NullString
+	var error_messageNull sql.NullString
 	var start_date_timeNull sql.NullString
 	var end_date_timeNull sql.NullString
 
@@ -792,6 +814,7 @@ func (t *JobQueueEntryBase) FindLast() bool {
 		&statusInt,
 		&user_idNull,
 		&descriptionNull,
+		&error_messageNull,
 		&start_date_timeNull,
 		&end_date_timeNull,
 	)
@@ -809,6 +832,7 @@ func (t *JobQueueEntryBase) FindLast() bool {
 	t.Status = JobQueueEntryStatus(statusInt)
 	t.User_id = types.NewCode(user_idNull.String)
 	t.Description = types.NewText(descriptionNull.String)
+	t.Error_message = types.NewText(error_messageNull.String)
 	t.Start_date_time, _ = types.NewDateTimeFromString(start_date_timeNull.String)
 	t.End_date_time, _ = types.NewDateTimeFromString(end_date_timeNull.String)
 
@@ -852,7 +876,7 @@ func (t *JobQueueEntryBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -923,6 +947,7 @@ func (t *JobQueueEntryBase) Next(steps ...int) bool {
 		var statusInt int
 		var user_idNull sql.NullString
 		var descriptionNull sql.NullString
+		var error_messageNull sql.NullString
 		var start_date_timeNull sql.NullString
 		var end_date_timeNull sql.NullString
 
@@ -932,6 +957,7 @@ func (t *JobQueueEntryBase) Next(steps ...int) bool {
 			&statusInt,
 			&user_idNull,
 			&descriptionNull,
+			&error_messageNull,
 			&start_date_timeNull,
 			&end_date_timeNull,
 		)
@@ -948,6 +974,7 @@ func (t *JobQueueEntryBase) Next(steps ...int) bool {
 		t.Status = JobQueueEntryStatus(statusInt)
 		t.User_id = types.NewCode(user_idNull.String)
 		t.Description = types.NewText(descriptionNull.String)
+		t.Error_message = types.NewText(error_messageNull.String)
 		t.Start_date_time, _ = types.NewDateTimeFromString(start_date_timeNull.String)
 		t.End_date_time, _ = types.NewDateTimeFromString(end_date_timeNull.String)
 
@@ -980,7 +1007,7 @@ func (t *JobQueueEntryBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1005,6 +1032,7 @@ func (t *JobQueueEntryBase) FindSetBuffered() bool {
 		var statusInt int
 		var user_idNull sql.NullString
 		var descriptionNull sql.NullString
+		var error_messageNull sql.NullString
 		var start_date_timeNull sql.NullString
 		var end_date_timeNull sql.NullString
 
@@ -1014,6 +1042,7 @@ func (t *JobQueueEntryBase) FindSetBuffered() bool {
 			&statusInt,
 			&user_idNull,
 			&descriptionNull,
+			&error_messageNull,
 			&start_date_timeNull,
 			&end_date_timeNull,
 		)
@@ -1028,6 +1057,7 @@ func (t *JobQueueEntryBase) FindSetBuffered() bool {
 		record.Status = JobQueueEntryStatus(statusInt)
 		record.User_id = types.NewCode(user_idNull.String)
 		record.Description = types.NewText(descriptionNull.String)
+		record.Error_message = types.NewText(error_messageNull.String)
 		record.Start_date_time, _ = types.NewDateTimeFromString(start_date_timeNull.String)
 		record.End_date_time, _ = types.NewDateTimeFromString(end_date_timeNull.String)
 
@@ -1063,6 +1093,7 @@ func (t *JobQueueEntryBase) copyFromBuffered(record *JobQueueEntryBase) {
 	t.Status = record.Status
 	t.User_id = record.User_id
 	t.Description = record.Description
+	t.Error_message = record.Error_message
 	t.Start_date_time = record.Start_date_time
 	t.End_date_time = record.End_date_time
 	t.StoreOldValues()
@@ -1281,6 +1312,17 @@ func (t *JobQueueEntryBase) ValidateField(fieldName string, value interface{}) e
 		}
 		// Call OnValidate trigger
 		return t.OnValidate_Description()
+	case "error_message":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Error_message = v
+		} else if v, ok := value.(string); ok {
+			t.Error_message = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field error_message")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Error_message()
 	case "start_date_time":
 		// Set field value
 		if v, ok := value.(types.DateTime); ok {
@@ -1350,6 +1392,12 @@ func (t *JobQueueEntryBase) OnValidate_Description() error {
 	return nil
 }
 
+// OnValidate_Error_message is the validation trigger for error_message field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueEntryBase) OnValidate_Error_message() error {
+	return nil
+}
+
 // OnValidate_Start_date_time is the validation trigger for start_date_time field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
 func (t *JobQueueEntryBase) OnValidate_Start_date_time() error {
@@ -1381,6 +1429,7 @@ func (t *JobQueueEntryBase) ToMap() map[string]interface{} {
 		"status": int(t.Status),
 		"user_id": t.User_id.String(),
 		"description": t.Description.String(),
+		"error_message": t.Error_message.String(),
 		"start_date_time": t.Start_date_time.String(),
 		"end_date_time": t.End_date_time.String(),
 	}
@@ -1426,6 +1475,11 @@ func (t *JobQueueEntryBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["description"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Description = types.NewText(s)
+		}
+	}
+	if v, ok := data["error_message"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Error_message = types.NewText(s)
 		}
 	}
 	if v, ok := data["start_date_time"]; ok && v != nil {
@@ -1499,6 +1553,15 @@ func (t *JobQueueEntryBase) GetFields() []tables.FieldInfo {
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     100,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "error_message",
+			Type:       tables.FieldTypeText,
+			Length:     250,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,

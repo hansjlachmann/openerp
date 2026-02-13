@@ -197,6 +197,7 @@ tables:
       status: "Status"
       user_id: "User ID"
       description: "Description"
+      error_message: "Error Message"
       start_date_time: "Start Date/Time"
       end_date_time: "End Date/Time"
 

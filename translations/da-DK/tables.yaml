@@ -197,6 +197,7 @@ tables:
       status: "Status"
       user_id: "Bruger-id"
       description: "Beskrivelse"
+      error_message: "Fejlmeddelelse"
       start_date_time: "Startdato/-tidspunkt"
       end_date_time: "Slutdato/-tidspunkt"
 

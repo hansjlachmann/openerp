@@ -79,7 +79,7 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success); err != nil {
+	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, ""); err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 
