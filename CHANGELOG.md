@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.44](https://github.com/hansjlachmann/openerp/compare/v0.1.43...v0.1.44) (2026-02-13)
+
+
+### Features
+
+* add HTTPS support with self-signed certificates for internal network ([5cd18fb](https://github.com/hansjlachmann/openerp/commit/5cd18fb88ff40ef7c78754d62d4f8cb84169c975))
+* log job queue entries for failed report executions ([664a22a](https://github.com/hansjlachmann/openerp/commit/664a22aa37bee3d6b8506c42073981955e628d86))
+
+
+### Bug Fixes
+
+* add $state() to confirmResponseCallback to resolve Svelte warning ([a0def70](https://github.com/hansjlachmann/openerp/commit/a0def70553b277896acb454add4686789062e644))
+* resolve empty branch lint error in page registry LoadMenu call ([19f797d](https://github.com/hansjlachmann/openerp/commit/19f797da62f2922364154c9e8a3c4a2b5f368b80))
+* show animated "Saving PDF..." while waiting for startjob response ([f5d84d2](https://github.com/hansjlachmann/openerp/commit/f5d84d274c7891ea62dcccda46c93492c8d60f0e))
+* suppress warning for missing default menu.yaml at startup ([1bdb7dc](https://github.com/hansjlachmann/openerp/commit/1bdb7dc60cfb9614a1f8b36c0d1f9e2f517a8b3d))
+
 ## [0.1.43](https://github.com/hansjlachmann/openerp/compare/v0.1.42...v0.1.43) (2026-02-12)
 
 
