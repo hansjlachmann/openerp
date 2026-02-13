@@ -106,7 +106,7 @@
 	let progressError = $state('');
 	let progressConfirmMode = $state(false);
 	let progressConfirmMessage = $state('');
-	let confirmResponseCallback: ((response: boolean) => void) | undefined = undefined;
+	let confirmResponseCallback: ((response: boolean) => void) | undefined = $state(undefined);
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
