@@ -32,6 +32,11 @@ table:
       db_name: description
       length: 100
 
+    - name: error_message
+      type: types.Text
+      db_name: error_message
+      length: 250
+
     - name: start_date_time
       type: types.DateTime
       db_name: start_date_time

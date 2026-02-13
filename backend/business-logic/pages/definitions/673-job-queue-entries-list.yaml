@@ -25,6 +25,9 @@ page:
         - source: description
           width: 250
 
+        - source: error_message
+          width: 300
+
         - source: start_date_time
           width: 150
 

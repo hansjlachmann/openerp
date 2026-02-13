@@ -11,7 +11,7 @@ import (
 )
 
 // CreateJobQueueEntry creates a new Job Queue Entry record for the given job queue.
-func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *tables.JobQueue, status gtables.JobQueueEntryStatus) error {
+func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *tables.JobQueue, status gtables.JobQueueEntryStatus, errorMsg string) error {
 	var entry tables.JobQueueEntry
 	entry.InitWithDBType(db, company, dbType)
 
@@ -26,6 +26,9 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 	entry.Job_queue_no = jobQueue.No
 	entry.Start_date_time = types.Now()
 	entry.End_date_time = types.Now()
+	if errorMsg != "" {
+		entry.Error_message = types.NewText(errorMsg)
+	}
 
 	if !entry.Insert(true) {
 		return fmt.Errorf("failed to insert job queue entry")
