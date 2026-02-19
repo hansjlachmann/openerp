@@ -162,3 +162,14 @@ func Confirm(message string) bool {
 	}
 	return dialog.Confirm(message)
 }
+
+// RequestInput shows an input dialog with arbitrary fields and waits for user response
+// Returns a map of field name → value, or nil on cancel/timeout
+// Note: This only works in async codeunits (UsesProgress() = true)
+func RequestInput(title string, fields []InputField) map[string]string {
+	dialog := GetCurrentDialog()
+	if dialog == nil {
+		return nil
+	}
+	return dialog.RequestInput(title, fields)
+}

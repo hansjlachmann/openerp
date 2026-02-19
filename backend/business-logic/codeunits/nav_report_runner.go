@@ -129,7 +129,28 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	if err != nil {
 		return fcodeunits.Error("Invalid report ID in Parameter field: " + paramStr), nil
 	}
-	inputJSON := fmt.Sprintf(`{"reportId":%d,"format":"PDF"}`, reportID)
+
+	// Request report date from the user
+	inputResult := fcodeunits.RequestInput("Filter", []fcodeunits.InputField{
+		{Name: "date", Label: "Report Date", Type: "date", Required: true,
+			Default: time.Now().Format("2006-01-02")},
+	})
+	if inputResult == nil || inputResult["date"] == "" {
+		return fcodeunits.Message("Report cancelled."), nil
+	}
+
+	// Build filter object from user input
+	filterMap := make(map[string]interface{})
+	for k, v := range inputResult {
+		filterMap[k] = v
+	}
+	payload := map[string]interface{}{
+		"reportId": reportID,
+		"format":   "PDF",
+		"filter":   filterMap,
+	}
+	inputJSONBytes, _ := json.Marshal(payload)
+	inputJSON := string(inputJSONBytes)
 	log.Printf("[NavReportRunner] Input JSON: %s", inputJSON)
 
 	// Update progress: Starting
