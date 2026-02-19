@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.45](https://github.com/hansjlachmann/openerp/compare/v0.1.44...v0.1.45) (2026-02-19)
+
+
+### Features
+
+* add RequestInput dialog for codeunits to collect user input mid-execution ([c50825a](https://github.com/hansjlachmann/openerp/commit/c50825a45a0b9433536decffa7bf730cd173df07))
+
 ## [0.1.44](https://github.com/hansjlachmann/openerp/compare/v0.1.43...v0.1.44) (2026-02-13)
 
 
