@@ -256,8 +256,9 @@ func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		ConfirmID string `json:"confirm_id"`
-		Response  bool   `json:"response"`
+		ConfirmID string            `json:"confirm_id"`
+		Response  bool              `json:"response"`
+		Values    map[string]string `json:"values,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
@@ -273,9 +274,15 @@ func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Job not found"))
 	}
 
-	// Send the response
-	if !dialog.RespondToConfirm(req.ConfirmID, req.Response) {
-		return c.Status(400).JSON(apitypes.NewErrorResponse("No pending confirm with that ID"))
+	// Route to input response or confirm response
+	if req.Values != nil {
+		if !dialog.RespondToInput(req.ConfirmID, req.Values) {
+			return c.Status(400).JSON(apitypes.NewErrorResponse("No pending input request with that ID"))
+		}
+	} else {
+		if !dialog.RespondToConfirm(req.ConfirmID, req.Response) {
+			return c.Status(400).JSON(apitypes.NewErrorResponse("No pending confirm with that ID"))
+		}
 	}
 
 	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{

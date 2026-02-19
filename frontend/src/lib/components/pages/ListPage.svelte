@@ -108,6 +108,11 @@
 	let progressConfirmMessage = $state('');
 	let confirmResponseCallback: ((response: boolean) => void) | undefined = $state(undefined);
 
+	// Input dialog state (for codeunits requesting user input)
+	let progressInputMode = $state(false);
+	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string }>>([]);
+	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
+
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
 		const sourceRecords = editMode ? editableRecords : records;
@@ -336,12 +341,16 @@
 		progressConfirmMode = false;
 		progressConfirmMessage = '';
 		confirmResponseCallback = undefined;
+		progressInputMode = false;
+		progressInputFields = [];
+		inputResponseCallback = undefined;
 
 		try {
 			const result = await startJob(codeunitId, selectedRecord || {}, {
 				onProgress: (event) => {
-					// When receiving progress, exit confirm mode
+					// When receiving progress, exit confirm/input mode
 					progressConfirmMode = false;
+					progressInputMode = false;
 					progressValue = event.value;
 					if (event.message) {
 						progressMessage = event.message;
@@ -349,6 +358,7 @@
 				},
 				onComplete: (event) => {
 					progressConfirmMode = false;
+					progressInputMode = false;
 					progressValue = 100;
 					if (event.message) {
 						progressMessage = event.message;
@@ -356,6 +366,7 @@
 				},
 				onError: (err) => {
 					progressConfirmMode = false;
+					progressInputMode = false;
 					progressError = err;
 				},
 				onConfirm: (event, respond) => {
@@ -367,6 +378,17 @@
 						progressConfirmMode = false;
 						progressConfirmMessage = '';
 						respond(response);
+					};
+				},
+				onInputRequest: (event, respond) => {
+					// Show input dialog
+					progressInputMode = true;
+					progressInputFields = (event.data?.fields as typeof progressInputFields) || [];
+					if (event.message) progressTitle = event.message;
+					inputResponseCallback = (values: Record<string, string> | null) => {
+						progressInputMode = false;
+						progressInputFields = [];
+						respond(values);
 					};
 				},
 				onSyncResult: (syncResult) => {
@@ -1836,6 +1858,9 @@
 	confirmMode={progressConfirmMode}
 	confirmMessage={progressConfirmMessage}
 	onConfirmResponse={confirmResponseCallback}
+	inputMode={progressInputMode}
+	inputFields={progressInputFields}
+	onInputResponse={inputResponseCallback}
 />
 
 <!-- Codeunit Dialog Modal -->

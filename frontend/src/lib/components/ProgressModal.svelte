@@ -3,6 +3,14 @@
 	import Button from './Button.svelte';
 	import { t, MSG, DLG, BTN } from '$lib/services/i18n.svelte';
 
+	interface InputField {
+		name: string;
+		label: string;
+		type: string;
+		required?: boolean;
+		default?: string;
+	}
+
 	interface Props {
 		open?: boolean;
 		title?: string;
@@ -12,6 +20,9 @@
 		confirmMode?: boolean;
 		confirmMessage?: string;
 		onConfirmResponse?: (response: boolean) => void;
+		inputMode?: boolean;
+		inputFields?: InputField[];
+		onInputResponse?: (values: Record<string, string> | null) => void;
 		showCancel?: boolean;
 		onCancel?: () => void;
 	}
@@ -25,11 +36,34 @@
 		confirmMode = false,
 		confirmMessage = '',
 		onConfirmResponse,
+		inputMode = false,
+		inputFields = [],
+		onInputResponse,
 		showCancel = false,
 		onCancel
 	}: Props = $props();
 
 	const displayPercent = $derived(Math.round(progress));
+
+	// Input form values
+	let inputValues = $state<Record<string, string>>({});
+
+	// Initialize input values when inputMode activates with new fields
+	$effect(() => {
+		if (inputMode && inputFields.length > 0) {
+			const initial: Record<string, string> = {};
+			for (const field of inputFields) {
+				initial[field.name] = field.default ?? '';
+			}
+			inputValues = initial;
+		}
+	});
+
+	// Check if all required fields have values
+	const inputValid = $derived(() => {
+		if (!inputMode) return false;
+		return inputFields.every(f => !f.required || (inputValues[f.name] ?? '').trim() !== '');
+	});
 
 	function handleYes() {
 		onConfirmResponse?.(true);
@@ -42,12 +76,28 @@
 	function handleCancel() {
 		onCancel?.();
 	}
+
+	function handleInputOk() {
+		onInputResponse?.({ ...inputValues });
+	}
+
+	function handleInputCancel() {
+		onInputResponse?.(null);
+	}
+
+	function getInputType(fieldType: string): string {
+		switch (fieldType) {
+			case 'date': return 'date';
+			case 'number': return 'number';
+			default: return 'text';
+		}
+	}
 </script>
 
 <Modal {open}>
 	<div class="progress-modal">
 		<div class="progress-header">
-			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : title}</h3>
+			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : inputMode ? title : title}</h3>
 		</div>
 
 		<div class="progress-body">
@@ -63,6 +113,27 @@
 				<div class="confirm-buttons">
 					<Button variant="secondary" onclick={handleNo}>{t(BTN.NO)}</Button>
 					<Button variant="primary" onclick={handleYes}>{t(BTN.YES)}</Button>
+				</div>
+			{:else if inputMode}
+				<div class="input-form">
+					{#each inputFields as field}
+						<div class="input-field">
+							<label class="input-label" for="input-{field.name}">
+								{field.label}
+								{#if field.required}<span class="required-mark">*</span>{/if}
+							</label>
+							<input
+								id="input-{field.name}"
+								type={getInputType(field.type)}
+								class="input-control"
+								bind:value={inputValues[field.name]}
+							/>
+						</div>
+					{/each}
+				</div>
+				<div class="confirm-buttons">
+					<Button variant="secondary" onclick={handleInputCancel}>{t(BTN.CANCEL)}</Button>
+					<Button variant="primary" onclick={handleInputOk} disabled={!inputValid()}>{t(BTN.OK)}</Button>
 				</div>
 			{:else if error}
 				<div class="error-container">
@@ -194,5 +265,42 @@
 
 	.cancel-container {
 		@apply flex justify-end mt-4;
+	}
+
+	/* Input form styles */
+	.input-form {
+		@apply space-y-3;
+	}
+
+	.input-field {
+		@apply flex flex-col gap-1;
+	}
+
+	.input-label {
+		@apply text-sm font-medium text-gray-700;
+	}
+
+	:global(.dark) .input-label {
+		color: #d1d5db;
+	}
+
+	.required-mark {
+		@apply text-red-500 ml-0.5;
+	}
+
+	.input-control {
+		@apply w-full px-3 py-2 text-sm border border-gray-300 rounded-md;
+		@apply bg-white text-gray-900;
+		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+	}
+
+	:global(.dark) .input-control {
+		background-color: #374151;
+		border-color: #4b5563;
+		color: #f3f4f6;
+	}
+
+	:global(.dark) .input-control:focus {
+		border-color: #3b82f6;
 	}
 </style>

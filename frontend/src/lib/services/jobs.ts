@@ -37,6 +37,7 @@ export interface JobCallbacks {
 	onError?: (error: string) => void;
 	onSyncResult?: (result: SyncJobResult) => void;
 	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
+	onInputRequest?: (event: ProgressEvent, respond: (values: Record<string, string> | null) => void) => void;
 	onData?: (data: Record<string, unknown>) => void; // Called when job returns data (e.g., PDF)
 	onJobStarted?: (jobId: string) => void; // Called when async job starts with job ID for cancellation
 }
@@ -169,6 +170,23 @@ export async function startJob(
 							}
 						};
 						callbacks.onConfirm?.(event, respond);
+					} else if (event.event_type === 'request_input') {
+						// Handle input request dialog
+						const respond = async (values: Record<string, string> | null) => {
+							try {
+								await fetch(`/api/jobs/${jobId}/confirm`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										confirm_id: event.confirm_id,
+										values: values ?? {}
+									})
+								});
+							} catch (err) {
+								console.error('Failed to send input response:', err);
+							}
+						};
+						callbacks.onInputRequest?.(event, respond);
 					} else {
 						callbacks.onProgress?.(event);
 					}

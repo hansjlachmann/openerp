@@ -22,6 +22,15 @@ type ProgressEvent struct {
 	Data       map[string]interface{} `json:"data,omitempty"`         // Result data (e.g., PDF base64)
 }
 
+// InputField describes a single input field for RequestInput dialogs
+type InputField struct {
+	Name     string `json:"name"`               // Field key (e.g. "date")
+	Label    string `json:"label"`              // Display label
+	Type     string `json:"type"`               // "date", "text", "number"
+	Required bool   `json:"required,omitempty"` // Whether the field is required
+	Default  string `json:"default,omitempty"`  // Default value
+}
+
 // Dialog represents a NAV-style dialog with progress bar support
 // Usage:
 //   dialog := OpenDialog("Processing @1@@@@@@@@@@@")
@@ -37,8 +46,10 @@ type Dialog struct {
 	cancel         context.CancelFunc
 	closed         bool
 	mu             sync.Mutex
-	pendingConfirm map[string]chan bool // Map of confirm ID to response channel
+	pendingConfirm map[string]chan bool              // Map of confirm ID to response channel
 	confirmMu      sync.Mutex
+	pendingInput   map[string]chan map[string]string  // Map of confirm ID to input response channel
+	inputMu        sync.Mutex
 }
 
 // Update sends a progress update for a field
@@ -273,6 +284,78 @@ func (d *Dialog) RespondToConfirm(confirmID string, response bool) bool {
 	if ch, ok := d.pendingConfirm[confirmID]; ok {
 		select {
 		case ch <- response:
+			return true
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+// RequestInput shows an input dialog with arbitrary fields and waits for user response
+// Returns a map of field name → value, or nil on cancel/timeout
+func (d *Dialog) RequestInput(title string, fields []InputField) map[string]string {
+	d.mu.Lock()
+	if d.closed {
+		d.mu.Unlock()
+		return nil
+	}
+	d.mu.Unlock()
+
+	// Create unique confirm ID and response channel
+	confirmID := uuid.New().String()
+	responseChan := make(chan map[string]string, 1)
+
+	// Register the pending input
+	d.inputMu.Lock()
+	if d.pendingInput == nil {
+		d.pendingInput = make(map[string]chan map[string]string)
+	}
+	d.pendingInput[confirmID] = responseChan
+	d.inputMu.Unlock()
+
+	// Clean up on completion
+	defer func() {
+		d.inputMu.Lock()
+		delete(d.pendingInput, confirmID)
+		d.inputMu.Unlock()
+	}()
+
+	// Send request_input event to frontend
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		EventType: "request_input",
+		ConfirmID: confirmID,
+		Message:   title,
+		Timestamp: time.Now().UnixMilli(),
+		Data: map[string]interface{}{
+			"fields": fields,
+		},
+	}:
+	case <-d.ctx.Done():
+		return nil
+	}
+
+	// Wait for response
+	select {
+	case values := <-responseChan:
+		return values
+	case <-d.ctx.Done():
+		return nil
+	case <-time.After(5 * time.Minute):
+		return nil
+	}
+}
+
+// RespondToInput handles an input dialog response from the frontend
+func (d *Dialog) RespondToInput(confirmID string, values map[string]string) bool {
+	d.inputMu.Lock()
+	defer d.inputMu.Unlock()
+
+	if ch, ok := d.pendingInput[confirmID]; ok {
+		select {
+		case ch <- values:
 			return true
 		default:
 			return false
