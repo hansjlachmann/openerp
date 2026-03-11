@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.46](https://github.com/hansjlachmann/openerp/compare/v0.1.45...v0.1.46) (2026-03-11)
+
+
+### Features
+
+* add F5 (refresh) and Ctrl+D (delete) keyboard shortcuts in navigation mode ([e1a38b4](https://github.com/hansjlachmann/openerp/commit/e1a38b447616d8a7f290501e1bd7f03f6b3a845b))
+* add i18n support for codeunit dialog titles and messages ([3efbe4d](https://github.com/hansjlachmann/openerp/commit/3efbe4d5c969fd8cd6e0afab36c8942988e7cded))
+* implement 3-state spreadsheet cell model in ListPage ([7f9d466](https://github.com/hansjlachmann/openerp/commit/7f9d4663c464e595cb5571e2a6108cf93695daae))
+
 ## [0.1.45](https://github.com/hansjlachmann/openerp/compare/v0.1.44...v0.1.45) (2026-02-19)
 
 
