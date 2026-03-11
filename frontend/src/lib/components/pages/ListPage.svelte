@@ -87,12 +87,18 @@
 	// Row numbers state
 	let showRowNumbers = $state(false);
 
-	// Edit mode state
-	let editMode = $state(false);
+	// 3-state cell model: navigation → cell-selected → cell-editing
+	let cellState = $state<'navigation' | 'cell-selected' | 'cell-editing'>('navigation');
+	let cellEditSnapshot = $state<any>(undefined); // value before editing, for Escape revert
+	let editableActive = $state(false); // whether editableRecords is initialized
+
 	// Editable copy of records for edit mode (to avoid mutating props)
 	let editableRecords = $state<Array<Record<string, any>>>([]);
-	// Prevent rapid toggling
-	let isToggling = false;
+
+	// Derived state helpers
+	const isNavigation = $derived(cellState === 'navigation');
+	const isCellSelected = $derived(cellState === 'cell-selected');
+	const isCellEditing = $derived(cellState === 'cell-editing');
 
 	// Dialog state (for codeunit results)
 	let dialogOpen = $state(false);
@@ -115,7 +121,7 @@
 
 	// Filter records by search query
 	const filteredRecords = $derived(() => {
-		const sourceRecords = editMode ? editableRecords : records;
+		const sourceRecords = editableActive ? editableRecords : records;
 		if (!searchQuery.trim()) return sourceRecords;
 
 		const query = searchQuery.toLowerCase().trim();
@@ -168,7 +174,7 @@
 
 	// Auto-focus the page on mount and when records load (but not when modal is open)
 	$effect(() => {
-		if (listPageElement && !editMode && records.length > 0 && !modalOpen) {
+		if (listPageElement && isNavigation && records.length > 0 && !modalOpen) {
 			setTimeout(() => {
 				listPageElement?.focus();
 			}, 100);
@@ -185,9 +191,12 @@
 			if (event.key === 'Escape') {
 				event.preventDefault();
 				event.stopPropagation();
-				if (editMode) {
-					// Exit edit mode
-					toggleEditMode();
+				if (isCellEditing) {
+					// Revert edit, back to cell-selected
+					exitEditingToCellSelected(true);
+				} else if (isCellSelected) {
+					// Back to navigation mode
+					exitToNavigation();
 				} else {
 					// Navigate back to main menu
 					goto('/');
@@ -195,7 +204,7 @@
 				return;
 			}
 
-			// Skip other shortcuts if we're in an input field
+			// Skip other shortcuts if we're in an input field (but not cell-editing inputs in the table)
 			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
 			// Build shortcut key string
@@ -221,7 +230,7 @@
 		return () => window.removeEventListener('keydown', handleGlobalKeydown, true);
 	});
 
-	// Note: Focus is handled explicitly in toggleEditMode(), handleCellKeyDown(), and insertNewRow()
+	// Note: Focus is handled explicitly in transition functions, handleCellKeyDown(), and insertNewRow()
 	// No auto-focus effect needed - it interferes with user clicks
 
 	// Load customizations from localStorage on mount
@@ -443,8 +452,12 @@
 				}
 				return;
 			} else if (page.page.editable) {
-				// Fallback to inline edit mode toggle
-				toggleEditMode();
+				// Toggle inline edit mode
+				if (isNavigation) {
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+				} else {
+					exitToNavigation();
+				}
 				return;
 			}
 		}
@@ -480,10 +493,10 @@
 
 	// Handle new record - insert blank row below current selection
 	function handleNew() {
-		// Enter edit mode if not already
-		if (!editMode) {
+		// Initialize editable records if not already active
+		if (!editableActive) {
 			editableRecords = records.map(r => ({ ...r }));
-			editMode = true;
+			editableActive = true;
 		}
 
 		// If an empty new row already exists, just focus it instead of creating another
@@ -492,6 +505,8 @@
 			selectedIndex = existingNewRowIndex;
 			currentCellRow = existingNewRowIndex;
 			currentCellCol = 0;
+			cellState = 'cell-editing';
+			cellEditSnapshot = '';
 			focusCell(currentCellRow, currentCellCol);
 			return;
 		}
@@ -519,42 +534,138 @@
 		// Update selection to the new row
 		selectedIndex = insertIndex;
 
-		// Focus the first cell of the new row
+		// Focus the first cell of the new row in cell-editing mode
 		currentCellRow = insertIndex;
 		currentCellCol = 0;
+		cellState = 'cell-editing';
+		cellEditSnapshot = '';
 		focusCell(currentCellRow, currentCellCol);
 	}
 
-	// Toggle edit mode
-	function toggleEditMode() {
-		if (isToggling) {
+	// --- 3-State Transition Functions ---
+
+	// Enter cell-selected state at the given cell
+	function enterCellSelected(row: number, col: number) {
+		const cols = visibleColumns();
+		if (row < 0 || col < 0 || col >= cols.length) return;
+
+		// Initialize editable records if not active
+		if (!editableActive) {
+			editableRecords = records.map(r => ({ ...r }));
+			editableActive = true;
+		}
+
+		if (row >= editableRecords.length) return;
+
+		currentCellRow = row;
+		currentCellCol = col;
+		selectedIndex = row;
+		cellState = 'cell-selected';
+		cellEditSnapshot = undefined;
+
+		// Auto-escalate to cell-editing for lookup/select fields (interactive controls have no selected-only state)
+		const field = cols[col];
+		const hasAdvancedLookup = lookups[field.source]?.columns && lookups[field.source]?.rows?.length;
+		const hasSimpleLookup = lookups[field.source]?.simple;
+
+		if (hasAdvancedLookup || hasSimpleLookup) {
+			enterCellEditing(false);
 			return;
 		}
 
-		isToggling = true;
-		editMode = !editMode;
+		// Focus the cell-selected div
+		focusCellSelectedElement(row, col);
+	}
 
-		if (editMode) {
-			// Entering edit mode - create editable copies and focus at selected row
-			editableRecords = records.map(r => ({ ...r }));
-			if (editableRecords.length > 0) {
-				// Start at the currently selected row, or first row if none selected
-				currentCellRow = selectedIndex >= 0 ? selectedIndex : 0;
-				currentCellCol = 0;
-				// Explicitly focus the cell (no effect needed)
-				focusCell(currentCellRow, currentCellCol);
-			}
-		} else {
-			// Exiting edit mode - reset state
-			currentCellRow = -1;
-			currentCellCol = -1;
-			editableRecords = [];
+	// Enter cell-editing state from cell-selected
+	function enterCellEditing(clearContent: boolean = false, typedChar?: string) {
+		if (cellState !== 'cell-selected') return;
+
+		const cols = visibleColumns();
+		const field = cols[currentCellCol];
+		const record = editableRecords[currentCellRow];
+		if (!field || !record) return;
+
+		// Snapshot current value for Escape revert
+		cellEditSnapshot = record[field.source];
+
+		if (clearContent) {
+			record[field.source] = typedChar ?? '';
+			editableRecords = [...editableRecords];
 		}
 
-		// Reset the toggling flag after a short delay
-		setTimeout(() => {
-			isToggling = false;
-		}, 100);
+		cellState = 'cell-editing';
+		focusCell(currentCellRow, currentCellCol, !clearContent);
+	}
+
+	// Exit cell-editing back to cell-selected
+	function exitEditingToCellSelected(revert: boolean) {
+		if (cellState !== 'cell-editing') return;
+
+		if (revert && cellEditSnapshot !== undefined) {
+			const cols = visibleColumns();
+			const field = cols[currentCellCol];
+			if (field && editableRecords[currentCellRow]) {
+				editableRecords[currentCellRow][field.source] = cellEditSnapshot;
+				editableRecords = [...editableRecords];
+			}
+		}
+
+		cellState = 'cell-selected';
+		cellEditSnapshot = undefined;
+		focusCellSelectedElement(currentCellRow, currentCellCol);
+	}
+
+	// Exit to navigation mode
+	function exitToNavigation() {
+		// Clean up empty new rows
+		cleanupEmptyNewRows();
+
+		cellState = 'navigation';
+		currentCellRow = -1;
+		currentCellCol = -1;
+		cellEditSnapshot = undefined;
+		editableRecords = [];
+		editableActive = false;
+
+		listPageElement?.focus();
+	}
+
+	// Confirm current cell value and move to target cell (enters cell-selected at target)
+	async function confirmAndMoveTo(targetRow: number, targetCol: number) {
+		const cols = visibleColumns();
+		const prevRow = currentCellRow;
+		const prevCol = currentCellCol;
+		const record = editableRecords[prevRow];
+
+		// Immediately transition state to prevent blur handler from interfering
+		cellState = 'cell-selected';
+		cellEditSnapshot = undefined;
+
+		// Apply Code uppercase and save the previous cell
+		if (record) {
+			const field = cols[prevCol];
+			if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+				record[field.source] = record[field.source].toUpperCase();
+			}
+			await handleCellBlur(record, prevRow, field?.source);
+		}
+
+		// Clean up empty new row if leaving it
+		let adjustedTargetRow = targetRow;
+		if (record && isEmptyNewRecord(record) && targetRow !== prevRow) {
+			editableRecords = editableRecords.filter((_, i) => i !== prevRow);
+			if (targetRow > prevRow) {
+				adjustedTargetRow--;
+			}
+		}
+
+		// Clamp target to valid range
+		adjustedTargetRow = Math.max(0, Math.min(adjustedTargetRow, editableRecords.length - 1));
+		const adjustedTargetCol = Math.max(0, Math.min(targetCol, cols.length - 1));
+
+		// Enter cell-selected at target
+		enterCellSelected(adjustedTargetRow, adjustedTargetCol);
 	}
 
 	// Track saving state to prevent concurrent saves
@@ -563,7 +674,7 @@
 
 	// Auto-save when leaving a cell
 	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string) {
-		if (!page || !editMode) return;
+		if (!page || !editableActive) return;
 
 		// If already saving, queue this save for later (must check before async validation)
 		if (isSaving) {
@@ -604,7 +715,9 @@
 				// so the user can fill all fields (including optional PKs) first.
 				const activeEl = document.activeElement;
 				const activeRowStr = activeEl?.getAttribute('data-row') ||
-					activeEl?.closest('[data-row]')?.getAttribute('data-row');
+					activeEl?.getAttribute('data-cell-row') ||
+					activeEl?.closest('[data-row]')?.getAttribute('data-row') ||
+					activeEl?.closest('[data-cell-row]')?.getAttribute('data-cell-row');
 				if (activeRowStr === String(rowIndex)) {
 					// Still on same row — user is still filling fields, defer insert
 					return;
@@ -693,7 +806,7 @@
 
 	// Insert a new row at cursor position
 	function insertNewRow(atEnd: boolean = false) {
-		if (!editMode) return;
+		if (!editableActive) return;
 
 		// Don't create a new row if we're already on an empty new row
 		if (currentCellRow >= 0 && currentCellRow < editableRecords.length) {
@@ -701,6 +814,8 @@
 			if (isEmptyNewRecord(currentRecord)) {
 				// Already on an empty new row, just focus it
 				currentCellCol = 0;
+				cellState = 'cell-editing';
+				cellEditSnapshot = '';
 				focusCell(currentCellRow, currentCellCol);
 				return;
 			}
@@ -728,17 +843,22 @@
 			...editableRecords.slice(insertIndex)
 		];
 
-		// Focus the first cell of the new row
+		// Focus the first cell of the new row in cell-editing mode
 		currentCellRow = insertIndex;
 		currentCellCol = 0;
-
-		// Focus will happen via the effect
+		cellState = 'cell-editing';
+		cellEditSnapshot = '';
+		focusCell(currentCellRow, currentCellCol);
 	}
 
-	// Handle keyboard navigation in edit list mode
-	function handleCellKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
+	// Handle keyboard in cell-selected mode
+	function handleCellSelectedKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
 		const cols = visibleColumns();
-		const totalRows = editMode ? editableRecords.length : records.length;
+		const record = editableRecords[rowIndex];
+		if (!record) return;
+
+		const field = cols[colIndex];
+		const isBoolean = typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool';
 
 		// Ctrl+Insert or Ctrl+N to insert new row
 		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
@@ -751,51 +871,176 @@
 			case 'ArrowUp':
 				event.preventDefault();
 				if (rowIndex > 0) {
-					// Clean up current row if it's an empty new row
-					const currentRecord = editableRecords[rowIndex];
-					if (isEmptyNewRecord(currentRecord)) {
-						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
-						currentCellRow = rowIndex - 1;
-					} else {
-						currentCellRow = rowIndex - 1;
-					}
-					currentCellCol = colIndex;
-					focusCell(currentCellRow, currentCellCol);
+					confirmAndMoveTo(rowIndex - 1, colIndex);
 				}
 				break;
 			case 'ArrowDown':
 				event.preventDefault();
-				if (rowIndex < totalRows - 1) {
-					// Clean up current row if it's an empty new row
-					const currentRecord = editableRecords[rowIndex];
-					if (isEmptyNewRecord(currentRecord)) {
-						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
-						// Stay at same row index (which is now the next row after removal)
-						currentCellCol = colIndex;
-						focusCell(currentCellRow, currentCellCol);
-					} else {
-						currentCellRow = rowIndex + 1;
-						currentCellCol = colIndex;
-						focusCell(currentCellRow, currentCellCol);
-					}
-				} else {
-					// On last row - only create new row if current row has data
-					const currentRecord = editableRecords[rowIndex];
-					if (!isEmptyNewRecord(currentRecord)) {
-						insertNewRow(true); // Append at end
-						currentCellCol = colIndex;
-						focusCell(currentCellRow, currentCellCol);
-					}
-					// If already on empty new row, do nothing (stay on current row)
+				if (rowIndex < editableRecords.length - 1) {
+					confirmAndMoveTo(rowIndex + 1, colIndex);
 				}
 				break;
 			case 'ArrowLeft':
-				// Navigate to previous cell if: cursor at start OR entire text is selected (NAV/BC behavior)
-				// For non-text inputs (checkbox, etc.), always navigate
+				event.preventDefault();
+				if (colIndex > 0) {
+					// No save, just move selection
+					enterCellSelected(rowIndex, colIndex - 1);
+				}
+				break;
+			case 'ArrowRight':
+				event.preventDefault();
+				if (colIndex < cols.length - 1) {
+					// No save, just move selection
+					enterCellSelected(rowIndex, colIndex + 1);
+				}
+				break;
+			case 'Tab':
+				event.preventDefault();
+				if (event.shiftKey) {
+					// Move left, wrap to previous row
+					if (colIndex > 0) {
+						confirmAndMoveTo(rowIndex, colIndex - 1);
+					} else if (rowIndex > 0) {
+						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
+					}
+				} else {
+					// Move right, wrap to next row
+					if (colIndex < cols.length - 1) {
+						confirmAndMoveTo(rowIndex, colIndex + 1);
+					} else if (rowIndex < editableRecords.length - 1) {
+						confirmAndMoveTo(rowIndex + 1, 0);
+					}
+				}
+				break;
+			case 'Enter':
+				event.preventDefault();
+				if (isBoolean) {
+					// Toggle checkbox + move down
+					record[field.source] = !record[field.source];
+					editableRecords = [...editableRecords];
+				}
+				if (rowIndex < editableRecords.length - 1) {
+					confirmAndMoveTo(rowIndex + 1, colIndex);
+				} else if (!isEmptyNewRecord(record)) {
+					// Save current cell, then create new row at end
+					handleCellBlur(record, rowIndex, field.source);
+					insertNewRow(true);
+				}
+				break;
+			case 'F2':
+				event.preventDefault();
+				if (!isBoolean) {
+					enterCellEditing(false); // cursor at end, content preserved
+				}
+				break;
+			case 'Delete':
+				event.preventDefault();
+				if (!isBoolean) {
+					record[field.source] = '';
+					editableRecords = [...editableRecords];
+				}
+				break;
+			case 'Backspace':
+				event.preventDefault();
+				if (!isBoolean) {
+					enterCellEditing(true); // clear + edit
+				}
+				break;
+			case ' ':
+				// Space on boolean: toggle checkbox
+				if (isBoolean) {
+					event.preventDefault();
+					record[field.source] = !record[field.source];
+					editableRecords = [...editableRecords];
+					handleCellBlur(record, rowIndex, field.source);
+				}
+				break;
+			case 'F8':
+				// Copy from cell above
+				event.preventDefault();
+				if (rowIndex > 0) {
+					const aboveRecord = editableRecords[rowIndex - 1];
+					record[field.source] = aboveRecord[field.source];
+					editableRecords = [...editableRecords];
+				}
+				break;
+			default:
+				// Printable character: clear + enter editing with typed char
+				if (!isBoolean && event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+					event.preventDefault();
+					enterCellEditing(true, event.key);
+				}
+				break;
+		}
+	}
+
+	// Handle keyboard navigation in cell-editing mode
+	function handleCellKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
+		const cols = visibleColumns();
+
+		// Ctrl+Insert or Ctrl+N to insert new row
+		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
+			event.preventDefault();
+			insertNewRow();
+			return;
+		}
+
+		switch (event.key) {
+			case 'ArrowUp':
 				{
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
-					let shouldNavigate = !isTextInput; // Non-text inputs always navigate
+					let shouldNavigate = !isTextInput;
+
+					if (isTextInput) {
+						const textLength = input.value?.length || 0;
+						const allSelected = input.selectionStart === 0 && input.selectionEnd === textLength && textLength > 0;
+						const atStart = input.selectionStart === 0;
+						shouldNavigate = allSelected || !!atStart;
+					}
+
+					if (shouldNavigate && rowIndex > 0) {
+						event.preventDefault();
+						confirmAndMoveTo(rowIndex - 1, colIndex);
+					}
+				}
+				break;
+			case 'ArrowDown':
+				{
+					const input = event.target as HTMLInputElement;
+					const isTextInput = input.type === 'text' || input.type === 'number';
+					let shouldNavigate = !isTextInput;
+
+					if (isTextInput) {
+						const textLength = input.value?.length || 0;
+						const allSelected = input.selectionStart === 0 && input.selectionEnd === textLength && textLength > 0;
+						const atEnd = input.selectionStart === textLength;
+						shouldNavigate = allSelected || !!atEnd;
+					}
+
+					if (shouldNavigate) {
+						event.preventDefault();
+						if (rowIndex < editableRecords.length - 1) {
+							confirmAndMoveTo(rowIndex + 1, colIndex);
+						} else {
+							const currentRecord = editableRecords[rowIndex];
+							if (!isEmptyNewRecord(currentRecord)) {
+								const field = cols[colIndex];
+								if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+									currentRecord[field.source] = currentRecord[field.source].toUpperCase();
+								}
+								handleCellBlur(currentRecord, rowIndex, field?.source);
+								insertNewRow(true);
+							}
+						}
+					}
+				}
+				break;
+			case 'ArrowLeft':
+				{
+					const input = event.target as HTMLInputElement;
+					const isTextInput = input.type === 'text' || input.type === 'number';
+					let shouldNavigate = !isTextInput;
 
 					if (isTextInput) {
 						const textLength = input.value?.length || 0;
@@ -806,19 +1051,15 @@
 
 					if (shouldNavigate && colIndex > 0) {
 						event.preventDefault();
-						currentCellRow = rowIndex;
-						currentCellCol = colIndex - 1;
-						focusCell(currentCellRow, currentCellCol);
+						confirmAndMoveTo(rowIndex, colIndex - 1);
 					}
 				}
 				break;
 			case 'ArrowRight':
-				// Navigate to next cell if: cursor at end OR entire text is selected (NAV/BC behavior)
-				// For non-text inputs (checkbox, etc.), always navigate
 				{
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
-					let shouldNavigate = !isTextInput; // Non-text inputs always navigate
+					let shouldNavigate = !isTextInput;
 
 					if (isTextInput) {
 						const textLength = input.value?.length || 0;
@@ -829,29 +1070,30 @@
 
 					if (shouldNavigate && colIndex < cols.length - 1) {
 						event.preventDefault();
-						currentCellRow = rowIndex;
-						currentCellCol = colIndex + 1;
-						focusCell(currentCellRow, currentCellCol);
+						confirmAndMoveTo(rowIndex, colIndex + 1);
 					}
 				}
 				break;
 			case 'Tab':
 				event.preventDefault();
-				if (colIndex < cols.length - 1) {
-					currentCellRow = rowIndex;
-					currentCellCol = colIndex + 1;
-					focusCell(currentCellRow, currentCellCol);
+				if (event.shiftKey) {
+					if (colIndex > 0) {
+						confirmAndMoveTo(rowIndex, colIndex - 1);
+					} else if (rowIndex > 0) {
+						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
+					}
+				} else {
+					if (colIndex < cols.length - 1) {
+						confirmAndMoveTo(rowIndex, colIndex + 1);
+					} else if (rowIndex < editableRecords.length - 1) {
+						confirmAndMoveTo(rowIndex + 1, 0);
+					}
 				}
 				break;
 			case 'F2':
-				// F2 enters edit mode: place cursor at start of text (NAV/BC behavior)
-				{
-					event.preventDefault();
-					const input = event.target as HTMLInputElement;
-					if (input.type === 'text' || input.type === 'number') {
-						input.setSelectionRange(0, 0);
-					}
-				}
+				// Exit cell-editing → return to cell-selected (keep current value)
+				event.preventDefault();
+				exitEditingToCellSelected(false);
 				break;
 			case 'F8':
 				// F8 copies value from the cell above (NAV/BC behavior)
@@ -881,36 +1123,26 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
-				// Move to next row on Enter
-				if (rowIndex < totalRows - 1) {
-					// Clean up current row if it's an empty new row
-					const currentRecord = editableRecords[rowIndex];
-					if (isEmptyNewRecord(currentRecord)) {
-						editableRecords = editableRecords.filter((_, i) => i !== rowIndex);
-						// Stay at same row index (which is now the next row after removal)
-						currentCellCol = colIndex;
-						focusCell(currentCellRow, currentCellCol);
-					} else {
-						currentCellRow = rowIndex + 1;
-						currentCellCol = colIndex;
-						focusCell(currentCellRow, currentCellCol);
-					}
+				if (rowIndex < editableRecords.length - 1) {
+					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
-					// On last row - only create new row if current row has data
 					const currentRecord = editableRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
-						insertNewRow(true); // Append at end
-						currentCellCol = 0;
-						focusCell(currentCellRow, currentCellCol);
+						// Save current cell, then create new row
+						const field = cols[colIndex];
+						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
+						}
+						handleCellBlur(currentRecord, rowIndex, field?.source);
+						insertNewRow(true);
 					}
-					// If already on empty new row, do nothing (stay on current row)
 				}
 				break;
 		}
 	}
 
-	// Focus a specific cell
-	function focusCell(rowIndex: number, colIndex: number) {
+	// Focus a specific cell input (for cell-editing mode)
+	function focusCell(rowIndex: number, colIndex: number, selectAll: boolean = true) {
 		// Use a longer timeout to ensure Svelte has finished any re-renders
 		setTimeout(() => {
 			// Try direct input/select first (regular inputs and simple lookups)
@@ -919,7 +1151,14 @@
 			) as HTMLInputElement | HTMLSelectElement | null;
 			if (input) {
 				input.focus();
-				if (input instanceof HTMLInputElement) input.select();
+				if (input instanceof HTMLInputElement) {
+					if (selectAll) {
+						input.select();
+					} else {
+						const len = input.value?.length || 0;
+						input.setSelectionRange(len, len);
+					}
+				}
 				return;
 			}
 			// Try container div (LookupDropdown wrapper) and focus the input inside
@@ -930,10 +1169,70 @@
 				const innerInput = container.querySelector('input') as HTMLInputElement | null;
 				if (innerInput) {
 					innerInput.focus();
-					innerInput.select();
+					if (selectAll) {
+						innerInput.select();
+					} else {
+						const len = innerInput.value?.length || 0;
+						innerInput.setSelectionRange(len, len);
+					}
 				}
 			}
 		}, 50);
+	}
+
+	// Focus a cell-selected element (div with data-cell-row/data-cell-col)
+	function focusCellSelectedElement(row: number, col: number) {
+		setTimeout(() => {
+			const el = document.querySelector(
+				`[data-cell-row="${row}"][data-cell-col="${col}"]`
+			) as HTMLElement | null;
+			if (el) {
+				el.focus();
+			}
+		}, 50);
+	}
+
+	// Handle blur from cell-editing inputs
+	function handleEditingInputBlur() {
+		const blurredRow = currentCellRow;
+		const blurredCol = currentCellCol;
+
+		setTimeout(() => {
+			// If state already transitioned (e.g., keyboard/click handler took over), skip
+			if (cellState === 'navigation') return;
+
+			// If we've moved to a different cell, the transition was already handled
+			if (currentCellRow !== blurredRow || currentCellCol !== blurredCol) return;
+
+			// If focus left the table entirely, save and exit
+			if (!listPageElement?.contains(document.activeElement)) {
+				const cols = visibleColumns();
+				const field = cols[blurredCol];
+				const record = editableRecords[blurredRow];
+				if (record && field) {
+					if (fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+						record[field.source] = record[field.source].toUpperCase();
+					}
+					handleCellBlur(record, blurredRow, field.source);
+				}
+				exitToNavigation();
+			}
+		}, 10);
+	}
+
+	// Handle click on a cell in read-only display
+	function handleCellClick(rowIndex: number, colIndex: number) {
+		if (isNavigation) {
+			if (page.page.editable) {
+				selectedIndex = rowIndex;
+				enterCellSelected(rowIndex, colIndex);
+			} else {
+				handleRowClick(rowIndex);
+			}
+		} else {
+			// Already in editable state, move to clicked cell
+			confirmAndMoveTo(rowIndex, colIndex);
+		}
 	}
 
 	// Handle delete record
@@ -1238,13 +1537,24 @@
 			}
 		});
 
-		// Add navigation shortcuts only when NOT in edit mode
-		if (!editMode) {
+		// Add navigation shortcuts only when in navigation mode
+		if (isNavigation) {
 			map['ArrowDown'] = moveDown;
 			map['ArrowUp'] = moveUp;
 			map['Home'] = moveFirst;
 			map['End'] = moveLast;
-			map['Enter'] = openCard;
+			map['Enter'] = () => {
+				if (page.page.card_page_id) {
+					openCard();
+				} else if (page.page.editable && selectedIndex >= 0) {
+					enterCellSelected(selectedIndex, 0);
+				}
+			};
+			if (page.page.editable) {
+				map['F2'] = () => {
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+				};
+			}
 		}
 
 		return map;
@@ -1653,19 +1963,18 @@
 				{#each displayRecords as record, index (getRecordKey(record, primaryKeyField, primaryKeyFieldsList))}
 					<tr
 						class={cn(
-							editMode ? '' : 'cursor-pointer',
-							selectedIndex === index && 'selected',
+							isNavigation ? 'cursor-pointer' : '',
+							isNavigation && selectedIndex === index && 'selected',
 							record._isNew && 'new-row'
 						)}
-						onclick={() => !editMode && handleRowClick(index)}
 					>
 						{#if showRowNumbers}
 							<td class="row-number-cell">{index + 1}</td>
 						{/if}
 						{#each visibleColumns() as field, colIndex}
 							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
-								{#if editMode}
-									<!-- Edit Mode - Editable inputs -->
+								{#if isCellEditing && currentCellRow === index && currentCellCol === colIndex}
+									<!-- Cell-Editing Mode - Active input for this specific cell -->
 									{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 										<div class="edit-cell-input flex items-center">
 											<input
@@ -1681,6 +1990,7 @@
 													await handleCellBlur(record, index);
 												}}
 												onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+												onblur={handleEditingInputBlur}
 											/>
 										</div>
 									{:else if lookups[field.source]?.columns && lookups[field.source]?.rows?.length}
@@ -1699,7 +2009,7 @@
 													currentCellCol = colIndex;
 												}}
 												onblur={() => {
-													handleCellBlur(record, index, field.source);
+													handleEditingInputBlur();
 												}}
 											/>
 										</div>
@@ -1719,6 +2029,7 @@
 												handleCellBlur(record, index, field.source);
 											}}
 											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+											onblur={handleEditingInputBlur}
 										>
 											<option value="">—</option>
 											{#each Object.entries(lookups[field.source].simple ?? {}) as [key, label]}
@@ -1736,18 +2047,49 @@
 												currentCellRow = index;
 												currentCellCol = colIndex;
 											}}
-											onblur={async () => {
-												await handleCellBlur(record, index, field.source);
-											}}
+											onblur={handleEditingInputBlur}
 											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
 										/>
 									{/if}
+								{:else if (isCellSelected || isCellEditing) && currentCellRow === index && currentCellCol === colIndex}
+									<!-- Cell-Selected Mode - Blue border, no cursor, keyboard-driven -->
+									<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+									<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
+										<div
+											class="cell-selected-content cell-selected-active"
+											tabindex="0"
+											data-cell-row={index}
+											data-cell-col={colIndex}
+											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
+										>
+											<input type="checkbox" checked={record[field.source]} disabled />
+										</div>
+									{:else}
+										<div
+											class="cell-selected-content cell-selected-active"
+											tabindex="0"
+											data-cell-row={index}
+											data-cell-col={colIndex}
+											ondblclick={() => enterCellEditing(false)}
+											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
+										>
+											{formatValue(record[field.source])}
+										</div>
+									{/if}
 								{:else}
-									<!-- Normal Mode - Read-only -->
-									<div class={cn('read-cell-content', getFieldStyleClasses(field))}>
+									<!-- Read-only display -->
+									<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
+									<div
+										class={cn('read-cell-content', getFieldStyleClasses(field))}
+										onclick={() => handleCellClick(index, colIndex)}
+									>
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 											<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
-										{:else if field.primary_key && page.page.card_page_id}
+										{:else if field.primary_key && page.page.card_page_id && isNavigation}
 											<button
 												type="button"
 												class="primary-key-link"
@@ -1798,8 +2140,10 @@
 			{:else}
 				{records.length} record{records.length !== 1 ? 's' : ''}
 			{/if}
-			{#if selectedIndex >= 0 && selectedIndex < displayRecords.length}
+			{#if isNavigation && selectedIndex >= 0 && selectedIndex < displayRecords.length}
 				• Row {selectedIndex + 1} selected
+			{:else if !isNavigation && currentCellRow >= 0 && currentCellCol >= 0}
+				• Cell [{currentCellRow + 1}, {currentCellCol + 1}] {isCellEditing ? '(editing)' : '(selected)'}
 			{/if}
 		</span>
 	</div>
@@ -2178,6 +2522,34 @@
 		margin: 0;
 		box-sizing: content-box;
 		overflow: hidden;
+	}
+
+	/* Cell-selected state - same dimensions as read-cell-content with blue border */
+	.cell-selected-content {
+		display: block;
+		width: 100%;
+		height: 1.3em;
+		min-height: 1.3em;
+		max-height: 1.3em;
+		padding: 2px 6px;
+		line-height: 1.3;
+		font-size: 0.875rem;
+		margin: 0;
+		box-sizing: content-box;
+		overflow: hidden;
+		outline: none;
+	}
+
+	.cell-selected-active {
+		outline: 2px solid #2563eb; /* blue-600 border */
+		outline-offset: -2px; /* inset so it doesn't shift layout */
+		background: #eff6ff; /* blue-50 subtle highlight */
+	}
+
+	:global(.dark) .cell-selected-active {
+		outline-color: #3b82f6;
+		background: rgba(59, 130, 246, 0.1);
+		color: white;
 	}
 
 	/* Primary key link - looks like a hyperlink */
