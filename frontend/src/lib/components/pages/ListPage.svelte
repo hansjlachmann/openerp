@@ -846,8 +846,8 @@
 		const isBoolean = typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool';
 		const hasLookup = lookups[field.source]?.columns || lookups[field.source]?.simple;
 
-		// Ctrl+ArrowDown opens the lookup dropdown
-		if (event.key === 'ArrowDown' && event.ctrlKey && hasLookup) {
+		// Alt+ArrowDown opens the lookup dropdown
+		if (event.key === 'ArrowDown' && event.altKey && hasLookup) {
 			event.preventDefault();
 			enterCellEditing(false);
 			return;
