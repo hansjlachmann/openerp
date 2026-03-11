@@ -103,6 +103,8 @@
 
 	function openDropdown() {
 		if (disabled) return;
+		// Don't re-open if a selection was just made (handleSelect re-focuses input)
+		if (selectHandled) return;
 		isOpen = true;
 		// Find current selection index in filtered rows
 		selectedIndex = filteredRows().findIndex(r => r._key === value);
@@ -111,6 +113,7 @@
 
 	function handleToggle() {
 		if (disabled) return;
+		selectHandled = false; // Clear so toggle always works
 		if (isOpen) {
 			isOpen = false;
 		} else {
@@ -207,6 +210,7 @@
 			case 'ArrowDown':
 				e.preventDefault();
 				if (!isOpen) {
+					selectHandled = false; // Clear so ArrowDown always opens
 					openDropdown();
 				} else {
 					selectedIndex = Math.min(selectedIndex + 1, filteredRows().length - 1);
