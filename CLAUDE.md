@@ -266,7 +266,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - **"Confirm"** means: save the current cell value. For existing records this triggers `modifyRecord`. For new records this follows delayed insert rules (save only when leaving the row, not the cell).
 - **Cell-selected visual**: The cell shows a distinct border/highlight (e.g., blue border) without a cursor. This must be visually distinct from cell-editing (which shows a cursor in an input).
 - **Transition from navigation → cell-selected does NOT save anything** — it's purely a focus/selection change.
-- **Lookup fields** (LookupDropdown, `<select>`) enter cell-editing immediately when cell-selected (no separate selected-only state for interactive controls — they are interactive by nature).
+- **Lookup fields** (LookupDropdown, `<select>`) stay in cell-selected mode like regular fields. The user enters cell-editing via F2, typing a character, or double-click — then the LookupDropdown/select appears. This prevents Tab navigation issues since LookupDropdown manages its own keyboard internally and doesn't route through `handleCellKeyDown`.
 - **Boolean fields** (checkboxes) toggle on Space/Enter in cell-selected mode. They have no separate cell-editing state.
 
 ### New Record Creation
@@ -278,8 +278,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 ### Delayed Insert (NAV `DelayedInsert`)
 - New records are inserted only when the user **leaves the row** — not when leaving an individual cell.
 - This allows the user to fill all fields (including optional PK fields like `company`) before the insert fires.
-- The insert triggers when focus moves to a different row or outside the table. Detected via `document.activeElement.getAttribute('data-row')` — if still on the same row index, the insert is deferred.
-- **`forceInsert` bypass**: Keyboard handlers that explicitly leave the row (Enter/ArrowDown on last row, `confirmAndMoveTo` crossing rows, focus leaving table) pass `forceInsert: true` to `handleCellBlur()` to skip the `activeElement` check — because the DOM focus hasn't moved yet when the handler runs.
+- The insert triggers via the `forceInsert` parameter on `handleCellBlur()`. When `forceInsert` is `false` (default), new records are always deferred. Keyboard handlers pass `forceInsert: true` only when explicitly leaving the row: `confirmAndMoveTo` crossing rows, Enter/ArrowDown on last row, or focus leaving the table via `handleEditingInputBlur`.
+- **Do NOT use `document.activeElement`** to detect row changes — it's unreliable when async validation (`api.validateField`) causes Svelte to re-render mid-await, destroying the input element and moving focus to `document.body`.
 - Required PK fields must have non-empty values; optional PK fields (without `required: true`) can remain blank.
 - The `required` flag is sent from the backend via table YAML metadata → `TableMetadata` → page field definitions.
 - Empty new rows are automatically cleaned up when navigating away from them.

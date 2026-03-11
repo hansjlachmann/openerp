@@ -505,9 +505,8 @@
 			selectedIndex = existingNewRowIndex;
 			currentCellRow = existingNewRowIndex;
 			currentCellCol = 0;
-			cellState = 'cell-editing';
-			cellEditSnapshot = '';
-			focusCell(currentCellRow, currentCellCol);
+			cellState = 'cell-selected';
+			focusCellSelectedElement(currentCellRow, currentCellCol);
 			return;
 		}
 
@@ -534,12 +533,11 @@
 		// Update selection to the new row
 		selectedIndex = insertIndex;
 
-		// Focus the first cell of the new row in cell-editing mode
+		// Focus the first cell of the new row in cell-selected mode
 		currentCellRow = insertIndex;
 		currentCellCol = 0;
-		cellState = 'cell-editing';
-		cellEditSnapshot = '';
-		focusCell(currentCellRow, currentCellCol);
+		cellState = 'cell-selected';
+		focusCellSelectedElement(currentCellRow, currentCellCol);
 	}
 
 	// --- 3-State Transition Functions ---
@@ -562,16 +560,6 @@
 		selectedIndex = row;
 		cellState = 'cell-selected';
 		cellEditSnapshot = undefined;
-
-		// Auto-escalate to cell-editing for lookup/select fields (interactive controls have no selected-only state)
-		const field = cols[col];
-		const hasAdvancedLookup = lookups[field.source]?.columns && lookups[field.source]?.rows?.length;
-		const hasSimpleLookup = lookups[field.source]?.simple;
-
-		if (hasAdvancedLookup || hasSimpleLookup) {
-			enterCellEditing(false);
-			return;
-		}
 
 		// Focus the cell-selected div
 		focusCellSelectedElement(row, col);
@@ -713,18 +701,13 @@
 
 			if (isNew) {
 				// NAV/BC delayed insert: only insert when the user LEAVES THE ROW.
-				// If focus moved to another cell in the same row, defer the insert
-				// so the user can fill all fields (including optional PKs) first.
+				// Keyboard handlers pass forceInsert=true when moving to a different row,
+				// leaving the table, or pressing Enter on the last row.
+				// When forceInsert is false, always defer — the user is still filling fields.
+				// This avoids relying on document.activeElement which is unreliable when
+				// async validation causes Svelte to re-render (destroying the input mid-await).
 				if (!forceInsert) {
-					const activeEl = document.activeElement;
-					const activeRowStr = activeEl?.getAttribute('data-row') ||
-						activeEl?.getAttribute('data-cell-row') ||
-						activeEl?.closest('[data-row]')?.getAttribute('data-row') ||
-						activeEl?.closest('[data-cell-row]')?.getAttribute('data-cell-row');
-					if (activeRowStr === String(rowIndex)) {
-						// Still on same row — user is still filling fields, defer insert
-						return;
-					}
+					return;
 				}
 
 				// Delayed insert: required PK fields must be non-empty,
@@ -818,9 +801,8 @@
 			if (isEmptyNewRecord(currentRecord)) {
 				// Already on an empty new row, just focus it
 				currentCellCol = 0;
-				cellState = 'cell-editing';
-				cellEditSnapshot = '';
-				focusCell(currentCellRow, currentCellCol);
+				cellState = 'cell-selected';
+				focusCellSelectedElement(currentCellRow, currentCellCol);
 				return;
 			}
 		}
@@ -847,12 +829,11 @@
 			...editableRecords.slice(insertIndex)
 		];
 
-		// Focus the first cell of the new row in cell-editing mode
+		// Focus the first cell of the new row in cell-selected mode
 		currentCellRow = insertIndex;
 		currentCellCol = 0;
-		cellState = 'cell-editing';
-		cellEditSnapshot = '';
-		focusCell(currentCellRow, currentCellCol);
+		cellState = 'cell-selected';
+		focusCellSelectedElement(currentCellRow, currentCellCol);
 	}
 
 	// Handle keyboard in cell-selected mode
