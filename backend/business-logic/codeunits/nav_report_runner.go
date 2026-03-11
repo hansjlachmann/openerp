@@ -121,15 +121,21 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	jobID := generateJobID()
 	log.Printf("[NavReportRunner] Generated job ID: %s", jobID)
 
-	// Read report ID from the Parameter field on the Job Queue record
+	// Read report ID and format from the Parameter field on the Job Queue record
 	paramStr := strings.TrimSpace(jobQueue.Parameter.String())
 	if paramStr == "" {
 		return fcodeunits.Error("Parameter is empty - specify the report ID in the Parameter field"), nil
 	}
-	reportID, err := strconv.Atoi(paramStr)
-	if err != nil {
-		return fcodeunits.Error("Invalid report ID in Parameter field: " + paramStr), nil
+	params := parseParameter(paramStr)
+	reportIDStr := params["reportId"]
+	if reportIDStr == "" {
+		return fcodeunits.Error("Missing report ID in Parameter field: " + paramStr), nil
 	}
+	reportID, err := strconv.Atoi(reportIDStr)
+	if err != nil {
+		return fcodeunits.Error("Invalid report ID in Parameter field: " + reportIDStr), nil
+	}
+	outputFormat := params["format"] // "PDF" or "NONE"
 
 	// Request report date from the user
 	lang := fcodeunits.CurrentLanguage()
@@ -149,7 +155,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	}
 	payload := map[string]interface{}{
 		"reportId": reportID,
-		"format":   "PDF",
+		"format":   outputFormat,
 		"filter":   filterMap,
 	}
 	inputJSONBytes, _ := json.Marshal(payload)
@@ -349,8 +355,23 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			dialog.UpdateWithMessage(1, progress, msg)
 		}
 
-		// Only fetch PDF when progress reaches 100%
+		// Only complete when progress reaches 100%
 		if progress >= 100 {
+			// Process-only report (no PDF output)
+			if strings.EqualFold(outputFormat, "NONE") {
+				log.Printf("[NavReportRunner] Progress is 100%% for job %s (format=NONE, no PDF)", jobID)
+				if dialog != nil {
+					dialog.UpdateWithMessage(1, 100, "Process completed!")
+				}
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, ""); err != nil {
+					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
+				}
+				return fcodeunits.Result{
+					Success: true,
+					Message: "Process completed successfully",
+				}, nil
+			}
+
 			log.Printf("[NavReportRunner] Progress is 100%%, fetching PDF for job %s", jobID)
 
 			// Try to get the PDF path. Prefer the StartJob response, but fall back
@@ -484,6 +505,35 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		// Wait before next poll
 		time.Sleep(pollInterval)
 	}
+}
+
+// parseParameter parses structured parameter string into key-value map.
+// Supports: "7350" (legacy plain number), "reportId=7350", "reportId=7350;format=NONE"
+func parseParameter(param string) map[string]string {
+	result := make(map[string]string)
+	param = strings.TrimSpace(param)
+
+	// Legacy: plain number = report ID with PDF
+	if _, err := strconv.Atoi(param); err == nil {
+		result["reportId"] = param
+		result["format"] = "PDF"
+		return result
+	}
+
+	// Structured: key=value;key=value
+	for _, part := range strings.Split(param, ";") {
+		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
+		if len(kv) == 2 {
+			result[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+		}
+	}
+
+	// Default format to PDF if not specified
+	if result["format"] == "" {
+		result["format"] = "PDF"
+	}
+
+	return result
 }
 
 // parseProgressResponse parses the response body into CheckJobResponse
