@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.50](https://github.com/hansjlachmann/openerp/compare/v0.1.49...v0.1.50) (2026-03-11)
+
+
+### Bug Fixes
+
+* allow click-to-select in LookupDropdown ([35a2da4](https://github.com/hansjlachmann/openerp/commit/35a2da48c519e4d1b5b418de520f61cb12981b52))
+* change lookup dropdown shortcut from Ctrl+ArrowDown to Alt+ArrowDown ([b3633a3](https://github.com/hansjlachmann/openerp/commit/b3633a32617c4f362e16f7f6864462261e6ced72))
+* improve lookup field interaction in list page cell model ([95d56c8](https://github.com/hansjlachmann/openerp/commit/95d56c8aa264f738710ca5ffd40db28019af6c46))
+* prevent auto-escalation to cell-editing on new rows and lookup fields ([8524086](https://github.com/hansjlachmann/openerp/commit/852408654b0f26d44fc8a3d0d8a3e29c204ffee6))
+
+
+### Documentation
+
+* update CLAUDE.md with lookup field interaction patterns ([c68ebe5](https://github.com/hansjlachmann/openerp/commit/c68ebe5d7827305acf31520be9022745db3ec7b5))
+
 ## [0.1.49](https://github.com/hansjlachmann/openerp/compare/v0.1.48...v0.1.49) (2026-03-11)
 
 
