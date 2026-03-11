@@ -246,6 +246,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Printable character | Clear cell content + enter cell-editing with typed character |
 | F8 | Copy value from the cell directly above (NAV/BC standard) |
 | Ctrl+N / Ctrl+Insert | Insert new row |
+| Alt+ArrowDown (on lookup cell) | Enter cell-editing and open lookup dropdown |
 | Space (on boolean cell) | Toggle checkbox value |
 | Enter (on boolean cell) | Toggle checkbox value + move selection down |
 
@@ -266,7 +267,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - **"Confirm"** means: save the current cell value. For existing records this triggers `modifyRecord`. For new records this follows delayed insert rules (save only when leaving the row, not the cell).
 - **Cell-selected visual**: The cell shows a distinct border/highlight (e.g., blue border) without a cursor. This must be visually distinct from cell-editing (which shows a cursor in an input).
 - **Transition from navigation → cell-selected does NOT save anything** — it's purely a focus/selection change.
-- **Lookup fields** (LookupDropdown, `<select>`) stay in cell-selected mode like regular fields. The user enters cell-editing via F2, typing a character, or double-click — then the LookupDropdown/select appears. This prevents Tab navigation issues since LookupDropdown manages its own keyboard internally and doesn't route through `handleCellKeyDown`.
+- **Lookup fields** (LookupDropdown, `<select>`) in cell-selected mode show the formatted value plus a **▼ dropdown arrow button**. Clicking the arrow or pressing Alt+ArrowDown enters cell-editing and opens the dropdown. The user can also enter cell-editing via F2, typing, or double-click. LookupDropdown manages its own keyboard internally (arrow keys navigate the dropdown list, Enter selects, F4 toggles, Escape closes). Cell navigation keys (Tab, Shift+Tab, Enter when dropdown closed, Escape when dropdown closed, F2) are handled by `handleLookupCellKeyDown` on the wrapper div, which intercepts events that bubble up from LookupDropdown.
+- **`<select>` fields** (simple lookups) in cell-editing mode: arrow keys cycle through options natively (not intercepted by `handleCellKeyDown`). Tab/Enter handle cell navigation.
 - **Boolean fields** (checkboxes) toggle on Space/Enter in cell-selected mode. They have no separate cell-editing state.
 
 ### New Record Creation
@@ -299,16 +301,19 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - The `LookupDropdown` must be wrapped in a `<div data-row data-col>` container for focus management.
 
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
-- When the user selects a value from a `LookupDropdown`, the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.
+- When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.
 - The save fires only when focus actually **leaves** the component (e.g., user presses Tab or moves to another cell).
 - This prevents premature inserts during data entry and is critical for delayed insert behavior on composite PK tables.
+- **Re-open guard**: After `handleSelect` re-focuses the input, `onfocus` must NOT re-open the dropdown. The `selectHandled` flag prevents this — `openDropdown()` skips when `selectHandled` is true. The flag is cleared when the user types, toggles the dropdown, or presses ArrowDown to explicitly re-open.
 
 ### Focus Management
 - `focusCell(rowIndex, colIndex)` uses a 50ms timeout (for Svelte DOM updates) and handles three cell types:
   - Direct `<input>` elements (via `input[data-row][data-col]`)
   - `<select>` elements (via `select[data-row][data-col]`)
   - `LookupDropdown` wrapper `<div>` containers (via `div[data-row][data-col]`, then focuses the inner `<input>`)
+- `focusCellSelectedElement(row, col)` focuses the cell-selected `<div>` via `[data-cell-row][data-cell-col]` attributes.
 - All inputs receive `.select()` to highlight text on focus.
+- **LookupDropdown keyboard wrapper**: The `<div data-row data-col>` wrapper has an `onkeydown={handleLookupCellKeyDown}` handler that intercepts Tab/Enter/Escape/F2 after they bubble up from LookupDropdown. Keys already handled by LookupDropdown (e.g., ArrowDown when dropdown is open) are skipped via `event.defaultPrevented` check.
 
 ### Search and Sorting
 - **Search**: Case-insensitive substring match across all visible columns. Filters `displayRecords` reactively.
