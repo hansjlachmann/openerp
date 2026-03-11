@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.51](https://github.com/hansjlachmann/openerp/compare/v0.1.50...v0.1.51) (2026-03-11)
+
+
+### Features
+
+* support optional PDF output in NavReportRunner (codeunit 50022) ([ad92b8e](https://github.com/hansjlachmann/openerp/commit/ad92b8ea908184ccb6ffff059c6edcf82aebca45))
+
 ## [0.1.50](https://github.com/hansjlachmann/openerp/compare/v0.1.49...v0.1.50) (2026-03-11)
 
 
