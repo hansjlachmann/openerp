@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.49](https://github.com/hansjlachmann/openerp/compare/v0.1.48...v0.1.49) (2026-03-11)
+
+
+### Documentation
+
+* document forceInsert bypass for delayed insert in CLAUDE.md ([05085be](https://github.com/hansjlachmann/openerp/commit/05085becfb11cf4aa2b14de2cd4953ec3cca289a))
+
 ## [0.1.48](https://github.com/hansjlachmann/openerp/compare/v0.1.47...v0.1.48) (2026-03-11)
 
 
