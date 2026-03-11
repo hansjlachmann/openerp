@@ -648,7 +648,8 @@
 			if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 				record[field.source] = record[field.source].toUpperCase();
 			}
-			await handleCellBlur(record, prevRow, field?.source);
+			const leavingRow = targetRow !== prevRow;
+			await handleCellBlur(record, prevRow, field?.source, leavingRow);
 		}
 
 		// Clean up empty new row if leaving it
@@ -673,7 +674,8 @@
 	let pendingSave: { record: Record<string, any>; rowIndex: number } | null = null;
 
 	// Auto-save when leaving a cell
-	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string) {
+	// forceInsert: skip delayed insert check (used when we know we're leaving the row but DOM focus hasn't moved yet)
+	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, forceInsert: boolean = false) {
 		if (!page || !editableActive) return;
 
 		// If already saving, queue this save for later (must check before async validation)
@@ -713,14 +715,16 @@
 				// NAV/BC delayed insert: only insert when the user LEAVES THE ROW.
 				// If focus moved to another cell in the same row, defer the insert
 				// so the user can fill all fields (including optional PKs) first.
-				const activeEl = document.activeElement;
-				const activeRowStr = activeEl?.getAttribute('data-row') ||
-					activeEl?.getAttribute('data-cell-row') ||
-					activeEl?.closest('[data-row]')?.getAttribute('data-row') ||
-					activeEl?.closest('[data-cell-row]')?.getAttribute('data-cell-row');
-				if (activeRowStr === String(rowIndex)) {
-					// Still on same row — user is still filling fields, defer insert
-					return;
+				if (!forceInsert) {
+					const activeEl = document.activeElement;
+					const activeRowStr = activeEl?.getAttribute('data-row') ||
+						activeEl?.getAttribute('data-cell-row') ||
+						activeEl?.closest('[data-row]')?.getAttribute('data-row') ||
+						activeEl?.closest('[data-cell-row]')?.getAttribute('data-cell-row');
+					if (activeRowStr === String(rowIndex)) {
+						// Still on same row — user is still filling fields, defer insert
+						return;
+					}
 				}
 
 				// Delayed insert: required PK fields must be non-empty,
@@ -923,7 +927,7 @@
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Save current cell, then create new row at end
-					handleCellBlur(record, rowIndex, field.source);
+					handleCellBlur(record, rowIndex, field.source, true);
 					insertNewRow(true);
 				}
 				break;
@@ -1029,7 +1033,7 @@
 								if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 									currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 								}
-								handleCellBlur(currentRecord, rowIndex, field?.source);
+								handleCellBlur(currentRecord, rowIndex, field?.source, true);
 								insertNewRow(true);
 							}
 						}
@@ -1133,7 +1137,7 @@
 						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
-						handleCellBlur(currentRecord, rowIndex, field?.source);
+						handleCellBlur(currentRecord, rowIndex, field?.source, true);
 						insertNewRow(true);
 					}
 				}
@@ -1213,7 +1217,7 @@
 					if (fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 						record[field.source] = record[field.source].toUpperCase();
 					}
-					handleCellBlur(record, blurredRow, field.source);
+					handleCellBlur(record, blurredRow, field.source, true);
 				}
 				exitToNavigation();
 			}
