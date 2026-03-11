@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.47](https://github.com/hansjlachmann/openerp/compare/v0.1.46...v0.1.47) (2026-03-11)
+
+
+### Bug Fixes
+
+* add Ctrl+E shortcut in navigation mode and remove outdated Code field gap note ([8fa0604](https://github.com/hansjlachmann/openerp/commit/8fa0604f7af5d1dd100d722145c7cc0e6c14ab21))
+
 ## [0.1.46](https://github.com/hansjlachmann/openerp/compare/v0.1.45...v0.1.46) (2026-03-11)
 
 
