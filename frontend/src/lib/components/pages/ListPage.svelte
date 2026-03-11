@@ -1554,6 +1554,9 @@
 				map['F2'] = () => {
 					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
 				};
+				map['Ctrl+E'] = () => {
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+				};
 			}
 			map['F5'] = () => handleAction('Refresh');
 			map['Ctrl+D'] = () => {
