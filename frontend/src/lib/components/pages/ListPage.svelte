@@ -844,6 +844,14 @@
 
 		const field = cols[colIndex];
 		const isBoolean = typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool';
+		const hasLookup = lookups[field.source]?.columns || lookups[field.source]?.simple;
+
+		// Ctrl+ArrowDown opens the lookup dropdown
+		if (event.key === 'ArrowDown' && event.ctrlKey && hasLookup) {
+			event.preventDefault();
+			enterCellEditing(false);
+			return;
+		}
 
 		// Ctrl+Insert or Ctrl+N to insert new row
 		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
@@ -970,9 +978,13 @@
 			return;
 		}
 
+		// Skip arrow/key navigation for <select> elements — let browser handle option cycling
+		const isSelectElement = event.target instanceof HTMLSelectElement;
+
 		switch (event.key) {
 			case 'ArrowUp':
 				{
+					if (isSelectElement) break; // Let <select> handle its own arrow navigation
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
 					let shouldNavigate = !isTextInput;
@@ -992,6 +1004,7 @@
 				break;
 			case 'ArrowDown':
 				{
+					if (isSelectElement) break; // Let <select> handle its own arrow navigation
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
 					let shouldNavigate = !isTextInput;
@@ -1023,6 +1036,7 @@
 				break;
 			case 'ArrowLeft':
 				{
+					if (isSelectElement) break; // Let <select> handle its own navigation
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
 					let shouldNavigate = !isTextInput;
@@ -1042,6 +1056,7 @@
 				break;
 			case 'ArrowRight':
 				{
+					if (isSelectElement) break; // Let <select> handle its own navigation
 					const input = event.target as HTMLInputElement;
 					const isTextInput = input.type === 'text' || input.type === 'number';
 					let shouldNavigate = !isTextInput;
@@ -1122,6 +1137,60 @@
 						insertNewRow(true);
 					}
 				}
+				break;
+		}
+	}
+
+	// Handle keyboard on LookupDropdown wrapper div (bubbles up from LookupDropdown input)
+	// Only intercepts Tab/Enter for cell navigation — LookupDropdown handles Arrow/Escape/F4 internally
+	function handleLookupCellKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
+		// Skip keys already handled by LookupDropdown (Arrow keys, Escape with open dropdown)
+		if (event.defaultPrevented) return;
+
+		const cols = visibleColumns();
+
+		switch (event.key) {
+			case 'Tab':
+				event.preventDefault();
+				if (event.shiftKey) {
+					if (colIndex > 0) {
+						confirmAndMoveTo(rowIndex, colIndex - 1);
+					} else if (rowIndex > 0) {
+						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
+					}
+				} else {
+					if (colIndex < cols.length - 1) {
+						confirmAndMoveTo(rowIndex, colIndex + 1);
+					} else if (rowIndex < editableRecords.length - 1) {
+						confirmAndMoveTo(rowIndex + 1, 0);
+					}
+				}
+				break;
+			case 'Enter':
+				// Only handle Enter when dropdown is closed (LookupDropdown preventDefault's Enter when open)
+				event.preventDefault();
+				if (rowIndex < editableRecords.length - 1) {
+					confirmAndMoveTo(rowIndex + 1, colIndex);
+				} else {
+					const currentRecord = editableRecords[rowIndex];
+					if (!isEmptyNewRecord(currentRecord)) {
+						const field = cols[colIndex];
+						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
+						}
+						handleCellBlur(currentRecord, rowIndex, field?.source, true);
+						insertNewRow(true);
+					}
+				}
+				break;
+			case 'Escape':
+				// LookupDropdown handles Escape when dropdown is open (preventDefault).
+				// When dropdown is closed, Escape bubbles here — revert and exit editing.
+				exitEditingToCellSelected(true);
+				break;
+			case 'F2':
+				event.preventDefault();
+				exitEditingToCellSelected(false);
 				break;
 		}
 	}
@@ -1987,7 +2056,9 @@
 										</div>
 									{:else if lookups[field.source]?.columns && lookups[field.source]?.rows?.length}
 										<!-- Advanced lookup with columns - LookupDropdown -->
-										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper">
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
+										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper"
+											onkeydown={(e) => handleLookupCellKeyDown(e, index, colIndex)}>
 											<LookupDropdown
 												columns={lookups[field.source].columns ?? []}
 												rows={lookups[field.source].rows ?? []}
@@ -2057,6 +2128,35 @@
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
 											<input type="checkbox" checked={record[field.source]} disabled />
+										</div>
+									{:else if lookups[field.source]?.columns || lookups[field.source]?.simple}
+										<!-- Cell-selected with lookup: show value + dropdown arrow -->
+										<div
+											class="cell-selected-content cell-selected-active cell-selected-lookup"
+											tabindex="0"
+											data-cell-row={index}
+											data-cell-col={colIndex}
+											ondblclick={() => enterCellEditing(false)}
+											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
+										>
+											<span class="cell-selected-lookup-value">
+												{#if lookups[field.source]?.rows?.length}
+													{formatLookupValue(record[field.source], lookups[field.source])}
+												{:else}
+													{formatValue(record[field.source])}
+												{/if}
+											</span>
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
+											<span
+												class="cell-selected-lookup-arrow"
+												onclick={(e) => {
+													e.stopPropagation();
+													enterCellEditing(false);
+												}}
+												role="button"
+												tabindex="-1"
+												aria-label="Open lookup"
+											>▼</span>
 										</div>
 									{:else}
 										<div
@@ -2542,6 +2642,40 @@
 		outline-color: #3b82f6;
 		background: rgba(59, 130, 246, 0.1);
 		color: white;
+	}
+
+	.cell-selected-lookup {
+		display: flex;
+		align-items: center;
+		padding-right: 0;
+	}
+
+	.cell-selected-lookup-value {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.cell-selected-lookup-arrow {
+		flex-shrink: 0;
+		padding: 0 4px;
+		font-size: 0.5rem;
+		color: #6b7280;
+		cursor: pointer;
+		line-height: 1;
+	}
+
+	.cell-selected-lookup-arrow:hover {
+		color: #2563eb;
+	}
+
+	:global(.dark) .cell-selected-lookup-arrow {
+		color: #9ca3af;
+	}
+
+	:global(.dark) .cell-selected-lookup-arrow:hover {
+		color: #60a5fa;
 	}
 
 	/* Primary key link - looks like a hyperlink */
