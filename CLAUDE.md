@@ -279,6 +279,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - New records are inserted only when the user **leaves the row** — not when leaving an individual cell.
 - This allows the user to fill all fields (including optional PK fields like `company`) before the insert fires.
 - The insert triggers when focus moves to a different row or outside the table. Detected via `document.activeElement.getAttribute('data-row')` — if still on the same row index, the insert is deferred.
+- **`forceInsert` bypass**: Keyboard handlers that explicitly leave the row (Enter/ArrowDown on last row, `confirmAndMoveTo` crossing rows, focus leaving table) pass `forceInsert: true` to `handleCellBlur()` to skip the `activeElement` check — because the DOM focus hasn't moved yet when the handler runs.
 - Required PK fields must have non-empty values; optional PK fields (without `required: true`) can remain blank.
 - The `required` flag is sent from the backend via table YAML metadata → `TableMetadata` → page field definitions.
 - Empty new rows are automatically cleaned up when navigating away from them.
