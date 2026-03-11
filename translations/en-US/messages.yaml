@@ -136,6 +136,13 @@ messages:
   # Dialog Titles
   DLG_DELETE_RECORD_TITLE: "Delete Record"
   DLG_CONFIRM_TITLE: "Confirm"
+  DLG_MESSAGE_TITLE: "Message"
+  DLG_ERROR_TITLE: "Error"
+  DLG_FILTER_TITLE: "Filter"
+
+  # Codeunit Messages
+  CU_REPORT_DATE: "Report Date"
+  CU_REPORT_CANCELLED: "Report cancelled."
 
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Are you sure you want to delete this record?"
