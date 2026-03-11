@@ -136,6 +136,13 @@ messages:
   # Dialog Titles
   DLG_DELETE_RECORD_TITLE: "Slet post"
   DLG_CONFIRM_TITLE: "Bekræft"
+  DLG_MESSAGE_TITLE: "Meddelelse"
+  DLG_ERROR_TITLE: "Fejl"
+  DLG_FILTER_TITLE: "Filter"
+
+  # Codeunit Messages
+  CU_REPORT_DATE: "Rapportdato"
+  CU_REPORT_CANCELLED: "Rapport annulleret."
 
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på, at du vil slette denne post?"

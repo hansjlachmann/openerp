@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
@@ -108,6 +109,19 @@ func CurrentCompany() string {
 	return ""
 }
 
+// CurrentLanguage returns the current user's language
+// First checks goroutine-specific context, then falls back to global session
+func CurrentLanguage() string {
+	if ctx := GetCurrentContext(); ctx != nil {
+		return ctx.Language
+	}
+	sess := session.GetCurrent()
+	if sess != nil {
+		return sess.GetLanguage()
+	}
+	return "en-US"
+}
+
 // CurrentDateTime returns the current date and time
 func CurrentDateTime() time.Time {
 	return time.Now()
@@ -127,10 +141,11 @@ func CurrentTime() time.Time {
 
 // Message returns a result that displays an info dialog
 func Message(text string) Result {
+	ts := i18n.GetInstance()
 	return Result{
 		Success: true,
 		Dialog: &DialogResult{
-			Title:   "Message",
+			Title:   ts.Message("DLG_MESSAGE_TITLE", CurrentLanguage()),
 			Message: text,
 			Type:    "info",
 		},
@@ -139,10 +154,11 @@ func Message(text string) Result {
 
 // Error returns a result that displays an error dialog
 func Error(text string) Result {
+	ts := i18n.GetInstance()
 	return Result{
 		Success: false,
 		Dialog: &DialogResult{
-			Title:   "Error",
+			Title:   ts.Message("DLG_ERROR_TITLE", CurrentLanguage()),
 			Message: text,
 			Type:    "error",
 		},

@@ -16,6 +16,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -131,12 +132,14 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	}
 
 	// Request report date from the user
-	inputResult := fcodeunits.RequestInput("Filter", []fcodeunits.InputField{
-		{Name: "date", Label: "Report Date", Type: "date", Required: true,
+	lang := fcodeunits.CurrentLanguage()
+	ts := i18n.GetInstance()
+	inputResult := fcodeunits.RequestInput(ts.Message("DLG_FILTER_TITLE", lang), []fcodeunits.InputField{
+		{Name: "date", Label: ts.Message("CU_REPORT_DATE", lang), Type: "date", Required: true,
 			Default: time.Now().Format("2006-01-02")},
 	})
 	if inputResult == nil || inputResult["date"] == "" {
-		return fcodeunits.Message("Report cancelled."), nil
+		return fcodeunits.Message(ts.Message("CU_REPORT_CANCELLED", lang)), nil
 	}
 
 	// Build filter object from user input
