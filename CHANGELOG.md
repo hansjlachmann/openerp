@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.48](https://github.com/hansjlachmann/openerp/compare/v0.1.47...v0.1.48) (2026-03-11)
+
+
+### Bug Fixes
+
+* delayed insert not firing when pressing Enter on new record ([adecba7](https://github.com/hansjlachmann/openerp/commit/adecba748e73f6caee78bdd960071ce8b06d17fa))
+
 ## [0.1.47](https://github.com/hansjlachmann/openerp/compare/v0.1.46...v0.1.47) (2026-03-11)
 
 
