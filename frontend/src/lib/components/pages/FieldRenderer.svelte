@@ -2,7 +2,8 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isDateType, isDateTimeType, formatDate, formatDateTime } from '$lib/utils/fieldHelpers';
+	import { currentLanguage } from '$lib/stores/session';
 	import LookupDropdown from './LookupDropdown.svelte';
 
 	interface Props {
@@ -40,8 +41,16 @@
 	// Determine if field is editable
 	const isEditable = $derived(editable);
 
+	// Locale for date formatting
+	let locale = $state('en-US');
+	currentLanguage.subscribe((lang) => { locale = lang; });
+
 	// Check if this is a boolean field (detected from actual value type or backend metadata)
 	const isBooleanField = $derived(typeof value === 'boolean' || fieldType === 'bool');
+
+	// Check if this is a date or datetime field
+	const isDateField = $derived(isDateType(fieldType));
+	const isDateTimeField = $derived(isDateTimeType(fieldType));
 
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
@@ -123,6 +132,12 @@
 		}
 		if (field.source.includes('email')) {
 			return 'email';
+		}
+		if (isDateField) {
+			return 'date';
+		}
+		if (isDateTimeField) {
+			return 'datetime-local';
 		}
 		return 'text';
 	});
@@ -267,6 +282,10 @@
 			<div class={cn('field-value', fieldStyle)}>
 				{#if isOptionField}
 					{optionDisplayValue()}
+				{:else if isDateField}
+					{formatDate(String(value ?? ''), locale)}
+				{:else if isDateTimeField}
+					{formatDateTime(String(value ?? ''), locale)}
 				{:else}
 					{formatValue(value)}
 				{/if}

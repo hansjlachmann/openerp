@@ -1,5 +1,132 @@
 import type { Field } from '$lib/types/pages';
 
+// --- Date/DateTime type detection and formatting ---
+
+/** Check if a field type represents a Date (from YAML "types.Date" or Go "Date") */
+export function isDateType(fieldType: string | undefined): boolean {
+	if (!fieldType) return false;
+	return fieldType === 'types.Date' || fieldType === 'Date';
+}
+
+/** Check if a field type represents a DateTime (from YAML "types.DateTime" or Go "DateTime") */
+export function isDateTimeType(fieldType: string | undefined): boolean {
+	if (!fieldType) return false;
+	return fieldType === 'types.DateTime' || fieldType === 'DateTime';
+}
+
+/** Format an ISO date string (YYYY-MM-DD) to locale display format */
+export function formatDate(isoDate: string, locale: string): string {
+	if (!isoDate) return '';
+	// Parse YYYY-MM-DD manually to avoid timezone issues
+	const parts = isoDate.split('T')[0].split('-');
+	if (parts.length !== 3) return isoDate;
+	const year = parseInt(parts[0], 10);
+	const month = parseInt(parts[1], 10) - 1;
+	const day = parseInt(parts[2], 10);
+	if (isNaN(year) || isNaN(month) || isNaN(day)) return isoDate;
+	const date = new Date(year, month, day);
+	try {
+		return new Intl.DateTimeFormat(locale, {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit'
+		}).format(date);
+	} catch {
+		return isoDate;
+	}
+}
+
+/** Format an ISO datetime string to locale display format */
+export function formatDateTime(isoDateTime: string, locale: string): string {
+	if (!isoDateTime) return '';
+	try {
+		const date = new Date(isoDateTime);
+		if (isNaN(date.getTime())) return isoDateTime;
+		return new Intl.DateTimeFormat(locale, {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(date);
+	} catch {
+		return isoDateTime;
+	}
+}
+
+/** Get a locale-specific date format pattern string (e.g., "DD.MM.YYYY" for nb-NO) */
+export function getDateFormatPattern(locale: string): string {
+	try {
+		const parts = new Intl.DateTimeFormat(locale, {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit'
+		}).formatToParts(new Date(2026, 0, 15)); // Jan 15, 2026
+		return parts
+			.map((p) => {
+				switch (p.type) {
+					case 'day':
+						return 'DD';
+					case 'month':
+						return 'MM';
+					case 'year':
+						return 'YYYY';
+					case 'literal':
+						return p.value;
+					default:
+						return '';
+				}
+			})
+			.join('');
+	} catch {
+		return 'YYYY-MM-DD';
+	}
+}
+
+/** Parse a locale-formatted date string back to ISO YYYY-MM-DD */
+export function parseLocaleDate(input: string, locale: string): string | null {
+	if (!input) return null;
+	// If already ISO format, return as-is
+	if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+	try {
+		// Determine part order from locale
+		const parts = new Intl.DateTimeFormat(locale, {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit'
+		}).formatToParts(new Date(2026, 0, 15));
+		const order = parts
+			.filter((p) => p.type === 'day' || p.type === 'month' || p.type === 'year')
+			.map((p) => p.type);
+		const separator = parts.find((p) => p.type === 'literal')?.value || '/';
+		const inputParts = input.split(separator).map((s) => s.trim());
+		if (inputParts.length !== 3) return null;
+		let day = 0,
+			month = 0,
+			year = 0;
+		for (let i = 0; i < 3; i++) {
+			const num = parseInt(inputParts[i], 10);
+			if (isNaN(num)) return null;
+			switch (order[i]) {
+				case 'day':
+					day = num;
+					break;
+				case 'month':
+					month = num;
+					break;
+				case 'year':
+					year = num;
+					break;
+			}
+		}
+		if (year < 100) year += 2000;
+		if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+		return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+	} catch {
+		return null;
+	}
+}
+
 /**
  * Get the display caption for a field
  * @param fieldSource - The field source name
