@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.52](https://github.com/hansjlachmann/openerp/compare/v0.1.51...v0.1.52) (2026-03-12)
+
+
+### Bug Fixes
+
+* **ci:** pull before writing .env to avoid rebase conflicts ([9bb03ae](https://github.com/hansjlachmann/openerp/commit/9bb03ae88ca5fee5dd137df3eeb8b163f4d873dc))
+
 ## [0.1.51](https://github.com/hansjlachmann/openerp/compare/v0.1.50...v0.1.51) (2026-03-11)
 
 
