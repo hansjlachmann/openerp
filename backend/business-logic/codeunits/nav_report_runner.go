@@ -252,6 +252,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	var postFailed bool         // Whether the POST returned an error (e.g. timeout)
 	var postErrorMsg string     // The original POST error message
 	var everSeenProgress bool   // Whether we've ever seen progress > 0
+	var lastSeenProgress int    // Last non-zero progress value seen
 	zeroProgressPolls := 0      // Consecutive polls with 0% after POST failure
 
 	for {
@@ -334,14 +335,20 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		if progress > 0 {
 			everSeenProgress = true
+			lastSeenProgress = progress
+			zeroProgressPolls = 0 // Reset counter when we see real progress
 		}
 
-		// If POST already failed and we've never seen any progress, the job never
-		// started (e.g. invalid parameters). Stop after a few polls to confirm.
-		if postFailed && !everSeenProgress {
+		// If POST already failed and progress is 0, the job either never started
+		// or has disappeared (e.g. NAV error mid-execution). Stop after a few polls.
+		if postFailed && progress == 0 {
 			zeroProgressPolls++
 			if zeroProgressPolls >= 5 {
-				log.Printf("[NavReportRunner] POST failed and no progress after %d polls — job never started", zeroProgressPolls)
+				if everSeenProgress {
+					log.Printf("[NavReportRunner] POST failed and job disappeared after reaching %d%% — %d consecutive zero polls", lastSeenProgress, zeroProgressPolls)
+				} else {
+					log.Printf("[NavReportRunner] POST failed and no progress after %d polls — job never started", zeroProgressPolls)
+				}
 				errMsg := "NAV service error: " + postErrorMsg
 				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
