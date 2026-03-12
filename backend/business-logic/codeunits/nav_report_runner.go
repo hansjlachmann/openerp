@@ -520,11 +520,21 @@ func parseParameter(param string) map[string]string {
 		return result
 	}
 
-	// Structured: key=value;key=value
+	// Structured: key=value;key=value (keys are case-insensitive, normalized to camelCase)
 	for _, part := range strings.Split(param, ";") {
 		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
 		if len(kv) == 2 {
-			result[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+			key := strings.TrimSpace(kv[0])
+			value := strings.TrimSpace(kv[1])
+			// Normalize known keys to canonical form
+			switch strings.ToLower(key) {
+			case "reportid":
+				result["reportId"] = value
+			case "format":
+				result["format"] = value
+			default:
+				result[key] = value
+			}
 		}
 	}
 
