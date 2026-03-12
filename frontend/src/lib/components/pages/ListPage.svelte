@@ -23,7 +23,8 @@
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, isEmptyRecord, hasRecordData } from '$lib/utils/recordHelpers';
 
@@ -99,6 +100,26 @@
 	const isNavigation = $derived(cellState === 'navigation');
 	const isCellSelected = $derived(cellState === 'cell-selected');
 	const isCellEditing = $derived(cellState === 'cell-editing');
+
+	// Locale for date formatting (subscribe to currentLanguage store)
+	let locale = $state('en-US');
+	currentLanguage.subscribe((lang) => { locale = lang; });
+
+	/** Format a cell value with date/datetime awareness */
+	function formatCellValue(value: any, fieldSource: string): string {
+		const ft = fieldTypes[fieldSource];
+		if (isDateType(ft)) return formatDate(String(value ?? ''), locale);
+		if (isDateTimeType(ft)) return formatDateTime(String(value ?? ''), locale);
+		return formatValue(value);
+	}
+
+	/** Get the HTML input type for a cell-editing field */
+	function getCellInputType(fieldSource: string): string {
+		const ft = fieldTypes[fieldSource];
+		if (isDateType(ft)) return 'date';
+		if (isDateTimeType(ft)) return 'datetime-local';
+		return 'text';
+	}
 
 	// Dialog state (for codeunit results)
 	let dialogOpen = $state(false);
@@ -2101,7 +2122,7 @@
 										</select>
 									{:else}
 										<input
-											type="text"
+											type={getCellInputType(field.source)}
 											data-row={index}
 											data-col={colIndex}
 											class="edit-cell-input"
@@ -2143,7 +2164,7 @@
 												{#if lookups[field.source]?.rows?.length}
 													{formatLookupValue(record[field.source], lookups[field.source])}
 												{:else}
-													{formatValue(record[field.source])}
+													{formatCellValue(record[field.source], field.source)}
 												{/if}
 											</span>
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -2167,7 +2188,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											{formatValue(record[field.source])}
+											{formatCellValue(record[field.source], field.source)}
 										</div>
 									{/if}
 								{:else}
@@ -2190,7 +2211,7 @@
 													handlePrimaryKeyClick(index);
 												}}
 											>
-												{formatValue(record[field.source])}
+												{formatCellValue(record[field.source], field.source)}
 											</button>
 										{:else if options[field.source]}
 											<!-- Option field - always show dropdown -->
@@ -2211,8 +2232,10 @@
 											</select>
 										{:else if lookups[field.source]?.rows?.length}
 											{formatLookupValue(record[field.source], lookups[field.source])}
-										{:else}
+										{:else if options[field.source]}
 											{formatOptionValue(record[field.source], options[field.source])}
+										{:else}
+											{formatCellValue(record[field.source], field.source)}
 										{/if}
 									</div>
 								{/if}

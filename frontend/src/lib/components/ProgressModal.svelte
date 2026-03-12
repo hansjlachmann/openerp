@@ -2,6 +2,8 @@
 	import Modal from './Modal.svelte';
 	import Button from './Button.svelte';
 	import { t, MSG, DLG, BTN } from '$lib/services/i18n.svelte';
+	import { getDateFormatPattern, parseLocaleDate, formatDate } from '$lib/utils/fieldHelpers';
+	import { currentLanguage } from '$lib/stores/session';
 
 	interface InputField {
 		name: string;
@@ -45,6 +47,10 @@
 
 	const displayPercent = $derived(Math.round(progress));
 
+	// Locale for date formatting
+	let locale = $state('en-US');
+	currentLanguage.subscribe((lang) => { locale = lang; });
+
 	// Input form values
 	let inputValues = $state<Record<string, string>>({});
 
@@ -53,16 +59,28 @@
 		if (inputMode && inputFields.length > 0) {
 			const initial: Record<string, string> = {};
 			for (const field of inputFields) {
-				initial[field.name] = field.default ?? '';
+				if (field.type === 'date' && field.default) {
+					// Convert ISO default to locale format for display
+					initial[field.name] = formatDate(field.default, locale);
+				} else {
+					initial[field.name] = field.default ?? '';
+				}
 			}
 			inputValues = initial;
 		}
 	});
 
-	// Check if all required fields have values
+	// Check if all required fields have values (and date fields parse correctly)
 	const inputValid = $derived(() => {
 		if (!inputMode) return false;
-		return inputFields.every(f => !f.required || (inputValues[f.name] ?? '').trim() !== '');
+		return inputFields.every(f => {
+			const val = (inputValues[f.name] ?? '').trim();
+			if (f.required && val === '') return false;
+			if (f.type === 'date' && val !== '') {
+				return parseLocaleDate(val, locale) !== null;
+			}
+			return true;
+		});
 	});
 
 	function handleYes() {
@@ -78,7 +96,15 @@
 	}
 
 	function handleInputOk() {
-		onInputResponse?.({ ...inputValues });
+		// Convert locale-formatted date values back to ISO before sending
+		const result: Record<string, string> = { ...inputValues };
+		for (const field of inputFields) {
+			if (field.type === 'date' && result[field.name]) {
+				const iso = parseLocaleDate(result[field.name], locale);
+				if (iso) result[field.name] = iso;
+			}
+		}
+		onInputResponse?.(result);
 	}
 
 	function handleInputCancel() {
@@ -87,7 +113,7 @@
 
 	function getInputType(fieldType: string): string {
 		switch (fieldType) {
-			case 'date': return 'date';
+			case 'date': return 'text'; // Use text input with locale placeholder
 			case 'number': return 'number';
 			default: return 'text';
 		}
@@ -126,6 +152,7 @@
 								id="input-{field.name}"
 								type={getInputType(field.type)}
 								class="input-control"
+								placeholder={field.type === 'date' ? getDateFormatPattern(locale) : undefined}
 								bind:value={inputValues[field.name]}
 							/>
 						</div>
