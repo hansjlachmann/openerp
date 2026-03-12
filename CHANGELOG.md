@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.55](https://github.com/hansjlachmann/openerp/compare/v0.1.54...v0.1.55) (2026-03-12)
+
+
+### Bug Fixes
+
+* URL-decode record ID in parseRecordKey for composite keys ([578353d](https://github.com/hansjlachmann/openerp/commit/578353dd20ddea1661f015b1db011ceebc300f97))
+
 ## [0.1.54](https://github.com/hansjlachmann/openerp/compare/v0.1.53...v0.1.54) (2026-03-12)
 
 
