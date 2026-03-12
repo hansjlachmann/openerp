@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.53](https://github.com/hansjlachmann/openerp/compare/v0.1.52...v0.1.53) (2026-03-12)
+
+
+### Bug Fixes
+
+* **ci:** remove duplicate .env write step that caused unstaged changes ([a780011](https://github.com/hansjlachmann/openerp/commit/a7800113e3166451c941f33d34ffcd486d43a5bd))
+
 ## [0.1.52](https://github.com/hansjlachmann/openerp/compare/v0.1.51...v0.1.52) (2026-03-12)
 
 
