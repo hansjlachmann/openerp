@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -58,6 +59,11 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 // For single PK tables: returns the string as-is
 // For composite PK tables: splits comma-separated values and returns map[string]interface{}
 func parseRecordKey(id string, table ftables.Table) interface{} {
+	// URL-decode the id (Fiber does not auto-decode route params)
+	if decoded, err := url.PathUnescape(id); err == nil {
+		id = decoded
+	}
+
 	fields := table.GetFields()
 	var pkFields []string
 	for _, f := range fields {
