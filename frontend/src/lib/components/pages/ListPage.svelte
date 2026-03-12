@@ -725,7 +725,7 @@
 					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
 					// Update record in place to preserve _tempId (keeps Svelte's keyed each stable)
 					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering
-					Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
+					if (savedRecord) Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
 					delete editableRecords[rowIndex]._isNew;
 					// Trigger parent update if callback exists
 					if (onsave) {
@@ -737,7 +737,7 @@
 				const { _isNew, _tempId, ...recordToSave } = record;
 				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, recordToSave);
 				// Update record in place to preserve any _tempId
-				Object.assign(editableRecords[rowIndex], savedRecord);
+				if (savedRecord) Object.assign(editableRecords[rowIndex], savedRecord);
 				if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
 				// Trigger parent update if callback exists
 				if (onsave) {
