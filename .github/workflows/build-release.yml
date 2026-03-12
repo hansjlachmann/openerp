@@ -212,7 +212,11 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          git pull --rebase origin main
+          echo "# OpenERP Environment Configuration" > .env
+          echo "# This file is automatically updated by CI on each release" >> .env
+          echo "" >> .env
+          echo "APP_VERSION=${{ needs.release.outputs.version }}" >> .env
           git add .env
           git diff --staged --quiet || git commit -m "chore: update .env to version ${{ needs.release.outputs.version }}"
-          git pull --rebase origin main
           git push
