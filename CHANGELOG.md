@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.56](https://github.com/hansjlachmann/openerp/compare/v0.1.55...v0.1.56) (2026-03-12)
+
+
+### Features
+
+* locale-aware date/datetime formatting across all frontend pages ([bb8567e](https://github.com/hansjlachmann/openerp/commit/bb8567e3bdb47ea27703468532b7dac0c42a381f))
+
 ## [0.1.55](https://github.com/hansjlachmann/openerp/compare/v0.1.54...v0.1.55) (2026-03-12)
 
 
