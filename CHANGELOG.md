@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.54](https://github.com/hansjlachmann/openerp/compare/v0.1.53...v0.1.54) (2026-03-12)
+
+
+### Bug Fixes
+
+* detect job disappearing after POST failure in NavReportRunner ([e6ec2ca](https://github.com/hansjlachmann/openerp/commit/e6ec2ca9ce8c709ead4777dbb54d09e74a71aa87))
+* guard Object.assign against null savedRecord in ListPage ([04e227e](https://github.com/hansjlachmann/openerp/commit/04e227eceae8f9a5819aa8124f21779f708830a9))
+* make parameter keys case-insensitive in NavReportRunner ([7ec5e79](https://github.com/hansjlachmann/openerp/commit/7ec5e792b752ab5d308890b42c24203519642c19))
+
 ## [0.1.53](https://github.com/hansjlachmann/openerp/compare/v0.1.52...v0.1.53) (2026-03-12)
 
 
