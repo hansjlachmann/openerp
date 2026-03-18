@@ -180,6 +180,7 @@ tables:
       next_start: "Neste start"
       minutes_between_run: "Minutter mellom kjøring"
       recurring_job: "Gjentakende jobb"
+      number_of_entries: "Antall poster"
 
     # Option field values
     options:
