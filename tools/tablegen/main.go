@@ -1335,7 +1335,7 @@ func (t *{{ $.BaseStructName }}) calcFlowField_{{ .Name }}() {
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
 
 func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
-	tableName := fmt.Sprintf("%s$%s", t.company, {{ .SourceTable }}TableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1375,7 +1375,7 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 {{- if and .FlowField (eq .CalcFormula "Count") }}
 
 func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, {{ .SourceTable }}TableName)
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string

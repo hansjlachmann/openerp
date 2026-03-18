@@ -44,6 +44,9 @@ export interface Field {
 	style?: 'Strong' | 'Attention' | 'Favorable' | 'Unfavorable';
 	table_relation?: string;
 	width?: number;
+	drilldown?: number;
+	drilldown_filter_field?: string;
+	drilldown_filter_value?: string;
 	primary_key?: boolean;
 	required?: boolean;
 }

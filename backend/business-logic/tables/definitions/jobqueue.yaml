@@ -44,3 +44,15 @@ table:
     - name: recurring_job
       type: bool
       db_name: recurring_job
+
+    # FlowField - count of related Job Queue Entries
+    - name: number_of_entries
+      type: int
+      flow_field: true
+      calc_formula: Count
+      source_table: Job_Queue_Entry
+      source_field: entry_no
+      flow_filters:
+        - field: job_queue_no
+          type: field
+          value: no

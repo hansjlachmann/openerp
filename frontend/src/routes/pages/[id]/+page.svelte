@@ -6,7 +6,7 @@
 </script>
 
 <div class="page-container">
-	<PageRenderer pageid={data.pageId} recordid={data.recordId} />
+	<PageRenderer pageid={data.pageId} recordid={data.recordId} initialFilter={data.filter} />
 </div>
 
 <style>
