@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.57](https://github.com/hansjlachmann/openerp/compare/v0.1.56...v0.1.57) (2026-03-18)
+
+
+### Features
+
+* replace global session with per-request JWT cookie sessions ([8a245c9](https://github.com/hansjlachmann/openerp/commit/8a245c984ea073913ec36be1ef9e298fd0011069))
+
 ## [0.1.56](https://github.com/hansjlachmann/openerp/compare/v0.1.55...v0.1.56) (2026-03-12)
 
 
