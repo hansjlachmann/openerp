@@ -2213,6 +2213,18 @@
 											>
 												{formatCellValue(record[field.source], field.source)}
 											</button>
+										{:else if field.drilldown && record[field.source]}
+											<button
+												type="button"
+												class="primary-key-link"
+												onclick={(e) => {
+													e.stopPropagation();
+													const filterValue = record[field.drilldown_filter_value || ''] ?? '';
+													window.location.href = `/pages/${field.drilldown}?filter=${field.drilldown_filter_field}=${filterValue}`;
+												}}
+											>
+												{formatCellValue(record[field.source], field.source)}
+											</button>
 										{:else if options[field.source]}
 											<!-- Option field - always show dropdown -->
 											<select

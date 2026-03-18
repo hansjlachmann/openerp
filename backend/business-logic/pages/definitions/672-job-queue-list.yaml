@@ -36,6 +36,12 @@ page:
         - source: recurring_job
           width: 100
 
+        - source: number_of_entries
+          width: 120
+          drilldown: 673
+          drilldown_filter_field: job_queue_no
+          drilldown_filter_value: no
+
   actions:
     - name: Run
       caption: Run

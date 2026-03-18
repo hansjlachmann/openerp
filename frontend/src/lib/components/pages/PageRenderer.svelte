@@ -21,9 +21,10 @@
 	interface Props {
 		pageid: number;
 		recordid?: string;
+		initialFilter?: string;
 	}
 
-	let { pageid, recordid }: Props = $props();
+	let { pageid, recordid, initialFilter }: Props = $props();
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -45,8 +46,15 @@
 	// Track the current record ID (may differ from URL recordid after insert)
 	let currentRecordId = $state<string | undefined>(undefined);
 
-	// Filters for list pages
-	let currentFilters: import('$lib/types/api').TableFilter[] = $state([]);
+	// Filters for list pages - parse initialFilter if provided (format: "field=expression")
+	let currentFilters: import('$lib/types/api').TableFilter[] = $state(parseInitialFilter(initialFilter));
+
+	function parseInitialFilter(filter: string | undefined): import('$lib/types/api').TableFilter[] {
+		if (!filter) return [];
+		const eqIndex = filter.indexOf('=');
+		if (eqIndex <= 0) return [];
+		return [{ field: filter.substring(0, eqIndex), expression: filter.substring(eqIndex + 1) }];
+	}
 
 	// Navigation data for card pages
 	let recordIds: string[] = $state([]);

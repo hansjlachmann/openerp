@@ -254,6 +254,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	var everSeenProgress bool   // Whether we've ever seen progress > 0
 	var lastSeenProgress int    // Last non-zero progress value seen
 	zeroProgressPolls := 0      // Consecutive polls with 0% after POST failure
+	var checkJobError string    // Error message from checkjob response
 
 	for {
 		// Check if we've exceeded max wait time
@@ -262,6 +263,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			errMsg := "Report generation timed out after 15 minutes"
 			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
 				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
+			}
+			if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+				log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 			}
 			return fcodeunits.Error(errMsg), nil
 		}
@@ -320,6 +324,19 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		log.Printf("[NavReportRunner] Progress response: %s", string(checkBody))
 
+		// Parse checkjob for error fields (e.g. {"error":"...","details":"..."})
+		var checkErr struct {
+			Error   string `json:"error"`
+			Details string `json:"details"`
+		}
+		checkJobError = ""
+		if json.Unmarshal(checkBody, &checkErr) == nil && checkErr.Error != "" {
+			checkJobError = checkErr.Details
+			if checkJobError == "" {
+				checkJobError = checkErr.Error
+			}
+		}
+
 		// Parse progress
 		var checkResult CheckJobResponse
 		if err := json.Unmarshal(checkBody, &checkResult); err != nil {
@@ -342,6 +359,18 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		// If POST already failed and progress is 0, the job either never started
 		// or has disappeared (e.g. NAV error mid-execution). Stop after a few polls.
 		if postFailed && progress == 0 {
+			// If checkjob also returned an error, the job is dead — fail immediately
+			if checkJobError != "" {
+				log.Printf("[NavReportRunner] POST failed and checkjob error: %s", checkJobError)
+				errMsg := "NAV service error: " + postErrorMsg
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
+					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
+				}
+				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
+				}
+				return fcodeunits.Error(errMsg), nil
+			}
 			zeroProgressPolls++
 			if zeroProgressPolls >= 5 {
 				if everSeenProgress {
@@ -352,6 +381,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				errMsg := "NAV service error: " + postErrorMsg
 				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
+				}
+				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 				}
 				return fcodeunits.Error(errMsg), nil
 			}
@@ -427,6 +459,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
+				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
+				}
 				return fcodeunits.Error(errMsg), nil
 			}
 
@@ -443,6 +478,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
+				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
+				}
 				return fcodeunits.Error(errMsg), nil
 			}
 			log.Printf("[NavReportRunner] Fetching PDF: POST %s with body: %s", pdfURL, string(pdfReqBody))
@@ -453,6 +491,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				errMsg := "Failed to fetch PDF: " + err.Error()
 				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
+				}
+				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
 			}
@@ -466,6 +507,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
+				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
+				}
 				return fcodeunits.Error(errMsg), nil
 			}
 
@@ -477,6 +521,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
+				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
+				}
 				return fcodeunits.Error(errMsg), nil
 			}
 
@@ -486,6 +533,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				errMsg := "Failed to parse PDF response: " + err.Error()
 				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
+				}
+				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
 			}

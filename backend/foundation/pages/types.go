@@ -49,9 +49,12 @@ type Field struct {
 	Importance    string `yaml:"importance,omitempty" json:"importance,omitempty"`       // Promoted, Standard, Additional
 	Style         string `yaml:"style,omitempty" json:"style,omitempty"`                 // Strong, Attention, Favorable, Unfavorable
 	TableRelation string `yaml:"table_relation,omitempty" json:"table_relation,omitempty"` // Lookup table
-	Width         int    `yaml:"width,omitempty" json:"width,omitempty"`                 // Column width (for List pages)
-	PrimaryKey    bool   `yaml:"-" json:"primary_key,omitempty"`                         // Is this the primary key field (populated at runtime)
-	Required      bool   `yaml:"-" json:"required,omitempty"`                            // Is this field required (populated at runtime)
+	Width                 int    `yaml:"width,omitempty" json:"width,omitempty"`                                           // Column width (for List pages)
+	Drilldown             int    `yaml:"drilldown,omitempty" json:"drilldown,omitempty"`                                   // Page ID to navigate to on click
+	DrilldownFilterField  string `yaml:"drilldown_filter_field,omitempty" json:"drilldown_filter_field,omitempty"`         // Field on target table to filter
+	DrilldownFilterValue  string `yaml:"drilldown_filter_value,omitempty" json:"drilldown_filter_value,omitempty"`         // Field on current record for filter value
+	PrimaryKey            bool   `yaml:"-" json:"primary_key,omitempty"`                                                   // Is this the primary key field (populated at runtime)
+	Required              bool   `yaml:"-" json:"required,omitempty"`                                                      // Is this field required (populated at runtime)
 }
 
 // Action represents a page action/button

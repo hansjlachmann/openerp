@@ -48,6 +48,8 @@ type JobQueueBase struct {
 	Next_start types.DateTime `db:"next_start"`
 	Minutes_between_run int `db:"minutes_between_run"`
 	Recurring_job bool `db:"recurring_job"`
+	// FlowField: Count(Job_Queue_Entry.entry_no)
+	Number_of_entries int
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -140,7 +142,8 @@ func GetJobQueueTableSchema() string {
 		parameter TEXT(250),
 		next_start TEXT,
 		minutes_between_run INTEGER,
-		recurring_job INTEGER
+		recurring_job INTEGER,
+		number_of_entries INTEGER
 	`
 }
 
@@ -155,7 +158,8 @@ func GetJobQueuePostgresTableSchema() string {
 		parameter VARCHAR(250),
 		next_start TIMESTAMP,
 		minutes_between_run INTEGER,
-		recurring_job BOOLEAN
+		recurring_job BOOLEAN,
+		number_of_entries INTEGER
 	`
 }
 
@@ -564,10 +568,65 @@ func (t *JobQueueBase) Delete(runTrigger bool) bool {
 	return true
 }
 
-// CalcFields is a no-op for tables without FlowFields
-// Implemented for tables.Table interface compliance
+// ========================================
+// FlowField Calculations (BC/NAV style)
+// ========================================
+
+// CalcFields calculates FlowField values (BC/NAV style)
+// Usage:
+//   customer.CalcFields("balance", "balance_lcy") - Calculate specific fields
+//   customer.CalcFields() - Calculate all FlowFields
 func (t *JobQueueBase) CalcFields(fieldNames ...string) {
-	// This table has no FlowFields to calculate
+	// If no field names specified, calculate all FlowFields
+	if len(fieldNames) == 0 {
+		t.calcFlowField_number_of_entries()
+		return
+	}
+
+	// Calculate only specified fields
+	for _, fieldName := range fieldNames {
+		switch fieldName {
+		case "number_of_entries":
+			t.calcFlowField_number_of_entries()
+		}
+	}
+}
+
+// calcFlowField_number_of_entries calculates the number_of_entries FlowField
+// CalcFormula: Count(Job_Queue_Entry.entry_no)
+func (t *JobQueueBase) calcFlowField_number_of_entries() {
+	t.Number_of_entries = t.calcCountJob_Queue_Entry()
+}
+
+// Helper methods for FlowField calculations
+
+func (t *JobQueueBase) calcCountJob_Queue_Entry() int {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "job_queue_no = ?")
+	args = append(args, t.No)
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var count int
+	err := t.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate count for number_of_entries: %v\n", err)
+		return 0
+	}
+
+	return count
 }
 
 // ========================================
@@ -1102,6 +1161,7 @@ func (t *JobQueueBase) copyFromBuffered(record *JobQueueBase) {
 	t.Next_start = record.Next_start
 	t.Minutes_between_run = record.Minutes_between_run
 	t.Recurring_job = record.Recurring_job
+	t.Number_of_entries = record.Number_of_entries
 	t.StoreOldValues()
 }
 
@@ -1460,6 +1520,8 @@ func (t *JobQueueBase) ToMap() map[string]interface{} {
 		"next_start": t.Next_start.String(),
 		"minutes_between_run": t.Minutes_between_run,
 		"recurring_job": t.Recurring_job,
+		// FlowField: number_of_entries
+		"number_of_entries": t.Number_of_entries,
 	}
 }
 
@@ -1630,12 +1692,22 @@ func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			Name:       "number_of_entries",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  true,
+		},
 	}
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
 func (t *JobQueueBase) GetFlowFields() []string {
 	return []string{
+		"number_of_entries",
 	}
 }
 

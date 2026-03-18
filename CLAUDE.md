@@ -101,6 +101,7 @@ translations/            i18n JSON files
 - **Case-sensitive DB comparisons**: PostgreSQL string comparison is case-sensitive. Always use the canonical (uppercase) user ID from the database (e.g., `user.User_id.String()`) for permission and lookup queries — never use raw user input directly.
 - **Composite primary keys**: Tables can have composite primary keys (e.g., `User_Member` has `user_id + role_id + company`). `TableMetadata` stores `map[string][]string` for all PK fields. The API uses comma-separated PK values in URLs (e.g., `/delete/HANS2,READER,TEST-COMPANY`), parsed by `parseRecordKey()` in the backend.
 - **Field type metadata**: The backend sends `field_types` (a `map[field_name]type_string`) in API captions for both page definitions and table record responses. The page endpoint (`/api/pages/:id`) reads types from YAML table definitions via `TableMetadata.GetFieldType()` (returns lowercase YAML types like `"bool"`, `"code"`, `"text"`). The table endpoints (`/api/tables/...`) use the Go `FieldType` constants (returns `"Boolean"`, `"Code"`, `"Text"`). The frontend uses the page endpoint's `field_types` for rendering decisions (e.g., boolean checkbox detection).
+- **FlowFields (BC/NAV style)**: Tables can define computed aggregate fields from related tables. Defined in table YAML with `flow_field: true`, `calc_formula` (Sum, Count), `source_table`, `source_field`, and `flow_filters`. The tablegen tool generates `CalcFields()` methods. The API automatically calls `CalcFields()` for list and get endpoints when flow fields are in the requested fields. Flow fields are read-only and not persisted to the database. Example: `Customer.balance_lcy` sums `CustomerLedgerEntry.remaining_amt_lcy`, `Job_Queue.number_of_entries` counts related `Job_Queue_Entry` records.
 
 ## Page Definition Guide
 
@@ -124,6 +125,11 @@ page:
         - source: no           # Field name from source_table
           width: 120           # Column width in pixels
           caption: Phone No.   # (optional) Override caption (otherwise uses translation)
+        - source: number_of_entries
+          width: 120
+          drilldown: 673                        # (optional) Page ID to navigate to on click
+          drilldown_filter_field: job_queue_no   # Field on target table to filter by
+          drilldown_filter_value: no             # Field on current record for filter value
 
   actions:                     # Toolbar buttons
     - name: Run                # Action name (used by handleAction)
@@ -183,6 +189,8 @@ page:
 - **Action captions**: Come from `translations/{lang}/common.yaml` under `common.actions.{action_name}`. The YAML `caption` is the fallback.
 - **Frontend routing**: `PageRenderer.svelte` checks `page.type` and renders `<ListPage>` or `<CardPage>` — never create page-type-specific routes or components.
 - **Modal card**: When `modal_card: true` on a list page, the Edit/New actions open a `<ModalCardPage>` overlay instead of navigating to a separate card page. The modal auto-saves on field changes and refreshes the list on close.
+- **Drilldown fields**: List page fields can have `drilldown` (target page ID), `drilldown_filter_field` (field on target table), and `drilldown_filter_value` (field on current record). Clicking the cell navigates via `window.location.href` to `/pages/{drilldown}?filter={filter_field}={value}`. Use `window.location.href` (not `goto()`) because `PageRenderer` uses `onMount` — client-side navigation won't remount the component.
+- **URL filter parameter**: List pages accept `?filter=field=expression` query parameter to pre-filter on load. Parsed in `PageRenderer.svelte` into `currentFilters` and passed to the API. Used by drilldown links to show related records.
 
 ## Frontend Conventions
 
