@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.58](https://github.com/hansjlachmann/openerp/compare/v0.1.57...v0.1.58) (2026-03-18)
+
+
+### Bug Fixes
+
+* disable nginx proxy buffering for SSE streaming ([0e670b8](https://github.com/hansjlachmann/openerp/commit/0e670b8a20b8ff0e7bd9ce0e1903ba18cb56ce09))
+
 ## [0.1.57](https://github.com/hansjlachmann/openerp/compare/v0.1.56...v0.1.57) (2026-03-18)
 
 
