@@ -444,6 +444,8 @@
 				if (!progressError) {
 					toast.success(t(MSG.JOB_COMPLETED));
 				}
+				// Refresh list data to reflect changes (e.g. new entries, status updates)
+				onaction?.('Refresh');
 			}
 		} catch (err) {
 			const errMsg = err instanceof Error ? err.message : 'Unknown error';

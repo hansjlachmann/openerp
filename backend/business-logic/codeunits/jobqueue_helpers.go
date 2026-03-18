@@ -19,6 +19,9 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 	if entry.FindLast() {
 		nextEntryNo = entry.Entry_no + 1
 	}
+
+	// Re-initialize to clear fields loaded by FindLast (e.g. previous error_message)
+	entry.InitWithDBType(db, company, dbType)
 	entry.Entry_no = nextEntryNo
 	entry.Status = status
 	entry.User_id = types.NewCode(fcodeunits.CurrentUserID())
