@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.60](https://github.com/hansjlachmann/openerp/compare/v0.1.59...v0.1.60) (2026-03-18)
+
+
+### Bug Fixes
+
+* Job Queue entry error leak, missing translation, and post-job refresh ([b493f81](https://github.com/hansjlachmann/openerp/commit/b493f813fab0b42b136ae68310387318b9c73607))
+
 ## [0.1.59](https://github.com/hansjlachmann/openerp/compare/v0.1.58...v0.1.59) (2026-03-18)
 
 
