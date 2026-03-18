@@ -13,7 +13,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
@@ -186,7 +185,7 @@ func (h *TablesHandler) getLookupValuesAsInterface(table ftables.Table, company 
 // GET /api/tables/:table/options
 func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 	tableName := c.Params("table")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -225,7 +224,7 @@ func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 // GET /api/tables/:table/ids
 func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	tableName := c.Params("table")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -265,7 +264,7 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 // GET /api/tables/:table/list
 func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	tableName := c.Params("table")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -370,7 +369,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	tableName := c.Params("table")
 	id := c.Params("id")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -426,7 +425,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 // POST /api/tables/:table/insert
 func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	tableName := c.Params("table")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -518,7 +517,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	tableName := c.Params("table")
 	id := c.Params("id")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -603,7 +602,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	tableName := c.Params("table")
 	id := c.Params("id")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -655,7 +654,7 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 // POST /api/tables/:table/validate
 func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	tableName := c.Params("table")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))

@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
 // SessionHandler handles session-related API requests
@@ -19,8 +18,9 @@ func NewSessionHandler() *SessionHandler {
 // GetSession returns the current session information
 // GET /api/session
 func (h *SessionHandler) GetSession(c *fiber.Ctx) error {
-	// Get current session (in real app, this would come from authentication)
-	sess := session.GetCurrent()
+	c.Set("Cache-Control", "no-store")
+
+	sess := getSession(c)
 	if sess == nil {
 		// No active session - return empty session
 		response := apitypes.NewSuccessResponse(&apitypes.SessionResponse{

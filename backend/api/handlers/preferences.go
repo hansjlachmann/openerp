@@ -12,7 +12,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
@@ -37,7 +36,7 @@ func NewPreferencesHandlerWithDBType(db *sql.DB, dbType database.DBType) *Prefer
 func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 	pageID := c.Params("page_id")
 	preferenceType := c.Params("type")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -83,7 +82,7 @@ func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	pageID := c.Params("page_id")
 	preferenceType := c.Params("type")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -161,7 +160,7 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 	pageID := c.Params("page_id")
 	preferenceType := c.Params("type")
 	preferenceName := c.Params("name")
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))

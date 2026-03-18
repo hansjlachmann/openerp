@@ -144,6 +144,15 @@ func (db *Database) CloseDatabase() error {
 	return nil
 }
 
+// WrapConnection wraps an existing *sql.DB and DBType into a Database instance.
+// Used by the auth middleware to create session-scoped Database wrappers.
+func WrapConnection(conn *sql.DB, dbType DBType) *Database {
+	return &Database{
+		conn:   conn,
+		dbType: dbType,
+	}
+}
+
 // GetConnection returns the underlying database connection
 func (db *Database) GetConnection() *sql.DB {
 	return db.conn

@@ -9,11 +9,19 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
+// getSessionFromLocals retrieves the session from c.Locals, falling back to global session
+func getSessionFromLocals(c *fiber.Ctx) *session.Session {
+	if sess, ok := c.Locals("session").(*session.Session); ok {
+		return sess
+	}
+	return session.GetCurrent()
+}
+
 // PermissionCheck returns middleware that enforces table-level permissions.
 // Maps HTTP method + path to a permission operation and checks against the session.
 func PermissionCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		sess := session.GetCurrent()
+		sess := getSessionFromLocals(c)
 		if sess == nil {
 			// No session — let downstream handlers deal with it
 			return c.Next()

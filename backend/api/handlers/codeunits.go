@@ -7,9 +7,9 @@ import (
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
 // CodeunitsHandler handles codeunit-related API requests
@@ -31,7 +31,7 @@ func NewCodeunitsHandlerWithDBType(db *sql.DB, dbType database.DBType) *Codeunit
 // RunCodeunit executes a codeunit by ID with the provided record
 // POST /api/codeunits/run
 func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
@@ -39,6 +39,10 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
+
+	// Set goroutine context for sync codeunit execution
+	fcodeunits.SetCurrentContext(sess.GetUserID(), sess.GetUserName(), company, language)
+	defer fcodeunits.ClearCurrentContext()
 
 	// Parse request body
 	var req struct {

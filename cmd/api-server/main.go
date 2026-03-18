@@ -15,7 +15,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/objects"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -154,12 +153,7 @@ func main() {
 
 	fmt.Printf("✓ Company entered: %s\n", companyName)
 
-	// Create a default session for API access
-	sess := session.NewSession(db, companyName, nil)
-	sess.SetUser("api-user", "API User", "en-US", "admin")
-	session.SetCurrent(sess)
-
-	fmt.Printf("✓ Session created for API access\n\n")
+	fmt.Printf("✓ Per-request JWT sessions enabled\n\n")
 
 	// Create and setup API server
 	var server *api.Server
