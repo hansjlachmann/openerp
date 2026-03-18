@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.59](https://github.com/hansjlachmann/openerp/compare/v0.1.58...v0.1.59) (2026-03-18)
+
+
+### Features
+
+* add Job Queue error handling, flow field, and drilldown navigation ([2ff7ad8](https://github.com/hansjlachmann/openerp/commit/2ff7ad8e07abf8cf176dd046f3449374079e4824))
+
 ## [0.1.58](https://github.com/hansjlachmann/openerp/compare/v0.1.57...v0.1.58) (2026-03-18)
 
 
