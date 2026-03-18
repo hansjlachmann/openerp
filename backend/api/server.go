@@ -25,10 +25,12 @@ func init() {
 
 // Server represents the API server
 type Server struct {
-	app         *fiber.App
-	db          *sql.DB
-	dbType      database.DBType
-	companyInit handlers.CompanyInitializer
+	app          *fiber.App
+	db           *sql.DB
+	dbType       database.DBType
+	companyInit  handlers.CompanyInitializer
+	jwtConfig    middleware.JWTConfig
+	sessionCache *middleware.SessionCache
 }
 
 // NewServer creates a new API server (defaults to SQLite)
@@ -49,11 +51,16 @@ func NewServerFull(db *sql.DB, dbType database.DBType, companyInit handlers.Comp
 		ErrorHandler: customErrorHandler,
 	})
 
+	jwtConfig := middleware.DefaultJWTConfig()
+	sessionCache := middleware.NewSessionCache()
+
 	return &Server{
-		app:         app,
-		db:          db,
-		dbType:      dbType,
-		companyInit: companyInit,
+		app:          app,
+		db:           db,
+		dbType:       dbType,
+		companyInit:  companyInit,
+		jwtConfig:    jwtConfig,
+		sessionCache: sessionCache,
 	}
 }
 
@@ -63,6 +70,9 @@ func (s *Server) Setup() {
 	s.app.Use(recover.New()) // Panic recovery
 	s.app.Use(middleware.CORS())
 	s.app.Use(middleware.Logger())
+	// Create a permission loader for the auth middleware (used on cache miss / server restart)
+	permLoader := handlers.NewPermissionLoader(s.db, s.dbType)
+	s.app.Use(middleware.AuthMiddleware(s.jwtConfig, s.db, s.dbType, s.sessionCache, permLoader))
 
 	// API routes
 	api := s.app.Group("/api")
@@ -72,7 +82,7 @@ func (s *Server) Setup() {
 	tablesHandler := handlers.NewTablesHandlerFull(s.db, s.dbType, s.companyInit)
 	pagesHandler := handlers.NewPagesHandler()
 	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
-	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit)
+	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit, s.jwtConfig, s.sessionCache)
 	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
 
 	// Translation routes

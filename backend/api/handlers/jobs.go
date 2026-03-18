@@ -11,11 +11,9 @@ import (
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
-
-	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 )
 
 // JobsHandler handles job-related API requests (codeunits with progress)
@@ -37,7 +35,7 @@ func NewJobsHandlerWithDBType(db *sql.DB, dbType database.DBType) *JobsHandler {
 // StartJob starts a codeunit as a background job with progress tracking
 // POST /api/jobs/start
 func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
-	sess := session.GetCurrent()
+	sess := getSession(c)
 
 	if sess == nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))

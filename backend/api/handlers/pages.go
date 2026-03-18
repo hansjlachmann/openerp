@@ -11,7 +11,6 @@ import (
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
 // PagesHandler handles page-related API endpoints
@@ -40,7 +39,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	}
 
 	// Get current session for captions
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	if sess == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
@@ -154,7 +153,7 @@ func normalizeLanguageCode(code string) string {
 // GET /api/menu
 func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
 	// Get current session to determine user's menu
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	menuName := ""
 	if sess != nil {
 		menuName = sess.GetMenu()

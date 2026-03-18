@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/hansjlachmann/openerp/backend/api/middleware"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -29,9 +30,11 @@ func getLanguageOrDefault(sess *session.Session) string {
 
 // AuthHandler handles authentication API requests
 type AuthHandler struct {
-	db          *sql.DB
-	dbType      database.DBType
-	companyInit CompanyInitializer
+	db           *sql.DB
+	dbType       database.DBType
+	companyInit  CompanyInitializer
+	jwtConfig    middleware.JWTConfig
+	sessionCache *middleware.SessionCache
 }
 
 // NewAuthHandler creates a new auth handler (defaults to SQLite)
@@ -45,8 +48,8 @@ func NewAuthHandlerWithDBType(db *sql.DB, dbType database.DBType) *AuthHandler {
 }
 
 // NewAuthHandlerFull creates an auth handler with company initializer support
-func NewAuthHandlerFull(db *sql.DB, dbType database.DBType, companyInit CompanyInitializer) *AuthHandler {
-	return &AuthHandler{db: db, dbType: dbType, companyInit: companyInit}
+func NewAuthHandlerFull(db *sql.DB, dbType database.DBType, companyInit CompanyInitializer, jwtConfig middleware.JWTConfig, sessionCache *middleware.SessionCache) *AuthHandler {
+	return &AuthHandler{db: db, dbType: dbType, companyInit: companyInit, jwtConfig: jwtConfig, sessionCache: sessionCache}
 }
 
 // Login authenticates a user and creates a session
@@ -82,8 +85,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyVerifyFailed().Message("en-US")))
 	}
 
-	sess := session.GetCurrent()
-
 	var user tables.User
 	user.InitWithDBType(h.db, company, h.dbType)
 
@@ -111,24 +112,29 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	user.UpdateLastLogin()
 	_ = user.Modify(false)
 
-	// Create/update session
-	if sess == nil {
-		// For API, we don't have a pre-existing session, so we'll just return user info
-		// The frontend will store this and send it with future requests
-		// In a production system, you'd want to use JWT tokens or session cookies
-	} else {
-		sess.SetUser(
-			user.User_id.String(),
-			user.User_name.String(),
-			user.Language.String(),
-			user.Menu.String(),
-		)
-		sess.SetCompany(company)
+	// Load permissions for this user/company
+	hasRoles, isSuper, perms := h.loadUserPermissions(user.User_id.String(), company)
 
-		// Load permissions for this user/company
-		hasRoles, isSuper, perms := h.loadUserPermissions(user.User_id.String(), company)
-		sess.SetPermissions(hasRoles, isSuper, perms)
+	// Create per-request session and cache it
+	userMenu := user.Menu.String()
+	if userMenu == "" {
+		userMenu = "admin"
 	}
+	dbWrapper := database.WrapConnection(h.db, h.dbType)
+	sess := session.NewSession(dbWrapper, company, nil)
+	sess.SetUser(user.User_id.String(), user.User_name.String(), user.Language.String(), userMenu)
+	sess.SetPermissions(hasRoles, isSuper, perms)
+
+	// Generate JWT and set cookie
+	token, tokenErr := middleware.GenerateToken(h.jwtConfig, user.User_id.String(), user.User_name.String(), company, user.Language.String(), userMenu)
+	if tokenErr != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse("Failed to create session token"))
+	}
+	middleware.SetAuthCookie(c, h.jwtConfig, token)
+
+	// Cache the session
+	cacheKey := user.User_id.String() + ":" + company
+	h.sessionCache.Set(cacheKey, sess, h.jwtConfig.TokenExpiry)
 
 	ts := i18n.GetInstance()
 	userLang := user.Language.String()
@@ -144,11 +150,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		if !lang.Translation_key.IsEmpty() {
 			translationKey = lang.Translation_key.String()
 		}
-	}
-
-	userMenu := user.Menu.String()
-	if userMenu == "" {
-		userMenu = "admin" // Default menu
 	}
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -167,11 +168,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // Logout ends the current user session
 // POST /api/auth/logout
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	language := getLanguageOrDefault(sess)
-	if sess != nil {
-		sess.SetUser("", "", "", "")
+
+	// Remove from cache
+	if sess != nil && sess.GetUserID() != "" {
+		h.sessionCache.RemoveByUser(sess.GetUserID())
 	}
+
+	// Clear cookie
+	middleware.ClearAuthCookie(c, h.jwtConfig)
 
 	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
@@ -183,7 +189,9 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 // GetCurrentUser returns the currently logged in user
 // GET /api/auth/user
 func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
-	sess := session.GetCurrent()
+	c.Set("Cache-Control", "no-store")
+
+	sess := getSession(c)
 	if sess == nil {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
@@ -293,7 +301,7 @@ func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 	}
 
 	// If user is logged in, filter by allowed companies
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	if sess != nil && sess.GetUserID() != "" {
 		allowedCompanies, hasRoles := h.getUserAllowedCompanies(sess.GetUserID())
 		if hasRoles && allowedCompanies != nil {
@@ -348,18 +356,19 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.UnsupportedLanguage(requestBody.Language).Message("en-US")))
 	}
 
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	if sess == nil {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
-	// Update session language (keep existing menu)
-	sess.SetUser(sess.GetUserID(), sess.GetUserName(), requestBody.Language, sess.GetMenu())
+	// Capture current values before creating new session
+	userID := sess.GetUserID()
+	userName := sess.GetUserName()
+	company := sess.GetCompany()
+	menu := sess.GetMenu()
 
 	// Optionally persist to user record
 	if requestBody.Persist {
-		userID := sess.GetUserID()
-		company := sess.GetCompany()
 		if userID != "" && company != "" {
 			var user tables.User
 			user.InitWithDBType(h.db, company, h.dbType)
@@ -368,6 +377,20 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 				user.Modify(false) // Don't run triggers
 			}
 		}
+	}
+
+	// Create new session with updated language (avoid mutating cached session)
+	dbWrapper := database.WrapConnection(h.db, h.dbType)
+	newSess := session.NewSession(dbWrapper, company, nil)
+	newSess.SetUser(userID, userName, requestBody.Language, menu)
+	newSess.SetPermissions(sess.HasRoles, sess.IsSuper, sess.Permissions)
+
+	// Re-issue JWT with updated language
+	token, tokenErr := middleware.GenerateToken(h.jwtConfig, userID, userName, company, requestBody.Language, menu)
+	if tokenErr == nil {
+		middleware.SetAuthCookie(c, h.jwtConfig, token)
+		cacheKey := userID + ":" + company
+		h.sessionCache.Set(cacheKey, newSess, h.jwtConfig.TokenExpiry)
 	}
 
 	ts := i18n.GetInstance()
@@ -403,7 +426,7 @@ func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyVerifyFailed().Message("en-US")))
 	}
 
-	sess := session.GetCurrent()
+	sess := getSession(c)
 	if sess == nil {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
@@ -418,17 +441,36 @@ func (h *AuthHandler) SetCompany(c *fiber.Ctx) error {
 		}
 	}
 
-	// Update session company
-	sess.SetCompany(requestBody.Company)
+	// Remove old cache entry
+	oldCacheKey := userID + ":" + sess.GetCompany()
+	h.sessionCache.Remove(oldCacheKey)
 
-	// Reload permissions for the new company context
+	// Capture current values
+	userName := sess.GetUserName()
+	language := sess.GetLanguage()
+	menu := sess.GetMenu()
+
+	// Create new session with updated company (avoid mutating cached session)
+	dbWrapper := database.WrapConnection(h.db, h.dbType)
+	newSess := session.NewSession(dbWrapper, requestBody.Company, nil)
+	newSess.SetUser(userID, userName, language, menu)
+
+	// Load permissions for the new company context
 	if userID != "" {
 		hasRoles, isSuper, perms := h.loadUserPermissions(userID, requestBody.Company)
-		sess.SetPermissions(hasRoles, isSuper, perms)
+		newSess.SetPermissions(hasRoles, isSuper, perms)
+	}
+
+	// Re-issue JWT with updated company
+	token, tokenErr := middleware.GenerateToken(h.jwtConfig, userID, userName, requestBody.Company, language, menu)
+	if tokenErr == nil {
+		middleware.SetAuthCookie(c, h.jwtConfig, token)
+		newCacheKey := userID + ":" + requestBody.Company
+		h.sessionCache.Set(newCacheKey, newSess, h.jwtConfig.TokenExpiry)
 	}
 
 	ts := i18n.GetInstance()
-	language := getLanguageOrDefault(sess)
+	language = getLanguageOrDefault(newSess)
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"company": requestBody.Company,
 		"message": ts.Message("MSG_COMPANY_CHANGED", language),

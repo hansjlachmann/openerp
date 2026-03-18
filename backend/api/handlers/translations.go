@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
-	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
 
 // TranslationsHandler handles translation-related API requests
@@ -26,7 +25,7 @@ func (h *TranslationsHandler) GetTranslations(c *fiber.Ctx) error {
 		language = lang
 	} else {
 		// Fall back to session language
-		sess := session.GetCurrent()
+		sess := getSession(c)
 		if sess != nil {
 			lang := normalizeLanguageCode(sess.GetLanguage())
 			if lang != "" {
