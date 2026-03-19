@@ -117,12 +117,11 @@
 				}
 				break;
 			case 'Enter':
-				e.preventDefault();
 				if (isOpen && selectedIndex >= 0 && selectedIndex < entries.length) {
+					e.preventDefault();
 					handleSelect(entries[selectedIndex][0]);
-				} else if (!isOpen) {
-					openDropdown();
 				}
+				// When closed, let Enter bubble up for cell navigation (move to next row)
 				break;
 			case 'Tab':
 				isOpen = false;
