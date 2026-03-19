@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.61](https://github.com/hansjlachmann/openerp/compare/v0.1.60...v0.1.61) (2026-03-19)
+
+
+### Features
+
+* add Ctrl+C/V copy-paste support in list page cell-selected mode ([b2b851b](https://github.com/hansjlachmann/openerp/commit/b2b851b97634be2483310880a6a2e92862c42ddd))
+
 ## [0.1.60](https://github.com/hansjlachmann/openerp/compare/v0.1.59...v0.1.60) (2026-03-18)
 
 
