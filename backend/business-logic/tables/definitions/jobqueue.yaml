@@ -31,7 +31,7 @@ table:
     - name: parameter
       type: types.Text
       db_name: parameter
-      length: 250
+      length: 2000
 
     - name: next_start
       type: types.DateTime
