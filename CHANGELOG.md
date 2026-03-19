@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.62](https://github.com/hansjlachmann/openerp/compare/v0.1.61...v0.1.62) (2026-03-19)
+
+
+### Features
+
+* dynamic dialog fields from Job Queue JSON parameter ([ae87de8](https://github.com/hansjlachmann/openerp/commit/ae87de8c50111bbeb637763265ca3462403e6db9))
+* replace native select with OptionDropdown for Option fields ([e3306f2](https://github.com/hansjlachmann/openerp/commit/e3306f28b69c280f6b63afe35ee4ecf60d76d77b))
+
+
+### Bug Fixes
+
+* OptionDropdown Enter key should move to next row when closed ([bdb5554](https://github.com/hansjlachmann/openerp/commit/bdb55549f1b82964ab980c0c4d41c2498d11763c))
+* OptionDropdown not opening due to missing tabindex default ([95df0f9](https://github.com/hansjlachmann/openerp/commit/95df0f953181c309538d1a712bd131cfcd0136c9))
+
+
+### Documentation
+
+* clarify OptionDropdown Enter key behavior in CLAUDE.md ([2e3ff07](https://github.com/hansjlachmann/openerp/commit/2e3ff074f511665224aa300514bf4e3596e8fa72))
+
 ## [0.1.61](https://github.com/hansjlachmann/openerp/compare/v0.1.60...v0.1.61) (2026-03-19)
 
 
