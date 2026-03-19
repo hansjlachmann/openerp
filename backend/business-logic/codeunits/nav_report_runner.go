@@ -126,32 +126,54 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	if paramStr == "" {
 		return fcodeunits.Error("Parameter is empty - specify the report ID in the Parameter field"), nil
 	}
-	params := parseParameter(paramStr)
-	reportIDStr := params["reportId"]
-	if reportIDStr == "" {
+
+	jp, err := parseJSONParameter(paramStr)
+	if err != nil {
+		return fcodeunits.Error("Invalid Parameter field: " + err.Error()), nil
+	}
+
+	reportID := jp.ReportID
+	if reportID == 0 {
 		return fcodeunits.Error("Missing report ID in Parameter field: " + paramStr), nil
 	}
-	reportID, err := strconv.Atoi(reportIDStr)
-	if err != nil {
-		return fcodeunits.Error("Invalid report ID in Parameter field: " + reportIDStr), nil
-	}
-	outputFormat := params["format"] // "PDF" or "NONE"
+	outputFormat := jp.Format
 
-	// Request report date from the user
 	lang := fcodeunits.CurrentLanguage()
 	ts := i18n.GetInstance()
-	inputResult := fcodeunits.RequestInput(ts.Message("DLG_FILTER_TITLE", lang), []fcodeunits.InputField{
-		{Name: "date", Label: ts.Message("CU_REPORT_DATE", lang), Type: "date", Required: true,
-			Default: time.Now().Format("2006-01-02")},
-	})
-	if inputResult == nil || inputResult["date"] == "" {
-		return fcodeunits.Message(ts.Message("CU_REPORT_CANCELLED", lang)), nil
-	}
 
-	// Build filter object from user input
-	filterMap := make(map[string]interface{})
-	for k, v := range inputResult {
-		filterMap[k] = v
+	// Show dialog based on fields configuration
+	var filterMap map[string]interface{}
+	if len(jp.Fields) > 0 {
+		// JSON parameter with fields defined → dynamic input dialog
+		resolvedFields := resolveFields(jp.Fields, lang)
+		inputResult := fcodeunits.RequestInput(ts.Message("DLG_FILTER_TITLE", lang), resolvedFields)
+		if inputResult == nil {
+			return fcodeunits.Message(ts.Message("CU_REPORT_CANCELLED", lang)), nil
+		}
+		filterMap = make(map[string]interface{})
+		for k, v := range inputResult {
+			filterMap[k] = v
+		}
+	} else if jp.Fields == nil {
+		// Legacy format (no JSON fields key) → hardcoded date dialog
+		inputResult := fcodeunits.RequestInput(ts.Message("DLG_FILTER_TITLE", lang), []fcodeunits.InputField{
+			{Name: "date", Label: ts.Message("CU_REPORT_DATE", lang), Type: "date", Required: true,
+				Default: time.Now().Format("2006-01-02")},
+		})
+		if inputResult == nil || inputResult["date"] == "" {
+			return fcodeunits.Message(ts.Message("CU_REPORT_CANCELLED", lang)), nil
+		}
+		filterMap = make(map[string]interface{})
+		for k, v := range inputResult {
+			filterMap[k] = v
+		}
+	} else {
+		// fields: [] (empty array) → confirm dialog before running
+		jobDesc := jobQueue.Description.String()
+		if !fcodeunits.Confirm(fmt.Sprintf("Start job %s?", jobDesc)) {
+			return fcodeunits.Message(ts.Message("CU_REPORT_CANCELLED", lang)), nil
+		}
+		filterMap = make(map[string]interface{})
 	}
 	payload := map[string]interface{}{
 		"reportId": reportID,
@@ -601,6 +623,62 @@ func parseParameter(param string) map[string]string {
 	}
 
 	return result
+}
+
+// JobParameter represents the parsed JSON parameter for a job queue entry
+type JobParameter struct {
+	ReportID int                     `json:"reportId"`
+	Format   string                  `json:"format"`
+	Fields   []fcodeunits.InputField `json:"fields"`
+}
+
+// parseJSONParameter parses the parameter string as JSON or falls back to legacy key=value format.
+// For JSON: parses into JobParameter directly.
+// For legacy: uses parseParameter() and returns JobParameter with Fields=nil (signals hardcoded date dialog).
+func parseJSONParameter(param string) (*JobParameter, error) {
+	param = strings.TrimSpace(param)
+
+	if strings.HasPrefix(param, "{") {
+		var jp JobParameter
+		if err := json.Unmarshal([]byte(param), &jp); err != nil {
+			return nil, fmt.Errorf("invalid JSON parameter: %w", err)
+		}
+		if jp.Format == "" {
+			jp.Format = "PDF"
+		}
+		return &jp, nil
+	}
+
+	// Legacy format → parse as key=value
+	legacy := parseParameter(param)
+	reportID, _ := strconv.Atoi(legacy["reportId"])
+	format := legacy["format"]
+	if format == "" {
+		format = "PDF"
+	}
+	return &JobParameter{
+		ReportID: reportID,
+		Format:   format,
+		Fields:   nil, // nil signals legacy mode (hardcoded date dialog)
+	}, nil
+}
+
+// resolveFields resolves i18n labels and magic defaults for input fields.
+func resolveFields(fields []fcodeunits.InputField, lang string) []fcodeunits.InputField {
+	ts := i18n.GetInstance()
+	resolved := make([]fcodeunits.InputField, len(fields))
+	for i, f := range fields {
+		resolved[i] = f
+		// Try i18n key first; if no translation found, use label as-is
+		if translated := ts.Message(f.Label, lang); translated != f.Label {
+			resolved[i].Label = translated
+		}
+		// Magic default: "today" → current date ISO
+		if f.Type == "date" && strings.EqualFold(f.Default, "today") {
+			resolved[i].Default = time.Now().Format("2006-01-02")
+		}
+	}
+	return resolved
 }
 
 // parseProgressResponse parses the response body into CheckJobResponse
