@@ -883,6 +883,28 @@
 			return;
 		}
 
+		// Ctrl+C: Copy cell value to clipboard
+		if (event.key === 'c' && event.ctrlKey && !event.shiftKey && !event.altKey) {
+			event.preventDefault();
+			const value = record[field.source];
+			const text = formatCellValue(value, field.source);
+			navigator.clipboard.writeText(text);
+			return;
+		}
+
+		// Ctrl+V: Paste from clipboard into cell
+		if (event.key === 'v' && event.ctrlKey && !event.shiftKey && !event.altKey) {
+			event.preventDefault();
+			if (field.editable === false) return;
+			if (isBoolean) return;
+			navigator.clipboard.readText().then((text) => {
+				record[field.source] = text;
+				editableRecords = [...editableRecords];
+				enterCellEditing(false);
+			});
+			return;
+		}
+
 		switch (event.key) {
 			case 'ArrowUp':
 				event.preventDefault();

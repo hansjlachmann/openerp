@@ -205,6 +205,8 @@ page:
 
 - **Date formatting (ABSOLUTE RULE)**: All Date and DateTime values must be displayed using locale-aware formatting via `Intl.DateTimeFormat` with the user's session language. Date fields use `formatDate()` and DateTime fields use `formatDateTime()` from `fieldHelpers.ts`. Detection uses `isDateType(fieldTypes[field])` and `isDateTimeType(fieldTypes[field])` which handle both YAML types (`"types.Date"`) and Go FieldType constants (`"Date"`). The API wire format is always ISO (`YYYY-MM-DD` / RFC3339) — locale formatting is display-only. For card page editing, use `<input type="date">` / `<input type="datetime-local">` (browser handles locale). For ProgressModal date dialogs, use text input with locale placeholder from `getDateFormatPattern()` and convert back to ISO via `parseLocaleDate()` on submit.
 
+- **Copy/paste in list pages (ABSOLUTE RULE)**: Ctrl+C in cell-selected mode copies the cell's display value to the system clipboard via `navigator.clipboard.writeText()`. Ctrl+V in cell-selected mode pastes from clipboard, sets the cell value, and enters cell-editing mode. In cell-editing mode, the browser handles Ctrl+C/V natively on the input element — never intercept these keys in cell-editing mode. Boolean and non-editable fields ignore Ctrl+V.
+
 ## Generic List Page Behaviors (ABSOLUTE RULES)
 
 All list page behaviors are driven by page metadata — never add table-specific logic in `ListPage.svelte` or `PageRenderer.svelte`.
@@ -254,6 +256,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Delete | Clear cell content (set to empty string), stay in cell-selected |
 | Backspace | Clear cell content + enter cell-editing |
 | Printable character | Clear cell content + enter cell-editing with typed character |
+| Ctrl+C | Copy cell value to system clipboard |
+| Ctrl+V | Paste from clipboard into cell + enter cell-editing |
 | F8 | Copy value from the cell directly above (NAV/BC standard) |
 | Ctrl+N / Ctrl+Insert | Insert new row |
 | Alt+ArrowDown (on lookup cell) | Enter cell-editing and open lookup dropdown |
@@ -271,6 +275,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Enter | Confirm + move selection down. On last data row: create new row |
 | F2 | Exit cell-editing → return to cell-selected (keep current value) |
 | Escape | Revert cell to value before editing began, return to cell-selected |
+| Ctrl+C | Native browser behavior (copies selected text) |
+| Ctrl+V | Native browser behavior (pastes at cursor) |
 | All other keys | Normal text input behavior |
 
 ### Key Behavioral Notes
