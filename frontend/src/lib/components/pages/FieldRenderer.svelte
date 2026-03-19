@@ -5,6 +5,7 @@
 	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isDateType, isDateTimeType, formatDate, formatDateTime } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import LookupDropdown from './LookupDropdown.svelte';
+	import OptionDropdown from './OptionDropdown.svelte';
 
 	interface Props {
 		field: Field;
@@ -165,21 +166,18 @@
 					/>
 				</div>
 			{:else if isOptionField && options}
-				<!-- Option/Enum field - render as dropdown -->
-				<select
-					id={field.source}
-					class={cn('select', fieldStyle, error ? 'input-error' : '')}
-					value={String(value ?? 0)}
+				<!-- Option/Enum field - render as OptionDropdown -->
+				<OptionDropdown
+					{options}
+					{value}
 					{tabindex}
-					onchange={handleSelectChange}
+					onselect={(newValue) => {
+						value = newValue;
+						onchange?.(newValue);
+						onblur?.();
+					}}
 					onblur={() => onblur?.()}
-					aria-invalid={!!error}
-					aria-describedby={error ? `${field.source}-error` : undefined}
-				>
-					{#each Object.entries(options) as [optValue, optLabel]}
-						<option value={optValue}>{optLabel}</option>
-					{/each}
-				</select>
+				/>
 			{:else if isAdvancedLookup && lookups?.columns && lookups?.rows}
 				<!-- Advanced lookup with columns - render as table-style dropdown -->
 				<LookupDropdown

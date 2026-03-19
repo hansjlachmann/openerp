@@ -9,6 +9,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
 	import LookupDropdown from './LookupDropdown.svelte';
+	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
@@ -868,9 +869,10 @@
 		const field = cols[colIndex];
 		const isBoolean = typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool';
 		const hasLookup = lookups[field.source]?.columns || lookups[field.source]?.simple;
+		const hasOptions = !!options[field.source];
 
-		// Alt+ArrowDown opens the lookup dropdown
-		if (event.key === 'ArrowDown' && event.altKey && hasLookup) {
+		// Alt+ArrowDown opens the lookup/option dropdown
+		if (event.key === 'ArrowDown' && event.altKey && (hasLookup || hasOptions)) {
 			event.preventDefault();
 			enterCellEditing(false);
 			return;
@@ -1260,7 +1262,7 @@
 				}
 				return;
 			}
-			// Try container div (LookupDropdown wrapper) and focus the input inside
+			// Try container div (LookupDropdown/OptionDropdown wrapper) and focus the input inside
 			const container = document.querySelector(
 				`div[data-row="${rowIndex}"][data-col="${colIndex}"]`
 			);
@@ -1273,6 +1275,12 @@
 					} else {
 						const len = innerInput.value?.length || 0;
 						innerInput.setSelectionRange(len, len);
+					}
+				} else {
+					// OptionDropdown uses a focusable div[role="combobox"] trigger
+					const combobox = container.querySelector('[role="combobox"]') as HTMLElement | null;
+					if (combobox) {
+						combobox.focus();
 					}
 				}
 			}
@@ -2144,6 +2152,25 @@
 												<option value={key}>{label}</option>
 											{/each}
 										</select>
+									{:else if options[field.source]}
+										<!-- Option field - OptionDropdown -->
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
+										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper"
+											onkeydown={(e) => handleLookupCellKeyDown(e, index, colIndex)}>
+											<OptionDropdown
+												options={options[field.source]}
+												value={record[field.source]}
+												compact={true}
+												onselect={(newValue) => {
+													record[field.source] = newValue;
+													currentCellRow = index;
+													currentCellCol = colIndex;
+												}}
+												onblur={() => {
+													handleEditingInputBlur();
+												}}
+											/>
+										</div>
 									{:else}
 										<input
 											type={getCellInputType(field.source)}
@@ -2203,6 +2230,31 @@
 												aria-label="Open lookup"
 											>▼</span>
 										</div>
+									{:else if options[field.source]}
+										<!-- Cell-selected with option: show value + dropdown arrow -->
+										<div
+											class="cell-selected-content cell-selected-active cell-selected-lookup"
+											tabindex="0"
+											data-cell-row={index}
+											data-cell-col={colIndex}
+											ondblclick={() => enterCellEditing(false)}
+											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
+										>
+											<span class="cell-selected-lookup-value">
+												{formatOptionValue(record[field.source], options[field.source])}
+											</span>
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
+											<span
+												class="cell-selected-lookup-arrow"
+												onclick={(e) => {
+													e.stopPropagation();
+													enterCellEditing(false);
+												}}
+												role="button"
+												tabindex="-1"
+												aria-label="Open options"
+											>▼</span>
+										</div>
 									{:else}
 										<div
 											class="cell-selected-content cell-selected-active"
@@ -2249,27 +2301,10 @@
 											>
 												{formatCellValue(record[field.source], field.source)}
 											</button>
-										{:else if options[field.source]}
-											<!-- Option field - always show dropdown -->
-											<select
-												class="option-select"
-												value={String(record[field.source] ?? 0)}
-												onchange={async (e) => {
-													const target = e.target as HTMLSelectElement;
-													const newValue = parseInt(target.value, 10);
-													record[field.source] = newValue;
-													await handleCellBlur(record, index);
-												}}
-												onclick={(e) => e.stopPropagation()}
-											>
-												{#each Object.entries(options[field.source]) as [optValue, optLabel]}
-													<option value={optValue}>{optLabel}</option>
-												{/each}
-											</select>
+											{:else if options[field.source]}
+												{formatOptionValue(record[field.source], options[field.source])}
 										{:else if lookups[field.source]?.rows?.length}
 											{formatLookupValue(record[field.source], lookups[field.source])}
-										{:else if options[field.source]}
-											{formatOptionValue(record[field.source], options[field.source])}
 										{:else}
 											{formatCellValue(record[field.source], field.source)}
 										{/if}
@@ -2759,47 +2794,6 @@
 
 	:global(.dark) .primary-key-link:hover {
 		color: #93c5fd;
-	}
-
-	/* Option field dropdown in list */
-	.option-select {
-		@apply w-full text-sm;
-		@apply bg-transparent border-0 rounded;
-		@apply cursor-pointer;
-		@apply outline-none;
-		appearance: none;
-		padding: 2px 1.5rem 2px 6px;
-		line-height: 1.3;
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.25rem center;
-		background-repeat: no-repeat;
-		background-size: 1em 1em;
-	}
-
-	.option-select:hover {
-		@apply bg-gray-100;
-	}
-
-	.option-select:focus {
-		@apply bg-white ring-2 ring-blue-500/30;
-	}
-
-	:global(.dark) .option-select {
-		color: var(--color-text-primary);
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-	}
-
-	:global(.dark) .option-select:hover {
-		background-color: rgba(255, 255, 255, 0.1);
-	}
-
-	:global(.dark) .option-select:focus {
-		background-color: var(--color-bg-input);
-	}
-
-	:global(.dark) .option-select option {
-		background-color: var(--color-bg-primary);
-		color: var(--color-text-primary);
 	}
 
 	/* Quick Search Styles */
