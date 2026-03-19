@@ -15,7 +15,7 @@
 	let {
 		options,
 		value = null,
-		tabindex,
+		tabindex = 0,
 		disabled = false,
 		compact = false,
 		onselect,
