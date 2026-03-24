@@ -4,6 +4,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -54,7 +55,7 @@ func (c *HelloWorld) UsesProgress() bool {
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	jobQueue := record.(*tables.JobQueue)
 
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, ""); err != nil {
+	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now()); err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 

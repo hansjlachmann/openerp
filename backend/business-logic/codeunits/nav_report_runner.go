@@ -17,6 +17,7 @@ import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -184,6 +185,9 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	inputJSON := string(inputJSONBytes)
 	log.Printf("[NavReportRunner] Input JSON: %s", inputJSON)
 
+	// Capture job start time for Job Queue Entry logging
+	jobStartTime := types.Now()
+
 	// Update progress: Starting
 	if dialog != nil {
 		dialog.UpdateWithMessage(1, 0, "Starting report generation...")
@@ -283,7 +287,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if time.Since(startTime) > maxWaitTime {
 			log.Printf("[NavReportRunner] Job %s timed out", jobID)
 			errMsg := "Report generation timed out after 15 minutes"
-			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
+			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
 				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 			}
 			if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
@@ -385,7 +389,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if checkJobError != "" {
 				log.Printf("[NavReportRunner] POST failed and checkjob error: %s", checkJobError)
 				errMsg := "NAV service error: " + postErrorMsg
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
 				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
@@ -401,7 +405,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 					log.Printf("[NavReportRunner] POST failed and no progress after %d polls — job never started", zeroProgressPolls)
 				}
 				errMsg := "NAV service error: " + postErrorMsg
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
 				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
@@ -424,7 +428,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if dialog != nil {
 					dialog.UpdateWithMessage(1, 100, "Process completed!")
 				}
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, ""); err != nil {
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
 				return fcodeunits.Result{
@@ -478,7 +482,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if pdfPath == "" {
 				log.Printf("[NavReportRunner] No PDF path available — StartJob likely timed out")
 				errMsg := "Report completed but PDF path unavailable — the NAV proxy timed out. Try increasing the WCF SendTimeout on the proxy."
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); err != nil {
+				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
 				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
@@ -497,7 +501,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] Failed to marshal PDF request: %v", err)
 				errMsg := "Failed to marshal PDF request: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
+				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
 				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
@@ -511,7 +515,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] PDF fetch error: %v", err)
 				errMsg := "Failed to fetch PDF: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
+				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
 				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
@@ -526,7 +530,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] Failed to read PDF response body: %v", err)
 				errMsg := "Failed to read PDF response: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
+				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
 				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
@@ -540,7 +544,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if pdfResp.StatusCode != http.StatusOK {
 				log.Printf("[NavReportRunner] PDF fetch returned status %d", pdfResp.StatusCode)
 				errMsg := fmt.Sprintf("PDF fetch failed with status %d", pdfResp.StatusCode)
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
+				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
 				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
@@ -553,7 +557,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
 				log.Printf("[NavReportRunner] Failed to parse PDF response: %v", err)
 				errMsg := "Failed to parse PDF response: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg); logErr != nil {
+				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
 				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
@@ -567,7 +571,7 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			}
 
 			// Log successful execution to Job Queue Entries
-			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, ""); err != nil {
+			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime); err != nil {
 				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 			}
 
