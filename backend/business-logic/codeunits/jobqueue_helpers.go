@@ -11,7 +11,7 @@ import (
 )
 
 // CreateJobQueueEntry creates a new Job Queue Entry record for the given job queue.
-func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *tables.JobQueue, status gtables.JobQueueEntryStatus, errorMsg string) error {
+func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *tables.JobQueue, status gtables.JobQueueEntryStatus, errorMsg string, startTime types.DateTime) error {
 	var entry tables.JobQueueEntry
 	entry.InitWithDBType(db, company, dbType)
 
@@ -20,14 +20,15 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 		nextEntryNo = entry.Entry_no + 1
 	}
 
-	// Re-initialize to clear fields loaded by FindLast (e.g. previous error_message)
+	// Create a fresh entry to avoid stale fields from FindLast (e.g. previous error_message)
+	entry = tables.JobQueueEntry{}
 	entry.InitWithDBType(db, company, dbType)
 	entry.Entry_no = nextEntryNo
 	entry.Status = status
 	entry.User_id = types.NewCode(fcodeunits.CurrentUserID())
 	entry.Description = jobQueue.Description
 	entry.Job_queue_no = jobQueue.No
-	entry.Start_date_time = types.Now()
+	entry.Start_date_time = startTime
 	entry.End_date_time = types.Now()
 	if errorMsg != "" {
 		entry.Error_message = types.NewText(errorMsg)
