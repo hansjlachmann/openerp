@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.63](https://github.com/hansjlachmann/openerp/compare/v0.1.62...v0.1.63) (2026-03-24)
+
+
+### Bug Fixes
+
+* Job Queue entry error leak and incorrect end time ([1e94ef8](https://github.com/hansjlachmann/openerp/commit/1e94ef8a582293805b6bbd03a8ecc2b2cece5eff))
+
 ## [0.1.62](https://github.com/hansjlachmann/openerp/compare/v0.1.61...v0.1.62) (2026-03-19)
 
 
