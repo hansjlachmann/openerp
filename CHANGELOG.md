@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.65](https://github.com/hansjlachmann/openerp/compare/v0.1.64...v0.1.65) (2026-03-26)
+
+
+### Bug Fixes
+
+* permission check case mismatch after uppercase migration ([ad1555a](https://github.com/hansjlachmann/openerp/commit/ad1555aa9f612c4c0ff870ddf202bc9d6d74a771))
+
 ## [0.1.64](https://github.com/hansjlachmann/openerp/compare/v0.1.63...v0.1.64) (2026-03-26)
 
 
