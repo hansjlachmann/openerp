@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.64](https://github.com/hansjlachmann/openerp/compare/v0.1.63...v0.1.64) (2026-03-26)
+
+
+### Bug Fixes
+
+* boolean checkbox save in navigation mode and Permission key casing ([fabfcee](https://github.com/hansjlachmann/openerp/commit/fabfcee9a474be56d11ea7fa505adf4c76a8b524))
+* boolean checkboxes not clickable on editable list pages ([584c6f3](https://github.com/hansjlachmann/openerp/commit/584c6f3425270d23a4ff9c1beb89aac4bcae6cb1))
+
 ## [0.1.63](https://github.com/hansjlachmann/openerp/compare/v0.1.62...v0.1.63) (2026-03-24)
 
 
