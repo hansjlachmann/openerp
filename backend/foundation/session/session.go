@@ -141,7 +141,7 @@ func (s *Session) HasPermission(tableName string, op PermissionOperation) bool {
 	if s.Permissions == nil {
 		return false
 	}
-	perm, exists := s.Permissions[tableName]
+	perm, exists := s.Permissions[strings.ToUpper(tableName)]
 	if !exists {
 		return false
 	}
