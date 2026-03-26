@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	fmigrations "github.com/hansjlachmann/openerp/backend/foundation/migrations"
@@ -78,6 +79,9 @@ func (m *Migration002SeedRoles) insertRole(ctx *fmigrations.Context, code, descr
 }
 
 func (m *Migration002SeedRoles) insertPermission(ctx *fmigrations.Context, roleID, tableName string, canRead, canInsert, canModify, canDelete bool) error {
+	// Uppercase Code fields to match types.Code behavior (prevents case-sensitive mismatch in PostgreSQL)
+	roleID = strings.ToUpper(roleID)
+	tableName = strings.ToUpper(tableName)
 	var query string
 	if ctx.DBType == database.DBTypePostgres {
 		query = `INSERT INTO "Permission" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (role_id, table_name) DO NOTHING`

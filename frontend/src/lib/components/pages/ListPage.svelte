@@ -2284,10 +2284,17 @@
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 											{#if page.page.editable}
 												<input type="checkbox" checked={record[field.source]}
-													onclick={(e) => {
+													onclick={async (e) => {
 														e.stopPropagation();
 														record[field.source] = !record[field.source];
-														handleCellBlur(record, index);
+														const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
+														if (recordId) {
+															try {
+																await api.modifyRecord(page.page.source_table, recordId, { [field.source]: record[field.source] });
+															} catch (err) {
+																record[field.source] = !record[field.source];
+															}
+														}
 													}}
 												/>
 											{:else}
