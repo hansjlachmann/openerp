@@ -2199,7 +2199,12 @@
 											data-cell-col={colIndex}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											<input type="checkbox" checked={record[field.source]} disabled />
+											<input type="checkbox" checked={record[field.source]}
+												onclick={() => {
+													record[field.source] = !record[field.source];
+													handleCellBlur(record, index);
+												}}
+											/>
 										</div>
 									{:else if lookups[field.source]?.columns || lookups[field.source]?.simple}
 										<!-- Cell-selected with lookup: show value + dropdown arrow -->
@@ -2277,7 +2282,17 @@
 										onclick={() => handleCellClick(index, colIndex)}
 									>
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
-											<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
+											{#if page.page.editable}
+												<input type="checkbox" checked={record[field.source]}
+													onclick={(e) => {
+														e.stopPropagation();
+														record[field.source] = !record[field.source];
+														handleCellBlur(record, index);
+													}}
+												/>
+											{:else}
+												<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
+											{/if}
 										{:else if field.primary_key && page.page.card_page_id && isNavigation}
 											<button
 												type="button"
