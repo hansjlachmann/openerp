@@ -83,6 +83,11 @@ func (t *CompanyBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *CompanyBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetCompanyTableSchema returns the SQLite schema
 func GetCompanyTableSchema() string {
 	return `

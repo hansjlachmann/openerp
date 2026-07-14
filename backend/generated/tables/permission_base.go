@@ -88,6 +88,11 @@ func (t *PermissionBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *PermissionBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetPermissionTableSchema returns the SQLite schema
 func GetPermissionTableSchema() string {
 	return `

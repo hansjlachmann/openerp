@@ -128,6 +128,11 @@ func (t *JobQueueEntryBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *JobQueueEntryBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetJobQueueEntryTableSchema returns the SQLite schema
 func GetJobQueueEntryTableSchema() string {
 	return `

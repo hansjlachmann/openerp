@@ -85,6 +85,11 @@ func (t *PaymentTermsBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *PaymentTermsBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetPaymentTermsTableSchema returns the SQLite schema
 func GetPaymentTermsTableSchema() string {
 	return `

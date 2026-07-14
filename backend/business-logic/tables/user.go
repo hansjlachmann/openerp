@@ -2,6 +2,7 @@ package tables
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -47,9 +48,15 @@ func (t *User) OnModify() error {
 
 // OnDelete trigger - called before deleting a record
 func (t *User) OnDelete(db database.Executor, company string) error {
-	// Check if user has preferences
-	// Note: We could allow deletion and cascade delete preferences, or prevent deletion
-	// For now, we allow deletion (preferences will remain orphaned unless cleaned up)
+	// Cascade delete this user's preferences so they don't remain orphaned.
+	tableName := fmt.Sprintf("%s$%s", company, gtables.UserPreferencesTableName)
+	query := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?`, tableName)
+	if t.GetDBType() == database.DBTypePostgres {
+		query = fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = $1`, tableName)
+	}
+	if _, err := db.Exec(query, t.User_id.String()); err != nil {
+		return fmt.Errorf("failed to delete user preferences: %w", err)
+	}
 	return nil
 }
 
