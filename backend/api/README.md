@@ -314,23 +314,9 @@ Perfect for high-performance ERP applications.
 **Current Implementation:**
 - CORS configured for development
 - Basic error handling
-- No authentication (uses default session)
+- Per-request JWT authentication (HTTP-only cookie, see `middleware/auth.go`)
 
-**Production TODO:**
-- Add JWT authentication
-- Rate limiting
-- Request validation
-- HTTPS/TLS support
-- API versioning
-
-## Next Steps
-
-1. Add authentication middleware
-2. Implement WebSocket support for live updates
-3. Add request validation (field constraints)
-4. Implement pagination for large datasets
-5. Add caching layer (Redis)
-6. API documentation (Swagger/OpenAPI)
+Remaining hardening and roadmap items are tracked centrally in [`/TODO.md`](../../TODO.md).
 
 ## License
 
