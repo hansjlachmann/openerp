@@ -270,11 +270,9 @@ const customer: Customer = {
 
 ## Next Steps
 
-1. **Create Go API Backend** - Implement the REST API endpoints
-2. **Add Docker/DevContainer** - Full stack development environment
-3. **Implement Pages** - Customer Card, Payment Terms List, etc.
-4. **Add WebSocket support** - Real-time updates
-5. **Implement YAML Page Definitions** - Dynamic page generation
+The Go API backend, YAML page definitions, and the generic `PageRenderer` are already
+implemented. Remaining frontend work (WebSocket real-time updates, additional page types)
+is tracked centrally in [`/TODO.md`](../TODO.md).
 
 ## License
 
