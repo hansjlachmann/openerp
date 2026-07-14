@@ -24,14 +24,13 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
 
 ## Backend — Core / Data Layer
 
-- [ ] `backend/foundation/database/repository.go:44,74,96` — `Repository.Create/Update/Delete`
-      are no-op stubs, and the entire `Repository` type is unused (no references outside the
-      file). Decide: **remove the dead abstraction**, or implement reflection-based CRUD that
-      reads struct tags to build INSERT/UPDATE/DELETE.
-- [ ] `backend/foundation/migrations/helpers.go:12` — SQLite column drop / type change not
-      implemented (SQLite requires recreating the table); currently must be done via raw SQL.
-- [ ] `backend/business-logic/tables/user.go:52` — deleting a user leaves orphaned
-      `UserPreferences`; implement cascade cleanup on user delete.
+- [x] `backend/foundation/database/repository.go` — removed the unused `Repository` type
+      (its `Insert/Update/Delete` were no-op stubs and it had no references anywhere).
+- [x] `backend/foundation/migrations/helpers.go` — added `RecreateTable` (the SQLite-safe
+      create/copy/drop/rename primitive) and made `ChangeColumnType` work on SQLite via it.
+      DropColumn/RenameColumn already used native modern-SQLite syntax.
+- [x] `backend/business-logic/tables/user.go` — `User.OnDelete` now cascade-deletes the
+      user's `User_Preferences` rows (added `GetDBType()` getter to the tablegen template).
 - [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
       and Dimensions are simplified with no `table_relation`s; add proper relations.
 
@@ -71,8 +70,8 @@ From `frontend/README.md` (formerly "Next Steps") and inline markers.
 
 From `docs/migrations.md`.
 
-- [ ] Implement a SQLite-safe drop-column / alter-column migration helper (table-recreate
-      approach). Same underlying gap as `backend/foundation/migrations/helpers.go:12`.
+- [x] SQLite-safe drop-column / alter-column migration helper — done via `RecreateTable`
+      + SQLite `ChangeColumnType` in `backend/foundation/migrations/helpers.go`.
 
 ---
 

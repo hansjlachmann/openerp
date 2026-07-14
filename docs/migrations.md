@@ -135,7 +135,9 @@ ctx.AddColumnIfNotExists(tableName, columnName, definition)
 // Check if column exists
 exists, err := ctx.ColumnExists(tableName, columnName)
 
-// Change column type (PostgreSQL only)
+// Change column type (PostgreSQL alters in place; SQLite rebuilds the table).
+// Note: on SQLite, CHECK and table-level constraints are not preserved — use
+// RecreateTable with an explicit schema when the table relies on those.
 ctx.ChangeColumnType(tableName, columnName, newType)
 ```
 
@@ -144,6 +146,12 @@ ctx.ChangeColumnType(tableName, columnName, newType)
 ```go
 // Check if table exists
 exists, err := ctx.TableExists(tableName)
+
+// SQLite-safe table rebuild (create new / copy / drop / rename). Use for structural
+// changes SQLite's ALTER TABLE can't do in place. newSchema is the full column
+// definition list; copyColumns are the columns carried over from the old table.
+// Recreate any needed indexes with CreateIndex afterwards.
+ctx.RecreateTable(tableName, "id INTEGER PRIMARY KEY, name TEXT", []string{"id", "name"})
 
 // Execute across all companies
 ctx.ForEachCompanyTable("Customer", func(fullTableName string) error {
