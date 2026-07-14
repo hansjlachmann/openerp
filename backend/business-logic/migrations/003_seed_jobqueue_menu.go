@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"fmt"
+
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	fmigrations "github.com/hansjlachmann/openerp/backend/foundation/migrations"
 )
@@ -25,6 +27,18 @@ func (m *Migration003SeedJobQueueMenu) Description() string {
 }
 
 func (m *Migration003SeedJobQueueMenu) Up(ctx *fmigrations.Context) error {
+	// Ensure the Menu table exists — migrations run before table sync, so on a fresh
+	// database the table has not been created yet.
+	menuSQL := `CREATE TABLE IF NOT EXISTS "Menu" (
+		code VARCHAR(20) NOT NULL DEFAULT '',
+		description VARCHAR(50) NOT NULL DEFAULT '',
+		filename VARCHAR(50) NOT NULL DEFAULT '',
+		PRIMARY KEY (code)
+	)`
+	if err := ctx.ExecuteSQL(menuSQL); err != nil {
+		return fmt.Errorf("failed to ensure Menu table: %w", err)
+	}
+
 	var query string
 	if ctx.DBType == database.DBTypePostgres {
 		query = `INSERT INTO "Menu" (code, description, filename) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING`
