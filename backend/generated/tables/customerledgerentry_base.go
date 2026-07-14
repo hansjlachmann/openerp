@@ -235,6 +235,11 @@ func (t *CustomerLedgerEntryBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *CustomerLedgerEntryBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetCustomerLedgerEntryTableSchema returns the SQLite schema
 func GetCustomerLedgerEntryTableSchema() string {
 	return `

@@ -712,6 +712,11 @@ func (t *{{ .BaseStructName }}) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *{{ .BaseStructName }}) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // Get{{ .StructName }}TableSchema returns the SQLite schema
 func Get{{ .StructName }}TableSchema() string {
 	return ` + "`" + `

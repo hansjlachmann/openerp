@@ -85,6 +85,11 @@ func (t *MenuBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *MenuBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetMenuTableSchema returns the SQLite schema
 func GetMenuTableSchema() string {
 	return `

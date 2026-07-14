@@ -85,6 +85,11 @@ func (t *LanguageBase) GetCompany() string {
 	return t.company
 }
 
+// GetDBType returns the database type (for wrapper access)
+func (t *LanguageBase) GetDBType() database.DBType {
+	return t.dbType
+}
+
 // GetLanguageTableSchema returns the SQLite schema
 func GetLanguageTableSchema() string {
 	return `
