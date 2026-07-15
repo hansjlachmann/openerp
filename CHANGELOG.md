@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.66](https://github.com/hansjlachmann/openerp/compare/v0.1.65...v0.1.66) (2026-07-15)
+
+
+### Features
+
+* add IP-based rate limiting to the API ([a4ff9cf](https://github.com/hansjlachmann/openerp/commit/a4ff9cfe0a897e0f1ad431fef05b278e9588d626))
+* add SQLite-safe RecreateTable migration helper ([973e02e](https://github.com/hansjlachmann/openerp/commit/973e02ed8a7323ce4100872bb2fee3afe54c2346))
+
+
+### Bug Fixes
+
+* cascade-delete user preferences on user delete ([b9f7f2d](https://github.com/hansjlachmann/openerp/commit/b9f7f2d2d664364f7de29aa62ccbbacd269ea6f2))
+* create Menu table in migration 003 before seeding ([85cdeab](https://github.com/hansjlachmann/openerp/commit/85cdeab22f1d67cb01765b95d83122a9bea67ec8))
+
+
+### Code Refactoring
+
+* remove unused Repository abstraction ([221793b](https://github.com/hansjlachmann/openerp/commit/221793b26f8b42127e93c0562c11f043c5705715))
+
+
+### Documentation
+
+* add consolidated TODO.md backlog and reconcile stale sub-READMEs ([8f1f41c](https://github.com/hansjlachmann/openerp/commit/8f1f41c8adb0d3e52486475b049be04fd729775e))
+
 ## [0.1.65](https://github.com/hansjlachmann/openerp/compare/v0.1.64...v0.1.65) (2026-03-26)
 
 
