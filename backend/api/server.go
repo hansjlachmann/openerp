@@ -49,6 +49,10 @@ func NewServerFull(db *sql.DB, dbType database.DBType, companyInit handlers.Comp
 		AppName:      "OpenERP API v1.0",
 		ServerHeader: "OpenERP",
 		ErrorHandler: customErrorHandler,
+		// Trust the reverse proxy's X-Forwarded-For so c.IP() (used by the rate
+		// limiter) is the real client address rather than the proxy's. Safe only
+		// behind a trusted proxy (nginx) that overwrites this header.
+		ProxyHeader: fiber.HeaderXForwardedFor,
 	})
 
 	jwtConfig := middleware.DefaultJWTConfig()
@@ -69,6 +73,7 @@ func (s *Server) Setup() {
 	// Global middleware
 	s.app.Use(recover.New()) // Panic recovery
 	s.app.Use(middleware.CORS())
+	s.app.Use(middleware.RateLimit()) // Generous global rate limit (per client IP)
 	s.app.Use(middleware.Logger())
 	// Create a permission loader for the auth middleware (used on cache miss / server restart)
 	permLoader := handlers.NewPermissionLoader(s.db, s.dbType)
@@ -90,7 +95,7 @@ func (s *Server) Setup() {
 	api.Get("/translations", translationsHandler.GetTranslations)
 
 	// Auth routes
-	api.Post("/auth/login", authHandler.Login)
+	api.Post("/auth/login", middleware.LoginRateLimit(), authHandler.Login) // Strict limit: brute-force protection
 	api.Post("/auth/logout", authHandler.Logout)
 	api.Get("/auth/user", authHandler.GetCurrentUser)
 	api.Post("/auth/init", authHandler.CreateInitialUser)
@@ -105,8 +110,8 @@ func (s *Server) Setup() {
 
 	// Table routes
 	tables := api.Group("/tables/:table", middleware.PermissionCheck())
-	tables.Get("/ids", tablesHandler.GetRecordIDs)        // Lightweight IDs-only endpoint
-	tables.Get("/options", tablesHandler.GetOptions)      // Fast options metadata only
+	tables.Get("/ids", tablesHandler.GetRecordIDs)   // Lightweight IDs-only endpoint
+	tables.Get("/options", tablesHandler.GetOptions) // Fast options metadata only
 	tables.Get("/list", tablesHandler.ListRecords)
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)

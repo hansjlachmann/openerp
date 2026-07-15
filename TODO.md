@@ -13,7 +13,9 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
 
 - [x] JWT authentication — **done** (`backend/api/middleware/auth.go`; per-request JWT in HTTP-only cookie)
-- [ ] Rate limiting
+- [x] Rate limiting — `backend/api/middleware/ratelimit.go`: generous global limiter
+      (300/min per IP, skips `/health`) + strict login limiter (10/min per IP) against
+      brute-force. In-memory store; needs Redis for multi-instance.
 - [ ] Request validation (field constraints)
 - [ ] HTTPS/TLS support
 - [ ] API versioning
