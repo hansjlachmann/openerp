@@ -23,10 +23,10 @@ type TableDef struct {
 
 // Key represents an index/key on a table (BC/NAV style)
 type Key struct {
-	Name      string   `yaml:"name"`       // Key name (e.g., "customer_open")
-	Fields    []string `yaml:"fields"`     // Fields in the key (e.g., ["customer_no", "open"])
-	Unique    bool     `yaml:"unique"`     // Whether this is a UNIQUE index
-	Clustered bool     `yaml:"clustered"`  // Primary key-like behavior (BC/NAV concept)
+	Name      string   `yaml:"name"`      // Key name (e.g., "customer_open")
+	Fields    []string `yaml:"fields"`    // Fields in the key (e.g., ["customer_no", "open"])
+	Unique    bool     `yaml:"unique"`    // Whether this is a UNIQUE index
+	Clustered bool     `yaml:"clustered"` // Primary key-like behavior (BC/NAV concept)
 }
 
 // Field represents a single field in a table
@@ -41,10 +41,10 @@ type Field struct {
 	AutoTimestamp bool           `yaml:"auto_timestamp"`
 	Validation    *Validation    `yaml:"validation"`
 	TableRelation *TableRelation `yaml:"table_relation"`
-	Options       []string       `yaml:"options"`   // For Option type fields (enum values)
-	Precision     int            `yaml:"precision"` // For Decimal type (total digits)
-	Scale         int            `yaml:"scale"`     // For Decimal type (decimal places)
-	FlowField     bool           `yaml:"flow_field"` // For FlowFields (calculated fields)
+	Options       []string       `yaml:"options"`      // For Option type fields (enum values)
+	Precision     int            `yaml:"precision"`    // For Decimal type (total digits)
+	Scale         int            `yaml:"scale"`        // For Decimal type (decimal places)
+	FlowField     bool           `yaml:"flow_field"`   // For FlowFields (calculated fields)
 	CalcFormula   string         `yaml:"calc_formula"` // Sum, Count, Lookup, Exist, Average, Min, Max
 	SourceTable   string         `yaml:"source_table"` // Table to calculate from
 	SourceField   string         `yaml:"source_field"` // Field to aggregate
@@ -53,9 +53,9 @@ type Field struct {
 
 // FlowFilter represents a filter condition for FlowField calculation
 type FlowFilter struct {
-	Field     string `yaml:"field"`      // Field name in source table
-	Type      string `yaml:"type"`       // "const" or "field"
-	Value     string `yaml:"value"`      // Constant value or field name from current table
+	Field string `yaml:"field"` // Field name in source table
+	Type  string `yaml:"type"`  // "const" or "field"
+	Value string `yaml:"value"` // Constant value or field name from current table
 }
 
 // LookupColumn defines a column to display in the lookup dropdown
@@ -638,6 +638,10 @@ type {{ .BaseStructName }} struct {
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
+
+	// Pagination window for FindSet/FindSetBuffered (0 limit = all rows)
+	limit  int
+	offset int
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
 	bufferedRecords []*{{ .BaseStructName }}
@@ -1595,6 +1599,33 @@ func (t *{{ .BaseStructName }}) getOrderByClause() string {
 	return "{{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}"
 }
 
+// SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
+// limit rows, skipping the first offset rows. A limit of 0 disables pagination
+// (all matching rows are returned). Negative values are treated as 0.
+func (t *{{ .BaseStructName }}) SetPage(limit, offset int) {
+	if limit < 0 {
+		limit = 0
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	t.limit = limit
+	t.offset = offset
+}
+
+// getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
+// Returns an empty string when no limit is set. LIMIT/OFFSET take integer
+// literals (not placeholders), which both SQLite and PostgreSQL accept.
+func (t *{{ .BaseStructName }}) getLimitClause() string {
+	if t.limit <= 0 {
+		return ""
+	}
+	if t.offset > 0 {
+		return fmt.Sprintf(" LIMIT %d OFFSET %d", t.limit, t.offset)
+	}
+	return fmt.Sprintf(" LIMIT %d", t.limit)
+}
+
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *{{ .BaseStructName }}) FindFirst() bool {
@@ -1840,7 +1871,7 @@ func (t *{{ .BaseStructName }}) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s`" + `, tableName, where, orderBy)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s%s`" + `, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2019,7 +2050,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s`" + `, tableName, where, orderBy)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s%s`" + `, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

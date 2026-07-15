@@ -311,8 +311,32 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		}
 	}
 
-	// Collect records
-	var records []map[string]interface{}
+	// Parse pagination window (opt-in). When page_size > 0 the query is limited
+	// server-side and total reflects the full filtered count. Without page_size the
+	// entire result set is returned, preserving the frontend's client-side
+	// search/sort over the full data set.
+	page := c.QueryInt("page", 1)
+	if page < 1 {
+		page = 1
+	}
+	pageSize := c.QueryInt("page_size", 0)
+	if pageSize < 0 {
+		pageSize = 0
+	}
+	const maxPageSize = 1000
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+
+	total := 0
+	if pageSize > 0 {
+		total = table.Count() // full filtered count, before applying the window
+		table.SetPage(pageSize, (page-1)*pageSize)
+	}
+
+	// Collect records (non-nil so an empty result serializes as [] rather than null,
+	// e.g. when a requested page is past the end of the data)
+	records := make([]map[string]interface{}, 0)
 	flowFields := table.GetFlowFields()
 
 	if table.FindSet() {
@@ -355,11 +379,18 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		captions.Options[fieldName] = optionMap
 	}
 
+	// Pagination metadata: real values when a page_size was requested, otherwise
+	// the legacy single-page shape (all records reported as page 1).
+	respPage, respPageSize, respTotal := 1, len(records), len(records)
+	if pageSize > 0 {
+		respPage, respPageSize, respTotal = page, pageSize, total
+	}
+
 	response := apitypes.NewSuccessResponseWithCaptions(map[string]interface{}{
 		"records":   records,
-		"total":     len(records),
-		"page":      1,
-		"page_size": len(records),
+		"total":     respTotal,
+		"page":      respPage,
+		"page_size": respPageSize,
 	}, captions)
 	return c.JSON(response)
 }
@@ -772,4 +803,3 @@ func containsAny(slice []string, items []string) bool {
 	}
 	return false
 }
-

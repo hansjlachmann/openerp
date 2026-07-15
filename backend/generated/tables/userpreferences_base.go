@@ -41,6 +41,10 @@ type UserPreferencesBase struct {
 	currentRows *sql.Rows
 	orderByFields []string
 
+	// Pagination window for FindSet/FindSetBuffered (0 limit = all rows)
+	limit  int
+	offset int
+
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
 	bufferedRecords []*UserPreferencesBase
 	currentBufferPos int
@@ -672,6 +676,33 @@ func (t *UserPreferencesBase) getOrderByClause() string {
 	return "user_id, page_id, preference_type, preference_name"
 }
 
+// SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
+// limit rows, skipping the first offset rows. A limit of 0 disables pagination
+// (all matching rows are returned). Negative values are treated as 0.
+func (t *UserPreferencesBase) SetPage(limit, offset int) {
+	if limit < 0 {
+		limit = 0
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	t.limit = limit
+	t.offset = offset
+}
+
+// getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
+// Returns an empty string when no limit is set. LIMIT/OFFSET take integer
+// literals (not placeholders), which both SQLite and PostgreSQL accept.
+func (t *UserPreferencesBase) getLimitClause() string {
+	if t.limit <= 0 {
+		return ""
+	}
+	if t.offset > 0 {
+		return fmt.Sprintf(" LIMIT %d OFFSET %d", t.limit, t.offset)
+	}
+	return fmt.Sprintf(" LIMIT %d", t.limit)
+}
+
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *UserPreferencesBase) FindFirst() bool {
@@ -806,7 +837,7 @@ func (t *UserPreferencesBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -934,7 +965,7 @@ func (t *UserPreferencesBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
