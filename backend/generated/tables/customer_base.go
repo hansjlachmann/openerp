@@ -73,6 +73,10 @@ type CustomerBase struct {
 	currentRows *sql.Rows
 	orderByFields []string
 
+	// Pagination window for FindSet/FindSetBuffered (0 limit = all rows)
+	limit  int
+	offset int
+
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
 	bufferedRecords []*CustomerBase
 	currentBufferPos int
@@ -943,6 +947,33 @@ func (t *CustomerBase) getOrderByClause() string {
 	return "no"
 }
 
+// SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
+// limit rows, skipping the first offset rows. A limit of 0 disables pagination
+// (all matching rows are returned). Negative values are treated as 0.
+func (t *CustomerBase) SetPage(limit, offset int) {
+	if limit < 0 {
+		limit = 0
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	t.limit = limit
+	t.offset = offset
+}
+
+// getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
+// Returns an empty string when no limit is set. LIMIT/OFFSET take integer
+// literals (not placeholders), which both SQLite and PostgreSQL accept.
+func (t *CustomerBase) getLimitClause() string {
+	if t.limit <= 0 {
+		return ""
+	}
+	if t.offset > 0 {
+		return fmt.Sprintf(" LIMIT %d OFFSET %d", t.limit, t.offset)
+	}
+	return fmt.Sprintf(" LIMIT %d", t.limit)
+}
+
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
 func (t *CustomerBase) FindFirst() bool {
@@ -1107,7 +1138,7 @@ func (t *CustomerBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1250,7 +1281,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
