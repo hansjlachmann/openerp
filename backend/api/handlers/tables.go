@@ -54,6 +54,24 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 	return table, nil
 }
 
+// ensureSetupRecord makes sure a setup table's single blank-primary-key record
+// exists, creating it if absent (BC-style: the setup record is always there).
+func (h *TablesHandler) ensureSetupRecord(tableName, company string) {
+	probe, err := h.getTable(tableName, company)
+	if err != nil || !probe.IsSetupTable() {
+		return
+	}
+	if probe.Get("") {
+		return // already exists
+	}
+	// Insert the single blank-primary-key record (fresh instance, no triggers).
+	blank, err := h.getTable(tableName, company)
+	if err != nil {
+		return
+	}
+	_ = blank.Insert(false)
+}
+
 // parseRecordKey parses a URL record ID into the appropriate type for table.Get()
 // For single PK tables: returns the string as-is
 // For composite PK tables: splits comma-separated values and returns map[string]interface{}
@@ -283,6 +301,11 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	sortBy := c.Query("sort_by", "")
 	if sortBy != "" {
 		table.SetCurrentKey(sortBy)
+	}
+
+	// Setup tables always have their single record present (BC-style)
+	if table.IsSetupTable() {
+		h.ensureSetupRecord(tableName, company)
 	}
 
 	// Parse fields parameter (JSON array of field names) - for future FlowField optimization
@@ -558,15 +581,15 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
-	// Check for empty ID
-	if id == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
-	}
-
 	// Create table instance
 	table, err := h.getTable(tableName, company)
 	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// An empty ID is only valid for a setup table (its single record has a blank primary key)
+	if id == "" && !table.IsSetupTable() {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
 	}
 
 	// Get existing record (supports composite keys via comma-separated values)
@@ -643,15 +666,15 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	language := sess.GetLanguage()
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 
-	// Check for empty ID
-	if id == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
-	}
-
 	// Create table instance
 	table, err := h.getTable(tableName, company)
 	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// An empty ID is only valid for a setup table (its single record has a blank primary key)
+	if id == "" && !table.IsSetupTable() {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
 	}
 
 	// Get existing record (supports composite keys via comma-separated values)

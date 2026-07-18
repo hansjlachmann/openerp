@@ -10,6 +10,9 @@ type Table interface {
 	// Identity
 	GetTableID() int
 	GetTableName() string
+	// IsSetupTable reports whether this is a BC-style singleton setup table
+	// (a single record identified by a blank primary key)
+	IsSetupTable() bool
 
 	// Initialization - must be called before any operations
 	Init(db database.Executor, company string)

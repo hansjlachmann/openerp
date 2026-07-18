@@ -21,6 +21,10 @@ menu:
         page_id: 26
         icon: calendar
 
+      - name: SMTP Setup
+        page_id: 409
+        icon: mail
+
       - name: Companies
         page_id: 11
         icon: building

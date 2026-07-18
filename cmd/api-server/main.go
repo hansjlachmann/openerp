@@ -11,6 +11,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/api"
 	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
+	"github.com/hansjlachmann/openerp/backend/business-logic/scheduler"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -34,6 +35,9 @@ func main() {
 	// Register tables
 	if err := registry.RegisterTable(tables.PaymentTermsTableID, &tables.PaymentTerms{}); err != nil {
 		log.Printf("Warning: Failed to register PaymentTerms: %v\n", err)
+	}
+	if err := registry.RegisterTable(tables.SMTPSetupTableID, &tables.SMTPSetup{}); err != nil {
+		log.Printf("Warning: Failed to register SMTP_Setup: %v\n", err)
 	}
 	if err := registry.RegisterTable(tables.CustomerTableID, &tables.Customer{}); err != nil {
 		log.Printf("Warning: Failed to register Customer: %v\n", err)
@@ -125,7 +129,7 @@ func main() {
 			companyName = "cronus"
 		}
 
-		port = "8080"
+		port = getEnv("PORT", "8080")
 	}
 
 	defer func() { _ = db.CloseDatabase() }()
@@ -173,6 +177,14 @@ func main() {
 		}
 	}()
 
+	// Start the Job Queue scheduler (in-process poller for automatic job runs)
+	schedDBType := database.DBTypeSQLite
+	if dbHost != "" {
+		schedDBType = database.DBTypePostgres
+	}
+	sched := scheduler.New(db.GetConnection(), schedDBType, companyMgr.ListCompanies)
+	sched.Start()
+
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -193,6 +205,8 @@ func main() {
 
 	<-quit
 	fmt.Println("\n🛑 Shutting down server...")
+
+	sched.Stop()
 
 	if err := server.Shutdown(); err != nil {
 		log.Printf("Error during shutdown: %v", err)

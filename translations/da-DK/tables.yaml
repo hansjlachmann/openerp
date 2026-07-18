@@ -13,6 +13,17 @@ tables:
       discount_date_calculation: "Kontantrabatdatoberegning"
       discount_percent: "Rabat %"
 
+  # SMTP Setup (Table 409)
+  smtp_setup:
+    caption: "SMTP-opsætning"
+    fields:
+      enabled: "Aktiveret"
+      smtp_server: "SMTP-server"
+      smtp_server_port: "SMTP-serverport"
+      user_id: "Brugernavn"
+      password: "Adgangskode"
+      from_address: "Fra-adresse"
+
   # Customer (Table 18)
   customer:
     caption: "Debitor"
@@ -180,6 +191,9 @@ tables:
       next_start: "Næste start"
       minutes_between_run: "Minutter mellem kørsel"
       recurring_job: "Tilbagevendende opgave"
+      recurrence: "Gentagelse"
+      notification_email: "Notifikations-e-mail"
+      notify_on: "Underret ved"
       number_of_entries: "Antal poster"
 
     # Option field values
@@ -188,6 +202,17 @@ tables:
         on_hold: "Afvent"
         ready: "Klar"
         error: "Fejl"
+      recurrence:
+        once: "Én gang"
+        minutes: "Minutter"
+        hourly: "Hver time"
+        daily: "Dagligt"
+        weekly: "Ugentligt"
+        monthly: "Månedligt"
+      notify_on:
+        never: "Aldrig"
+        always: "Altid"
+        on_error: "Ved fejl"
 
   # Job Queue Entry (Table 473)
   job_queue_entry:

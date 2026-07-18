@@ -18,6 +18,9 @@ export interface PageMetadata {
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];
+	// Primary key field names from the source table (sent by the backend), used to
+	// identify records even when the PK is not shown on the page (e.g. setup tables).
+	primary_key_fields?: string[];
 }
 
 export interface Layout {

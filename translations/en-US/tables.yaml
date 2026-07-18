@@ -13,6 +13,17 @@ tables:
       discount_date_calculation: "Discount Date Calculation"
       discount_percent: "Discount %"
 
+  # SMTP Setup (Table 409)
+  smtp_setup:
+    caption: "SMTP Setup"
+    fields:
+      enabled: "Enabled"
+      smtp_server: "SMTP Server"
+      smtp_server_port: "SMTP Server Port"
+      user_id: "User Name"
+      password: "Password"
+      from_address: "From Address"
+
   # Customer (Table 18)
   customer:
     caption: "Customer"
@@ -180,6 +191,9 @@ tables:
       next_start: "Next Start"
       minutes_between_run: "Minutes between Run"
       recurring_job: "Recurring Job"
+      recurrence: "Recurrence"
+      notification_email: "Notification Email"
+      notify_on: "Notify On"
       number_of_entries: "No. of Entries"
 
     # Option field values
@@ -188,6 +202,17 @@ tables:
         on_hold: "On Hold"
         ready: "Ready"
         error: "Error"
+      recurrence:
+        once: "Once"
+        minutes: "Minutes"
+        hourly: "Hourly"
+        daily: "Daily"
+        weekly: "Weekly"
+        monthly: "Monthly"
+      notify_on:
+        never: "Never"
+        always: "Always"
+        on_error: "On Error"
 
   # Job Queue Entry (Table 473)
   job_queue_entry:

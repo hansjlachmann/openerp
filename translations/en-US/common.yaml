@@ -42,6 +42,7 @@ common:
     users: "Users"
     languages: "Languages"
     payment_terms: "Payment Terms"
+    smtp_setup: "SMTP Setup"
     companies: "Companies"
     menus: "Menus"
     job_queue: "Job Queue"

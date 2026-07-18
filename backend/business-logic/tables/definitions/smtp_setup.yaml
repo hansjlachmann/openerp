@@ -1,0 +1,41 @@
+table:
+  id: 409
+  name: "SMTP_Setup"
+  global: true         # Global table - no company prefix (system-wide mail configuration)
+  setup_table: true    # BC-style singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      type: types.Code
+      db_name: primary_key
+      primary_key: true
+      length: 20
+
+    - name: enabled
+      type: bool
+      db_name: enabled
+      default: false
+
+    - name: smtp_server
+      type: types.Text
+      db_name: smtp_server
+      length: 250
+
+    - name: smtp_server_port
+      type: int
+      db_name: smtp_server_port
+      default: 587
+
+    - name: user_id
+      type: types.Text
+      db_name: user_id
+      length: 100
+
+    - name: password
+      type: types.Text
+      db_name: password
+      length: 250
+
+    - name: from_address
+      type: types.Text
+      db_name: from_address
+      length: 100

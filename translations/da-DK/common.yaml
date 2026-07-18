@@ -42,6 +42,7 @@ common:
     users: "Brugere"
     languages: "Sprog"
     payment_terms: "Betalingsbetingelser"
+    smtp_setup: "SMTP-opsætning"
     companies: "Regnskaber"
     menus: "Menuer"
     job_queue: "Opgavekø"

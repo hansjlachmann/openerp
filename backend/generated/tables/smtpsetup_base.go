@@ -5,6 +5,7 @@ package tables
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -13,12 +14,16 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// LanguageBase represents Table 8: Language
+// SMTPSetupBase represents Table 409: SMTP_Setup
 // This is the generated base struct - embed in your wrapper struct and override Init
-type LanguageBase struct {
-	Code types.Code `db:"code,pk"`
-	Name types.Text `db:"name"`
-	Translation_key types.Text `db:"translation_key"`
+type SMTPSetupBase struct {
+	Primary_key types.Code `db:"primary_key,pk"`
+	Enabled bool `db:"enabled"`
+	Smtp_server types.Text `db:"smtp_server"`
+	Smtp_server_port int `db:"smtp_server_port"`
+	User_id types.Text `db:"user_id"`
+	Password types.Text `db:"password"`
+	From_address types.Text `db:"from_address"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -29,7 +34,7 @@ type LanguageBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*languageBaseFilterCondition
+	filters map[string]*sMTPSetupBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
@@ -40,7 +45,7 @@ type LanguageBase struct {
 	offset int
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*LanguageBase
+	bufferedRecords []*SMTPSetupBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -49,72 +54,80 @@ type LanguageBase struct {
 	onDeleteFn func(database.Executor, string) error
 }
 
-const LanguageTableID = 8
-const LanguageTableName = "Language"
+const SMTPSetupTableID = 409
+const SMTPSetupTableName = "SMTP_Setup"
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *LanguageBase) GetTableID() int {
-	return LanguageTableID
+func (t *SMTPSetupBase) GetTableID() int {
+	return SMTPSetupTableID
 }
 
 // GetTableName returns the table name
-func (t *LanguageBase) GetTableName() string {
-	return LanguageTableName
+func (t *SMTPSetupBase) GetTableName() string {
+	return SMTPSetupTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *LanguageBase) GetTableSchema() string {
-	return GetLanguageTableSchema()
+func (t *SMTPSetupBase) GetTableSchema() string {
+	return GetSMTPSetupTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *LanguageBase) GetPostgresTableSchema() string {
-	return GetLanguagePostgresTableSchema()
+func (t *SMTPSetupBase) GetPostgresTableSchema() string {
+	return GetSMTPSetupPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *LanguageBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *SMTPSetupBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *LanguageBase) GetDB() database.Executor {
+func (t *SMTPSetupBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *LanguageBase) GetCompany() string {
+func (t *SMTPSetupBase) GetCompany() string {
 	return t.company
 }
 
 // GetDBType returns the database type (for wrapper access)
-func (t *LanguageBase) GetDBType() database.DBType {
+func (t *SMTPSetupBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
 // IsSetupTable reports whether this is a BC-style singleton setup table
 // (a single record identified by a blank primary key).
-func (t *LanguageBase) IsSetupTable() bool {
-	return false
+func (t *SMTPSetupBase) IsSetupTable() bool {
+	return true
 }
 
-// GetLanguageTableSchema returns the SQLite schema
-func GetLanguageTableSchema() string {
+// GetSMTPSetupTableSchema returns the SQLite schema
+func GetSMTPSetupTableSchema() string {
 	return `
-		code TEXT(10) PRIMARY KEY,
-		name TEXT(50),
-		translation_key TEXT(5)
+		primary_key TEXT(20) PRIMARY KEY,
+		enabled INTEGER,
+		smtp_server TEXT(250),
+		smtp_server_port INTEGER DEFAULT 587,
+		user_id TEXT(100),
+		password TEXT(250),
+		from_address TEXT(100)
 	`
 }
 
-// GetLanguagePostgresTableSchema returns the PostgreSQL schema
-func GetLanguagePostgresTableSchema() string {
+// GetSMTPSetupPostgresTableSchema returns the PostgreSQL schema
+func GetSMTPSetupPostgresTableSchema() string {
 	return `
-		code VARCHAR(10) PRIMARY KEY,
-		name VARCHAR(50),
-		translation_key VARCHAR(5)
+		primary_key VARCHAR(20) PRIMARY KEY,
+		enabled BOOLEAN,
+		smtp_server VARCHAR(250),
+		smtp_server_port INTEGER DEFAULT 587,
+		user_id VARCHAR(100),
+		password VARCHAR(250),
+		from_address VARCHAR(100)
 	`
 }
 
@@ -123,49 +136,41 @@ func GetLanguagePostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *LanguageBase) GetCaption(language string) string {
+func (t *SMTPSetupBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("Language", language)
+	return ts.TableCaption("SMTP_Setup", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *LanguageBase) GetFieldCaption(fieldName, language string) string {
+func (t *SMTPSetupBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("Language", fieldName, language)
+	return ts.FieldCaption("SMTP_Setup", fieldName, language)
 }
 
-// CreateTable creates the Language table for the specified company (SQLite)
+// CreateTable creates the SMTP_Setup table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *LanguageBase) CreateTable(db database.Executor, company string) error {
+func (t *SMTPSetupBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the Language table for the specified company with the given database type
+// CreateTableWithDBType creates the SMTP_Setup table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *LanguageBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := SMTPSetupTableName
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetLanguagePostgresTableSchema()
+		schema = GetSMTPSetupPostgresTableSchema()
 	} else {
-		schema = GetLanguageTableSchema()
+		schema = GetSMTPSetupTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create Language table: %w", err)
+		return fmt.Errorf("failed to create SMTP_Setup table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
-	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$Language$Primary", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (code)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
-		return fmt.Errorf("failed to create index Primary: %w", err)
-	}
 
 	return nil
 }
@@ -174,33 +179,38 @@ func (t *LanguageBase) CreateTableWithDBType(db database.Executor, company strin
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new Language record with database context
+// Init initializes a new SMTPSetup record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *LanguageBase) Init(db database.Executor, company string) {
+func (t *SMTPSetupBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new Language record with database context and type
-func (t *LanguageBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new SMTPSetup record with database context and type
+func (t *SMTPSetupBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.Smtp_server_port = 587
 }
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *LanguageBase) StoreOldValues() {
+func (t *SMTPSetupBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
-	t.oldValues["code"] = t.Code
-	t.oldValues["name"] = t.Name
-	t.oldValues["translation_key"] = t.Translation_key
+	t.oldValues["primary_key"] = t.Primary_key
+	t.oldValues["enabled"] = t.Enabled
+	t.oldValues["smtp_server"] = t.Smtp_server
+	t.oldValues["smtp_server_port"] = t.Smtp_server_port
+	t.oldValues["user_id"] = t.User_id
+	t.oldValues["password"] = t.Password
+	t.oldValues["from_address"] = t.From_address
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *LanguageBase) convertPlaceholders(sql string, count int) string {
+func (t *SMTPSetupBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -214,19 +224,19 @@ func (t *LanguageBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *LanguageBase) Get(primaryKey interface{}) bool {
+func (t *SMTPSetupBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var codeVal types.Code
-		if v, exists := pkMap["code"]; exists {
+		var primary_keyVal types.Code
+		if v, exists := pkMap["primary_key"]; exists {
 			switch val := v.(type) {
 			case types.Code:
-				codeVal = val
+				primary_keyVal = val
 			case string:
-				codeVal = types.NewCode(val)
+				primary_keyVal = types.NewCode(val)
 			}
 		}
-		return t.GetByPK(codeVal)
+		return t.GetByPK(primary_keyVal)
 	}
 	// Handle single primary key (for tables with only one PK field)
 	switch pk := primaryKey.(type) {
@@ -236,32 +246,40 @@ func (t *LanguageBase) Get(primaryKey interface{}) bool {
 		return t.GetByPK(types.NewCode(pk))
 	}
 
-	fmt.Printf("Error: Invalid primary key type for Language.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for SMTP_Setup.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *LanguageBase) GetByPK(code types.Code) bool {
-	tableName := LanguageTableName
-	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+func (t *SMTPSetupBase) GetByPK(primary_key types.Code) bool {
+	tableName := SMTPSetupTableName
+	var primary_keyNull sql.NullString
+	var enabledBool sql.NullBool
+	var smtp_serverNull sql.NullString
+	var smtp_server_portVal int
+	var user_idNull sql.NullString
+	var passwordNull sql.NullString
+	var from_addressNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
-		code,
+		primary_key,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
-		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&primary_keyNull,
+		&enabledBool,
+		&smtp_serverNull,
+		&smtp_server_portVal,
+		&user_idNull,
+		&passwordNull,
+		&from_addressNull,
 	)
 
 	if err != nil {
@@ -270,14 +288,18 @@ func (t *LanguageBase) GetByPK(code types.Code) bool {
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get Language: %v\n", err)
+		fmt.Printf("Error: Failed to get SMTP_Setup: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Primary_key = types.NewCode(primary_keyNull.String)
+	t.Enabled = enabledBool.Bool
+	t.Smtp_server = types.NewText(smtp_serverNull.String)
+	t.Smtp_server_port = smtp_server_portVal
+	t.User_id = types.NewText(user_idNull.String)
+	t.Password = types.NewText(passwordNull.String)
+	t.From_address = types.NewText(from_addressNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -286,7 +308,7 @@ func (t *LanguageBase) GetByPK(code types.Code) bool {
 }
 
 // Insert inserts the record into the database
-func (t *LanguageBase) Insert(runTrigger bool) bool {
+func (t *SMTPSetupBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
@@ -294,31 +316,35 @@ func (t *LanguageBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := SMTPSetupTableName
 
 	// Collect arguments for INSERT
 	args := []interface{}{
-		t.Code,
-		t.Name,
-		t.Translation_key,
+		t.Primary_key,
+		t.Enabled,
+		t.Smtp_server,
+		t.Smtp_server_port,
+		t.User_id,
+		t.Password,
+		t.From_address,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name, translation_key) VALUES (?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert Language: %v\n", err)
+		fmt.Printf("Error: Failed to insert SMTP_Setup: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *LanguageBase) Modify(runTrigger bool) bool {
+func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
@@ -326,7 +352,7 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := SMTPSetupTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -334,13 +360,29 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 
 	// If we have old values (loaded from Get), only update changed fields
 	if t.oldValues != nil {
-		if t.hasFieldChanged("name") {
-			setClauses = append(setClauses, "name = ?")
-			values = append(values, t.Name)
+		if t.hasFieldChanged("enabled") {
+			setClauses = append(setClauses, "enabled = ?")
+			values = append(values, t.Enabled)
 		}
-		if t.hasFieldChanged("translation_key") {
-			setClauses = append(setClauses, "translation_key = ?")
-			values = append(values, t.Translation_key)
+		if t.hasFieldChanged("smtp_server") {
+			setClauses = append(setClauses, "smtp_server = ?")
+			values = append(values, t.Smtp_server)
+		}
+		if t.hasFieldChanged("smtp_server_port") {
+			setClauses = append(setClauses, "smtp_server_port = ?")
+			values = append(values, t.Smtp_server_port)
+		}
+		if t.hasFieldChanged("user_id") {
+			setClauses = append(setClauses, "user_id = ?")
+			values = append(values, t.User_id)
+		}
+		if t.hasFieldChanged("password") {
+			setClauses = append(setClauses, "password = ?")
+			values = append(values, t.Password)
+		}
+		if t.hasFieldChanged("from_address") {
+			setClauses = append(setClauses, "from_address = ?")
+			values = append(values, t.From_address)
 		}
 
 		// If nothing changed, skip update
@@ -349,17 +391,25 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 		}
 	} else {
 		// No old values (fresh record), update all fields
-		setClauses = append(setClauses, "name = ?")
-		values = append(values, t.Name)
-		setClauses = append(setClauses, "translation_key = ?")
-		values = append(values, t.Translation_key)
+		setClauses = append(setClauses, "enabled = ?")
+		values = append(values, t.Enabled)
+		setClauses = append(setClauses, "smtp_server = ?")
+		values = append(values, t.Smtp_server)
+		setClauses = append(setClauses, "smtp_server_port = ?")
+		values = append(values, t.Smtp_server_port)
+		setClauses = append(setClauses, "user_id = ?")
+		values = append(values, t.User_id)
+		setClauses = append(setClauses, "password = ?")
+		values = append(values, t.Password)
+		setClauses = append(setClauses, "from_address = ?")
+		values = append(values, t.From_address)
 	}
 
 	// Add WHERE clause value (primary key)
-	values = append(values, t.Code)
+	values = append(values, t.Primary_key)
 
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND primary_key = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -369,14 +419,14 @@ func (t *LanguageBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify Language: %v\n", err)
+		fmt.Printf("Error: Failed to modify SMTP_Setup: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
+func (t *SMTPSetupBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -389,13 +439,31 @@ func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
-	case "name":
-		if old, ok := oldValue.(types.Text); ok {
-			return !t.Name.Equal(old)
+	case "enabled":
+		if old, ok := oldValue.(bool); ok {
+			return t.Enabled != old
 		}
-	case "translation_key":
+		return true // Type mismatch, assume changed
+	case "smtp_server":
 		if old, ok := oldValue.(types.Text); ok {
-			return !t.Translation_key.Equal(old)
+			return !t.Smtp_server.Equal(old)
+		}
+	case "smtp_server_port":
+		if old, ok := oldValue.(int); ok {
+			return t.Smtp_server_port != old
+		}
+		return true // Type mismatch, assume changed
+	case "user_id":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.User_id.Equal(old)
+		}
+	case "password":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Password.Equal(old)
+		}
+	case "from_address":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.From_address.Equal(old)
 		}
 	}
 
@@ -403,7 +471,7 @@ func (t *LanguageBase) hasFieldChanged(fieldName string) bool {
 }
 
 // Delete removes the record from the database
-func (t *LanguageBase) Delete(runTrigger bool) bool {
+func (t *SMTPSetupBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
@@ -411,22 +479,22 @@ func (t *LanguageBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := LanguageTableName
+	tableName := SMTPSetupTableName
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.Code,
+		t.Primary_key,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete Language: %v\n", err)
+		fmt.Printf("Error: Failed to delete SMTP_Setup: %v\n", err)
 		return false
 	}
 	return true
@@ -434,7 +502,7 @@ func (t *LanguageBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *LanguageBase) CalcFields(fieldNames ...string) {
+func (t *SMTPSetupBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -442,8 +510,8 @@ func (t *LanguageBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// languageBaseFilterCondition represents a filter on a field
-type languageBaseFilterCondition struct {
+// sMTPSetupBaseFilterCondition represents a filter on a field
+type sMTPSetupBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -455,9 +523,9 @@ type languageBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
+func (t *SMTPSetupBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*languageBaseFilterCondition)
+		t.filters = make(map[string]*sMTPSetupBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -476,7 +544,7 @@ func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &languageBaseFilterCondition{
+	t.filters[fieldName] = &sMTPSetupBaseFilterCondition{
 		fieldName: fieldName,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -487,11 +555,11 @@ func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
+func (t *SMTPSetupBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*languageBaseFilterCondition)
+		t.filters = make(map[string]*sMTPSetupBaseFilterCondition)
 	}
-	t.filters[fieldName] = &languageBaseFilterCondition{
+	t.filters[fieldName] = &sMTPSetupBaseFilterCondition{
 		fieldName:    fieldName,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -500,12 +568,12 @@ func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *LanguageBase) SetCurrentKey(fields ...string) {
+func (t *SMTPSetupBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = fields
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *LanguageBase) Reset() {
+func (t *SMTPSetupBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -516,7 +584,7 @@ func (t *LanguageBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
+func (t *SMTPSetupBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -555,7 +623,7 @@ func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *LanguageBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *SMTPSetupBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -597,18 +665,18 @@ func (t *LanguageBase) parseFilterExpression(fieldName, expr string) (string, []
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *LanguageBase) getOrderByClause() string {
+func (t *SMTPSetupBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "code"
+	return "primary_key"
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
 // limit rows, skipping the first offset rows. A limit of 0 disables pagination
 // (all matching rows are returned). Negative values are treated as 0.
-func (t *LanguageBase) SetPage(limit, offset int) {
+func (t *SMTPSetupBase) SetPage(limit, offset int) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -622,7 +690,7 @@ func (t *LanguageBase) SetPage(limit, offset int) {
 // getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
 // Returns an empty string when no limit is set. LIMIT/OFFSET take integer
 // literals (not placeholders), which both SQLite and PostgreSQL accept.
-func (t *LanguageBase) getLimitClause() string {
+func (t *SMTPSetupBase) getLimitClause() string {
 	if t.limit <= 0 {
 		return ""
 	}
@@ -634,37 +702,47 @@ func (t *LanguageBase) getLimitClause() string {
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *LanguageBase) FindFirst() bool {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) FindFirst() bool {
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+	var primary_keyNull sql.NullString
+	var enabledBool sql.NullBool
+	var smtp_serverNull sql.NullString
+	var user_idNull sql.NullString
+	var passwordNull sql.NullString
+	var from_addressNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&primary_keyNull,
+		&enabledBool,
+		&smtp_serverNull,
+		&t.Smtp_server_port,
+		&user_idNull,
+		&passwordNull,
+		&from_addressNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first Language: %v\n", err)
+		fmt.Printf("Error: Failed to find first SMTP_Setup: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Primary_key = types.NewCode(primary_keyNull.String)
+	t.Enabled = enabledBool.Bool
+	t.Smtp_server = types.NewText(smtp_serverNull.String)
+	t.User_id = types.NewText(user_idNull.String)
+	t.Password = types.NewText(passwordNull.String)
+	t.From_address = types.NewText(from_addressNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -674,37 +752,47 @@ func (t *LanguageBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *LanguageBase) FindLast() bool {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) FindLast() bool {
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
-	var codeNull sql.NullString
-	var nameNull sql.NullString
-	var translation_keyNull sql.NullString
+	var primary_keyNull sql.NullString
+	var enabledBool sql.NullBool
+	var smtp_serverNull sql.NullString
+	var user_idNull sql.NullString
+	var passwordNull sql.NullString
+	var from_addressNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
-		&codeNull,
-		&nameNull,
-		&translation_keyNull,
+		&primary_keyNull,
+		&enabledBool,
+		&smtp_serverNull,
+		&t.Smtp_server_port,
+		&user_idNull,
+		&passwordNull,
+		&from_addressNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last Language: %v\n", err)
+		fmt.Printf("Error: Failed to find last SMTP_Setup: %v\n", err)
 		return false
 	}
 
 	// Populate fields
-	t.Code = types.NewCode(codeNull.String)
-	t.Name = types.NewText(nameNull.String)
-	t.Translation_key = types.NewText(translation_keyNull.String)
+	t.Primary_key = types.NewCode(primary_keyNull.String)
+	t.Enabled = enabledBool.Bool
+	t.Smtp_server = types.NewText(smtp_serverNull.String)
+	t.User_id = types.NewText(user_idNull.String)
+	t.Password = types.NewText(passwordNull.String)
+	t.From_address = types.NewText(from_addressNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -713,8 +801,8 @@ func (t *LanguageBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *LanguageBase) Count() int {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) Count() int {
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -725,7 +813,7 @@ func (t *LanguageBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count Language: %v\n", err)
+		fmt.Printf("Error: Failed to count SMTP_Setup: %v\n", err)
 		return 0
 	}
 
@@ -735,25 +823,25 @@ func (t *LanguageBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *LanguageBase) FindSet() bool {
+func (t *SMTPSetupBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := LanguageTableName
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for Language: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for SMTP_Setup: %v\n", err)
 		return false
 	}
 
@@ -771,7 +859,7 @@ func (t *LanguageBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *LanguageBase) Next(steps ...int) bool {
+func (t *SMTPSetupBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -813,27 +901,37 @@ func (t *LanguageBase) Next(steps ...int) bool {
 		}
 
 		// Scan the row
-		var codeNull sql.NullString
-		var nameNull sql.NullString
-		var translation_keyNull sql.NullString
+		var primary_keyNull sql.NullString
+		var enabledBool sql.NullBool
+		var smtp_serverNull sql.NullString
+		var user_idNull sql.NullString
+		var passwordNull sql.NullString
+		var from_addressNull sql.NullString
 
 		err := t.currentRows.Scan(
-			&codeNull,
-			&nameNull,
-			&translation_keyNull,
+			&primary_keyNull,
+			&enabledBool,
+			&smtp_serverNull,
+			&t.Smtp_server_port,
+			&user_idNull,
+			&passwordNull,
+			&from_addressNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
+			fmt.Printf("Error: Failed to scan SMTP_Setup record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
 		}
 
 		// Populate fields
-		t.Code = types.NewCode(codeNull.String)
-		t.Name = types.NewText(nameNull.String)
-		t.Translation_key = types.NewText(translation_keyNull.String)
+		t.Primary_key = types.NewCode(primary_keyNull.String)
+		t.Enabled = enabledBool.Bool
+		t.Smtp_server = types.NewText(smtp_serverNull.String)
+		t.User_id = types.NewText(user_idNull.String)
+		t.Password = types.NewText(passwordNull.String)
+		t.From_address = types.NewText(from_addressNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -849,7 +947,7 @@ func (t *LanguageBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *LanguageBase) FindSetBuffered() bool {
+func (t *SMTPSetupBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -859,19 +957,19 @@ func (t *LanguageBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := LanguageTableName
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, translation_key FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for Language: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for SMTP_Setup: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -879,31 +977,41 @@ func (t *LanguageBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &LanguageBase{}
+		record := &SMTPSetupBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
-		var codeNull sql.NullString
-		var nameNull sql.NullString
-		var translation_keyNull sql.NullString
+		var primary_keyNull sql.NullString
+		var enabledBool sql.NullBool
+		var smtp_serverNull sql.NullString
+		var user_idNull sql.NullString
+		var passwordNull sql.NullString
+		var from_addressNull sql.NullString
 
 		err := rows.Scan(
-			&codeNull,
-			&nameNull,
-			&translation_keyNull,
+			&primary_keyNull,
+			&enabledBool,
+			&smtp_serverNull,
+			&record.Smtp_server_port,
+			&user_idNull,
+			&passwordNull,
+			&from_addressNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Language record: %v\n", err)
+			fmt.Printf("Error: Failed to scan SMTP_Setup record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
-		record.Code = types.NewCode(codeNull.String)
-		record.Name = types.NewText(nameNull.String)
-		record.Translation_key = types.NewText(translation_keyNull.String)
+		record.Primary_key = types.NewCode(primary_keyNull.String)
+		record.Enabled = enabledBool.Bool
+		record.Smtp_server = types.NewText(smtp_serverNull.String)
+		record.User_id = types.NewText(user_idNull.String)
+		record.Password = types.NewText(passwordNull.String)
+		record.From_address = types.NewText(from_addressNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -914,7 +1022,7 @@ func (t *LanguageBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate Language records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate SMTP_Setup records: %v\n", err)
 		return false
 	}
 
@@ -931,10 +1039,14 @@ func (t *LanguageBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *LanguageBase) copyFromBuffered(record *LanguageBase) {
-	t.Code = record.Code
-	t.Name = record.Name
-	t.Translation_key = record.Translation_key
+func (t *SMTPSetupBase) copyFromBuffered(record *SMTPSetupBase) {
+	t.Primary_key = record.Primary_key
+	t.Enabled = record.Enabled
+	t.Smtp_server = record.Smtp_server
+	t.Smtp_server_port = record.Smtp_server_port
+	t.User_id = record.User_id
+	t.Password = record.Password
+	t.From_address = record.From_address
 	t.StoreOldValues()
 }
 
@@ -943,14 +1055,14 @@ func (t *LanguageBase) copyFromBuffered(record *LanguageBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *LanguageBase) IsEmpty() bool {
+func (t *SMTPSetupBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
@@ -964,7 +1076,7 @@ func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all Language: %v\n", err)
+		fmt.Printf("Error: Failed to modify all SMTP_Setup: %v\n", err)
 		return 0
 	}
 
@@ -974,8 +1086,8 @@ func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *LanguageBase) DeleteAll() int {
-	tableName := LanguageTableName
+func (t *SMTPSetupBase) DeleteAll() int {
+	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -986,7 +1098,7 @@ func (t *LanguageBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all Language: %v\n", err)
+		fmt.Printf("Error: Failed to delete all SMTP_Setup: %v\n", err)
 		return 0
 	}
 
@@ -995,16 +1107,16 @@ func (t *LanguageBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *LanguageBase) CopyFilters(from *LanguageBase) {
+func (t *SMTPSetupBase) CopyFilters(from *SMTPSetupBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*languageBaseFilterCondition)
+	t.filters = make(map[string]*sMTPSetupBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &languageBaseFilterCondition{
+		t.filters[key] = &sMTPSetupBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -1024,7 +1136,7 @@ func (t *LanguageBase) CopyFilters(from *LanguageBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *LanguageBase) GetFilters() string {
+func (t *SMTPSetupBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1052,63 +1164,141 @@ func (t *LanguageBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *LanguageBase) ValidateField(fieldName string, value interface{}) error {
+func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
-	case "code":
+	case "primary_key":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
-			t.Code = v
+			t.Primary_key = v
 		} else if v, ok := value.(string); ok {
-			t.Code = types.NewCode(v)
+			t.Primary_key = types.NewCode(v)
 		} else {
-			return fmt.Errorf("invalid type for field code")
+			return fmt.Errorf("invalid type for field primary_key")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Code()
-	case "name":
+		return t.OnValidate_Primary_key()
+	case "enabled":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Enabled = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Enabled = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field enabled")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Enabled()
+	case "smtp_server":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.Name = v
+			t.Smtp_server = v
 		} else if v, ok := value.(string); ok {
-			t.Name = types.NewText(v)
+			t.Smtp_server = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field name")
+			return fmt.Errorf("invalid type for field smtp_server")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Name()
-	case "translation_key":
+		return t.OnValidate_Smtp_server()
+	case "smtp_server_port":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Smtp_server_port = v
+		case float64:
+			t.Smtp_server_port = int(v)
+		case string:
+			if v == "" {
+				t.Smtp_server_port = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Smtp_server_port = i
+			} else {
+				return fmt.Errorf("invalid integer value for field smtp_server_port: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field smtp_server_port")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Smtp_server_port()
+	case "user_id":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.Translation_key = v
+			t.User_id = v
 		} else if v, ok := value.(string); ok {
-			t.Translation_key = types.NewText(v)
+			t.User_id = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field translation_key")
+			return fmt.Errorf("invalid type for field user_id")
 		}
 		// Call OnValidate trigger
-		return t.OnValidate_Translation_key()
+		return t.OnValidate_User_id()
+	case "password":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Password = v
+		} else if v, ok := value.(string); ok {
+			t.Password = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field password")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_Password()
+	case "from_address":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.From_address = v
+		} else if v, ok := value.(string); ok {
+			t.From_address = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field from_address")
+		}
+		// Call OnValidate trigger
+		return t.OnValidate_From_address()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-// OnValidate_Code is the validation trigger for code field (BC/NAV style)
+// OnValidate_Primary_key is the validation trigger for primary_key field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Code() error {
+func (t *SMTPSetupBase) OnValidate_Primary_key() error {
 	return nil
 }
 
-// OnValidate_Name is the validation trigger for name field (BC/NAV style)
+// OnValidate_Enabled is the validation trigger for enabled field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Name() error {
+func (t *SMTPSetupBase) OnValidate_Enabled() error {
 	return nil
 }
 
-// OnValidate_Translation_key is the validation trigger for translation_key field (BC/NAV style)
+// OnValidate_Smtp_server is the validation trigger for smtp_server field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *LanguageBase) OnValidate_Translation_key() error {
+func (t *SMTPSetupBase) OnValidate_Smtp_server() error {
+	return nil
+}
+
+// OnValidate_Smtp_server_port is the validation trigger for smtp_server_port field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *SMTPSetupBase) OnValidate_Smtp_server_port() error {
+	return nil
+}
+
+// OnValidate_User_id is the validation trigger for user_id field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *SMTPSetupBase) OnValidate_User_id() error {
+	return nil
+}
+
+// OnValidate_Password is the validation trigger for password field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *SMTPSetupBase) OnValidate_Password() error {
+	return nil
+}
+
+// OnValidate_From_address is the validation trigger for from_address field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *SMTPSetupBase) OnValidate_From_address() error {
 	return nil
 }
 
@@ -1117,81 +1307,144 @@ func (t *LanguageBase) OnValidate_Translation_key() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *LanguageBase) ClearFilters() {
+func (t *SMTPSetupBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *LanguageBase) ToMap() map[string]interface{} {
+func (t *SMTPSetupBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"code": t.Code.String(),
-		"name": t.Name.String(),
-		"translation_key": t.Translation_key.String(),
+		"primary_key": t.Primary_key.String(),
+		"enabled": t.Enabled,
+		"smtp_server": t.Smtp_server.String(),
+		"smtp_server_port": t.Smtp_server_port,
+		"user_id": t.User_id.String(),
+		"password": t.Password.String(),
+		"from_address": t.From_address.String(),
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *LanguageBase) FromMap(data map[string]interface{}) {
-	if v, ok := data["code"]; ok && v != nil {
+func (t *SMTPSetupBase) FromMap(data map[string]interface{}) {
+	if v, ok := data["primary_key"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Code = types.NewCode(s)
+			t.Primary_key = types.NewCode(s)
 		}
 	}
-	if v, ok := data["name"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Name = types.NewText(s)
+	if v, ok := data["enabled"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Enabled = b
 		}
 	}
-	if v, ok := data["translation_key"]; ok && v != nil {
+	if v, ok := data["smtp_server"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Translation_key = types.NewText(s)
+			t.Smtp_server = types.NewText(s)
+		}
+	}
+	if v, ok := data["smtp_server_port"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Smtp_server_port = int(val)
+		case int:
+			t.Smtp_server_port = val
+		}
+	}
+	if v, ok := data["user_id"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.User_id = types.NewText(s)
+		}
+	}
+	if v, ok := data["password"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Password = types.NewText(s)
+		}
+	}
+	if v, ok := data["from_address"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.From_address = types.NewText(s)
 		}
 	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *LanguageBase) UpdateFromMap(data map[string]interface{}) {
+func (t *SMTPSetupBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *LanguageBase) GetPrimaryKeyField() string {
-	return "code"
+func (t *SMTPSetupBase) GetPrimaryKeyField() string {
+	return "primary_key"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *LanguageBase) GetPrimaryKeyValue() string {
-	return t.Code.String()
+func (t *SMTPSetupBase) GetPrimaryKeyValue() string {
+	return t.Primary_key.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *LanguageBase) GetFields() []tables.FieldInfo {
+func (t *SMTPSetupBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
-			Name:       "code",
+			Name:       "primary_key",
 			Type:       tables.FieldTypeCode,
-			Length:     10,
-			Required:   true,
+			Length:     20,
+			Required:   false,
 			Editable:   false,
 			PrimaryKey: true,
 			FlowField:  false,
 		},
 		{
-			Name:       "name",
-			Type:       tables.FieldTypeText,
-			Length:     50,
+			Name:       "enabled",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
 			FlowField:  false,
 		},
 		{
-			Name:       "translation_key",
+			Name:       "smtp_server",
 			Type:       tables.FieldTypeText,
-			Length:     5,
+			Length:     250,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "smtp_server_port",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "user_id",
+			Type:       tables.FieldTypeText,
+			Length:     100,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "password",
+			Type:       tables.FieldTypeText,
+			Length:     250,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "from_address",
+			Type:       tables.FieldTypeText,
+			Length:     100,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -1201,19 +1454,19 @@ func (t *LanguageBase) GetFields() []tables.FieldInfo {
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *LanguageBase) GetFlowFields() []string {
+func (t *SMTPSetupBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *LanguageBase) GetOptionFields() map[string][]string {
+func (t *SMTPSetupBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *LanguageBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *SMTPSetupBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
 	}
 }

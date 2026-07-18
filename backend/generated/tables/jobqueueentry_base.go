@@ -137,6 +137,12 @@ func (t *JobQueueEntryBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
+// IsSetupTable reports whether this is a BC-style singleton setup table
+// (a single record identified by a blank primary key).
+func (t *JobQueueEntryBase) IsSetupTable() bool {
+	return false
+}
+
 // GetJobQueueEntryTableSchema returns the SQLite schema
 func GetJobQueueEntryTableSchema() string {
 	return `
