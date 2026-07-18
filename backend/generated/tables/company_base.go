@@ -92,6 +92,12 @@ func (t *CompanyBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
+// IsSetupTable reports whether this is a BC-style singleton setup table
+// (a single record identified by a blank primary key).
+func (t *CompanyBase) IsSetupTable() bool {
+	return false
+}
+
 // GetCompanyTableSchema returns the SQLite schema
 func GetCompanyTableSchema() string {
 	return `

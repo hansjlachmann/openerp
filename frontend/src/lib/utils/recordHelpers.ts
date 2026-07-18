@@ -8,6 +8,12 @@ import type { PageDefinition, Field } from '$lib/types/pages';
 export function getPrimaryKeyField(page: PageDefinition | null | undefined): string | undefined {
 	if (!page) return undefined;
 
+	// Prefer the backend-provided PK fields (works even when the PK is not displayed,
+	// e.g. BC-style setup tables whose blank primary key is hidden).
+	if (page.page.primary_key_fields && page.page.primary_key_fields.length > 0) {
+		return page.page.primary_key_fields[0];
+	}
+
 	// Check repeater fields (List pages)
 	if (page.page.layout.repeater?.fields) {
 		const pkField = page.page.layout.repeater.fields.find((f: Field) => f.primary_key);
@@ -31,6 +37,11 @@ export function getPrimaryKeyField(page: PageDefinition | null | undefined): str
  */
 export function getPrimaryKeyFields(page: PageDefinition | null | undefined): string[] {
 	if (!page) return [];
+
+	// Prefer the backend-provided PK fields (authoritative; covers hidden PKs).
+	if (page.page.primary_key_fields && page.page.primary_key_fields.length > 0) {
+		return page.page.primary_key_fields;
+	}
 
 	const pkFields: string[] = [];
 
@@ -80,8 +91,10 @@ export function getRecordId(
 		return undefined;
 	}
 
-	// If primary key field is specified, use it directly
-	if (primaryKeyField && record[primaryKeyField] !== undefined && record[primaryKeyField] !== '') {
+	// If primary key field is specified, use it directly.
+	// An empty string is a valid id (BC-style setup tables have a single blank primary key),
+	// so only fall through when the field is entirely absent.
+	if (primaryKeyField && record[primaryKeyField] !== undefined) {
 		return String(record[primaryKeyField]);
 	}
 
@@ -133,9 +146,13 @@ export function getRecordKey(
 	// For new unsaved records, use the temporary ID
 	if (record._tempId) return record._tempId;
 
-	// Use the composite or single primary key value
+	// Use the composite or single primary key value.
+	// An empty string is a valid, stable key (BC-style setup tables have a single
+	// blank primary key) — only fall through when there is no id at all. Returning a
+	// random key here would give the keyed each an unstable key on every render,
+	// destroying/recreating the row (breaks focus, edit state, and Svelte reconcile).
 	const id = getRecordId(record, primaryKeyField, primaryKeyFields);
-	if (id) return id;
+	if (id !== undefined) return id;
 
 	// Last resort fallback - should not happen in practice
 	return `record-${Math.random().toString(36).substr(2, 9)}`;

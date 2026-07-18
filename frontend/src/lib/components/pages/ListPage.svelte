@@ -748,21 +748,27 @@
 					const { _isNew, _tempId, ...recordToSave } = record;
 					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
 					// Update record in place to preserve _tempId (keeps Svelte's keyed each stable)
-					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering
-					if (savedRecord) Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
-					delete editableRecords[rowIndex]._isNew;
+					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering.
+					// Guard: an await can race with exitToNavigation() clearing editableRecords.
+					if (savedRecord && editableRecords[rowIndex]) {
+						Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
+						delete editableRecords[rowIndex]._isNew;
+					}
 					// Trigger parent update if callback exists
 					if (onsave) {
 						await onsave(savedRecord, true);
 					}
 				}
-			} else if (recordId) {
-				// Existing record - update it
+			} else if (recordId !== undefined) {
+				// Existing record - update it (recordId may be "" for a blank-PK setup record)
 				const { _isNew, _tempId, ...recordToSave } = record;
 				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, recordToSave);
-				// Update record in place to preserve any _tempId
-				if (savedRecord) Object.assign(editableRecords[rowIndex], savedRecord);
-				if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
+				// Update record in place to preserve any _tempId.
+				// Guard: an await can race with exitToNavigation() clearing editableRecords.
+				if (savedRecord && editableRecords[rowIndex]) {
+					Object.assign(editableRecords[rowIndex], savedRecord);
+					if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
+				}
 				// Trigger parent update if callback exists
 				if (onsave) {
 					await onsave(savedRecord, false);
@@ -2288,7 +2294,7 @@
 														e.stopPropagation();
 														record[field.source] = !record[field.source];
 														const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
-														if (recordId) {
+														if (recordId !== undefined) {
 															try {
 																await api.modifyRecord(page.page.source_table, recordId, { [field.source]: record[field.source] });
 															} catch (err) {

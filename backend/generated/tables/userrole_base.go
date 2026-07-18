@@ -93,6 +93,12 @@ func (t *UserRoleBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
+// IsSetupTable reports whether this is a BC-style singleton setup table
+// (a single record identified by a blank primary key).
+func (t *UserRoleBase) IsSetupTable() bool {
+	return false
+}
+
 // GetUserRoleTableSchema returns the SQLite schema
 func GetUserRoleTableSchema() string {
 	return `

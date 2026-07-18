@@ -13,11 +13,12 @@ import (
 // TableDef represents a table definition from YAML
 type TableDef struct {
 	Table struct {
-		ID     int     `yaml:"id"`
-		Name   string  `yaml:"name"`
-		Global bool    `yaml:"global"` // If true, table is global (no company prefix)
-		Fields []Field `yaml:"fields"`
-		Keys   []Key   `yaml:"keys"`
+		ID         int     `yaml:"id"`
+		Name       string  `yaml:"name"`
+		Global     bool    `yaml:"global"`      // If true, table is global (no company prefix)
+		SetupTable bool    `yaml:"setup_table"` // If true, BC-style singleton setup table (single blank-PK record)
+		Fields     []Field `yaml:"fields"`
+		Keys       []Key   `yaml:"keys"`
 	} `yaml:"table"`
 }
 
@@ -719,6 +720,12 @@ func (t *{{ .BaseStructName }}) GetCompany() string {
 // GetDBType returns the database type (for wrapper access)
 func (t *{{ .BaseStructName }}) GetDBType() database.DBType {
 	return t.dbType
+}
+
+// IsSetupTable reports whether this is a BC-style singleton setup table
+// (a single record identified by a blank primary key).
+func (t *{{ .BaseStructName }}) IsSetupTable() bool {
+	return {{ .Table.SetupTable }}
 }
 
 // Get{{ .StructName }}TableSchema returns the SQLite schema

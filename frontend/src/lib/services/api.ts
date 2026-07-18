@@ -10,6 +10,15 @@ import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handle
 
 const API_BASE = '/api';
 
+// Builds a record endpoint URL. An empty id (a BC-style setup table's single
+// record has a blank primary key) omits the id segment so it matches the no-id
+// backend routes instead of producing a trailing-slash 404.
+function recordUrl(tableName: string, action: 'card' | 'modify' | 'delete', id: string): string {
+	return id === ''
+		? `${API_BASE}/tables/${tableName}/${action}`
+		: `${API_BASE}/tables/${tableName}/${action}/${id}`;
+}
+
 // Helper to build query string from filters
 function buildQueryString(options?: ListOptions): string {
 	if (!options) return '';
@@ -70,12 +79,12 @@ export const api = {
 	},
 
 	async getRecord<T = TableRecord>(tableName: string, id: string): Promise<T> {
-		const response = await fetch(`${API_BASE}/tables/${tableName}/card/${id}`);
+		const response = await fetch(recordUrl(tableName, 'card', id));
 		return handleApiResponse<T>(response, `get ${tableName} ${id}`);
 	},
 
 	async getRecordWithCaptions<T = TableRecord>(tableName: string, id: string): Promise<DataWithCaptions<T>> {
-		const response = await fetch(`${API_BASE}/tables/${tableName}/card/${id}`);
+		const response = await fetch(recordUrl(tableName, 'card', id));
 		return handleApiResponseWithCaptions<T>(response, `get ${tableName} ${id}`);
 	},
 
@@ -126,7 +135,7 @@ export const api = {
 		id: string,
 		data: Partial<T>
 	): Promise<T> {
-		const response = await fetch(`${API_BASE}/tables/${tableName}/modify/${id}`, {
+		const response = await fetch(recordUrl(tableName, 'modify', id), {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
@@ -135,7 +144,7 @@ export const api = {
 	},
 
 	async deleteRecord(tableName: string, id: string): Promise<void> {
-		const response = await fetch(`${API_BASE}/tables/${tableName}/delete/${id}`, {
+		const response = await fetch(recordUrl(tableName, 'delete', id), {
 			method: 'DELETE'
 		});
 		return handleApiResponseVoid(response, `delete ${tableName} ${id}`);

@@ -17,6 +17,9 @@ func init() {
 	RegisterTableFactory("Payment_terms", gtables.PaymentTermsTableID, func() ftables.Table {
 		return &PaymentTerms{}
 	})
+	RegisterTableFactory("SMTP_Setup", gtables.SMTPSetupTableID, func() ftables.Table {
+		return &SMTPSetup{}
+	})
 	RegisterTableFactory("Customer_ledger_entry", gtables.CustomerLedgerEntryTableID, func() ftables.Table {
 		return &CustomerLedgerEntry{}
 	})

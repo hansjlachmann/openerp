@@ -47,6 +47,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// Get table metadata for primary key info
 	tableMeta := pages.GetTableMetadata()
 	primaryKeyFields := tableMeta.GetPrimaryKeyFields(pageDef.Page.SourceTable)
+	// Send the PK field names so the frontend can identify records even when the
+	// primary key is not displayed on the page (e.g. BC-style setup tables).
+	pageDef.Page.PrimaryKeyFields = primaryKeyFields
 	// Build a set for quick lookup
 	pkSet := make(map[string]bool, len(primaryKeyFields))
 	for _, pk := range primaryKeyFields {

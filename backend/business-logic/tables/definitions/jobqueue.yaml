@@ -45,6 +45,21 @@ table:
       type: bool
       db_name: recurring_job
 
+    - name: recurrence
+      type: Option
+      db_name: recurrence
+      options: ["Once", "Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
+
+    - name: notification_email
+      type: types.Text
+      db_name: notification_email
+      length: 100
+
+    - name: notify_on
+      type: Option
+      db_name: notify_on
+      options: ["Never", "Always", "On Error"]
+
     # FlowField - count of related Job Queue Entries
     - name: number_of_entries
       type: int

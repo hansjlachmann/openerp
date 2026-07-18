@@ -1,0 +1,43 @@
+page:
+  id: 409
+  type: List
+  name: SMTP Setup List
+  source_table: SMTP_Setup
+  caption: SMTP Setup
+  editable: true
+
+  # BC-style singleton setup table: the single record is created automatically,
+  # the blank primary key is not shown, and there is no New/Delete.
+  layout:
+    repeater:
+      fields:
+        - source: enabled
+          width: 90
+
+        - source: smtp_server
+          width: 240
+
+        - source: smtp_server_port
+          width: 120
+
+        - source: user_id
+          width: 220
+
+        - source: password
+          width: 200
+
+        - source: from_address
+          width: 240
+
+  actions:
+    - name: Edit
+      caption: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

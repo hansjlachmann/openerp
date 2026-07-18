@@ -94,6 +94,12 @@ func (t *MenuBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
+// IsSetupTable reports whether this is a BC-style singleton setup table
+// (a single record identified by a blank primary key).
+func (t *MenuBase) IsSetupTable() bool {
+	return false
+}
+
 // GetMenuTableSchema returns the SQLite schema
 func GetMenuTableSchema() string {
 	return `

@@ -86,10 +86,20 @@ From `docs/migrations.md`.
 
 ---
 
-## Planned Feature: Job Queue — Automatic / Scheduled Execution
+## Feature: Job Queue — Automatic / Scheduled Execution ✅ IMPLEMENTED
 
-**Status:** specified, not implemented. Decisions: recurrence modeled as a new Option field;
-execution via an in-process DB-polling scheduler (no cron dependency, no OS cron).
+**Status:** implemented. In-process DB-polling scheduler (`backend/business-logic/scheduler/`)
+runs `Job_Queue` jobs on a `recurrence` schedule and emails notifications
+(`backend/foundation/mail/`). Scheduler config: `JOB_QUEUE_ENABLED` (default on),
+`JOB_QUEUE_POLL_INTERVAL` (seconds, default 60). **SMTP is configured in the DB** via the global
+`SMTP_Setup` table (table 409, Settings → SMTP Setup); no env-var SMTP config. The design notes
+below are retained as reference.
+
+`SMTP_Setup` is the first **BC-style setup table** (see the framework feature below).
+
+Not yet done (follow-ups): localize notification email via i18n; per-job leases (currently one global
+`_scheduler_lock`); "In Process" start-entry lifecycle (codeunits still self-log their entries);
+mask/encrypt the SMTP password (currently stored and rendered in plain text).
 
 ### Goal
 Run `Job_Queue` records automatically on a recurring schedule (Minutes / Hourly / Daily / Weekly /
@@ -205,6 +215,24 @@ generation — uses progress but no user confirms) are the realistic scheduled t
 - Email: with a stub/mock SMTP sender, assert `notify_on` gating (Always vs On Error vs Never) and
   that a blank `notification_email` sends nothing; assert a failed SMTP send doesn't break the run.
 - Manual: via `scripts/dev.sh`, set a job Ready with near `next_start`, watch it run and log on page 673.
+
+---
+
+## Framework: BC-style Setup Tables ✅ IMPLEMENTED
+
+Reusable support for NAV/BC-style singleton **setup tables** — a single record identified by a blank
+`Primary Key` (Code[20]). To add one: create a table YAML with a `primary_key` (Code[20], not
+required) field and `setup_table: true`, and a list page showing the real fields (omit the PK column
+and New/Delete). The framework handles the rest:
+
+- **tablegen**: `setup_table: true` → generates `IsSetupTable()` (on the `Table` interface).
+- **Auto-create**: the list endpoint creates the single blank-PK record on first access, so it is
+  always present (BC "the setup record is always there").
+- **Blank-PK routing**: no-id API routes (`GET /card`, `PUT /modify`, `DELETE /delete`) plus handlers
+  that accept an empty id for setup tables; the frontend api client omits the id segment when blank.
+
+Works for global or company-scoped tables. First consumer: `SMTP_Setup` (table 409). Follow-up:
+mask/encrypt setup fields flagged sensitive (e.g. the SMTP password) instead of plain text.
 
 ---
 
