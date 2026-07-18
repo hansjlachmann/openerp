@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.67](https://github.com/hansjlachmann/openerp/compare/v0.1.66...v0.1.67) (2026-07-18)
+
+
+### Features
+
+* add opt-in server-side pagination to list endpoint ([6f4904a](https://github.com/hansjlachmann/openerp/commit/6f4904a48c7dda4b673d4c1dc04342f777a9df4a))
+* automatic Job Queue scheduler with email notifications and DB-backed SMTP setup ([8293f98](https://github.com/hansjlachmann/openerp/commit/8293f9838cb4a16f4d6650e27cc4580dd7fc2a11))
+
+
+### Documentation
+
+* mark pagination done; add Job Queue scheduler + email spec ([743642e](https://github.com/hansjlachmann/openerp/commit/743642eb4d4eac089b2858e3eea51fde69168ae0))
+
 ## [0.1.66](https://github.com/hansjlachmann/openerp/compare/v0.1.65...v0.1.66) (2026-07-15)
 
 
