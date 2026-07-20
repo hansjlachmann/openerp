@@ -236,6 +236,275 @@ mask/encrypt setup fields flagged sensitive (e.g. the SMTP password) instead of 
 
 ---
 
+## Feature: Editable List — BC Record Entry Behavior
+
+**Status:** planned, not started. Inserting a row on an editable list page does not match Business
+Central. Reference material: seven BC screenshots in `screenshots/GeneralJournal01-07.png` (General
+Journals, batch CBI-RECON) capturing the real lifecycle. The decisive frame is 04 — selecting
+`Account No. 01013` makes "✓ Saved" appear **while the cursor is still on the row**, and
+simultaneously auto-fills Account Name, Description, Gen. Bus. Posting Group and Gen. Posting Type.
+So BC inserts on the **first field the user validates with a value**, not on row-leave, and one
+field's validation populates siblings. OpenERP does neither.
+
+### Goal
+A new row arrives pre-populated with defaults but uncommitted; it is INSERTed the moment the user
+validates the first field with a value, while the cursor is still on the row; validating one field
+can populate sibling fields; abandoning an untouched new row discards it silently.
+
+### Observed BC lifecycle (from the screenshots)
+- **ArrowDown past the last row** (02) — a new row appears **already populated** (Posting Date, VAT
+  Date, Document No., Account Type, Bal. Account Type, Amount 0,00), yet the footer still reads
+  "Number of Lines **2**" → the record is not inserted.
+- **Lookup on Account No.** (03) — the dropdown opens over the still-uncommitted row.
+- **Select 01013** (04) — "✓ Saved" appears; INSERT fires here, on the row. Four sibling fields
+  auto-fill from that single validation.
+- **Edit Description** (05–07) — every subsequent edit is a MODIFY.
+- **ArrowUp out of an untouched new row** — the row is discarded, never inserted.
+
+### The insert lifecycle (the core rule)
+Replaces today's row-leave rule end to end.
+- **Row created** — populated from the init endpoint, marked `_isNew`, not persisted.
+- **INSERT** — fires on the first field the **user** validates with a non-empty value, on the row.
+  On success `_isNew` clears and the row holds a real primary key.
+- **MODIFY** — every subsequent field commit on that row.
+- **DISCARD** — leaving a row on which the user validated nothing removes it client-side, no API call.
+- **Critical subtlety:** init-supplied defaults must **not** count toward the insert trigger. In
+  screenshot 02 the row already carries Posting Date, Document No., Account Type and Amount while the
+  footer still reads 2 lines. Track user-originated edits explicitly (a `_touched` set on the row, or
+  a diff against the pristine init payload) — do **not** test "has any non-empty field", which would
+  insert the row the instant it is created.
+- Keep the existing "only one uncommitted new row at a time" rule; reuse `isEmptyNewRecord`
+  (`frontend/src/lib/components/pages/ListPage.svelte:802`) and `cleanupEmptyNewRows` (`:807`).
+- Retire the `forceInsert` parameter on `handleCellBlur` (`:690`, gate at `:733`) — insert timing
+  stops being a function of *where focus went* and becomes a function of *what the user changed*,
+  which also removes the focus-tracking fragility behind several past bugs.
+
+### New-record initialization (backend)
+Nothing like this exists today — no `OnNewRecord`, no `InitRecord`, no No. Series anywhere in the
+repo. `ListPage.svelte:537-547` and `:843-851` blank every field client-side, so even the four YAML
+`default:` values in the repo never reach a new row.
+- New `Table` interface method `InitRecord()` (BC/NAV `OnNewRecord`), defaulting to the static-default
+  assignment already generated into `InitWithDBType` (`tools/tablegen/main.go:830-847`), overridable
+  per table in `backend/business-logic/tables/*.go` alongside the `OnValidate_*` overrides.
+- New endpoint `POST /api/tables/:table/init` returning the initialized record as a map — the same
+  `table.ToMap()` shape the insert path already returns (`backend/api/handlers/tables.go:565`).
+- `ListPage.svelte` calls it instead of the client-side blank-field loops. Must degrade gracefully:
+  on failure fall back to today's blank row rather than blocking data entry.
+- **Dependency, not in scope:** the `Document No.` in the screenshots (`CBI-G000000…`) comes from a
+  **No. Series**, which does not exist here. `InitRecord` is the hook it will plug into — spec No.
+  Series as its own item.
+
+### Cross-field auto-fill on validate (backend)
+`POST /api/tables/:table/validate` (`backend/api/handlers/tables.go:709-762`) builds a **fresh empty
+record** (line 730), so a trigger cannot see the other entered fields, and returns `Success: true`
+with **no `Data`** (759-761). The screenshot-04 auto-fill is impossible today.
+- Rework it to accept the **full in-progress record** plus `{field, value}`, hydrate the table
+  instance from it instead of using a blank one, run `ValidateField` (which tail-calls
+  `OnValidate_<Field>()`), and return the **mutated record** via `table.ToMap()` — mirroring what
+  insert and modify already do at `:565` / `:650`.
+- `api.validateField` (`frontend/src/lib/services/api.ts:153-173`) returns `{valid, error, record?}`.
+- `ListPage.svelte` merges the returned record into `editableRecords[rowIndex]`. **Reuse the existing
+  post-`await` guard** — `editableRecords[rowIndex]` can be `undefined` after an await because
+  `exitToNavigation()` empties the array; this is the exact bug already fixed at the two
+  `Object.assign` sites in `handleCellBlur`.
+- `OnValidate_*` needs no signature change — it takes no parameters and its receiver is the record
+  (`tools/tablegen/main.go:2486-2490`), so mutating siblings is already possible in Go. Only the
+  transport discards it today. Five overrides exist repo-wide, all pure validation.
+- **Scope expansion to watch:** validate is currently called only for `table_relation` fields lacking
+  an advanced lookup (`ListPage.svelte:709`). BC-style auto-fill means calling it on every field
+  commit — decide whether to gate it on a per-field or per-table "has an OnValidate override" flag so
+  tables that would do nothing with it don't pay a round trip per cell.
+
+### Trailing blank row and row creation
+- BC always renders a blank placeholder row after the last record; ArrowDown from the last record
+  moves into it and materializes the new row. Today ArrowDown/Enter on the last row calls
+  `insertNewRow(true)` (`:961`, `:1058`, `:1177`) — an explicit create rather than a persistent
+  placeholder, so the affordance is invisible until the key is pressed.
+- Show a **"✓ Saved" status indicator** in the page header reflecting insert/modify completion, as in
+  screenshots 01 and 04. Cheap, and it is the only feedback that the row actually committed.
+
+### Files to create / modify (when implemented)
+- `backend/api/handlers/tables.go` — rework `ValidateField`; add the init handler.
+- `backend/api/server.go` — register the init route (validate is registered at `:120`).
+- `backend/foundation/tables/interface.go` — add `InitRecord()` to the interface.
+- `tools/tablegen/main.go` — generate the default `InitRecord()` body from YAML `default:` values;
+  regenerate `backend/generated/tables/`.
+- `frontend/src/lib/services/api.ts` — validate returns a record; add the init call.
+- `frontend/src/lib/types/api.ts` — validate response type.
+- `frontend/src/lib/components/pages/ListPage.svelte` — insert lifecycle, `_touched` tracking,
+  validate-merge, trailing blank row, saved indicator.
+- `CLAUDE.md` — **rewrite the "Delayed Insert" ABSOLUTE RULE** to the first-user-filled-field rule,
+  and update the "Cell Value Auto-Save" section to match.
+
+### Open questions (resolve at implementation)
+- If the INSERT fails server-side validation, does the row stay uncommitted and editable (recommend
+  yes, mirroring `modalSaveBlocked`), or revert?
+- Should `_touched` reset after a successful insert, or persist for the row's lifetime?
+- Does the init endpoint need the current filter context? BC seeds a journal line from its batch —
+  likely yes eventually; decide whether to pass filters now or add later.
+- Per-field vs per-table gating for the expanded validate calls.
+
+### Verification (when implemented)
+- Unit: insert-trigger predicate — table-driven over (init payload, user edits) → insert / no-insert.
+  Must cover "pre-populated row with zero user edits does not insert". Mirror the style of
+  `frontend/src/lib/utils/__tests__/recordHelpers.test.ts`.
+- Unit (Go): `InitRecord()` applies YAML defaults; an overriding table's `OnValidate_*` that mutates
+  siblings is reflected in the returned `ToMap()`.
+- Integration (SQLite): POST validate with a partially-filled record; assert the response carries the
+  sibling fields the trigger set, not just `success: true`.
+- Manual: via `scripts/dev.sh` on an editable list — ArrowDown to create a row and confirm it is
+  pre-populated *and* absent from the record count; ArrowUp and confirm it vanished with no API call;
+  re-create, fill one field, confirm INSERT fires on the row and the saved indicator appears; edit a
+  second field and confirm it is a MODIFY, not a second INSERT.
+- Regression: composite-PK tables (`User_Member`) — the old rule deliberately let users fill every PK
+  part before inserting; the new rule inserts on the first one. Confirm blank-but-optional PK parts
+  still work.
+- Regression: re-walk the three keyboard tables in CLAUDE.md; the 3-state cell model must be untouched.
+
+### Not in scope
+Footer totals (the screenshots' "Number of Lines / Balance / Total Balance"), No. Series, and the
+journal objects themselves — no G/L Account table, journal line table, or journal page exists yet
+(only a vestigial `journal_batch_name` column on Customer Ledger Entry). This spec is the **generic
+engine** a future journal will sit on. Each of those is its own item.
+
+---
+
+## Feature: List Page — Business Central Parity
+
+**Status:** planned, not started. Separate from the record-entry work above — this is the page-level
+surface (selection, column headers, action bar), not the insert lifecycle. The 3-state cell model
+(navigation / cell-selected / cell-editing) and every existing ABSOLUTE RULE stay intact; this work
+adds the BC surface *around* them. Data handling stays client-side for now, so sorting stays
+client-side too.
+
+### Goal
+Multi-row selection with bulk actions, interactive column headers, and a grouped action bar with a
+row context menu.
+
+### Current state (reuse, don't rebuild)
+- Sort state already supports direction — `sortField`/`sortDirection`
+  (`frontend/src/lib/components/pages/ListPage.svelte:79-80`), `handleSort` (`:1738`), comparison in
+  `sortedRecords` (`:163`). Only the *trigger* needs to move to the header.
+- Column customization `ItemCustomization {visible, section?, order?}` in
+  `frontend/src/lib/utils/customizationStorage.ts` (localStorage `page-customization-*`,
+  `column-widths-*`, `row-numbers-*`). `clearPageCustomizations` (`:62`) exists but has no caller.
+- `createDragAndDrop` (`frontend/src/lib/utils/dragAndDrop.svelte.ts`) — used today only by
+  `CustomizeFieldsModal.svelte`; reuse it for header drag-reorder.
+- Server-side filtering already works end to end: `FilterPane` → `onfilter` →
+  `PageRenderer.handleFilterChange` (`:414`) → `loadListData` (`:205`). "Filter to this value" must
+  use this path, not a second one.
+- `frontend/src/lib/stores/confirm.ts` and `toast.ts` for bulk confirmation and failure reporting.
+- Grouping precedent to copy: `MenuGroup {Name, Icon, Items}` (`backend/foundation/pages/types.go:80-85`).
+- Dropdown keyboard pattern to mirror: `OptionDropdown.svelte` `handleKeydown` (`:95`).
+
+### Phase 1 — Selection & bulk actions
+- **Fix first:** `selectedRecord` (`:329`) and `moveDown`/`moveUp`/`moveLast` (`:1684-1706`) index
+  `records` instead of `displayRecords` — so the highlighted row and the acted-on record diverge
+  whenever search or sort is active. This is a live bug; multi-select is built on top of it.
+- Add `selectedKeys: Set<string>` (keys via `getRecordKey`) with `selectedIndex` as the range anchor.
+  Never key selection by array index — search and sort reorder `displayRecords`.
+- Leftmost checkbox column, opt-in via `multi_select: true` in page YAML (default off, so existing
+  pages are unchanged). Header checkbox = select all / none, tri-state when partial.
+- Mouse: click selects one; ctrl/cmd-click toggles; shift-click selects the inclusive range in
+  `displayRecords` order.
+- Keyboard, navigation mode only: `Ctrl+A` select all, `Shift+ArrowUp/Down` extend from anchor,
+  `Space` toggle. These must not leak into cell-selected mode.
+- **Interaction with the cell model:** multi-select exists only in navigation mode;
+  `enterCellSelected` collapses the selection to the single focused row. This keeps every cell-level
+  ABSOLUTE RULE untouched.
+- Bulk execution: `handleDelete` and `handleRunObject` (`:335`) iterate the selection sequentially —
+  one confirm for the whole batch, per-row failures collected and surfaced together rather than
+  aborting, one refresh at the end instead of per row.
+
+### Phase 2 — Column header menus
+- New `ColumnHeaderMenu.svelte` — a caret menu per `<th>`: Sort Ascending, Sort Descending, Filter to
+  this value, Clear filter, Hide column, Freeze pane up to this column.
+- Sort drives the existing client-side `sortField`/`sortDirection`. **Note:** the backend never reads
+  `sort_order` — only the unused DTO `backend/api/types/api_types.go:26` and `backend/api/README.md:43`
+  mention it — so descending sort is impossible server-side today. Client-side keeps it correct.
+- Clicking the header caption sorts (toggling direction), replacing the separate sort button at
+  `:2042`, which is not a BC affordance.
+- "Filter to this value" pushes through the existing `onfilter` path so FilterPane stays the single
+  source of filter truth.
+- Hide column writes `visible: false` into `columnCustomizations`; the Customize modal restores it.
+- Freeze pane: new `frozenColumn` key in `customizationStorage.ts`, rendered `position: sticky;
+  left: …` (the table already does `position: sticky; top: 0` on `thead th` at `:2512`).
+- Header drag-to-reorder via `createDragAndDrop`, writing the same `order` field the Customize modal
+  writes — one persistence format, two editors.
+
+### Phase 3 — Action bar & context menu
+Backend `Action` struct (`backend/foundation/pages/types.go:64-72`) — additive, all optional:
+`category` (New / Process / Report / Related / Actions), `image` (icon name, replacing the hardcoded
+name-based switch at `ListPage.svelte:1879-1887`), `scope` (page / row / selection), `visible`
+(`*bool`). Also change `Enabled bool` (`:71`) to `*bool` — its "Default true" comment is currently
+unenforceable because omitted and `false` are indistinguishable; match `Editable`/`Visible`/`ModalCard`.
+
+- Promoted actions stay in the toolbar. **Non-promoted actions get rendered** — grouped into category
+  dropdowns. Today `:1857` filters to `promoted` only, so a non-promoted action is reachable **only**
+  if it happens to carry a keyboard shortcut.
+- Right-click opens a row context menu of `scope: row` and `scope: selection` actions plus the
+  built-in Edit / Delete / New, dispatching through the same `handleAction` (`:459`) so there is
+  exactly one action code path.
+- Enablement becomes selection-aware (`scope: row` needs exactly one selected, `scope: selection`
+  needs ≥1), replacing the inline IIFE at `:1858`.
+- **Also fix:** `run_page` is handled in `CardPage.svelte` (`:307`, `:440`) but not in ListPage — a
+  list action with `run_page` silently does nothing, falling through `:515` into
+  `PageRenderer.handleListAction` (`:334`), which has no matching case.
+
+### Files to create / modify (when implemented)
+- `frontend/src/lib/components/pages/ListPage.svelte` — selection state, header wiring, action bar,
+  context menu, the `displayRecords` indexing fix.
+- New `frontend/src/lib/components/pages/ColumnHeaderMenu.svelte`, `RowContextMenu.svelte`,
+  `ActionGroupMenu.svelte`.
+- New `frontend/src/lib/utils/selection.ts` — pure range/toggle/select-all math, kept out of the
+  component so it is unit-testable.
+- `frontend/src/lib/utils/customizationStorage.ts` — `frozenColumn` key.
+- `backend/foundation/pages/types.go` — new `Action` properties; `PageMetadata.multi_select`.
+- `frontend/src/lib/types/pages.ts` — mirror the new action and page properties.
+- `translations/{en-US,nb-NO}/common.yaml` — captions for the new menu commands (Sort Ascending,
+  Filter to this value, Freeze pane, …). Per CLAUDE.md, never hardcode display text in Svelte.
+- `CLAUDE.md` — extend "Generic List Page Behaviors" with the selection and action-bar rules.
+
+### Open questions (resolve at implementation)
+- Opt-in `multi_select` per page, or on for every list? (Recommend opt-in first, flip the default once
+  it has proven itself.)
+- Does selection survive a filter change, or reset? (BC resets.)
+- Right-clicking a row outside the current selection — select it first? (BC does; recommend matching.)
+
+### Verification (when implemented)
+- Unit: `selection.ts` — shift-range across a sorted/filtered `displayRecords`, ctrl-toggle,
+  select-all/none, tri-state header, anchor behavior. Mirror
+  `frontend/src/lib/utils/__tests__/recordHelpers.test.ts`.
+- Unit: action grouping and enablement — category bucketing, `scope` → enabled given 0/1/N selected,
+  `visible: false` omitted.
+- Integration: note the honest starting point — `ListPage.svelte` is ~92 KB with **zero** direct test
+  coverage, and `@testing-library/svelte` ^5.2.0 is installed but unused, so a component test here
+  would be the repo's first; budget for establishing the pattern.
+- E2E: both existing specs (`frontend/e2e/login.spec.ts`, `navigation.spec.ts`) stop at `/login` and
+  never authenticate — a list-page E2E needs a login fixture that does not exist yet.
+- Manual: via `scripts/dev.sh` — shift-select a range with a search active and confirm the acted-on
+  rows match the highlighted rows (the bug being fixed); bulk delete; sort descending from the header
+  menu; reach a non-promoted action from both the Actions menu and the row context menu.
+
+### Deferred to later phases
+- **Filter, search & views** — BC filter pane (Shift+F3), server-side search, full BC filter
+  expression syntax, saved Views as a tab strip carrying filters + sort + columns. Related finding:
+  `backend/foundation/filters/parser.go` is a richer parser (`>`, `<`, `>=`, `<=`, `?`, plus
+  `SanitizeFieldName`) that is **dead code** — zero importers — while the weaker per-table generated
+  `parseFilterExpression` runs instead, with broken open-ended ranges (`..X`) and an operator-
+  precedence bug (`..` is tested before `<>` and `*`).
+- **Server-side paging & sorting** — the `page`/`page_size` plumbing shipped in `6f4904a` is complete
+  backend-side but has zero frontend callers, and `sort_order` is never read. Until this lands,
+  `total` is not a true count and all sorting must stay client-side.
+- **Security follow-up (own item, not UI):** filter field names and `sort_by` from the query string
+  are interpolated straight into SQL (`backend/api/handlers/tables.go:333`, `:303`) with no
+  validation, while the `SanitizeFieldName` helper that would fix it sits unused in the dead
+  `foundation/filters` package.
+- Totals/footer row, grouping, FactBox pane, export to Excel/CSV, "Show as chart", row-level style
+  expressions, expand/collapse rows.
+
+---
+
 _Not tracked here (identified as noise, not real TODOs): i18n `%1`/`%2` substitution logic,
 SQL `$N`/`?` parameter builders, Svelte input `placeholder=` attributes, UUID templates in
 `toast.ts`, and `vi.stubGlobal` test helpers._
