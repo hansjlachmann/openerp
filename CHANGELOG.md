@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.68](https://github.com/hansjlachmann/openerp/compare/v0.1.67...v0.1.68) (2026-07-20)
+
+
+### Documentation
+
+* spec BC list page parity and editable-list record entry behavior ([005eeea](https://github.com/hansjlachmann/openerp/commit/005eeea25d6fbae227fcc90cf0073217aecc5a11))
+
 ## [0.1.67](https://github.com/hansjlachmann/openerp/compare/v0.1.66...v0.1.67) (2026-07-18)
 
 
