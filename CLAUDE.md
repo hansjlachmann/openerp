@@ -296,6 +296,14 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - If `card_page_id` is set with `modal_card: true`, New opens a modal card instead of adding an inline row.
 
 ### Delayed Insert (NAV `DelayedInsert`)
+> **This rule is scheduled to change.** See `TODO.md` → *Feature: Editable List — BC Record Entry
+> Behavior*. Business Central inserts on the **first field the user validates with a value**, while
+> the cursor is still on the row — not on row-leave (evidenced in `screenshots/GeneralJournal01-07.png`).
+> The rule below remains authoritative until that work lands; do not implement the new behavior
+> piecemeal. Changing it also requires updating the dependent statements in this file at
+> "Key Behavioral Notes", "Cell Value Auto-Save", and "LookupDropdown Select vs Blur", and resolving
+> how composite PK tables (`User_Member`) keep the guarantee described in the second bullet below.
+
 - New records are inserted only when the user **leaves the row** — not when leaving an individual cell.
 - This allows the user to fill all fields (including optional PK fields like `company`) before the insert fires.
 - The insert triggers via the `forceInsert` parameter on `handleCellBlur()`. When `forceInsert` is `false` (default), new records are always deferred. Keyboard handlers pass `forceInsert: true` only when explicitly leaving the row: `confirmAndMoveTo` crossing rows, Enter/ArrowDown on last row, or focus leaving the table via `handleEditingInputBlur`.

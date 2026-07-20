@@ -77,9 +77,13 @@ backend/foundation/openerp-gui
 
 # SSL certificates
 certs/
+.pfx
 
 # claude
 .claude/settings.local.json
+
+# Local reference material (BC screenshots referenced by TODO.md / CLAUDE.md)
+screenshots/
 
 
 instant-build-script
