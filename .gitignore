@@ -75,9 +75,12 @@ backend/foundation/openerp-gui
 *.db-wal
 *.db-journal
 
-# SSL certificates
+# SSL certificates — NEVER commit private key material (production certs)
 certs/
-.pfx
+*.pfx
+*.p12
+*.key
+*.pem
 
 # claude
 .claude/settings.local.json
