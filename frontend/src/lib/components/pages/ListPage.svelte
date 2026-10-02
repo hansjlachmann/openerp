@@ -27,7 +27,7 @@
 	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, isEmptyRecord, hasRecordData } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -515,11 +515,17 @@
 		onaction?.(actionName, selectedRecord || undefined);
 	}
 
+	// Editable copy of the records. _key holds each record's persisted primary key, so a
+	// record whose key field the user edits is still addressed by its stored key
+	function toEditableRecords(): Array<Record<string, any>> {
+		return records.map(r => ({ ...r, _key: getRecordId(r, primaryKeyField, primaryKeyFieldsList) }));
+	}
+
 	// Handle new record - insert blank row below current selection
 	function handleNew() {
 		// Initialize editable records if not already active
 		if (!editableActive) {
-			editableRecords = records.map(r => ({ ...r }));
+			editableRecords = toEditableRecords();
 			editableActive = true;
 		}
 
@@ -534,17 +540,7 @@
 			return;
 		}
 
-		// Create a new empty record with all fields initialized to empty strings
-		// This ensures all PK fields are defined (important for delayed insert with composite keys)
-		const newRecord: Record<string, any> = {
-			_isNew: true,
-			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-		};
-		if (page.page.layout.repeater?.fields) {
-			for (const f of page.page.layout.repeater.fields) {
-				newRecord[f.source] = '';
-			}
-		}
+		const newRecord = createNewRecord();
 
 		// Insert below the currently selected row (or at end if none selected)
 		const insertIndex = selectedIndex >= 0 ? selectedIndex + 1 : editableRecords.length;
@@ -573,7 +569,7 @@
 
 		// Initialize editable records if not active
 		if (!editableActive) {
-			editableRecords = records.map(r => ({ ...r }));
+			editableRecords = toEditableRecords();
 			editableActive = true;
 		}
 
@@ -660,8 +656,7 @@
 			if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 				record[field.source] = record[field.source].toUpperCase();
 			}
-			const leavingRow = targetRow !== prevRow;
-			await handleCellBlur(record, prevRow, field?.source, leavingRow);
+			await handleCellBlur(record, prevRow, field?.source);
 		}
 
 		// Clean up empty new row if leaving it
@@ -683,24 +678,53 @@
 
 	// Track saving state to prevent concurrent saves
 	let isSaving = $state(false);
-	let pendingSave: { record: Record<string, any>; rowIndex: number } | null = null;
+	let pendingSave: { record: Record<string, any>; rowIndex: number; fieldName?: string } | null = null;
 
-	// Auto-save when leaving a cell
-	// forceInsert: skip delayed insert check (used when we know we're leaving the row but DOM focus hasn't moved yet)
-	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, forceInsert: boolean = false) {
+	// Header save indicator ("Saving..." / "✓ Saved"), the only feedback that a row committed
+	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
+	let savedTimeout: ReturnType<typeof setTimeout> | undefined;
+
+	// Auto-save when a cell value is confirmed (BC/NAV record entry):
+	// - Existing record: MODIFY.
+	// - New record: a field the user changed is first validated server-side together with the
+	//   whole in-progress record, so its OnValidate trigger can fill sibling fields. The record
+	//   is then INSERTed as soon as it has a user edit and values for its required primary key
+	//   fields — while the cursor is still on the row, not when the row is left. Until then it
+	//   stays uncommitted; an untouched new row is discarded when the user leaves it.
+	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string) {
 		if (!page || !editableActive) return;
 
 		// If already saving, queue this save for later (must check before async validation)
 		if (isSaving) {
-			pendingSave = { record, rowIndex };
+			pendingSave = { record, rowIndex, fieldName };
 			return;
 		}
 
 		isSaving = true;
 
-		// Validate table_relation fields: check if the value exists in the related table
-		// Skip validation for fields using LookupDropdown (it validates internally)
-		if (fieldName) {
+		const isNew = record._isNew === true;
+
+		if (fieldName && isNew) {
+			// Validate the user's change with the full record; merge sibling fields the trigger set
+			if (!sameFieldValue(record[fieldName], record._pristine?.[fieldName])) {
+				try {
+					const result = await api.validateField(page.page.source_table, fieldName, record[fieldName], stripInternalFields(record));
+					if (!result.valid) {
+						toast.error(result.error || `Invalid value for ${fieldName}`);
+						record[fieldName] = record._pristine?.[fieldName] ?? '';
+						isSaving = false;
+						return;
+					}
+					if (result.record) {
+						Object.assign(record, result.record);
+					}
+				} catch {
+					// Validation endpoint failed — skip validation, don't block
+				}
+			}
+		} else if (fieldName) {
+			// Validate table_relation fields: check if the value exists in the related table
+			// Skip validation for fields using LookupDropdown (it validates internally)
 			const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === fieldName);
 			const hasAdvancedLookup = lookups[fieldName]?.columns && lookups[fieldName]?.rows?.length;
 			const value = record[fieldName];
@@ -719,56 +743,50 @@
 			}
 		}
 		try {
-			// Check if this is a new record (has _isNew flag)
-			const isNew = record._isNew === true;
-			const recordId = getRecordId(record, primaryKeyField, primaryKeyFieldsList);
+			// Address an existing record by its persisted key: the user may have edited a
+			// primary key field, which the backend then renames (BC/NAV Rename)
+			const recordId = record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			if (isNew) {
-				// NAV/BC delayed insert: only insert when the user LEAVES THE ROW.
-				// Keyboard handlers pass forceInsert=true when moving to a different row,
-				// leaving the table, or pressing Enter on the last row.
-				// When forceInsert is false, always defer — the user is still filling fields.
-				// This avoids relying on document.activeElement which is unreliable when
-				// async validation causes Svelte to re-render (destroying the input mid-await).
-				if (!forceInsert) {
+				const pkFields = primaryKeyFieldsList.map(pk => ({
+					source: pk,
+					required: page.page.layout.repeater?.fields?.find(f => f.source === pk)?.required
+				}));
+				if (!shouldInsertNewRecord(record, record._pristine ?? {}, pkFields)) {
 					return;
 				}
 
-				// Delayed insert: required PK fields must be non-empty,
-				// optional PK fields can be blank (e.g., blank company = all companies)
-				const allPKsFilled = primaryKeyFieldsList.length === 0 || primaryKeyFieldsList.every(pk => {
-					const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === pk);
-					if (fieldDef?.required) {
-						return record[pk] !== undefined && record[pk] !== '';
-					}
-					return record[pk] !== undefined;
-				});
-				if (hasRecordData(record) && allPKsFilled) {
-					// Remove temporary flags before saving
-					const { _isNew, _tempId, ...recordToSave } = record;
-					const savedRecord = await api.insertRecord(page.page.source_table, recordToSave);
-					// Update record in place to preserve _tempId (keeps Svelte's keyed each stable)
-					// Remove _isNew flag since it's now saved, but keep _tempId for stable rendering.
-					// Guard: an await can race with exitToNavigation() clearing editableRecords.
-					if (savedRecord && editableRecords[rowIndex]) {
-						Object.assign(editableRecords[rowIndex], savedRecord, { _tempId });
-						delete editableRecords[rowIndex]._isNew;
-					}
-					// Trigger parent update if callback exists
-					if (onsave) {
-						await onsave(savedRecord, true);
-					}
+				const tempId = record._tempId;
+				saveState = 'saving';
+				const savedRecord = await api.insertRecord(page.page.source_table, stripInternalFields(record));
+				// Update the row in place, keeping _tempId so Svelte's keyed each stays stable.
+				// Find it by _tempId: an await can race with rows being removed or with
+				// exitToNavigation() clearing editableRecords.
+				const savedIndex = editableRecords.findIndex(r => r._tempId === tempId);
+				if (savedRecord && savedIndex >= 0) {
+					Object.assign(editableRecords[savedIndex], savedRecord);
+					delete editableRecords[savedIndex]._isNew;
+					delete editableRecords[savedIndex]._pristine;
+					editableRecords[savedIndex]._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
+				}
+				markSaved();
+				// Trigger parent update if callback exists
+				if (onsave) {
+					await onsave(savedRecord, true);
 				}
 			} else if (recordId !== undefined) {
 				// Existing record - update it (recordId may be "" for a blank-PK setup record)
-				const { _isNew, _tempId, ...recordToSave } = record;
-				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, recordToSave);
+				const _tempId = record._tempId;
+				saveState = 'saving';
+				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, stripInternalFields(record));
 				// Update record in place to preserve any _tempId.
 				// Guard: an await can race with exitToNavigation() clearing editableRecords.
 				if (savedRecord && editableRecords[rowIndex]) {
 					Object.assign(editableRecords[rowIndex], savedRecord);
 					if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
+					editableRecords[rowIndex]._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
 				}
+				markSaved();
 				// Trigger parent update if callback exists
 				if (onsave) {
 					await onsave(savedRecord, false);
@@ -776,31 +794,77 @@
 			}
 		} catch (err) {
 			console.error('Error saving cell:', err);
+			saveState = 'idle';
 			const message = err instanceof Error ? err.message : t(ERR.FAILED_SAVE_RECORD);
 			toast.error(message);
 			// Revert the cell to its original value
-			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === getRecordId(record, primaryKeyField, primaryKeyFieldsList));
-			if (originalRecord) {
+			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === (record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList)));
+			if (!isNew && originalRecord) {
 				// Existing record - revert to original values but keep temp flags
-				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId };
+				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId, _key: editableRecords[rowIndex]?._key };
 				editableRecords[rowIndex] = { ...deepCopy(originalRecord), ...tempFlags };
 			}
-			// For new records without an original, the invalid value stays but won't be saved
+			// A new record that failed to insert stays uncommitted and editable;
+			// the insert is retried on the next confirmed cell
 		} finally {
 			isSaving = false;
 			// Process any pending save
 			if (pendingSave) {
-				const { record: pendingRecord, rowIndex: pendingRowIndex } = pendingSave;
+				const { record: pendingRecord, rowIndex: pendingRowIndex, fieldName: pendingFieldName } = pendingSave;
 				pendingSave = null;
 				// Use setTimeout to avoid stack overflow
-				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex), 0);
+				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex, pendingFieldName), 0);
 			}
 		}
 	}
 
-	// Check if a record is an empty new record (marked as new and has no user data)
+	// Show the "Saved" indicator briefly after an insert/modify completes
+	function markSaved() {
+		saveState = 'saved';
+		if (savedTimeout) clearTimeout(savedTimeout);
+		savedTimeout = setTimeout(() => {
+			saveState = 'idle';
+		}, 1500);
+	}
+
+	// Create a new, not yet inserted row (BC/NAV OnNewRecord). It starts blank and is filled
+	// with the table's defaults from the init endpoint when they arrive; if that fails it stays
+	// blank so data entry is never blocked. The initial values are kept in _pristine: only
+	// changes away from them count as user edits, so defaults never trigger an insert.
+	function createNewRecord(): Record<string, any> {
+		const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+		// All repeater fields start as empty strings so composite PK fields are always defined
+		const blank: Record<string, any> = {};
+		for (const f of page.page.layout.repeater?.fields ?? []) {
+			blank[f.source] = '';
+		}
+		void applyNewRecordDefaults(tempId, blank);
+		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
+	}
+
+	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>) {
+		let defaults: Record<string, any>;
+		try {
+			defaults = await api.initRecord(page.page.source_table);
+		} catch (err) {
+			console.error('Failed to initialize new record, keeping it blank:', err);
+			return;
+		}
+		const row = editableRecords.find(r => r._tempId === tempId);
+		if (!row || row._isNew !== true || !defaults) return;
+		for (const [key, value] of Object.entries(defaults)) {
+			// Never overwrite what the user already typed while the defaults were loading
+			if (sameFieldValue(row[key], blank[key])) {
+				row[key] = value;
+			}
+		}
+		row._pristine = { ...blank, ...defaults };
+		editableRecords = [...editableRecords];
+	}
+
+	// Check if a record is an untouched new record (marked as new, no user edits beyond its defaults)
 	function isEmptyNewRecord(record: Record<string, any>): boolean {
-		return record._isNew === true && isEmptyRecord(record);
+		return record._isNew === true && !hasUserEdits(record, record._pristine ?? {});
 	}
 
 	// Remove empty new rows from editableRecords
@@ -840,16 +904,7 @@
 		// Clean up any other empty new rows first
 		cleanupEmptyNewRows();
 
-		// Create a new empty record with all fields initialized to empty strings
-		const newRecord: Record<string, any> = {
-			_isNew: true,
-			_tempId: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-		};
-		if (page.page.layout.repeater?.fields) {
-			for (const f of page.page.layout.repeater.fields) {
-				newRecord[f.source] = '';
-			}
-		}
+		const newRecord = createNewRecord();
 
 		// Insert at end, or at current cursor position
 		const insertIndex = atEnd ? editableRecords.length : (currentCellRow >= 0 ? currentCellRow : editableRecords.length);
@@ -924,6 +979,10 @@
 				event.preventDefault();
 				if (rowIndex < editableRecords.length - 1) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
+				} else if (!isEmptyNewRecord(record)) {
+					// Past the last row: save current cell, then create a new row (BC behavior)
+					handleCellBlur(record, rowIndex, field.source);
+					insertNewRow(true);
 				}
 				break;
 			case 'ArrowLeft':
@@ -969,7 +1028,7 @@
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Save current cell, then create new row at end
-					handleCellBlur(record, rowIndex, field.source, true);
+					handleCellBlur(record, rowIndex, field.source);
 					insertNewRow(true);
 				}
 				break;
@@ -1080,7 +1139,7 @@
 								if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 									currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 								}
-								handleCellBlur(currentRecord, rowIndex, field?.source, true);
+								handleCellBlur(currentRecord, rowIndex, field?.source);
 								insertNewRow(true);
 							}
 						}
@@ -1186,7 +1245,7 @@
 						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
-						handleCellBlur(currentRecord, rowIndex, field?.source, true);
+						handleCellBlur(currentRecord, rowIndex, field?.source);
 						insertNewRow(true);
 					}
 				}
@@ -1231,7 +1290,7 @@
 						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
-						handleCellBlur(currentRecord, rowIndex, field?.source, true);
+						handleCellBlur(currentRecord, rowIndex, field?.source);
 						insertNewRow(true);
 					}
 				}
@@ -1326,7 +1385,7 @@
 					if (fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 						record[field.source] = record[field.source].toUpperCase();
 					}
-					handleCellBlur(record, blurredRow, field.source, true);
+					handleCellBlur(record, blurredRow, field.source);
 				}
 				exitToNavigation();
 			}
@@ -1346,6 +1405,21 @@
 			// Already in editable state, move to clicked cell
 			confirmAndMoveTo(rowIndex, colIndex);
 		}
+	}
+
+	// Handle click on the trailing blank row: start a new record at the end (BC/NAV)
+	async function handlePlaceholderRowClick() {
+		if (isNavigation) {
+			if (!editableActive) {
+				editableRecords = toEditableRecords();
+				editableActive = true;
+			}
+		} else if (currentCellRow >= 0 && currentCellCol >= 0) {
+			// Confirm the cell being left, as a click on any other cell does
+			await confirmAndMoveTo(currentCellRow, currentCellCol);
+		}
+		insertNewRow(true);
+		selectedIndex = currentCellRow;
 	}
 
 	// Handle delete record
@@ -1854,6 +1928,25 @@
 <div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
 	<PageHeader title={page.page.caption}>
 		{#snippet leftActions()}
+			{#if page.page.editable}
+				<!-- Save state indicator - fixed width container to prevent layout shift -->
+				<div class="save-state-container">
+					<div class="saving-indicator" class:visible={saveState === 'saving'}>
+						<svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+						<span class="text-sm text-gray-600 dark:text-gray-400">{t(MSG.SAVING)}</span>
+					</div>
+					<div class="saved-indicator" class:visible={saveState === 'saved'}>
+						<svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						</svg>
+						<span class="text-sm text-green-600 dark:text-green-400 font-medium">{t(MSG.SAVED)}</span>
+					</div>
+				</div>
+			{/if}
+
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
 					{@const isDisabled = (() => {
 						// New and Refresh are always enabled
@@ -2342,6 +2435,19 @@
 						{/each}
 					</tr>
 				{/each}
+				{#if page.page.editable && !searchQuery.trim() && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+					<!-- BC-style trailing blank row: click it to start a new record -->
+					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
+						{#if showRowNumbers}
+							<td class="row-number-cell"></td>
+						{/if}
+						{#each visibleColumns() as _field}
+							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
+								<div class="read-cell-content"></div>
+							</td>
+						{/each}
+					</tr>
+				{/if}
 		</tbody>
 		</table>
 		</div>
@@ -2881,5 +2987,31 @@
 	:global(.dark) .clear-search-btn:hover {
 		color: #d1d5db;
 		background-color: #4b5563;
+	}
+
+	/* Header save indicator (same as CardPage) */
+	.save-state-container {
+		@apply relative;
+		width: 80px; /* Fixed width to accommodate "Saving..." text */
+		height: 32px;
+	}
+
+	.saving-indicator,
+	.saved-indicator {
+		@apply flex items-center gap-2;
+		@apply absolute inset-0;
+		@apply opacity-0 transition-opacity duration-200;
+		pointer-events: none;
+	}
+
+	.saving-indicator.visible,
+	.saved-indicator.visible {
+		@apply opacity-100;
+		pointer-events: auto;
+	}
+
+	/* Trailing blank row (BC-style new-record affordance) */
+	.placeholder-row {
+		cursor: pointer;
 	}
 </style>

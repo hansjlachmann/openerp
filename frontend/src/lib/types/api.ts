@@ -32,6 +32,13 @@ export interface TableRecord {
 	[key: string]: any;
 }
 
+// Result of a field validation (POST /tables/:table/validate)
+export interface ValidateFieldResult {
+	valid: boolean;
+	error?: string;
+	record?: TableRecord; // Record after the OnValidate trigger ran (may fill sibling fields)
+}
+
 // List response with pagination
 export interface ListResponse<T = TableRecord> {
 	records: T[];

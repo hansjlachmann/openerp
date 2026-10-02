@@ -21,8 +21,16 @@ func NewJobQueueEntry() *JobQueueEntry {
 
 // Init initializes the record with database context and sets up triggers
 func (t *JobQueueEntry) Init(db database.Executor, company string) {
-	t.JobQueueEntryBase.Init(db, company)
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes the record with database context and type and sets up
+// triggers. The API creates tables via the tables.Table interface and calls this method,
+// so the wiring must live here for triggers and OnValidate_* overrides to fire.
+func (t *JobQueueEntry) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+	t.JobQueueEntryBase.InitWithDBType(db, company, dbType)
 	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
+	t.SetSelf(t)
 }
 
 // ========================================

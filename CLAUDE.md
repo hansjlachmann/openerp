@@ -248,7 +248,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 
 | Key | Action |
 |-----|--------|
-| ArrowUp / ArrowDown | Confirm value + move selection to cell above/below |
+| ArrowUp / ArrowDown | Confirm value + move selection to cell above/below. ArrowDown on last data row: create new row |
 | ArrowLeft / ArrowRight | Move cell selection left/right within the row |
 | Tab | Confirm value + move selection right (wraps to next row) |
 | Shift+Tab | Confirm value + move selection left (wraps to previous row) |
@@ -282,7 +282,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | All other keys | Normal text input behavior |
 
 ### Key Behavioral Notes
-- **"Confirm"** means: save the current cell value. For existing records this triggers `modifyRecord`. For new records this follows delayed insert rules (save only when leaving the row, not the cell).
+- **"Confirm"** means: save the current cell value. For existing records this triggers `modifyRecord`. For new records it validates the field and inserts the record once it is insertable (see Record Entry below) — on the row, not when the row is left.
 - **Cell-selected visual**: The cell shows a distinct border/highlight (e.g., blue border) without a cursor. This must be visually distinct from cell-editing (which shows a cursor in an input).
 - **Transition from navigation → cell-selected does NOT save anything** — it's purely a focus/selection change.
 - **Lookup fields** (LookupDropdown, `<select>`) in cell-selected mode show the formatted value plus a **▼ dropdown arrow button**. Clicking the arrow or pressing Alt+ArrowDown enters cell-editing and opens the dropdown. The user can also enter cell-editing via F2, typing, or double-click. LookupDropdown manages its own keyboard internally (arrow keys navigate the dropdown list, Enter selects, F4 toggles, Escape closes). Cell navigation keys (Tab, Shift+Tab, Enter when dropdown closed, Escape when dropdown closed, F2) are handled by `handleLookupCellKeyDown` on the wrapper div, which intercepts events that bubble up from LookupDropdown.
@@ -290,34 +290,39 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - **Boolean fields** (checkboxes) toggle on Space/Enter in cell-selected mode. They have no separate cell-editing state.
 
 ### New Record Creation
-- When clicking New (or Ctrl+N), all repeater fields are initialized to `""` (empty string). This ensures composite PK fields are defined from creation.
-- Only one empty new row can exist at a time — clicking New again focuses the existing empty row.
+- New rows are created by `createNewRecord()`: all repeater fields start as `""` (so composite PK fields are always defined), then the row is filled with the table's defaults from `POST /api/tables/:table/init` (`InitRecord()`, BC/NAV `OnNewRecord`). If the init call fails the row stays blank — data entry is never blocked. Values the user typed before the defaults arrived are never overwritten.
+- The values a row was initialized with are kept in `_pristine`. Only changes away from them count as user edits (`hasUserEdits`) — init-supplied defaults never do.
+- Only one untouched new row can exist at a time — clicking New again focuses the existing one.
 - New rows are marked with `_isNew: true` and a `_tempId` for stable keyed rendering.
+- Editable lists render a **trailing blank row** after the last record; clicking it starts a new record. ArrowDown/Enter past the last data row does the same.
 - If `card_page_id` is set with `modal_card: true`, New opens a modal card instead of adding an inline row.
 
-### Delayed Insert (NAV `DelayedInsert`)
-> **This rule is scheduled to change.** See `TODO.md` → *Feature: Editable List — BC Record Entry
-> Behavior*. Business Central inserts on the **first field the user validates with a value**, while
-> the cursor is still on the row — not on row-leave (evidenced in `screenshots/GeneralJournal01-07.png`).
-> The rule below remains authoritative until that work lands; do not implement the new behavior
-> piecemeal. Changing it also requires updating the dependent statements in this file at
-> "Key Behavioral Notes", "Cell Value Auto-Save", and "LookupDropdown Select vs Blur", and resolving
-> how composite PK tables (`User_Member`) keep the guarantee described in the second bullet below.
-
-- New records are inserted only when the user **leaves the row** — not when leaving an individual cell.
-- This allows the user to fill all fields (including optional PK fields like `company`) before the insert fires.
-- The insert triggers via the `forceInsert` parameter on `handleCellBlur()`. When `forceInsert` is `false` (default), new records are always deferred. Keyboard handlers pass `forceInsert: true` only when explicitly leaving the row: `confirmAndMoveTo` crossing rows, Enter/ArrowDown on last row, or focus leaving the table via `handleEditingInputBlur`.
-- **Do NOT use `document.activeElement`** to detect row changes — it's unreliable when async validation (`api.validateField`) causes Svelte to re-render mid-await, destroying the input element and moving focus to `document.body`.
-- Required PK fields must have non-empty values; optional PK fields (without `required: true`) can remain blank.
+### Record Entry (BC/NAV insert lifecycle) (ABSOLUTE RULE)
+Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
+- **Row created** — pre-populated with defaults, `_isNew`, not persisted, not counted in the record count.
+- **INSERT** — on a confirmed cell, as soon as `shouldInsertNewRecord()` holds: the row has a user edit and every required primary key field has a value (optional PK fields may be blank but must be defined). This fires **while the cursor is still on the row**, not on row-leave. On success `_isNew`/`_pristine` are removed and `_key` holds the persisted key.
+- **MODIFY** — every later confirmed cell on that row.
+- **DISCARD** — leaving a new row with no user edits removes it client-side with no API call (`isEmptyNewRecord` → `cleanupEmptyNewRows`, or the row filter in `confirmAndMoveTo`).
+- Never test "has any non-empty field" to decide an insert — defaults would insert the row the moment it is created. Always compare against `_pristine`.
+- A user-edited new row whose required PK fields are still blank stays uncommitted; it inserts on the first confirmed cell after they are filled. An insert that fails keeps the row uncommitted and editable; the next confirmed cell retries it.
+- Insert timing depends on **what the user changed**, never on where focus went. **Do NOT use `document.activeElement`** to detect row changes — it's unreliable when async validation re-renders mid-await, destroying the input and moving focus to `document.body`.
 - The `required` flag is sent from the backend via table YAML metadata → `TableMetadata` → page field definitions.
-- Empty new rows are automatically cleaned up when navigating away from them.
+- **Composite primary keys** (`User_Member`): the record inserts once `user_id` and `role_id` are filled, with a blank optional `company`. Setting `company` afterwards is a MODIFY that **renames** the key: the generated `Modify()` SETs changed PK fields and matches the old key in its WHERE clause (BC/NAV Rename). The frontend addresses an existing row by `_key` (its persisted key), not its current field values, so PK edits reach the right record.
+- After a successful insert/modify the page header shows the "Saving…"/"✓ Saved" indicator (`saveState`), the only feedback that a row committed.
+
+### Cross-field validation (OnValidate auto-fill)
+- For a new row, confirming a field the user changed calls `api.validateField(table, field, value, record)` with the **full in-progress record**. The backend hydrates the table from it, runs `ValidateField` (→ the wrapper's `OnValidate_<Field>()`), and returns the resulting record, which is merged into the row. A trigger can therefore fill sibling fields (e.g. Account No. → Account Name).
+- Existing rows get trigger results from the `modifyRecord` response, which is merged into the row the same way.
+- `InsertRecord`/`ModifyRecord` only VALIDATE fields whose value changed, in table field order (`validateChangedFields`), so a stale sibling in the payload never overwrites a value another field's trigger filled in.
+- Wrapper triggers reach the API because each wrapper overrides `InitWithDBType` to call `SetTriggers(...)` and `SetSelf(t)`; the generated `ValidateField` dispatches to wrapper `OnValidate_*` overrides through `self`. When adding a wrapper by hand, keep that override — without it OnInsert/OnModify/OnDelete and OnValidate overrides silently never run from the API.
 
 ### Cell Value Auto-Save
-- When a cell value is "confirmed" (see keyboard tables above), existing records call `modifyRecord`. New records are only saved when the user has left the row (see delayed insert above).
+- When a cell value is "confirmed" (see keyboard tables above), existing records call `modifyRecord`. New records follow the Record Entry rules above.
 - The `isSaving` guard must be set **before** any async validation to prevent race conditions from concurrent save events.
-- Fields using `LookupDropdown` (advanced lookup) skip server-side validation since the component validates internally.
-- Failed saves revert to original values from the unmodified `records` array.
-- Concurrent save events are queued via `pendingSave` and processed after the current save completes.
+- For existing rows, `table_relation` fields without an advanced lookup are checked via `api.validateField`; fields using `LookupDropdown` (advanced lookup) skip it since the component validates internally. New rows always validate the user's change (see above).
+- Failed saves of existing records revert to original values from the unmodified `records` array.
+- Concurrent save events are queued via `pendingSave` (including the field name) and processed after the current save completes.
+- After an `await`, locate a new row by `_tempId` (never by a stale index) — `exitToNavigation()` can clear `editableRecords` and rows can be removed mid-save.
 
 ### Lookup Fields (ABSOLUTE RULE)
 - Fields with `table_relation` that have `columns` + `rows` (advanced lookup) must render using `LookupDropdown` with `compact={true}` — providing a table-style dropdown with column headers, type-ahead filtering, and keyboard navigation.
@@ -329,7 +334,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
 - When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.
 - The save fires only when focus actually **leaves** the component (e.g., user presses Tab or moves to another cell).
-- This prevents premature inserts during data entry and is critical for delayed insert behavior on composite PK tables.
+- This keeps the save tied to the user confirming the cell: a lookup pick inserts a new record (Record Entry rules) only when focus leaves the cell, never on the pick alone.
 - **Re-open guard**: After `handleSelect` re-focuses the input, `onfocus` must NOT re-open the dropdown. The `selectHandled` flag prevents this — `openDropdown()` skips when `selectHandled` is true. The flag is cleared when the user types, toggles the dropdown, or presses ArrowDown to explicitly re-open.
 
 ### Focus Management

@@ -115,6 +115,10 @@ type JobQueueBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const JobQueueTableID = 472
@@ -188,6 +192,12 @@ func (t *JobQueueBase) SetTriggers(onInsert, onModify func() error, onDelete fun
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *JobQueueBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -316,6 +326,18 @@ func (t *JobQueueBase) InitWithDBType(db database.Executor, company string, dbTy
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *JobQueueBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *JobQueueBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
@@ -506,8 +528,14 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("no") {
+			setClauses = append(setClauses, "no = ?")
+			values = append(values, t.No)
+		}
 		if t.hasFieldChanged("description") {
 			setClauses = append(setClauses, "description = ?")
 			values = append(values, t.Description)
@@ -583,8 +611,12 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Notify_on)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.No)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["no"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.No)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND no = ?`,
@@ -599,6 +631,10 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Job_Queue: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -617,6 +653,10 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "no":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.No.Equal(old)
+		}
 	case "description":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
@@ -1489,7 +1529,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_No() error }); ok {
+			return w.OnValidate_No()
+		}
 		return t.OnValidate_No()
 	case "description":
 		// Set field value
@@ -1500,7 +1543,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field description")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Description() error }); ok {
+			return w.OnValidate_Description()
+		}
 		return t.OnValidate_Description()
 	case "description_2":
 		// Set field value
@@ -1511,7 +1557,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field description_2")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Description_2() error }); ok {
+			return w.OnValidate_Description_2()
+		}
 		return t.OnValidate_Description_2()
 	case "status":
 		// Set field value
@@ -1553,7 +1602,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field status (expected JobQueueStatus, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Status() error }); ok {
+			return w.OnValidate_Status()
+		}
 		return t.OnValidate_Status()
 	case "object_id_to_run":
 		// Set field value
@@ -1573,7 +1625,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		default:
 			return fmt.Errorf("invalid type for field object_id_to_run")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Object_id_to_run() error }); ok {
+			return w.OnValidate_Object_id_to_run()
+		}
 		return t.OnValidate_Object_id_to_run()
 	case "parameter":
 		// Set field value
@@ -1584,7 +1639,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field parameter")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Parameter() error }); ok {
+			return w.OnValidate_Parameter()
+		}
 		return t.OnValidate_Parameter()
 	case "next_start":
 		// Set field value
@@ -1601,7 +1659,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field next_start (expected DateTime, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Next_start() error }); ok {
+			return w.OnValidate_Next_start()
+		}
 		return t.OnValidate_Next_start()
 	case "minutes_between_run":
 		// Set field value
@@ -1621,7 +1682,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		default:
 			return fmt.Errorf("invalid type for field minutes_between_run")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Minutes_between_run() error }); ok {
+			return w.OnValidate_Minutes_between_run()
+		}
 		return t.OnValidate_Minutes_between_run()
 	case "recurring_job":
 		// Set field value
@@ -1633,7 +1697,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field recurring_job")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Recurring_job() error }); ok {
+			return w.OnValidate_Recurring_job()
+		}
 		return t.OnValidate_Recurring_job()
 	case "recurrence":
 		// Set field value
@@ -1675,7 +1742,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field recurrence (expected JobQueueRecurrence, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Recurrence() error }); ok {
+			return w.OnValidate_Recurrence()
+		}
 		return t.OnValidate_Recurrence()
 	case "notification_email":
 		// Set field value
@@ -1686,7 +1756,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field notification_email")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Notification_email() error }); ok {
+			return w.OnValidate_Notification_email()
+		}
 		return t.OnValidate_Notification_email()
 	case "notify_on":
 		// Set field value
@@ -1728,7 +1801,10 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field notify_on (expected JobQueueNotify_on, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Notify_on() error }); ok {
+			return w.OnValidate_Notify_on()
+		}
 		return t.OnValidate_Notify_on()
 	}
 
