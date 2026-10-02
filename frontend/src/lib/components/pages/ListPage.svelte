@@ -2847,7 +2847,7 @@
 	/* Cell-selected state - same dimensions as read-cell-content with blue border */
 	.cell-selected-content {
 		display: block;
-		width: 100%;
+		width: auto; /* fill the cell; 100% plus padding would overflow into the next cell */
 		height: 1.3em;
 		min-height: 1.3em;
 		max-height: 1.3em;
@@ -2861,14 +2861,14 @@
 	}
 
 	.cell-selected-active {
-		outline: 2px solid #2563eb; /* blue-600 border */
-		outline-offset: -2px; /* inset so it doesn't shift layout */
-		background: #eff6ff; /* blue-50 subtle highlight */
+		outline: 1px solid rgba(37, 99, 235, 0.45); /* subtle blue-600 frame */
+		outline-offset: -1px; /* inset so it doesn't shift layout */
+		background: rgba(239, 246, 255, 0.6); /* faint blue-50 highlight */
 	}
 
 	:global(.dark) .cell-selected-active {
-		outline-color: #3b82f6;
-		background: rgba(59, 130, 246, 0.1);
+		outline-color: rgba(59, 130, 246, 0.5);
+		background: rgba(59, 130, 246, 0.06);
 		color: white;
 	}
 
