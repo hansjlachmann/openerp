@@ -47,6 +47,10 @@ type PaymentTermsBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const PaymentTermsTableID = 3
@@ -77,6 +81,12 @@ func (t *PaymentTermsBase) SetTriggers(onInsert, onModify func() error, onDelete
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *PaymentTermsBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -179,6 +189,18 @@ func (t *PaymentTermsBase) InitWithDBType(db database.Executor, company string, 
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *PaymentTermsBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *PaymentTermsBase) applyDefaults() {
 	t.Active = true
 }
 
@@ -325,8 +347,14 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			setClauses = append(setClauses, "code = ?")
+			values = append(values, t.Code)
+		}
 		if t.hasFieldChanged("description") {
 			setClauses = append(setClauses, "description = ?")
 			values = append(values, t.Description)
@@ -348,8 +376,12 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Active)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.Code)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["code"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Code)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
@@ -364,6 +396,10 @@ func (t *PaymentTermsBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Payment Terms: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -382,6 +418,10 @@ func (t *PaymentTermsBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Code.Equal(old)
+		}
 	case "description":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Description.Equal(old)
@@ -1059,7 +1099,10 @@ func (t *PaymentTermsBase) ValidateField(fieldName string, value interface{}) er
 		} else {
 			return fmt.Errorf("invalid type for field code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Code() error }); ok {
+			return w.OnValidate_Code()
+		}
 		return t.OnValidate_Code()
 	case "description":
 		// Set field value
@@ -1070,7 +1113,10 @@ func (t *PaymentTermsBase) ValidateField(fieldName string, value interface{}) er
 		} else {
 			return fmt.Errorf("invalid type for field description")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Description() error }); ok {
+			return w.OnValidate_Description()
+		}
 		return t.OnValidate_Description()
 	case "active":
 		// Set field value
@@ -1082,7 +1128,10 @@ func (t *PaymentTermsBase) ValidateField(fieldName string, value interface{}) er
 		} else {
 			return fmt.Errorf("invalid type for field active")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Active() error }); ok {
+			return w.OnValidate_Active()
+		}
 		return t.OnValidate_Active()
 	}
 

@@ -652,6 +652,10 @@ type {{ .BaseStructName }} struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const {{ .StructName }}TableID = {{ .Table.ID }}
@@ -705,6 +709,12 @@ func (t *{{ .BaseStructName }}) SetTriggers(onInsert, onModify func() error, onD
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *{{ .BaseStructName }}) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -837,7 +847,18 @@ func (t *{{ .BaseStructName }}) InitWithDBType(db database.Executor, company str
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
 
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *{{ .BaseStructName }}) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *{{ .BaseStructName }}) applyDefaults() {
 {{- range .Table.Fields }}
 {{- if .AutoTimestamp }}
 	t.{{ upperFirst .Name }} = time.Now()
@@ -1142,10 +1163,12 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 {{- range .Table.Fields }}
-{{- if and (not .PrimaryKey) (not .FlowField) }}
+{{- if not .FlowField }}
 		if t.hasFieldChanged("{{ .DBName }}") {
 			setClauses = append(setClauses, "{{ .DBName }} = ?")
 			values = append(values, t.{{ upperFirst .Name }})
@@ -1167,10 +1190,14 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 {{- end }}
 	}
 
-	// Add WHERE clause value (primary key)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
 {{- range .Table.Fields }}
 {{- if .PrimaryKey }}
-	values = append(values, t.{{ upperFirst .Name }})
+	if old, ok := t.oldValues["{{ .DBName }}"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.{{ upperFirst .Name }})
+	}
 {{- end }}
 {{- end }}
 
@@ -1187,6 +1214,10 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify {{ .Table.Name }}: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -1206,7 +1237,7 @@ func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
 {{- range .Table.Fields }}
-{{- if and (not .PrimaryKey) (not .FlowField) }}
+{{- if not .FlowField }}
 	case "{{ .DBName }}":
 {{- if eq .Type "Option" }}
 		if old, ok := oldValue.({{ $.StructName }}{{ upperFirst .Name }}); ok {
@@ -2471,7 +2502,10 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
 {{- end }}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_{{ upperFirst .Name }}() error }); ok {
+			return w.OnValidate_{{ upperFirst .Name }}()
+		}
 		return t.OnValidate_{{ upperFirst .Name }}()
 {{- end }}
 {{- end }}
@@ -2761,8 +2795,16 @@ func New{{ .StructName }}() *{{ .StructName }} {
 
 // Init initializes the record with database context and sets up triggers
 func (t *{{ .StructName }}) Init(db database.Executor, company string) {
-	t.{{ .BaseStructName }}.Init(db, company)
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes the record with database context and type and sets up
+// triggers. The API creates tables via the tables.Table interface and calls this method,
+// so the wiring must live here for triggers and OnValidate_* overrides to fire.
+func (t *{{ .StructName }}) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+	t.{{ .BaseStructName }}.InitWithDBType(db, company, dbType)
 	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
+	t.SetSelf(t)
 }
 
 // ========================================

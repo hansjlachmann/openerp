@@ -4,7 +4,8 @@ import type {
 	ListOptions,
 	TableRecord,
 	LookupData,
-	CodeunitResult
+	CodeunitResult,
+	ValidateFieldResult
 } from '$types/api';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 
@@ -150,26 +151,39 @@ export const api = {
 		return handleApiResponseVoid(response, `delete ${tableName} ${id}`);
 	},
 
+	// Validate a field (BC/NAV VALIDATE). Pass the in-progress record so the field's
+	// OnValidate trigger can see and fill in sibling fields; the result carries the
+	// resulting record.
 	async validateField(
 		tableName: string,
 		fieldName: string,
-		value: any
-	): Promise<{ valid: boolean; error?: string }> {
+		value: any,
+		record?: TableRecord
+	): Promise<ValidateFieldResult> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/validate`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ field: fieldName, value })
+			body: JSON.stringify({ field: fieldName, value, record })
 		});
 
 		if (!response.ok) {
 			throw new Error(`Failed to validate field: ${response.statusText}`);
 		}
 
-		const result: ApiResponse = await response.json();
+		const result: ApiResponse<TableRecord> = await response.json();
 		return {
 			valid: result.success,
-			error: result.error
+			error: result.error,
+			record: result.data
 		};
+	},
+
+	// Get a new, not yet inserted record with its defaults applied (BC/NAV OnNewRecord)
+	async initRecord<T = TableRecord>(tableName: string): Promise<T> {
+		const response = await fetch(`${API_BASE}/tables/${tableName}/init`, {
+			method: 'POST'
+		});
+		return handleApiResponse<T>(response, `init ${tableName}`);
 	},
 
 	// Run codeunit by ID with record data

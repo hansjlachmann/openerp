@@ -21,8 +21,16 @@ func NewLanguage() *Language {
 
 // Init initializes the record with database context and sets up triggers
 func (t *Language) Init(db database.Executor, company string) {
-	t.LanguageBase.Init(db, company)
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes the record with database context and type and sets up
+// triggers. The API creates tables via the tables.Table interface and calls this method,
+// so the wiring must live here for triggers and OnValidate_* overrides to fire.
+func (t *Language) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+	t.LanguageBase.InitWithDBType(db, company, dbType)
 	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
+	t.SetSelf(t)
 }
 
 // ========================================
@@ -99,21 +107,6 @@ func (t *Language) OnValidate_Translation_key() error {
 	if !t.Translation_key.IsEmpty() {
 		return t.validateTranslationKey()
 	}
-	return nil
-}
-
-// ValidateField overrides the base ValidateField to use custom validation for translation_key
-func (t *Language) ValidateField(fieldName string, value interface{}) error {
-	// Call base validation first (sets the field value)
-	if err := t.LanguageBase.ValidateField(fieldName, value); err != nil {
-		return err
-	}
-
-	// Add custom validation for translation_key
-	if fieldName == "translation_key" || fieldName == "Translation_key" {
-		return t.OnValidate_Translation_key()
-	}
-
 	return nil
 }
 

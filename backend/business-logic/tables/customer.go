@@ -22,8 +22,16 @@ func NewCustomer() *Customer {
 
 // Init initializes the record with database context and sets up triggers
 func (t *Customer) Init(db database.Executor, company string) {
-	t.CustomerBase.Init(db, company)
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes the record with database context and type and sets up
+// triggers. The API creates tables via the tables.Table interface and calls this method,
+// so the wiring must live here for triggers and OnValidate_* overrides to fire.
+func (t *Customer) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+	t.CustomerBase.InitWithDBType(db, company, dbType)
 	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
+	t.SetSelf(t)
 }
 
 // ========================================
@@ -90,7 +98,7 @@ func (t *Customer) OnValidate_Payment_terms_code() error {
 	// Check if the payment terms exists and is active
 	if t.Payment_terms_code != "" && t.Payment_terms_code != types.Code("") {
 		var relatedRecord PaymentTerms
-		relatedRecord.Init(t.GetDB(), t.GetCompany())
+		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Payment_terms_code) {
 			return errors.New("payment terms code does not exist")
 		}

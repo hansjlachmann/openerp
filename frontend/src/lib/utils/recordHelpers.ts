@@ -187,6 +187,53 @@ export function hasRecordData(record: Record<string, any>): boolean {
 }
 
 /**
+ * Compare two field values loosely: inputs hold strings while the API returns typed
+ * values (e.g. option index 0 vs "0"), and blank/null/undefined are all "no value".
+ */
+export function sameFieldValue(a: any, b: any): boolean {
+	return String(a ?? '') === String(b ?? '');
+}
+
+/**
+ * Remove internal underscore-prefixed flags (_isNew, _tempId, _pristine, ...) before a
+ * record is sent to the API.
+ */
+export function stripInternalFields(record: Record<string, any>): Record<string, any> {
+	return Object.fromEntries(Object.entries(record).filter(([key]) => !key.startsWith('_')));
+}
+
+/**
+ * Check if the user has changed any field of a new record away from the values it was
+ * initialized with. Init-supplied defaults are not user edits: a pre-populated row the
+ * user never touched counts as untouched (BC/NAV discards it, never inserts it).
+ * @param record - The new record
+ * @param pristine - The values the record was initialized with
+ */
+export function hasUserEdits(record: Record<string, any>, pristine: Record<string, any>): boolean {
+	return Object.keys(record).some(key => !key.startsWith('_') && !sameFieldValue(record[key], pristine[key]));
+}
+
+/**
+ * Decide whether a new record should be INSERTed now. BC/NAV inserts on the first field
+ * the user validates, while the cursor is still on the row — once the record has a user
+ * edit and every required primary key field has a value. Optional primary key fields may
+ * stay blank (e.g. blank company = all companies) but must be defined.
+ * @param record - The new record
+ * @param pristine - The values the record was initialized with
+ * @param primaryKeyFields - Primary key fields with their required flag
+ */
+export function shouldInsertNewRecord(
+	record: Record<string, any>,
+	pristine: Record<string, any>,
+	primaryKeyFields: Array<{ source: string; required?: boolean }>
+): boolean {
+	if (record._isNew !== true || !hasUserEdits(record, pristine)) return false;
+	return primaryKeyFields.every(pk =>
+		pk.required ? !sameFieldValue(record[pk.source], '') : record[pk.source] !== undefined
+	);
+}
+
+/**
  * Check if a record has changed from its original state
  * Handles type coercion for number/string comparisons
  */

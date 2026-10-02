@@ -236,9 +236,34 @@ mask/encrypt setup fields flagged sensitive (e.g. the SMTP password) instead of 
 
 ---
 
-## Feature: Editable List — BC Record Entry Behavior
+## Feature: Editable List — BC Record Entry Behavior ✅ IMPLEMENTED
 
-**Status:** planned, not started. Inserting a row on an editable list page does not match Business
+**Status:** implemented. The rules now live in `CLAUDE.md` → *Record Entry (BC/NAV insert lifecycle)*
+and *Cross-field validation*. Resolved open questions: a failed INSERT keeps the row uncommitted and
+editable (retried on the next confirmed cell); "touched" is a diff against the row's `_pristine` init
+values, dropped after insert; the init endpoint takes no filter context yet (see follow-ups); no
+validate gating was needed — only new rows call validate, existing rows get trigger results from the
+modify response. Work that landed alongside it:
+- **Triggers never ran from the API.** `getTable` called the base `InitWithDBType`, so wrapper
+  `SetTriggers` never ran (no OnInsert/OnModify/OnDelete), and Go has no virtual dispatch, so wrapper
+  `OnValidate_*` overrides were dead code. Wrappers now override `InitWithDBType` and register
+  `SetSelf(t)`; generated `ValidateField` dispatches through it. The relation validators in
+  `customer.go`/`customerledgerentry.go` now pass the DB type (they hardcoded SQLite placeholders).
+- **PK edits were silent no-ops.** Generated `Modify()` never updated primary key columns (an all-PK
+  table like `User_Member` returned success without writing). It now renames in place (BC Rename).
+- `InsertRecord`/`ModifyRecord` validate only changed fields, in table field order.
+
+Follow-ups (not done):
+- [ ] Trigger errors surface as a generic "insert/modify failed": `Insert`/`Modify` return `bool` and
+      only print the trigger error. Return the error so the user sees e.g. "no is required".
+- [ ] `User.OnDelete` deletes from `{session company}$User_Preferences`, but the preferences handler
+      stores rows under company `""` (`backend/api/handlers/preferences.go:53`), so the cascade misses.
+- [ ] Init endpoint filter context — seed a new row from the list's current filters (BC seeds a
+      journal line from its batch). Pass filters when the first journal page needs it.
+- [x] Manual browser walkthrough (Verification → Manual below) — done by hand against the docker
+      compose stack (PostgreSQL).
+
+Original spec, kept for reference — Inserting a row on an editable list page does not match Business
 Central. Reference material: seven BC screenshots in `screenshots/GeneralJournal01-07.png` (General
 Journals, batch CBI-RECON) capturing the real lifecycle. The decisive frame is 04 — selecting
 `Account No. 01013` makes "✓ Saved" appear **while the cursor is still on the row**, and

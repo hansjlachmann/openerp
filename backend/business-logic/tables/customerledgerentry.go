@@ -22,8 +22,16 @@ func NewCustomerLedgerEntry() *CustomerLedgerEntry {
 
 // Init initializes the record with database context and sets up triggers
 func (t *CustomerLedgerEntry) Init(db database.Executor, company string) {
-	t.CustomerLedgerEntryBase.Init(db, company)
+	t.InitWithDBType(db, company, database.DBTypeSQLite)
+}
+
+// InitWithDBType initializes the record with database context and type and sets up
+// triggers. The API creates tables via the tables.Table interface and calls this method,
+// so the wiring must live here for triggers and OnValidate_* overrides to fire.
+func (t *CustomerLedgerEntry) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+	t.CustomerLedgerEntryBase.InitWithDBType(db, company, dbType)
 	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
+	t.SetSelf(t)
 }
 
 // ========================================
@@ -88,7 +96,7 @@ func (t *CustomerLedgerEntry) Validate() error {
 func (t *CustomerLedgerEntry) OnValidate_Customer_no() error {
 	if t.Customer_no != "" && t.Customer_no != types.Code("") {
 		var relatedRecord Customer
-		relatedRecord.Init(t.GetDB(), t.GetCompany())
+		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Customer_no) {
 			return errors.New("customer_no does not exist in Customer table")
 		}
@@ -100,7 +108,7 @@ func (t *CustomerLedgerEntry) OnValidate_Customer_no() error {
 func (t *CustomerLedgerEntry) OnValidate_Sell_to_customer_no() error {
 	if t.Sell_to_customer_no != "" && t.Sell_to_customer_no != types.Code("") {
 		var relatedRecord Customer
-		relatedRecord.Init(t.GetDB(), t.GetCompany())
+		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Sell_to_customer_no) {
 			return errors.New("sell_to_customer_no does not exist in Customer table")
 		}

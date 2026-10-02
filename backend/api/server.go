@@ -118,6 +118,7 @@ func (s *Server) Setup() {
 	tables.Put("/modify/:id", tablesHandler.ModifyRecord)
 	tables.Delete("/delete/:id", tablesHandler.DeleteRecord)
 	tables.Post("/validate", tablesHandler.ValidateField)
+	tables.Post("/init", tablesHandler.InitRecord)
 	// No-id variants for BC-style setup tables (single record with a blank primary key)
 	tables.Get("/card", tablesHandler.GetRecord)
 	tables.Put("/modify", tablesHandler.ModifyRecord)

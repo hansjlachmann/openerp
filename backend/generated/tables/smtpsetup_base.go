@@ -52,6 +52,10 @@ type SMTPSetupBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const SMTPSetupTableID = 409
@@ -82,6 +86,12 @@ func (t *SMTPSetupBase) SetTriggers(onInsert, onModify func() error, onDelete fu
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *SMTPSetupBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -192,6 +202,18 @@ func (t *SMTPSetupBase) InitWithDBType(db database.Executor, company string, dbT
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *SMTPSetupBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *SMTPSetupBase) applyDefaults() {
 	t.Smtp_server_port = 587
 }
 
@@ -358,8 +380,14 @@ func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("primary_key") {
+			setClauses = append(setClauses, "primary_key = ?")
+			values = append(values, t.Primary_key)
+		}
 		if t.hasFieldChanged("enabled") {
 			setClauses = append(setClauses, "enabled = ?")
 			values = append(values, t.Enabled)
@@ -405,8 +433,12 @@ func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 		values = append(values, t.From_address)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.Primary_key)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["primary_key"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Primary_key)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND primary_key = ?`,
@@ -421,6 +453,10 @@ func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify SMTP_Setup: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -439,6 +475,10 @@ func (t *SMTPSetupBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "primary_key":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Primary_key.Equal(old)
+		}
 	case "enabled":
 		if old, ok := oldValue.(bool); ok {
 			return t.Enabled != old
@@ -1177,7 +1217,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field primary_key")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Primary_key() error }); ok {
+			return w.OnValidate_Primary_key()
+		}
 		return t.OnValidate_Primary_key()
 	case "enabled":
 		// Set field value
@@ -1189,7 +1232,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field enabled")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Enabled() error }); ok {
+			return w.OnValidate_Enabled()
+		}
 		return t.OnValidate_Enabled()
 	case "smtp_server":
 		// Set field value
@@ -1200,7 +1246,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field smtp_server")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Smtp_server() error }); ok {
+			return w.OnValidate_Smtp_server()
+		}
 		return t.OnValidate_Smtp_server()
 	case "smtp_server_port":
 		// Set field value
@@ -1220,7 +1269,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		default:
 			return fmt.Errorf("invalid type for field smtp_server_port")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Smtp_server_port() error }); ok {
+			return w.OnValidate_Smtp_server_port()
+		}
 		return t.OnValidate_Smtp_server_port()
 	case "user_id":
 		// Set field value
@@ -1231,7 +1283,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_User_id() error }); ok {
+			return w.OnValidate_User_id()
+		}
 		return t.OnValidate_User_id()
 	case "password":
 		// Set field value
@@ -1242,7 +1297,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field password")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Password() error }); ok {
+			return w.OnValidate_Password()
+		}
 		return t.OnValidate_Password()
 	case "from_address":
 		// Set field value
@@ -1253,7 +1311,10 @@ func (t *SMTPSetupBase) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field from_address")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_From_address() error }); ok {
+			return w.OnValidate_From_address()
+		}
 		return t.OnValidate_From_address()
 	}
 
