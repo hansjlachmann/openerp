@@ -47,6 +47,10 @@ type UserMemberBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const UserMemberTableID = 5140
@@ -77,6 +81,12 @@ func (t *UserMemberBase) SetTriggers(onInsert, onModify func() error, onDelete f
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *UserMemberBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -189,6 +199,18 @@ func (t *UserMemberBase) InitWithDBType(db database.Executor, company string, db
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *UserMemberBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *UserMemberBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
@@ -349,8 +371,22 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("user_id") {
+			setClauses = append(setClauses, "user_id = ?")
+			values = append(values, t.User_id)
+		}
+		if t.hasFieldChanged("role_id") {
+			setClauses = append(setClauses, "role_id = ?")
+			values = append(values, t.Role_id)
+		}
+		if t.hasFieldChanged("company") {
+			setClauses = append(setClauses, "company = ?")
+			values = append(values, t.Company)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -360,10 +396,22 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 		// No old values (fresh record), update all fields
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.User_id)
-	values = append(values, t.Role_id)
-	values = append(values, t.Company)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["user_id"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.User_id)
+	}
+	if old, ok := t.oldValues["role_id"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Role_id)
+	}
+	if old, ok := t.oldValues["company"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Company)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND user_id = ? AND role_id = ? AND company = ?`,
@@ -378,6 +426,10 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify User_Member: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -396,6 +448,18 @@ func (t *UserMemberBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "user_id":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.User_id.Equal(old)
+		}
+	case "role_id":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Role_id.Equal(old)
+		}
+	case "company":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Company.Equal(old)
+		}
 	}
 
 	return false
@@ -1066,7 +1130,10 @@ func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) erro
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_User_id() error }); ok {
+			return w.OnValidate_User_id()
+		}
 		return t.OnValidate_User_id()
 	case "role_id":
 		// Set field value
@@ -1077,7 +1144,10 @@ func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) erro
 		} else {
 			return fmt.Errorf("invalid type for field role_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Role_id() error }); ok {
+			return w.OnValidate_Role_id()
+		}
 		return t.OnValidate_Role_id()
 	case "company":
 		// Set field value
@@ -1088,7 +1158,10 @@ func (t *UserMemberBase) ValidateField(fieldName string, value interface{}) erro
 		} else {
 			return fmt.Errorf("invalid type for field company")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Company() error }); ok {
+			return w.OnValidate_Company()
+		}
 		return t.OnValidate_Company()
 	}
 

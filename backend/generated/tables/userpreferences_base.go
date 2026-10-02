@@ -53,6 +53,10 @@ type UserPreferencesBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const UserPreferencesTableID = 5120
@@ -83,6 +87,12 @@ func (t *UserPreferencesBase) SetTriggers(onInsert, onModify func() error, onDel
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *UserPreferencesBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -203,6 +213,18 @@ func (t *UserPreferencesBase) InitWithDBType(db database.Executor, company strin
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *UserPreferencesBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *UserPreferencesBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
@@ -393,8 +415,26 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("user_id") {
+			setClauses = append(setClauses, "user_id = ?")
+			values = append(values, t.User_id)
+		}
+		if t.hasFieldChanged("page_id") {
+			setClauses = append(setClauses, "page_id = ?")
+			values = append(values, t.Page_id)
+		}
+		if t.hasFieldChanged("preference_type") {
+			setClauses = append(setClauses, "preference_type = ?")
+			values = append(values, t.Preference_type)
+		}
+		if t.hasFieldChanged("preference_name") {
+			setClauses = append(setClauses, "preference_name = ?")
+			values = append(values, t.Preference_name)
+		}
 		if t.hasFieldChanged("preference_data") {
 			setClauses = append(setClauses, "preference_data = ?")
 			values = append(values, t.Preference_data)
@@ -422,11 +462,27 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Updated_at)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.User_id)
-	values = append(values, t.Page_id)
-	values = append(values, t.Preference_type)
-	values = append(values, t.Preference_name)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["user_id"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.User_id)
+	}
+	if old, ok := t.oldValues["page_id"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Page_id)
+	}
+	if old, ok := t.oldValues["preference_type"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Preference_type)
+	}
+	if old, ok := t.oldValues["preference_name"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Preference_name)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?`,
@@ -441,6 +497,10 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify User_Preferences: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -459,6 +519,23 @@ func (t *UserPreferencesBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "user_id":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.User_id.Equal(old)
+		}
+	case "page_id":
+		if old, ok := oldValue.(int); ok {
+			return t.Page_id != old
+		}
+		return true // Type mismatch, assume changed
+	case "preference_type":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Preference_type.Equal(old)
+		}
+	case "preference_name":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Preference_name.Equal(old)
+		}
 	case "preference_data":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Preference_data.Equal(old)
@@ -1186,7 +1263,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_User_id() error }); ok {
+			return w.OnValidate_User_id()
+		}
 		return t.OnValidate_User_id()
 	case "page_id":
 		// Set field value
@@ -1206,7 +1286,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		default:
 			return fmt.Errorf("invalid type for field page_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Page_id() error }); ok {
+			return w.OnValidate_Page_id()
+		}
 		return t.OnValidate_Page_id()
 	case "preference_type":
 		// Set field value
@@ -1217,7 +1300,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field preference_type")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Preference_type() error }); ok {
+			return w.OnValidate_Preference_type()
+		}
 		return t.OnValidate_Preference_type()
 	case "preference_name":
 		// Set field value
@@ -1228,7 +1314,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field preference_name")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Preference_name() error }); ok {
+			return w.OnValidate_Preference_name()
+		}
 		return t.OnValidate_Preference_name()
 	case "preference_data":
 		// Set field value
@@ -1239,7 +1328,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field preference_data")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Preference_data() error }); ok {
+			return w.OnValidate_Preference_data()
+		}
 		return t.OnValidate_Preference_data()
 	case "created_at":
 		// Set field value
@@ -1256,7 +1348,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field created_at (expected DateTime, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Created_at() error }); ok {
+			return w.OnValidate_Created_at()
+		}
 		return t.OnValidate_Created_at()
 	case "updated_at":
 		// Set field value
@@ -1273,7 +1368,10 @@ func (t *UserPreferencesBase) ValidateField(fieldName string, value interface{})
 		} else {
 			return fmt.Errorf("invalid type for field updated_at (expected DateTime, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Updated_at() error }); ok {
+			return w.OnValidate_Updated_at()
+		}
 		return t.OnValidate_Updated_at()
 	}
 

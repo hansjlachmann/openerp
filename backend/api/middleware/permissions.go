@@ -63,7 +63,8 @@ func mapRouteToOperation(c *fiber.Ctx) session.PermissionOperation {
 	case "GET":
 		return session.PermRead
 	case "POST":
-		if strings.HasSuffix(path, "/insert") {
+		// Initializing a new record is the first step of inserting one
+		if strings.HasSuffix(path, "/insert") || strings.HasSuffix(path, "/init") {
 			return session.PermInsert
 		}
 		if strings.HasSuffix(path, "/validate") {

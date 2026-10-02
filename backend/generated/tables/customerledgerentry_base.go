@@ -144,6 +144,10 @@ type CustomerLedgerEntryBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const CustomerLedgerEntryTableID = 21
@@ -227,6 +231,12 @@ func (t *CustomerLedgerEntryBase) SetTriggers(onInsert, onModify func() error, o
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *CustomerLedgerEntryBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -444,6 +454,18 @@ func (t *CustomerLedgerEntryBase) InitWithDBType(db database.Executor, company s
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *CustomerLedgerEntryBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *CustomerLedgerEntryBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
@@ -794,8 +816,14 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("entry_no") {
+			setClauses = append(setClauses, "entry_no = ?")
+			values = append(values, t.Entry_no)
+		}
 		if t.hasFieldChanged("customer_no") {
 			setClauses = append(setClauses, "customer_no = ?")
 			values = append(values, t.Customer_no)
@@ -1057,8 +1085,12 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Bal_account_no)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.Entry_no)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["entry_no"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Entry_no)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND entry_no = ?`,
@@ -1073,6 +1105,10 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer Ledger Entry: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -1091,6 +1127,11 @@ func (t *CustomerLedgerEntryBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "entry_no":
+		if old, ok := oldValue.(int); ok {
+			return t.Entry_no != old
+		}
+		return true // Type mismatch, assume changed
 	case "customer_no":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Customer_no.Equal(old)
@@ -2436,7 +2477,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		default:
 			return fmt.Errorf("invalid type for field entry_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Entry_no() error }); ok {
+			return w.OnValidate_Entry_no()
+		}
 		return t.OnValidate_Entry_no()
 	case "customer_no":
 		// Set field value
@@ -2447,7 +2491,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field customer_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Customer_no() error }); ok {
+			return w.OnValidate_Customer_no()
+		}
 		return t.OnValidate_Customer_no()
 	case "sell_to_customer_no":
 		// Set field value
@@ -2458,7 +2505,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field sell_to_customer_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Sell_to_customer_no() error }); ok {
+			return w.OnValidate_Sell_to_customer_no()
+		}
 		return t.OnValidate_Sell_to_customer_no()
 	case "posting_date":
 		// Set field value
@@ -2475,7 +2525,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field posting_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Posting_date() error }); ok {
+			return w.OnValidate_Posting_date()
+		}
 		return t.OnValidate_Posting_date()
 	case "document_date":
 		// Set field value
@@ -2492,7 +2545,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field document_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Document_date() error }); ok {
+			return w.OnValidate_Document_date()
+		}
 		return t.OnValidate_Document_date()
 	case "document_type":
 		// Set field value
@@ -2534,7 +2590,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field document_type (expected CustomerLedgerEntryDocument_type, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Document_type() error }); ok {
+			return w.OnValidate_Document_type()
+		}
 		return t.OnValidate_Document_type()
 	case "document_no":
 		// Set field value
@@ -2545,7 +2604,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field document_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Document_no() error }); ok {
+			return w.OnValidate_Document_no()
+		}
 		return t.OnValidate_Document_no()
 	case "external_document_no":
 		// Set field value
@@ -2556,7 +2618,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field external_document_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_External_document_no() error }); ok {
+			return w.OnValidate_External_document_no()
+		}
 		return t.OnValidate_External_document_no()
 	case "description":
 		// Set field value
@@ -2567,7 +2632,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field description")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Description() error }); ok {
+			return w.OnValidate_Description()
+		}
 		return t.OnValidate_Description()
 	case "currency_code":
 		// Set field value
@@ -2578,7 +2646,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field currency_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Currency_code() error }); ok {
+			return w.OnValidate_Currency_code()
+		}
 		return t.OnValidate_Currency_code()
 	case "amount":
 		// Set field value
@@ -2599,7 +2670,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field amount (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Amount() error }); ok {
+			return w.OnValidate_Amount()
+		}
 		return t.OnValidate_Amount()
 	case "remaining_amount":
 		// Set field value
@@ -2620,7 +2694,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field remaining_amount (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Remaining_amount() error }); ok {
+			return w.OnValidate_Remaining_amount()
+		}
 		return t.OnValidate_Remaining_amount()
 	case "closed_by_amount":
 		// Set field value
@@ -2641,7 +2718,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field closed_by_amount (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Closed_by_amount() error }); ok {
+			return w.OnValidate_Closed_by_amount()
+		}
 		return t.OnValidate_Closed_by_amount()
 	case "original_amount_lcy":
 		// Set field value
@@ -2662,7 +2742,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field original_amount_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Original_amount_lcy() error }); ok {
+			return w.OnValidate_Original_amount_lcy()
+		}
 		return t.OnValidate_Original_amount_lcy()
 	case "remaining_amt_lcy":
 		// Set field value
@@ -2683,7 +2766,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field remaining_amt_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Remaining_amt_lcy() error }); ok {
+			return w.OnValidate_Remaining_amt_lcy()
+		}
 		return t.OnValidate_Remaining_amt_lcy()
 	case "amount_lcy":
 		// Set field value
@@ -2704,7 +2790,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field amount_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Amount_lcy() error }); ok {
+			return w.OnValidate_Amount_lcy()
+		}
 		return t.OnValidate_Amount_lcy()
 	case "closed_by_amount_lcy":
 		// Set field value
@@ -2725,7 +2814,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field closed_by_amount_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Closed_by_amount_lcy() error }); ok {
+			return w.OnValidate_Closed_by_amount_lcy()
+		}
 		return t.OnValidate_Closed_by_amount_lcy()
 	case "sales_lcy":
 		// Set field value
@@ -2746,7 +2838,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field sales_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Sales_lcy() error }); ok {
+			return w.OnValidate_Sales_lcy()
+		}
 		return t.OnValidate_Sales_lcy()
 	case "profit_lcy":
 		// Set field value
@@ -2767,7 +2862,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field profit_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Profit_lcy() error }); ok {
+			return w.OnValidate_Profit_lcy()
+		}
 		return t.OnValidate_Profit_lcy()
 	case "inv_discount_lcy":
 		// Set field value
@@ -2788,7 +2886,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field inv_discount_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Inv_discount_lcy() error }); ok {
+			return w.OnValidate_Inv_discount_lcy()
+		}
 		return t.OnValidate_Inv_discount_lcy()
 	case "pmt_discount_date":
 		// Set field value
@@ -2805,7 +2906,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field pmt_discount_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Pmt_discount_date() error }); ok {
+			return w.OnValidate_Pmt_discount_date()
+		}
 		return t.OnValidate_Pmt_discount_date()
 	case "pmt_disc_possible":
 		// Set field value
@@ -2826,7 +2930,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field pmt_disc_possible (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Pmt_disc_possible() error }); ok {
+			return w.OnValidate_Pmt_disc_possible()
+		}
 		return t.OnValidate_Pmt_disc_possible()
 	case "pmt_disc_given_lcy":
 		// Set field value
@@ -2847,7 +2954,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field pmt_disc_given_lcy (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Pmt_disc_given_lcy() error }); ok {
+			return w.OnValidate_Pmt_disc_given_lcy()
+		}
 		return t.OnValidate_Pmt_disc_given_lcy()
 	case "customer_posting_group":
 		// Set field value
@@ -2858,7 +2968,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field customer_posting_group")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Customer_posting_group() error }); ok {
+			return w.OnValidate_Customer_posting_group()
+		}
 		return t.OnValidate_Customer_posting_group()
 	case "department_code":
 		// Set field value
@@ -2869,7 +2982,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field department_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Department_code() error }); ok {
+			return w.OnValidate_Department_code()
+		}
 		return t.OnValidate_Department_code()
 	case "project_code":
 		// Set field value
@@ -2880,7 +2996,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field project_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Project_code() error }); ok {
+			return w.OnValidate_Project_code()
+		}
 		return t.OnValidate_Project_code()
 	case "salesperson_code":
 		// Set field value
@@ -2891,7 +3010,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field salesperson_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Salesperson_code() error }); ok {
+			return w.OnValidate_Salesperson_code()
+		}
 		return t.OnValidate_Salesperson_code()
 	case "user_id":
 		// Set field value
@@ -2902,7 +3024,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_User_id() error }); ok {
+			return w.OnValidate_User_id()
+		}
 		return t.OnValidate_User_id()
 	case "source_code":
 		// Set field value
@@ -2913,7 +3038,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field source_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Source_code() error }); ok {
+			return w.OnValidate_Source_code()
+		}
 		return t.OnValidate_Source_code()
 	case "reason_code":
 		// Set field value
@@ -2924,7 +3052,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field reason_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Reason_code() error }); ok {
+			return w.OnValidate_Reason_code()
+		}
 		return t.OnValidate_Reason_code()
 	case "journal_batch_name":
 		// Set field value
@@ -2935,7 +3066,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field journal_batch_name")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Journal_batch_name() error }); ok {
+			return w.OnValidate_Journal_batch_name()
+		}
 		return t.OnValidate_Journal_batch_name()
 	case "transaction_no":
 		// Set field value
@@ -2955,7 +3089,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		default:
 			return fmt.Errorf("invalid type for field transaction_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Transaction_no() error }); ok {
+			return w.OnValidate_Transaction_no()
+		}
 		return t.OnValidate_Transaction_no()
 	case "applies_to_doc_type":
 		// Set field value
@@ -2997,7 +3134,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field applies_to_doc_type (expected CustomerLedgerEntryApplies_to_doc_type, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Applies_to_doc_type() error }); ok {
+			return w.OnValidate_Applies_to_doc_type()
+		}
 		return t.OnValidate_Applies_to_doc_type()
 	case "applies_to_doc_no":
 		// Set field value
@@ -3008,7 +3148,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field applies_to_doc_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Applies_to_doc_no() error }); ok {
+			return w.OnValidate_Applies_to_doc_no()
+		}
 		return t.OnValidate_Applies_to_doc_no()
 	case "applies_to_id":
 		// Set field value
@@ -3019,7 +3162,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field applies_to_id")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Applies_to_id() error }); ok {
+			return w.OnValidate_Applies_to_id()
+		}
 		return t.OnValidate_Applies_to_id()
 	case "open":
 		// Set field value
@@ -3031,7 +3177,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field open")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Open() error }); ok {
+			return w.OnValidate_Open()
+		}
 		return t.OnValidate_Open()
 	case "positive":
 		// Set field value
@@ -3043,7 +3192,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field positive")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Positive() error }); ok {
+			return w.OnValidate_Positive()
+		}
 		return t.OnValidate_Positive()
 	case "on_hold":
 		// Set field value
@@ -3054,7 +3206,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field on_hold")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_On_hold() error }); ok {
+			return w.OnValidate_On_hold()
+		}
 		return t.OnValidate_On_hold()
 	case "due_date":
 		// Set field value
@@ -3071,7 +3226,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field due_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Due_date() error }); ok {
+			return w.OnValidate_Due_date()
+		}
 		return t.OnValidate_Due_date()
 	case "closed_by_entry_no":
 		// Set field value
@@ -3091,7 +3249,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		default:
 			return fmt.Errorf("invalid type for field closed_by_entry_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Closed_by_entry_no() error }); ok {
+			return w.OnValidate_Closed_by_entry_no()
+		}
 		return t.OnValidate_Closed_by_entry_no()
 	case "closed_at_date":
 		// Set field value
@@ -3108,7 +3269,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field closed_at_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Closed_at_date() error }); ok {
+			return w.OnValidate_Closed_at_date()
+		}
 		return t.OnValidate_Closed_at_date()
 	case "bal_account_type":
 		// Set field value
@@ -3150,7 +3314,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field bal_account_type (expected CustomerLedgerEntryBal_account_type, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Bal_account_type() error }); ok {
+			return w.OnValidate_Bal_account_type()
+		}
 		return t.OnValidate_Bal_account_type()
 	case "bal_account_no":
 		// Set field value
@@ -3161,7 +3328,10 @@ func (t *CustomerLedgerEntryBase) ValidateField(fieldName string, value interfac
 		} else {
 			return fmt.Errorf("invalid type for field bal_account_no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Bal_account_no() error }); ok {
+			return w.OnValidate_Bal_account_no()
+		}
 		return t.OnValidate_Bal_account_no()
 	}
 

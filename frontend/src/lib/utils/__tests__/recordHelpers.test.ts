@@ -4,7 +4,10 @@ import {
 	isNewRecord,
 	getRecordKey,
 	deepCopy,
-	hasRecordChanged
+	hasRecordChanged,
+	hasUserEdits,
+	shouldInsertNewRecord,
+	stripInternalFields
 } from '../recordHelpers';
 
 describe('getRecordId', () => {
@@ -139,5 +142,59 @@ describe('hasRecordChanged', () => {
 		const current = { no: 'ABC', _internal: 'changed' };
 		const original = { no: 'ABC', _internal: 'original' };
 		expect(hasRecordChanged(current, original)).toBe(false);
+	});
+});
+
+describe('hasUserEdits', () => {
+	const pristine = { no: '', posting_date: '2026-10-02', amount: '0', active: true, type: 0 };
+
+	it('is false for a pre-populated row the user never touched', () => {
+		expect(hasUserEdits({ ...pristine, _isNew: true, _tempId: 't1' }, pristine)).toBe(false);
+	});
+
+	it('treats input strings equal to typed defaults as unchanged', () => {
+		expect(hasUserEdits({ ...pristine, type: '0' }, pristine)).toBe(false);
+	});
+
+	it('is true once a field differs from its initial value', () => {
+		expect(hasUserEdits({ ...pristine, no: 'C1' }, pristine)).toBe(true);
+	});
+
+	it('counts toggling a defaulted boolean as an edit', () => {
+		expect(hasUserEdits({ ...pristine, active: false }, pristine)).toBe(true);
+	});
+});
+
+describe('shouldInsertNewRecord', () => {
+	const pks = [{ source: 'no', required: true }];
+
+	// Table-driven: (initial values, user edits) → insert / no insert
+	const cases: Array<{ name: string; pristine: Record<string, any>; edits: Record<string, any>; pks?: Array<{ source: string; required?: boolean }>; insert: boolean }> = [
+		{ name: 'pre-populated row with zero user edits', pristine: { no: '', posting_date: '2026-10-02', amount: '0' }, edits: {}, insert: false },
+		{ name: 'blank row with zero user edits', pristine: { no: '', name: '' }, edits: {}, insert: false },
+		{ name: 'user fills the primary key', pristine: { no: '', name: '' }, edits: { no: 'C1' }, insert: true },
+		{ name: 'user fills a non-key field while the required key is blank', pristine: { no: '', name: '' }, edits: { name: 'Acme' }, insert: false },
+		{ name: 'required key supplied by defaults, user edits another field', pristine: { no: 'G0001', amount: '0' }, edits: { amount: '100' }, insert: true },
+		{ name: 'composite key: first required part only', pristine: { user_id: '', role_id: '', company: '' }, edits: { user_id: 'HANS' }, pks: [{ source: 'user_id', required: true }, { source: 'role_id', required: true }, { source: 'company' }], insert: false },
+		{ name: 'composite key: required parts filled, optional part blank', pristine: { user_id: '', role_id: '', company: '' }, edits: { user_id: 'HANS', role_id: 'READER' }, pks: [{ source: 'user_id', required: true }, { source: 'role_id', required: true }, { source: 'company' }], insert: true },
+		{ name: 'optional key part missing entirely', pristine: { user_id: '', role_id: '' }, edits: { user_id: 'HANS', role_id: 'READER' }, pks: [{ source: 'user_id', required: true }, { source: 'role_id', required: true }, { source: 'company' }], insert: false },
+		{ name: 'table without primary key fields, user edit', pristine: { name: '' }, edits: { name: 'x' }, pks: [], insert: true }
+	];
+
+	for (const c of cases) {
+		it(`${c.insert ? 'inserts' : 'does not insert'}: ${c.name}`, () => {
+			const record = { ...c.pristine, ...c.edits, _isNew: true, _tempId: 't1' };
+			expect(shouldInsertNewRecord(record, c.pristine, c.pks ?? pks)).toBe(c.insert);
+		});
+	}
+
+	it('never inserts a record that is not new', () => {
+		expect(shouldInsertNewRecord({ no: 'C1' }, { no: '' }, pks)).toBe(false);
+	});
+});
+
+describe('stripInternalFields', () => {
+	it('removes underscore-prefixed flags', () => {
+		expect(stripInternalFields({ no: 'C1', _isNew: true, _tempId: 't1', _pristine: { no: '' } })).toEqual({ no: 'C1' });
 	});
 });

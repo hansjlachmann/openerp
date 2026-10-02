@@ -85,6 +85,10 @@ type CustomerBase struct {
 	onInsertFn func() error
 	onModifyFn func() error
 	onDeleteFn func(database.Executor, string) error
+
+	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
+	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
+	self interface{}
 }
 
 const CustomerTableID = 18
@@ -134,6 +138,12 @@ func (t *CustomerBase) SetTriggers(onInsert, onModify func() error, onDelete fun
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
+// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
+func (t *CustomerBase) SetSelf(self interface{}) {
+	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
@@ -266,6 +276,18 @@ func (t *CustomerBase) InitWithDBType(db database.Executor, company string, dbTy
 	t.company = company
 	t.dbType = dbType
 	t.oldValues = nil // Fresh record, no old values
+	t.applyDefaults()
+}
+
+// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// The base implementation applies the YAML default values; wrappers can override
+// it to supply further defaults (call the base implementation first).
+func (t *CustomerBase) InitRecord() {
+	t.applyDefaults()
+}
+
+// applyDefaults assigns the YAML default values and auto timestamps
+func (t *CustomerBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
@@ -456,8 +478,14 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 	var setClauses []string
 	var values []interface{}
 
-	// If we have old values (loaded from Get), only update changed fields
+	// If we have old values (loaded from Get), only update changed fields.
+	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("no") {
+			setClauses = append(setClauses, "no = ?")
+			values = append(values, t.No)
+		}
 		if t.hasFieldChanged("name") {
 			setClauses = append(setClauses, "name = ?")
 			values = append(values, t.Name)
@@ -533,8 +561,12 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Profile_photo)
 	}
 
-	// Add WHERE clause value (primary key)
-	values = append(values, t.No)
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["no"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.No)
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND no = ?`,
@@ -549,6 +581,10 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer: %v\n", err)
 		return false
+	}
+	// The stored record now matches the current values (including a renamed key)
+	if t.oldValues != nil {
+		t.StoreOldValues()
 	}
 	return true
 }
@@ -567,6 +603,10 @@ func (t *CustomerBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "no":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.No.Equal(old)
+		}
 	case "name":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Name.Equal(old)
@@ -1525,7 +1565,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field no")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_No() error }); ok {
+			return w.OnValidate_No()
+		}
 		return t.OnValidate_No()
 	case "name":
 		// Set field value
@@ -1536,7 +1579,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field name")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Name() error }); ok {
+			return w.OnValidate_Name()
+		}
 		return t.OnValidate_Name()
 	case "address":
 		// Set field value
@@ -1547,7 +1593,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field address")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Address() error }); ok {
+			return w.OnValidate_Address()
+		}
 		return t.OnValidate_Address()
 	case "post_code":
 		// Set field value
@@ -1558,7 +1607,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field post_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Post_code() error }); ok {
+			return w.OnValidate_Post_code()
+		}
 		return t.OnValidate_Post_code()
 	case "city":
 		// Set field value
@@ -1569,7 +1621,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field city")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_City() error }); ok {
+			return w.OnValidate_City()
+		}
 		return t.OnValidate_City()
 	case "phonenumber":
 		// Set field value
@@ -1580,7 +1635,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field phonenumber")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Phonenumber() error }); ok {
+			return w.OnValidate_Phonenumber()
+		}
 		return t.OnValidate_Phonenumber()
 	case "payment_terms_code":
 		// Set field value
@@ -1591,7 +1649,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field payment_terms_code")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Payment_terms_code() error }); ok {
+			return w.OnValidate_Payment_terms_code()
+		}
 		return t.OnValidate_Payment_terms_code()
 	case "status":
 		// Set field value
@@ -1633,7 +1694,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field status (expected CustomerStatus, int, or string)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Status() error }); ok {
+			return w.OnValidate_Status()
+		}
 		return t.OnValidate_Status()
 	case "credit_limit":
 		// Set field value
@@ -1654,7 +1718,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field credit_limit (expected Decimal, string, float64, int, or int64)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Credit_limit() error }); ok {
+			return w.OnValidate_Credit_limit()
+		}
 		return t.OnValidate_Credit_limit()
 	case "last_order_date":
 		// Set field value
@@ -1671,7 +1738,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field last_order_date (expected Date, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Last_order_date() error }); ok {
+			return w.OnValidate_Last_order_date()
+		}
 		return t.OnValidate_Last_order_date()
 	case "created_at":
 		// Set field value
@@ -1688,7 +1758,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field created_at (expected DateTime, string, or time.Time)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Created_at() error }); ok {
+			return w.OnValidate_Created_at()
+		}
 		return t.OnValidate_Created_at()
 	case "profile_photo":
 		// Set field value
@@ -1711,7 +1784,10 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field profile_photo (expected []byte, string, or nil)")
 		}
-		// Call OnValidate trigger
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Profile_photo() error }); ok {
+			return w.OnValidate_Profile_photo()
+		}
 		return t.OnValidate_Profile_photo()
 	}
 

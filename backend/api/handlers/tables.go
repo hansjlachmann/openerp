@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -501,29 +502,9 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	// Get FlowFields to skip during validation (they're calculated, not stored)
-	flowFields := make(map[string]bool)
-	for _, ff := range table.GetFlowFields() {
-		flowFields[ff] = true
-	}
-
-	// Validate and set each field (runs OnValidate triggers for table relations, etc.)
-	for fieldName, value := range data {
-		// Skip nil values - frontend may send null for unchanged fields
-		if value == nil {
-			continue
-		}
-		// Skip FlowFields - they're calculated, not validated
-		if flowFields[fieldName] {
-			continue
-		}
-		// Skip virtual password field for User table - handled separately below
-		if tableName == "User" && fieldName == "password" {
-			continue
-		}
-		if err := table.ValidateField(fieldName, value); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
-		}
+	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
+	if err := validateChangedFields(table, tableName, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Special handling for User table password
@@ -603,29 +584,9 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	// Get FlowFields to skip during validation (they're calculated, not stored)
-	flowFields := make(map[string]bool)
-	for _, ff := range table.GetFlowFields() {
-		flowFields[ff] = true
-	}
-
-	// Validate and update each field (runs OnValidate triggers for table relations, etc.)
-	for fieldName, value := range data {
-		// Skip nil values - frontend may send null for unchanged fields
-		if value == nil {
-			continue
-		}
-		// Skip FlowFields - they're calculated, not validated
-		if flowFields[fieldName] {
-			continue
-		}
-		// Skip virtual password field for User table - handled separately below
-		if tableName == "User" && fieldName == "password" {
-			continue
-		}
-		if err := table.ValidateField(fieldName, value); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
-		}
+	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
+	if err := validateChangedFields(table, tableName, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Special handling for User table password
@@ -704,7 +665,82 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// ValidateField validates a single field value
+// validateChangedFields runs ValidateField (BC/NAV VALIDATE) for each field in data whose
+// value differs from the table's current value, in table field order. Unchanged fields are
+// skipped so a stale payload value cannot overwrite a sibling that another field's
+// OnValidate trigger filled in. Unknown fields are still validated so they are reported.
+func validateChangedFields(table ftables.Table, tableName string, data map[string]interface{}) error {
+	current := table.ToMap()
+
+	skip := make(map[string]bool)
+	for _, ff := range table.GetFlowFields() {
+		skip[ff] = true // FlowFields are calculated, not validated
+	}
+	if tableName == "User" {
+		skip["password"] = true // virtual field, handled separately by the caller
+	}
+
+	ordered := make([]string, 0, len(data))
+	seen := make(map[string]bool, len(data))
+	for _, f := range table.GetFields() {
+		if _, ok := data[f.Name]; ok {
+			ordered = append(ordered, f.Name)
+			seen[f.Name] = true
+		}
+	}
+	extra := make([]string, 0)
+	for name := range data {
+		if !seen[name] {
+			extra = append(extra, name)
+		}
+	}
+	sort.Strings(extra)
+	ordered = append(ordered, extra...)
+
+	for _, fieldName := range ordered {
+		value := data[fieldName]
+		// Skip nil values - frontend may send null for unchanged fields
+		if value == nil || skip[fieldName] {
+			continue
+		}
+		if cur, ok := current[fieldName]; ok && fmt.Sprint(cur) == fmt.Sprint(value) {
+			continue
+		}
+		if err := table.ValidateField(fieldName, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// InitRecord returns a new, not yet inserted record with its defaults applied
+// (BC/NAV OnNewRecord). Nothing is persisted.
+// POST /api/tables/:table/init
+func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := getSession(c)
+
+	if sess == nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+
+	company := sess.GetCompany()
+	language := sess.GetLanguage()
+
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	table.InitRecord()
+
+	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
+}
+
+// ValidateField validates a single field value (BC/NAV VALIDATE).
+// When the in-progress record is supplied, the table is hydrated from it first so the
+// field's OnValidate trigger can see (and fill in) sibling fields; the resulting record
+// is returned in data.
 // POST /api/tables/:table/validate
 func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	tableName := c.Params("table")
@@ -719,8 +755,9 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 
 	// Parse request body
 	var req struct {
-		Field string      `json:"field"`
-		Value interface{} `json:"value"`
+		Field  string                 `json:"field"`
+		Value  interface{}            `json:"value"`
+		Record map[string]interface{} `json:"record"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
@@ -730,6 +767,11 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	table, err := h.getTable(tableName, company)
 	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// Hydrate from the in-progress record (plain assignment, no triggers)
+	if req.Record != nil {
+		table.FromMap(req.Record)
 	}
 
 	// Validate field (runs OnValidate trigger)
@@ -757,9 +799,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(apitypes.APIResponse{
-		Success: true,
-	})
+	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
 }
 
 // dropCompanyTables drops all "companyName$*" tables from PostgreSQL
