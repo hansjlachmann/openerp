@@ -389,12 +389,12 @@
 		align-items: center;
 		justify-content: center;
 		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #008489 0%, #003a3e 100%);
 		padding: 1rem;
 	}
 
 	:global(.dark) .login-container {
-		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+		background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
 	}
 
 	.login-card {
@@ -407,7 +407,7 @@
 	}
 
 	:global(.dark) .login-card {
-		background: #1f2937;
+		background: #1e1e1e;
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 	}
 
@@ -418,22 +418,22 @@
 
 	.login-header h1 {
 		margin: 0 0 0.5rem 0;
-		color: #2d3748;
+		color: #212121;
 		font-size: 2rem;
 	}
 
 	:global(.dark) .login-header h1 {
-		color: #f3f4f6;
+		color: #f2f2f3;
 	}
 
 	.login-header p {
 		margin: 0;
-		color: #718096;
+		color: #505c6d;
 		font-size: 1rem;
 	}
 
 	:global(.dark) .login-header p {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	.error-message {
@@ -459,104 +459,104 @@
 	.form-group label {
 		display: block;
 		margin-bottom: 0.5rem;
-		color: #2d3748;
+		color: #212121;
 		font-weight: 500;
 		font-size: 0.875rem;
 	}
 
 	:global(.dark) .form-group label {
-		color: #e5e7eb;
+		color: #e5e7e9;
 	}
 
 	.form-group input {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid #cbd5e0;
+		border: 1px solid #d3d6da;
 		border-radius: 4px;
 		font-size: 1rem;
 		transition: border-color 0.15s ease-in-out;
 		box-sizing: border-box;
 		background-color: white;
-		color: #2d3748;
+		color: #212121;
 	}
 
 	:global(.dark) .form-group input {
-		background-color: #374151;
-		border-color: #4b5563;
-		color: #f3f4f6;
+		background-color: #303032;
+		border-color: #505c6d;
+		color: #f2f2f3;
 	}
 
 	.form-group input:focus {
 		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		border-color: #008489;
+		box-shadow: 0 0 0 3px rgba(0, 132, 137, 0.1);
 	}
 
 	:global(.dark) .form-group input:focus {
-		border-color: #818cf8;
-		box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+		border-color: #37a1a5;
+		box-shadow: 0 0 0 3px rgba(55, 161, 165, 0.2);
 	}
 
 	.form-group input:disabled {
-		background-color: #f7fafc;
+		background-color: #f7f7f7;
 		cursor: not-allowed;
 	}
 
 	:global(.dark) .form-group input:disabled {
-		background-color: #1f2937;
+		background-color: #1e1e1e;
 	}
 
 	.form-group input::placeholder {
-		color: #a0aec0;
+		color: #a4b0c4;
 	}
 
 	:global(.dark) .form-group input::placeholder {
-		color: #6b7280;
+		color: #737d8a;
 	}
 
 	.company-select {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid #cbd5e0;
+		border: 1px solid #d3d6da;
 		border-radius: 4px;
 		font-size: 1rem;
 		transition: border-color 0.15s ease-in-out;
 		box-sizing: border-box;
 		background-color: white;
-		color: #2d3748;
+		color: #212121;
 		cursor: pointer;
 	}
 
 	:global(.dark) .company-select {
-		background-color: #374151;
-		border-color: #4b5563;
-		color: #f3f4f6;
+		background-color: #303032;
+		border-color: #505c6d;
+		color: #f2f2f3;
 	}
 
 	.company-select:focus {
 		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		border-color: #008489;
+		box-shadow: 0 0 0 3px rgba(0, 132, 137, 0.1);
 	}
 
 	:global(.dark) .company-select:focus {
-		border-color: #818cf8;
-		box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+		border-color: #37a1a5;
+		box-shadow: 0 0 0 3px rgba(55, 161, 165, 0.2);
 	}
 
 	.company-select:disabled {
-		background-color: #f7fafc;
+		background-color: #f7f7f7;
 		cursor: not-allowed;
 	}
 
 	:global(.dark) .company-select:disabled {
-		background-color: #1f2937;
+		background-color: #1e1e1e;
 	}
 
 	.login-button {
 		width: 100%;
 		padding: 0.75rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #008489 0%, #003a3e 100%);
 		color: white;
 		border: none;
 		border-radius: 4px;
@@ -567,16 +567,16 @@
 	}
 
 	:global(.dark) .login-button {
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: linear-gradient(135deg, #00838f 0%, #00585c 100%);
 	}
 
 	.login-button:hover:not(:disabled) {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 12px rgba(0, 132, 137, 0.4);
 	}
 
 	:global(.dark) .login-button:hover:not(:disabled) {
-		box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+		box-shadow: 0 4px 12px rgba(0, 131, 143, 0.4);
 	}
 
 	.login-button:active:not(:disabled) {
@@ -591,8 +591,8 @@
 	.secondary-button {
 		width: 100%;
 		padding: 0.75rem;
-		background: #e2e8f0;
-		color: #2d3748;
+		background: #e5e7e9;
+		color: #212121;
 		border: none;
 		border-radius: 4px;
 		font-size: 0.875rem;
@@ -603,16 +603,16 @@
 	}
 
 	:global(.dark) .secondary-button {
-		background: #374151;
-		color: #e5e7eb;
+		background: #303032;
+		color: #e5e7e9;
 	}
 
 	.secondary-button:hover:not(:disabled) {
-		background: #cbd5e0;
+		background: #d3d6da;
 	}
 
 	:global(.dark) .secondary-button:hover:not(:disabled) {
-		background: #4b5563;
+		background: #505c6d;
 	}
 
 	.secondary-button:disabled {
@@ -623,23 +623,23 @@
 	.setup-prompt {
 		margin-top: 1.5rem;
 		padding: 1rem;
-		background-color: #f7fafc;
+		background-color: #f7f7f7;
 		border-radius: 4px;
 		text-align: center;
 	}
 
 	:global(.dark) .setup-prompt {
-		background-color: #374151;
+		background-color: #303032;
 	}
 
 	.setup-prompt p {
 		margin: 0 0 0.75rem 0;
-		color: #4a5568;
+		color: #505c6d;
 		font-size: 0.875rem;
 	}
 
 	:global(.dark) .setup-prompt p {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	.company-row {
@@ -653,7 +653,7 @@
 
 	.new-company-btn {
 		padding: 0.75rem 1rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #008489 0%, #003a3e 100%);
 		color: white;
 		border: none;
 		border-radius: 4px;
@@ -665,12 +665,12 @@
 	}
 
 	:global(.dark) .new-company-btn {
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: linear-gradient(135deg, #00838f 0%, #00585c 100%);
 	}
 
 	.new-company-btn:hover:not(:disabled) {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 12px rgba(0, 132, 137, 0.4);
 	}
 
 	.new-company-btn:disabled {
@@ -682,10 +682,10 @@
 		display: block;
 		margin-top: 0.25rem;
 		font-size: 0.75rem;
-		color: #718096;
+		color: #505c6d;
 	}
 
 	:global(.dark) .help-text {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 </style>

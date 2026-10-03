@@ -34,7 +34,7 @@ page:
 
     - name: New
       caption: New
-      shortcut: Ctrl+N
+      shortcut: Alt+N
       promoted: true
       enabled: true
 

@@ -377,8 +377,8 @@
 
 	:global(.dark) .field-group :global(input.input:focus),
 	:global(.dark) .field-group :global(select.select:focus) {
-		border-color: #3b82f6; /* blue-500 */
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+		border-color: #00838f; /* blue-500 */
+		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
 	:global(.dark) .field-group :global(input.input::placeholder) {
@@ -392,7 +392,7 @@
 
 	.checkbox-wrapper input[type="checkbox"] {
 		@apply w-5 h-5 cursor-pointer;
-		accent-color: #3b82f6;
+		accent-color: #00838f;
 	}
 
 	.checkbox-wrapper.readonly input[type="checkbox"] {

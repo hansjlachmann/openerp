@@ -196,10 +196,10 @@ page:
 
 - **TypeScript strict mode** with `checkJs` enabled
 - **Suppressed Svelte warnings**: `a11y_no_noninteractive_tabindex`, `a11y_no_noninteractive_element_interactions` (intentional tabindex patterns), `css_unused_selector` (Tailwind `@apply`)
-- **Tailwind with BC/NAV color scheme**: `text-nav-blue` (#002050), `text-nav-lightblue` (#4472c4), font: Segoe UI. Dark mode via `class` strategy.
+- **Business Central color palette**: colors match BC light and dark mode (reference: `docs/BC-Screenshot-LightMode.png`, `docs/BC-Screenshot-DarkMode.png`). `tailwind.config.js` retunes Tailwind's `gray` scale to BC neutrals (light page `#ffffff`, text `#212121`, secondary `#505c6d`; dark page `gray-900` `#121212`, text `gray-50` `#f7f7f7`, secondary `gray-400` `#a4b0c4`, separators `gray-700` `#303032`) and maps `blue`/`primary` to BC teal (links `600` `#008489` light / `400` `#37a1a5` dark, tiles `500` `#00838f`). `nav-blue` is the BC app bar `#282828` in both modes. Use these classes — never introduce other hues (no indigo/purple/Tailwind blue) except red/green/yellow for status. Raw colors in `<style>` blocks must use the same palette values. Font: Segoe UI. Dark mode via `class` strategy.
 - **Svelte 5 runes**: Always use runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`) — never legacy Svelte 4 patterns (`export let`, `$:`, `$store` syntax).
 - **i18n**: All labels and field captions in the frontend must come from backend translation files — never hardcode display text in Svelte components. In backend codeunits, use `i18n.GetInstance().Message(key, CurrentLanguage())` for user-facing strings (dialog titles, field labels, messages). Never hardcode English strings that are shown to the user.
-- **BC/NAV keyboard shortcuts**: Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
+- **BC/NAV keyboard shortcuts**: Alt+N new (as in the BC web client — never Ctrl+N, Ctrl+T or Ctrl+W: browsers reserve them and never pass them to the page), Ctrl+E edit, Ctrl+D delete, Ctrl+S save, Ctrl+F find, F5 refresh, Escape cancel, Ctrl+Home/End first/last, PageUp/Down prev/next
 - **Code field behavior (ABSOLUTE RULE)**: Fields with `types.Code` must allow typing in any case, then auto-uppercase the value on blur (when the field loses focus). This matches standard NAV/BC behavior. Never force uppercase while typing — only convert on exit. Apply this everywhere Code fields are rendered: login forms, list page cell-editing, card page fields, modal dialogs, and any other input bound to a Code field.
 - **Boolean field rendering (ABSOLUTE RULE)**: Fields with YAML `type: bool` must always render as checkboxes — on card pages, list pages (edit and read-only mode), and modal card pages. Detection uses two complementary checks: `typeof value === 'boolean'` (works for existing records) OR `fieldTypes[field.source] === 'bool'` (works for new/empty records where value is `undefined`). The `fieldTypes` metadata flows from backend YAML → `TableMetadata` → page API response `captions.field_types` → `PageRenderer` → `CardPage`/`ListPage`/`ModalCardPage` → `FieldRenderer`. Never rely solely on `typeof` — new records have no value yet, so the backend metadata is essential. This is fully generic: any table field with `type: bool` in its YAML definition automatically gets checkbox rendering everywhere. On editable list pages, boolean checkboxes must be **clickable** in both cell-selected mode and navigation/read-only mode — clicking toggles the value and saves immediately. In cell-selected mode, use `handleCellBlur` (editableActive is true). In navigation mode, call `api.modifyRecord` directly (editableActive is false, so `handleCellBlur` would return early). On error, revert the checkbox value. On non-editable list pages, boolean checkboxes remain `disabled`. Never render boolean checkboxes with `disabled` on editable list pages.
 
@@ -238,7 +238,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Enter | If `card_page_id` set: open card page. Otherwise: enter cell-selected on first editable cell |
 | F2 | Enter cell-selected on first editable cell of selected row |
 | Ctrl+E | Enter cell-selected (same as F2) |
-| Ctrl+N / Ctrl+Insert | Insert new row |
+| Alt+N / Ctrl+Insert | Insert new row |
 | Ctrl+F | Focus search input and select all text |
 | Ctrl+D | Delete selected record |
 | F5 | Refresh list data |
@@ -261,7 +261,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Ctrl+C | Copy cell value to system clipboard |
 | Ctrl+V | Paste from clipboard into cell + enter cell-editing |
 | F8 | Copy value from the cell directly above (NAV/BC standard) |
-| Ctrl+N / Ctrl+Insert | Insert new row |
+| Alt+N / Ctrl+Insert | Insert new row |
 | Alt+ArrowDown (on lookup cell) | Enter cell-editing and open lookup dropdown |
 | Space (on boolean cell) | Toggle checkbox value |
 | Enter (on boolean cell) | Toggle checkbox value + move selection down |

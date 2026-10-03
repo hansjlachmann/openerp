@@ -20,7 +20,7 @@ function normalizeKeyName(key: string): string {
 	return aliases[key] || key;
 }
 
-// Parse keyboard event to shortcut string (e.g., "Ctrl+N", "F5")
+// Parse keyboard event to shortcut string (e.g., "Alt+N", "F5")
 export function getShortcutKey(event: KeyboardEvent): string {
 	const parts: string[] = [];
 
@@ -32,6 +32,9 @@ export function getShortcutKey(event: KeyboardEvent): string {
 	let key = event.key;
 	if (key === ' ') key = 'Space';
 	if (key.length === 1) key = key.toUpperCase();
+	// With Alt, use the physical key: on macOS Option+N reports a composed character
+	// ("˜" or "Dead") as event.key instead of "n"
+	if (event.altKey && /^(Key[A-Z]|Digit[0-9])$/.test(event.code)) key = event.code.slice(-1);
 
 	parts.push(key);
 
@@ -81,9 +84,10 @@ export function shortcuts(node: HTMLElement, shortcutMap: ShortcutMap) {
 	};
 }
 
-// Common BC/NAV shortcuts
+// Common BC/NAV shortcuts. New is Alt+N as in the Business Central web client:
+// browsers reserve Ctrl+N (new window) and never pass it to the page.
 export const commonShortcuts = {
-	NEW: 'Ctrl+N',
+	NEW: 'Alt+N',
 	EDIT: 'Ctrl+E',
 	DELETE: 'Ctrl+D',
 	SAVE: 'Ctrl+S',

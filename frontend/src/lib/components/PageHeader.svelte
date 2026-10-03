@@ -85,8 +85,8 @@
 	}
 
 	:global(.dark) .page-header {
-		background-color: #1f2937; /* gray-800 */
-		border-color: #374151; /* gray-700 */
+		background-color: #1e1e1e; /* gray-800 */
+		border-color: #303032; /* gray-700 */
 	}
 
 	.header-title {
@@ -94,7 +94,7 @@
 	}
 
 	:global(.dark) .header-title {
-		color: #60a5fa; /* blue-400 */
+		color: #37a1a5; /* blue-400 */
 	}
 
 	.header-subtitle {
@@ -102,7 +102,7 @@
 	}
 
 	:global(.dark) .header-subtitle {
-		color: #9ca3af; /* gray-400 */
+		color: #a4b0c4; /* gray-400 */
 	}
 
 	.close-button {
@@ -110,11 +110,11 @@
 	}
 
 	:global(.dark) .close-button {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	:global(.dark) .close-button:hover {
-		color: #f3f4f6;
-		background-color: #374151;
+		color: #f2f2f3;
+		background-color: #303032;
 	}
 </style>

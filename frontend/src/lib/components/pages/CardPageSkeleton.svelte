@@ -62,8 +62,8 @@
 	}
 
 	:global(.dark) .skeleton-header {
-		background-color: #1f2937;
-		border-color: #374151;
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 
 	.skeleton-sections {
@@ -75,8 +75,8 @@
 	}
 
 	:global(.dark) .skeleton-card {
-		background-color: #1f2937;
-		border-color: #374151;
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 
 	.skeleton-card-header {
@@ -84,7 +84,7 @@
 	}
 
 	:global(.dark) .skeleton-card-header {
-		border-color: #374151;
+		border-color: #303032;
 	}
 
 	.skeleton-card-body {

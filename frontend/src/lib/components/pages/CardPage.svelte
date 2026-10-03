@@ -567,7 +567,7 @@
 	}
 
 	:global(.dark) .card-page {
-		background-color: #111827; /* gray-900 */
+		background-color: #121212; /* gray-900 */
 	}
 
 	.keyboard-hint {
@@ -629,7 +629,7 @@
 	}
 
 	:global(.dark) .empty-state-icon {
-		color: #4b5563; /* gray-600 */
+		color: #505c6d; /* gray-600 */
 	}
 
 	.empty-state-icon svg {
@@ -641,7 +641,7 @@
 	}
 
 	:global(.dark) .empty-state-title {
-		color: #d1d5db; /* gray-300 */
+		color: #d3d6da; /* gray-300 */
 	}
 
 	.empty-state-text {
@@ -649,7 +649,7 @@
 	}
 
 	:global(.dark) .empty-state-text {
-		color: #9ca3af; /* gray-400 */
+		color: #a4b0c4; /* gray-400 */
 	}
 
 	.card-page :global(.edge-nav-btn:not(:disabled):hover) {
@@ -663,7 +663,7 @@
 	}
 
 	:global(.dark) .card-page :global(.page-header) {
-		background-color: #111827; /* gray-900 */
+		background-color: #121212; /* gray-900 */
 	}
 
 	/* Error banner styles */
