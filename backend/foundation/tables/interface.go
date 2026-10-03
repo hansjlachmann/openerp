@@ -30,6 +30,9 @@ type Table interface {
 	Modify(runTrigger bool) bool
 	// Delete removes the current record, runTrigger controls OnDelete execution
 	Delete(runTrigger bool) bool
+	// TriggerError returns the trigger error that made the last Insert/Modify/Delete
+	// fail (a business-rule message for the user), or nil
+	TriggerError() error
 
 	// Query operations (BC/NAV style)
 	// FindSet prepares iteration over filtered records

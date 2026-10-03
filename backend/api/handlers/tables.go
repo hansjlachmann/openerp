@@ -543,6 +543,10 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 
 	// Insert record
 	if !table.Insert(true) {
+		// A failed OnInsert trigger is a business rule the user broke: show its message
+		if trigErr := table.TriggerError(); trigErr != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 	}
 
@@ -613,6 +617,10 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 
 	// Modify record
 	if !table.Modify(true) {
+		// A failed OnModify trigger is a business rule the user broke: show its message
+		if trigErr := table.TriggerError(); trigErr != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
 	}
 
@@ -662,6 +670,10 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 
 	// Delete record
 	if !table.Delete(true) {
+		// A failed OnDelete trigger is a business rule the user broke: show its message
+		if trigErr := table.TriggerError(); trigErr != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 	}
 

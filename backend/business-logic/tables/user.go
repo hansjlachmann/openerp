@@ -2,7 +2,6 @@ package tables
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -56,15 +55,14 @@ func (t *User) OnModify() error {
 
 // OnDelete trigger - called before deleting a record
 func (t *User) OnDelete(db database.Executor, company string) error {
-	// Cascade delete this user's preferences so they don't remain orphaned.
-	tableName := fmt.Sprintf("%s$%s", company, gtables.UserPreferencesTableName)
-	query := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ?`, tableName)
-	if t.GetDBType() == database.DBTypePostgres {
-		query = fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = $1`, tableName)
-	}
-	if _, err := db.Exec(query, t.User_id.String()); err != nil {
-		return fmt.Errorf("failed to delete user preferences: %w", err)
-	}
+	// Cascade delete this user's preferences so they don't remain orphaned. Preferences
+	// are stored without a company (company "", see handlers/preferences.go), so they are
+	// deleted there regardless of the session's company. SetRange is an exact match, so a
+	// user ID containing filter characters (*, |, ..) cannot widen the delete.
+	var prefs UserPreferences
+	prefs.InitWithDBType(db, "", t.GetDBType())
+	prefs.SetRange("user_id", t.User_id.String())
+	prefs.DeleteAll()
 	return nil
 }
 

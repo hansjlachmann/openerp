@@ -258,10 +258,15 @@ modify response. Work that landed alongside it:
 - `InsertRecord`/`ModifyRecord` validate only changed fields, in table field order.
 
 Follow-ups (not done):
-- [ ] Trigger errors surface as a generic "insert/modify failed": `Insert`/`Modify` return `bool` and
-      only print the trigger error. Return the error so the user sees e.g. "no is required".
-- [ ] `User.OnDelete` deletes from `{session company}$User_Preferences`, but the preferences handler
-      stores rows under company `""` (`backend/api/handlers/preferences.go:53`), so the cascade misses.
+- [x] Trigger errors surface as a generic "insert/modify failed" — **fixed.** Tables keep the failing
+      OnInsert/OnModify/OnDelete error (`TriggerError()`); the API returns it with 400 and the frontend
+      shows it (delete toasts too). Database errors keep the generic message.
+- [ ] Trigger/validation messages are hardcoded English (`errors.New("name cannot exceed 50
+      characters")` in the table wrappers' `Validate()`), and users now see them. Move them to
+      `translations/*/errors.yaml` per the CLAUDE.md i18n rule.
+- [x] `User.OnDelete` preferences cascade missed — **fixed.** It deletes from the same company-less
+      preferences table the handler uses, by exact user ID. Preferences of users deleted before this
+      fix are still orphaned in `$User_Preferences`; clean them up once if it matters.
 - [ ] Init endpoint filter context — seed a new row from the list's current filters (BC seeds a
       journal line from its batch). Pass filters when the first journal page needs it.
 - [ ] Editing a primary key cell of a record loaded from the database: `getRecordKey` keys such

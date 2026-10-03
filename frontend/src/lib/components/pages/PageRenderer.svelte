@@ -288,7 +288,7 @@
 								}
 							} catch (err) {
 								console.error('Delete error:', err);
-								toast.error(t(ERR.FAILED_DELETE));
+								toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
 							}
 						}
 					);
@@ -360,7 +360,7 @@
 								await loadListData();
 								toast.success(t(MSG.RECORD_DELETED));
 							} catch (err) {
-								toast.error(t(ERR.FAILED_DELETE));
+								toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
 							}
 						}
 					);
@@ -404,7 +404,7 @@
 			await loadListData();
 			toast.success(t(MSG.RECORD_DELETED));
 		} catch (err) {
-			toast.error(t(ERR.FAILED_DELETE));
+			toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
 			console.error('Delete error:', err);
 			throw err;
 		}
