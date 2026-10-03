@@ -37,6 +37,7 @@ const (
 	ErrInvalidRequestBody  ErrorCode = "ERR_INVALID_REQUEST_BODY"
 	ErrInvalidFields       ErrorCode = "ERR_INVALID_FIELDS"
 	ErrInvalidFilters      ErrorCode = "ERR_INVALID_FILTERS"
+	ErrInvalidSortField    ErrorCode = "ERR_INVALID_SORT_FIELD"
 	ErrInvalidPageID       ErrorCode = "ERR_INVALID_PAGE_ID"
 	ErrLanguageRequired    ErrorCode = "ERR_LANGUAGE_REQUIRED"
 	ErrUnsupportedLanguage ErrorCode = "ERR_UNSUPPORTED_LANGUAGE"
@@ -232,6 +233,11 @@ func InvalidFields() *AppError {
 // InvalidFilters creates an error for invalid filters parameter
 func InvalidFilters() *AppError {
 	return &AppError{Code: ErrInvalidFilters}
+}
+
+// InvalidSortField creates an error for a sort_by field that is not a column of the table
+func InvalidSortField() *AppError {
+	return &AppError{Code: ErrInvalidSortField}
 }
 
 // InvalidPageID creates an error for invalid page ID

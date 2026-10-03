@@ -30,7 +30,7 @@ func (c *PaymentTermsInsert10) RunCLI() error {
 
 	var Customer tables.Customer
 	Customer.Init(c.session.GetConnection(), c.session.GetCompany())
-	Customer.SetRange(string(Customer.No), "100", "101")
+	Customer.SetRange("no", "100", "101")
 	fmt.Printf("Customer IsEmpty: %v\n", Customer.IsEmpty())
 
 	/*

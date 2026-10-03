@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -42,11 +43,12 @@ func init() {
 
 func newTablesTestApp(t *testing.T) *fiber.App {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
+	// Named shared-cache in-memory DB: handlers keep a result set open while running
+	// a second query (e.g. Count), so more than one connection must see the same data
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = db.Close() })
 	if err := (&tables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
@@ -61,6 +63,8 @@ func newTablesTestApp(t *testing.T) *fiber.App {
 	app.Post("/api/tables/:table/validate", h.ValidateField)
 	app.Post("/api/tables/:table/init", h.InitRecord)
 	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	app.Get("/api/tables/:table/list", h.ListRecords)
+	app.Get("/api/tables/:table/ids", h.GetRecordIDs)
 	return app
 }
 
@@ -176,5 +180,49 @@ func TestInitPayloadIsInsertable(t *testing.T) {
 	}
 	if data, _ := out["data"].(map[string]interface{}); data["no"] != "C1" {
 		t.Errorf("inserted no = %v, want C1", data["no"])
+	}
+}
+
+func getJSON(t *testing.T, app *fiber.App, target string) (int, map[string]interface{}) {
+	t.Helper()
+	resp, err := app.Test(httptest.NewRequest("GET", target, nil))
+	if err != nil {
+		t.Fatalf("GET %s: %v", target, err)
+	}
+	raw, _ := io.ReadAll(resp.Body)
+	var out map[string]interface{}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatalf("decode %s: %v (%s)", target, err, raw)
+	}
+	return resp.StatusCode, out
+}
+
+// sort_by and filter field names from the query string must be real columns
+// (they end up in SQL text); anything else is rejected before reaching SQL.
+func TestListRejectsUnknownFieldNames(t *testing.T) {
+	app := newTablesTestApp(t)
+	postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C1","name":"Acme"}`)
+
+	injected := url.QueryEscape("no; DROP TABLE x --")
+	badFilter := url.QueryEscape(`[{"field":"no) OR (1=1","expression":"x"}]`)
+	for _, target := range []string{
+		"/api/tables/Customer/list?sort_by=" + injected,
+		"/api/tables/Customer/ids?sort_by=" + injected,
+		"/api/tables/Customer/list?filters=" + badFilter,
+	} {
+		status, out := getJSON(t, app, target)
+		if status != 400 || out["success"] != false {
+			t.Errorf("GET %s = %d %v, want 400", target, status, out)
+		}
+	}
+
+	goodFilter := url.QueryEscape(`[{"field":"no","expression":"C1"}]`)
+	status, out := getJSON(t, app, "/api/tables/Customer/list?sort_by=name&filters="+goodFilter)
+	if status != 200 || out["success"] != true {
+		t.Fatalf("valid sort/filter = %d %v, want 200", status, out)
+	}
+	data, _ := out["data"].(map[string]interface{})
+	if total, _ := data["total"].(float64); total != 1 {
+		t.Errorf("total = %v, want 1", data["total"])
 	}
 }
