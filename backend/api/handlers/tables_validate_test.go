@@ -226,3 +226,17 @@ func TestListRejectsUnknownFieldNames(t *testing.T) {
 		t.Errorf("total = %v, want 1", data["total"])
 	}
 }
+
+// A failing OnInsert trigger is a business rule the user broke: the API returns its
+// message with 400, not a generic "insert failed".
+func TestInsertReturnsTriggerError(t *testing.T) {
+	app := newTablesTestApp(t)
+
+	out := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C1","name":"`+strings.Repeat("x", 60)+`"}`)
+	if out["success"] != false {
+		t.Fatalf("insert succeeded, want OnInsert to reject a 60-character name")
+	}
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "name cannot exceed 50") {
+		t.Errorf("error = %q, want the OnInsert validation message", msg)
+	}
+}

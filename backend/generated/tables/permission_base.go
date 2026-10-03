@@ -54,6 +54,10 @@ type PermissionBase struct {
 	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
 	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
 	self interface{}
+
+	// Error returned by the OnInsert/OnModify/OnDelete trigger of the last
+	// Insert/Modify/Delete call (nil if the trigger passed or did not run)
+	triggerErr error
 }
 
 const PermissionTableID = 5150
@@ -84,6 +88,13 @@ func (t *PermissionBase) SetTriggers(onInsert, onModify func() error, onDelete f
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
+}
+
+// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
+// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
+// or succeeded. Trigger errors are business-rule messages meant for the user.
+func (t *PermissionBase) TriggerError() error {
+	return t.triggerErr
 }
 
 // SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
@@ -338,9 +349,11 @@ func (t *PermissionBase) GetByPK(role_id types.Code, table_name types.Code) bool
 // Insert inserts the record into the database
 func (t *PermissionBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
+	t.triggerErr = nil
 	if runTrigger && t.onInsertFn != nil {
 		if err := t.onInsertFn(); err != nil {
 			fmt.Printf("Error: OnInsert trigger failed: %v\n", err)
+			t.triggerErr = err
 			return false
 		}
 	}
@@ -373,9 +386,11 @@ func (t *PermissionBase) Insert(runTrigger bool) bool {
 // Modify updates the record in the database
 func (t *PermissionBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
+	t.triggerErr = nil
 	if runTrigger && t.onModifyFn != nil {
 		if err := t.onModifyFn(); err != nil {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
+			t.triggerErr = err
 			return false
 		}
 	}
@@ -513,9 +528,11 @@ func (t *PermissionBase) hasFieldChanged(fieldName string) bool {
 // Delete removes the record from the database
 func (t *PermissionBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
+	t.triggerErr = nil
 	if runTrigger && t.onDeleteFn != nil {
 		if err := t.onDeleteFn(t.db, t.company); err != nil {
 			fmt.Printf("Error: OnDelete trigger failed: %v\n", err)
+			t.triggerErr = err
 			return false
 		}
 	}

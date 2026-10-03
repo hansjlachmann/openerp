@@ -2,6 +2,7 @@ package tables
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -154,5 +155,83 @@ func TestModifyRenamesChangedPrimaryKey(t *testing.T) {
 	}
 	if !probe.GetByPK(types.NewCode("HANS"), types.NewCode("WRITER"), types.NewText("TEST-COMPANY")) {
 		t.Error("second rename did not match the already-renamed key")
+	}
+}
+
+// A failing trigger's error is kept for the caller (the API shows it to the user), and
+// cleared by the next Insert/Modify/Delete.
+func TestTriggerErrorIsReported(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	c := &Customer{}
+	c.InitWithDBType(db, "TEST", database.DBTypeSQLite)
+	c.No = types.NewCode("C1")
+	c.Name = types.NewText(strings.Repeat("x", 60)) // Customer.Validate: max 50
+	if c.Insert(true) {
+		t.Fatal("Insert succeeded, want OnInsert to reject a 60-character name")
+	}
+	if err := c.TriggerError(); err == nil || !strings.Contains(err.Error(), "name cannot exceed 50") {
+		t.Errorf("TriggerError() = %v, want the OnInsert validation message", err)
+	}
+
+	c.Name = types.NewText("Acme")
+	if !c.Insert(true) {
+		t.Fatal("Insert with a valid name failed")
+	}
+	if err := c.TriggerError(); err != nil {
+		t.Errorf("TriggerError() after a successful Insert = %v, want nil", err)
+	}
+}
+
+// Deleting a user removes their preferences, which are stored without a company
+// (handlers/preferences.go), whatever company the deleting session is in.
+func TestUserDeleteRemovesTheirPreferences(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&User{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create user table: %v", err)
+	}
+	if err := (&UserPreferences{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create preferences table: %v", err)
+	}
+
+	for _, id := range []string{"HANS", "OTHER"} {
+		u := &User{}
+		u.InitWithDBType(db, "", database.DBTypeSQLite)
+		u.User_id = types.NewCode(id)
+		if !u.Insert(false) {
+			t.Fatalf("insert user %s failed", id)
+		}
+		p := &UserPreferences{}
+		p.InitWithDBType(db, "", database.DBTypeSQLite)
+		p.User_id, p.Page_id = types.NewCode(id), 22
+		p.Preference_type, p.Preference_name = types.NewCode("COLUMNS"), types.NewCode("DEFAULT")
+		if !p.Insert(false) {
+			t.Fatalf("insert preference for %s failed", id)
+		}
+	}
+
+	// Delete from a session in company CRONUS: preferences still live under company ""
+	u := &User{}
+	u.InitWithDBType(db, "CRONUS", database.DBTypeSQLite)
+	if !u.Get("HANS") {
+		t.Fatal("user HANS not found")
+	}
+	if !u.Delete(true) {
+		t.Fatalf("Delete failed: %v", u.TriggerError())
+	}
+
+	prefs := &UserPreferences{}
+	prefs.InitWithDBType(db, "", database.DBTypeSQLite)
+	prefs.SetRange("user_id", "HANS")
+	if n := prefs.Count(); n != 0 {
+		t.Errorf("HANS has %d preferences after delete, want 0", n)
+	}
+	prefs.ClearFilters()
+	prefs.SetRange("user_id", "OTHER")
+	if n := prefs.Count(); n != 1 {
+		t.Errorf("OTHER has %d preferences, want 1 (must be untouched)", n)
 	}
 }
