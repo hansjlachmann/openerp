@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.69](https://github.com/hansjlachmann/openerp/compare/v0.1.68...v0.1.69) (2026-10-03)
+
+
+### Features
+
+* arrow-key navigation on the main menu; align Customer List shortcuts ([64baeed](https://github.com/hansjlachmann/openerp/commit/64baeedaf2b6fe46b950cefd15d5c8f3864ab271))
+* BC-style record entry on editable list pages ([09618bd](https://github.com/hansjlachmann/openerp/commit/09618bd0999d8045d9a1679367caf77d918b93f9))
+* Business Central colors, light list header, wider scrollbars, Alt+N for New ([6de819e](https://github.com/hansjlachmann/openerp/commit/6de819e3ca165424fd2498a253cbd6930d7aa60e))
+
+
+### Bug Fixes
+
+* prevent SQL injection through filter and sort field names ([cffb5eb](https://github.com/hansjlachmann/openerp/commit/cffb5eb6e56d3ee85a4a27750a4d6c1e8c7496fd))
+* subtler list cell selection frame that stays inside its cell ([e97fbb5](https://github.com/hansjlachmann/openerp/commit/e97fbb573cc4dc57efbe0373036a04eda34295a2))
+
+
+### Documentation
+
+* record follow-ups from record entry and SQL injection work ([d21073d](https://github.com/hansjlachmann/openerp/commit/d21073dda47f90e58598f4edfeb5383c04434bf9))
+
 ## [0.1.68](https://github.com/hansjlachmann/openerp/compare/v0.1.67...v0.1.68) (2026-07-20)
 
 
