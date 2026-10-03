@@ -28,6 +28,7 @@ errors:
   ERR_INVALID_REQUEST_BODY: "Ugyldig forespørsel"
   ERR_INVALID_FIELDS: "Ugyldig felt-parameter"
   ERR_INVALID_FILTERS: "Ugyldig filter-parameter"
+  ERR_INVALID_SORT_FIELD: "Ugyldig sorteringsfelt"
   ERR_INVALID_PAGE_ID: "Ugyldig side-ID"
   ERR_LANGUAGE_REQUIRED: "Språk er påkrevd"
   ERR_UNSUPPORTED_LANGUAGE: "Språket støttes ikke: %1"

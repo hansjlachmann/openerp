@@ -521,10 +521,14 @@ unenforceable because omitted and `false` are indistinguishable; match `Editable
 - **Server-side paging & sorting** — the `page`/`page_size` plumbing shipped in `6f4904a` is complete
   backend-side but has zero frontend callers, and `sort_order` is never read. Until this lands,
   `total` is not a true count and all sorting must stay client-side.
-- **Security follow-up (own item, not UI):** filter field names and `sort_by` from the query string
-  are interpolated straight into SQL (`backend/api/handlers/tables.go:333`, `:303`) with no
-  validation, while the `SanitizeFieldName` helper that would fix it sits unused in the dead
-  `foundation/filters` package.
+- ~~**Security follow-up:** filter field names and `sort_by` interpolated straight into SQL~~ —
+  **fixed.** Generated tables map field names through a column allowlist (`columnName`/`HasColumn`)
+  in `SetFilter`, `SetRange`, `SetCurrentKey` and `ModifyAll`; an unknown filter field fails closed
+  (`1=0`, so a mistyped filter can never widen a `DeleteAll`). The list/ids handlers reject unknown
+  fields with 400. `SanitizeFieldName` (regex strip) was not used — an allowlist is stricter.
+- [ ] Filtering on FlowFields (e.g. Customer `balance_lcy`): `FilterPane` offers every repeater field,
+      but FlowFields are not columns, so the API now returns 400 "Invalid filters parameter" (before:
+      an SQL error). BC supports it via CalcFields; needs its own implementation.
 - Totals/footer row, grouping, FactBox pane, export to Excel/CSV, "Show as chart", row-level style
   expressions, expand/collapse rows.
 

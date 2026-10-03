@@ -43,6 +43,8 @@ type Table interface {
 	ClearFilters()
 	// SetCurrentKey sets the sort order by field(s)
 	SetCurrentKey(fields ...string)
+	// HasColumn reports whether a field name is a stored column (allowed in filters/sort)
+	HasColumn(field string) bool
 	// SetPage sets a pagination window for FindSet: at most limit rows, skipping
 	// the first offset rows. A limit of 0 returns all matching rows.
 	SetPage(limit, offset int)

@@ -261,6 +261,10 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
 	if sortBy != "" {
+		// Field names end up in SQL text: only accept real columns of this table
+		if !table.HasColumn(sortBy) {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
+		}
 		table.SetCurrentKey(sortBy)
 	}
 
@@ -301,6 +305,10 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
 	if sortBy != "" {
+		// Field names end up in SQL text: only accept real columns of this table
+		if !table.HasColumn(sortBy) {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
+		}
 		table.SetCurrentKey(sortBy)
 	}
 
@@ -329,8 +337,11 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
 		}
 
-		// Apply BC-style filters
+		// Apply BC-style filters (field names end up in SQL text: only accept real columns)
 		for _, f := range apiFilters {
+			if !table.HasColumn(f.Field) {
+				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
+			}
 			table.SetFilter(f.Field, f.Expression)
 		}
 	}

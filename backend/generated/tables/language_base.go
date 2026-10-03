@@ -489,6 +489,7 @@ type languageBaseFilterCondition struct {
 	maxValue     interface{}
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
+	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
 }
 
 // SetRange sets a range filter on a field (BC/NAV style)
@@ -516,8 +517,17 @@ func (t *LanguageBase) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
-	t.filters[fieldName] = &languageBaseFilterCondition{
-		fieldName: fieldName,
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		// Unknown field: fail closed (no rows) rather than drop the filter or put
+		// the name into SQL
+		fmt.Printf("Error: SetRange on unknown field %q of Language\n", fieldName)
+		t.filters[fieldName] = &languageBaseFilterCondition{invalidField: true}
+		return
+	}
+
+	t.filters[column] = &languageBaseFilterCondition{
+		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
 	}
@@ -531,17 +541,55 @@ func (t *LanguageBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*languageBaseFilterCondition)
 	}
-	t.filters[fieldName] = &languageBaseFilterCondition{
-		fieldName:    fieldName,
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		// Unknown field: fail closed (no rows) rather than drop the filter or put
+		// the name into SQL
+		fmt.Printf("Error: SetFilter on unknown field %q of Language\n", fieldName)
+		t.filters[fieldName] = &languageBaseFilterCondition{invalidField: true}
+		return
+	}
+	t.filters[column] = &languageBaseFilterCondition{
+		fieldName:    column,
 		filterExpr:   filterExpr,
 		isExpression: true,
 	}
 }
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
+// Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *LanguageBase) SetCurrentKey(fields ...string) {
-	t.orderByFields = fields
+	t.orderByFields = nil
+	for _, field := range fields {
+		column, ok := t.columnName(field)
+		if !ok {
+			fmt.Printf("Error: SetCurrentKey on unknown field %q of Language\n", field)
+			continue
+		}
+		t.orderByFields = append(t.orderByFields, column)
+	}
+}
+
+// HasColumn reports whether fieldName (case-insensitive) is a stored column of this
+// table. Only such names may be used in filters and sort keys.
+func (t *LanguageBase) HasColumn(fieldName string) bool {
+	_, ok := t.columnName(fieldName)
+	return ok
+}
+
+// columnName maps a field name (case-insensitive) to its database column. Field names
+// end up in SQL text (WHERE / ORDER BY / SET), so only names from this allowlist are used.
+func (t *LanguageBase) columnName(fieldName string) (string, bool) {
+	switch strings.ToLower(fieldName) {
+	case strings.ToLower("code"):
+		return "code", true
+	case strings.ToLower("name"):
+		return "name", true
+	case strings.ToLower("translation_key"):
+		return "translation_key", true
+	}
+	return "", false
 }
 
 // Reset clears all filters (BC/NAV style)
@@ -565,7 +613,9 @@ func (t *LanguageBase) buildWhereClause() (string, []interface{}) {
 	var args []interface{}
 
 	for _, filter := range t.filters {
-		if filter.isExpression {
+		if filter.invalidField {
+			conditions = append(conditions, "1=0")
+		} else if filter.isExpression {
 			// Parse BC/NAV filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
@@ -991,10 +1041,15 @@ func (t *LanguageBase) IsEmpty() bool {
 // Returns the number of records modified
 func (t *LanguageBase) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := LanguageTableName
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		fmt.Printf("Error: ModifyAll on unknown field %q of Language\n", fieldName)
+		return 0
+	}
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
-	updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s`, tableName, fieldName, where)
+	updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s`, tableName, column, where)
 
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
@@ -1050,6 +1105,7 @@ func (t *LanguageBase) CopyFilters(from *LanguageBase) {
 			maxValue:     filter.maxValue,
 			filterExpr:   filter.filterExpr,
 			isExpression: filter.isExpression,
+			invalidField: filter.invalidField,
 		}
 	}
 
@@ -1071,7 +1127,9 @@ func (t *LanguageBase) GetFilters() string {
 
 	var parts []string
 	for _, filter := range t.filters {
-		if filter.isExpression {
+		if filter.invalidField {
+			parts = append(parts, "<invalid field>")
+		} else if filter.isExpression {
 			parts = append(parts, fmt.Sprintf("%s: %s", filter.fieldName, filter.filterExpr))
 		} else if filter.minValue != nil && filter.maxValue != nil {
 			parts = append(parts, fmt.Sprintf("%s: %v..%v", filter.fieldName, filter.minValue, filter.maxValue))

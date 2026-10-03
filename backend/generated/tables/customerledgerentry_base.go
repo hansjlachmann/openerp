@@ -1356,6 +1356,7 @@ type customerLedgerEntryBaseFilterCondition struct {
 	maxValue     interface{}
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
+	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
 }
 
 // SetRange sets a range filter on a field (BC/NAV style)
@@ -1383,8 +1384,17 @@ func (t *CustomerLedgerEntryBase) SetRange(fieldName string, values ...interface
 		return
 	}
 
-	t.filters[fieldName] = &customerLedgerEntryBaseFilterCondition{
-		fieldName: fieldName,
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		// Unknown field: fail closed (no rows) rather than drop the filter or put
+		// the name into SQL
+		fmt.Printf("Error: SetRange on unknown field %q of Customer Ledger Entry\n", fieldName)
+		t.filters[fieldName] = &customerLedgerEntryBaseFilterCondition{invalidField: true}
+		return
+	}
+
+	t.filters[column] = &customerLedgerEntryBaseFilterCondition{
+		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
 	}
@@ -1398,17 +1408,135 @@ func (t *CustomerLedgerEntryBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*customerLedgerEntryBaseFilterCondition)
 	}
-	t.filters[fieldName] = &customerLedgerEntryBaseFilterCondition{
-		fieldName:    fieldName,
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		// Unknown field: fail closed (no rows) rather than drop the filter or put
+		// the name into SQL
+		fmt.Printf("Error: SetFilter on unknown field %q of Customer Ledger Entry\n", fieldName)
+		t.filters[fieldName] = &customerLedgerEntryBaseFilterCondition{invalidField: true}
+		return
+	}
+	t.filters[column] = &customerLedgerEntryBaseFilterCondition{
+		fieldName:    column,
 		filterExpr:   filterExpr,
 		isExpression: true,
 	}
 }
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
+// Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *CustomerLedgerEntryBase) SetCurrentKey(fields ...string) {
-	t.orderByFields = fields
+	t.orderByFields = nil
+	for _, field := range fields {
+		column, ok := t.columnName(field)
+		if !ok {
+			fmt.Printf("Error: SetCurrentKey on unknown field %q of Customer Ledger Entry\n", field)
+			continue
+		}
+		t.orderByFields = append(t.orderByFields, column)
+	}
+}
+
+// HasColumn reports whether fieldName (case-insensitive) is a stored column of this
+// table. Only such names may be used in filters and sort keys.
+func (t *CustomerLedgerEntryBase) HasColumn(fieldName string) bool {
+	_, ok := t.columnName(fieldName)
+	return ok
+}
+
+// columnName maps a field name (case-insensitive) to its database column. Field names
+// end up in SQL text (WHERE / ORDER BY / SET), so only names from this allowlist are used.
+func (t *CustomerLedgerEntryBase) columnName(fieldName string) (string, bool) {
+	switch strings.ToLower(fieldName) {
+	case strings.ToLower("entry_no"):
+		return "entry_no", true
+	case strings.ToLower("customer_no"):
+		return "customer_no", true
+	case strings.ToLower("sell_to_customer_no"):
+		return "sell_to_customer_no", true
+	case strings.ToLower("posting_date"):
+		return "posting_date", true
+	case strings.ToLower("document_date"):
+		return "document_date", true
+	case strings.ToLower("document_type"):
+		return "document_type", true
+	case strings.ToLower("document_no"):
+		return "document_no", true
+	case strings.ToLower("external_document_no"):
+		return "external_document_no", true
+	case strings.ToLower("description"):
+		return "description", true
+	case strings.ToLower("currency_code"):
+		return "currency_code", true
+	case strings.ToLower("amount"):
+		return "amount", true
+	case strings.ToLower("remaining_amount"):
+		return "remaining_amount", true
+	case strings.ToLower("closed_by_amount"):
+		return "closed_by_amount", true
+	case strings.ToLower("original_amount_lcy"):
+		return "original_amount_lcy", true
+	case strings.ToLower("remaining_amt_lcy"):
+		return "remaining_amt_lcy", true
+	case strings.ToLower("amount_lcy"):
+		return "amount_lcy", true
+	case strings.ToLower("closed_by_amount_lcy"):
+		return "closed_by_amount_lcy", true
+	case strings.ToLower("sales_lcy"):
+		return "sales_lcy", true
+	case strings.ToLower("profit_lcy"):
+		return "profit_lcy", true
+	case strings.ToLower("inv_discount_lcy"):
+		return "inv_discount_lcy", true
+	case strings.ToLower("pmt_discount_date"):
+		return "pmt_discount_date", true
+	case strings.ToLower("pmt_disc_possible"):
+		return "pmt_disc_possible", true
+	case strings.ToLower("pmt_disc_given_lcy"):
+		return "pmt_disc_given_lcy", true
+	case strings.ToLower("customer_posting_group"):
+		return "customer_posting_group", true
+	case strings.ToLower("department_code"):
+		return "department_code", true
+	case strings.ToLower("project_code"):
+		return "project_code", true
+	case strings.ToLower("salesperson_code"):
+		return "salesperson_code", true
+	case strings.ToLower("user_id"):
+		return "user_id", true
+	case strings.ToLower("source_code"):
+		return "source_code", true
+	case strings.ToLower("reason_code"):
+		return "reason_code", true
+	case strings.ToLower("journal_batch_name"):
+		return "journal_batch_name", true
+	case strings.ToLower("transaction_no"):
+		return "transaction_no", true
+	case strings.ToLower("applies_to_doc_type"):
+		return "applies_to_doc_type", true
+	case strings.ToLower("applies_to_doc_no"):
+		return "applies_to_doc_no", true
+	case strings.ToLower("applies_to_id"):
+		return "applies_to_id", true
+	case strings.ToLower("open"):
+		return "open", true
+	case strings.ToLower("positive"):
+		return "positive", true
+	case strings.ToLower("on_hold"):
+		return "on_hold", true
+	case strings.ToLower("due_date"):
+		return "due_date", true
+	case strings.ToLower("closed_by_entry_no"):
+		return "closed_by_entry_no", true
+	case strings.ToLower("closed_at_date"):
+		return "closed_at_date", true
+	case strings.ToLower("bal_account_type"):
+		return "bal_account_type", true
+	case strings.ToLower("bal_account_no"):
+		return "bal_account_no", true
+	}
+	return "", false
 }
 
 // Reset clears all filters (BC/NAV style)
@@ -1432,7 +1560,9 @@ func (t *CustomerLedgerEntryBase) buildWhereClause() (string, []interface{}) {
 	var args []interface{}
 
 	for _, filter := range t.filters {
-		if filter.isExpression {
+		if filter.invalidField {
+			conditions = append(conditions, "1=0")
+		} else if filter.isExpression {
 			// Parse BC/NAV filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
@@ -2354,10 +2484,15 @@ func (t *CustomerLedgerEntryBase) IsEmpty() bool {
 // Returns the number of records modified
 func (t *CustomerLedgerEntryBase) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		fmt.Printf("Error: ModifyAll on unknown field %q of Customer Ledger Entry\n", fieldName)
+		return 0
+	}
 	where, args := t.buildWhereClause()
 
 	// Build UPDATE SQL
-	updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s`, tableName, fieldName, where)
+	updateSQL := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s`, tableName, column, where)
 
 	// Prepend newValue to args
 	allArgs := append([]interface{}{newValue}, args...)
@@ -2413,6 +2548,7 @@ func (t *CustomerLedgerEntryBase) CopyFilters(from *CustomerLedgerEntryBase) {
 			maxValue:     filter.maxValue,
 			filterExpr:   filter.filterExpr,
 			isExpression: filter.isExpression,
+			invalidField: filter.invalidField,
 		}
 	}
 
@@ -2434,7 +2570,9 @@ func (t *CustomerLedgerEntryBase) GetFilters() string {
 
 	var parts []string
 	for _, filter := range t.filters {
-		if filter.isExpression {
+		if filter.invalidField {
+			parts = append(parts, "<invalid field>")
+		} else if filter.isExpression {
 			parts = append(parts, fmt.Sprintf("%s: %s", filter.fieldName, filter.filterExpr))
 		} else if filter.minValue != nil && filter.maxValue != nil {
 			parts = append(parts, fmt.Sprintf("%s: %v..%v", filter.fieldName, filter.minValue, filter.maxValue))

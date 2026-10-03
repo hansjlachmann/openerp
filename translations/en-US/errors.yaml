@@ -28,6 +28,7 @@ errors:
   ERR_INVALID_REQUEST_BODY: "Invalid request body"
   ERR_INVALID_FIELDS: "Invalid fields parameter"
   ERR_INVALID_FILTERS: "Invalid filters parameter"
+  ERR_INVALID_SORT_FIELD: "Invalid sort field"
   ERR_INVALID_PAGE_ID: "Invalid page ID"
   ERR_LANGUAGE_REQUIRED: "Language is required"
   ERR_UNSUPPORTED_LANGUAGE: "Unsupported language: %1"
