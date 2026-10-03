@@ -44,6 +44,10 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       user's `User_Preferences` rows (added `GetDBType()` getter to the tablegen template).
 - [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
       and Dimensions are simplified with no `table_relation`s; add proper relations.
+- [ ] Codeunits break on PostgreSQL: they open tables with `.Init(db, company)`, which always uses
+      the SQLite database type (`?` placeholders). Use `InitWithDBType(..., session DB type)` instead —
+      `codeunits/customer_mgt.go:32,49,63`, `paymentterms_mgt.go:29,44`,
+      `paymentterms_insert10.go:32,39`. (The table relation validators had the same bug; fixed.)
 
 ## Backend — Generated Table Scaffold Stubs
 
@@ -260,6 +264,13 @@ Follow-ups (not done):
       stores rows under company `""` (`backend/api/handlers/preferences.go:53`), so the cascade misses.
 - [ ] Init endpoint filter context — seed a new row from the list's current filters (BC seeds a
       journal line from its batch). Pass filters when the first journal page needs it.
+- [ ] Editing a primary key cell of a record loaded from the database: `getRecordKey` keys such
+      rows by their PK values (only new rows use `_tempId`), so each keystroke changes the row's key
+      and Svelte may re-create the row mid-edit (focus loss). Not yet reproduced — verify, then key
+      editable rows by `_key` (their persisted key) instead.
+- [ ] Known deviation from BC: picking a value in a `LookupDropdown` saves when focus leaves the cell
+      (CLAUDE.md "LookupDropdown Select vs Blur" ABSOLUTE RULE), while BC validates — and inserts —
+      on the pick itself (screenshot 04). Kept on purpose; revisit if it matters.
 - [x] Manual browser walkthrough (Verification → Manual below) — done by hand against the docker
       compose stack (PostgreSQL).
 
