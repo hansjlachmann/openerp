@@ -298,8 +298,8 @@
 	}
 
 	:global(.dark) .modal-header {
-		border-color: #374151; /* gray-700 */
-		background-color: #1f2937; /* gray-800 */
+		border-color: #303032; /* gray-700 */
+		background-color: #1e1e1e; /* gray-800 */
 	}
 
 	.modal-title {
@@ -307,7 +307,7 @@
 	}
 
 	:global(.dark) .modal-title {
-		color: #60a5fa; /* blue-400 */
+		color: #37a1a5; /* blue-400 */
 	}
 
 	.modal-controls {
@@ -326,12 +326,12 @@
 	}
 
 	:global(.dark) .control-btn {
-		color: #9ca3af; /* gray-400 */
+		color: #a4b0c4; /* gray-400 */
 	}
 
 	:global(.dark) .control-btn:hover {
-		background-color: #374151; /* gray-700 */
-		color: #f3f4f6; /* gray-100 */
+		background-color: #303032; /* gray-700 */
+		color: #f2f2f3; /* gray-100 */
 	}
 
 	.modal-body {
@@ -342,7 +342,7 @@
 	}
 
 	:global(.dark) .modal-body {
-		background-color: #111827; /* gray-900 */
+		background-color: #121212; /* gray-900 */
 	}
 
 	.keyboard-hint {
@@ -355,8 +355,8 @@
 	}
 
 	:global(.dark) .keyboard-hint {
-		background-color: #1f2937; /* gray-800 */
-		border-color: #374151; /* gray-700 */
+		background-color: #1e1e1e; /* gray-800 */
+		border-color: #303032; /* gray-700 */
 	}
 
 	.keyboard-hint kbd {
@@ -367,8 +367,8 @@
 	}
 
 	:global(.dark) .keyboard-hint kbd {
-		background-color: #374151; /* gray-700 */
-		border-color: #4b5563; /* gray-600 */
+		background-color: #303032; /* gray-700 */
+		border-color: #505c6d; /* gray-600 */
 	}
 
 

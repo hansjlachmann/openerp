@@ -74,8 +74,8 @@
 	}
 
 	:global(.dark) .skeleton-header {
-		background-color: #1f2937;
-		border-color: #374151;
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 
 	.skeleton-table {
@@ -83,15 +83,16 @@
 	}
 
 	:global(.dark) .skeleton-table {
-		border-color: #374151;
+		border-color: #303032;
 	}
 
 	.skeleton-thead {
-		@apply flex bg-nav-blue px-4 py-3;
+		@apply flex bg-white px-4 py-3 border-b border-gray-300;
 	}
 
 	:global(.dark) .skeleton-thead {
-		background-color: #1f2937;
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 
 	.skeleton-th {
@@ -103,7 +104,7 @@
 	}
 
 	:global(.dark) .skeleton-tbody {
-		background-color: #111827;
+		background-color: #121212;
 	}
 
 	.skeleton-tr {
@@ -111,7 +112,7 @@
 	}
 
 	:global(.dark) .skeleton-tr {
-		border-color: #374151;
+		border-color: #303032;
 	}
 
 	.skeleton-tr.even {
@@ -119,7 +120,7 @@
 	}
 
 	:global(.dark) .skeleton-tr.even {
-		background-color: rgba(31, 41, 55, 0.5);
+		background-color: rgba(30, 30, 30, 0.5);
 	}
 
 	.skeleton-td {
@@ -131,7 +132,7 @@
 	}
 
 	:global(.dark) .skeleton-status {
-		background-color: #1f2937;
-		border-color: #374151;
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 </style>

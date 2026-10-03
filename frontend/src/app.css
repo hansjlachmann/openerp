@@ -6,35 +6,36 @@
 :root {
 	/* Light mode colors */
 	--color-bg-primary: #ffffff;
-	--color-bg-secondary: #f9fafb; /* gray-50 */
-	--color-bg-tertiary: #f3f4f6; /* gray-100 */
+	--color-bg-secondary: #f7f7f7; /* gray-50 */
+	--color-bg-tertiary: #f2f2f3; /* gray-100 */
 	--color-bg-input: #ffffff;
-	--color-border-primary: #e5e7eb; /* gray-200 */
-	--color-border-secondary: #d1d5db; /* gray-300 */
-	--color-text-primary: #111827; /* gray-900 */
-	--color-text-secondary: #4b5563; /* gray-600 */
-	--color-text-tertiary: #6b7280; /* gray-500 */
-	--color-text-muted: #9ca3af; /* gray-400 */
+	--color-border-primary: #e5e7e9; /* gray-200 */
+	--color-border-secondary: #d3d6da; /* gray-300 */
+	--color-text-primary: #121212; /* gray-900 */
+	--color-text-secondary: #505c6d; /* gray-600 */
+	--color-text-tertiary: #737d8a; /* gray-500 */
+	--color-text-muted: #a4b0c4; /* gray-400 */
 }
 
 .dark {
-	--color-bg-primary: #1f2937; /* gray-800 */
-	--color-bg-secondary: #111827; /* gray-900 */
-	--color-bg-tertiary: #374151; /* gray-700 */
-	--color-bg-input: #374151; /* gray-700 */
-	--color-border-primary: #374151; /* gray-700 */
-	--color-border-secondary: #4b5563; /* gray-600 */
-	--color-text-primary: #f3f4f6; /* gray-100 */
-	--color-text-secondary: #d1d5db; /* gray-300 */
-	--color-text-tertiary: #9ca3af; /* gray-400 */
-	--color-text-muted: #6b7280; /* gray-500 */
+	--color-bg-primary: #1e1e1e; /* gray-800 */
+	--color-bg-secondary: #121212; /* gray-900 */
+	--color-bg-tertiary: #303032; /* gray-700 */
+	--color-bg-input: #303032; /* gray-700 */
+	--color-border-primary: #303032; /* gray-700 */
+	--color-border-secondary: #505c6d; /* gray-600 */
+	--color-text-primary: #f2f2f3; /* gray-100 */
+	--color-text-secondary: #d3d6da; /* gray-300 */
+	--color-text-tertiary: #a4b0c4; /* gray-400 */
+	--color-text-muted: #737d8a; /* gray-500 */
 }
 
 /* BC/NAV-inspired global styles */
 @layer base {
+	/* BC: white page with near-black text; dark mode #121212 page with off-white text */
 	body {
-		@apply bg-gray-50 text-gray-900 font-sans;
-		@apply dark:bg-gray-900 dark:text-gray-100;
+		@apply bg-white font-sans dark:bg-gray-900 dark:text-gray-50;
+		color: #212121;
 	}
 
 	/* Focus styles for keyboard navigation */
@@ -157,20 +158,52 @@
 	}
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - wide, BC colors (sampled from docs/BC-Screenshot-*.png) */
 ::-webkit-scrollbar {
-	width: 12px;
-	height: 12px;
+	width: 16px;
+	height: 16px;
 }
 
-::-webkit-scrollbar-track {
-	@apply bg-gray-100 dark:bg-gray-800;
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+	background-color: #fcfcfc;
 }
 
 ::-webkit-scrollbar-thumb {
-	@apply bg-gray-400 rounded dark:bg-gray-600;
+	background-color: #8b8b8b;
+	border: 2px solid #fcfcfc; /* small gap around the thumb, like BC */
+	border-radius: 8px;
+	min-height: 40px;
+	min-width: 40px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	@apply bg-gray-500 dark:bg-gray-500;
+	background-color: #6e6e6e;
+}
+
+.dark ::-webkit-scrollbar-track,
+.dark ::-webkit-scrollbar-corner {
+	background-color: #2c2c2c;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+	background-color: #9f9f9f;
+	border-color: #2c2c2c;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+	background-color: #bdbdbd;
+}
+
+/* Firefox has no ::-webkit-scrollbar. Only set the standard properties there: in
+   Chromium, setting them disables the ::-webkit-scrollbar styling above */
+@supports not selector(::-webkit-scrollbar) {
+	* {
+		scrollbar-width: auto;
+		scrollbar-color: #8b8b8b #fcfcfc;
+	}
+
+	.dark * {
+		scrollbar-color: #9f9f9f #2c2c2c;
+	}
 }

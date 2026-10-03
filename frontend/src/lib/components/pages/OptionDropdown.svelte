@@ -217,9 +217,9 @@
 	}
 
 	:global(.dark) .option-trigger {
-		background-color: var(--color-bg-input, #1f2937);
-		border-color: var(--color-border-secondary, #374151);
-		color: var(--color-text-primary, #f9fafb);
+		background-color: var(--color-bg-input, #1e1e1e);
+		border-color: var(--color-border-secondary, #303032);
+		color: var(--color-text-primary, #f7f7f7);
 	}
 
 	:global(.dark) .option-trigger:hover {
@@ -227,8 +227,8 @@
 	}
 
 	:global(.dark) .option-trigger:focus {
-		border-color: #3b82f6;
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+		border-color: #00838f;
+		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
 	/* Compact mode for list page cells */
@@ -296,8 +296,8 @@
 	}
 
 	:global(.dark) .option-panel {
-		background-color: var(--color-bg-primary, #111827);
-		border-color: var(--color-border-secondary, #374151);
+		background-color: var(--color-bg-primary, #121212);
+		border-color: var(--color-border-secondary, #303032);
 	}
 
 	.option-body {
@@ -311,11 +311,11 @@
 	}
 
 	:global(.dark) .option-row {
-		color: var(--color-text-primary, #f9fafb);
+		color: var(--color-text-primary, #f7f7f7);
 	}
 
 	:global(.dark) .option-row:hover {
-		background-color: var(--color-bg-secondary, #1f2937);
+		background-color: var(--color-bg-secondary, #1e1e1e);
 	}
 
 	.option-row.selected {
@@ -323,7 +323,7 @@
 	}
 
 	:global(.dark) .option-row.selected {
-		background-color: rgba(59, 130, 246, 0.1);
+		background-color: rgba(0, 131, 143, 0.1);
 	}
 
 	.option-row.focused {
@@ -331,7 +331,7 @@
 	}
 
 	:global(.dark) .option-row.focused {
-		background-color: var(--color-bg-secondary, #1f2937);
+		background-color: var(--color-bg-secondary, #1e1e1e);
 	}
 
 	.option-row.selected.focused {
@@ -339,6 +339,6 @@
 	}
 
 	:global(.dark) .option-row.selected.focused {
-		background-color: rgba(59, 130, 246, 0.2);
+		background-color: rgba(0, 131, 143, 0.2);
 	}
 </style>

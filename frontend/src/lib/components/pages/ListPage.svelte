@@ -20,7 +20,7 @@
 	import EditIcon from '$lib/components/icons/EditIcon.svelte';
 	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
 	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
-	import { shortcuts, normalizeShortcut } from '$lib/utils/shortcuts';
+	import { shortcuts, normalizeShortcut, getShortcutKey, commonShortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
@@ -229,15 +229,7 @@
 			// Skip other shortcuts if we're in an input field (but not cell-editing inputs in the table)
 			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
-			// Build shortcut key string
-			const parts: string[] = [];
-			if (event.ctrlKey || event.metaKey) parts.push('Ctrl');
-			if (event.altKey) parts.push('Alt');
-			if (event.shiftKey) parts.push('Shift');
-			let key = event.key;
-			if (key.length === 1) key = key.toUpperCase();
-			parts.push(key);
-			const shortcutKey = parts.join('+');
+			const shortcutKey = getShortcutKey(event);
 
 			// Check if this matches any action shortcut (normalize the action shortcut for comparison)
 			const action = page.page.actions?.find(a => a.shortcut && normalizeShortcut(a.shortcut) === shortcutKey);
@@ -519,6 +511,13 @@
 	// record whose key field the user edits is still addressed by its stored key
 	function toEditableRecords(): Array<Record<string, any>> {
 		return records.map(r => ({ ...r, _key: getRecordId(r, primaryKeyField, primaryKeyFieldsList) }));
+	}
+
+	// Ctrl+Insert (new line) or Alt+N (New) inserts a new row (BC). Not Ctrl+N: browsers
+	// reserve it for a new window and never pass it to the page.
+	function isNewRowShortcut(event: KeyboardEvent): boolean {
+		const shortcutKey = getShortcutKey(event);
+		return shortcutKey === 'Ctrl+Insert' || shortcutKey === commonShortcuts.NEW;
 	}
 
 	// Handle new record - insert blank row below current selection
@@ -939,8 +938,8 @@
 			return;
 		}
 
-		// Ctrl+Insert or Ctrl+N to insert new row
-		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
+		// Ctrl+Insert or Alt+N to insert new row
+		if (isNewRowShortcut(event)) {
 			event.preventDefault();
 			insertNewRow();
 			return;
@@ -1083,8 +1082,8 @@
 	function handleCellKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
 		const cols = visibleColumns();
 
-		// Ctrl+Insert or Ctrl+N to insert new row
-		if ((event.key === 'Insert' || event.key === 'n') && event.ctrlKey) {
+		// Ctrl+Insert or Alt+N to insert new row
+		if (isNewRowShortcut(event)) {
 			event.preventDefault();
 			insertNewRow();
 			return;
@@ -2609,15 +2608,23 @@
 		background: transparent;
 	}
 
+	/* BC column header: light background with bold dark text (dark mode: dark header) */
 	.table th {
-		@apply px-4 py-3 text-left text-sm font-semibold;
-		@apply bg-nav-blue text-white;
-		@apply dark:bg-gray-800;
-		border-right: 1px solid rgba(255, 255, 255, 0.1);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+		@apply px-4 py-3 text-left text-sm font-bold;
+		background-color: #ffffff;
+		color: #212121;
+		border-right: 1px solid #e5e7e9;
+		border-bottom: 1px solid #d3d6da;
 		position: sticky;
 		top: 0;
 		z-index: 10;
+	}
+
+	:global(.dark) .table th {
+		background-color: #1e1e1e;
+		color: #f7f7f7;
+		border-right-color: rgba(255, 255, 255, 0.1);
+		border-bottom-color: rgba(255, 255, 255, 0.2);
 	}
 
 	.table th:last-child {
@@ -2638,15 +2645,15 @@
 		max-width: 50px;
 		text-align: center;
 		font-size: 0.75rem;
-		color: #6b7280;
-		border-right: 1px solid #d1d5db;
-		border-bottom: 1px solid #d1d5db;
+		color: #737d8a;
+		border-right: 1px solid #d3d6da;
+		border-bottom: 1px solid #d3d6da;
 	}
 
 	:global(.dark) .row-number-cell {
 		color: white;
-		background-color: rgb(31 41 55); /* gray-800 - matches normal columns */
-		border-color: #4b5563; /* gray-600 */
+		background-color: rgb(30 30 30); /* gray-800 - matches normal columns */
+		border-color: #505c6d; /* gray-600 */
 	}
 
 	.resize-handle {
@@ -2665,11 +2672,11 @@
 	}
 
 	.resize-handle:hover {
-		background: rgba(59, 130, 246, 0.5);
+		background: rgba(0, 131, 143, 0.5);
 	}
 
 	.resize-handle:active {
-		background: rgba(59, 130, 246, 0.8);
+		background: rgba(0, 131, 143, 0.8);
 	}
 
 	.th-content {
@@ -2681,7 +2688,7 @@
 
 	.th-label {
 		flex: 1;
-		color: white;
+		color: inherit;
 	}
 
 	.sort-btn {
@@ -2699,6 +2706,10 @@
 
 	.sort-btn:hover {
 		opacity: 1;
+		background: rgba(0, 0, 0, 0.06);
+	}
+
+	:global(.dark) .sort-btn:hover {
 		background: rgba(255, 255, 255, 0.1);
 	}
 
@@ -2728,20 +2739,20 @@
 	}
 
 	.table tbody tr.selected {
-		background-color: #dbeafe !important; /* bg-blue-100 */
+		background-color: #cce8ea !important; /* bg-blue-100 */
 	}
 
 	.table tbody tr.selected:hover {
-		background-color: #dbeafe !important;
+		background-color: #cce8ea !important;
 	}
 
 	:global(.dark) .table tbody tr.selected {
-		background-color: #1e40af !important; /* bg-blue-800 */
+		background-color: #00585c !important; /* bg-blue-800 */
 		color: white;
 	}
 
 	:global(.dark) .table tbody tr.selected:hover {
-		background-color: #1e40af !important;
+		background-color: #00585c !important;
 	}
 
 	:global(.dark) .table tbody tr.selected td,
@@ -2751,11 +2762,11 @@
 	}
 
 	.table tbody tr.new-row {
-		background-color: #e0f2fe !important;
+		background-color: #e6f3f4 !important;
 	}
 
 	:global(.dark) .table tbody tr.new-row {
-		background-color: #1e3a5f !important; /* Dark blue background for new rows */
+		background-color: #003a3e !important; /* Dark teal background for new rows */
 	}
 
 	.table td {
@@ -2770,9 +2781,9 @@
 	}
 
 	:global(.dark) .status-bar {
-		background-color: #1f2937; /* gray-800 */
-		border-color: #374151; /* gray-700 */
-		color: #d1d5db; /* gray-300 */
+		background-color: #1e1e1e; /* gray-800 */
+		border-color: #303032; /* gray-700 */
+		color: #d3d6da; /* gray-300 */
 	}
 
 	.lookup-cell-wrapper {
@@ -2821,7 +2832,7 @@
 	}
 
 	:global(.dark) tbody tr:not(.selected) td.p-0 {
-		background: rgb(31 41 55);
+		background: #121212; /* BC dark mode: list rows on the page background */
 	}
 
 	/* Selected rows - make td background transparent to show row highlight */
@@ -2861,14 +2872,14 @@
 	}
 
 	.cell-selected-active {
-		outline: 1px solid rgba(37, 99, 235, 0.45); /* subtle blue-600 frame */
+		outline: 1px solid rgba(0, 132, 137, 0.45); /* subtle blue-600 frame */
 		outline-offset: -1px; /* inset so it doesn't shift layout */
-		background: rgba(239, 246, 255, 0.6); /* faint blue-50 highlight */
+		background: rgba(230, 243, 244, 0.6); /* faint blue-50 highlight */
 	}
 
 	:global(.dark) .cell-selected-active {
-		outline-color: rgba(59, 130, 246, 0.5);
-		background: rgba(59, 130, 246, 0.06);
+		outline-color: rgba(0, 131, 143, 0.5);
+		background: rgba(0, 131, 143, 0.06);
 		color: white;
 	}
 
@@ -2889,26 +2900,26 @@
 		flex-shrink: 0;
 		padding: 0 4px;
 		font-size: 0.5rem;
-		color: #6b7280;
+		color: #737d8a;
 		cursor: pointer;
 		line-height: 1;
 	}
 
 	.cell-selected-lookup-arrow:hover {
-		color: #2563eb;
+		color: #008489;
 	}
 
 	:global(.dark) .cell-selected-lookup-arrow {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	:global(.dark) .cell-selected-lookup-arrow:hover {
-		color: #60a5fa;
+		color: #37a1a5;
 	}
 
 	/* Primary key link - looks like a hyperlink */
 	.primary-key-link {
-		color: #2563eb;
+		color: #008489;
 		text-decoration: underline;
 		background: none;
 		border: none;
@@ -2919,15 +2930,15 @@
 	}
 
 	.primary-key-link:hover {
-		color: #1d4ed8;
+		color: #006e72;
 	}
 
 	:global(.dark) .primary-key-link {
-		color: #60a5fa;
+		color: #37a1a5;
 	}
 
 	:global(.dark) .primary-key-link:hover {
-		color: #93c5fd;
+		color: #66b9bf;
 	}
 
 	/* Quick Search Styles */
@@ -2941,7 +2952,7 @@
 	}
 
 	:global(.dark) .search-icon {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	.search-input {
@@ -2961,18 +2972,18 @@
 	}
 
 	:global(.dark) .search-input {
-		background-color: #374151;
-		border-color: #4b5563;
+		background-color: #303032;
+		border-color: #505c6d;
 		color: white;
 	}
 
 	:global(.dark) .search-input::placeholder {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	:global(.dark) .search-input:focus {
-		border-color: #3b82f6;
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+		border-color: #00838f;
+		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
 	.clear-search-btn {
@@ -2981,12 +2992,12 @@
 	}
 
 	:global(.dark) .clear-search-btn {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	:global(.dark) .clear-search-btn:hover {
-		color: #d1d5db;
-		background-color: #4b5563;
+		color: #d3d6da;
+		background-color: #505c6d;
 	}
 
 	/* Header save indicator (same as CardPage) */

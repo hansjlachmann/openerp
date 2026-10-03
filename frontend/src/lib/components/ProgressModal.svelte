@@ -207,7 +207,7 @@
 	}
 
 	:global(.dark) .progress-title {
-		color: #f3f4f6;
+		color: #f2f2f3;
 	}
 
 	.progress-body {
@@ -219,7 +219,7 @@
 	}
 
 	:global(.dark) .status-message {
-		color: #9ca3af;
+		color: #a4b0c4;
 	}
 
 	.progress-container {
@@ -231,7 +231,7 @@
 	}
 
 	:global(.dark) .progress-bar-track {
-		background-color: #374151;
+		background-color: #303032;
 	}
 
 	.progress-bar-fill {
@@ -243,7 +243,7 @@
 	}
 
 	:global(.dark) .progress-percent {
-		color: #d1d5db;
+		color: #d3d6da;
 	}
 
 	.error-container {
@@ -271,7 +271,7 @@
 	}
 
 	:global(.dark) .confirm-container {
-		background-color: rgba(59, 130, 246, 0.1);
+		background-color: rgba(0, 131, 143, 0.1);
 	}
 
 	.confirm-icon {
@@ -283,7 +283,7 @@
 	}
 
 	:global(.dark) .confirm-message {
-		color: #d1d5db;
+		color: #d3d6da;
 	}
 
 	.confirm-buttons {
@@ -308,7 +308,7 @@
 	}
 
 	:global(.dark) .input-label {
-		color: #d1d5db;
+		color: #d3d6da;
 	}
 
 	.required-mark {
@@ -322,12 +322,12 @@
 	}
 
 	:global(.dark) .input-control {
-		background-color: #374151;
-		border-color: #4b5563;
-		color: #f3f4f6;
+		background-color: #303032;
+		border-color: #505c6d;
+		color: #f2f2f3;
 	}
 
 	:global(.dark) .input-control:focus {
-		border-color: #3b82f6;
+		border-color: #00838f;
 	}
 </style>

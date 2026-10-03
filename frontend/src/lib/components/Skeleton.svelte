@@ -31,9 +31,9 @@
 	.skeleton {
 		background: linear-gradient(
 			90deg,
-			#e5e7eb 0%,
-			#f3f4f6 50%,
-			#e5e7eb 100%
+			#e5e7e9 0%,
+			#f2f2f3 50%,
+			#e5e7e9 100%
 		);
 		background-size: 200% 100%;
 		animation: shimmer 1.5s infinite;
@@ -42,9 +42,9 @@
 	:global(.dark) .skeleton {
 		background: linear-gradient(
 			90deg,
-			#374151 0%,
-			#4b5563 50%,
-			#374151 100%
+			#303032 0%,
+			#505c6d 50%,
+			#303032 100%
 		);
 		background-size: 200% 100%;
 	}
