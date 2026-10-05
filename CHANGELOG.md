@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.76](https://github.com/hansjlachmann/openerp/compare/v0.1.75...v0.1.76) (2026-10-05)
+
+
+### Documentation
+
+* TODO high-priority list performance with large data ([c3d5a4b](https://github.com/hansjlachmann/openerp/commit/c3d5a4bf75bd5001b714b61afc3659d8087d73a4))
+
 ## [0.1.75](https://github.com/hansjlachmann/openerp/compare/v0.1.74...v0.1.75) (2026-10-05)
 
 
