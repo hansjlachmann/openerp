@@ -82,6 +82,10 @@ From `frontend/README.md` (formerly "Next Steps") and inline markers.
       page types render; all other types hit the "not yet supported" fallback. Add support
       for additional page types as they are introduced.
 - [ ] WebSocket support for real-time updates (pairs with the backend WebSocket item).
+- [ ] Keyboard Shortcuts help window (`frontend/src/routes/help/shortcuts/+page.svelte`):
+      remove the intro text "Keys work as in Microsoft Dynamics NAV and Business Central."
+      (the `HELP_INTRO` line under the title, and the `HELP_INTRO` key in
+      `translations/{en-US,nb-NO,da-DK}/messages.yaml` and the `HELP` constant).
 - [x] Create Go API backend — done
 - [x] YAML page definitions (dynamic page generation) — done
 - [x] Generic `PageRenderer` (List/Card) — done
