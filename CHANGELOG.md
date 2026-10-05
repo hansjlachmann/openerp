@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.70](https://github.com/hansjlachmann/openerp/compare/v0.1.69...v0.1.70) (2026-10-05)
+
+
+### Bug Fixes
+
+* list Edit/Delete acted on the wrong record when searched or sorted ([41eeba1](https://github.com/hansjlachmann/openerp/commit/41eeba1e901bfb3947a962ce2d8dc031b295f31c))
+* show trigger error messages and fix user preferences cascade ([9a1f43d](https://github.com/hansjlachmann/openerp/commit/9a1f43de9ba1b9fa273b92bfd3599451d3707114))
+
+
+### Documentation
+
+* add deployment and operations follow-ups to TODO ([0f1f6ec](https://github.com/hansjlachmann/openerp/commit/0f1f6ec371b9c7d1135d866234707986ab2f44a1))
+
 ## [0.1.69](https://github.com/hansjlachmann/openerp/compare/v0.1.68...v0.1.69) (2026-10-03)
 
 
