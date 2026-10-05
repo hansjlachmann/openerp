@@ -1,19 +1,18 @@
 page:
-  id: 11
+  id: 12
   type: List
-  name: Companies
-  source_table: Company
-  caption: Companies
+  name: Countries Regions
+  source_table: Country_Region
+  caption: Countries/Regions
   editable: true
 
   layout:
     repeater:
       fields:
-        - source: name
-          width: 300
-          primary_key: true
+        - source: code
+          width: 120
 
-        - source: display_name
+        - source: name
           width: 300
 
   actions:

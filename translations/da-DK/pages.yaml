@@ -18,6 +18,10 @@ pages:
   payment_terms_list:
     caption: "Betalingsbetingelser"
 
+  # Country/Region pages
+  countries_regions:
+    caption: "Lande/områder"
+
   # User pages
   user_card:
     caption: "Brugerkort"

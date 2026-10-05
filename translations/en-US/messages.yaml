@@ -197,6 +197,15 @@ messages:
   CU_REPORT_DATE: "Report Date"
   CU_REPORT_CANCELLED: "Report cancelled."
 
+  # Demo data (codeunit 50100)
+  DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."
+  DEMO_DATA_NOT_EMPTY: "Company \"%1\" already has customers. Demo data is only created in a company without customers."
+  DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL or LARGE."
+  DEMO_DATA_INSERT_FAILED: "Could not create %1 %2: %3. No demo data was created."
+  DEMO_DATA_SETUP: "Creating countries and payment terms..."
+  DEMO_DATA_CUSTOMERS: "Creating customers..."
+  DEMO_DATA_ENTRIES: "Creating customer ledger entries..."
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Are you sure you want to delete this record?"
   DLG_DELETE_CONFIRM: "Are you sure you want to delete this %1?"

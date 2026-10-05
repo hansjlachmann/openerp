@@ -279,25 +279,33 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// CompanyInfo is a company as listed for the login page and the company switcher.
+// Name is the technical key (prefixes the company's tables); DisplayName is what
+// users see (BC/NAV Display Name) and may be blank.
+type CompanyInfo struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+}
+
 // ListCompanies returns available companies for the current user.
 // If the user is logged in and has role memberships, only returns companies they have access to.
 // If not logged in (login screen) or user has no roles, returns all companies.
 // GET /api/auth/companies
 func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 	// Get all companies first
-	rows, err := h.db.Query(`SELECT name FROM "Company" ORDER BY name`)
+	rows, err := h.db.Query(`SELECT name, COALESCE(display_name, '') FROM "Company" ORDER BY name`)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 	}
 	defer rows.Close()
 
-	var allCompanies []string
+	allCompanies := []CompanyInfo{}
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var info CompanyInfo
+		if err := rows.Scan(&info.Name, &info.DisplayName); err != nil {
 			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyListFailed().Message("en-US")))
 		}
-		allCompanies = append(allCompanies, name)
+		allCompanies = append(allCompanies, info)
 	}
 
 	// If user is logged in, filter by allowed companies
@@ -306,13 +314,13 @@ func (h *AuthHandler) ListCompanies(c *fiber.Ctx) error {
 		allowedCompanies, hasRoles := h.getUserAllowedCompanies(sess.GetUserID())
 		if hasRoles && allowedCompanies != nil {
 			// Filter to only allowed companies
-			filtered := make([]string, 0, len(allowedCompanies))
+			filtered := make([]CompanyInfo, 0, len(allowedCompanies))
 			allowedSet := make(map[string]bool, len(allowedCompanies))
 			for _, c := range allowedCompanies {
 				allowedSet[strings.ToLower(c)] = true
 			}
 			for _, c := range allCompanies {
-				if allowedSet[strings.ToLower(c)] {
+				if allowedSet[strings.ToLower(c.Name)] {
 					filtered = append(filtered, c)
 				}
 			}
@@ -495,7 +503,8 @@ func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {
 // POST /api/auth/companies
 func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 	var requestBody struct {
-		Name string `json:"name"`
+		Name        string `json:"name"`
+		DisplayName string `json:"display_name"`
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
@@ -526,7 +535,11 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 	}
 
 	// Insert company
-	_, err = h.db.Exec(`INSERT INTO "Company" (name) VALUES ($1)`, name)
+	displayName := strings.TrimSpace(requestBody.DisplayName)
+	if r := []rune(displayName); len(r) > 100 {
+		displayName = string(r[:100])
+	}
+	_, err = h.db.Exec(`INSERT INTO "Company" (name, display_name) VALUES ($1, $2)`, name, displayName)
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyCreateFailed().Message("en-US")))
 	}
@@ -540,8 +553,9 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 
 	ts := i18n.GetInstance()
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
-		"name":    name,
-		"message": ts.Message("MSG_COMPANY_CREATED", "en-US"),
+		"name":         name,
+		"display_name": displayName,
+		"message":      ts.Message("MSG_COMPANY_CREATED", "en-US"),
 	})
 	return c.JSON(response)
 }

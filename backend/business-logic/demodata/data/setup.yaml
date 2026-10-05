@@ -1,0 +1,24 @@
+# Demo data: setup tables. Records that already exist are left as they are.
+
+countries:
+  - code: "NO"
+    name: Norway
+  - code: DK
+    name: Denmark
+  - code: GB
+    name: United Kingdom
+
+payment_terms:
+  # due_days is demo-only: it sets the due date of the generated invoices
+  - code: 14 DAYS
+    description: Net 14 days
+    due_days: 14
+  - code: 30 DAYS
+    description: Net 30 days
+    due_days: 30
+  - code: CM
+    description: Current month
+    due_days: 30
+  - code: COD
+    description: Cash on delivery
+    due_days: 0

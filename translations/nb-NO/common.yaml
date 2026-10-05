@@ -42,6 +42,7 @@ common:
     users: "Brukere"
     languages: "Språk"
     payment_terms: "Betalingsbetingelser"
+    countries_regions: "Land/regioner"
     smtp_setup: "SMTP-oppsett"
     companies: "Selskaper"
     menus: "Menyer"

@@ -39,6 +39,9 @@ func main() {
 	if err := registry.RegisterTable(tables.SMTPSetupTableID, &tables.SMTPSetup{}); err != nil {
 		log.Printf("Warning: Failed to register SMTP_Setup: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.CountryRegionTableID, &tables.CountryRegion{}); err != nil {
+		log.Printf("Warning: Failed to register Country_Region: %v\n", err)
+	}
 	if err := registry.RegisterTable(tables.CustomerTableID, &tables.Customer{}); err != nil {
 		log.Printf("Warning: Failed to register Customer: %v\n", err)
 	}

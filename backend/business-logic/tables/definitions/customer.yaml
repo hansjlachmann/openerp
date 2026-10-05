@@ -29,6 +29,19 @@ table:
       db_name: city
       length: 50
     
+    - name: country_region_code
+      type: types.Code
+      db_name: country_region_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: name
+            width: 200
+
     - name: phonenumber
       type: types.Text
       db_name: phonenumber

@@ -8,6 +8,7 @@ import type {
 	ValidateFieldResult
 } from '$types/api';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
+import type { CompanyInfo } from '$lib/utils/company';
 
 const API_BASE = '/api';
 
@@ -247,14 +248,14 @@ export const api = {
 		return result.data || [];
 	},
 
-	async listCompanies(): Promise<ApiResponse<string[]>> {
+	async listCompanies(): Promise<ApiResponse<CompanyInfo[]>> {
 		const response = await fetch(`${API_BASE}/auth/companies`);
-		return handleApiResponseFull<string[]>(response, 'list companies');
+		return handleApiResponseFull<CompanyInfo[]>(response, 'list companies');
 	},
 
-	async getCompanies(): Promise<string[]> {
+	async getCompanies(): Promise<CompanyInfo[]> {
 		const response = await fetch(`${API_BASE}/auth/companies`);
-		const result = await handleApiResponseFull<string[]>(response, 'get companies');
+		const result = await handleApiResponseFull<CompanyInfo[]>(response, 'get companies');
 		return result.data || [];
 	},
 

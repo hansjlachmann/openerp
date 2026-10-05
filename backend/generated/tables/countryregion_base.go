@@ -13,11 +13,11 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// CompanyBase represents Table 10: Company
+// CountryRegionBase represents Table 11: Country_Region
 // This is the generated base struct - embed in your wrapper struct and override Init
-type CompanyBase struct {
-	Name types.Text `db:"name,pk"`
-	Display_name types.Text `db:"display_name"`
+type CountryRegionBase struct {
+	Code types.Code `db:"code,pk"`
+	Name types.Text `db:"name"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -28,7 +28,7 @@ type CompanyBase struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*companyBaseFilterCondition
+	filters map[string]*countryRegionBaseFilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
@@ -39,7 +39,7 @@ type CompanyBase struct {
 	offset int
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*CompanyBase
+	bufferedRecords []*CountryRegionBase
 	currentBufferPos int
 
 	// Trigger function references (set by wrapper struct via SetTriggers)
@@ -56,31 +56,31 @@ type CompanyBase struct {
 	triggerErr error
 }
 
-const CompanyTableID = 10
-const CompanyTableName = "Company"
+const CountryRegionTableID = 11
+const CountryRegionTableName = "Country_Region"
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *CompanyBase) GetTableID() int {
-	return CompanyTableID
+func (t *CountryRegionBase) GetTableID() int {
+	return CountryRegionTableID
 }
 
 // GetTableName returns the table name
-func (t *CompanyBase) GetTableName() string {
-	return CompanyTableName
+func (t *CountryRegionBase) GetTableName() string {
+	return CountryRegionTableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *CompanyBase) GetTableSchema() string {
-	return GetCompanyTableSchema()
+func (t *CountryRegionBase) GetTableSchema() string {
+	return GetCountryRegionTableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *CompanyBase) GetPostgresTableSchema() string {
-	return GetCompanyPostgresTableSchema()
+func (t *CountryRegionBase) GetPostgresTableSchema() string {
+	return GetCountryRegionPostgresTableSchema()
 }
 
 // SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *CompanyBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
+func (t *CountryRegionBase) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
 	t.onInsertFn = onInsert
 	t.onModifyFn = onModify
 	t.onDeleteFn = onDelete
@@ -89,50 +89,50 @@ func (t *CompanyBase) SetTriggers(onInsert, onModify func() error, onDelete func
 // TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
 // the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
 // or succeeded. Trigger errors are business-rule messages meant for the user.
-func (t *CompanyBase) TriggerError() error {
+func (t *CountryRegionBase) TriggerError() error {
 	return t.triggerErr
 }
 
 // SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
 // ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
-func (t *CompanyBase) SetSelf(self interface{}) {
+func (t *CountryRegionBase) SetSelf(self interface{}) {
 	t.self = self
 }
 
 // GetDB returns the database executor (for wrapper access)
-func (t *CompanyBase) GetDB() database.Executor {
+func (t *CountryRegionBase) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *CompanyBase) GetCompany() string {
+func (t *CountryRegionBase) GetCompany() string {
 	return t.company
 }
 
 // GetDBType returns the database type (for wrapper access)
-func (t *CompanyBase) GetDBType() database.DBType {
+func (t *CountryRegionBase) GetDBType() database.DBType {
 	return t.dbType
 }
 
 // IsSetupTable reports whether this is a BC-style singleton setup table
 // (a single record identified by a blank primary key).
-func (t *CompanyBase) IsSetupTable() bool {
+func (t *CountryRegionBase) IsSetupTable() bool {
 	return false
 }
 
-// GetCompanyTableSchema returns the SQLite schema
-func GetCompanyTableSchema() string {
+// GetCountryRegionTableSchema returns the SQLite schema
+func GetCountryRegionTableSchema() string {
 	return `
-		name TEXT(100) PRIMARY KEY,
-		display_name TEXT(100)
+		code TEXT(10) PRIMARY KEY,
+		name TEXT(50)
 	`
 }
 
-// GetCompanyPostgresTableSchema returns the PostgreSQL schema
-func GetCompanyPostgresTableSchema() string {
+// GetCountryRegionPostgresTableSchema returns the PostgreSQL schema
+func GetCountryRegionPostgresTableSchema() string {
 	return `
-		name VARCHAR(100) PRIMARY KEY,
-		display_name VARCHAR(100)
+		code VARCHAR(10) PRIMARY KEY,
+		name VARCHAR(50)
 	`
 }
 
@@ -141,44 +141,44 @@ func GetCompanyPostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *CompanyBase) GetCaption(language string) string {
+func (t *CountryRegionBase) GetCaption(language string) string {
 	ts := i18n.GetInstance()
-	return ts.TableCaption("Company", language)
+	return ts.TableCaption("Country_Region", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *CompanyBase) GetFieldCaption(fieldName, language string) string {
+func (t *CountryRegionBase) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
-	return ts.FieldCaption("Company", fieldName, language)
+	return ts.FieldCaption("Country_Region", fieldName, language)
 }
 
-// CreateTable creates the Company table for the specified company (SQLite)
+// CreateTable creates the Country_Region table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *CompanyBase) CreateTable(db database.Executor, company string) error {
+func (t *CountryRegionBase) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// CreateTableWithDBType creates the Company table for the specified company with the given database type
+// CreateTableWithDBType creates the Country_Region table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *CompanyBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, CountryRegionTableName)
 	var schema string
 	if dbType == database.DBTypePostgres {
-		schema = GetCompanyPostgresTableSchema()
+		schema = GetCountryRegionPostgresTableSchema()
 	} else {
-		schema = GetCompanyTableSchema()
+		schema = GetCountryRegionTableSchema()
 	}
 
 	createSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s)`, tableName, schema)
 	_, err := db.Exec(createSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create Company table: %w", err)
+		return fmt.Errorf("failed to create Country_Region table: %w", err)
 	}
 
 	// Create indexes (BC/NAV Keys)
 	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$Company$Primary", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (name)`,
+	indexName = fmt.Sprintf("%s$Country_Region$Primary", company)
+	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (code)`,
 		indexName, tableName)
 	_, err = db.Exec(indexSQL)
 	if err != nil {
@@ -192,15 +192,15 @@ func (t *CompanyBase) CreateTableWithDBType(db database.Executor, company string
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new Company record with database context
+// Init initializes a new CountryRegion record with database context
 // The db parameter can be either *sql.DB or *sql.Tx, allowing operations
 // to work seamlessly with or without explicit transactions
-func (t *CompanyBase) Init(db database.Executor, company string) {
+func (t *CountryRegionBase) Init(db database.Executor, company string) {
 	t.InitWithDBType(db, company, database.DBTypeSQLite)
 }
 
-// InitWithDBType initializes a new Company record with database context and type
-func (t *CompanyBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+// InitWithDBType initializes a new CountryRegion record with database context and type
+func (t *CountryRegionBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
@@ -211,25 +211,25 @@ func (t *CompanyBase) InitWithDBType(db database.Executor, company string, dbTyp
 // InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
-func (t *CompanyBase) InitRecord() {
+func (t *CountryRegionBase) InitRecord() {
 	t.applyDefaults()
 }
 
 // applyDefaults assigns the YAML default values and auto timestamps
-func (t *CompanyBase) applyDefaults() {
+func (t *CountryRegionBase) applyDefaults() {
 }
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *CompanyBase) StoreOldValues() {
+func (t *CountryRegionBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
+	t.oldValues["code"] = t.Code
 	t.oldValues["name"] = t.Name
-	t.oldValues["display_name"] = t.Display_name
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *CompanyBase) convertPlaceholders(sql string, count int) string {
+func (t *CountryRegionBase) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -243,52 +243,52 @@ func (t *CompanyBase) convertPlaceholders(sql string, count int) string {
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *CompanyBase) Get(primaryKey interface{}) bool {
+func (t *CountryRegionBase) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
-		var nameVal types.Text
-		if v, exists := pkMap["name"]; exists {
+		var codeVal types.Code
+		if v, exists := pkMap["code"]; exists {
 			switch val := v.(type) {
-			case types.Text:
-				nameVal = val
+			case types.Code:
+				codeVal = val
 			case string:
-				nameVal = types.NewText(val)
+				codeVal = types.NewCode(val)
 			}
 		}
-		return t.GetByPK(nameVal)
+		return t.GetByPK(codeVal)
 	}
 	// Handle single primary key (for tables with only one PK field)
 	switch pk := primaryKey.(type) {
-	case types.Text:
+	case types.Code:
 		return t.GetByPK(pk)
 	case string:
-		return t.GetByPK(types.NewText(pk))
+		return t.GetByPK(types.NewCode(pk))
 	}
 
-	fmt.Printf("Error: Invalid primary key type for Company.Get: %T (use map for composite keys)\n", primaryKey)
+	fmt.Printf("Error: Invalid primary key type for Country_Region.Get: %T (use map for composite keys)\n", primaryKey)
 	return false
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *CompanyBase) GetByPK(name types.Text) bool {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) GetByPK(code types.Code) bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
+	var codeNull sql.NullString
 	var nameNull sql.NullString
-	var display_nameNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
-		name,
+		code,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT name, display_name FROM "%s" WHERE 1=1 AND name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
+		&codeNull,
 		&nameNull,
-		&display_nameNull,
 	)
 
 	if err != nil {
@@ -297,13 +297,13 @@ func (t *CompanyBase) GetByPK(name types.Text) bool {
 			return false
 		}
 		// Actual database error
-		fmt.Printf("Error: Failed to get Company: %v\n", err)
+		fmt.Printf("Error: Failed to get Country_Region: %v\n", err)
 		return false
 	}
 
 	// Populate fields
+	t.Code = types.NewCode(codeNull.String)
 	t.Name = types.NewText(nameNull.String)
-	t.Display_name = types.NewText(display_nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -312,7 +312,7 @@ func (t *CompanyBase) GetByPK(name types.Text) bool {
 }
 
 // Insert inserts the record into the database
-func (t *CompanyBase) Insert(runTrigger bool) bool {
+func (t *CountryRegionBase) Insert(runTrigger bool) bool {
 	// Call OnInsert trigger if requested (via function reference set by wrapper)
 	t.triggerErr = nil
 	if runTrigger && t.onInsertFn != nil {
@@ -322,30 +322,30 @@ func (t *CompanyBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := CompanyTableName
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 
 	// Collect arguments for INSERT
 	args := []interface{}{
+		t.Code,
 		t.Name,
-		t.Display_name,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (name, display_name) VALUES (?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name) VALUES (?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to insert Company: %v\n", err)
+		fmt.Printf("Error: Failed to insert Country_Region: %v\n", err)
 		return false
 	}
 	return true
 }
 
 // Modify updates the record in the database
-func (t *CompanyBase) Modify(runTrigger bool) bool {
+func (t *CountryRegionBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
 	t.triggerErr = nil
 	if runTrigger && t.onModifyFn != nil {
@@ -355,7 +355,7 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := CompanyTableName
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -365,13 +365,13 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			setClauses = append(setClauses, "code = ?")
+			values = append(values, t.Code)
+		}
 		if t.hasFieldChanged("name") {
 			setClauses = append(setClauses, "name = ?")
 			values = append(values, t.Name)
-		}
-		if t.hasFieldChanged("display_name") {
-			setClauses = append(setClauses, "display_name = ?")
-			values = append(values, t.Display_name)
 		}
 
 		// If nothing changed, skip update
@@ -380,19 +380,19 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 		}
 	} else {
 		// No old values (fresh record), update all fields
-		setClauses = append(setClauses, "display_name = ?")
-		values = append(values, t.Display_name)
-	}
-
-	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
-	if old, ok := t.oldValues["name"]; ok {
-		values = append(values, old)
-	} else {
+		setClauses = append(setClauses, "name = ?")
 		values = append(values, t.Name)
 	}
 
+	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
+	if old, ok := t.oldValues["code"]; ok {
+		values = append(values, old)
+	} else {
+		values = append(values, t.Code)
+	}
+
 	// Build and execute SQL
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND name = ?`,
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
 		tableName,
 		strings.Join(setClauses, ", "),
 	)
@@ -402,7 +402,7 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 
 	_, err := t.db.Exec(sqlStr, values...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify Company: %v\n", err)
+		fmt.Printf("Error: Failed to modify Country_Region: %v\n", err)
 		return false
 	}
 	// The stored record now matches the current values (including a renamed key)
@@ -413,7 +413,7 @@ func (t *CompanyBase) Modify(runTrigger bool) bool {
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *CompanyBase) hasFieldChanged(fieldName string) bool {
+func (t *CountryRegionBase) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -426,13 +426,13 @@ func (t *CompanyBase) hasFieldChanged(fieldName string) bool {
 
 	// Compare old vs new value based on field name (with type assertion)
 	switch fieldName {
+	case "code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Code.Equal(old)
+		}
 	case "name":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Name.Equal(old)
-		}
-	case "display_name":
-		if old, ok := oldValue.(types.Text); ok {
-			return !t.Display_name.Equal(old)
 		}
 	}
 
@@ -440,7 +440,7 @@ func (t *CompanyBase) hasFieldChanged(fieldName string) bool {
 }
 
 // Delete removes the record from the database
-func (t *CompanyBase) Delete(runTrigger bool) bool {
+func (t *CountryRegionBase) Delete(runTrigger bool) bool {
 	// Call OnDelete trigger if requested (via function reference set by wrapper)
 	t.triggerErr = nil
 	if runTrigger && t.onDeleteFn != nil {
@@ -450,22 +450,22 @@ func (t *CompanyBase) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := CompanyTableName
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.Name,
+		t.Code,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
 	_, err := t.db.Exec(sqlStr, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete Company: %v\n", err)
+		fmt.Printf("Error: Failed to delete Country_Region: %v\n", err)
 		return false
 	}
 	return true
@@ -473,7 +473,7 @@ func (t *CompanyBase) Delete(runTrigger bool) bool {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *CompanyBase) CalcFields(fieldNames ...string) {
+func (t *CountryRegionBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
@@ -481,8 +481,8 @@ func (t *CompanyBase) CalcFields(fieldNames ...string) {
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// companyBaseFilterCondition represents a filter on a field
-type companyBaseFilterCondition struct {
+// countryRegionBaseFilterCondition represents a filter on a field
+type countryRegionBaseFilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -495,9 +495,9 @@ type companyBaseFilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *CompanyBase) SetRange(fieldName string, values ...interface{}) {
+func (t *CountryRegionBase) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*companyBaseFilterCondition)
+		t.filters = make(map[string]*countryRegionBaseFilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -520,12 +520,12 @@ func (t *CompanyBase) SetRange(fieldName string, values ...interface{}) {
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
 		// the name into SQL
-		fmt.Printf("Error: SetRange on unknown field %q of Company\n", fieldName)
-		t.filters[fieldName] = &companyBaseFilterCondition{invalidField: true}
+		fmt.Printf("Error: SetRange on unknown field %q of Country_Region\n", fieldName)
+		t.filters[fieldName] = &countryRegionBaseFilterCondition{invalidField: true}
 		return
 	}
 
-	t.filters[column] = &companyBaseFilterCondition{
+	t.filters[column] = &countryRegionBaseFilterCondition{
 		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -536,19 +536,19 @@ func (t *CompanyBase) SetRange(fieldName string, values ...interface{}) {
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *CompanyBase) SetFilter(fieldName, filterExpr string) {
+func (t *CountryRegionBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*companyBaseFilterCondition)
+		t.filters = make(map[string]*countryRegionBaseFilterCondition)
 	}
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
 		// the name into SQL
-		fmt.Printf("Error: SetFilter on unknown field %q of Company\n", fieldName)
-		t.filters[fieldName] = &companyBaseFilterCondition{invalidField: true}
+		fmt.Printf("Error: SetFilter on unknown field %q of Country_Region\n", fieldName)
+		t.filters[fieldName] = &countryRegionBaseFilterCondition{invalidField: true}
 		return
 	}
-	t.filters[column] = &companyBaseFilterCondition{
+	t.filters[column] = &countryRegionBaseFilterCondition{
 		fieldName:    column,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -558,12 +558,12 @@ func (t *CompanyBase) SetFilter(fieldName, filterExpr string) {
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *CompanyBase) SetCurrentKey(fields ...string) {
+func (t *CountryRegionBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = nil
 	for _, field := range fields {
 		column, ok := t.columnName(field)
 		if !ok {
-			fmt.Printf("Error: SetCurrentKey on unknown field %q of Company\n", field)
+			fmt.Printf("Error: SetCurrentKey on unknown field %q of Country_Region\n", field)
 			continue
 		}
 		t.orderByFields = append(t.orderByFields, column)
@@ -572,25 +572,25 @@ func (t *CompanyBase) SetCurrentKey(fields ...string) {
 
 // HasColumn reports whether fieldName (case-insensitive) is a stored column of this
 // table. Only such names may be used in filters and sort keys.
-func (t *CompanyBase) HasColumn(fieldName string) bool {
+func (t *CountryRegionBase) HasColumn(fieldName string) bool {
 	_, ok := t.columnName(fieldName)
 	return ok
 }
 
 // columnName maps a field name (case-insensitive) to its database column. Field names
 // end up in SQL text (WHERE / ORDER BY / SET), so only names from this allowlist are used.
-func (t *CompanyBase) columnName(fieldName string) (string, bool) {
+func (t *CountryRegionBase) columnName(fieldName string) (string, bool) {
 	switch strings.ToLower(fieldName) {
+	case strings.ToLower("code"):
+		return "code", true
 	case strings.ToLower("name"):
 		return "name", true
-	case strings.ToLower("display_name"):
-		return "display_name", true
 	}
 	return "", false
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *CompanyBase) Reset() {
+func (t *CountryRegionBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -601,7 +601,7 @@ func (t *CompanyBase) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters
-func (t *CompanyBase) buildWhereClause() (string, []interface{}) {
+func (t *CountryRegionBase) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 {
 		return "1=1", nil
 	}
@@ -642,7 +642,7 @@ func (t *CompanyBase) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *CompanyBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *CountryRegionBase) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -684,18 +684,18 @@ func (t *CompanyBase) parseFilterExpression(fieldName, expr string) (string, []i
 }
 
 // getOrderByClause builds ORDER BY clause from current key
-func (t *CompanyBase) getOrderByClause() string {
+func (t *CountryRegionBase) getOrderByClause() string {
 	if len(t.orderByFields) > 0 {
 		return strings.Join(t.orderByFields, ", ")
 	}
 	// Default: order by primary key
-	return "name"
+	return "code"
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
 // limit rows, skipping the first offset rows. A limit of 0 disables pagination
 // (all matching rows are returned). Negative values are treated as 0.
-func (t *CompanyBase) SetPage(limit, offset int) {
+func (t *CountryRegionBase) SetPage(limit, offset int) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -709,7 +709,7 @@ func (t *CompanyBase) SetPage(limit, offset int) {
 // getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
 // Returns an empty string when no limit is set. LIMIT/OFFSET take integer
 // literals (not placeholders), which both SQLite and PostgreSQL accept.
-func (t *CompanyBase) getLimitClause() string {
+func (t *CountryRegionBase) getLimitClause() string {
 	if t.limit <= 0 {
 		return ""
 	}
@@ -721,34 +721,34 @@ func (t *CompanyBase) getLimitClause() string {
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *CompanyBase) FindFirst() bool {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) FindFirst() bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, display_name FROM "%s" WHERE %s ORDER BY name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	var codeNull sql.NullString
 	var nameNull sql.NullString
-	var display_nameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
+		&codeNull,
 		&nameNull,
-		&display_nameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find first Company: %v\n", err)
+		fmt.Printf("Error: Failed to find first Country_Region: %v\n", err)
 		return false
 	}
 
 	// Populate fields
+	t.Code = types.NewCode(codeNull.String)
 	t.Name = types.NewText(nameNull.String)
-	t.Display_name = types.NewText(display_nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -758,34 +758,34 @@ func (t *CompanyBase) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *CompanyBase) FindLast() bool {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) FindLast() bool {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, display_name FROM "%s" WHERE %s ORDER BY name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	var codeNull sql.NullString
 	var nameNull sql.NullString
-	var display_nameNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
+		&codeNull,
 		&nameNull,
-		&display_nameNull,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
-		fmt.Printf("Error: Failed to find last Company: %v\n", err)
+		fmt.Printf("Error: Failed to find last Country_Region: %v\n", err)
 		return false
 	}
 
 	// Populate fields
+	t.Code = types.NewCode(codeNull.String)
 	t.Name = types.NewText(nameNull.String)
-	t.Display_name = types.NewText(display_nameNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -794,8 +794,8 @@ func (t *CompanyBase) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *CompanyBase) Count() int {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) Count() int {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -806,7 +806,7 @@ func (t *CompanyBase) Count() int {
 	var count int
 	err := t.db.QueryRow(query, args...).Scan(&count)
 	if err != nil {
-		fmt.Printf("Error: Failed to count Company: %v\n", err)
+		fmt.Printf("Error: Failed to count Country_Region: %v\n", err)
 		return 0
 	}
 
@@ -816,25 +816,25 @@ func (t *CompanyBase) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *CompanyBase) FindSet() bool {
+func (t *CountryRegionBase) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := CompanyTableName
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, display_name FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSet for Company: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSet for Country_Region: %v\n", err)
 		return false
 	}
 
@@ -852,7 +852,7 @@ func (t *CompanyBase) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *CompanyBase) Next(steps ...int) bool {
+func (t *CountryRegionBase) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -894,24 +894,24 @@ func (t *CompanyBase) Next(steps ...int) bool {
 		}
 
 		// Scan the row
+		var codeNull sql.NullString
 		var nameNull sql.NullString
-		var display_nameNull sql.NullString
 
 		err := t.currentRows.Scan(
+			&codeNull,
 			&nameNull,
-			&display_nameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Company record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Country_Region record: %v\n", err)
 			t.currentRows.Close()
 			t.currentRows = nil
 			return false
 		}
 
 		// Populate fields
+		t.Code = types.NewCode(codeNull.String)
 		t.Name = types.NewText(nameNull.String)
-		t.Display_name = types.NewText(display_nameNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -927,7 +927,7 @@ func (t *CompanyBase) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *CompanyBase) FindSetBuffered() bool {
+func (t *CountryRegionBase) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -937,19 +937,19 @@ func (t *CompanyBase) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := CompanyTableName
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, display_name FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, name FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to execute FindSetBuffered for Company: %v\n", err)
+		fmt.Printf("Error: Failed to execute FindSetBuffered for Country_Region: %v\n", err)
 		return false
 	}
 	defer rows.Close()
@@ -957,28 +957,28 @@ func (t *CompanyBase) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &CompanyBase{}
+		record := &CountryRegionBase{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
 
 		// Scan the row
+		var codeNull sql.NullString
 		var nameNull sql.NullString
-		var display_nameNull sql.NullString
 
 		err := rows.Scan(
+			&codeNull,
 			&nameNull,
-			&display_nameNull,
 		)
 
 		if err != nil {
-			fmt.Printf("Error: Failed to scan Company record: %v\n", err)
+			fmt.Printf("Error: Failed to scan Country_Region record: %v\n", err)
 			return false
 		}
 
 		// Populate special type fields
+		record.Code = types.NewCode(codeNull.String)
 		record.Name = types.NewText(nameNull.String)
-		record.Display_name = types.NewText(display_nameNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -989,7 +989,7 @@ func (t *CompanyBase) FindSetBuffered() bool {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		fmt.Printf("Error: Failed to iterate Company records: %v\n", err)
+		fmt.Printf("Error: Failed to iterate Country_Region records: %v\n", err)
 		return false
 	}
 
@@ -1006,9 +1006,9 @@ func (t *CompanyBase) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *CompanyBase) copyFromBuffered(record *CompanyBase) {
+func (t *CountryRegionBase) copyFromBuffered(record *CountryRegionBase) {
+	t.Code = record.Code
 	t.Name = record.Name
-	t.Display_name = record.Display_name
 	t.StoreOldValues()
 }
 
@@ -1017,17 +1017,17 @@ func (t *CompanyBase) copyFromBuffered(record *CompanyBase) {
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *CompanyBase) IsEmpty() bool {
+func (t *CountryRegionBase) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *CompanyBase) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) ModifyAll(fieldName string, newValue interface{}) int {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	column, ok := t.columnName(fieldName)
 	if !ok {
-		fmt.Printf("Error: ModifyAll on unknown field %q of Company\n", fieldName)
+		fmt.Printf("Error: ModifyAll on unknown field %q of Country_Region\n", fieldName)
 		return 0
 	}
 	where, args := t.buildWhereClause()
@@ -1043,7 +1043,7 @@ func (t *CompanyBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 	result, err := t.db.Exec(updateSQL, allArgs...)
 	if err != nil {
-		fmt.Printf("Error: Failed to modify all Company: %v\n", err)
+		fmt.Printf("Error: Failed to modify all Country_Region: %v\n", err)
 		return 0
 	}
 
@@ -1053,8 +1053,8 @@ func (t *CompanyBase) ModifyAll(fieldName string, newValue interface{}) int {
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *CompanyBase) DeleteAll() int {
-	tableName := CompanyTableName
+func (t *CountryRegionBase) DeleteAll() int {
+	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL
@@ -1065,7 +1065,7 @@ func (t *CompanyBase) DeleteAll() int {
 
 	result, err := t.db.Exec(deleteSQL, args...)
 	if err != nil {
-		fmt.Printf("Error: Failed to delete all Company: %v\n", err)
+		fmt.Printf("Error: Failed to delete all Country_Region: %v\n", err)
 		return 0
 	}
 
@@ -1074,16 +1074,16 @@ func (t *CompanyBase) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *CompanyBase) CopyFilters(from *CompanyBase) {
+func (t *CountryRegionBase) CopyFilters(from *CountryRegionBase) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*companyBaseFilterCondition)
+	t.filters = make(map[string]*countryRegionBaseFilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &companyBaseFilterCondition{
+		t.filters[key] = &countryRegionBaseFilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -1104,7 +1104,7 @@ func (t *CompanyBase) CopyFilters(from *CompanyBase) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *CompanyBase) GetFilters() string {
+func (t *CountryRegionBase) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -1134,10 +1134,24 @@ func (t *CompanyBase) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *CompanyBase) ValidateField(fieldName string, value interface{}) error {
+func (t *CountryRegionBase) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
+	case "code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Code = v
+		} else if v, ok := value.(string); ok {
+			t.Code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field code")
+		}
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Code() error }); ok {
+			return w.OnValidate_Code()
+		}
+		return t.OnValidate_Code()
 	case "name":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
@@ -1152,34 +1166,20 @@ func (t *CompanyBase) ValidateField(fieldName string, value interface{}) error {
 			return w.OnValidate_Name()
 		}
 		return t.OnValidate_Name()
-	case "display_name":
-		// Set field value
-		if v, ok := value.(types.Text); ok {
-			t.Display_name = v
-		} else if v, ok := value.(string); ok {
-			t.Display_name = types.NewText(v)
-		} else {
-			return fmt.Errorf("invalid type for field display_name")
-		}
-		// Call OnValidate trigger (the wrapper's override if it defines one)
-		if w, ok := t.self.(interface{ OnValidate_Display_name() error }); ok {
-			return w.OnValidate_Display_name()
-		}
-		return t.OnValidate_Display_name()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-// OnValidate_Name is the validation trigger for name field (BC/NAV style)
+// OnValidate_Code is the validation trigger for code field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *CompanyBase) OnValidate_Name() error {
+func (t *CountryRegionBase) OnValidate_Code() error {
 	return nil
 }
 
-// OnValidate_Display_name is the validation trigger for display_name field (BC/NAV style)
+// OnValidate_Name is the validation trigger for name field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
-func (t *CompanyBase) OnValidate_Display_name() error {
+func (t *CountryRegionBase) OnValidate_Name() error {
 	return nil
 }
 
@@ -1188,66 +1188,66 @@ func (t *CompanyBase) OnValidate_Display_name() error {
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *CompanyBase) ClearFilters() {
+func (t *CountryRegionBase) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *CompanyBase) ToMap() map[string]interface{} {
+func (t *CountryRegionBase) ToMap() map[string]interface{} {
 	return map[string]interface{}{
+		"code": t.Code.String(),
 		"name": t.Name.String(),
-		"display_name": t.Display_name.String(),
 	}
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *CompanyBase) FromMap(data map[string]interface{}) {
+func (t *CountryRegionBase) FromMap(data map[string]interface{}) {
+	if v, ok := data["code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Code = types.NewCode(s)
+		}
+	}
 	if v, ok := data["name"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Name = types.NewText(s)
 		}
 	}
-	if v, ok := data["display_name"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Display_name = types.NewText(s)
-		}
-	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *CompanyBase) UpdateFromMap(data map[string]interface{}) {
+func (t *CountryRegionBase) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *CompanyBase) GetPrimaryKeyField() string {
-	return "name"
+func (t *CountryRegionBase) GetPrimaryKeyField() string {
+	return "code"
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *CompanyBase) GetPrimaryKeyValue() string {
-	return t.Name.String()
+func (t *CountryRegionBase) GetPrimaryKeyValue() string {
+	return t.Code.String()
 }
 
 // GetFields returns metadata about all fields
-func (t *CompanyBase) GetFields() []tables.FieldInfo {
+func (t *CountryRegionBase) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
-			Name:       "name",
-			Type:       tables.FieldTypeText,
-			Length:     100,
+			Name:       "code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
 			Required:   true,
 			Editable:   false,
 			PrimaryKey: true,
 			FlowField:  false,
 		},
 		{
-			Name:       "display_name",
+			Name:       "name",
 			Type:       tables.FieldTypeText,
-			Length:     100,
+			Length:     50,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -1257,19 +1257,19 @@ func (t *CompanyBase) GetFields() []tables.FieldInfo {
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *CompanyBase) GetFlowFields() []string {
+func (t *CountryRegionBase) GetFlowFields() []string {
 	return []string{
 	}
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *CompanyBase) GetOptionFields() map[string][]string {
+func (t *CountryRegionBase) GetOptionFields() map[string][]string {
 	return map[string][]string{
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *CompanyBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *CountryRegionBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
 	}
 }
