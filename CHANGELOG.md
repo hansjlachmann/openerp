@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.74](https://github.com/hansjlachmann/openerp/compare/v0.1.73...v0.1.74) (2026-10-05)
+
+
+### Documentation
+
+* TODO remove intro text from keyboard shortcuts help ([c6f99d0](https://github.com/hansjlachmann/openerp/commit/c6f99d0a1609a084e772e94bbfdcf2d5e42dc161))
+
 ## [0.1.73](https://github.com/hansjlachmann/openerp/compare/v0.1.72...v0.1.73) (2026-10-05)
 
 
