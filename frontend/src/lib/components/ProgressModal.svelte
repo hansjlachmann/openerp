@@ -31,7 +31,7 @@
 
 	let {
 		open = false,
-		title = t(MSG.PROCESSING),
+		title, // default looked up in the template (translations may load after mount)
 		message = '',
 		progress = 0,
 		error = '',
@@ -123,7 +123,7 @@
 <Modal {open}>
 	<div class="progress-modal">
 		<div class="progress-header">
-			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : inputMode ? title : title}</h3>
+			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : (title ?? t(MSG.PROCESSING))}</h3>
 		</div>
 
 		<div class="progress-body">
