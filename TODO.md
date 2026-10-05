@@ -8,6 +8,67 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## 🔴 HIGH PRIORITY — Performance with large data (do this first)
+
+Found with the LARGE demo data set (10,000 customers, 141,710 customer ledger entries, local
+Postgres, company `demo04`). Measured on the list API exactly as the frontend calls it:
+
+| Request | Time | Size |
+|---|---|---|
+| Customer list as the page loads it (all rows, with FlowFields) | **28.4 s** | 3.8 MB |
+| Customer list, same columns without FlowFields | 0.4 s | 3.6 MB |
+| Customer list, one page of 100 rows with FlowFields | 0.3 s | — |
+| Customer Ledger Entries list as the page loads it (all rows) | **14.4 s** | **132 MB** |
+| One `GROUP BY customer_no` query for the balance of all customers | < 0.4 s | — |
+
+### Cause 1 — FlowFields are calculated per row (N+1 queries)
+`ListRecords` (`backend/api/handlers/tables.go`) calls `table.CalcFields(flowFields...)` for every
+row, and each FlowField is its own query (`calcSum…`/`calcCount…` in the generated `*_base.go`).
+10,000 customers × 3 FlowFields = 30,000 queries ≈ 28 s. It also calculates every FlowField, not
+just the requested ones (`no_of_ledger_entries` is not on the list).
+
+### Cause 2 — list pages always load the whole table
+`PageRenderer.loadListData()` never sends `page_size`, so the backend returns every row (the
+paging support in `ListRecords` + generated `SetPage` is unused). Search, sort and keyboard
+navigation in `ListPage.svelte` work client-side on the full array, and every row is rendered.
+141,710 ledger entries = 132 MB JSON and a DOM the browser cannot handle.
+
+### Step A — batch FlowField calculation (small, low risk; do first)
+- [ ] tablegen: generate a set-based `CalcFieldsBatch(records, fields...)` (or a per-FlowField
+      `calc…ForKeys(keys)`) that runs **one** `SELECT <flow filter field>, SUM/COUNT(...) … WHERE
+      <const filters> AND <field> IN (…) GROUP BY <field>` per FlowField for all rows of the
+      result, and fills each record from the map (missing key = 0). Keep `CalcFields` for the card.
+- [ ] `ListRecords`: collect the rows first, then batch-calculate **only the requested** FlowFields
+      (`requestedFields ∩ flowFields`; all only when no `fields` param is sent).
+- [ ] Large `IN` lists: chunk keys (e.g. 1,000 per query) or, for an unfiltered list, use the
+      grouped query without `IN`.
+- [ ] Verify: Customer list (10,000 rows) < 1.5 s on Postgres; SQLite still works; FlowField
+      values identical to the per-row calculation (test on demo data); card page unchanged.
+
+### Step B — load lists in pages as you scroll (BC behaviour; larger)
+BC loads a window of rows and fetches more while scrolling; search/sort/filter run on the server.
+- [ ] Frontend: `loadListData()` requests `page_size` (~100) and appends further pages when the
+      user scrolls near the end, presses PageDown/End/Ctrl+End, or ArrowDown past the loaded rows.
+      Show the server `total` as the record count.
+- [ ] Search → server side: new `search` query param on `/list` (case-insensitive substring over
+      the visible columns, columns validated with `HasColumn`, values as bind parameters).
+- [ ] Sort → server side: `sort_by` exists; add/verify `sort_order` (asc/desc) and a stable
+      secondary order on the primary key so pages don't overlap.
+- [ ] Keep the ListPage rules intact: row indexes stay positions in `displayRecords` (now the
+      loaded window); End/Ctrl+End must load the last page; new rows (`_isNew`), Record Entry
+      insert/modify, cell editing, trailing blank row and selection must keep working while
+      pages load. Refresh (F5) reloads from page 1 but keeps the selected record.
+- [ ] Render only the visible rows (virtualized list) if the DOM is still slow after paging.
+- [ ] Card navigation: `getRecordIDs` returns all keys (10,000 is fine; check at 100k+).
+- [ ] Lookups (`captions.lookups`) load all rows of the related table — page/search them too
+      when a related table is large.
+- [ ] Verify with demo04: Customer list and Customer Ledger Entries open in < 1 s, scrolling to
+      the end works, search finds rows not yet loaded, sort covers all rows, E2E tests pass.
+- [ ] Update CLAUDE.md "Generic List Page Behaviors" (search/sort/paging rules) and the
+      Keyboard Shortcuts help if key behaviour changes.
+
+---
+
 ## Backend — API
 
 From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
