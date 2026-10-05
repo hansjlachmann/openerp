@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.72](https://github.com/hansjlachmann/openerp/compare/v0.1.71...v0.1.72) (2026-10-05)
+
+
+### Bug Fixes
+
+* F8/F2 in list cells place the cursor at the end instead of selecting all ([58a4dc0](https://github.com/hansjlachmann/openerp/commit/58a4dc0468ac0a99142b32a37a2790fac3fbf865))
+* list scrolling hid rows behind the sticky header; highlight selected cell text ([08ed035](https://github.com/hansjlachmann/openerp/commit/08ed035839c817a2b8aa620c14cb2390fa7ef17a))
+
 ## [0.1.71](https://github.com/hansjlachmann/openerp/compare/v0.1.70...v0.1.71) (2026-10-05)
 
 
