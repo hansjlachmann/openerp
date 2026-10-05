@@ -263,7 +263,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Printable character | Clear cell content + enter cell-editing with typed character |
 | Ctrl+C | Copy cell value to system clipboard |
 | Ctrl+V | Paste from clipboard into cell + enter cell-editing |
-| F8 | Copy value from the cell directly above (NAV/BC standard) |
+| F8 | Copy value from the cell directly above, then enter cell-editing with the cursor at the end (NAV/BC standard). Escape reverts to the value before F8 |
 | Alt+N / Ctrl+Insert | Insert new row |
 | Alt+ArrowDown (on lookup cell) | Enter cell-editing and open lookup dropdown |
 | Space (on boolean cell) | Toggle checkbox value |
@@ -280,6 +280,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Shift+Tab | Confirm + move selection left (wraps to previous row) |
 | Enter | Confirm + move selection down. On last data row: create new row |
 | F2 | Exit cell-editing → return to cell-selected (keep current value) |
+| F8 | Copy value from the cell directly above, cursor at the end of the text |
 | Escape | Revert cell to value before editing began, return to cell-selected |
 | Ctrl+C | Native browser behavior (copies selected text) |
 | Ctrl+V | Native browser behavior (pastes at cursor) |
@@ -351,7 +352,7 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
   - `<select>` elements (via `select[data-row][data-col]`)
   - `LookupDropdown` wrapper `<div>` containers (via `div[data-row][data-col]`, then focuses the inner `<input>`)
 - `focusCellSelectedElement(row, col)` focuses the cell-selected `<div>` via `[data-cell-row][data-cell-col]` attributes.
-- All inputs receive `.select()` to highlight text on focus.
+- Entering cell-editing (F2, F8, double-click, typing) places the **cursor at the end** of the text — never select-all — so a value can be amended (`PAY-TERM01` → Backspace → `PAY-TERM02`). `enterCellEditing` calls `focusCell(..., false)`; `placeCursorAtEnd` skips inputs without text selection (date/time).
 - **LookupDropdown keyboard wrapper**: The `<div data-row data-col>` wrapper has an `onkeydown={handleLookupCellKeyDown}` handler that intercepts Tab/Enter/Escape/F2 after they bubble up from LookupDropdown. Keys already handled by LookupDropdown (e.g., ArrowDown when dropdown is open) are skipped via `event.defaultPrevented` check.
 
 ### Search and Sorting

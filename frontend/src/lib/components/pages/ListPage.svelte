@@ -622,7 +622,10 @@
 		}
 
 		cellState = 'cell-editing';
-		focusCell(currentCellRow, currentCellCol, !clearContent);
+		// Cursor at the end of the text, never select-all (NAV/BC): F2/F8/double-click keep the
+		// content to be amended (PAY-TERM01 -> Backspace -> PAY-TERM02); a typed character
+		// starts the new content with the cursor after it
+		focusCell(currentCellRow, currentCellCol, false);
 	}
 
 	// Exit cell-editing back to cell-selected
@@ -1103,12 +1106,17 @@
 				}
 				break;
 			case 'F8':
-				// Copy from cell above
+				// Copy from cell above, then edit it with the cursor at the end (NAV/BC)
 				event.preventDefault();
-				if (rowIndex > 0) {
+				if (rowIndex > 0 && field.editable !== false) {
 					const aboveRecord = displayRecords[rowIndex - 1];
+					const valueBefore = record[field.source];
 					record[field.source] = aboveRecord[field.source];
 					editableRecords = [...editableRecords];
+					if (!isBoolean) {
+						enterCellEditing(false); // keeps content, cursor at end
+						cellEditSnapshot = valueBefore; // Escape reverts to the value before F8
+					}
 				}
 				break;
 			default:
@@ -1266,8 +1274,8 @@
 				// F8 copies value from the cell above (NAV/BC behavior)
 				{
 					event.preventDefault();
-					if (rowIndex > 0) {
-						const field = cols[colIndex];
+					const field = cols[colIndex];
+					if (rowIndex > 0 && field && field.editable !== false) {
 						const aboveRecord = displayRecords[rowIndex - 1];
 						const currentRecord = displayRecords[rowIndex];
 						const valueToCopy = aboveRecord[field.source];
@@ -1283,8 +1291,9 @@
 							input.value = valueToCopy ?? '';
 						}
 
-						// Trigger reactivity
+						// Trigger reactivity, then put the cursor at the end of the copied text
 						editableRecords = [...editableRecords];
+						if (input.type !== 'checkbox') focusCell(rowIndex, colIndex, false);
 					}
 				}
 				break;
@@ -1366,6 +1375,17 @@
 	}
 
 	// Focus a specific cell input (for cell-editing mode)
+	// Put the text cursor at the end of the input's value. Date/time inputs have no text
+	// selection (setSelectionRange throws on them), so they are just left focused.
+	function placeCursorAtEnd(input: HTMLInputElement) {
+		const len = input.value?.length || 0;
+		try {
+			input.setSelectionRange(len, len);
+		} catch {
+			// input type without selection support (date, datetime-local, checkbox, ...)
+		}
+	}
+
 	function focusCell(rowIndex: number, colIndex: number, selectAll: boolean = true) {
 		// Use a longer timeout to ensure Svelte has finished any re-renders
 		setTimeout(() => {
@@ -1379,8 +1399,7 @@
 					if (selectAll) {
 						input.select();
 					} else {
-						const len = input.value?.length || 0;
-						input.setSelectionRange(len, len);
+						placeCursorAtEnd(input);
 					}
 				}
 				return;
@@ -1396,8 +1415,7 @@
 					if (selectAll) {
 						innerInput.select();
 					} else {
-						const len = innerInput.value?.length || 0;
-						innerInput.setSelectionRange(len, len);
+						placeCursorAtEnd(innerInput);
 					}
 				} else {
 					// OptionDropdown uses a focusable div[role="combobox"] trigger
