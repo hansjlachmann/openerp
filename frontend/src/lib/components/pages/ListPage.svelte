@@ -27,7 +27,7 @@
 	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -317,9 +317,13 @@
 	let modalSaveBlocked = $state(false); // Block editing due to save error
 	let modalSaveBlockedMessage = $state(''); // Error message for blocked state
 
-	// Get selected record
+	// Get selected record. selectedIndex indexes the rows as displayed (after search and
+	// column sort), so look the row up in displayRecords — never records[selectedIndex], which
+	// is a different record whenever the list is searched or sorted. While cells are being
+	// edited the displayed rows are editable copies: return the saved record with the same
+	// persisted key. An uncommitted new row has no saved record, so it is no selection.
 	const selectedRecord = $derived(
-		selectedIndex >= 0 && selectedIndex < records.length ? records[selectedIndex] : null
+		findSelectedRecord(displayRecords, selectedIndex, records, editableActive, primaryKeyField, primaryKeyFieldsList)
 	);
 
 	// Handle running a codeunit
@@ -1700,13 +1704,15 @@
 	// Handle primary key click - open the card
 	async function handlePrimaryKeyClick(index: number) {
 		selectedIndex = index;
-		if (page.page.card_page_id) {
+		// index is a displayed row (search/sort applied), not an index into records
+		const record = displayRecords[index];
+		if (record && page.page.card_page_id) {
 			if (page.page.modal_card) {
 				// Open as modal
-				await openModalCard(records[index]);
+				await openModalCard(record);
 			} else {
 				// Navigate to full page
-				onrowclick?.(records[index]);
+				onrowclick?.(record);
 			}
 		}
 	}
@@ -1755,7 +1761,7 @@
 
 	// Navigation functions
 	function moveDown() {
-		if (selectedIndex < records.length - 1) {
+		if (selectedIndex < displayRecords.length - 1) {
 			selectedIndex++;
 		}
 	}
@@ -1767,14 +1773,14 @@
 	}
 
 	function moveFirst() {
-		if (records.length > 0) {
+		if (displayRecords.length > 0) {
 			selectedIndex = 0;
 		}
 	}
 
 	function moveLast() {
-		if (records.length > 0) {
-			selectedIndex = records.length - 1;
+		if (displayRecords.length > 0) {
+			selectedIndex = displayRecords.length - 1;
 		}
 	}
 
