@@ -6,6 +6,15 @@
 	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
 	import { t, MSG, MENU } from '$lib/services/i18n.svelte';
+	import { toast } from '$lib/stores/toast';
+	import { companySwitchOpen } from '$lib/stores/companySwitch';
+	import { getShortcutKey } from '$lib/utils/shortcuts';
+	import CompanySwitchDialog from './CompanySwitchDialog.svelte';
+	import { SHORTCUT_HELP_URL, SHORTCUT_HELP_WINDOW } from '$lib/utils/shortcutHelp';
+
+	// NAV Classic: Ctrl+O opens the Switch Company dialog. Browsers let the page take
+	// Ctrl+O (unlike Ctrl+N/T/W), so it never reaches the browser's Open File dialog.
+	const SWITCH_COMPANY_SHORTCUT = 'Ctrl+O';
 
 	let loading = $state(true);
 	let currentTheme = $state<'light' | 'dark'>('light');
@@ -19,6 +28,12 @@
 	let changingLanguage = $state(false);
 	let changingCompany = $state(false);
 	let version = $state('...');
+	let showCompanyDialog = $state(false);
+	let focusBeforeDialog: HTMLElement | null = null;
+
+	$effect(() => {
+		companySwitchOpen.set(showCompanyDialog);
+	});
 
 	theme.subscribe((value) => {
 		currentTheme = value;
@@ -135,14 +150,64 @@
 			showCompanyMenu = false;
 			showUserMenu = false;
 
-			// Reload the page to apply company change
-			window.location.reload();
+			// Land on the main menu of the new company (NAV Classic closed all windows,
+			// BC goes to the start page): the open record may not exist there. Full load,
+			// so every page and store starts fresh in the new company.
+			window.location.href = '/';
 		} catch (err) {
 			console.error('Error changing company:', err);
+			toast.error(err instanceof Error ? err.message : String(err));
 		} finally {
 			changingCompany = false;
 		}
 	}
+
+	// Keyboard Shortcuts help opens as a detached window. The window name makes a second
+	// click reuse (and raise) the same window instead of opening another one.
+	function openShortcutHelp() {
+		showUserMenu = false;
+		showLanguageMenu = false;
+		showCompanyMenu = false;
+		const width = 820;
+		const height = 760;
+		const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+		const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+		const win = window.open(
+			SHORTCUT_HELP_URL,
+			SHORTCUT_HELP_WINDOW,
+			`popup=yes,width=${width},height=${height},left=${left},top=${top}`
+		);
+		win?.focus();
+	}
+
+	function openCompanyDialog() {
+		showUserMenu = false;
+		showLanguageMenu = false;
+		showCompanyMenu = false;
+		focusBeforeDialog = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		showCompanyDialog = true;
+	}
+
+	function closeCompanyDialog() {
+		showCompanyDialog = false;
+		// Back to where the user was (e.g. the list cell), if it still exists
+		if (focusBeforeDialog?.isConnected) focusBeforeDialog.focus({ preventScroll: true });
+		focusBeforeDialog = null;
+	}
+
+	// Ctrl+O anywhere (menu, list, card, inside a cell) opens Switch Company. Capture
+	// phase, so it runs before page handlers and the browser's Open File dialog.
+	function handleGlobalKeydown(event: KeyboardEvent) {
+		if (getShortcutKey(event) !== SWITCH_COMPANY_SHORTCUT || !$currentUser) return;
+		event.preventDefault();
+		event.stopPropagation();
+		if (!showCompanyDialog && !changingCompany) openCompanyDialog();
+	}
+
+	onMount(() => {
+		window.addEventListener('keydown', handleGlobalKeydown, true);
+		return () => window.removeEventListener('keydown', handleGlobalKeydown, true);
+	});
 
 	// Close dropdown when clicking outside
 	function handleClickOutside(event: MouseEvent) {
@@ -372,6 +437,7 @@
 													/>
 												</svg>
 												{t(MENU.COMPANY)}
+												<span class="text-xs text-gray-500 dark:text-gray-400">({SWITCH_COMPANY_SHORTCUT})</span>
 											</span>
 											<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
 												{currentCompanyName || '—'}
@@ -429,6 +495,29 @@
 										{/if}
 									</div>
 								{/if}
+
+								<!-- Keyboard shortcuts help (detached window) -->
+								<button
+									onclick={openShortcutHelp}
+									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2" />
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"
+										/>
+									</svg>
+									{t(MENU.SHORTCUTS)}
+								</button>
 
 								<!-- Divider -->
 								<div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
@@ -506,6 +595,16 @@
 			<span class="text-xs text-white/70 pl-2 border-l border-white/20">v{version}</span>
 		</div>
 	</nav>
+{/if}
+
+{#if showCompanyDialog}
+	<CompanySwitchDialog
+		{companies}
+		current={currentCompanyName}
+		switching={changingCompany}
+		onselect={handleCompanyChange}
+		onclose={closeCompanyDialog}
+	/>
 {/if}
 
 <style>

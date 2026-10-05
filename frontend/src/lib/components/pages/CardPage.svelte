@@ -19,6 +19,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
+	import { handleFieldEnterKey } from '$lib/utils/fieldNavigation';
 
 	interface Props {
 		page: PageDefinition;
@@ -495,7 +496,8 @@
 		</div>
 	{/if}
 
-	<div class="sections-container">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="sections-container" onkeydown={(e) => handleFieldEnterKey(e, e.currentTarget as HTMLElement)}>
 		{#if isEmptyRecord() && !editMode}
 			<!-- Empty state -->
 			<div class="empty-state">
