@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.73](https://github.com/hansjlachmann/openerp/compare/v0.1.72...v0.1.73) (2026-10-05)
+
+
+### Features
+
+* Ctrl+O switch company, Enter to next field on cards, keyboard shortcuts help ([4e6513c](https://github.com/hansjlachmann/openerp/commit/4e6513cb55a84d272729a3394094c7e6948da139))
+
 ## [0.1.72](https://github.com/hansjlachmann/openerp/compare/v0.1.71...v0.1.72) (2026-10-05)
 
 
