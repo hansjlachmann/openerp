@@ -288,13 +288,33 @@
 	// Auto-scroll selected row into view
 	$effect(() => {
 		if (selectedIndex >= 0 && tableBodyElement) {
-			const rows = tableBodyElement.querySelectorAll('tr');
-			const selectedRow = rows[selectedIndex];
-			if (selectedRow) {
-				selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-			}
+			scrollRowIntoView(selectedIndex);
 		}
 	});
+
+	// Scroll the list so the given displayed row is fully visible. The column header is
+	// sticky, so the browser's scrollIntoView would park a row moving up *behind* the header
+	// (e.g. the first record after PageUp); scroll the list container ourselves instead,
+	// keeping rows below the header.
+	function scrollRowIntoView(rowIndex: number) {
+		const row = tableBodyElement?.querySelectorAll('tr')[rowIndex] as HTMLElement | undefined;
+		if (!row) return;
+		const container = row.closest('.table-container') as HTMLElement | null;
+		if (!container) {
+			row.scrollIntoView({ block: 'nearest' });
+			return;
+		}
+		const headerHeight = (container.querySelector('thead') as HTMLElement | null)?.offsetHeight ?? 0;
+		const box = container.getBoundingClientRect();
+		const rowBox = row.getBoundingClientRect();
+		const visibleTop = box.top + headerHeight;
+		const visibleBottom = box.top + container.clientHeight; // excludes horizontal scrollbar
+		if (rowBox.top < visibleTop) {
+			container.scrollTop -= visibleTop - rowBox.top;
+		} else if (rowBox.bottom > visibleBottom) {
+			container.scrollTop += rowBox.bottom - visibleBottom;
+		}
+	}
 
 	// Edit List mode state (BC-style full list editing)
 	let currentCellRow = $state<number>(-1);
@@ -1386,6 +1406,24 @@
 		}
 	}
 
+	// Scroll the list so a cell is visible: its row vertically (below the sticky header), and
+	// its column horizontally. Used with focus({ preventScroll: true }), which turns off the
+	// browser's own scrolling (that one hides rows behind the sticky header).
+	function scrollCellIntoView(rowIndex: number, cellElement: HTMLElement) {
+		scrollRowIntoView(rowIndex);
+		const cell = (cellElement.closest('td') as HTMLElement | null) ?? cellElement;
+		const container = cell.closest('.table-container') as HTMLElement | null;
+		if (!container) return;
+		const box = container.getBoundingClientRect();
+		const cellBox = cell.getBoundingClientRect();
+		const visibleRight = box.left + container.clientWidth; // excludes vertical scrollbar
+		if (cellBox.left < box.left) {
+			container.scrollLeft -= box.left - cellBox.left;
+		} else if (cellBox.right > visibleRight) {
+			container.scrollLeft += cellBox.right - visibleRight;
+		}
+	}
+
 	function focusCell(rowIndex: number, colIndex: number, selectAll: boolean = true) {
 		// Use a longer timeout to ensure Svelte has finished any re-renders
 		setTimeout(() => {
@@ -1394,7 +1432,8 @@
 				`input[data-row="${rowIndex}"][data-col="${colIndex}"], select[data-row="${rowIndex}"][data-col="${colIndex}"]`
 			) as HTMLInputElement | HTMLSelectElement | null;
 			if (input) {
-				input.focus();
+				input.focus({ preventScroll: true });
+				scrollCellIntoView(rowIndex, input);
 				if (input instanceof HTMLInputElement) {
 					if (selectAll) {
 						input.select();
@@ -1409,9 +1448,10 @@
 				`div[data-row="${rowIndex}"][data-col="${colIndex}"]`
 			);
 			if (container) {
+				scrollCellIntoView(rowIndex, container as HTMLElement);
 				const innerInput = container.querySelector('input') as HTMLInputElement | null;
 				if (innerInput) {
-					innerInput.focus();
+					innerInput.focus({ preventScroll: true });
 					if (selectAll) {
 						innerInput.select();
 					} else {
@@ -1421,7 +1461,7 @@
 					// OptionDropdown uses a focusable div[role="combobox"] trigger
 					const combobox = container.querySelector('[role="combobox"]') as HTMLElement | null;
 					if (combobox) {
-						combobox.focus();
+						combobox.focus({ preventScroll: true });
 					}
 				}
 			}
@@ -1435,7 +1475,8 @@
 				`[data-cell-row="${row}"][data-cell-col="${col}"]`
 			) as HTMLElement | null;
 			if (el) {
-				el.focus();
+				el.focus({ preventScroll: true });
+				scrollCellIntoView(row, el);
 			}
 		}, 50);
 	}
@@ -2416,13 +2457,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											<span class="cell-selected-lookup-value">
-												{#if lookups[field.source]?.rows?.length}
-													{formatLookupValue(record[field.source], lookups[field.source])}
-												{:else}
-													{formatCellValue(record[field.source], field.source)}
-												{/if}
-											</span>
+											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{#if lookups[field.source]?.rows?.length}{formatLookupValue(record[field.source], lookups[field.source])}{:else}{formatCellValue(record[field.source], field.source)}{/if}</span></span>
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<span
 												class="cell-selected-lookup-arrow"
@@ -2445,9 +2480,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											<span class="cell-selected-lookup-value">
-												{formatOptionValue(record[field.source], options[field.source])}
-											</span>
+											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{formatOptionValue(record[field.source], options[field.source])}</span></span>
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<span
 												class="cell-selected-lookup-arrow"
@@ -2469,7 +2502,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											{formatCellValue(record[field.source], field.source)}
+											<span class="cell-selected-text">{formatCellValue(record[field.source], field.source)}</span>
 										</div>
 									{/if}
 								{:else}
@@ -3126,5 +3159,28 @@
 	/* Trailing blank row (BC-style new-record affordance) */
 	.placeholder-row {
 		cursor: pointer;
+	}
+
+	/* Value in the selected cell looks like selected text (BC): blue in light mode, grey in
+	   dark mode. Typing replaces it; F2 puts the cursor at the end. */
+	.cell-selected-text {
+		background-color: #0078d4;
+		color: #ffffff;
+	}
+
+	:global(.dark) .cell-selected-text {
+		background-color: #505c6d;
+		color: #f7f7f7;
+	}
+
+	/* Text selected inside a cell being edited: same colors */
+	.edit-cell-input::selection {
+		background-color: #0078d4;
+		color: #ffffff;
+	}
+
+	:global(.dark) .edit-cell-input::selection {
+		background-color: #505c6d;
+		color: #f7f7f7;
 	}
 </style>
