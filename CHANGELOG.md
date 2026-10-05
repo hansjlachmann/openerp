@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.71](https://github.com/hansjlachmann/openerp/compare/v0.1.70...v0.1.71) (2026-10-05)
+
+
+### Bug Fixes
+
+* dialog buttons showed raw translation keys (BTN_CANCEL) ([c3cb572](https://github.com/hansjlachmann/openerp/commit/c3cb572ca588d326a678c387308a3a2c8318666e))
+* list editing with search/sort, lookup Tab/Enter, PageUp/Down, DelayedInsert ([b124b6b](https://github.com/hansjlachmann/openerp/commit/b124b6b6bea590fa0130751305bddef3f1db92bf))
+
 ## [0.1.70](https://github.com/hansjlachmann/openerp/compare/v0.1.69...v0.1.70) (2026-10-05)
 
 
