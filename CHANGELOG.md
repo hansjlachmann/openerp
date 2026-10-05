@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.75](https://github.com/hansjlachmann/openerp/compare/v0.1.74...v0.1.75) (2026-10-05)
+
+
+### Features
+
+* demo data via Job Queue, Country/Region table, company display name ([2d78784](https://github.com/hansjlachmann/openerp/commit/2d78784c626360f9afcbf720d37a5f5aac94eb34))
+
 ## [0.1.74](https://github.com/hansjlachmann/openerp/compare/v0.1.73...v0.1.74) (2026-10-05)
 
 
