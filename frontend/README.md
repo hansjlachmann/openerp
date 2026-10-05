@@ -108,6 +108,8 @@ BC/NAV-style keyboard shortcuts are implemented throughout the application:
 | `↑/↓`          | Navigate table rows    |
 | `Enter`        | Open/Edit selected row |
 | `Escape`       | Cancel                 |
+| `Ctrl+O`       | Switch company         |
+| `Enter`        | Next field (card page) |
 
 ## API Client Usage
 

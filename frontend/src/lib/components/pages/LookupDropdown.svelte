@@ -233,18 +233,15 @@
 					if (selectedIndex >= 0 && selectedIndex < filteredRows().length) {
 						handleSelect(filteredRows()[selectedIndex]);
 					}
-				} else if (compact) {
-					// Closed, in a list cell: commit what was typed, then let Enter bubble to the
-					// list (move to the next row / new row). Never swallow it — the user would
-					// be stuck in the cell.
+				} else {
+					// Closed: commit what was typed, then let Enter bubble — in a list cell to
+					// move to the next row / new row, on a card page to move to the next field
+					// (NAV/BC). Never swallow it, or the user is stuck in the field. Open the
+					// dropdown with ArrowDown/Alt+ArrowDown/F4 instead.
 					if (!commitTypedInput()) {
 						e.preventDefault();
 						e.stopPropagation();
 					}
-				} else {
-					// Closed, on a card page: Enter opens the dropdown
-					e.preventDefault();
-					openDropdown();
 				}
 				break;
 			case 'Tab':

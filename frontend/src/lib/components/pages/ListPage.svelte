@@ -24,6 +24,8 @@
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
+	import { companySwitchOpen } from '$lib/stores/companySwitch';
+	import { get } from 'svelte/store';
 	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
@@ -209,8 +211,8 @@
 	// Window-level keyboard shortcuts (to capture before browser handles them)
 	$effect(() => {
 		function handleGlobalKeydown(event: KeyboardEvent) {
-			// Skip if modal is open
-			if (modalOpen) return;
+			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open
+			if (modalOpen || get(companySwitchOpen)) return;
 
 			// Handle Escape specially - works even in input fields (NAV/BC behavior)
 			if (event.key === 'Escape') {
