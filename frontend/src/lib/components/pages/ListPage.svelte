@@ -150,6 +150,9 @@
 		const columns = visibleColumns();
 
 		return sourceRecords.filter(record => {
+			// A new, uncommitted row is always shown: it is blank, so it would never match the
+			// search, and the user must see the row they are entering (BC shows it too)
+			if (record._isNew) return true;
 			// Search across all visible columns
 			return columns.some(field => {
 				const value = record[field.source];
@@ -524,6 +527,24 @@
 		return shortcutKey === 'Ctrl+Insert' || shortcutKey === commonShortcuts.NEW;
 	}
 
+	// Row index convention: every row index in the editing code (currentCellRow, selectedIndex,
+	// rowIndex, prevRow, ...) is a position in displayRecords — the rows as shown, after search
+	// and column sort. editableRecords holds the same row objects in their underlying order:
+	// insert and remove rows there by identity, never by a displayed index, then map back with
+	// displayIndexOf().
+	function displayIndexOf(row: Record<string, any>): number {
+		return displayRecords.findIndex((r) => r === row || (!!row._tempId && r._tempId === row._tempId));
+	}
+
+	// Insert a row into editableRecords right after the given displayed row (at the end if
+	// there is none) and return its displayed index
+	function insertRowAfter(newRow: Record<string, any>, anchor: Record<string, any> | undefined): number {
+		const anchorPos = anchor ? editableRecords.indexOf(anchor) : -1;
+		const insertPos = anchorPos >= 0 ? anchorPos + 1 : editableRecords.length;
+		editableRecords = [...editableRecords.slice(0, insertPos), newRow, ...editableRecords.slice(insertPos)];
+		return displayIndexOf(newRow);
+	}
+
 	// Handle new record - insert blank row below current selection
 	function handleNew() {
 		// Initialize editable records if not already active
@@ -533,7 +554,7 @@
 		}
 
 		// If an empty new row already exists, just focus it instead of creating another
-		const existingNewRowIndex = editableRecords.findIndex(r => isEmptyNewRecord(r));
+		const existingNewRowIndex = displayRecords.findIndex(r => isEmptyNewRecord(r));
 		if (existingNewRowIndex >= 0) {
 			selectedIndex = existingNewRowIndex;
 			currentCellRow = existingNewRowIndex;
@@ -546,12 +567,7 @@
 		const newRecord = createNewRecord();
 
 		// Insert below the currently selected row (or at end if none selected)
-		const insertIndex = selectedIndex >= 0 ? selectedIndex + 1 : editableRecords.length;
-		editableRecords = [
-			...editableRecords.slice(0, insertIndex),
-			newRecord,
-			...editableRecords.slice(insertIndex)
-		];
+		const insertIndex = insertRowAfter(newRecord, selectedIndex >= 0 ? displayRecords[selectedIndex] : undefined);
 
 		// Update selection to the new row
 		selectedIndex = insertIndex;
@@ -576,7 +592,7 @@
 			editableActive = true;
 		}
 
-		if (row >= editableRecords.length) return;
+		if (row >= displayRecords.length) return;
 
 		currentCellRow = row;
 		currentCellCol = col;
@@ -594,7 +610,7 @@
 
 		const cols = visibleColumns();
 		const field = cols[currentCellCol];
-		const record = editableRecords[currentCellRow];
+		const record = displayRecords[currentCellRow];
 		if (!field || !record) return;
 
 		// Snapshot current value for Escape revert
@@ -616,8 +632,8 @@
 		if (revert && cellEditSnapshot !== undefined) {
 			const cols = visibleColumns();
 			const field = cols[currentCellCol];
-			if (field && editableRecords[currentCellRow]) {
-				editableRecords[currentCellRow][field.source] = cellEditSnapshot;
+			if (field && displayRecords[currentCellRow]) {
+				displayRecords[currentCellRow][field.source] = cellEditSnapshot;
 				editableRecords = [...editableRecords];
 			}
 		}
@@ -647,7 +663,9 @@
 		const cols = visibleColumns();
 		const prevRow = currentCellRow;
 		const prevCol = currentCellCol;
-		const record = editableRecords[prevRow];
+		const record = displayRecords[prevRow];
+		// Remember the target row itself: saving can reorder the displayed rows (column sort)
+		const targetRecord = displayRecords[targetRow];
 
 		// Immediately transition state to prevent blur handler from interfering
 		cellState = 'cell-selected';
@@ -659,29 +677,28 @@
 			if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 				record[field.source] = record[field.source].toUpperCase();
 			}
-			await handleCellBlur(record, prevRow, field?.source);
+			await handleCellBlur(record, prevRow, field?.source, targetRecord !== record);
 		}
 
 		// Clean up empty new row if leaving it
-		let adjustedTargetRow = targetRow;
-		if (record && isEmptyNewRecord(record) && targetRow !== prevRow) {
-			editableRecords = editableRecords.filter((_, i) => i !== prevRow);
-			if (targetRow > prevRow) {
-				adjustedTargetRow--;
-			}
+		if (record && isEmptyNewRecord(record) && targetRecord !== record) {
+			editableRecords = editableRecords.filter((r) => r !== record);
 		}
 
-		// Clamp target to valid range
-		adjustedTargetRow = Math.max(0, Math.min(adjustedTargetRow, editableRecords.length - 1));
+		// Find the target row again (by identity), then clamp to the valid range
+		let adjustedTargetRow = targetRecord ? displayIndexOf(targetRecord) : targetRow;
+		if (adjustedTargetRow < 0) adjustedTargetRow = targetRow;
+		adjustedTargetRow = Math.max(0, Math.min(adjustedTargetRow, displayRecords.length - 1));
 		const adjustedTargetCol = Math.max(0, Math.min(targetCol, cols.length - 1));
 
 		// Enter cell-selected at target
 		enterCellSelected(adjustedTargetRow, adjustedTargetCol);
 	}
 
+
 	// Track saving state to prevent concurrent saves
 	let isSaving = $state(false);
-	let pendingSave: { record: Record<string, any>; rowIndex: number; fieldName?: string } | null = null;
+	let pendingSave: { record: Record<string, any>; rowIndex: number; fieldName?: string; leavingRow?: boolean } | null = null;
 
 	// Header save indicator ("Saving..." / "✓ Saved"), the only feedback that a row committed
 	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
@@ -694,12 +711,14 @@
 	//   is then INSERTed as soon as it has a user edit and values for its required primary key
 	//   fields — while the cursor is still on the row, not when the row is left. Until then it
 	//   stays uncommitted; an untouched new row is discarded when the user leaves it.
-	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string) {
+	// - Pages with delayed_insert (BC DelayedInsert) insert only when leavingRow is true: the
+	//   user moved to another row, past the last row, or out of the table.
+	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, leavingRow: boolean = false) {
 		if (!page || !editableActive) return;
 
 		// If already saving, queue this save for later (must check before async validation)
 		if (isSaving) {
-			pendingSave = { record, rowIndex, fieldName };
+			pendingSave = { record, rowIndex, fieldName, leavingRow };
 			return;
 		}
 
@@ -755,6 +774,10 @@
 					source: pk,
 					required: page.page.layout.repeater?.fields?.find(f => f.source === pk)?.required
 				}));
+				// DelayedInsert pages: keep the row uncommitted until the user leaves it
+				if (page.page.delayed_insert && !leavingRow) {
+					return;
+				}
 				if (!shouldInsertNewRecord(record, record._pristine ?? {}, pkFields)) {
 					return;
 				}
@@ -782,12 +805,13 @@
 				const _tempId = record._tempId;
 				saveState = 'saving';
 				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, stripInternalFields(record));
-				// Update record in place to preserve any _tempId.
-				// Guard: an await can race with exitToNavigation() clearing editableRecords.
-				if (savedRecord && editableRecords[rowIndex]) {
-					Object.assign(editableRecords[rowIndex], savedRecord);
-					if (_tempId) editableRecords[rowIndex]._tempId = _tempId;
-					editableRecords[rowIndex]._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
+				// Update the row object itself (not by index: the displayed order can differ from
+				// editableRecords, and an await can race with exitToNavigation() clearing it;
+				// updating a detached row is harmless). Keep any _tempId.
+				if (savedRecord) {
+					Object.assign(record, savedRecord);
+					if (_tempId) record._tempId = _tempId;
+					record._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
 				}
 				markSaved();
 				// Trigger parent update if callback exists
@@ -803,9 +827,8 @@
 			// Revert the cell to its original value
 			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === (record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList)));
 			if (!isNew && originalRecord) {
-				// Existing record - revert to original values but keep temp flags
-				const tempFlags = { _tempId: editableRecords[rowIndex]?._tempId, _key: editableRecords[rowIndex]?._key };
-				editableRecords[rowIndex] = { ...deepCopy(originalRecord), ...tempFlags };
+				// Existing record - revert the row to its saved values (temp flags are kept)
+				Object.assign(record, deepCopy(originalRecord));
 			}
 			// A new record that failed to insert stays uncommitted and editable;
 			// the insert is retried on the next confirmed cell
@@ -813,10 +836,10 @@
 			isSaving = false;
 			// Process any pending save
 			if (pendingSave) {
-				const { record: pendingRecord, rowIndex: pendingRowIndex, fieldName: pendingFieldName } = pendingSave;
+				const { record: pendingRecord, rowIndex: pendingRowIndex, fieldName: pendingFieldName, leavingRow: pendingLeavingRow } = pendingSave;
 				pendingSave = null;
 				// Use setTimeout to avoid stack overflow
-				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex, pendingFieldName), 0);
+				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex, pendingFieldName, pendingLeavingRow), 0);
 			}
 		}
 	}
@@ -871,21 +894,28 @@
 	}
 
 	// Remove empty new rows from editableRecords
-	function cleanupEmptyNewRows(exceptRowIndex?: number) {
-		const indicesToRemove: number[] = [];
-		editableRecords.forEach((record, index) => {
-			if (index !== exceptRowIndex && isEmptyNewRecord(record)) {
-				indicesToRemove.push(index);
-			}
-		});
-		if (indicesToRemove.length > 0) {
-			editableRecords = editableRecords.filter((_, index) => !indicesToRemove.includes(index));
-			// Adjust current row if needed
-			const removedBefore = indicesToRemove.filter(i => i < currentCellRow).length;
-			if (removedBefore > 0) {
-				currentCellRow = Math.max(0, currentCellRow - removedBefore);
-			}
+	function cleanupEmptyNewRows() {
+		if (!editableRecords.some((r) => isEmptyNewRecord(r))) return;
+		// Keep the current row's identity so its displayed index can be found again
+		const current = displayRecords[currentCellRow];
+		editableRecords = editableRecords.filter((r) => !isEmptyNewRecord(r));
+		if (current) {
+			const index = displayIndexOf(current);
+			currentCellRow = index >= 0 ? index : Math.min(currentCellRow, displayRecords.length - 1);
 		}
+	}
+
+	// Confirm the cell on the last row and open a new blank row below it — unless the row
+	// is itself an untouched new row (no chain of blank rows)
+	function confirmAndAddRow(rowIndex: number, colIndex: number) {
+		const record = displayRecords[rowIndex];
+		if (!record || isEmptyNewRecord(record)) return;
+		const field = visibleColumns()[colIndex];
+		if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+			record[field.source] = record[field.source].toUpperCase();
+		}
+		handleCellBlur(record, rowIndex, field?.source, true);
+		insertNewRow(true);
 	}
 
 	// Insert a new row at cursor position
@@ -893,15 +923,13 @@
 		if (!editableActive) return;
 
 		// Don't create a new row if we're already on an empty new row
-		if (currentCellRow >= 0 && currentCellRow < editableRecords.length) {
-			const currentRecord = editableRecords[currentCellRow];
-			if (isEmptyNewRecord(currentRecord)) {
-				// Already on an empty new row, just focus it
-				currentCellCol = 0;
-				cellState = 'cell-selected';
-				focusCellSelectedElement(currentCellRow, currentCellCol);
-				return;
-			}
+		const currentRecord = currentCellRow >= 0 ? displayRecords[currentCellRow] : undefined;
+		if (currentRecord && isEmptyNewRecord(currentRecord)) {
+			// Already on an empty new row, just focus it
+			currentCellCol = 0;
+			cellState = 'cell-selected';
+			focusCellSelectedElement(currentCellRow, currentCellCol);
+			return;
 		}
 
 		// Clean up any other empty new rows first
@@ -909,16 +937,15 @@
 
 		const newRecord = createNewRecord();
 
-		// Insert at end, or at current cursor position
-		const insertIndex = atEnd ? editableRecords.length : (currentCellRow >= 0 ? currentCellRow : editableRecords.length);
-		editableRecords = [
-			...editableRecords.slice(0, insertIndex),
-			newRecord,
-			...editableRecords.slice(insertIndex)
-		];
+		// Insert at the end, or above the current row (by identity in editableRecords)
+		const current = currentCellRow >= 0 ? displayRecords[currentCellRow] : undefined;
+		const currentPos = !atEnd && current ? editableRecords.indexOf(current) : -1;
+		const insertPos = currentPos >= 0 ? currentPos : editableRecords.length;
+		editableRecords = [...editableRecords.slice(0, insertPos), newRecord, ...editableRecords.slice(insertPos)];
 
 		// Focus the first cell of the new row in cell-selected mode
-		currentCellRow = insertIndex;
+		currentCellRow = displayIndexOf(newRecord);
+		selectedIndex = currentCellRow;
 		currentCellCol = 0;
 		cellState = 'cell-selected';
 		focusCellSelectedElement(currentCellRow, currentCellCol);
@@ -927,7 +954,7 @@
 	// Handle keyboard in cell-selected mode
 	function handleCellSelectedKeyDown(event: KeyboardEvent, rowIndex: number, colIndex: number) {
 		const cols = visibleColumns();
-		const record = editableRecords[rowIndex];
+		const record = displayRecords[rowIndex];
 		if (!record) return;
 
 		const field = cols[colIndex];
@@ -980,13 +1007,22 @@
 				break;
 			case 'ArrowDown':
 				event.preventDefault();
-				if (rowIndex < editableRecords.length - 1) {
+				if (rowIndex < displayRecords.length - 1) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Past the last row: save current cell, then create a new row (BC behavior)
-					handleCellBlur(record, rowIndex, field.source);
+					handleCellBlur(record, rowIndex, field.source, true);
 					insertNewRow(true);
 				}
+				break;
+			case 'PageDown':
+				// Confirm value + move a page down in the same column
+				event.preventDefault();
+				confirmAndMoveTo(Math.min(displayRecords.length - 1, rowIndex + rowsPerPage()), colIndex);
+				break;
+			case 'PageUp':
+				event.preventDefault();
+				confirmAndMoveTo(Math.max(0, rowIndex - rowsPerPage()), colIndex);
 				break;
 			case 'ArrowLeft':
 				event.preventDefault();
@@ -1015,8 +1051,11 @@
 					// Move right, wrap to next row
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < editableRecords.length - 1) {
+					} else if (rowIndex < displayRecords.length - 1) {
 						confirmAndMoveTo(rowIndex + 1, 0);
+					} else {
+						// Last column of the last row: save and open a new blank row (BC)
+						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
 				break;
@@ -1027,11 +1066,11 @@
 					record[field.source] = !record[field.source];
 					editableRecords = [...editableRecords];
 				}
-				if (rowIndex < editableRecords.length - 1) {
+				if (rowIndex < displayRecords.length - 1) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Save current cell, then create new row at end
-					handleCellBlur(record, rowIndex, field.source);
+					handleCellBlur(record, rowIndex, field.source, true);
 					insertNewRow(true);
 				}
 				break;
@@ -1067,7 +1106,7 @@
 				// Copy from cell above
 				event.preventDefault();
 				if (rowIndex > 0) {
-					const aboveRecord = editableRecords[rowIndex - 1];
+					const aboveRecord = displayRecords[rowIndex - 1];
 					record[field.source] = aboveRecord[field.source];
 					editableRecords = [...editableRecords];
 				}
@@ -1133,16 +1172,16 @@
 
 					if (shouldNavigate) {
 						event.preventDefault();
-						if (rowIndex < editableRecords.length - 1) {
+						if (rowIndex < displayRecords.length - 1) {
 							confirmAndMoveTo(rowIndex + 1, colIndex);
 						} else {
-							const currentRecord = editableRecords[rowIndex];
+							const currentRecord = displayRecords[rowIndex];
 							if (!isEmptyNewRecord(currentRecord)) {
 								const field = cols[colIndex];
 								if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 									currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 								}
-								handleCellBlur(currentRecord, rowIndex, field?.source);
+								handleCellBlur(currentRecord, rowIndex, field?.source, true);
 								insertNewRow(true);
 							}
 						}
@@ -1200,10 +1239,23 @@
 				} else {
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < editableRecords.length - 1) {
+					} else if (rowIndex < displayRecords.length - 1) {
 						confirmAndMoveTo(rowIndex + 1, 0);
+					} else {
+						// Last column of the last row: save and open a new blank row (BC)
+						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
+				break;
+			case 'PageDown':
+				if (isSelectElement) break;
+				event.preventDefault();
+				confirmAndMoveTo(Math.min(displayRecords.length - 1, rowIndex + rowsPerPage()), colIndex);
+				break;
+			case 'PageUp':
+				if (isSelectElement) break;
+				event.preventDefault();
+				confirmAndMoveTo(Math.max(0, rowIndex - rowsPerPage()), colIndex);
 				break;
 			case 'F2':
 				// Exit cell-editing → return to cell-selected (keep current value)
@@ -1216,8 +1268,8 @@
 					event.preventDefault();
 					if (rowIndex > 0) {
 						const field = cols[colIndex];
-						const aboveRecord = editableRecords[rowIndex - 1];
-						const currentRecord = editableRecords[rowIndex];
+						const aboveRecord = displayRecords[rowIndex - 1];
+						const currentRecord = displayRecords[rowIndex];
 						const valueToCopy = aboveRecord[field.source];
 
 						// Copy the value
@@ -1238,17 +1290,17 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
-				if (rowIndex < editableRecords.length - 1) {
+				if (rowIndex < displayRecords.length - 1) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
-					const currentRecord = editableRecords[rowIndex];
+					const currentRecord = displayRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
 						// Save current cell, then create new row
 						const field = cols[colIndex];
 						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
-						handleCellBlur(currentRecord, rowIndex, field?.source);
+						handleCellBlur(currentRecord, rowIndex, field?.source, true);
 						insertNewRow(true);
 					}
 				}
@@ -1276,24 +1328,27 @@
 				} else {
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < editableRecords.length - 1) {
+					} else if (rowIndex < displayRecords.length - 1) {
 						confirmAndMoveTo(rowIndex + 1, 0);
+					} else {
+						// Last column of the last row: save and open a new blank row (BC)
+						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
 				break;
 			case 'Enter':
 				// Only handle Enter when dropdown is closed (LookupDropdown preventDefault's Enter when open)
 				event.preventDefault();
-				if (rowIndex < editableRecords.length - 1) {
+				if (rowIndex < displayRecords.length - 1) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
-					const currentRecord = editableRecords[rowIndex];
+					const currentRecord = displayRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
 						const field = cols[colIndex];
 						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
-						handleCellBlur(currentRecord, rowIndex, field?.source);
+						handleCellBlur(currentRecord, rowIndex, field?.source, true);
 						insertNewRow(true);
 					}
 				}
@@ -1383,12 +1438,12 @@
 			if (!listPageElement?.contains(document.activeElement)) {
 				const cols = visibleColumns();
 				const field = cols[blurredCol];
-				const record = editableRecords[blurredRow];
+				const record = displayRecords[blurredRow];
 				if (record && field) {
 					if (fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
 						record[field.source] = record[field.source].toUpperCase();
 					}
-					handleCellBlur(record, blurredRow, field.source);
+					handleCellBlur(record, blurredRow, field.source, true);
 				}
 				exitToNavigation();
 			}
@@ -1735,6 +1790,8 @@
 			map['ArrowUp'] = moveUp;
 			map['Home'] = moveFirst;
 			map['End'] = moveLast;
+			map['PageDown'] = movePageDown;
+			map['PageUp'] = movePageUp;
 			map['Enter'] = () => {
 				if (page.page.card_page_id) {
 					openCard();
@@ -1769,6 +1826,27 @@
 	function moveUp() {
 		if (selectedIndex > 0) {
 			selectedIndex--;
+		}
+	}
+
+	// Rows per page for PageUp/PageDown: as many rows as fit in the visible list area
+	function rowsPerPage(): number {
+		const container = tableBodyElement?.closest('.table-container') as HTMLElement | null;
+		const row = tableBodyElement?.querySelector('tr') as HTMLElement | null;
+		if (!container || !row || row.offsetHeight === 0) return 10;
+		const headerHeight = (container.querySelector('thead') as HTMLElement | null)?.offsetHeight ?? 0;
+		return Math.max(1, Math.floor((container.clientHeight - headerHeight) / row.offsetHeight) - 1);
+	}
+
+	function movePageDown() {
+		if (displayRecords.length > 0) {
+			selectedIndex = Math.min(displayRecords.length - 1, Math.max(selectedIndex, 0) + rowsPerPage());
+		}
+	}
+
+	function movePageUp() {
+		if (displayRecords.length > 0) {
+			selectedIndex = Math.max(0, selectedIndex - rowsPerPage());
 		}
 	}
 

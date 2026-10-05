@@ -5,6 +5,9 @@ page:
   source_table: User_Member
   caption: User Members
   editable: true
+  # Insert only when leaving the row (BC DelayedInsert): the key is user + role + company,
+  # and a blank company means "all companies" — never save a half-entered membership
+  delayed_insert: true
 
   layout:
     repeater:

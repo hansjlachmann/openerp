@@ -17,6 +17,10 @@ type PageMetadata struct {
 	ModalCard         *bool    `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
 	Editable          *bool    `yaml:"editable,omitempty" json:"editable,omitempty"`
 	EnableNavigation  *bool    `yaml:"enable_navigation,omitempty" json:"enable_navigation,omitempty"`
+	// DelayedInsert (BC/NAV DelayedInsert): on editable lists, insert a new record only when
+	// the user leaves the row, not on the first validated field. For pages where the user
+	// types a composite key (e.g. User Members), so no half-entered key is ever saved.
+	DelayedInsert *bool `yaml:"delayed_insert,omitempty" json:"delayed_insert,omitempty"`
 	FocusField        string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout            Layout   `yaml:"layout" json:"layout"`
 	Actions           []Action `yaml:"actions,omitempty" json:"actions,omitempty"`

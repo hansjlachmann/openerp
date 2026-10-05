@@ -295,9 +295,10 @@
 		overflow: hidden;
 	}
 
+	/* Dark mode: rows on the blank page background, highlighted row grey */
 	:global(.dark) .option-panel {
-		background-color: var(--color-bg-primary, #121212);
-		border-color: var(--color-border-secondary, #303032);
+		background-color: #121212;
+		border-color: #303032;
 	}
 
 	.option-body {
@@ -315,7 +316,7 @@
 	}
 
 	:global(.dark) .option-row:hover {
-		background-color: var(--color-bg-secondary, #1e1e1e);
+		background-color: #303032;
 	}
 
 	.option-row.selected {
@@ -331,7 +332,7 @@
 	}
 
 	:global(.dark) .option-row.focused {
-		background-color: var(--color-bg-secondary, #1e1e1e);
+		background-color: #303032;
 	}
 
 	.option-row.selected.focused {
@@ -339,6 +340,6 @@
 	}
 
 	:global(.dark) .option-row.selected.focused {
-		background-color: rgba(0, 131, 143, 0.2);
+		background-color: #303032;
 	}
 </style>
