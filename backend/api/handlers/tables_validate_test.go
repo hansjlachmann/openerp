@@ -240,3 +240,34 @@ func TestInsertReturnsTriggerError(t *testing.T) {
 		t.Errorf("error = %q, want the OnInsert validation message", msg)
 	}
 }
+
+// The duplicate check must use the whole primary key. For composite keys it used only the
+// first field (GetPrimaryKeyValue), so Get always failed, duplicates reached the database
+// and came back as a generic "insert failed".
+func TestInsertDuplicateCompositeKey(t *testing.T) {
+	app := newTablesTestApp(t)
+	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	defer db.Close()
+	if err := (&tables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	first := postJSON(t, app, "/api/tables/User_Member/insert", `{"user_id":"HANS","role_id":"READER","company":"CRONUS"}`)
+	if first["success"] != true {
+		t.Fatalf("first insert failed: %v", first["error"])
+	}
+
+	// Same user and role in another company is a different record
+	other := postJSON(t, app, "/api/tables/User_Member/insert", `{"user_id":"HANS","role_id":"READER","company":"OTHER"}`)
+	if other["success"] != true {
+		t.Errorf("insert for another company failed: %v (must not be treated as a duplicate)", other["error"])
+	}
+
+	dup := postJSON(t, app, "/api/tables/User_Member/insert", `{"user_id":"HANS","role_id":"READER","company":"CRONUS"}`)
+	if dup["success"] != false {
+		t.Fatal("duplicate insert succeeded")
+	}
+	if msg, _ := dup["error"].(string); !strings.Contains(msg, "HANS,READER,CRONUS") {
+		t.Errorf("error = %q, want a duplicate message naming the full key HANS,READER,CRONUS", msg)
+	}
+}

@@ -59,19 +59,23 @@
 	// Don't filter if input matches the current selected value (user hasn't started searching)
 	const filteredRows = $derived(() => {
 		if (!inputValue) return rows;
-		// If input exactly matches the current value, show all rows (user opened dropdown without typing)
-		if (inputValue === value) return rows;
+		// If input is the current, existing value, show all rows (user opened dropdown without
+		// typing). A value that is not an existing key (e.g. the first character typed into a
+		// list cell) is a search term, so it filters.
+		if (inputValue === value && rows.some(r => r._key === value)) return rows;
 		const term = inputValue.toLowerCase();
-		return rows.filter(row => {
-			// Search in _key (code) first, then all columns
-			if (row._key.toLowerCase().startsWith(term)) return true;
-			return columns.some(col => {
-				const val = row[col.source];
-				if (val === null || val === undefined) return false;
-				return String(val).toLowerCase().includes(term);
-			});
-		});
+		return rows.filter(row => rowMatches(row, term));
 	});
+
+	// Type-ahead match: code (key) starts with the term, or any column contains it
+	function rowMatches(row: LookupRow, term: string): boolean {
+		if (row._key.toLowerCase().startsWith(term)) return true;
+		return columns.some(col => {
+			const val = row[col.source];
+			if (val === null || val === undefined) return false;
+			return String(val).toLowerCase().includes(term);
+		});
+	}
 
 	// Scroll selected row into view when navigating with keyboard
 	$effect(() => {
@@ -223,15 +227,35 @@
 				}
 				break;
 			case 'Enter':
-				e.preventDefault();
-				if (isOpen && selectedIndex >= 0 && selectedIndex < filteredRows().length) {
-					handleSelect(filteredRows()[selectedIndex]);
-				} else if (!isOpen) {
+				if (isOpen) {
+					// Open: Enter selects the highlighted row
+					e.preventDefault();
+					if (selectedIndex >= 0 && selectedIndex < filteredRows().length) {
+						handleSelect(filteredRows()[selectedIndex]);
+					}
+				} else if (compact) {
+					// Closed, in a list cell: commit what was typed, then let Enter bubble to the
+					// list (move to the next row / new row). Never swallow it — the user would
+					// be stuck in the cell.
+					if (!commitTypedInput()) {
+						e.preventDefault();
+						e.stopPropagation();
+					}
+				} else {
+					// Closed, on a card page: Enter opens the dropdown
+					e.preventDefault();
 					openDropdown();
 				}
 				break;
 			case 'Tab':
-				// Let blur handle validation
+				// Commit what the user typed now, synchronously: the list page saves the cell
+				// as soon as Tab bubbles up, before the delayed blur validation would run.
+				if (!commitTypedInput()) {
+					// No matching record: stay in the field (BC), don't save a bad value
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
 				isOpen = false;
 				break;
 			case 'F4':
@@ -240,6 +264,41 @@
 				handleToggle();
 				break;
 		}
+	}
+
+	// Resolve the typed text to a record and select it (BC: leaving a relation field with a
+	// partial value picks the matching record). Exact key match first, case-insensitive, so
+	// "hans" becomes "HANS" (Code fields are uppercase); otherwise the row highlighted in the
+	// open dropdown (the first type-ahead match). Returns false if nothing matches.
+	function commitTypedInput(): boolean {
+		if (selectHandled) return true; // already selected via click/Enter
+		const typed = inputValue.trim();
+		if (!typed) {
+			value = '';
+			inputValue = '';
+			selectHandled = true;
+			onselect?.('');
+			return true;
+		}
+		const term = typed.toLowerCase();
+		const exact = rows.find((r) => r._key.toLowerCase() === term);
+		// The row highlighted in the open dropdown, if it matches what was typed
+		const highlighted = isOpen && selectedIndex >= 0 ? filteredRows()[selectedIndex] : undefined;
+		const highlightedMatch = highlighted && rowMatches(highlighted, term) ? highlighted : undefined;
+		const row =
+			exact ??
+			highlightedMatch ??
+			rows.find((r) => r._key.toLowerCase().startsWith(term)) ??
+			rows.find((r) => rowMatches(r, term));
+		if (!row) {
+			toast.error(t(ERR.FIELD_NOT_EXIST, fieldName || 'Value', typed));
+			return false;
+		}
+		value = row._key;
+		inputValue = row._key;
+		selectHandled = true;
+		onselect?.(row._key);
+		return true;
 	}
 
 	// Handle click outside - close dropdown and revert input
@@ -370,7 +429,7 @@
 	}
 
 	:global(.dark) .lookup-arrow-btn:hover {
-		background-color: var(--color-bg-secondary, #303032);
+		background-color: #303032;
 	}
 
 	.lookup-arrow {
@@ -427,9 +486,10 @@
 		overflow: hidden;
 	}
 
+	/* Dark mode: rows on the blank page background, highlighted row grey */
 	:global(.dark) .lookup-panel {
-		background-color: var(--color-bg-primary, #121212);
-		border-color: var(--color-border-secondary, #303032);
+		background-color: #121212;
+		border-color: #303032;
 	}
 
 	.lookup-header {
@@ -439,8 +499,8 @@
 	}
 
 	:global(.dark) .lookup-header {
-		background-color: var(--color-bg-secondary, #1e1e1e);
-		border-color: var(--color-border-secondary, #303032);
+		background-color: #1e1e1e;
+		border-color: #303032;
 	}
 
 	.lookup-header-cell {
@@ -463,7 +523,7 @@
 	}
 
 	:global(.dark) .lookup-row:hover {
-		background-color: var(--color-bg-secondary, #1e1e1e);
+		background-color: #303032;
 	}
 
 	.lookup-row.selected {
@@ -479,7 +539,7 @@
 	}
 
 	:global(.dark) .lookup-row.focused {
-		background-color: var(--color-bg-secondary, #1e1e1e);
+		background-color: #303032;
 	}
 
 	.lookup-row.selected.focused {
@@ -487,7 +547,7 @@
 	}
 
 	:global(.dark) .lookup-row.selected.focused {
-		background-color: rgba(0, 131, 143, 0.2);
+		background-color: #303032;
 	}
 
 	.lookup-cell {

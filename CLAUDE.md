@@ -118,6 +118,7 @@ page:
   card_page_id: 21             # (optional) Associated card page for row click / Edit action
   modal_card: true             # (optional) Open card in modal instead of navigating to card page
   editable: true               # (optional) Enable inline editing in the repeater
+  delayed_insert: true         # (optional) BC DelayedInsert: insert a new row only when leaving the row
 
   layout:
     repeater:
@@ -235,6 +236,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 |-----|--------|
 | ArrowUp / ArrowDown | Move row selection up/down |
 | Home / End | Select first / last row |
+| PageUp / PageDown | Move row selection one page (the rows that fit in the visible list) up/down |
 | Enter | If `card_page_id` set: open card page. Otherwise: enter cell-selected on first editable cell |
 | F2 | Enter cell-selected on first editable cell of selected row |
 | Ctrl+E | Enter cell-selected (same as F2) |
@@ -250,7 +252,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 |-----|--------|
 | ArrowUp / ArrowDown | Confirm value + move selection to cell above/below. ArrowDown on last data row: create new row |
 | ArrowLeft / ArrowRight | Move cell selection left/right within the row |
-| Tab | Confirm value + move selection right (wraps to next row) |
+| PageUp / PageDown | Confirm value + move selection one page up/down in the same column |
+| Tab | Confirm value + move selection right (wraps to next row; last column of the last row: create new row) |
 | Shift+Tab | Confirm value + move selection left (wraps to previous row) |
 | Enter | Confirm value + move selection down. On last data row: create new row |
 | F2 | Enter cell-editing (preserve content, cursor at end) |
@@ -272,7 +275,8 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 |-----|--------|
 | ArrowUp / ArrowDown | If cursor at text boundary (start/end) or all text selected: confirm + move selection. Otherwise: move cursor in text |
 | ArrowLeft / ArrowRight | Move cursor within text. At text boundary: confirm + move selection to adjacent cell |
-| Tab | Confirm + move selection right (wraps to next row) |
+| PageUp / PageDown | Confirm + move selection one page up/down in the same column |
+| Tab | Confirm + move selection right (wraps to next row; last column of the last row: create new row) |
 | Shift+Tab | Confirm + move selection left (wraps to previous row) |
 | Enter | Confirm + move selection down. On last data row: create new row |
 | F2 | Exit cell-editing → return to cell-selected (keep current value) |
@@ -307,7 +311,9 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - A user-edited new row whose required PK fields are still blank stays uncommitted; it inserts on the first confirmed cell after they are filled. An insert that fails keeps the row uncommitted and editable; the next confirmed cell retries it.
 - Insert timing depends on **what the user changed**, never on where focus went. **Do NOT use `document.activeElement`** to detect row changes — it's unreliable when async validation re-renders mid-await, destroying the input and moving focus to `document.body`.
 - The `required` flag is sent from the backend via table YAML metadata → `TableMetadata` → page field definitions.
-- **Composite primary keys** (`User_Member`): the record inserts once `user_id` and `role_id` are filled, with a blank optional `company`. Setting `company` afterwards is a MODIFY that **renames** the key: the generated `Modify()` SETs changed PK fields and matches the old key in its WHERE clause (BC/NAV Rename). The frontend addresses an existing row by `_key` (its persisted key), not its current field values, so PK edits reach the right record.
+- **DelayedInsert pages** (`delayed_insert: true` in the list page YAML, BC's DelayedInsert): the INSERT waits until the user **leaves the row** (`handleCellBlur(..., leavingRow = true)`: moving to another row, Tab/Enter past the last row, focus leaving the table). Use it where the user types a composite key, e.g. User Members (`user_id + role_id + company`): inserting on the first field would save a half-entered key, and a blank `company` means "all companies". Escape does **not** insert (it cancels). Without the flag, a list inserts on the first validated field (rule above).
+- **Renaming keys**: changing a primary key field of a saved record is a MODIFY that **renames** the key: the generated `Modify()` SETs changed PK fields and matches the old key in its WHERE clause (BC/NAV Rename). The frontend addresses an existing row by `_key` (its persisted key), not its current field values, so PK edits reach the right record.
+- **Duplicate check**: `InsertRecord` checks for an existing record with the **full** primary key (`fullPrimaryKey`); `GetPrimaryKeyValue()` returns only the first key field and must not be used to identify composite-key records.
 - After a successful insert/modify the page header shows the "Saving…"/"✓ Saved" indicator (`saveState`), the only feedback that a row committed.
 
 ### Cross-field validation (OnValidate auto-fill)
@@ -333,6 +339,8 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
 - When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.
+- **Enter on a closed dropdown in a list cell (`compact`) is never swallowed**: it commits the typed text and bubbles to `handleLookupCellKeyDown` (move down / new row on the last row). Swallowing it left the user stuck in the cell after picking a value with Enter. On card pages (non-compact), Enter on a closed dropdown opens it.
+- **Tab commits the typed text synchronously** (`commitTypedInput`): an exact code match (case-insensitive, so `hans` → `HANS`), else the highlighted matching row, else the first code starting with the text. No match → error and the focus stays in the field (the list's Tab handler runs right after and would otherwise save the partial text).
 - The save fires only when focus actually **leaves** the component (e.g., user presses Tab or moves to another cell).
 - This keeps the save tied to the user confirming the cell: a lookup pick inserts a new record (Record Entry rules) only when focus leaves the cell, never on the pick alone.
 - **Re-open guard**: After `handleSelect` re-focuses the input, `onfocus` must NOT re-open the dropdown. The `selectHandled` flag prevents this — `openDropdown()` skips when `selectHandled` is true. The flag is cleared when the user types, toggles the dropdown, or presses ArrowDown to explicitly re-open.
@@ -347,7 +355,8 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - **LookupDropdown keyboard wrapper**: The `<div data-row data-col>` wrapper has an `onkeydown={handleLookupCellKeyDown}` handler that intercepts Tab/Enter/Escape/F2 after they bubble up from LookupDropdown. Keys already handled by LookupDropdown (e.g., ArrowDown when dropdown is open) are skipped via `event.defaultPrevented` check.
 
 ### Search and Sorting
-- **Search**: Case-insensitive substring match across all visible columns. Filters `displayRecords` reactively.
+- **Search**: Case-insensitive substring match across all visible columns. Filters `displayRecords` reactively. New, uncommitted rows (`_isNew`) are always shown, so Alt+N works while a search is active.
+- **Row indexes are displayed positions (ABSOLUTE RULE)**: `selectedIndex`, `currentCellRow`, `rowIndex`, `prevRow` etc. are positions in `displayRecords` (after search and sort) — never index `records` or `editableRecords` with them. Read rows as `displayRecords[i]`; the selected saved record is `findSelectedRecord()`. Insert/remove rows in `editableRecords` by identity (`insertRowAfter`, `filter(r => r !== row)`) and map back with `displayIndexOf()`. After an `await`, update the row object itself, not `editableRecords[index]`. Mixing the index spaces made Edit/Delete act on the wrong record and cell edits land in the wrong row when the list was searched or sorted.
 - **Column sorting**: Click column headers to sort. Toggle asc/desc on same column. Type-aware comparison: numbers compared numerically, booleans by value, strings via `localeCompare`.
 
 ### Column Customization

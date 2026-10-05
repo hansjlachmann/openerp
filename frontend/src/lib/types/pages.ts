@@ -15,6 +15,8 @@ export interface PageMetadata {
 	modal_card?: boolean;
 	editable?: boolean;
 	enable_navigation?: boolean;
+	// BC/NAV DelayedInsert: insert a new list row only when the user leaves the row
+	delayed_insert?: boolean;
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];

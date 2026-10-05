@@ -76,6 +76,30 @@ func (h *TablesHandler) ensureSetupRecord(tableName, company string) {
 // parseRecordKey parses a URL record ID into the appropriate type for table.Get()
 // For single PK tables: returns the string as-is
 // For composite PK tables: splits comma-separated values and returns map[string]interface{}
+// fullPrimaryKey returns the current record's complete primary key in the form Get expects
+// (a string for a single-field key, a field->value map for a composite key — the same form
+// parseRecordKey builds from a URL id), plus a comma-joined display value. GetPrimaryKeyValue
+// only returns the first key field, so it cannot identify a composite-key record.
+func fullPrimaryKey(table ftables.Table) (interface{}, string) {
+	values := table.ToMap()
+	var pkFields []string
+	for _, f := range table.GetFields() {
+		if f.PrimaryKey {
+			pkFields = append(pkFields, f.Name)
+		}
+	}
+	if len(pkFields) <= 1 {
+		return table.GetPrimaryKeyValue(), table.GetPrimaryKeyValue()
+	}
+	pkMap := make(map[string]interface{}, len(pkFields))
+	parts := make([]string, len(pkFields))
+	for i, field := range pkFields {
+		parts[i] = fmt.Sprint(values[field])
+		pkMap[field] = parts[i]
+	}
+	return pkMap, strings.Join(parts, ",")
+}
+
 func parseRecordKey(id string, table ftables.Table) interface{} {
 	// URL-decode the id (Fiber does not auto-decode route params)
 	if decoded, err := url.PathUnescape(id); err == nil {
@@ -535,10 +559,11 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
 	}
 
-	// Check if record already exists
+	// Check if record already exists (all primary key fields, for composite keys too)
+	pkLookup, pkDisplay := fullPrimaryKey(table)
 	existingTable, _ := h.getTable(tableName, company)
-	if existingTable.Get(pkValue) {
-		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pkValue).Message(language)))
+	if existingTable.Get(pkLookup) {
+		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pkDisplay).Message(language)))
 	}
 
 	// Insert record
