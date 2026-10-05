@@ -88,6 +88,33 @@ From `docs/migrations.md`.
 - [x] SQLite-safe drop-column / alter-column migration helper — done via `RecreateTable`
       + SQLite `ChangeColumnType` in `backend/foundation/migrations/helpers.go`.
 
+## Deployment / Operations
+
+Gaps in the production setup (`docker-compose.prod.yml`), found while recovering a server after
+an OS upgrade and reboot.
+
+- [ ] **Auto-start after reboot** — no service in `docker-compose.prod.yml` has a `restart:` policy,
+      so after a host reboot the stack stays down until someone runs `up -d` by hand. Add
+      `restart: unless-stopped` to `db`, `backend`, `frontend` and `nginx`.
+- [ ] **Only expose nginx** — `db` (5432), `backend` (8080) and `frontend` (3000) are published on
+      all host interfaces, so they are reachable from the network directly, bypassing nginx/HTTPS.
+      Publish only nginx's 80/443; the other services talk over the compose network.
+- [ ] **Postgres credentials** — `docker-compose.prod.yml` hardcodes `openerp`/`openerp`. Read the
+      password from `.env` (e.g. `POSTGRES_PASSWORD: ${DB_PASSWORD}` for `db`, `DB_PASSWORD` for
+      `backend`) and document changing it on an existing volume (`ALTER USER`, since the image
+      only applies `POSTGRES_PASSWORD` when initializing an empty volume).
+- [ ] **`JWT_SECRET` in production** — when unset, the backend logs a warning and uses a random
+      key per start (safe, but every restart logs all users out). Document setting it in `.env`
+      (`JWT_SECRET=$(openssl rand -hex 32)`); consider refusing to start in production without it.
+- [ ] **Automated backups** — add a script (e.g. `scripts/backup.sh`) that runs
+      `pg_dump -Fc` in the `db` container into a dated file outside the git checkout and prunes
+      files older than N days, plus a cron example. Copying backups off the host stays a separate,
+      site-specific step.
+- [ ] **Operations doc** — `docs/operations.md`: start/stop, what to do after a host reboot,
+      upgrading via `APP_VERSION` in `.env`, backup and restore (`pg_restore --clean`), and never
+      `docker compose down -v` / `docker volume prune` (deletes the database volume). Note that
+      compose must run from the checkout folder, since the volume name comes from the project name.
+
 ---
 
 ## Feature: Job Queue — Automatic / Scheduled Execution ✅ IMPLEMENTED
