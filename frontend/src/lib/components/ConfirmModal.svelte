@@ -13,12 +13,15 @@
 		oncancel?: () => void;
 	}
 
+	// Default texts are looked up in the template, not as prop defaults: a prop default is
+	// evaluated once at mount, possibly before the translations have loaded, and would then
+	// show the raw key (e.g. "BTN_CANCEL") for good.
 	let {
 		open = false,
-		title = t(DLG.CONFIRM_TITLE),
-		message = t(DLG.CONFIRM_DEFAULT),
-		confirmText = t(BTN.CONFIRM),
-		cancelText = t(BTN.CANCEL),
+		title,
+		message,
+		confirmText,
+		cancelText,
 		variant = 'danger',
 		onconfirm,
 		oncancel
@@ -53,10 +56,10 @@
 			</div>
 			<div class="flex-1">
 				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-					{title}
+					{title ?? t(DLG.CONFIRM_TITLE)}
 				</h3>
 				<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-					{message}
+					{message ?? t(DLG.CONFIRM_DEFAULT)}
 				</p>
 			</div>
 		</div>
@@ -66,14 +69,14 @@
 				class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
 				onclick={oncancel}
 			>
-				{cancelText}
+				{cancelText ?? t(BTN.CANCEL)}
 			</button>
 			<button
 				type="button"
 				class="px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 {variantColors[variant]}"
 				onclick={onconfirm}
 			>
-				{confirmText}
+				{confirmText ?? t(BTN.CONFIRM)}
 			</button>
 		</div>
 	</div>
