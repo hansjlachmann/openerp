@@ -22,6 +22,11 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       **length** (SQLite ignores `TEXT(n)`), **required/not-empty**, and range at validate
       time. Clean fix: generate these checks into the `OnValidate` stubs from YAML metadata
       (tablegen change).
+- [ ] **Security: `password_hash` is returned by the API.** `/api/tables/User/list`, `/card/:id` and
+      the insert/modify responses include the bcrypt `password_hash` (generic `ToMap()`), so anyone
+      with read permission on User can fetch every user's hash for offline cracking. Strip it from
+      all User responses (e.g. a per-table hidden/sensitive-field flag in YAML honored by `ToMap`
+      consumers) — pairs with the SMTP password masking item.
 - [ ] HTTPS/TLS support
 - [ ] API versioning
 - [ ] WebSocket support for live updates

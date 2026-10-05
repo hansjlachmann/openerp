@@ -7,7 +7,8 @@ import {
 	hasRecordChanged,
 	hasUserEdits,
 	shouldInsertNewRecord,
-	stripInternalFields
+	stripInternalFields,
+	findSelectedRecord
 } from '../recordHelpers';
 
 describe('getRecordId', () => {
@@ -196,5 +197,37 @@ describe('shouldInsertNewRecord', () => {
 describe('stripInternalFields', () => {
 	it('removes underscore-prefixed flags', () => {
 		expect(stripInternalFields({ no: 'C1', _isNew: true, _tempId: 't1', _pristine: { no: '' } })).toEqual({ no: 'C1' });
+	});
+});
+
+describe('findSelectedRecord', () => {
+	const records = [
+		{ user_id: 'ADMIN', name: 'Administrator' },
+		{ user_id: 'HANS', name: 'Hans' },
+		{ user_id: 'ZOE', name: 'Zoe' }
+	];
+
+	it('returns the displayed row, not records[index], when the list is searched', () => {
+		// Search for "hans": the only displayed row is HANS, at index 0
+		const displayed = [records[1]];
+		expect(findSelectedRecord(displayed, 0, records, false, 'user_id')?.user_id).toBe('HANS');
+	});
+
+	it('returns the displayed row when the list is sorted descending', () => {
+		const displayed = [...records].reverse();
+		expect(findSelectedRecord(displayed, 0, records, false, 'user_id')?.user_id).toBe('ZOE');
+	});
+
+	it('returns the saved record for an editable copy, by its persisted key', () => {
+		// The user edited the key cell of HANS but has not saved yet
+		const displayed = [{ ...records[1], user_id: 'HANS2', _key: 'HANS' }];
+		expect(findSelectedRecord(displayed, 0, records, true, 'user_id')).toBe(records[1]);
+	});
+
+	it('returns null for an uncommitted new row or no selection', () => {
+		const displayed = [records[0], { user_id: '', _isNew: true, _tempId: 't1' }];
+		expect(findSelectedRecord(displayed, 1, records, true, 'user_id')).toBeNull();
+		expect(findSelectedRecord(displayed, -1, records, false, 'user_id')).toBeNull();
+		expect(findSelectedRecord(displayed, 5, records, false, 'user_id')).toBeNull();
 	});
 });

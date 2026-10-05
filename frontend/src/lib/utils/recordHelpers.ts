@@ -264,3 +264,26 @@ export function hasRecordChanged(
 	}
 	return false;
 }
+
+/**
+ * Resolve the record behind the selected list row. The selected index counts rows as
+ * displayed (after search and column sort), so it must index displayRecords — indexing the
+ * unfiltered records array returns a different record whenever the list is searched or
+ * sorted. While cells are being edited the displayed rows are editable copies; the saved
+ * record with the same persisted key (`_key`, else the current key values) is returned.
+ * An uncommitted new row has no saved record and yields null.
+ */
+export function findSelectedRecord(
+	displayRecords: Array<Record<string, any>>,
+	selectedIndex: number,
+	records: Array<Record<string, any>>,
+	editing: boolean,
+	primaryKeyField?: string,
+	primaryKeyFields?: string[]
+): Record<string, any> | null {
+	const row = selectedIndex >= 0 ? displayRecords[selectedIndex] : undefined;
+	if (!row || row._isNew) return null;
+	if (!editing) return row;
+	const key = row._key ?? getRecordId(row, primaryKeyField, primaryKeyFields);
+	return records.find((r) => getRecordId(r, primaryKeyField, primaryKeyFields) === key) ?? null;
+}
