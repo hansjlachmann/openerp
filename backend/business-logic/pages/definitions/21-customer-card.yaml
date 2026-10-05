@@ -31,6 +31,10 @@ page:
           - source: city
             editable: true
 
+          - source: country_region_code
+            editable: true
+            table_relation: Country_Region
+
       - name: Communication
         caption: Communication
         fields:

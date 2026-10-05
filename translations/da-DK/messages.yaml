@@ -197,6 +197,15 @@ messages:
   CU_REPORT_DATE: "Rapportdato"
   CU_REPORT_CANCELLED: "Rapport annulleret."
 
+  # Demo data (codeunit 50100)
+  DEMO_DATA_DONE: "Demodata oprettet: %1 debitorer og %2 debitorposter."
+  DEMO_DATA_NOT_EMPTY: "Virksomheden \"%1\" har allerede debitorer. Demodata oprettes kun i en virksomhed uden debitorer."
+  DEMO_DATA_BAD_SIZE: "Ukendt størrelse på demodata \"%1\". Sæt opgavens parameter til SMALL eller LARGE."
+  DEMO_DATA_INSERT_FAILED: "Kunne ikke oprette %1 %2: %3. Der blev ikke oprettet demodata."
+  DEMO_DATA_SETUP: "Opretter lande og betalingsbetingelser..."
+  DEMO_DATA_CUSTOMERS: "Opretter debitorer..."
+  DEMO_DATA_ENTRIES: "Opretter debitorposter..."
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på, at du vil slette denne post?"
   DLG_DELETE_CONFIRM: "Er du sikker på, at du vil slette denne %1?"

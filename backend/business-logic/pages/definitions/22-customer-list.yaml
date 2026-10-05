@@ -20,6 +20,9 @@ page:
         - source: city
           width: 150
 
+        - source: country_region_code
+          width: 100
+
         - source: phonenumber
           caption: Phone No.
           width: 150

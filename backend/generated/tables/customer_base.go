@@ -44,6 +44,7 @@ type CustomerBase struct {
 	Address types.Text `db:"address"`
 	Post_code types.Code `db:"post_code"`
 	City types.Text `db:"city"`
+	Country_region_code types.Code `db:"country_region_code"`
 	Phonenumber types.Text `db:"phonenumber"`
 	Payment_terms_code types.Code `db:"payment_terms_code"`
 	Status CustomerStatus `db:"status"`
@@ -186,6 +187,7 @@ func GetCustomerTableSchema() string {
 		address TEXT(50),
 		post_code TEXT(20),
 		city TEXT(50),
+		country_region_code TEXT(10),
 		phonenumber TEXT(30),
 		payment_terms_code TEXT(10),
 		status INTEGER CHECK (status >= 0 AND status <= 4),
@@ -207,6 +209,7 @@ func GetCustomerPostgresTableSchema() string {
 		address VARCHAR(50),
 		post_code VARCHAR(20),
 		city VARCHAR(50),
+		country_region_code VARCHAR(10),
 		phonenumber VARCHAR(30),
 		payment_terms_code VARCHAR(10),
 		status INTEGER CHECK (status >= 0 AND status <= 4),
@@ -310,6 +313,7 @@ func (t *CustomerBase) StoreOldValues() {
 	t.oldValues["address"] = t.Address
 	t.oldValues["post_code"] = t.Post_code
 	t.oldValues["city"] = t.City
+	t.oldValues["country_region_code"] = t.Country_region_code
 	t.oldValues["phonenumber"] = t.Phonenumber
 	t.oldValues["payment_terms_code"] = t.Payment_terms_code
 	t.oldValues["status"] = t.Status
@@ -369,6 +373,7 @@ func (t *CustomerBase) GetByPK(no types.Code) bool {
 	var addressNull sql.NullString
 	var post_codeNull sql.NullString
 	var cityNull sql.NullString
+	var country_region_codeNull sql.NullString
 	var phonenumberNull sql.NullString
 	var payment_terms_codeNull sql.NullString
 	var statusInt int
@@ -383,7 +388,7 @@ func (t *CustomerBase) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -394,6 +399,7 @@ func (t *CustomerBase) GetByPK(no types.Code) bool {
 		&addressNull,
 		&post_codeNull,
 		&cityNull,
+		&country_region_codeNull,
 		&phonenumberNull,
 		&payment_terms_codeNull,
 		&statusInt,
@@ -419,6 +425,7 @@ func (t *CustomerBase) GetByPK(no types.Code) bool {
 	t.Address = types.NewText(addressNull.String)
 	t.Post_code = types.NewCode(post_codeNull.String)
 	t.City = types.NewText(cityNull.String)
+	t.Country_region_code = types.NewCode(country_region_codeNull.String)
 	t.Phonenumber = types.NewText(phonenumberNull.String)
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
 	t.Status = CustomerStatus(statusInt)
@@ -453,6 +460,7 @@ func (t *CustomerBase) Insert(runTrigger bool) bool {
 		t.Address,
 		t.Post_code,
 		t.City,
+		t.Country_region_code,
 		t.Phonenumber,
 		t.Payment_terms_code,
 		t.Status,
@@ -463,7 +471,7 @@ func (t *CustomerBase) Insert(runTrigger bool) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -517,6 +525,10 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "city = ?")
 			values = append(values, t.City)
 		}
+		if t.hasFieldChanged("country_region_code") {
+			setClauses = append(setClauses, "country_region_code = ?")
+			values = append(values, t.Country_region_code)
+		}
 		if t.hasFieldChanged("phonenumber") {
 			setClauses = append(setClauses, "phonenumber = ?")
 			values = append(values, t.Phonenumber)
@@ -560,6 +572,8 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Post_code)
 		setClauses = append(setClauses, "city = ?")
 		values = append(values, t.City)
+		setClauses = append(setClauses, "country_region_code = ?")
+		values = append(values, t.Country_region_code)
 		setClauses = append(setClauses, "phonenumber = ?")
 		values = append(values, t.Phonenumber)
 		setClauses = append(setClauses, "payment_terms_code = ?")
@@ -637,6 +651,10 @@ func (t *CustomerBase) hasFieldChanged(fieldName string) bool {
 	case "city":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.City.Equal(old)
+		}
+	case "country_region_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Country_region_code.Equal(old)
 		}
 	case "phonenumber":
 		if old, ok := oldValue.(types.Text); ok {
@@ -957,6 +975,8 @@ func (t *CustomerBase) columnName(fieldName string) (string, bool) {
 		return "post_code", true
 	case strings.ToLower("city"):
 		return "city", true
+	case strings.ToLower("country_region_code"):
+		return "country_region_code", true
 	case strings.ToLower("phonenumber"):
 		return "phonenumber", true
 	case strings.ToLower("payment_terms_code"):
@@ -1112,7 +1132,7 @@ func (t *CustomerBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1121,6 +1141,7 @@ func (t *CustomerBase) FindFirst() bool {
 	var addressNull sql.NullString
 	var post_codeNull sql.NullString
 	var cityNull sql.NullString
+	var country_region_codeNull sql.NullString
 	var phonenumberNull sql.NullString
 	var payment_terms_codeNull sql.NullString
 	var statusInt int
@@ -1134,6 +1155,7 @@ func (t *CustomerBase) FindFirst() bool {
 		&addressNull,
 		&post_codeNull,
 		&cityNull,
+		&country_region_codeNull,
 		&phonenumberNull,
 		&payment_terms_codeNull,
 		&statusInt,
@@ -1157,6 +1179,7 @@ func (t *CustomerBase) FindFirst() bool {
 	t.Address = types.NewText(addressNull.String)
 	t.Post_code = types.NewCode(post_codeNull.String)
 	t.City = types.NewText(cityNull.String)
+	t.Country_region_code = types.NewCode(country_region_codeNull.String)
 	t.Phonenumber = types.NewText(phonenumberNull.String)
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
 	t.Status = CustomerStatus(statusInt)
@@ -1177,7 +1200,7 @@ func (t *CustomerBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1186,6 +1209,7 @@ func (t *CustomerBase) FindLast() bool {
 	var addressNull sql.NullString
 	var post_codeNull sql.NullString
 	var cityNull sql.NullString
+	var country_region_codeNull sql.NullString
 	var phonenumberNull sql.NullString
 	var payment_terms_codeNull sql.NullString
 	var statusInt int
@@ -1199,6 +1223,7 @@ func (t *CustomerBase) FindLast() bool {
 		&addressNull,
 		&post_codeNull,
 		&cityNull,
+		&country_region_codeNull,
 		&phonenumberNull,
 		&payment_terms_codeNull,
 		&statusInt,
@@ -1222,6 +1247,7 @@ func (t *CustomerBase) FindLast() bool {
 	t.Address = types.NewText(addressNull.String)
 	t.Post_code = types.NewCode(post_codeNull.String)
 	t.City = types.NewText(cityNull.String)
+	t.Country_region_code = types.NewCode(country_region_codeNull.String)
 	t.Phonenumber = types.NewText(phonenumberNull.String)
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
 	t.Status = CustomerStatus(statusInt)
@@ -1269,7 +1295,7 @@ func (t *CustomerBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1341,6 +1367,7 @@ func (t *CustomerBase) Next(steps ...int) bool {
 		var addressNull sql.NullString
 		var post_codeNull sql.NullString
 		var cityNull sql.NullString
+		var country_region_codeNull sql.NullString
 		var phonenumberNull sql.NullString
 		var payment_terms_codeNull sql.NullString
 		var statusInt int
@@ -1354,6 +1381,7 @@ func (t *CustomerBase) Next(steps ...int) bool {
 			&addressNull,
 			&post_codeNull,
 			&cityNull,
+			&country_region_codeNull,
 			&phonenumberNull,
 			&payment_terms_codeNull,
 			&statusInt,
@@ -1376,6 +1404,7 @@ func (t *CustomerBase) Next(steps ...int) bool {
 		t.Address = types.NewText(addressNull.String)
 		t.Post_code = types.NewCode(post_codeNull.String)
 		t.City = types.NewText(cityNull.String)
+		t.Country_region_code = types.NewCode(country_region_codeNull.String)
 		t.Phonenumber = types.NewText(phonenumberNull.String)
 		t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
 		t.Status = CustomerStatus(statusInt)
@@ -1412,7 +1441,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1438,6 +1467,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 		var addressNull sql.NullString
 		var post_codeNull sql.NullString
 		var cityNull sql.NullString
+		var country_region_codeNull sql.NullString
 		var phonenumberNull sql.NullString
 		var payment_terms_codeNull sql.NullString
 		var statusInt int
@@ -1451,6 +1481,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 			&addressNull,
 			&post_codeNull,
 			&cityNull,
+			&country_region_codeNull,
 			&phonenumberNull,
 			&payment_terms_codeNull,
 			&statusInt,
@@ -1471,6 +1502,7 @@ func (t *CustomerBase) FindSetBuffered() bool {
 		record.Address = types.NewText(addressNull.String)
 		record.Post_code = types.NewCode(post_codeNull.String)
 		record.City = types.NewText(cityNull.String)
+		record.Country_region_code = types.NewCode(country_region_codeNull.String)
 		record.Phonenumber = types.NewText(phonenumberNull.String)
 		record.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
 		record.Status = CustomerStatus(statusInt)
@@ -1510,6 +1542,7 @@ func (t *CustomerBase) copyFromBuffered(record *CustomerBase) {
 	t.Address = record.Address
 	t.Post_code = record.Post_code
 	t.City = record.City
+	t.Country_region_code = record.Country_region_code
 	t.Phonenumber = record.Phonenumber
 	t.Payment_terms_code = record.Payment_terms_code
 	t.Status = record.Status
@@ -1719,6 +1752,20 @@ func (t *CustomerBase) ValidateField(fieldName string, value interface{}) error 
 			return w.OnValidate_City()
 		}
 		return t.OnValidate_City()
+	case "country_region_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Country_region_code = v
+		} else if v, ok := value.(string); ok {
+			t.Country_region_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field country_region_code")
+		}
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Country_region_code() error }); ok {
+			return w.OnValidate_Country_region_code()
+		}
+		return t.OnValidate_Country_region_code()
 	case "phonenumber":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
@@ -1917,6 +1964,12 @@ func (t *CustomerBase) OnValidate_City() error {
 	return nil
 }
 
+// OnValidate_Country_region_code is the validation trigger for country_region_code field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *CustomerBase) OnValidate_Country_region_code() error {
+	return nil
+}
+
 // OnValidate_Phonenumber is the validation trigger for phonenumber field (BC/NAV style)
 // Override this in the wrapper struct to add custom validation
 func (t *CustomerBase) OnValidate_Phonenumber() error {
@@ -1978,6 +2031,7 @@ func (t *CustomerBase) ToMap() map[string]interface{} {
 		"address": t.Address.String(),
 		"post_code": t.Post_code.String(),
 		"city": t.City.String(),
+		"country_region_code": t.Country_region_code.String(),
 		"phonenumber": t.Phonenumber.String(),
 		"payment_terms_code": t.Payment_terms_code.String(),
 		"status": int(t.Status),
@@ -2019,6 +2073,11 @@ func (t *CustomerBase) FromMap(data map[string]interface{}) {
 	if v, ok := data["city"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.City = types.NewText(s)
+		}
+	}
+	if v, ok := data["country_region_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Country_region_code = types.NewCode(s)
 		}
 	}
 	if v, ok := data["phonenumber"]; ok && v != nil {
@@ -2129,6 +2188,15 @@ func (t *CustomerBase) GetFields() []tables.FieldInfo {
 			Name:       "city",
 			Type:       tables.FieldTypeText,
 			Length:     50,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "country_region_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -2246,6 +2314,16 @@ func (t *CustomerBase) GetOptionFields() map[string][]string {
 // GetTableRelationFields returns fields that have table relations (foreign keys)
 func (t *CustomerBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
+		"country_region_code": {
+			Table:        "Country_Region",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 80},
+				{Source: "name", Width: 200},
+			},
+			SearchTimeout: 0,
+		},
 		"payment_terms_code": {
 			Table:        "Payment_terms",
 			Field:        "code",

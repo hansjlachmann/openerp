@@ -11,6 +11,7 @@
 	import { getShortcutKey } from '$lib/utils/shortcuts';
 	import CompanySwitchDialog from './CompanySwitchDialog.svelte';
 	import { SHORTCUT_HELP_URL, SHORTCUT_HELP_WINDOW } from '$lib/utils/shortcutHelp';
+	import { companyLabel, companyLabelFor, type CompanyInfo } from '$lib/utils/company';
 
 	// NAV Classic: Ctrl+O opens the Switch Company dialog. Browsers let the page take
 	// Ctrl+O (unlike Ctrl+N/T/W), so it never reaches the browser's Open File dialog.
@@ -22,7 +23,7 @@
 	let showLanguageMenu = $state(false);
 	let showCompanyMenu = $state(false);
 	let languages = $state<{ code: string; name: string }[]>([]);
-	let companies = $state<string[]>([]);
+	let companies = $state<CompanyInfo[]>([]);
 	let currentLanguage = $state('en-US');
 	let currentCompanyName = $state('');
 	let changingLanguage = $state(false);
@@ -274,7 +275,7 @@
 			<!-- Session information -->
 			<div class="flex items-center gap-4 text-sm text-white/80 border-r border-white/20 pr-4 mr-2">
 				{#if $currentCompany}
-					<span class="font-medium">{$currentCompany}</span>
+					<span class="font-medium">{companyLabelFor(companies, $currentCompany)}</span>
 				{/if}
 				{#if $session.userName}
 					<span>User: {$session.userName}</span>
@@ -440,7 +441,7 @@
 												<span class="text-xs text-gray-500 dark:text-gray-400">({SWITCH_COMPANY_SHORTCUT})</span>
 											</span>
 											<span class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-												{currentCompanyName || '—'}
+												{currentCompanyName ? companyLabelFor(companies, currentCompanyName) : '—'}
 												<svg
 													xmlns="http://www.w3.org/2000/svg"
 													class="h-3 w-3"
@@ -461,19 +462,19 @@
 										<!-- Company submenu -->
 										{#if showCompanyMenu}
 											<div class="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
-												{#each companies as company}
+												{#each companies as company (company.name)}
 													<button
-														onclick={() => handleCompanyChange(company)}
+														onclick={() => handleCompanyChange(company.name)}
 														disabled={changingCompany}
 														class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between disabled:opacity-50"
-														class:text-blue-600={company === currentCompanyName}
-														class:dark:text-blue-400={company === currentCompanyName}
-														class:font-medium={company === currentCompanyName}
-														class:text-gray-700={company !== currentCompanyName}
-														class:dark:text-gray-300={company !== currentCompanyName}
+														class:text-blue-600={company.name === currentCompanyName}
+														class:dark:text-blue-400={company.name === currentCompanyName}
+														class:font-medium={company.name === currentCompanyName}
+														class:text-gray-700={company.name !== currentCompanyName}
+														class:dark:text-gray-300={company.name !== currentCompanyName}
 													>
-														{company}
-														{#if company === currentCompanyName}
+														{companyLabel(company)}
+														{#if company.name === currentCompanyName}
 															<svg
 																xmlns="http://www.w3.org/2000/svg"
 																class="h-4 w-4"

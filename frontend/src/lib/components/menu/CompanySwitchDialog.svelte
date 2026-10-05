@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { t, MENU } from '$lib/services/i18n.svelte';
+	import { companyLabel, filterCompanies, type CompanyInfo } from '$lib/utils/company';
 
 	// Switch Company dialog (Ctrl+O, as in NAV Classic). Typing filters the list,
-	// ArrowUp/Down move, Enter switches, Escape closes.
+	// ArrowUp/Down move, Enter switches, Escape closes. Companies show their display
+	// name; `current` and `onselect` use the technical name.
 	interface Props {
-		companies: string[];
+		companies: CompanyInfo[];
 		current: string;
 		switching?: boolean;
 		onselect: (company: string) => void;
@@ -19,15 +21,11 @@
 	let inputElement: HTMLInputElement | null = $state(null);
 	let listElement: HTMLUListElement | null = $state(null);
 
-	const filtered = $derived(
-		filter.trim() === ''
-			? companies
-			: companies.filter((c) => c.toLowerCase().includes(filter.trim().toLowerCase()))
-	);
+	const filtered = $derived(filterCompanies(companies, filter));
 
 	// Start on the current company
 	onMount(() => {
-		highlighted = Math.max(0, companies.indexOf(current));
+		highlighted = Math.max(0, companies.findIndex((c) => c.name === current));
 		tick().then(() => {
 			inputElement?.focus();
 			scrollHighlightedIntoView();
@@ -49,13 +47,13 @@
 		tick().then(scrollHighlightedIntoView);
 	}
 
-	function choose(company: string | undefined) {
+	function choose(company: CompanyInfo | undefined) {
 		if (!company || switching) return;
-		if (company === current) {
+		if (company.name === current) {
 			onclose();
 			return;
 		}
-		onselect(company);
+		onselect(company.name);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -123,7 +121,7 @@
 			/>
 		</div>
 		<ul bind:this={listElement} class="max-h-72 overflow-y-auto pb-2" role="listbox">
-			{#each filtered as company, i (company)}
+			{#each filtered as company, i (company.name)}
 				<li role="option" aria-selected={i === highlighted}>
 					<button
 						type="button"
@@ -134,14 +132,14 @@
 						class="w-full text-left px-4 py-2 text-sm flex items-center justify-between disabled:opacity-50"
 						class:bg-gray-100={i === highlighted}
 						class:dark:bg-gray-700={i === highlighted}
-						class:text-blue-600={company === current}
-						class:dark:text-blue-400={company === current}
-						class:font-medium={company === current}
-						class:text-gray-700={company !== current}
-						class:dark:text-gray-300={company !== current}
+						class:text-blue-600={company.name === current}
+						class:dark:text-blue-400={company.name === current}
+						class:font-medium={company.name === current}
+						class:text-gray-700={company.name !== current}
+						class:dark:text-gray-300={company.name !== current}
 					>
-						{company}
-						{#if company === current}
+						{companyLabel(company)}
+						{#if company.name === current}
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 							</svg>

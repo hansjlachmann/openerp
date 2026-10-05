@@ -197,6 +197,15 @@ messages:
   CU_REPORT_DATE: "Rapportdato"
   CU_REPORT_CANCELLED: "Rapport avbrutt."
 
+  # Demo data (codeunit 50100)
+  DEMO_DATA_DONE: "Demodata opprettet: %1 kunder og %2 kundeposter."
+  DEMO_DATA_NOT_EMPTY: "Selskapet \"%1\" har allerede kunder. Demodata opprettes bare i et selskap uten kunder."
+  DEMO_DATA_BAD_SIZE: "Ukjent størrelse på demodata \"%1\". Sett parameteren på jobben til SMALL eller LARGE."
+  DEMO_DATA_INSERT_FAILED: "Kunne ikke opprette %1 %2: %3. Ingen demodata ble opprettet."
+  DEMO_DATA_SETUP: "Oppretter land og betalingsbetingelser..."
+  DEMO_DATA_CUSTOMERS: "Oppretter kunder..."
+  DEMO_DATA_ENTRIES: "Oppretter kundeposter..."
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på at du vil slette denne posten?"
   DLG_DELETE_CONFIRM: "Er du sikker på at du vil slette denne %1?"

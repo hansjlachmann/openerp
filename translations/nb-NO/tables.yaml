@@ -13,6 +13,13 @@ tables:
       discount_date_calculation: "Beregning av kontantrabattdato"
       discount_percent: "Kontantrabatt-%"
 
+  # Country/Region (Table 11)
+  country_region:
+    caption: "Land/region"
+    fields:
+      code: "Kode"
+      name: "Navn"
+
   # SMTP Setup (Table 409)
   smtp_setup:
     caption: "SMTP-oppsett"
@@ -33,6 +40,7 @@ tables:
       address: "Adresse"
       post_code: "Postnr."
       city: "Poststed"
+      country_region_code: "Land/regionkode"
       phonenumber: "Telefonnr."
       email: "E-post"
       payment_terms_code: "Betalingsbeting.kode"
@@ -151,6 +159,7 @@ tables:
     caption: "Selskap"
     fields:
       name: "Navn"
+      display_name: "Visningsnavn"
 
   # User Role (Table 5130)
   user_role:

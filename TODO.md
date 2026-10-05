@@ -258,6 +258,24 @@ generation — uses progress but no user confirms) are the realistic scheduled t
 
 ---
 
+## Feature: Demo Data — step 1 ✅ IMPLEMENTED
+
+Codeunit 50100 + `backend/business-logic/demodata` (YAML data, SMALL/LARGE, run from the Job Queue),
+new Country_Region table (page 12) with `Customer.country_region_code`, and `Company.display_name`.
+See README "Demo Data".
+
+Remaining:
+- [ ] Env flag for docker/CI (e.g. `DEMO_DATA_COMPANY=demo01`, `DEMO_DATA_SIZE=SMALL`): at startup create
+      the company if missing and run `demodata.Create` when it has no customers, so Playwright E2E starts
+      from known data.
+- [ ] Permissions: the READER role (migration 002) has no read permission on `Country_Region`; add it in a
+      new migration (also missing for `SMTP_Setup`).
+- [ ] Company display name can only be set on the Companies page (11) after creating the company; the
+      login page "New company" form takes only the technical name.
+- [ ] New business tables (items, sales documents, ...) get demo data in the same change.
+
+---
+
 ## Framework: BC-style Setup Tables ✅ IMPLEMENTED
 
 Reusable support for NAV/BC-style singleton **setup tables** — a single record identified by a blank

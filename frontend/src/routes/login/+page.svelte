@@ -6,11 +6,12 @@
 	import { session } from '$stores/session';
 	import { toast } from '$lib/stores/toast';
 	import { onMount } from 'svelte';
+	import { companyLabel, type CompanyInfo } from '$lib/utils/company';
 
 	let userID = $state('');
 	let password = $state('');
 	let company = $state('');
-	let companies = $state<string[]>([]);
+	let companies = $state<CompanyInfo[]>([]);
 	let error = $state('');
 	let loading = $state(false);
 	let needsInitialSetup = $state(false);
@@ -36,7 +37,7 @@
 				companies = response.data;
 				// Set default company if available
 				if (companies.length > 0) {
-					company = companies[0];
+					company = companies[0].name;
 				}
 			}
 		} catch (err) {
@@ -332,8 +333,8 @@
 						{#if companies.length === 0}
 							<option value="">{t(LOGIN.LOADING_COMPANIES)}</option>
 						{:else}
-							{#each companies as companyName}
-								<option value={companyName}>{companyName}</option>
+							{#each companies as c (c.name)}
+								<option value={c.name}>{companyLabel(c)}</option>
 							{/each}
 						{/if}
 					</select>

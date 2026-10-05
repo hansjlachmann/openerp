@@ -17,6 +17,9 @@ func init() {
 	RegisterTableFactory("Payment_terms", gtables.PaymentTermsTableID, func() ftables.Table {
 		return &PaymentTerms{}
 	})
+	RegisterTableFactory("Country_Region", gtables.CountryRegionTableID, func() ftables.Table {
+		return &CountryRegion{}
+	})
 	RegisterTableFactory("SMTP_Setup", gtables.SMTPSetupTableID, func() ftables.Table {
 		return &SMTPSetup{}
 	})

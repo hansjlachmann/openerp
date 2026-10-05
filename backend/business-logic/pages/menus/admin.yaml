@@ -21,6 +21,10 @@ menu:
         page_id: 26
         icon: calendar
 
+      - name: Countries Regions
+        page_id: 12
+        icon: globe
+
       - name: SMTP Setup
         page_id: 409
         icon: mail

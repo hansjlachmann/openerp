@@ -1,0 +1,22 @@
+table:
+  id: 11
+  name: "Country_Region"
+  caption: Country/Region
+  description: Countries and regions (BC table 9 Country/Region)
+  fields:
+    - name: code
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: name
+      type: types.Text
+      db_name: name
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

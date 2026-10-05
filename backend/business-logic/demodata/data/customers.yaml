@@ -1,0 +1,191 @@
+# Demo data: the customers of the SMALL set (the LARGE set starts with these too).
+# Names are invented. UK phone numbers are in the ranges Ofcom reserves for drama
+# and fiction (020 7946 0xxx, 0161 496 0xxx, ...), so they never reach a real line.
+
+customers:
+  # Norway
+  - no: C00010
+    name: Fjordkraft Interiør AS
+    address: Karl Johans gate 21
+    post_code: "0159"
+    city: Oslo
+    country: "NO"
+    phone: +47 22 41 18 30
+    payment_terms: 30 DAYS
+    credit_limit: 250000
+  - no: C00020
+    name: Bryggen Sjømat AS
+    address: Bryggen 15
+    post_code: "5003"
+    city: Bergen
+    country: "NO"
+    phone: +47 55 30 12 40
+    payment_terms: 14 DAYS
+    credit_limit: 150000
+  - no: C00030
+    name: Nidaros Byggevare AS
+    address: Kongens gate 8
+    post_code: "7011"
+    city: Trondheim
+    country: "NO"
+    phone: +47 73 52 66 10
+    payment_terms: 30 DAYS
+    credit_limit: 400000
+  - no: C00040
+    name: Vestlandet Kontorservice AS
+    address: Kirkegata 12
+    post_code: "4006"
+    city: Stavanger
+    country: "NO"
+    phone: +47 51 89 23 70
+    payment_terms: CM
+    credit_limit: 100000
+  - no: C00050
+    name: Lyngen Turutstyr AS
+    address: Storgata 54
+    post_code: "9008"
+    city: Tromsø
+    country: "NO"
+    phone: +47 77 61 04 90
+    payment_terms: 30 DAYS
+    credit_limit: 75000
+  - no: C00060
+    name: Østfold Elektro AS
+    address: Nygaardsgata 3
+    post_code: "1607"
+    city: Fredrikstad
+    country: "NO"
+    phone: +47 69 31 45 20
+    payment_terms: 14 DAYS
+    credit_limit: 120000
+  - no: C00070
+    name: Sørlandet Møbelhus AS
+    address: Markens gate 30
+    post_code: "4611"
+    city: Kristiansand
+    country: "NO"
+    phone: +47 38 07 52 80
+    payment_terms: COD
+    credit_limit: 0
+    blocked: true
+
+  # Denmark
+  - no: C00080
+    name: Nørrebro Møbler ApS
+    address: Nørrebrogade 44
+    post_code: "2200"
+    city: København N
+    country: DK
+    phone: +45 35 37 21 10
+    payment_terms: 30 DAYS
+    credit_limit: 200000
+  - no: C00090
+    name: Aarhus Kaffekompagni A/S
+    address: Søndergade 18
+    post_code: "8000"
+    city: Aarhus C
+    country: DK
+    phone: +45 86 12 40 55
+    payment_terms: 14 DAYS
+    credit_limit: 80000
+  - no: C00100
+    name: Fynsk Trykkeri ApS
+    address: Vestergade 67
+    post_code: "5000"
+    city: Odense C
+    country: DK
+    phone: +45 66 11 23 90
+    payment_terms: 30 DAYS
+    credit_limit: 150000
+  - no: C00110
+    name: Limfjord Fiskeeksport A/S
+    address: Boulevarden 9
+    post_code: "9000"
+    city: Aalborg
+    country: DK
+    phone: +45 98 13 72 40
+    payment_terms: CM
+    credit_limit: 300000
+  - no: C00120
+    name: Strandvejens Vinhandel ApS
+    address: Strandvejen 128
+    post_code: "2900"
+    city: Hellerup
+    country: DK
+    phone: +45 39 62 18 05
+    payment_terms: 14 DAYS
+    credit_limit: 60000
+  - no: C00130
+    name: Esbjerg Havneservice A/S
+    address: Havnegade 22
+    post_code: "6700"
+    city: Esbjerg
+    country: DK
+    phone: +45 75 12 86 30
+    payment_terms: 30 DAYS
+    credit_limit: 250000
+  - no: C00140
+    name: Roskilde Cykelværksted ApS
+    address: Algade 31
+    post_code: "4000"
+    city: Roskilde
+    country: DK
+    phone: +45 46 35 07 20
+    payment_terms: COD
+    credit_limit: 25000
+
+  # United Kingdom
+  - no: C00150
+    name: Thames Office Supplies Ltd
+    address: 42 Upper Thames Street
+    post_code: EC4V 3BJ
+    city: London
+    country: GB
+    phone: +44 20 7946 0101
+    payment_terms: 30 DAYS
+    credit_limit: 300000
+  - no: C00160
+    name: Pennine Engineering Ltd
+    address: 18 Deansgate
+    post_code: M3 2BW
+    city: Manchester
+    country: GB
+    phone: +44 161 496 0202
+    payment_terms: 30 DAYS
+    credit_limit: 350000
+  - no: C00170
+    name: Albion Print & Design Ltd
+    address: 7 Briggate
+    post_code: LS1 6HD
+    city: Leeds
+    country: GB
+    phone: +44 113 496 0303
+    payment_terms: 14 DAYS
+    credit_limit: 90000
+  - no: C00180
+    name: Mersey Logistics Ltd
+    address: 25 Water Street
+    post_code: L2 0RG
+    city: Liverpool
+    country: GB
+    phone: +44 151 496 0404
+    payment_terms: CM
+    credit_limit: 200000
+  - no: C00190
+    name: Cotswold Fine Foods Ltd
+    address: 3 Market Place
+    post_code: GL7 2PE
+    city: Cirencester
+    country: GB
+    phone: +44 1632 960 505
+    payment_terms: 14 DAYS
+    credit_limit: 50000
+  - no: C00200
+    name: Kingsway Consulting Ltd
+    address: 110 Kingsway
+    post_code: WC2B 6AA
+    city: London
+    country: GB
+    phone: +44 20 7946 0606
+    payment_terms: 30 DAYS
+    credit_limit: 120000
