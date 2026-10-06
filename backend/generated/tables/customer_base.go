@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -274,9 +275,20 @@ func (t *CustomerBase) CreateTableWithDBType(db database.Executor, company strin
 		return fmt.Errorf("failed to create Customer table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
 
-	return nil
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *CustomerBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, CustomerTableName)
+	siftCompany := company
+	_ = tableName // no keys: nothing to index
+	keys := []sift.Key{
+	}
+	return sift.Sync(db, dbType, siftCompany, CustomerTableName, keys)
 }
 
 // ========================================
@@ -800,7 +812,8 @@ func (t *CustomerBase) CalcFieldsForRecords(records []map[string]interface{}, fi
 // calcForRecords_balance_lcy calculates the balance_lcy FlowField for a set of records
 // CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
 func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface{}) {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: totals of key customer_open, not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -867,7 +880,8 @@ func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface
 // calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
 // CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
 func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}) {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: totals of key customer_open, not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -932,7 +946,8 @@ func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}
 // calcForRecords_no_of_ledger_entries calculates the no_of_ledger_entries FlowField for a set of records
 // CalcFormula: Count(CustomerLedgerEntry.entry_no)
 func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]interface{}) {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: totals of key customer_open, not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -966,7 +981,7 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 		if len(whereClauses) > 0 {
 			whereClause = strings.Join(whereClauses, " AND ")
 		}
-		query := fmt.Sprintf(`SELECT customer_no, COUNT(*) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(cnt), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
 		query = t.convertPlaceholders(query, len(args))
 
 		rows, err := t.db.Query(query, args...)
@@ -993,7 +1008,8 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 // Helper methods for FlowField calculations
 
 func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: totals of key customer_open (one row per key value), not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1025,7 +1041,8 @@ func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decim
 }
 
 func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: totals of key customer_open (one row per key value), not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1055,7 +1072,8 @@ func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
 }
 
 func (t *CustomerBase) calcCountCustomerLedgerEntry() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	// SIFT: entry counts of key customer_open, not the entries
+	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1067,8 +1085,7 @@ func (t *CustomerBase) calcCountCustomerLedgerEntry() int {
 	if len(whereClauses) > 0 {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
-
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, whereClause)
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(cnt), 0) FROM "%s" WHERE %s`, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

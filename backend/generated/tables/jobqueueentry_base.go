@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -243,24 +244,27 @@ func (t *JobQueueEntryBase) CreateTableWithDBType(db database.Executor, company 
 		return fmt.Errorf("failed to create Job_Queue_Entry table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
-	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$Job_Queue_Entry$job_queue", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (job_queue_no)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
+
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *JobQueueEntryBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, JobQueueEntryTableName)
+	siftCompany := company
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (job_queue_no)`,
+		fmt.Sprintf("%s$Job_Queue_Entry$job_queue", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index job_queue: %w", err)
 	}
-	indexName = fmt.Sprintf("%s$Job_Queue_Entry$status", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (status)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (status)`,
+		fmt.Sprintf("%s$Job_Queue_Entry$status", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index status: %w", err)
 	}
-
-	return nil
+	keys := []sift.Key{
+	}
+	return sift.Sync(db, dbType, siftCompany, JobQueueEntryTableName, keys)
 }
 
 // ========================================

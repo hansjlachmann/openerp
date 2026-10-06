@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -420,38 +421,40 @@ func (t *CustomerLedgerEntryBase) CreateTableWithDBType(db database.Executor, co
 		return fmt.Errorf("failed to create Customer Ledger Entry table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
-	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$Customer Ledger Entry$customer_open", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no, open)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
+
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *CustomerLedgerEntryBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, CustomerLedgerEntryTableName)
+	siftCompany := company
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no, open)`,
+		fmt.Sprintf("%s$Customer Ledger Entry$customer_open", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer_open: %w", err)
 	}
-	indexName = fmt.Sprintf("%s$Customer Ledger Entry$customer", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no)`,
+		fmt.Sprintf("%s$Customer Ledger Entry$customer", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer: %w", err)
 	}
-	indexName = fmt.Sprintf("%s$Customer Ledger Entry$document", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (document_type, document_no)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (document_type, document_no)`,
+		fmt.Sprintf("%s$Customer Ledger Entry$document", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index document: %w", err)
 	}
-	indexName = fmt.Sprintf("%s$Customer Ledger Entry$posting_date", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (posting_date)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (posting_date)`,
+		fmt.Sprintf("%s$Customer Ledger Entry$posting_date", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index posting_date: %w", err)
 	}
-
-	return nil
+	keys := []sift.Key{
+		sift.BuildKey(dbType, siftCompany, CustomerLedgerEntryTableName, tableName, sift.KeySpec{
+			Name: "customer_open",
+			Fields: []sift.Column{{Name: "customer_no", Kind: sift.KindText}, {Name: "open", Kind: sift.KindBool}, },
+			Sums: []sift.Column{{Name: "remaining_amt_lcy", Kind: sift.KindDecimal}, {Name: "sales_lcy", Kind: sift.KindDecimal}, {Name: "amount_lcy", Kind: sift.KindDecimal}, },
+		}),
+	}
+	return sift.Sync(db, dbType, siftCompany, CustomerLedgerEntryTableName, keys)
 }
 
 // ========================================

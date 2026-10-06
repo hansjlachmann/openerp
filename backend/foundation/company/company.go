@@ -7,6 +7,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/migrations"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 )
 
 // MigrationRunner interface for running migrations
@@ -197,6 +198,12 @@ func (m *Manager) DeleteCompany(name string) error {
 	// If this is the current company, exit it first
 	if m.db.GetCurrentCompany() == name {
 		m.db.SetCurrentCompany("")
+	}
+
+	// SIFT totals: drop their triggers/functions and forget their definitions, so a
+	// company created later with the same name gets its totals built again
+	if err := sift.DropCompany(m.db.GetConnection(), m.db.GetDBType(), name); err != nil {
+		return fmt.Errorf("failed to drop SIFT totals: %w", err)
 	}
 
 	// Find all tables belonging to this company (Company$TableName pattern)

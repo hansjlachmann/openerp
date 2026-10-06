@@ -19,6 +19,12 @@ type TableDefinition interface {
 	CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error
 }
 
+// KeySyncer is implemented by generated tables: SyncKeys creates missing indexes and
+// builds, rebuilds or drops SIFT totals (keys with sum_index_fields).
+type KeySyncer interface {
+	SyncKeys(db database.Executor, company string, dbType database.DBType) error
+}
+
 // getSchemaForDBType returns the appropriate schema based on database type
 func getSchemaForDBType(tableDef TableDefinition, dbType database.DBType) string {
 	if dbType == database.DBTypePostgres {
@@ -108,6 +114,16 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): failed to fix NULL values: %v", tableID, tableDef.GetTableName(), err))
 				continue
+			}
+
+			// Keys added later (indexes) and SIFT totals (sum_index_fields): after the column
+			// sync, so a newly added sum field's column exists. New tables get them from
+			// CreateTableWithDBType.
+			if ks, ok := tableInterface.(KeySyncer); ok {
+				if err := ks.SyncKeys(db, companyName, dbType); err != nil {
+					failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): key sync failed: %v", tableID, tableDef.GetTableName(), err))
+					continue
+				}
 			}
 
 			migratedCount++
