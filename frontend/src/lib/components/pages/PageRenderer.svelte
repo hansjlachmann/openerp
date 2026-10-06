@@ -17,15 +17,17 @@
 	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
-	import { estimateRowsPerPage, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
+	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
 
 	interface Props {
 		pageid: number;
 		recordid?: string;
 		initialFilter?: string;
+		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
+		initialSelect?: string; // record key to select (returning from a drilldown)
 	}
 
-	let { pageid, recordid, initialFilter }: Props = $props();
+	let { pageid, recordid, initialFilter, returnUrl, initialSelect }: Props = $props();
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -110,7 +112,7 @@
 				// Set breadcrumb for card page
 				await setBreadcrumbForCardPage();
 			} else if (page.page.type === 'List') {
-				await loadListData();
+				await loadListData(await initialListOffset());
 				// Set breadcrumb for list page
 				breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
 			}
@@ -262,6 +264,21 @@
 			console.error('Error loading list data:', err);
 			records = [];
 			listTotal = 0;
+		}
+	}
+
+	// Returning from a drilldown to an unfiltered list: start with the window around the
+	// record to select (its position in primary key order), not at the top
+	async function initialListOffset(): Promise<number> {
+		if (!page || !initialSelect || currentFilters.length > 0) return 0;
+		try {
+			const ids = await api.getRecordIDs(page.page.source_table);
+			const position = ids.indexOf(initialSelect);
+			if (position < 0) return 0;
+			const perPage = estimateRowsPerPage(typeof window !== 'undefined' ? window.innerHeight : 800);
+			return windowOffsetFor(position, perPage, ids.length);
+		} catch {
+			return 0;
 		}
 	}
 
@@ -535,6 +552,8 @@
 			{currentFilters}
 			total={listTotal}
 			{windowOffset}
+			{returnUrl}
+			initialSelectKey={initialSelect}
 			onwindow={handleListWindow}
 			onaction={handleListAction}
 			onrowclick={handleRowClick}

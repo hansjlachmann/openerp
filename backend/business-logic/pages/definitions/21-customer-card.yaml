@@ -111,7 +111,10 @@ page:
     - name: Ledger Entries
       caption: Ledger Entries
       shortcut: Ctrl+F7
+      promoted: true
       run_page: 25
+      run_page_filter_field: customer_no
+      run_page_filter_value: no
 
     - name: Generate Ledger Entries
       caption: Generate Ledger Entries

@@ -28,6 +28,8 @@ messages:
   MSG_SAVED: "Gemt"
   MSG_NO_MATCHES: "Ingen match fundet"
   MSG_NO_RECORDS: "Ingen poster fundet"
+  MSG_LOOKUP_MORE: "%1 af %2 vises — skriv for at søge"
+  MSG_LOOKUP_LOADING: "Indlæser..."
   MSG_LOADING_MENU: "Indlæser menu..."
   MSG_NO_MENU_ITEMS: "Ingen menupunkter tilgængelige"
   MSG_CODEUNIT_SUCCESS: "Handling gennemført"

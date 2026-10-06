@@ -15,7 +15,8 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
-	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField } from '$lib/utils/recordHelpers';
+	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
+	import { withReturn } from '$lib/utils/returnUrl';
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
@@ -250,6 +251,19 @@
 	}
 
 	// Handle run_object actions (codeunits)
+	// URL of an action's run_page, filtered to this record when the action names a filter
+	// (run_page_filter_field = record[run_page_filter_value]), e.g. the customer's ledger entries
+	function runPageUrl(action: { run_page?: number; run_page_filter_field?: string; run_page_filter_value?: string }): string {
+		let url = `/pages/${action.run_page}`;
+		const value = action.run_page_filter_value ? record?.[action.run_page_filter_value] : undefined;
+		if (action.run_page_filter_field && value !== undefined && value !== null && value !== '') {
+			url += `?filter=${encodeURIComponent(`${action.run_page_filter_field}=${value}`)}`;
+		}
+		// Esc / close on the opened page comes back here (from a modal card: to its list,
+		// on this record)
+		return withReturn(url, getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)));
+	}
+
 	async function handleRunObject(runObject: string) {
 		// Parse the run_object string (format: "codeunit:ID")
 		const [objectType, objectId] = runObject.split(':');
@@ -306,7 +320,7 @@
 				map[normalizedShortcut] = () => {
 					// Handle run_page, run_object, or regular action (same as button click)
 					if (action.run_page) {
-						window.location.href = `/pages/${action.run_page}`;
+						window.location.href = runPageUrl(action);
 					} else if (action.run_object) {
 						handleRunObject(action.run_object);
 					} else {
@@ -439,7 +453,7 @@
 					tabindex={-1}
 					onclick={() => {
 						if (action.run_page) {
-							window.location.href = `/pages/${action.run_page}`;
+							window.location.href = runPageUrl(action);
 						} else if (action.run_object) {
 							handleRunObject(action.run_object);
 						} else {

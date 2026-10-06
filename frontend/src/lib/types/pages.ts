@@ -63,6 +63,8 @@ export interface Action {
 	shortcut?: string;
 	promoted?: boolean;
 	run_page?: number;
+	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
+	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
 	run_object?: string;
 	enabled?: boolean;
 }

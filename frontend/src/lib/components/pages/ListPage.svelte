@@ -26,10 +26,11 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
+	import { withReturn } from '$lib/utils/returnUrl';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
 
@@ -46,6 +47,10 @@
 		total?: number;
 		windowOffset?: number;
 		onwindow?: (request: ListWindowRequest) => Promise<void>;
+		// Opened from a drilldown/card action (BC): Esc and the close button go back here
+		returnUrl?: string;
+		// Record to select when the list opens (returning from a drilldown)
+		initialSelectKey?: string;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		onrowclick?: (record: Record<string, any>) => void;
 		onsave?: (record: Record<string, any>, isNew: boolean) => Promise<void>;
@@ -64,6 +69,8 @@
 		total = records.length,
 		windowOffset = 0,
 		onwindow,
+		returnUrl,
+		initialSelectKey,
 		onaction,
 		onrowclick,
 		onsave,
@@ -293,8 +300,7 @@
 					// Back to navigation mode
 					exitToNavigation();
 				} else {
-					// Navigate back to main menu
-					goto('/');
+					closeList();
 				}
 				return;
 			}
@@ -342,6 +348,25 @@
 		if (records.length > 0 && selectedIndex === -1) {
 			selectedIndex = 0;
 		}
+	});
+
+	// Esc / close in navigation mode: back to the page this list was opened from (drilldown,
+	// card action — as BC closes the page), otherwise to the main menu
+	function closeList() {
+		if (returnUrl) {
+			window.location.href = returnUrl;
+		} else {
+			goto('/');
+		}
+	}
+
+	// Select the record the list was opened for (returning from a drilldown), once
+	let initialSelectDone = false;
+	$effect(() => {
+		if (initialSelectDone || !initialSelectKey || records.length === 0) return;
+		initialSelectDone = true;
+		const index = records.findIndex((r) => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === initialSelectKey);
+		if (index >= 0) selectedIndex = index;
 	});
 
 	// Keep the selection on a loaded row when the window gets shorter (search, delete)
@@ -2197,7 +2222,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
-	<PageHeader title={page.page.caption}>
+	<PageHeader title={page.page.caption} onclose={returnUrl ? closeList : undefined}>
 		{#snippet leftActions()}
 			{#if page.page.editable}
 				<!-- Save state indicator - fixed width container to prevent layout shift -->
@@ -2481,7 +2506,7 @@
 												onblur={handleEditingInputBlur}
 											/>
 										</div>
-									{:else if lookups[field.source]?.columns && lookups[field.source]?.rows?.length}
+									{:else if isAdvancedLookup(lookups[field.source])}
 										<!-- Advanced lookup with columns - LookupDropdown -->
 										<!-- svelte-ignore a11y_no_static_element_interactions -->
 										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper"
@@ -2489,6 +2514,7 @@
 											<LookupDropdown
 												columns={lookups[field.source].columns ?? []}
 												rows={lookups[field.source].rows ?? []}
+												lazyUrl={lookups[field.source].lazy_url}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}
 												captions={captions}
@@ -2684,7 +2710,11 @@
 												onclick={(e) => {
 													e.stopPropagation();
 													const filterValue = record[field.drilldown_filter_value || ''] ?? '';
-													window.location.href = `/pages/${field.drilldown}?filter=${field.drilldown_filter_field}=${filterValue}`;
+													// Back to this list, on this record, with Esc or the close button
+													window.location.href = withReturn(
+														`/pages/${field.drilldown}?filter=${encodeURIComponent(`${field.drilldown_filter_field}=${filterValue}`)}`,
+														getRecordId(record, primaryKeyField, primaryKeyFieldsList)
+													);
 												}}
 											>
 												{formatCellValue(record[field.source], field.source)}

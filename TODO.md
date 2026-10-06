@@ -213,10 +213,16 @@ Open follow-ups:
       C00020 leaves its Customer Ledger Entries on C00020 (BC/NAV Rename updates related tables).
 - [ ] Code fields in list cells are sent to the API lowercase (`fieldTypes` holds `types.Code`, the
       uppercase check compares with `code`); the backend uppercases them, so the stored value is right.
-- [ ] Customer Ledger Entries page is missing: the customer card's "Ledger Entries" action has
-      `run_page: 25`, but there is no page 25 definition.
-- [ ] Lookups (`captions.lookups`, `getLookupValues` in tables.go) still load every row of the related
-      table on each list/card response — page/search them when a related table gets large.
+- [x] Customer Ledger Entries page 25 (menu, drilldowns from the Customer list's Balance/Sales, card
+      action "Ledger Entries"/Ctrl+F7 filtered to the customer). Found on the way: actions without
+      `enabled: true` were disabled (Go bool default) and pages naming their table by registry name got
+      no primary key fields — both fixed.
+- [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
+      exists (BC: posted ledger entries are not editable).
+- [ ] List cells ignore per-field `editable: false` except for paste and F8 (typing/F2 still edit).
+- [x] Lookups on demand for large related tables (> 200 rows): `lazy_url` + `GET …/lookup/:field`
+      with server search; relation values checked on insert/modify. demo04 Customer Ledger Entries
+      window 422 ms → 55 ms (deep window 865 ms → 88 ms).
 - [ ] Card navigation (`/ids`) returns all keys in primary-key order and ignores the list's
       sort/search/filter.
 - [ ] SQLite `LOWER()` only folds ASCII, so on SQLite the search is case-sensitive for æ/ø/å

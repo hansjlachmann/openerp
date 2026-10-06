@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -11,7 +12,7 @@ import (
 
 // TableMetadata holds metadata about tables for page rendering
 type TableMetadata struct {
-	primaryKeys    map[string][]string         // table name -> primary key field names (supports composite keys)
+	primaryKeys    map[string][]string          // table name -> primary key field names (supports composite keys)
 	requiredFields map[string]map[string]bool   // table name -> field name -> required
 	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
 	mu             sync.RWMutex
@@ -111,13 +112,13 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		}
 	}
 	if len(pkFields) > 0 {
-		tm.primaryKeys[tableDef.Table.Name] = pkFields
+		tm.primaryKeys[metadataKey(tableDef.Table.Name)] = pkFields
 	}
 	if len(reqFields) > 0 {
-		tm.requiredFields[tableDef.Table.Name] = reqFields
+		tm.requiredFields[metadataKey(tableDef.Table.Name)] = reqFields
 	}
 	if len(fTypes) > 0 {
-		tm.fieldTypes[tableDef.Table.Name] = fTypes
+		tm.fieldTypes[metadataKey(tableDef.Table.Name)] = fTypes
 	}
 
 	return nil
@@ -127,7 +128,7 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 func (tm *TableMetadata) GetPrimaryKeyField(tableName string) string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	if fields := tm.primaryKeys[tableName]; len(fields) > 0 {
+	if fields := tm.primaryKeys[metadataKey(tableName)]; len(fields) > 0 {
 		return fields[0]
 	}
 	return ""
@@ -137,14 +138,14 @@ func (tm *TableMetadata) GetPrimaryKeyField(tableName string) string {
 func (tm *TableMetadata) GetPrimaryKeyFields(tableName string) []string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	return tm.primaryKeys[tableName]
+	return tm.primaryKeys[metadataKey(tableName)]
 }
 
 // GetFieldType returns the YAML type for a field (e.g., "bool", "code", "text")
 func (tm *TableMetadata) GetFieldType(tableName, fieldName string) string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	if types, ok := tm.fieldTypes[tableName]; ok {
+	if types, ok := tm.fieldTypes[metadataKey(tableName)]; ok {
 		return types[fieldName]
 	}
 	return ""
@@ -154,8 +155,16 @@ func (tm *TableMetadata) GetFieldType(tableName, fieldName string) string {
 func (tm *TableMetadata) IsFieldRequired(tableName, fieldName string) bool {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	if reqFields, ok := tm.requiredFields[tableName]; ok {
+	if reqFields, ok := tm.requiredFields[metadataKey(tableName)]; ok {
 		return reqFields[fieldName]
 	}
 	return false
+}
+
+// metadataKey normalizes a table name for the metadata maps: pages use registry names
+// ("Customer_ledger_entry", "Payment_terms"), table YAML files display names ("Customer
+// Ledger Entry", "Payment Terms"). Without this, such pages got no primary_key_fields, the
+// frontend keyed their rows randomly and lost focus on every render.
+func metadataKey(tableName string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tableName), " ", "_"))
 }

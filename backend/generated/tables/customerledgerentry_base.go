@@ -4605,12 +4605,22 @@ func (t *CustomerLedgerEntryBase) GetTableRelationFields() map[string]tables.Tab
 			Table:        "Customer",
 			Field:        "no",
 			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 90},
+				{Source: "name", Width: 220},
+				{Source: "city", Width: 120},
+			},
 			SearchTimeout: 0,
 		},
 		"sell_to_customer_no": {
 			Table:        "Customer",
 			Field:        "no",
 			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 90},
+				{Source: "name", Width: 220},
+				{Source: "city", Width: 120},
+			},
 			SearchTimeout: 0,
 		},
 	}

@@ -138,7 +138,20 @@ type LookupData struct {
 	Rows          []map[string]interface{} `json:"rows"`                     // Row data
 	Simple        map[string]string        `json:"simple,omitempty"`         // Simple key->display map (simple mode)
 	SearchTimeout int                      `json:"search_timeout,omitempty"` // Auto-clear search timeout in ms (0 = default 1500)
+	// LazyURL is set when the related table is too large to send along: the dropdown
+	// loads its rows on demand from this URL (GET …/lookup/:field?search=), Rows and
+	// Simple stay empty
+	LazyURL string `json:"lazy_url,omitempty"`
+	Total   int    `json:"total,omitempty"` // rows in the related table (lazy lookups)
 }
+
+// lookupInlineLimit: related tables with at most this many rows are sent along with every
+// list/card response (instant dropdowns); larger ones are loaded on demand. Sending all
+// 10,000 customers with each Customer Ledger Entries window cost ~0.4 s per request.
+const lookupInlineLimit = 200
+
+// lookupPageSize is how many rows an on-demand dropdown loads per search
+const lookupPageSize = 50
 
 // LookupColumn represents a column in the lookup dropdown
 type LookupColumn struct {
@@ -147,7 +160,7 @@ type LookupColumn struct {
 }
 
 // getLookupValues fetches lookup values for table relation fields
-func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map[string]*LookupData {
+func (h *TablesHandler) getLookupValues(tableName string, table ftables.Table, company string) map[string]*LookupData {
 	lookups := make(map[string]*LookupData)
 
 	for fieldName, relInfo := range table.GetTableRelationFields() {
@@ -174,6 +187,19 @@ func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map
 					Width:  col.Width,
 				})
 			}
+		}
+
+		// Large related table: no rows, the dropdown loads them on demand
+		if total := relTable.Count(); total > lookupInlineLimit {
+			if len(lookup.Columns) == 0 {
+				lookup.Columns = []LookupColumn{{Source: relInfo.Field, Width: 150}}
+			}
+			lookup.Rows = nil
+			lookup.Simple = nil
+			lookup.LazyURL = fmt.Sprintf("/api/tables/%s/lookup/%s", url.PathEscape(tableName), url.PathEscape(fieldName))
+			lookup.Total = total
+			lookups[fieldName] = lookup
+			continue
 		}
 
 		// Fetch all records from related table
@@ -215,9 +241,72 @@ func (h *TablesHandler) getLookupValues(table ftables.Table, company string) map
 	return lookups
 }
 
+// LookupRows returns rows for an on-demand dropdown (lookups with lazy_url): rows of the
+// table related to :field whose key or lookup columns contain search (case-insensitive),
+// ordered by key, at most lookupPageSize. key=<value> returns the row with that key, if any.
+// GET /api/tables/:table/lookup/:field?search=&offset=&key=
+func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	fieldName := c.Params("field")
+	sess := getSession(c)
+	if sess == nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	company := sess.GetCompany()
+	language := sess.GetLanguage()
+
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+	relInfo, ok := table.GetTableRelationFields()[fieldName]
+	if !ok {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
+	}
+	relFactory, ok := tables.GetTableFactory(relInfo.Table)
+	if !ok {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(relInfo.Table).Message(language)))
+	}
+	relTable := relFactory()
+	relTable.InitWithDBType(h.db, company, h.dbType)
+
+	// Columns shown in the dropdown (stored columns only), the key first
+	columns := []string{relInfo.Field}
+	for _, col := range relInfo.LookupColumns {
+		if col.Source != relInfo.Field && relTable.HasColumn(col.Source) {
+			columns = append(columns, col.Source)
+		}
+	}
+
+	if key := c.Query("key", ""); key != "" {
+		relTable.SetFilter(relInfo.Field, strings.ToUpper(key))
+	} else if search := strings.TrimSpace(c.Query("search", "")); search != "" {
+		relTable.SetSearch(columns, search)
+	}
+	relTable.SetCurrentKey(relInfo.Field)
+	total := relTable.Count()
+	relTable.SetPage(lookupPageSize, max(c.QueryInt("offset", 0), 0))
+
+	rows := make([]map[string]interface{}, 0)
+	if relTable.FindSet() {
+		for {
+			record := relTable.ToMap()
+			row := map[string]interface{}{"_key": fmt.Sprint(record[relInfo.Field])}
+			for _, col := range columns {
+				row[col] = record[col]
+			}
+			rows = append(rows, row)
+			if !relTable.Next() {
+				break
+			}
+		}
+	}
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"rows": rows, "total": total}))
+}
+
 // getLookupValuesAsInterface converts lookup data to interface{} map for JSON serialization
-func (h *TablesHandler) getLookupValuesAsInterface(table ftables.Table, company string) map[string]interface{} {
-	lookups := h.getLookupValues(table, company)
+func (h *TablesHandler) getLookupValuesAsInterface(tableName string, table ftables.Table, company string) map[string]interface{} {
+	lookups := h.getLookupValues(tableName, table, company)
 	result := make(map[string]interface{})
 	for k, v := range lookups {
 		result[k] = v
@@ -255,7 +344,7 @@ func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 	}
 
 	// Build lookups map for table relation fields
-	lookups := h.getLookupValues(table, company)
+	lookups := h.getLookupValues(tableName, table, company)
 
 	response := apitypes.NewSuccessResponse(map[string]interface{}{
 		"options": options,
@@ -436,7 +525,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		Fields:     make(map[string]string),
 		FieldTypes: make(map[string]string),
 		Options:    make(map[string]map[string]string),
-		Lookups:    h.getLookupValuesAsInterface(table, company),
+		Lookups:    h.getLookupValuesAsInterface(tableName, table, company),
 	}
 
 	// Add field captions and types from metadata
@@ -510,7 +599,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		Fields:     make(map[string]string),
 		FieldTypes: make(map[string]string),
 		Options:    make(map[string]map[string]string),
-		Lookups:    h.getLookupValuesAsInterface(table, company),
+		Lookups:    h.getLookupValuesAsInterface(tableName, table, company),
 	}
 
 	for _, field := range table.GetFields() {
@@ -555,6 +644,11 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+
+	// A changed table relation field must point to an existing record
+	if err := h.checkRelations(table, company, language, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
@@ -642,6 +736,11 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+
+	// A changed table relation field must point to an existing record
+	if err := h.checkRelations(table, company, language, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
@@ -851,23 +950,50 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	}
 
 	// Check table relation: verify the value exists in the related table
-	if valueStr, ok := req.Value.(string); ok && valueStr != "" {
-		relFields := table.GetTableRelationFields()
-		if relInfo, hasRelation := relFields[req.Field]; hasRelation {
-			relTable, relErr := h.getTable(relInfo.Table, company)
-			if relErr == nil {
-				if !relTable.Get(valueStr) {
-					relCaption := i18n.GetInstance().TableCaption(relInfo.Table, language)
-					return c.JSON(apitypes.APIResponse{
-						Success: false,
-						Error:   fmt.Sprintf("%s '%s' does not exist", relCaption, valueStr),
-					})
-				}
-			}
-		}
+	if err := h.checkRelation(table, company, language, req.Field, req.Value); err != nil {
+		return c.JSON(apitypes.APIResponse{Success: false, Error: err.Error()})
 	}
 
 	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
+}
+
+// checkRelation returns an error when value (a non-empty key) does not exist in the
+// table related to field. Fields without a table relation always pass.
+func (h *TablesHandler) checkRelation(table ftables.Table, company, language, field string, value interface{}) error {
+	valueStr, ok := value.(string)
+	if !ok || valueStr == "" {
+		return nil
+	}
+	relInfo, hasRelation := table.GetTableRelationFields()[field]
+	if !hasRelation {
+		return nil
+	}
+	relTable, err := h.getTable(relInfo.Table, company)
+	if err != nil {
+		return nil // related table not registered: nothing to check against
+	}
+	if !relTable.Get(valueStr) {
+		relCaption := i18n.GetInstance().TableCaption(relInfo.Table, language)
+		return fmt.Errorf("%s '%s' does not exist", relCaption, valueStr)
+	}
+	return nil
+}
+
+// checkRelations checks every table relation field in data whose value differs from the
+// record's current value (insert/modify). The page's dropdowns are not the only guard:
+// on-demand dropdowns (large related tables) accept a typed key and rely on this check.
+func (h *TablesHandler) checkRelations(table ftables.Table, company, language string, data map[string]interface{}) error {
+	current := table.ToMap()
+	for field := range table.GetTableRelationFields() {
+		value, ok := data[field]
+		if !ok || fmt.Sprint(current[field]) == fmt.Sprint(value) {
+			continue
+		}
+		if err := h.checkRelation(table, company, language, field, value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // dropCompanyTables drops all "companyName$*" tables from PostgreSQL

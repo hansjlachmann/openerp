@@ -19,7 +19,6 @@ func listNos(t *testing.T, out map[string]interface{}) ([]string, int) {
 	return nos, int(total)
 }
 
-
 // List pages load a window of rows (offset/limit) with server-side sort and search.
 func TestListWindowSortAndSearch(t *testing.T) {
 	app := newTablesTestApp(t)
