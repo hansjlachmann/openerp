@@ -11,6 +11,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -203,17 +204,23 @@ func (t *UserBase) CreateTableWithDBType(db database.Executor, company string, d
 		return fmt.Errorf("failed to create User table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
-	var indexName, indexSQL string
-	indexName = fmt.Sprintf("%s$User$Primary", company)
-	indexSQL = fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id)`,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
+
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *UserBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+	tableName := UserTableName
+	siftCompany := ""
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id)`,
+		fmt.Sprintf("%s$User$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
-
-	return nil
+	keys := []sift.Key{
+	}
+	return sift.Sync(db, dbType, siftCompany, UserTableName, keys)
 }
 
 // ========================================

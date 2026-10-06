@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -28,6 +29,9 @@ type Key struct {
 	Fields    []string `yaml:"fields"`    // Fields in the key (e.g., ["customer_no", "open"])
 	Unique    bool     `yaml:"unique"`    // Whether this is a UNIQUE index
 	Clustered bool     `yaml:"clustered"` // Primary key-like behavior (BC/NAV concept)
+	// SumIndexFields (BC/NAV SIFT): the database keeps a totals table for this key with
+	// these fields summed, and FlowFields over the key's fields read the totals
+	SumIndexFields []string `yaml:"sum_index_fields"`
 }
 
 // Field represents a single field in a table
@@ -56,6 +60,9 @@ type Field struct {
 	// prepareTemplateData; empty means CalcFieldsForRecords calculates per record.
 	BatchKeyField string `yaml:"-"`
 	BatchKeyValue string `yaml:"-"`
+	// SIFTKey (derived): the source table's SIFT key this FlowField reads its totals from
+	// ("" = sums the entries)
+	SIFTKey string `yaml:"-"`
 }
 
 // FlowFilter represents a filter condition for FlowField calculation
@@ -112,7 +119,22 @@ type TemplateData struct {
 	HasFlowField     bool
 	HasBlobField     bool
 	HasIntField      bool
-	FirstPrimaryKey  *Field // First primary key field (for GetPrimaryKeyField/Value)
+	FirstPrimaryKey  *Field        // First primary key field (for GetPrimaryKeyField/Value)
+	SIFTKeys         []SIFTKeyData // this table's keys with sum_index_fields
+	UsesSIFT         bool          // imports the sift package (own SIFT keys or FlowFields reading totals)
+}
+
+// SIFTKeyData is a key with sum index fields, as the templates need it
+type SIFTKeyData struct {
+	Name   string
+	Fields []SIFTColumn
+	Sums   []SIFTColumn
+}
+
+// SIFTColumn is a key or sum column of a SIFT key (column name and sift.Kind)
+type SIFTColumn struct {
+	Name string
+	Kind string
 }
 
 func main() {
@@ -154,15 +176,41 @@ func main() {
 
 	fmt.Printf("Found %d table definition(s)\n", len(yamlFiles))
 
+	// Pass 1: read every definition. A FlowField reads the totals of a SIFT key on its
+	// source table, so FlowFields can only be resolved when all tables are known.
+	type parsed struct {
+		file string
+		def  *TableDef
+	}
+	var defs []parsed
+	byStruct := map[string]*TableDef{}
 	for _, yamlFile := range yamlFiles {
-		fmt.Printf("\nProcessing: %s\n", filepath.Base(yamlFile))
-
-		// Parse YAML
 		tableDef, err := parseYAML(yamlFile)
 		if err != nil {
-			fmt.Printf("  ✗ Error parsing YAML: %v\n", err)
+			fmt.Printf("✗ Error parsing %s: %v\n", filepath.Base(yamlFile), err)
 			continue
 		}
+		defs = append(defs, parsed{yamlFile, tableDef})
+		byStruct[toPascalCase(tableDef.Table.Name)] = tableDef
+	}
+	failed := false
+	for _, p := range defs {
+		if err := validateSIFTKeys(p.def); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
+			failed = true
+		}
+	}
+	if failed {
+		os.Exit(1)
+	}
+	for _, p := range defs {
+		resolveFlowFieldSIFT(p.def, byStruct)
+	}
+
+	// Pass 2: generate
+	for _, p := range defs {
+		yamlFile, tableDef := p.file, p.def
+		fmt.Printf("\nProcessing: %s\n", filepath.Base(yamlFile))
 
 		// Prepare template data
 		data := prepareTemplateData(tableDef)
@@ -290,7 +338,122 @@ func prepareTemplateData(def *TableDef) TemplateData {
 	}
 	data.TableDef = *def
 
+	// SIFT keys of this table, and whether the sift package is needed
+	fieldsByName := map[string]Field{}
+	for _, f := range def.Table.Fields {
+		fieldsByName[f.Name] = f
+	}
+	for _, k := range def.Table.Keys {
+		if len(k.SumIndexFields) == 0 {
+			continue
+		}
+		kd := SIFTKeyData{Name: k.Name}
+		for _, name := range k.Fields {
+			f := fieldsByName[name]
+			kd.Fields = append(kd.Fields, SIFTColumn{Name: f.DBName, Kind: siftKind(f)})
+		}
+		for _, name := range k.SumIndexFields {
+			f := fieldsByName[name]
+			kd.Sums = append(kd.Sums, SIFTColumn{Name: f.DBName, Kind: siftKind(f)})
+		}
+		data.SIFTKeys = append(data.SIFTKeys, kd)
+	}
+	data.UsesSIFT = true // SyncKeys always calls sift.Sync (drops totals of removed keys)
+
 	return data
+}
+
+// siftKind maps a field type to the sift package's column kind
+func siftKind(f Field) string {
+	switch f.Type {
+	case "int", "int64", "Option":
+		return "KindInt"
+	case "bool":
+		return "KindBool"
+	case "types.Date":
+		return "KindDate"
+	case "types.DateTime", "time.Time":
+		return "KindDateTime"
+	case "types.Decimal", "float64":
+		return "KindDecimal"
+	default:
+		return "KindText"
+	}
+}
+
+// validateSIFTKeys checks keys with sum_index_fields: key and sum fields must be stored
+// fields of the table, sum fields numeric.
+func validateSIFTKeys(def *TableDef) error {
+	fields := map[string]Field{}
+	for _, f := range def.Table.Fields {
+		fields[f.Name] = f
+	}
+	for _, k := range def.Table.Keys {
+		if len(k.SumIndexFields) == 0 {
+			continue
+		}
+		for _, name := range k.Fields {
+			f, ok := fields[name]
+			if !ok || f.FlowField {
+				return fmt.Errorf("key %s: field %q is not a stored field of %s", k.Name, name, def.Table.Name)
+			}
+		}
+		for _, name := range k.SumIndexFields {
+			f, ok := fields[name]
+			if !ok || f.FlowField {
+				return fmt.Errorf("key %s: sum index field %q is not a stored field of %s", k.Name, name, def.Table.Name)
+			}
+			switch f.Type {
+			case "types.Decimal", "int", "int64", "float64":
+			default:
+				return fmt.Errorf("key %s: sum index field %q has type %s; only numbers can be summed", k.Name, name, f.Type)
+			}
+		}
+	}
+	return nil
+}
+
+// resolveFlowFieldSIFT picks, for each Sum/Count FlowField, a SIFT key on its source table
+// whose fields contain every flow filter field and (Sum) whose sum index fields contain
+// the summed field — the key with the fewest fields. Without one the FlowField sums the
+// entries; when the source table has SIFT keys that is reported, as it is likely a
+// removed sum index field.
+func resolveFlowFieldSIFT(def *TableDef, byStruct map[string]*TableDef) {
+	for i := range def.Table.Fields {
+		f := &def.Table.Fields[i]
+		f.SIFTKey = ""
+		if !f.FlowField || (f.CalcFormula != "Sum" && f.CalcFormula != "Count") {
+			continue
+		}
+		source, ok := byStruct[toPascalCase(f.SourceTable)]
+		if !ok {
+			continue
+		}
+		best, bestLen, hasSIFT := "", 0, false
+		for _, k := range source.Table.Keys {
+			if len(k.SumIndexFields) == 0 {
+				continue
+			}
+			hasSIFT = true
+			if f.CalcFormula == "Sum" && !slices.Contains(k.SumIndexFields, f.SourceField) {
+				continue
+			}
+			covers := true
+			for _, ff := range f.FlowFilters {
+				if !slices.Contains(k.Fields, ff.Field) {
+					covers = false
+					break
+				}
+			}
+			if covers && (best == "" || len(k.Fields) < bestLen) {
+				best, bestLen = k.Name, len(k.Fields)
+			}
+		}
+		f.SIFTKey = best
+		if best == "" && hasSIFT {
+			fmt.Printf("⚠ %s.%s: no SIFT key of %s covers it, sums the entries\n", def.Table.Name, f.Name, source.Table.Name)
+		}
+	}
 }
 
 // fileExists checks if a file exists
@@ -611,6 +774,9 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+{{- if .UsesSIFT }}
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
+{{- end }}
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 {{- if or .HasCodeField .HasTextField .HasDecimalField .HasDateField .HasDateTimeField }}
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -863,21 +1029,40 @@ func (t *{{ .BaseStructName }}) CreateTableWithDBType(db database.Executor, comp
 		return fmt.Errorf("failed to create {{ .Table.Name }} table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
-{{- if .Table.Keys }}
-	var indexName, indexSQL string
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
+
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *{{ .BaseStructName }}) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+	siftCompany := ""
+{{- else }}
+	tableName := fmt.Sprintf("%s$%s", company, {{ .StructName }}TableName)
+	siftCompany := company
+{{- end }}
 {{- range .Table.Keys }}
-	indexName = fmt.Sprintf("%s${{ $.Table.Name }}${{ .Name }}", company)
-	indexSQL = fmt.Sprintf(` + "`CREATE INDEX IF NOT EXISTS \"%s\" ON \"%s\" ({{ join .Fields \", \" }})`" + `,
-		indexName, tableName)
-	_, err = db.Exec(indexSQL)
-	if err != nil {
+	if _, err := db.Exec(fmt.Sprintf(` + "`CREATE INDEX IF NOT EXISTS \"%s\" ON \"%s\" ({{ join .Fields \", \" }})`" + `,
+		fmt.Sprintf("%s${{ $.Table.Name }}${{ .Name }}", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index {{ .Name }}: %w", err)
 	}
 {{- end }}
+{{- if not .Table.Keys }}
+	_ = tableName // no keys: nothing to index
 {{- end }}
-
-	return nil
+	keys := []sift.Key{
+{{- range .SIFTKeys }}
+		sift.BuildKey(dbType, siftCompany, {{ $.StructName }}TableName, tableName, sift.KeySpec{
+			Name: "{{ .Name }}",
+			Fields: []sift.Column{ {{- range .Fields }}{Name: "{{ .Name }}", Kind: sift.{{ .Kind }}}, {{ end -}} },
+			Sums: []sift.Column{ {{- range .Sums }}{Name: "{{ .Name }}", Kind: sift.{{ .Kind }}}, {{ end -}} },
+		}),
+{{- end }}
+	}
+	return sift.Sync(db, dbType, siftCompany, {{ .StructName }}TableName, keys)
 }
 
 // ========================================
@@ -1463,7 +1648,12 @@ func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interf
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
 func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
 {{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+{{- if .SIFTKey }}
+	// SIFT: totals of key {{ .SIFTKey }}, not the entries
+	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
+{{- end }}
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -1509,7 +1699,11 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 		}
 
 		{{- if eq .CalcFormula "Count" }}
+{{- if .SIFTKey }}
+		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM(cnt), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
+{{- else }}
 		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COUNT(*) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
+{{- end }}
 		{{- else }}
 		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
 		{{- end }}
@@ -1571,7 +1765,12 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
 
 func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
+{{- if .SIFTKey }}
+	// SIFT: totals of key {{ .SIFTKey }} (one row per key value), not the entries
+	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
+{{- end }}
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1611,7 +1810,12 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 {{- if and .FlowField (eq .CalcFormula "Count") }}
 
 func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
+{{- if .SIFTKey }}
+	// SIFT: entry counts of key {{ .SIFTKey }}, not the entries
+	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
+{{- else }}
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
+{{- end }}
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1632,7 +1836,11 @@ func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
 
+{{- if .SIFTKey }}
+	query := fmt.Sprintf(` + "`SELECT COALESCE(SUM(cnt), 0) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
+{{- else }}
 	query := fmt.Sprintf(` + "`SELECT COUNT(*) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
+{{- end }}
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -321,9 +322,20 @@ func (t *JobQueueBase) CreateTableWithDBType(db database.Executor, company strin
 		return fmt.Errorf("failed to create Job_Queue table: %w", err)
 	}
 
-	// Create indexes (BC/NAV Keys)
+	// Indexes (BC/NAV Keys) and SIFT totals
+	return t.SyncKeys(db, company, dbType)
+}
 
-	return nil
+// SyncKeys brings an existing table's keys up to date (table sync at startup): creates
+// missing indexes and builds, rebuilds or drops the SIFT totals of keys with
+// sum_index_fields (sift.Sync; unchanged keys cost one query).
+func (t *JobQueueBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+	tableName := fmt.Sprintf("%s$%s", company, JobQueueTableName)
+	siftCompany := company
+	_ = tableName // no keys: nothing to index
+	keys := []sift.Key{
+	}
+	return sift.Sync(db, dbType, siftCompany, JobQueueTableName, keys)
 }
 
 // ========================================
@@ -887,7 +899,6 @@ func (t *JobQueueBase) calcCountJob_Queue_Entry() int {
 	if len(whereClauses) > 0 {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
-
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL

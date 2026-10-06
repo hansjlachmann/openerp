@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 const testCompany = "demo01"
@@ -302,5 +304,85 @@ func TestCalcFieldsForRecordsOnlyRequested(t *testing.T) {
 	}
 	if _, ok := records[0]["balance_lcy"]; ok {
 		t.Error("balance_lcy calculated although not requested")
+	}
+}
+
+// Customer FlowFields read SIFT totals (key customer_open of Customer Ledger Entry). They
+// must equal sums over the entries — also after entries are changed through the table API
+// (Modify closes an invoice, Delete removes one).
+func TestFlowFieldsFromSIFTMatchEntries(t *testing.T) {
+	db := newTestDB(t)
+	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	const entries = `"demo01$Customer Ledger Entry"`
+
+	check := func(label string) {
+		t.Helper()
+		rows, err := db.Query(`SELECT c.no,
+			(SELECT COALESCE(SUM(CAST(remaining_amt_lcy AS REAL)), 0) FROM ` + entries + ` e WHERE e.customer_no = c.no AND e.open = 1),
+			(SELECT COALESCE(SUM(CAST(sales_lcy AS REAL)), 0) FROM ` + entries + ` e WHERE e.customer_no = c.no),
+			(SELECT COUNT(*) FROM ` + entries + ` e WHERE e.customer_no = c.no)
+			FROM "demo01$Customer" c`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := map[string][3]float64{}
+		for rows.Next() {
+			var no string
+			var balance, sales, count float64
+			if err := rows.Scan(&no, &balance, &sales, &count); err != nil {
+				t.Fatal(err)
+			}
+			want[no] = [3]float64{balance, sales, count}
+		}
+		_ = rows.Close()
+
+		for no, w := range want {
+			var cust tables.Customer
+			cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+			if !cust.Get(no) {
+				t.Fatalf("customer %s not found", no)
+			}
+			cust.CalcFields()
+			got := [3]float64{cust.Balance_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
+			for i := range got {
+				if math.Abs(got[i]-w[i]) > 0.005 {
+					t.Fatalf("%s: %s FlowFields (balance, sales, count) = %v, want %v", label, no, got, w)
+				}
+			}
+		}
+	}
+	check("after demo data")
+
+	// Close the first open invoice through the table API (moves it to the closed totals)
+	var entry tables.CustomerLedgerEntry
+	entry.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	entry.SetRange("open", true)
+	if !entry.FindFirst() {
+		t.Fatal("no open entry")
+	}
+	entry.Open = false
+	entry.Remaining_amt_lcy = types.NewDecimal(0)
+	entry.Remaining_amount = types.NewDecimal(0)
+	if !entry.Modify(true) {
+		t.Fatal("Modify failed")
+	}
+	check("after closing an invoice")
+
+	// Delete an entry
+	entry.Reset()
+	if !entry.FindLast() || !entry.Delete(true) {
+		t.Fatal("Delete failed")
+	}
+	check("after deleting an entry")
+
+	// The totals table is what the FlowFields read: it holds at most 2 rows per customer
+	var totalsRows int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "demo01$Customer Ledger Entry$SIFT$customer_open"`).Scan(&totalsRows); err != nil {
+		t.Fatal(err)
+	}
+	if totalsRows == 0 || totalsRows > 40 {
+		t.Errorf("totals rows = %d, want 1..40 for 20 customers", totalsRows)
 	}
 }

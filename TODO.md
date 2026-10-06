@@ -8,6 +8,146 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## Feature: SIFT (Sum Index Fields) — Phase 1: foundation ✅ DONE
+
+Implemented as planned below (`backend/foundation/sift`, tablegen, `SyncKeys`); first key: Customer
+Ledger Entry `customer_open`. Verified:
+- Tests (SQLite + Postgres): 400 random inserts/modifies/key moves/deletes/rollbacks, NULL keys, bulk
+  statements, TRUNCATE → totals always equal the entries; 8 parallel writers on one totals row
+  (some rolled back) → exact; rebuild on added/removed sum field, removed key, missing totals table;
+  `DropCompany`; FlowFields via SIFT equal sums over the entries (also after Modify/Delete).
+- demo04 (Postgres, 141,710 entries): totals built at startup in 0.75 s (17,272 totals rows); all
+  10,000 customers' Balance/Sales/No. of entries identical to before; a FlowField reads 1 totals
+  row via its primary key (0.1 ms); insert/close/delete of an entry through the API moves the
+  totals correctly; second start rebuilds nothing; removing `sales_lcy` from `sum_index_fields`
+  → warning + rebuild + fallback to the entries, adding it back → rebuild, totals match.
+
+Next phases (not started): 2 LARGE+ demo data (~1,000 entries per customer) and measurement →
+3 Verify/Rebuild SIFT codeunit (Job Queue) → 4 FlowFilters (date filter), then G/L Account / G/L Entry.
+
+### Original plan
+
+### Goal
+FlowFields over large ledgers (G/L Entry, 100,000+ entries per account) must not add up every entry
+on each read. As in NAV/BC (SumIndexFields; BC: indexed views), table keys can declare sum fields;
+the database keeps a totals table per key up to date, and FlowFields read the totals.
+
+Phases: **1 foundation (this plan)** → 2 LARGE+ demo data (~1,000 entries per customer) and
+measurement → 3 Verify/Rebuild SIFT codeunit (Job Queue) → 4 FlowFilters (date filter), then
+G/L Account / G/L Entry.
+
+### Current state (reuse, don't rebuild)
+- FlowFields: `calc_formula` Sum/Count + `flow_filters` (const / field) in the table YAML; generated
+  per record `calcSum…`/`calcCount…` and batched `calcForRecords_…` (`tools/tablegen/main.go`).
+  Both run `SUM(...)`/`COUNT(*)` over the source table today.
+- Keys: `keys:` in the YAML → `CREATE INDEX` in the generated `CreateTableWithDBType` — **only when
+  the table is created**; table sync (`backend/foundation/objects/initializer.go`
+  `InitializeCompanyTablesWithDBType`) adds missing columns to existing tables but no indexes.
+- Decimals: Postgres `NUMERIC` (exact), SQLite `TEXT` (summed as float). Booleans: Postgres
+  `BOOLEAN`, SQLite `INTEGER`.
+
+### 1. YAML: sum index fields on keys
+```yaml
+keys:
+  - name: customer_open
+    fields: [customer_no, open]
+    sum_index_fields: [remaining_amt_lcy, sales_lcy, amount_lcy]
+```
+- tablegen `Key` gets `SumIndexFields []string`. Validation at generation time (fail the build):
+  key and sum fields must exist and be stored (not FlowFields); sum fields must be Decimal or int.
+- Apply to `custledgerentry.yaml` key `customer_open` (sums: `remaining_amt_lcy`, `sales_lcy`,
+  `amount_lcy`). One key serves both customer FlowFields (Balance filters customer + open,
+  Sales filters customer only → sums the open and closed totals rows).
+
+### 2. Totals table per SIFT key (generated)
+- Name `company$Table$SIFT$key` (global tables: `Table$SIFT$key`). Postgres limits names to 63 bytes:
+  when longer, use `<first 50 bytes>_<8-char hash>`; same rule for trigger/function names. One
+  generated helper `siftObjectName(company, key)` — never build these names elsewhere.
+- Columns: the key fields (same types as the source; together the PRIMARY KEY), one column per sum
+  field (`NUMERIC` / SQLite `REAL`; int → `BIGINT`/`INTEGER`), and `cnt BIGINT NOT NULL`.
+- One row per distinct key value combination; rows with `cnt = 0` are deleted.
+
+### 3. Maintenance by database triggers (same statement / transaction as the entry)
+Generated per SIFT key, for both databases:
+- **Postgres:** one PL/pgSQL function + `AFTER INSERT OR UPDATE OR DELETE … FOR EACH ROW` trigger:
+  - INSERT → `INSERT INTO sift (keys, sums, cnt) VALUES (NEW.…, NEW.…, 1) ON CONFLICT (keys) DO UPDATE
+    SET sum = sift.sum + EXCLUDED.sum, cnt = sift.cnt + 1`
+  - DELETE → `UPDATE sift SET sum = sum - OLD.…, cnt = cnt - 1 WHERE keys = OLD.…`, then
+    `DELETE FROM sift WHERE keys = OLD.… AND cnt = 0`
+  - UPDATE → only when a key or sum column changed (`AFTER UPDATE OF <cols>` +
+    `WHEN (OLD.(…) IS DISTINCT FROM NEW.(…))`): the DELETE step for OLD, then the INSERT step for NEW.
+  - Statement-level `AFTER TRUNCATE` trigger → `TRUNCATE` the totals table.
+  - Only deltas (`sum = sum + x`), never read-and-write-back: concurrent postings to the same key
+    serialize on the totals row lock and no update is lost; a rollback undoes the totals with the entry.
+- **SQLite:** three triggers (`AFTER INSERT` / `AFTER DELETE` / `AFTER UPDATE OF … WHEN …`) with the same
+  statements (upsert `ON CONFLICT … DO UPDATE` is supported by the bundled SQLite of go-sqlite3
+  v1.14.24). SQLite has no TRUNCATE.
+- NULL-safe: sums use `COALESCE(x, 0)`; key columns compared with `IS NOT DISTINCT FROM` (Postgres) /
+  `IS` (SQLite) where a key value can be NULL.
+
+### 4. Create, sync and initial fill
+- New generated method `EnsureSIFT(db, company, dbType) error` on every table (no-op without SIFT keys);
+  `objects/initializer.go` calls it (optional interface) for **existing and new** tables, after
+  column sync. Also fixes the missing-index gap: `EnsureSIFT` runs `CREATE INDEX IF NOT EXISTS` for all
+  keys, so keys added later reach existing tables.
+- Definition fingerprint (key fields + sum fields + generator version) stored in a global table
+  `_sift_definition (company, table_name, key_name, fingerprint)`. Missing or different →
+  rebuild in **one transaction**: drop triggers/function/totals table, create the totals table,
+  create triggers, fill with `INSERT INTO sift SELECT keys, SUM(…), COUNT(*) FROM table GROUP BY keys`,
+  store the fingerprint. Creating the trigger locks the source table against writes until commit
+  (Postgres `SHARE ROW EXCLUSIVE`), so no entry can slip in between fill and trigger.
+- Unchanged fingerprint → nothing to do (startup stays fast). Removed SIFT key → drop its objects.
+- Changing `sum_index_fields` later is a normal change: **adding** a field (e.g. a new amount column)
+  → column sync adds the column first (EnsureSIFT runs after it), the fingerprint differs → rebuild
+  with the new sum column, filled from the entries. **Removing** a field → rebuild without it (the
+  entry column and its data stay). Same for changed key fields or a renamed field.
+- Runs per company in the existing startup sync; check how multi-pod startup is serialized (migrations
+  have a distributed lock; table sync does not yet) — reuse the migration lock if needed.
+
+### 5. FlowFields read the totals
+- tablegen picks, per FlowField, a SIFT key on its `source_table` whose fields contain every flow
+  filter field and (for Sum) whose `sum_index_fields` contain `source_field`. Prefer the key with the
+  fewest fields. None found → today's code (sum over the entries), unchanged, and tablegen prints a
+  warning ("FlowField X: no SIFT key covers it, sums the entries") so a removed sum field is noticed.
+- Generated code with a SIFT key:
+  - card `calcSum…`: `SELECT COALESCE(SUM(sum_col), 0) FROM sift WHERE <flow filters>`
+  - `calcCount…`: `SELECT COALESCE(SUM(cnt), 0) …`
+  - list `calcForRecords_…`: the same grouped query as today, against the totals table (`GROUP BY` the
+    field filter column, `IN` list ≤ 500 keys, whole table above).
+- tablegen needs the source table's definition for this (FlowField on Customer → keys of Customer
+  Ledger Entry): load all YAML definitions first, then generate (it currently processes files one
+  by one).
+
+### 6. Out of scope for phase 1
+FlowFilters / date filters (phase 4), Min/Max/Average (not summable incrementally), `CalcSums` API for
+codeunits (later), SIFT on global tables beyond naming support, MaintainSIFTIndex = false variants.
+
+### Files to create / modify
+- `tools/tablegen/main.go` — `Key.SumIndexFields`, validation, two-pass YAML loading, SIFT DDL +
+  trigger templates (Postgres/SQLite), `EnsureSIFT`, `siftObjectName`, FlowField SIFT read path.
+- `backend/foundation/objects/initializer.go` — call `EnsureSIFT` for existing and new tables.
+- `backend/foundation/tables/interface.go` (or an optional `SIFTMaintainer` interface).
+- `backend/business-logic/tables/definitions/custledgerentry.yaml` — `sum_index_fields` on `customer_open`.
+- regenerated `backend/generated/tables/*`; CLAUDE.md (FlowFields / SIFT rules, naming, "only deltas").
+
+### Verification
+- **Unit (SQLite, `go test -race`):** random sequence of inserts, modifies (amount, open, customer_no
+  changes), deletes, `DeleteAll`/`ModifyAll`, transactions rolled back → totals table equals
+  `GROUP BY` over the entries (tolerance 0.005 on SQLite floats); `cnt = 0` rows removed;
+  FlowField values via SIFT equal the old per-entry sums (card and list paths).
+- **Postgres (optional test, runs when `TEST_POSTGRES_DSN` is set; run locally against the docker db):**
+  same consistency test, exact; concurrency test — N goroutines posting to the same customer in
+  parallel transactions, some rolling back → totals exact; TRUNCATE empties the totals.
+- **Sync:** fresh company → SIFT created and filled; existing company (demo04, 141,710 entries) →
+  built once at startup (measure time), second start does nothing; changed `sum_index_fields` →
+  rebuilt; a sum field added to the table and to `sum_index_fields` → rebuilt with the new column;
+  a sum field removed → rebuilt without it, the FlowField falls back and the warning is printed;
+  name > 63 bytes → hashed name works.
+- **End to end on demo04:** Customer list and card show the same Balance/Sales as before; EXPLAIN shows
+  the totals table used; demo data loader (one big transaction) still works and leaves exact totals.
+
+---
+
 ## Performance with large data ✅ DONE (steps A and B; open follow-ups under step B)
 
 Found with the LARGE demo data set (10,000 customers, 141,710 customer ledger entries, local

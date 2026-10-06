@@ -244,11 +244,17 @@ table:
   # Keys (Indexes) - BC/NAV style
   # These indexes optimize FlowField calculations and common queries
   keys:
-    # Key for FlowField: Customer.Balance_lcy (filters by customer_no + open)
+    # SIFT key (BC/NAV SumIndexFields): the database keeps totals per customer + open, so
+    # Customer.Balance_lcy (customer + open), Sales_lcy and No_of_ledger_entries (customer)
+    # read one or two totals rows instead of adding up every entry
     - name: customer_open
       fields:
         - customer_no
         - open
+      sum_index_fields:
+        - remaining_amt_lcy
+        - sales_lcy
+        - amount_lcy
 
     # Key for FlowField: Customer.Sales_lcy and No_of_ledger_entries (filters by customer_no)
     - name: customer
