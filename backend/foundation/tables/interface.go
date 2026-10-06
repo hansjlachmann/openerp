@@ -57,6 +57,10 @@ type Table interface {
 	// Field operations
 	// CalcFields calculates FlowFields (computed fields)
 	CalcFields(fields ...string)
+	// CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
+	// one grouped query per FlowField. records are ToMap() results and get the values
+	// set under the field names. With no fields, all FlowFields are calculated.
+	CalcFieldsForRecords(records []map[string]interface{}, fields ...string)
 	// ValidateField validates a single field value
 	ValidateField(field string, value interface{}) error
 

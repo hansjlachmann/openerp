@@ -768,6 +768,222 @@ func (t *CustomerBase) calcFlowField_no_of_ledger_entries() {
 	t.No_of_ledger_entries = t.calcCountCustomerLedgerEntry()
 }
 
+// CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
+// one grouped query per FlowField instead of one query per record. records are
+// ToMap() results; each gets its FlowField values under the field name. With no
+// field names, all FlowFields are calculated.
+func (t *CustomerBase) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+	if len(records) == 0 {
+		return
+	}
+	if len(fieldNames) == 0 {
+		fieldNames = t.GetFlowFields()
+	}
+	for _, fieldName := range fieldNames {
+		switch fieldName {
+		case "balance_lcy":
+			t.calcForRecords_balance_lcy(records)
+		case "sales_lcy":
+			t.calcForRecords_sales_lcy(records)
+		case "no_of_ledger_entries":
+			t.calcForRecords_no_of_ledger_entries(records)
+		}
+	}
+}
+
+// calcForRecords_balance_lcy calculates the balance_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface{}) {
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate balance_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["balance_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
+func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}) {
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(sales_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_no_of_ledger_entries calculates the no_of_ledger_entries FlowField for a set of records
+// CalcFormula: Count(CustomerLedgerEntry.entry_no)
+func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]interface{}) {
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]int, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COUNT(*) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate no_of_ledger_entries: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		rec["no_of_ledger_entries"] = values[fmt.Sprint(rec["no"])]
+	}
+}
+
 // Helper methods for FlowField calculations
 
 func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {

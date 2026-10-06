@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 
@@ -396,21 +397,17 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// Collect records (non-nil so an empty result serializes as [] rather than null,
 	// e.g. when a requested page is past the end of the data)
 	records := make([]map[string]interface{}, 0)
-	flowFields := table.GetFlowFields()
-
 	if table.FindSet() {
-		// Calculate FlowFields if not explicitly excluded
-		if len(requestedFields) == 0 || containsAny(requestedFields, flowFields) {
-			table.CalcFields(flowFields...)
-		}
 		records = append(records, table.ToMap())
-
 		for table.Next() {
-			if len(requestedFields) == 0 || containsAny(requestedFields, flowFields) {
-				table.CalcFields(flowFields...)
-			}
 			records = append(records, table.ToMap())
 		}
+	}
+
+	// FlowFields for all rows at once (one grouped query per FlowField, not one query
+	// per row and FlowField); only those requested when the client names its fields
+	if calc := flowFieldsToCalc(table.GetFlowFields(), requestedFields); len(calc) > 0 {
+		table.CalcFieldsForRecords(records, calc...)
 	}
 
 	// Get captions
@@ -903,14 +900,17 @@ func (h *TablesHandler) dropCompanyTablesSQLite(companyName string) {
 	}
 }
 
-// containsAny checks if slice contains any of the items
-func containsAny(slice []string, items []string) bool {
-	for _, s := range slice {
-		for _, item := range items {
-			if s == item {
-				return true
-			}
+// flowFieldsToCalc returns the FlowFields a list request needs: all of them when the
+// client sends no field list, otherwise only the requested ones.
+func flowFieldsToCalc(flowFields, requestedFields []string) []string {
+	if len(requestedFields) == 0 {
+		return flowFields
+	}
+	var calc []string
+	for _, f := range flowFields {
+		if slices.Contains(requestedFields, f) {
+			calc = append(calc, f)
 		}
 	}
-	return false
+	return calc
 }

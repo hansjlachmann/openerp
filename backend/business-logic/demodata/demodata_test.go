@@ -3,6 +3,7 @@ package demodata
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -209,5 +210,97 @@ func TestGenerateLargeCustomers(t *testing.T) {
 	}
 	if customers[0].No != "C00201" || len(perCountry) != 3 {
 		t.Errorf("first no = %s, countries = %v", customers[0].No, perCountry)
+	}
+}
+
+// CalcFieldsForRecords (list pages) must give the same FlowField values as CalcFields
+// per record (card page), including records without ledger entries and key lists
+// longer than one query chunk.
+func TestCalcFieldsForRecordsMatchesCalcFields(t *testing.T) {
+	db := newTestDB(t)
+	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var cust tables.Customer
+	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	var records []map[string]interface{}
+	if cust.FindSet() {
+		records = append(records, cust.ToMap())
+		for cust.Next() {
+			records = append(records, cust.ToMap())
+		}
+	}
+	if len(records) != 20 {
+		t.Fatalf("read %d customers, want 20", len(records))
+	}
+	// Expected values: CalcFields per record, after the result set is closed (the
+	// test DB has a single connection)
+	want := map[string]map[string]interface{}{}
+	for _, rec := range records {
+		var one tables.Customer
+		one.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		no := rec["no"].(string)
+		if !one.Get(no) {
+			t.Fatalf("customer %s not found", no)
+		}
+		one.CalcFields()
+		calc := one.ToMap()
+		want[no] = map[string]interface{}{
+			"balance_lcy": calc["balance_lcy"], "sales_lcy": calc["sales_lcy"], "no_of_ledger_entries": calc["no_of_ledger_entries"],
+		}
+	}
+	// Few keys: one grouped query with an IN list
+	few := make([]map[string]interface{}, len(records))
+	for i, rec := range records {
+		few[i] = map[string]interface{}{"no": rec["no"]}
+	}
+	cust.CalcFieldsForRecords(few)
+	for _, rec := range few {
+		no := rec["no"].(string)
+		for field, w := range want[no] {
+			if fmt.Sprint(rec[field]) != fmt.Sprint(w) {
+				t.Errorf("IN list: %s.%s = %v, want %v", no, field, rec[field], w)
+			}
+		}
+	}
+
+	// Many keys (more than one chunk, incl. customers without entries): one grouped
+	// query over the whole ledger
+	for i := 0; i < 1200; i++ {
+		no := fmt.Sprintf("X%05d", i)
+		records = append(records, map[string]interface{}{"no": no})
+		want[no] = map[string]interface{}{"balance_lcy": "0", "sales_lcy": "0", "no_of_ledger_entries": 0}
+	}
+
+	cust.CalcFieldsForRecords(records)
+
+	for _, rec := range records {
+		no := rec["no"].(string)
+		for field, w := range want[no] {
+			if fmt.Sprint(rec[field]) != fmt.Sprint(w) {
+				t.Errorf("%s.%s = %v, want %v", no, field, rec[field], w)
+			}
+		}
+	}
+	if fmt.Sprint(want["C00010"]["no_of_ledger_entries"]) == "0" {
+		t.Error("C00010 should have ledger entries")
+	}
+}
+
+func TestCalcFieldsForRecordsOnlyRequested(t *testing.T) {
+	db := newTestDB(t)
+	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	var cust tables.Customer
+	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	records := []map[string]interface{}{{"no": "C00010"}}
+	cust.CalcFieldsForRecords(records, "sales_lcy")
+	if _, ok := records[0]["sales_lcy"]; !ok {
+		t.Error("sales_lcy not calculated")
+	}
+	if _, ok := records[0]["balance_lcy"]; ok {
+		t.Error("balance_lcy calculated although not requested")
 	}
 }

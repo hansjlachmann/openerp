@@ -786,6 +786,86 @@ func (t *JobQueueBase) calcFlowField_number_of_entries() {
 	t.Number_of_entries = t.calcCountJob_Queue_Entry()
 }
 
+// CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
+// one grouped query per FlowField instead of one query per record. records are
+// ToMap() results; each gets its FlowField values under the field name. With no
+// field names, all FlowFields are calculated.
+func (t *JobQueueBase) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+	if len(records) == 0 {
+		return
+	}
+	if len(fieldNames) == 0 {
+		fieldNames = t.GetFlowFields()
+	}
+	for _, fieldName := range fieldNames {
+		switch fieldName {
+		case "number_of_entries":
+			t.calcForRecords_number_of_entries(records)
+		}
+	}
+}
+
+// calcForRecords_number_of_entries calculates the number_of_entries FlowField for a set of records
+// CalcFormula: Count(Job_Queue_Entry.entry_no)
+func (t *JobQueueBase) calcForRecords_number_of_entries(records []map[string]interface{}) {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]int, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "job_queue_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT job_queue_no, COUNT(*) FROM "%s" WHERE %s GROUP BY job_queue_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate number_of_entries: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		rec["number_of_entries"] = values[fmt.Sprint(rec["no"])]
+	}
+}
+
 // Helper methods for FlowField calculations
 
 func (t *JobQueueBase) calcCountJob_Queue_Entry() int {
