@@ -428,8 +428,10 @@
 	// this callback is just for notification - no need to save again
 	async function handleListSave(savedRecord: Record<string, any>, isNew: boolean) {
 		if (!page) return;
-		// Record is already saved by ListPage, just refresh the underlying data
-		await loadListData();
+		// Record is already saved by ListPage, just refresh the underlying data. Not awaited:
+		// ListPage awaits onsave inside its save, and the next cell's save must not wait for
+		// a list reload
+		void loadListData();
 	}
 
 	// Handle delete from list page

@@ -61,13 +61,18 @@ ArrowDown across windows, mouse-wheel loading, server search and sort, editing a
 window edge (saved), ArrowDown on the last record opens a new row.
 
 Open follow-ups:
-- [ ] **Focus lost after editing a list cell** (pre-existing, also before windowing): type in a cell,
-      ArrowDown → the value is saved and the next cell shows as selected, but focus lands on
-      `.list-page`, so further arrow keys do nothing until the user clicks. Reproduced on demo01 with
-      the old and the new code.
-- [ ] Cell modes: arrow keys pressed while a window loads (holding the key across a window edge)
-      are partly lost — the handlers take the row from the focused cell, which moves only after the
-      load. Navigation mode queues them (`pendingTarget`); cell modes could do the same.
+- [x] **Focus lost after editing a list cell** — fixed: the blur of the removed edit input was taken
+      as "left the table" (double save + navigation mode, whose delayed page focus stole the focus).
+      Fixed together with: rows keyed by the live primary key (typing a new No. saved a half-typed
+      rename after one character), unchanged rows MODIFYed on every cell move (2 requests per key,
+      hit the 300/min rate limit), a single-slot save queue that dropped edits, characters lost by
+      the 50 ms focus delay, and clicking the search box while editing not saving the cell.
+- [x] Cell modes losing arrow keys during a window load — fixed by the above (180 ArrowDowns now
+      land on row 181).
+- [ ] Renaming a record (editing its primary key) does not update related records: renaming customer
+      C00020 leaves its Customer Ledger Entries on C00020 (BC/NAV Rename updates related tables).
+- [ ] Code fields in list cells are sent to the API lowercase (`fieldTypes` holds `types.Code`, the
+      uppercase check compares with `code`); the backend uppercases them, so the stored value is right.
 - [ ] Customer Ledger Entries page is missing: the customer card's "Ledger Entries" action has
       `run_page: 25`, but there is no page 25 definition.
 - [ ] Lookups (`captions.lookups`, `getLookupValues` in tables.go) still load every row of the related
