@@ -169,6 +169,8 @@ messages:
   FILTER_ALL: "*Alle"
   FILTER_SAVE_VIEW: "Lagre som ny visning"
   FILTER_LIST_BY: "Filtrer liste etter:"
+  FILTER_TOTALS_BY: "Filtrer totaler etter:"
+  FILTER_INVALID: "%1: kan ikke lese \"%2\""
   FILTER_ADD: "Filter..."
   FILTER_SELECT_FIELD: "Velg felt..."
   FILTER_ENTER_EXPRESSION: "Skriv inn filteruttrykk..."
@@ -199,10 +201,17 @@ messages:
   CU_REPORT_DATE: "Rapportdato"
   CU_REPORT_CANCELLED: "Rapport avbrutt."
 
+  # Verify SIFT (codeunit 50110)
+  SIFT_VERIFY_CHECKING: "Kontrollerer SIFT-totaler for %1..."
+  SIFT_VERIFY_OK: "Kontrollerte %1 SIFT-nøkler: alle totaler stemmer med postene."
+  SIFT_VERIFY_DIFFERENCES: "%1 SIFT-nøkkel(er) har totaler som avviker fra postene: %2. Kjør jobben med parameter REPAIR for å bygge dem på nytt."
+  SIFT_VERIFY_REPAIRED: "Bygde %1 SIFT-nøkkel(er) på nytt der totalene avvek fra postene: %2."
+  SIFT_VERIFY_BAD_PARAMETER: "Ukjent parameter \"%1\". Bruk VERIFY eller REPAIR."
+
   # Demo data (codeunit 50100)
   DEMO_DATA_DONE: "Demodata opprettet: %1 kunder og %2 kundeposter."
   DEMO_DATA_NOT_EMPTY: "Selskapet \"%1\" har allerede kunder. Demodata opprettes bare i et selskap uten kunder."
-  DEMO_DATA_BAD_SIZE: "Ukjent størrelse på demodata \"%1\". Sett parameteren på jobben til SMALL eller LARGE."
+  DEMO_DATA_BAD_SIZE: "Ukjent størrelse på demodata \"%1\". Sett parameteren på jobben til SMALL, LARGE eller HEAVY."
   DEMO_DATA_INSERT_FAILED: "Kunne ikke opprette %1 %2: %3. Ingen demodata ble opprettet."
   DEMO_DATA_SETUP: "Oppretter land og betalingsbetingelser..."
   DEMO_DATA_CUSTOMERS: "Oppretter kunder..."

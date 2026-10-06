@@ -262,9 +262,39 @@ func (t *JobQueueEntryBase) SyncKeys(db database.Executor, company string, dbTyp
 		fmt.Sprintf("%s$Job_Queue_Entry$status", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index status: %w", err)
 	}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range jobQueueEntryBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, JobQueueEntryTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, JobQueueEntryTableName, keys)
+}
+
+// jobQueueEntryBaseSIFTSpecs are the table's keys with sum_index_fields
+func jobQueueEntryBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *JobQueueEntryBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName), t.company
+	var results []sift.VerifyResult
+	for _, spec := range jobQueueEntryBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, JobQueueEntryTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: JobQueueEntryTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, JobQueueEntryTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -612,6 +642,12 @@ func (t *JobQueueEntryBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *JobQueueEntryBase) SetDB(db database.Executor) {
+	t.db = db
 }
 
 // Delete removes the record from the database
@@ -1841,6 +1877,20 @@ func (t *JobQueueEntryBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *JobQueueEntryBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of Job_Queue_Entry", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *JobQueueEntryBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 

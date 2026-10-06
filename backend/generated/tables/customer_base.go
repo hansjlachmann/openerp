@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -60,6 +61,8 @@ type CustomerBase struct {
 	Sales_lcy types.Decimal
 	// FlowField: Count(CustomerLedgerEntry.entry_no)
 	No_of_ledger_entries int
+	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
+	Date_filter string
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -286,9 +289,39 @@ func (t *CustomerBase) SyncKeys(db database.Executor, company string, dbType dat
 	tableName := fmt.Sprintf("%s$%s", company, CustomerTableName)
 	siftCompany := company
 	_ = tableName // no keys: nothing to index
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range customerBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, CustomerTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, CustomerTableName, keys)
+}
+
+// customerBaseSIFTSpecs are the table's keys with sum_index_fields
+func customerBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *CustomerBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, CustomerTableName), t.company
+	var results []sift.VerifyResult
+	for _, spec := range customerBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, CustomerTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: CustomerTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, CustomerTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -614,6 +647,17 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.No)
 	}
+	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("no") {
+			renamed = append(renamed, renamedKey{"no", t.oldValues["no"], t.No})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND no = ?`,
@@ -628,6 +672,13 @@ func (t *CustomerBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer: %v\n", err)
 		return false
+	}
+	for _, r := range renamed {
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to Customer: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -704,6 +755,44 @@ func (t *CustomerBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *CustomerBase) SetDB(db database.Executor) {
+	t.db = db
+}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *CustomerBase) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+		"no": {{"Customer Ledger Entry", false, "customer_no"}, {"Customer Ledger Entry", false, "sell_to_customer_no"}, },
+	}
+	companies := []string{t.company}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete removes the record from the database
@@ -812,8 +901,14 @@ func (t *CustomerBase) CalcFieldsForRecords(records []map[string]interface{}, fi
 // calcForRecords_balance_lcy calculates the balance_lcy FlowField for a set of records
 // CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
 func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface{}) {
-	// SIFT: totals of key customer_open, not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -841,6 +936,13 @@ func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface
 		var args []interface{}
 		whereClauses = append(whereClauses, "open = ?")
 		args = append(args, true)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 		if chunk != nil {
 			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
 			args = append(args, chunk...)
@@ -880,8 +982,14 @@ func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface
 // calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
 // CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
 func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}) {
-	// SIFT: totals of key customer_open, not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -907,6 +1015,13 @@ func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}
 
 		var whereClauses []string
 		var args []interface{}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 		if chunk != nil {
 			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
 			args = append(args, chunk...)
@@ -946,8 +1061,14 @@ func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}
 // calcForRecords_no_of_ledger_entries calculates the no_of_ledger_entries FlowField for a set of records
 // CalcFormula: Count(CustomerLedgerEntry.entry_no)
 func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]interface{}) {
-	// SIFT: totals of key customer_open, not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -973,6 +1094,13 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 
 		var whereClauses []string
 		var args []interface{}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 		if chunk != nil {
 			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
 			args = append(args, chunk...)
@@ -981,7 +1109,11 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 		if len(whereClauses) > 0 {
 			whereClause = strings.Join(whereClauses, " AND ")
 		}
-		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(cnt), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(`SELECT customer_no, %s FROM "%s" WHERE %s GROUP BY customer_no`, agg, tableName, whereClause)
 		query = t.convertPlaceholders(query, len(args))
 
 		rows, err := t.db.Query(query, args...)
@@ -1008,8 +1140,14 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 // Helper methods for FlowField calculations
 
 func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {
-	// SIFT: totals of key customer_open (one row per key value), not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1018,6 +1156,13 @@ func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decim
 	args = append(args, t.No)
 	whereClauses = append(whereClauses, "open = ?")
 	args = append(args, true)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 
 	whereClause := "1=1"
 	if len(whereClauses) > 0 {
@@ -1041,14 +1186,27 @@ func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decim
 }
 
 func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
-	// SIFT: totals of key customer_open (one row per key value), not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
 	var args []interface{}
 	whereClauses = append(whereClauses, "customer_no = ?")
 	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 
 	whereClause := "1=1"
 	if len(whereClauses) > 0 {
@@ -1072,20 +1230,38 @@ func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
 }
 
 func (t *CustomerBase) calcCountCustomerLedgerEntry() int {
-	// SIFT: entry counts of key customer_open, not the entries
-	tableName := sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open")
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+	}
+	_ = useSIFT
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
 	var args []interface{}
 	whereClauses = append(whereClauses, "customer_no = ?")
 	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 
 	whereClause := "1=1"
 	if len(whereClauses) > 0 {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
-	query := fmt.Sprintf(`SELECT COALESCE(SUM(cnt), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(`SELECT %s FROM "%s" WHERE %s`, agg, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2581,6 +2757,27 @@ func (t *CustomerBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  true,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *CustomerBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	case "date_filter":
+		if err := flowfilter.Validate(flowfilter.KindDate, expr); err != nil {
+			return err
+		}
+		t.Date_filter = expr
+		return nil
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of Customer", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *CustomerBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
+		{Name: "date_filter", Kind: string(flowfilter.KindDate)},
 	}
 }
 

@@ -94,13 +94,14 @@ Codeunit 50100 "Create Demo Data" fills a company with demo data: countries
 year of customer ledger entries. The data is in `backend/business-logic/demodata/data/*.yaml`.
 
 1. Create a company, e.g. `demo01` with display name "Demo Company 01", and switch to it (Ctrl+O).
-2. Add a Job Queue line: Object ID to Run `50100`, Parameter `SMALL` or `LARGE`.
+2. Add a Job Queue line: Object ID to Run `50100`, Parameter `SMALL`, `LARGE` or `HEAVY`.
 3. Run it (F9), or set it to Ready with a Next Start to let the scheduler run it.
 
 | Size  | Customers | Ledger entries | Use |
 |-------|-----------|----------------|-----|
 | SMALL | 20        | ~540           | demos, screenshots, E2E |
 | LARGE | 10,000    | ~140,000       | paging, search and performance tests |
+| HEAVY | 200       | ~190,000 (~1,000 per customer, 2 years) | SIFT / FlowField volume tests |
 
 The run is one transaction (all or nothing), produces the same data every time
 (fixed random seed, dates relative to the run date), and refuses a company that

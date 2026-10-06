@@ -387,3 +387,44 @@ func TestMissingTotalsRebuiltAndDropCompany(t *testing.T) {
 		assertConsistent(t, d, sumNames(testSpec))
 	}
 }
+
+// VerifyKey finds totals that no longer match the entries; RebuildKey repairs them.
+func TestVerifyAndRebuild(t *testing.T) {
+	for _, d := range databases(t) {
+		for i := 1; i <= 30; i++ {
+			d.exec(t, d.db, `INSERT INTO `+q(d.entry())+` (no, acct, open, amount, qty) VALUES (?, ?, ?, ?, ?)`, i, fmt.Sprintf("A%d", i%4), i%2 == 0, fmt.Sprintf("%d.10", i), i)
+		}
+		syncSpec(t, d, testSpec)
+		verify := func() int {
+			n, err := VerifyKey(d.db, d.dbType, testCompany, testTable, d.entry(), testSpec)
+			if err != nil {
+				t.Fatalf("%s VerifyKey: %v", d.dbType, err)
+			}
+			return n
+		}
+		if n := verify(); n != 0 {
+			t.Fatalf("%s: %d differences right after building", d.dbType, n)
+		}
+
+		// Corrupt the totals behind the triggers' back: a wrong sum, a missing row, an extra row
+		totals := q(TableName(testCompany, testTable, testSpec.Name))
+		d.exec(t, d.db, `UPDATE `+totals+` SET amount = amount + 1 WHERE acct = 'A1'`)
+		d.exec(t, d.db, `DELETE FROM `+totals+` WHERE acct = 'A2'`)
+		blank := "0"
+		if d.dbType == database.DBTypePostgres {
+			blank = "FALSE"
+		}
+		d.exec(t, d.db, `INSERT INTO `+totals+` (acct, open, amount, qty, cnt) VALUES ('GHOST', `+blank+`, 5, 1, 1)`)
+		if n := verify(); n == 0 {
+			t.Fatalf("%s: corrupted totals not detected", d.dbType)
+		}
+
+		if err := RebuildKey(d.db, d.dbType, testCompany, testTable, d.entry(), testSpec); err != nil {
+			t.Fatalf("%s RebuildKey: %v", d.dbType, err)
+		}
+		if n := verify(); n != 0 {
+			t.Fatalf("%s: %d differences after rebuild", d.dbType, n)
+		}
+		assertConsistent(t, d, sumNames(testSpec))
+	}
+}

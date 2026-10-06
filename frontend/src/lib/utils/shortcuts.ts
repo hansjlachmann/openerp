@@ -52,6 +52,10 @@ export function normalizeShortcut(shortcut: string): string {
 // Svelte action for keyboard shortcuts
 export function shortcuts(node: HTMLElement, shortcutMap: ShortcutMap) {
 	function handleKeydown(event: KeyboardEvent) {
+		// Elements marked data-own-keys (e.g. the filter pane) handle their own keys. Checked
+		// here because Svelte delegates onkeydown to the app root: a stopPropagation there
+		// comes after this native listener has already run.
+		if ((event.target as HTMLElement | null)?.closest?.('[data-own-keys]')) return;
 		const shortcutKey = getShortcutKey(event);
 		const handler = shortcutMap[shortcutKey];
 

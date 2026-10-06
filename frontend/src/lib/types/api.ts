@@ -67,6 +67,7 @@ export interface ListOptions {
 	limit?: number; // ... and return at most this many (total = all matching records)
 	search?: string; // case-insensitive "contains" over search_fields
 	search_fields?: string[];
+	flow_filters?: TableFilter[]; // FlowFilter fields (e.g. Date Filter) the FlowFields apply, ISO dates
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
 

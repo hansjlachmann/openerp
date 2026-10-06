@@ -31,6 +31,7 @@
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
+	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
 
@@ -42,6 +43,8 @@
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		currentFilters?: TableFilter[];
+		// FlowFilters as typed (e.g. Date Filter): the list's FlowFields and the modal card use them
+		currentFlowFilters?: TableFilter[];
 		// Windowed loading (PageRenderer): records is a window of the list starting at
 		// windowOffset; total counts all matching records; onwindow loads another window
 		total?: number;
@@ -55,7 +58,7 @@
 		onrowclick?: (record: Record<string, any>) => void;
 		onsave?: (record: Record<string, any>, isNew: boolean) => Promise<void>;
 		ondelete?: (record: Record<string, any>) => Promise<void>;
-		onfilter?: (filters: TableFilter[]) => void;
+		onfilter?: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
 	}
 
 	let {
@@ -66,6 +69,7 @@
 		options = {},
 		lookups = {},
 		currentFilters = [],
+		currentFlowFilters = [],
 		total = records.length,
 		windowOffset = 0,
 		onwindow,
@@ -1722,7 +1726,8 @@
 
 			if (recordId) {
 				// Existing record - load it with options/lookups
-				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId);
+				// The modal card shows FlowFields for the list's FlowFilters (e.g. Date Filter)
+				const recordResult = await api.getRecordWithCaptions(sourceTable, recordId, apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, locale));
 				recData = deepCopy(recordResult.data);
 				opts = recordResult.captions?.options ? deepCopy(recordResult.captions.options) : {};
 				lkps = recordResult.captions?.lookups ? deepCopy(recordResult.captions.lookups) : {};
@@ -1934,7 +1939,7 @@
 				const refreshRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
 				if (refreshRecordId) {
 					try {
-						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, refreshRecordId);
+						const refreshResult = await api.getRecordWithCaptions(page.page.source_table, refreshRecordId, apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, locale));
 						modalRecord = refreshResult.data;
 						modalOptions = refreshResult.captions?.options || {};
 					} catch (err) {
@@ -2192,8 +2197,8 @@
 	}
 
 	// Apply filters
-	function handleApplyFilters(filters: TableFilter[]) {
-		onfilter?.(filters);
+	function handleApplyFilters(filters: TableFilter[], flowFilters: TableFilter[]) {
+		onfilter?.(filters, flowFilters);
 	}
 
 	// Close filter pane
@@ -2398,9 +2403,9 @@
 						/>
 					</svg>
 					<span class="ml-1">{t(LIST.FILTER)}</span>
-					{#if currentFilters.length > 0}
+					{#if currentFilters.length + currentFlowFilters.length > 0}
 						<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-600 text-white rounded-full">
-							{currentFilters.length}
+							{currentFilters.length + currentFlowFilters.length}
 						</span>
 					{/if}
 				</Button>
@@ -2413,6 +2418,7 @@
 				{page}
 				{captions}
 				currentFilters={currentFilters}
+				{currentFlowFilters}
 				onApply={handleApplyFilters}
 				onClose={handleCloseFilterPane}
 			/>

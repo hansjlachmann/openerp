@@ -22,19 +22,111 @@ Ledger Entry `customer_open`. Verified:
   totals correctly; second start rebuilds nothing; removing `sales_lcy` from `sum_index_fields`
   → warning + rebuild + fallback to the entries, adding it back → rebuild, totals match.
 
-Next phases (not started): 2 LARGE+ demo data (~1,000 entries per customer) and measurement →
-3 Verify/Rebuild SIFT codeunit (Job Queue) → 4 FlowFilters (date filter), then G/L Account / G/L Entry.
+Next phases: 2 heavy demo data and measurement ✅ done → 3 Verify/Rebuild SIFT codeunit ✅ done →
+4 FlowFilter fields (Date Filter) ✅ done.
+
+**Phase 3** — codeunit 50110 Verify SIFT (Job Queue, parameter VERIFY / REPAIR), `sift.VerifyKey` /
+`RebuildKey`, generated `VerifySIFT`. Tested on SQLite/Postgres and through the Job Queue on demo05
+(corrupted totals detected and logged as Error, REPAIR rebuilds, verify passes again).
+
+**Phase 2** — demo data size HEAVY: 200 customers, 190,062 entries (~1,000 per customer, two years).
+Measured on demo05 (Postgres), customer C00010 with 1,012 entries, after VACUUM:
+| Query | Sum over entries | SIFT totals |
+|---|---|---|
+| Balance (open entries) | 1.2–1.9 ms | 0.35–0.42 ms |
+| Sales, all time | 5.8–11.3 ms | 0.23–0.27 ms (~25–45×) |
+| Sales 2025 (date filter) | 1.8–6.1 ms | 2.3–2.6 ms |
+| Balance Q2 2026 (date filter) | 0.4–1.0 ms | 0.4–0.5 ms |
+Findings:
+- The date key was first (customer, open, date): a date-filtered Sales read all day rows of the customer
+  (slower than the entries). Reordered to `customer_date_open` (customer, date, open) — the change was
+  rebuilt automatically for all companies (rebuild path verified for real).
+- Date-filtered SIFT gives no gain here: a customer gets ~1–2 entries per day, so the date key has 584 day
+  rows for 1,012 entries. It pays off only with many entries per day (G/L volumes). Decide whether to keep
+  `customer_date_open` (costs one more totals update per posting and about as many rows as entries).
+- Right after the bulk load the totals had ~70 dead row versions per row (every posting updates the totals
+  row); after autovacuum/VACUUM the reads are fast.
+- [ ] Loading HEAVY took 9 min (row-by-row Insert, two SIFT triggers per entry): batch inserts in the demo
+      loader would make it much faster.
+- [ ] **Performance: dead row versions in SIFT totals tables (Postgres).** Every posting UPDATEs its totals
+      row; MVCC leaves the old version until autovacuum runs, and the primary key index points at all of
+      them. Measured on demo05 right after loading HEAVY: ~70 row versions per totals row, a totals read no
+      faster than summing the entries; after VACUUM 0.23–0.42 ms. Fix, in order of effect:
+      1. Generated totals tables `WITH (fillfactor = 50)` — only sum columns and `cnt` change (not indexed),
+         so updates become HOT (heap-only): the new version stays on the page, the index is not touched,
+         and dead versions are pruned on the next page access without waiting for autovacuum.
+      2. Per-table autovacuum settings on totals tables (`autovacuum_vacuum_scale_factor = 0`,
+         `autovacuum_vacuum_threshold` ~1000, `autovacuum_analyze_threshold` similar): small tables with
+         very many updates.
+      3. `VACUUM ANALYZE` the totals tables after bulk operations (demo loader, `RebuildKey`, Verify SIFT
+         REPAIR) — after commit, VACUUM cannot run in a transaction. For very large loads: insert the entries
+         first and build the totals once (drop/recreate via sift.Sync), which avoids the dead versions and is
+         much faster.
+      Verify: load HEAVY again, check `n_dead_tup` in `pg_stat_user_tables` and the totals read time right
+      after the load; existing totals tables get the new storage settings via `ALTER TABLE … SET (…)` in Sync.
+G/L Account / G/L Entry are out of the current scope.
+
+## SIFT Phase 4: FlowFilter fields (Date Filter) ✅ DONE
+
+Implemented as planned below. Verified: parser tests per type; on demo data the Customer FlowFields
+with a Date Filter (quarter, open ranges, two months with |) equal sums over the entries in the period,
+card and list; API 400 on bad expressions/unknown fields; date conversion tests (nb-NO, da-DK, en-US, t,
+|, <>, invalid dates). Browser on demo04: Date Filter 04/01/26..06/30/26 → C00010 balance 0, sales
+48,992.54 (same as the database), modal card shows the period value, invalid date → message, clear →
+back. Second SIFT key built at startup (demo04: 133,309 totals rows in 2.2 s — the demo spreads ~14
+entries per customer over a year, so few entries share a day). Found on the way: a broken
+messages.yaml made all messages show as keys (loader only warns) — new test parses every translation
+file; Enter in the filter pane also opened the selected record — fixed with `data-own-keys`.
+
+### Goal
+NAV/BC FlowFilter fields (FieldClass FlowFilter): not stored, they hold a filter the user sets, and
+FlowFields apply it in their CalcFormula (`Posting Date = FIELD(Date Filter)`). Types: Date, Boolean,
+Integer, Text, Code. First use: Customer "Date Filter" applied to Posting Date in Balance (LCY), Sales
+(LCY) and No. of Ledger Entries.
+
+### Decisions (with the user)
+- The user sets FlowFilters in the list's filter pane, section "Filter totals by" (BC). A modal card
+  opened from the list uses the same FlowFilters.
+- BC syntax in the user's date format: `01.01.26..31.03.26`, open ranges (`..31.03.26`, `01.01.26..`),
+  single date, `|` alternatives, `t` = today. The frontend converts dates to ISO; the backend only sees ISO.
+- Second SIFT key `customer_open_date` (customer_no, open, posting_date), same sum fields: no date
+  filter → `customer_open` (1–2 rows per customer); date filter → the date key.
+
+### Design
+- YAML: `flow_filter: true` on a field (type types.Date / bool / int / types.Text / types.Code); a FlowField
+  uses it with a flow filter of type `filter`: `{field: posting_date, type: filter, value: date_filter}` —
+  applied when the FlowFilter has a value, ignored when empty.
+- Generated code: FlowFilter fields are not columns (no schema/ToMap/FromMap/search/sort); the record keeps
+  each FlowFilter's expression (string). `SetFlowFilter(field, expr) error` (validates by parsing) and
+  `GetFlowFilterFields()` on the Table interface.
+- `backend/foundation/flowfilter`: one parser `Clause(column, kind, expr) (sql, args, error)` — `|`
+  alternatives; `a..b`, `..b`, `a..`; `<>x`; `*` wildcards for Text/Code (Code uppercased); Yes/No/true/false
+  for Boolean; ISO dates; numbers for Integer. Typed bind parameters only.
+- FlowField calculation (card `CalcFields`, list `CalcFieldsForRecords`, Sum and Count): `filter` flow filters
+  add the parsed clause; tablegen resolves two SIFT keys per FlowField (without and with the filter fields)
+  and the generated code picks at run time.
+- API: `flow_filters` (JSON `[{field, expression}]`) on `/list` and `/card`; unknown FlowFilter or parse error →
+  400 with the message. Page API sends `flow_filter_fields` (name + type).
+- Frontend: FilterPane "Filter totals by" section (FlowFilter fields, captions from translations); PageRenderer
+  keeps `currentFlowFilters` and sends them; local-date → ISO conversion in a util; filter badge counts them;
+  ListPage passes them to the modal card.
+
+### Verification
+- Parser unit tests per type (ranges, open ranges, `|`, `<>`, wildcards, errors).
+- SQLite demo data: Balance/Sales/No. of entries with a date filter equal direct sums over entries in that period
+  (card and list paths); without filter unchanged; SIFT date key used when filtered.
+- API: `flow_filters` on list/card, 400 on bad expressions/unknown fields. Frontend unit test for date conversion.
+- Browser on demo04: set Date Filter in the filter pane → totals change; clear → back; modal card shows period values.
 
 ### Original plan
 
 ### Goal
-FlowFields over large ledgers (G/L Entry, 100,000+ entries per account) must not add up every entry
+FlowFields over large ledgers (100,000+ entries per customer or account) must not add up every entry
 on each read. As in NAV/BC (SumIndexFields; BC: indexed views), table keys can declare sum fields;
 the database keeps a totals table per key up to date, and FlowFields read the totals.
 
 Phases: **1 foundation (this plan)** → 2 LARGE+ demo data (~1,000 entries per customer) and
-measurement → 3 Verify/Rebuild SIFT codeunit (Job Queue) → 4 FlowFilters (date filter), then
-G/L Account / G/L Entry.
+measurement → 3 Verify/Rebuild SIFT codeunit (Job Queue) → 4 FlowFilter fields (Date Filter).
 
 ### Current state (reuse, don't rebuild)
 - FlowFields: `calc_formula` Sum/Count + `flow_filters` (const / field) in the table YAML; generated
@@ -209,8 +301,12 @@ Open follow-ups:
       the 50 ms focus delay, and clicking the search box while editing not saving the cell.
 - [x] Cell modes losing arrow keys during a window load — fixed by the above (180 ArrowDowns now
       land on row 181).
-- [ ] Renaming a record (editing its primary key) does not update related records: renaming customer
-      C00020 leaves its Customer Ledger Entries on C00020 (BC/NAV Rename updates related tables).
+- [x] Renaming a record updates related records (BC/NAV Rename): generated `renameReferences` from the
+      YAML table relations, in one transaction with the modify. Verified: C00030 → C00030X moves all 36
+      entries (and SIFT totals), a rename to an existing No. rolls back completely.
+- [ ] Renaming a **Company** record (Companies page) now updates User Member, but the company's tables
+      (`company$…`) keep the old prefix — block renaming companies or rename their tables too.
+- [ ] A rename to an existing key fails with the generic "Failed to modify …"; say that the key exists.
 - [ ] Code fields in list cells are sent to the API lowercase (`fieldTypes` holds `types.Code`, the
       uppercase check compares with `code`); the backend uppercases them, so the stored value is right.
 - [x] Customer Ledger Entries page 25 (menu, drilldowns from the Customer list's Balance/Sales, card

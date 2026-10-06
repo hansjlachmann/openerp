@@ -51,6 +51,7 @@ tables:
       last_order_date: "Siste ordredato"
       created_at: "Opprettet den"
       status: "Status"
+      date_filter: "Datofilter"
 
     # Option field values
     options:

@@ -21,6 +21,21 @@ type TableDef struct {
 		Fields     []Field `yaml:"fields"`
 		Keys       []Key   `yaml:"keys"`
 	} `yaml:"table"`
+
+	// FlowFilterFields (derived): fields with flow_filter: true, taken out of Fields after
+	// parsing — they are not stored columns, the record only keeps their filter expression
+	FlowFilterFields []Field `yaml:"-"`
+
+	// References (derived): per primary key field (db name), the fields of other tables
+	// whose table_relation points to it — updated when the record is renamed (BC Rename)
+	References map[string][]Reference `yaml:"-"`
+}
+
+// Reference is a field of a table that refers to another table's key field
+type Reference struct {
+	Table  string // referencing table name (e.g. "Customer Ledger Entry")
+	Global bool   // referencing table has no company prefix
+	Column string // referencing column (e.g. "customer_no")
 }
 
 // Key represents an index/key on a table (BC/NAV style)
@@ -54,6 +69,9 @@ type Field struct {
 	SourceTable   string         `yaml:"source_table"` // Table to calculate from
 	SourceField   string         `yaml:"source_field"` // Field to aggregate
 	FlowFilters   []FlowFilter   `yaml:"flow_filters"` // Filter conditions
+	// FlowFilter (NAV FieldClass FlowFilter): not stored; holds a filter expression the
+	// user sets (e.g. Date Filter), applied by FlowFields with a flow filter of type "filter"
+	FlowFilter bool `yaml:"flow_filter"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -63,13 +81,22 @@ type Field struct {
 	// SIFTKey (derived): the source table's SIFT key this FlowField reads its totals from
 	// ("" = sums the entries)
 	SIFTKey string `yaml:"-"`
+	// SIFTKeyFiltered (derived): the SIFT key to read when a FlowFilter of this FlowField is
+	// set (its key must contain the filtered fields too); "" = sums the entries then
+	SIFTKeyFiltered string `yaml:"-"`
+	// FilterRefs (derived): the flow filters of type "filter" (FlowFilter fields applied)
+	FilterRefs []FlowFilter `yaml:"-"`
 }
 
 // FlowFilter represents a filter condition for FlowField calculation
 type FlowFilter struct {
 	Field string `yaml:"field"` // Field name in source table
-	Type  string `yaml:"type"`  // "const" or "field"
-	Value string `yaml:"value"` // Constant value or field name from current table
+	Type  string `yaml:"type"`  // "const", "field" or "filter" (apply a FlowFilter field of this table)
+	Value string `yaml:"value"` // Constant value, or field / FlowFilter field name of the current table
+
+	// Derived for type "filter": the FlowFilter field's struct field and flowfilter kind
+	FilterField string `yaml:"-"`
+	Kind        string `yaml:"-"`
 }
 
 // LookupColumn defines a column to display in the lookup dropdown
@@ -122,6 +149,7 @@ type TemplateData struct {
 	FirstPrimaryKey  *Field        // First primary key field (for GetPrimaryKeyField/Value)
 	SIFTKeys         []SIFTKeyData // this table's keys with sum_index_fields
 	UsesSIFT         bool          // imports the sift package (own SIFT keys or FlowFields reading totals)
+	UsesFlowFilter   bool          // imports the flowfilter package (table has FlowFilter fields)
 }
 
 // SIFTKeyData is a key with sum index fields, as the templates need it
@@ -190,12 +218,17 @@ func main() {
 			fmt.Printf("✗ Error parsing %s: %v\n", filepath.Base(yamlFile), err)
 			continue
 		}
+		splitFlowFilterFields(tableDef)
 		defs = append(defs, parsed{yamlFile, tableDef})
 		byStruct[toPascalCase(tableDef.Table.Name)] = tableDef
 	}
 	failed := false
 	for _, p := range defs {
 		if err := validateSIFTKeys(p.def); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
+			failed = true
+		}
+		if err := validateFlowFilters(p.def, byStruct); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
 			failed = true
 		}
@@ -206,6 +239,7 @@ func main() {
 	for _, p := range defs {
 		resolveFlowFieldSIFT(p.def, byStruct)
 	}
+	resolveReferences(defs, func(d parsed) *TableDef { return d.def })
 
 	// Pass 2: generate
 	for _, p := range defs {
@@ -359,6 +393,7 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		data.SIFTKeys = append(data.SIFTKeys, kd)
 	}
 	data.UsesSIFT = true // SyncKeys always calls sift.Sync (drops totals of removed keys)
+	data.UsesFlowFilter = len(def.FlowFilterFields) > 0
 
 	return data
 }
@@ -379,6 +414,116 @@ func siftKind(f Field) string {
 	default:
 		return "KindText"
 	}
+}
+
+// normalizedTableName compares table names written as registry names ("Payment_terms") and
+// as display names ("Payment Terms")
+func normalizedTableName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), " ", "_"))
+}
+
+// resolveReferences records, for each table's primary key fields, the fields of other tables
+// whose table_relation points to them (renaming a record updates those, BC/NAV Rename).
+func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
+	byName := map[string]*TableDef{}
+	for _, it := range items {
+		d := defOf(it)
+		byName[normalizedTableName(d.Table.Name)] = d
+		d.References = nil
+	}
+	for _, it := range items {
+		d := defOf(it)
+		for _, f := range d.Table.Fields {
+			if f.TableRelation == nil || f.FlowField {
+				continue
+			}
+			target, ok := byName[normalizedTableName(f.TableRelation.Table)]
+			if !ok {
+				continue
+			}
+			for _, tf := range target.Table.Fields {
+				if tf.PrimaryKey && (tf.Name == f.TableRelation.Field || tf.DBName == f.TableRelation.Field) {
+					if target.References == nil {
+						target.References = map[string][]Reference{}
+					}
+					target.References[tf.DBName] = append(target.References[tf.DBName], Reference{Table: d.Table.Name, Global: d.Table.Global, Column: f.DBName})
+				}
+			}
+		}
+	}
+}
+
+// splitFlowFilterFields moves FlowFilter fields out of Fields (they are not stored).
+func splitFlowFilterFields(def *TableDef) {
+	stored := def.Table.Fields[:0]
+	for _, f := range def.Table.Fields {
+		if f.FlowFilter {
+			def.FlowFilterFields = append(def.FlowFilterFields, f)
+		} else {
+			stored = append(stored, f)
+		}
+	}
+	def.Table.Fields = stored
+}
+
+// flowFilterKind maps a FlowFilter field's type to the flowfilter package kind
+func flowFilterKind(f Field) (string, bool) {
+	switch f.Type {
+	case "types.Date":
+		return "KindDate", true
+	case "bool":
+		return "KindBool", true
+	case "int", "int64":
+		return "KindInt", true
+	case "types.Text":
+		return "KindText", true
+	case "types.Code":
+		return "KindCode", true
+	}
+	return "", false
+}
+
+// validateFlowFilters checks FlowFilter field types and the "filter" flow filters of
+// FlowFields (FlowFilter field of this table, stored field of the source table), and fills
+// their derived struct field / kind.
+func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
+	filters := map[string]Field{}
+	for _, f := range def.FlowFilterFields {
+		if _, ok := flowFilterKind(f); !ok {
+			return fmt.Errorf("FlowFilter field %q has type %s; supported: types.Date, bool, int, types.Text, types.Code", f.Name, f.Type)
+		}
+		filters[f.Name] = f
+	}
+	for i := range def.Table.Fields {
+		f := &def.Table.Fields[i]
+		if !f.FlowField {
+			continue
+		}
+		for j := range f.FlowFilters {
+			ff := &f.FlowFilters[j]
+			if ff.Type != "filter" {
+				continue
+			}
+			filter, ok := filters[ff.Value]
+			if !ok {
+				return fmt.Errorf("FlowField %s: flow filter on %s uses %q, which is not a FlowFilter field of %s", f.Name, ff.Field, ff.Value, def.Table.Name)
+			}
+			if source, ok := byStruct[toPascalCase(f.SourceTable)]; ok {
+				found := false
+				for _, sf := range source.Table.Fields {
+					if sf.Name == ff.Field && !sf.FlowField {
+						found = true
+					}
+				}
+				if !found {
+					return fmt.Errorf("FlowField %s: %q is not a stored field of %s", f.Name, ff.Field, source.Table.Name)
+				}
+			}
+			ff.FilterField = upperFirst(filter.Name)
+			ff.Kind, _ = flowFilterKind(filter)
+		}
+	}
+	return nil
 }
 
 // validateSIFTKeys checks keys with sum_index_fields: key and sum fields must be stored
@@ -421,7 +566,12 @@ func validateSIFTKeys(def *TableDef) error {
 func resolveFlowFieldSIFT(def *TableDef, byStruct map[string]*TableDef) {
 	for i := range def.Table.Fields {
 		f := &def.Table.Fields[i]
-		f.SIFTKey = ""
+		f.SIFTKey, f.SIFTKeyFiltered, f.FilterRefs = "", "", nil
+		for _, ff := range f.FlowFilters {
+			if ff.Type == "filter" {
+				f.FilterRefs = append(f.FilterRefs, ff)
+			}
+		}
 		if !f.FlowField || (f.CalcFormula != "Sum" && f.CalcFormula != "Count") {
 			continue
 		}
@@ -429,31 +579,52 @@ func resolveFlowFieldSIFT(def *TableDef, byStruct map[string]*TableDef) {
 		if !ok {
 			continue
 		}
-		best, bestLen, hasSIFT := "", 0, false
-		for _, k := range source.Table.Keys {
-			if len(k.SumIndexFields) == 0 {
-				continue
-			}
-			hasSIFT = true
-			if f.CalcFormula == "Sum" && !slices.Contains(k.SumIndexFields, f.SourceField) {
-				continue
-			}
-			covers := true
-			for _, ff := range f.FlowFilters {
-				if !slices.Contains(k.Fields, ff.Field) {
-					covers = false
-					break
-				}
-			}
-			if covers && (best == "" || len(k.Fields) < bestLen) {
-				best, bestLen = k.Name, len(k.Fields)
+		// Without FlowFilters set: the fixed (const/field) filters; with: all filter fields
+		var fixed, all []string
+		for _, ff := range f.FlowFilters {
+			all = append(all, ff.Field)
+			if ff.Type != "filter" {
+				fixed = append(fixed, ff.Field)
 			}
 		}
-		f.SIFTKey = best
-		if best == "" && hasSIFT {
+		var hasSIFT bool
+		f.SIFTKey, hasSIFT = pickSIFTKey(source, f, fixed)
+		if f.SIFTKey == "" && hasSIFT {
 			fmt.Printf("⚠ %s.%s: no SIFT key of %s covers it, sums the entries\n", def.Table.Name, f.Name, source.Table.Name)
 		}
+		if len(f.FilterRefs) > 0 {
+			f.SIFTKeyFiltered, _ = pickSIFTKey(source, f, all)
+			if f.SIFTKeyFiltered == "" && hasSIFT {
+				fmt.Printf("⚠ %s.%s: no SIFT key of %s covers it with its FlowFilters, sums the entries when one is set\n", def.Table.Name, f.Name, source.Table.Name)
+			}
+		}
 	}
+}
+
+// pickSIFTKey returns the SIFT key of source with the fewest fields that contains all
+// filterFields and (Sum) sums f's source field; hasSIFT reports whether source has any.
+func pickSIFTKey(source *TableDef, f *Field, filterFields []string) (best string, hasSIFT bool) {
+	bestLen := 0
+	for _, k := range source.Table.Keys {
+		if len(k.SumIndexFields) == 0 {
+			continue
+		}
+		hasSIFT = true
+		if f.CalcFormula == "Sum" && !slices.Contains(k.SumIndexFields, f.SourceField) {
+			continue
+		}
+		covers := true
+		for _, field := range filterFields {
+			if !slices.Contains(k.Fields, field) {
+				covers = false
+				break
+			}
+		}
+		if covers && (best == "" || len(k.Fields) < bestLen) {
+			best, bestLen = k.Name, len(k.Fields)
+		}
+	}
+	return best, hasSIFT
 }
 
 // fileExists checks if a file exists
@@ -523,7 +694,18 @@ func templateFuncs() template.FuncMap {
 		"firstPK":            getFirstPK,
 		"toPascalCase":       toPascalCase,
 		"tableNameVar":       getTableNameVarCode,
+		"filterSetExpr":      filterSetExpr,
+		"flowFilterKind":     func(f Field) string { k, _ := flowFilterKind(f); return k },
 	}
+}
+
+// filterSetExpr is the Go condition "one of these FlowFilters has a value"
+func filterSetExpr(refs []FlowFilter) string {
+	var conds []string
+	for _, r := range refs {
+		conds = append(conds, fmt.Sprintf("t.%s != \"\"", r.FilterField))
+	}
+	return strings.Join(conds, " || ")
 }
 
 // getTableNameVarCode returns the Go code to set the tableName variable
@@ -754,6 +936,37 @@ func getSQLConstraints(f Field) string {
 // Templates
 
 const boilerplateTemplate = `// Code generated by tablegen. DO NOT EDIT.
+{{- define "flowSource" }}
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName), false
+{{- if .SIFTKey }}
+	tableName, useSIFT = sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}"), true
+{{- end }}
+{{- if .FilterRefs }}
+	if {{ filterSetExpr .FilterRefs }} {
+		// A FlowFilter is set: the key must contain the filtered fields too
+{{- if .SIFTKeyFiltered }}
+		tableName, useSIFT = sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKeyFiltered }}"), true
+{{- else }}
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName), false
+{{- end }}
+	}
+{{- end }}
+	_ = useSIFT
+{{- end }}
+{{- define "flowFilterWhere" }}
+{{- range .FlowFilters }}
+{{- if eq .Type "filter" }}
+	if t.{{ .FilterField }} != "" {
+		// FlowFilter {{ .Value }} applied to {{ .Field }} (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("{{ .Field }}", flowfilter.{{ .Kind }}, t.{{ .FilterField }}); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+{{- end }}
+{{- end }}
+{{- end }}
 
 package {{ .PackageName }}
 
@@ -774,6 +987,9 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+{{- if .UsesFlowFilter }}
+	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
+{{- end }}
 {{- if .UsesSIFT }}
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 {{- end }}
@@ -823,6 +1039,11 @@ type {{ .BaseStructName }} struct {
 {{- else }}
 	{{ upperFirst .Name }} {{ .Type }} ` + "`db:\"{{ .DBName }}{{if .PrimaryKey}},pk{{end}}\"`" + `
 {{- end }}
+{{- end }}
+
+{{- range .FlowFilterFields }}
+	// FlowFilter {{ .Name }} ({{ .Type }}): the filter expression FlowFields apply — not stored
+	{{ upperFirst .Name }} string
 {{- end }}
 
 	// Internal context (set by Init)
@@ -1053,16 +1274,50 @@ func (t *{{ .BaseStructName }}) SyncKeys(db database.Executor, company string, d
 {{- if not .Table.Keys }}
 	_ = tableName // no keys: nothing to index
 {{- end }}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range {{ lowerFirst .BaseStructName }}SIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, {{ .StructName }}TableName, tableName, spec))
+	}
+	return sift.Sync(db, dbType, siftCompany, {{ .StructName }}TableName, keys)
+}
+
+// {{ lowerFirst .BaseStructName }}SIFTSpecs are the table's keys with sum_index_fields
+func {{ lowerFirst .BaseStructName }}SIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
 {{- range .SIFTKeys }}
-		sift.BuildKey(dbType, siftCompany, {{ $.StructName }}TableName, tableName, sift.KeySpec{
+		{
 			Name: "{{ .Name }}",
 			Fields: []sift.Column{ {{- range .Fields }}{Name: "{{ .Name }}", Kind: sift.{{ .Kind }}}, {{ end -}} },
 			Sums: []sift.Column{ {{- range .Sums }}{Name: "{{ .Name }}", Kind: sift.{{ .Kind }}}, {{ end -}} },
-		}),
+		},
 {{- end }}
 	}
-	return sift.Sync(db, dbType, siftCompany, {{ .StructName }}TableName, keys)
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *{{ .BaseStructName }}) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+{{- if .Table.Global }}
+	tableName, siftCompany := {{ .StructName }}TableName, ""
+{{- else }}
+	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName), t.company
+{{- end }}
+	var results []sift.VerifyResult
+	for _, spec := range {{ lowerFirst .BaseStructName }}SIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, {{ .StructName }}TableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: {{ .StructName }}TableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, {{ .StructName }}TableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -1440,6 +1695,24 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 {{- end }}
 {{- end }}
 
+{{- if .References }}
+	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+{{- range .Table.Fields }}
+{{- if and .PrimaryKey (index $.References .DBName) }}
+		if t.hasFieldChanged("{{ .DBName }}") {
+			renamed = append(renamed, renamedKey{"{{ .DBName }}", t.oldValues["{{ .DBName }}"], t.{{ upperFirst .Name }}})
+		}
+{{- end }}
+{{- end }}
+	}
+{{- end }}
+
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s WHERE 1=1{{ range .Table.Fields }}{{ if .PrimaryKey }} AND {{ .DBName }} = ?{{ end }}{{ end }}`" + `,
 		tableName,
@@ -1454,6 +1727,15 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 		fmt.Printf("Error: Failed to modify {{ .Table.Name }}: %v\n", err)
 		return false
 	}
+{{- if .References }}
+	for _, r := range renamed {
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to {{ .Table.Name }}: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
+	}
+{{- end }}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
 		t.StoreOldValues()
@@ -1517,6 +1799,65 @@ func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
 
 	return false
 }
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *{{ .BaseStructName }}) SetDB(db database.Executor) {
+	t.db = db
+}
+{{- if .References }}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *{{ .BaseStructName }}) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+{{- range $field, $refs := .References }}
+		"{{ $field }}": { {{- range $refs }}{"{{ .Table }}", {{ .Global }}, "{{ .Column }}"}, {{ end -}} },
+{{- end }}
+	}
+{{- if .Table.Global }}
+	var companies []string
+	rows, err := t.db.Query(` + "`SELECT name FROM \"Company\"`" + `)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			rows.Close()
+			return err
+		}
+		companies = append(companies, name)
+	}
+	rows.Close()
+{{- else }}
+	companies := []string{t.company}
+{{- end }}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(` + "`UPDATE \"%s\" SET %s = ? WHERE %s = ?`" + `, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
+}
+{{- end }}
 
 // Delete removes the record from the database
 func (t *{{ .BaseStructName }}) Delete(runTrigger bool) bool {
@@ -1648,12 +1989,7 @@ func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interf
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
 func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
 {{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
-{{- if .SIFTKey }}
-	// SIFT: totals of key {{ .SIFTKey }}, not the entries
-	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
-{{- else }}
-	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
-{{- end }}
+{{- template "flowSource" . }}
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -1689,6 +2025,7 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 		args = append(args, {{ .Value }})
 		{{- end }}
 		{{- end }}
+		{{- template "flowFilterWhere" . }}
 		if chunk != nil {
 			whereClauses = append(whereClauses, "{{ .BatchKeyField }} IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
 			args = append(args, chunk...)
@@ -1699,11 +2036,11 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 		}
 
 		{{- if eq .CalcFormula "Count" }}
-{{- if .SIFTKey }}
-		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM(cnt), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
-{{- else }}
-		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COUNT(*) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
-{{- end }}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, %s FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, agg, tableName, whereClause)
 		{{- else }}
 		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
 		{{- end }}
@@ -1765,12 +2102,7 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
 
 func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
-{{- if .SIFTKey }}
-	// SIFT: totals of key {{ .SIFTKey }} (one row per key value), not the entries
-	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
-{{- else }}
-	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
-{{- end }}
+{{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1785,6 +2117,7 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 	args = append(args, t.{{ upperFirst .Value }})
 	{{- end }}
 	{{- end }}
+	{{- template "flowFilterWhere" . }}
 
 	whereClause := "1=1"
 	if len(whereClauses) > 0 {
@@ -1810,12 +2143,7 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 {{- if and .FlowField (eq .CalcFormula "Count") }}
 
 func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
-{{- if .SIFTKey }}
-	// SIFT: entry counts of key {{ .SIFTKey }}, not the entries
-	tableName := sift.TableName(t.company, {{ toPascalCase .SourceTable }}TableName, "{{ .SIFTKey }}")
-{{- else }}
-	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
-{{- end }}
+{{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -1830,17 +2158,18 @@ func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 	args = append(args, t.{{ upperFirst .Value }})
 	{{- end }}
 	{{- end }}
+	{{- template "flowFilterWhere" . }}
 
 	whereClause := "1=1"
 	if len(whereClauses) > 0 {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
 
-{{- if .SIFTKey }}
-	query := fmt.Sprintf(` + "`SELECT COALESCE(SUM(cnt), 0) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
-{{- else }}
-	query := fmt.Sprintf(` + "`SELECT COUNT(*) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
-{{- end }}
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(` + "`SELECT %s FROM \"%s\" WHERE %s`" + `, agg, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3228,6 +3557,31 @@ func (t *{{ .BaseStructName }}) GetFields() []tables.FieldInfo {
 			PrimaryKey: {{ .PrimaryKey }},
 			FlowField:  {{ .FlowField }},
 		},
+{{- end }}
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *{{ .BaseStructName }}) SetFlowFilter(field, expr string) error {
+	switch field {
+{{- range .FlowFilterFields }}
+	case "{{ .DBName }}":
+		if err := flowfilter.Validate(flowfilter.{{ flowFilterKind . }}, expr); err != nil {
+			return err
+		}
+		t.{{ upperFirst .Name }} = expr
+		return nil
+{{- end }}
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of {{ .Table.Name }}", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *{{ .BaseStructName }}) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
+{{- range .FlowFilterFields }}
+		{Name: "{{ .DBName }}", Kind: string(flowfilter.{{ flowFilterKind . }})},
 {{- end }}
 	}
 }

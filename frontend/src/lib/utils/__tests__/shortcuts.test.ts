@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getShortcutKey, commonShortcuts } from '../shortcuts';
+import { getShortcutKey, commonShortcuts, shortcuts } from '../shortcuts';
 
 function key(init: Partial<KeyboardEvent>): KeyboardEvent {
 	return { ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, code: '', key: '', ...init } as KeyboardEvent;
@@ -29,5 +29,21 @@ describe('getShortcutKey', () => {
 describe('commonShortcuts', () => {
 	it('never uses browser-reserved Ctrl+N for New', () => {
 		expect(commonShortcuts.NEW).toBe('Alt+N');
+	});
+});
+
+describe('shortcuts action', () => {
+	it('ignores keys typed inside an element marked data-own-keys', () => {
+		document.body.innerHTML = '<div id="list"><input id="search" /><div data-own-keys><input id="filter" /></div></div>';
+		const list = document.getElementById('list')!;
+		let opened = 0;
+		const action = shortcuts(list, { Enter: () => { opened++; } });
+		const press = (id: string) =>
+			document.getElementById(id)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+		press('filter');
+		expect(opened).toBe(0);
+		press('search');
+		expect(opened).toBe(1);
+		action.destroy();
 	});
 });

@@ -66,6 +66,11 @@ type Table interface {
 	// one grouped query per FlowField. records are ToMap() results and get the values
 	// set under the field names. With no fields, all FlowFields are calculated.
 	CalcFieldsForRecords(records []map[string]interface{}, fields ...string)
+	// SetFlowFilter sets a FlowFilter field's filter expression (e.g. Date Filter); FlowFields
+	// applying it use it. "" clears it. Errors for unknown fields and invalid expressions.
+	SetFlowFilter(field, expr string) error
+	// GetFlowFilterFields returns the table's FlowFilter fields (not stored)
+	GetFlowFilterFields() []FlowFilterFieldInfo
 	// ValidateField validates a single field value
 	ValidateField(field string, value interface{}) error
 
@@ -92,6 +97,13 @@ type Table interface {
 	// GetTableRelationFields returns fields that have table relations (foreign keys)
 	// Returns map[fieldName]TableRelationInfo
 	GetTableRelationFields() map[string]TableRelationInfo
+}
+
+// FlowFilterFieldInfo describes a FlowFilter field (NAV FieldClass FlowFilter): its name and
+// value kind ("date", "bool", "int", "text", "code")
+type FlowFilterFieldInfo struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
 }
 
 // FieldInfo contains metadata about a table field

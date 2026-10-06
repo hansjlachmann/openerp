@@ -83,3 +83,24 @@ func TestListWindowSortAndSearch(t *testing.T) {
 		}
 	}
 }
+
+// flow_filters sets FlowFilter fields (Customer Date Filter) for the FlowFields of a
+// list/card request; invalid expressions and unknown fields are rejected with 400.
+func TestListFlowFilters(t *testing.T) {
+	app := newTablesTestApp(t)
+	postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C01","name":"Customer 1"}`)
+	ok := url.QueryEscape(`[{"field":"date_filter","expression":"2026-01-01..2026-03-31"}]`)
+	if status, out := getJSON(t, app, "/api/tables/Customer/list?flow_filters="+ok); status != 200 {
+		t.Errorf("valid date filter = %d %v", status, out)
+	}
+	for _, bad := range []string{
+		`[{"field":"date_filter","expression":"31.03.26"}]`,
+		`[{"field":"name","expression":"x"}]`,
+		`not json`,
+	} {
+		status, out := getJSON(t, app, "/api/tables/Customer/list?flow_filters="+url.QueryEscape(bad))
+		if status != 400 || out["success"] != false {
+			t.Errorf("flow_filters %s = %d %v, want 400", bad, status, out)
+		}
+	}
+}

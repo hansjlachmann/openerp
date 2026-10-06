@@ -36,10 +36,15 @@ type Size string
 const (
 	Small Size = "SMALL" // the customers in customers.yaml (screenshots, demos, E2E)
 	Large Size = "LARGE" // ~10,000 customers (paging, search and FlowField load tests)
+	Heavy Size = "HEAVY" // 200 customers with ~1,000 entries each over two years (SIFT volume)
 )
 
 // largeCustomerCount is the total number of customers in the LARGE set.
 const largeCustomerCount = 10000
+
+// heavyCustomerCount is the total number of customers in the HEAVY set; each gets about
+// 1,000 ledger entries (≈500 invoices, most of them paid) spread over two years.
+const heavyCustomerCount = 200
 
 // seed makes every run generate the same data.
 const seed = 20261005
@@ -54,6 +59,8 @@ func ParseSize(parameter string) (Size, error) {
 		return Small, nil
 	case string(Large):
 		return Large, nil
+	case string(Heavy):
+		return Heavy, nil
 	}
 	return "", &SizeError{Parameter: parameter}
 }
@@ -194,12 +201,16 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 
 	rng := newRand()
 	customers := small.Customers
-	if opts.Size == Large {
+	if opts.Size == Large || opts.Size == Heavy {
 		var gen generatorFile
 		if err := loadYAML("generator.yaml", &gen); err != nil {
 			return counts, err
 		}
-		customers = append(append([]customerData{}, customers...), generateCustomers(rng, gen, setup, largeCustomerCount-len(customers))...)
+		total := largeCustomerCount
+		if opts.Size == Heavy {
+			total = heavyCustomerCount
+		}
+		customers = append(append([]customerData{}, customers...), generateCustomers(rng, gen, setup, total-len(customers))...)
 	}
 
 	dueDays := make(map[string]int, len(setup.PaymentTerms))
@@ -469,12 +480,15 @@ func generateEntries(rng *rand.Rand, customers []customerData, dueDays map[strin
 	}
 
 	for _, c := range customers {
-		n := 6 + rng.Intn(15)
-		if size == Large {
+		n, days := 6+rng.Intn(15), 365
+		switch size {
+		case Large:
 			n = 3 + rng.Intn(10)
+		case Heavy:
+			n, days = 450+rng.Intn(100), 730
 		}
 		for i := 0; i < n; i++ {
-			date := day(today, -rng.Intn(365))
+			date := day(today, -rng.Intn(days))
 			amount := round2(500 + rng.Float64()*24500)
 			inv := &ledgerEntry{
 				customerNo: c.No,

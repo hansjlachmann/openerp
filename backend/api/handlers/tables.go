@@ -438,6 +438,11 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		h.ensureSetupRecord(tableName, company)
 	}
 
+	// FlowFilters (e.g. Date Filter) the FlowFields apply
+	if err := applyFlowFilters(c, table); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+
 	// Parse fields parameter (JSON array of field names) - for future FlowField optimization
 	var requestedFields []string
 	fieldsParam := c.Query("fields", "")
@@ -587,6 +592,11 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	// Get record by primary key (supports composite keys via comma-separated values)
 	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
+	}
+
+	// FlowFilters (e.g. Date Filter) the FlowFields apply
+	if err := applyFlowFilters(c, table); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Calculate FlowFields
@@ -759,8 +769,12 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		}
 	}
 
-	// Modify record
-	if !table.Modify(true) {
+	// Modify record — in a transaction, so a renamed key and the fields of other tables that
+	// refer to it (BC/NAV Rename, done by the generated Modify) change together or not at all
+	if ok, err := h.modifyInTransaction(table); !ok {
+		if err != nil {
+			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
 		// A failed OnModify trigger is a business rule the user broke: show its message
 		if trigErr := table.TriggerError(); trigErr != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
@@ -957,6 +971,30 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
 }
 
+// modifyInTransaction runs table.Modify(true) in a database transaction (committed when it
+// succeeds, rolled back otherwise) and then points the record back at the handler's
+// connection. err is set only when the transaction itself fails.
+func (h *TablesHandler) modifyInTransaction(table ftables.Table) (bool, error) {
+	setter, ok := table.(interface{ SetDB(database.Executor) })
+	if !ok {
+		return table.Modify(true), nil
+	}
+	tx, err := h.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	setter.SetDB(tx)
+	defer setter.SetDB(h.db)
+	if !table.Modify(true) {
+		_ = tx.Rollback()
+		return false, nil
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // checkRelation returns an error when value (a non-empty key) does not exist in the
 // table related to field. Fields without a table relation always pass.
 func (h *TablesHandler) checkRelation(table ftables.Table, company, language, field string, value interface{}) error {
@@ -1047,6 +1085,30 @@ func (h *TablesHandler) dropCompanyTablesSQLite(companyName string) {
 			fmt.Printf("Warning: Failed to drop table '%s': %v\n", name, err)
 		}
 	}
+}
+
+// applyFlowFilters sets the FlowFilter fields (NAV FieldClass FlowFilter, e.g. Date Filter)
+// from the flow_filters query parameter, JSON [{field, expression}]. The expression is
+// validated per the field's kind (dates in ISO); unknown fields and invalid expressions
+// are errors.
+func applyFlowFilters(c *fiber.Ctx, table ftables.Table) error {
+	param := c.Query("flow_filters", "")
+	if param == "" {
+		return nil
+	}
+	var filters []struct {
+		Field      string `json:"field"`
+		Expression string `json:"expression"`
+	}
+	if err := json.Unmarshal([]byte(param), &filters); err != nil {
+		return fmt.Errorf("invalid flow_filters parameter")
+	}
+	for _, f := range filters {
+		if err := table.SetFlowFilter(f.Field, f.Expression); err != nil {
+			return fmt.Errorf("%s: %v", f.Field, err)
+		}
+	}
+	return nil
 }
 
 // flowFieldsToCalc returns the FlowFields a list request needs: all of them when the

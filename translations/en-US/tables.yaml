@@ -51,6 +51,7 @@ tables:
       last_order_date: "Last Order Date"
       created_at: "Created At"
       status: "Status"
+      date_filter: "Date Filter"
 
     # Option field values
     options:

@@ -52,7 +52,20 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// primary key is not displayed on the page (e.g. BC-style setup tables).
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
 	if factory, ok := tables.GetTableFactory(pageDef.Page.SourceTable); ok {
-		pageDef.Page.FlowFields = factory().GetFlowFields()
+		tbl := factory()
+		pageDef.Page.FlowFields = tbl.GetFlowFields()
+		pageDef.Page.FlowFilterFields = nil
+		lang := normalizeLanguageCode(sess.GetLanguage())
+		if lang == "" {
+			lang = "en-US"
+		}
+		for _, ff := range tbl.GetFlowFilterFields() {
+			pageDef.Page.FlowFilterFields = append(pageDef.Page.FlowFilterFields, pages.FlowFilterField{
+				Name:    ff.Name,
+				Kind:    ff.Kind,
+				Caption: i18n.GetInstance().FieldCaption(pageDef.Page.SourceTable, ff.Name, lang),
+			})
+		}
 	}
 	// Build a set for quick lookup
 	pkSet := make(map[string]bool, len(primaryKeyFields))
