@@ -435,10 +435,6 @@ func (t *CustomerLedgerEntryBase) SyncKeys(db database.Executor, company string,
 		fmt.Sprintf("%s$Customer Ledger Entry$customer_open", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer_open: %w", err)
 	}
-	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no, posting_date, open)`,
-		fmt.Sprintf("%s$Customer Ledger Entry$customer_date_open", company), tableName)); err != nil {
-		return fmt.Errorf("failed to create index customer_date_open: %w", err)
-	}
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no)`,
 		fmt.Sprintf("%s$Customer Ledger Entry$customer", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer: %w", err)
@@ -464,11 +460,6 @@ func customerLedgerEntryBaseSIFTSpecs() []sift.KeySpec {
 		{
 			Name: "customer_open",
 			Fields: []sift.Column{{Name: "customer_no", Kind: sift.KindText}, {Name: "open", Kind: sift.KindBool}, },
-			Sums: []sift.Column{{Name: "remaining_amt_lcy", Kind: sift.KindDecimal}, {Name: "sales_lcy", Kind: sift.KindDecimal}, {Name: "amount_lcy", Kind: sift.KindDecimal}, },
-		},
-		{
-			Name: "customer_date_open",
-			Fields: []sift.Column{{Name: "customer_no", Kind: sift.KindText}, {Name: "posting_date", Kind: sift.KindDate}, {Name: "open", Kind: sift.KindBool}, },
 			Sums: []sift.Column{{Name: "remaining_amt_lcy", Kind: sift.KindDecimal}, {Name: "sales_lcy", Kind: sift.KindDecimal}, {Name: "amount_lcy", Kind: sift.KindDecimal}, },
 		},
 	}

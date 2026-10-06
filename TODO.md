@@ -42,8 +42,8 @@ Findings:
   (slower than the entries). Reordered to `customer_date_open` (customer, date, open) — the change was
   rebuilt automatically for all companies (rebuild path verified for real).
 - Date-filtered SIFT gives no gain here: a customer gets ~1–2 entries per day, so the date key has 584 day
-  rows for 1,012 entries. It pays off only with many entries per day (G/L volumes). Decide whether to keep
-  `customer_date_open` (costs one more totals update per posting and about as many rows as entries).
+  rows for 1,012 entries. It pays off only with many entries per day (G/L volumes). Decided: `customer_date_open`
+  removed (migration 006 drops its index); date-filtered Customer FlowFields sum the entries.
 - Right after the bulk load the totals had ~70 dead row versions per row (every posting updates the totals
   row); after autovacuum/VACUUM the reads are fast.
 - [ ] Loading HEAVY took 9 min (row-by-row Insert, two SIFT triggers per entry): batch inserts in the demo

@@ -270,21 +270,6 @@ table:
         - sales_lcy
         - amount_lcy
 
-    # SIFT key with Posting Date: the Customer FlowFields read it when a Date Filter is set
-    # (one totals row per customer, posting day and open); without one they read customer_open.
-    # Posting Date comes before Open so a date range is an index range for every FlowField —
-    # Sales (LCY) does not filter on Open (measured: with Open second, a date-filtered Sales
-    # read every day row of the customer and was slower than summing the entries)
-    - name: customer_date_open
-      fields:
-        - customer_no
-        - posting_date
-        - open
-      sum_index_fields:
-        - remaining_amt_lcy
-        - sales_lcy
-        - amount_lcy
-
     # Key for FlowField: Customer.Sales_lcy and No_of_ledger_entries (filters by customer_no)
     - name: customer
       fields:

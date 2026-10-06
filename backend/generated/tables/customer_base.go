@@ -906,7 +906,7 @@ func (t *CustomerBase) calcForRecords_balance_lcy(records []map[string]interface
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
@@ -987,7 +987,7 @@ func (t *CustomerBase) calcForRecords_sales_lcy(records []map[string]interface{}
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
@@ -1066,7 +1066,7 @@ func (t *CustomerBase) calcForRecords_no_of_ledger_entries(records []map[string]
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
@@ -1145,7 +1145,7 @@ func (t *CustomerBase) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decim
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
@@ -1191,7 +1191,7 @@ func (t *CustomerBase) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
@@ -1235,7 +1235,7 @@ func (t *CustomerBase) calcCountCustomerLedgerEntry() int {
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
 	if t.Date_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_date_open"), true
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
 	_ = useSIFT
 
