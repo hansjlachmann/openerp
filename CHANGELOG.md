@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.79](https://github.com/hansjlachmann/openerp/compare/v0.1.78...v0.1.79) (2026-10-06)
+
+
+### Features
+
+* FlowFilter Date Filter, BC Rename cascade, Verify SIFT codeunit, HEAVY demo data ([747d667](https://github.com/hansjlachmann/openerp/commit/747d6679b8e329c1e7702882cf7d4dc1ecd15fda))
+
 ## [0.1.78](https://github.com/hansjlachmann/openerp/compare/v0.1.77...v0.1.78) (2026-10-06)
 
 
