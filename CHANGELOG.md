@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.77](https://github.com/hansjlachmann/openerp/compare/v0.1.76...v0.1.77) (2026-10-06)
+
+
+### Performance
+
+* calculate list FlowFields with one grouped query per field ([82a0624](https://github.com/hansjlachmann/openerp/commit/82a06245cfb35390916dc43ac6ea36e983ef42ba))
+* windowed list loading with server-side search and sort ([28466c9](https://github.com/hansjlachmann/openerp/commit/28466c949434af2d2d1ec260d8c5feeaa5623fe7))
+
 ## [0.1.76](https://github.com/hansjlachmann/openerp/compare/v0.1.75...v0.1.76) (2026-10-05)
 
 
