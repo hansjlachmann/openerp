@@ -149,6 +149,7 @@ page:
       run_page: 25             # (optional) Navigate to page ID on click
       run_object: codeunit:50010        # (optional) Run codeunit by ID
       run_object: field:object_id_to_run # (optional) Run codeunit from a record field value
+      # Actions are enabled unless enabled: false (a missing value means enabled)
 ```
 
 ### Card Page YAML Structure
@@ -185,6 +186,13 @@ page:
       shortcut: Esc
       promoted: true
       run_page: 22
+    - name: Ledger Entries
+      caption: Ledger Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 25
+      run_page_filter_field: customer_no   # (optional) open run_page filtered:
+      run_page_filter_value: no            # customer_no = this record's no
     - name: Generate Ledger Entries
       caption: Generate Ledger Entries
       promoted: true
@@ -192,13 +200,15 @@ page:
 ```
 
 ### Key Rules
+- **Card actions**: only `promoted: true` actions are shown as buttons on a card (there is no overflow menu); others are reachable by their shortcut only. `run_page_filter_field` / `run_page_filter_value` open `run_page` filtered to the current record (like list drilldowns).
+- **Table names**: pages use registry names (`Customer_ledger_entry`), table YAML files display names (`Customer Ledger Entry`). Table metadata (`TableMetadata`, primary key fields, field types) normalizes both (`metadataKey`); a page whose source table finds no metadata gets no `primary_key_fields`, and its rows are keyed randomly (focus lost on every render).
 - **Lookup field definitions**: `table_relation` with `lookup_columns` is defined in the **table** YAML (`backend/business-logic/tables/definitions/`), not the page YAML. The page YAML only needs `table_relation: TableName` on the card field. The backend resolves lookup column data automatically and sends it in the `captions.lookups` response.
 - **Field captions**: Come from `translations/{lang}/tables.yaml` by default. The page YAML `caption` field overrides the translation for a specific page only.
 - **Page captions**: Come from `translations/{lang}/pages.yaml`. The YAML `caption` is the fallback if no translation exists.
 - **Action captions**: Come from `translations/{lang}/common.yaml` under `common.actions.{action_name}`. The YAML `caption` is the fallback.
 - **Frontend routing**: `PageRenderer.svelte` checks `page.type` and renders `<ListPage>` or `<CardPage>` — never create page-type-specific routes or components.
 - **Modal card**: When `modal_card: true` on a list page, the Edit/New actions open a `<ModalCardPage>` overlay instead of navigating to a separate card page. The modal auto-saves on field changes and refreshes the list on close.
-- **Drilldown fields**: List page fields can have `drilldown` (target page ID), `drilldown_filter_field` (field on target table), and `drilldown_filter_value` (field on current record). Clicking the cell navigates via `window.location.href` to `/pages/{drilldown}?filter={filter_field}={value}`. Use `window.location.href` (not `goto()`) because `PageRenderer` uses `onMount` — client-side navigation won't remount the component.
+- **Drilldown fields**: List page fields can have `drilldown` (target page ID), `drilldown_filter_field` (field on target table), and `drilldown_filter_value` (field on current record). Clicking the cell navigates via `window.location.href` to `/pages/{drilldown}?filter={filter_field}={value}&back=…`. **Return (BC)**: drilldowns and card `run_page` actions add `back=<origin page with select=<record key>>` (`withReturn` in `utils/returnUrl.ts`, validated by `safeReturnUrl`). A list opened with `back` shows a close (×) button and Esc in navigation mode returns there instead of to the main menu; the origin list then opens on the window around the selected record and selects it (`initialSelect`, located via `/ids` when the list is unfiltered). Use `window.location.href` (not `goto()`) because `PageRenderer` uses `onMount` — client-side navigation won't remount the component.
 - **URL filter parameter**: List pages accept `?filter=field=expression` query parameter to pre-filter on load. Parsed in `PageRenderer.svelte` into `currentFilters` and passed to the API. Used by drilldown links to show related records.
 
 ## Frontend Conventions
@@ -350,6 +360,12 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - Fields with no lookup render as plain `<input>`.
 - Never use `<datalist>` for lookup fields.
 - The `LookupDropdown` must be wrapped in a `<div data-row data-col>` container for focus management.
+
+### On-demand lookups (large related tables) (ABSOLUTE RULE)
+- `getLookupValues` sends a relation's rows with every list/card response only when the related table has at most `lookupInlineLimit` (200) rows. Larger tables (customers, G/L accounts, …) are sent as `{columns, lazy_url, total}` without rows: sending all 10,000 customers with each Customer Ledger Entries window cost ~0.4 s per request.
+- `LookupDropdown` with `lazyUrl` loads up to 50 rows from `GET /api/tables/:table/lookup/:field` when it opens and 150 ms after typing (server search over the key and the relation's `lookup_columns`, ordered by key, `key=` for one exact key); it shows "N of M shown — type to search" when more match. Decide advanced vs simple rendering with `isAdvancedLookup()` (`utils/fieldHelpers.ts`), never by `rows.length` alone.
+- Tab/Enter/blur stay synchronous: a typed key that is not among the loaded rows is taken as typed (uppercased); the server then checks it on save — `InsertRecord`/`ModifyRecord` reject a changed table-relation value that does not exist (`checkRelations`), the same check as `/validate`. Never let a relation field be saved without that check.
+- Give relations to large tables `lookup_columns` (e.g. customer: `no, name, city`) so users can search by name.
 
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
 - When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.

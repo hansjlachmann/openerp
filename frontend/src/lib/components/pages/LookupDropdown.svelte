@@ -4,6 +4,7 @@
 	import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 	import type { LookupColumn } from '$lib/types/api';
 	import { clickOutside } from '$lib/actions/clickOutside';
+	import { api } from '$lib/services/api';
 
 	interface LookupRow {
 		_key: string;
@@ -21,6 +22,9 @@
 		disabled?: boolean;
 		error?: boolean;
 		compact?: boolean; // Compact mode for list page edit cells (no border, tight padding)
+		// Large related table: rows are not passed in but loaded from this URL when the
+		// dropdown opens and while the user types (server search), at most a page at a time
+		lazyUrl?: string;
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -36,6 +40,7 @@
 		disabled = false,
 		error = false,
 		compact = false,
+		lazyUrl,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -55,9 +60,46 @@
 		inputValue = value || '';
 	});
 
+	// On-demand rows (lazyUrl): the rows of the last search and how many match in total
+	let loadedRows = $state<LookupRow[]>([]);
+	let loadedTotal = $state(0);
+	let loading = $state(false);
+	let loadSeq = 0;
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// The rows the dropdown works with: passed in, or loaded on demand
+	const allRows = $derived(lazyUrl ? loadedRows : rows);
+
+	// Load rows matching search (only the latest request may set them). After loading,
+	// highlight the current value, else the first row.
+	async function loadRows(search: string) {
+		if (!lazyUrl) return;
+		const seq = ++loadSeq;
+		loading = true;
+		try {
+			const result = await api.lookupRows(lazyUrl, { search });
+			if (seq !== loadSeq) return;
+			loadedRows = result.rows ?? [];
+			loadedTotal = result.total ?? loadedRows.length;
+			selectedIndex = Math.max(0, loadedRows.findIndex((r) => r._key === value));
+			if (loadedRows.length === 0) selectedIndex = -1;
+		} catch {
+			if (seq === loadSeq) loadedRows = [];
+		} finally {
+			if (seq === loadSeq) loading = false;
+		}
+	}
+
+	// The search term: what the user typed, unless it is still the current value
+	function searchTerm(): string {
+		return inputValue && inputValue !== value ? inputValue : '';
+	}
+
 	// Filter rows based on input value (type-ahead filtering)
 	// Don't filter if input matches the current selected value (user hasn't started searching)
 	const filteredRows = $derived(() => {
+		// On-demand rows are already the server's search result
+		if (lazyUrl) return loadedRows;
 		if (!inputValue) return rows;
 		// If input is the current, existing value, show all rows (user opened dropdown without
 		// typing). A value that is not an existing key (e.g. the first character typed into a
@@ -110,6 +152,10 @@
 		// Don't re-open if a selection was just made (handleSelect re-focuses input)
 		if (selectHandled) return;
 		isOpen = true;
+		if (lazyUrl) {
+			loadRows(searchTerm());
+			return;
+		}
 		// Find current selection index in filtered rows
 		selectedIndex = filteredRows().findIndex(r => r._key === value);
 		if (selectedIndex < 0 && filteredRows().length > 0) selectedIndex = 0;
@@ -150,6 +196,10 @@
 		// Open dropdown when typing
 		if (!isOpen && inputValue) {
 			openDropdown();
+		} else if (lazyUrl && isOpen) {
+			// Search on the server shortly after the user stops typing
+			clearTimeout(searchTimer);
+			searchTimer = setTimeout(() => loadRows(searchTerm()), 150);
 		}
 
 		// Reset selection to first match
@@ -178,11 +228,17 @@
 			const trimmedInput = inputValue.trim().toUpperCase();
 			if (trimmedInput) {
 				// Find exact match by key (case-insensitive)
-				const matchingRow = rows.find(r => r._key.toUpperCase() === trimmedInput);
+				const matchingRow = allRows.find(r => r._key.toUpperCase() === trimmedInput);
 				if (matchingRow) {
 					value = matchingRow._key;
 					inputValue = matchingRow._key;
 					onselect?.(matchingRow._key);
+				} else if (lazyUrl) {
+					// Not among the loaded rows: take the typed key; saving the record checks
+					// that it exists (the table relation is validated on the server)
+					value = trimmedInput;
+					inputValue = trimmedInput;
+					onselect?.(trimmedInput);
 				} else {
 					// No match - show error and revert to previous value
 					const fieldLabel = fieldName || 'Value';
@@ -278,15 +334,24 @@
 			return true;
 		}
 		const term = typed.toLowerCase();
-		const exact = rows.find((r) => r._key.toLowerCase() === term);
+		const exact = allRows.find((r) => r._key.toLowerCase() === term);
 		// The row highlighted in the open dropdown, if it matches what was typed
 		const highlighted = isOpen && selectedIndex >= 0 ? filteredRows()[selectedIndex] : undefined;
 		const highlightedMatch = highlighted && rowMatches(highlighted, term) ? highlighted : undefined;
 		const row =
 			exact ??
 			highlightedMatch ??
-			rows.find((r) => r._key.toLowerCase().startsWith(term)) ??
-			rows.find((r) => rowMatches(r, term));
+			allRows.find((r) => r._key.toLowerCase().startsWith(term)) ??
+			allRows.find((r) => rowMatches(r, term));
+		if (!row && lazyUrl) {
+			// On-demand rows may not include it (or not be loaded yet): take the typed key
+			// synchronously; saving the record checks that it exists on the server
+			value = typed.toUpperCase();
+			inputValue = value;
+			selectHandled = true;
+			onselect?.(value);
+			return true;
+		}
 		if (!row) {
 			toast.error(t(ERR.FIELD_NOT_EXIST, fieldName || 'Value', typed));
 			return false;
@@ -382,7 +447,12 @@
 					</div>
 				{/each}
 				{#if filteredRows().length === 0}
-					<div class="lookup-empty">{inputValue ? t(MSG.NO_MATCHES) : t(MSG.NO_RECORDS)}</div>
+					<div class="lookup-empty">
+						{#if loading}{t(MSG.LOOKUP_LOADING)}{:else}{inputValue ? t(MSG.NO_MATCHES) : t(MSG.NO_RECORDS)}{/if}
+					</div>
+				{/if}
+				{#if lazyUrl && loadedTotal > loadedRows.length}
+					<div class="lookup-empty">{t(MSG.LOOKUP_MORE, String(loadedRows.length), String(loadedTotal))}</div>
 				{/if}
 			</div>
 		</div>

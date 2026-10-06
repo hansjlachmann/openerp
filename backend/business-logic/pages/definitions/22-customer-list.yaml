@@ -29,9 +29,15 @@ page:
 
         - source: balance_lcy
           width: 120
+          drilldown: 25
+          drilldown_filter_field: customer_no
+          drilldown_filter_value: no
 
         - source: sales_lcy
           width: 120
+          drilldown: 25
+          drilldown_filter_field: customer_no
+          drilldown_filter_value: no
 
         - source: status
           width: 100

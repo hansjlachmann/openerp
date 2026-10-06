@@ -28,6 +28,8 @@ messages:
   MSG_SAVED: "Saved"
   MSG_NO_MATCHES: "No matches found"
   MSG_NO_RECORDS: "No records found"
+  MSG_LOOKUP_MORE: "%1 of %2 shown — type to search"
+  MSG_LOOKUP_LOADING: "Loading..."
   MSG_LOADING_MENU: "Loading menu..."
   MSG_NO_MENU_ITEMS: "No menu items available"
   MSG_CODEUNIT_SUCCESS: "Operation completed successfully"

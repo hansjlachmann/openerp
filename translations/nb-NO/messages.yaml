@@ -28,6 +28,8 @@ messages:
   MSG_SAVED: "Lagret"
   MSG_NO_MATCHES: "Ingen treff funnet"
   MSG_NO_RECORDS: "Ingen poster funnet"
+  MSG_LOOKUP_MORE: "%1 av %2 vises — skriv for å søke"
+  MSG_LOOKUP_LOADING: "Laster..."
   MSG_LOADING_MENU: "Laster meny..."
   MSG_NO_MENU_ITEMS: "Ingen menyelementer tilgjengelig"
   MSG_CODEUNIT_SUCCESS: "Operasjon fullført"

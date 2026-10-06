@@ -17,6 +17,13 @@ table:
       table_relation:
         table: Customer
         field: no
+        lookup_columns:
+          - source: no
+            width: 90
+          - source: name
+            width: 220
+          - source: city
+            width: 120
 
     - name: sell_to_customer_no
       type: types.Code
@@ -25,6 +32,13 @@ table:
       table_relation:
         table: Customer
         field: no
+        lookup_columns:
+          - source: no
+            width: 90
+          - source: name
+            width: 220
+          - source: city
+            width: 120
 
     # Document Information
     - name: posting_date

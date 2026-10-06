@@ -2,7 +2,7 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isDateType, isDateTimeType, formatDate, formatDateTime } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
@@ -57,9 +57,8 @@
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
 
 	// Check if this is a lookup field with advanced columns (table-style dropdown)
-	const isAdvancedLookup = $derived(
-		lookups && lookups.columns && lookups.columns.length > 0 && lookups.rows
-	);
+	// (rows sent along, or loaded on demand from lazy_url for large related tables)
+	const isAdvancedLookup = $derived(isAdvancedLookupData(lookups));
 
 	// Check if this is a simple lookup field (basic dropdown)
 	const isSimpleLookup = $derived(
@@ -178,11 +177,12 @@
 					}}
 					onblur={() => onblur?.()}
 				/>
-			{:else if isAdvancedLookup && lookups?.columns && lookups?.rows}
+			{:else if isAdvancedLookup && lookups?.columns}
 				<!-- Advanced lookup with columns - render as table-style dropdown -->
 				<LookupDropdown
 					columns={[...lookups.columns]}
-					rows={[...lookups.rows]}
+					rows={[...(lookups.rows ?? [])]}
+					lazyUrl={lookups.lazy_url}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
@@ -243,12 +243,13 @@
 					disabled
 				/>
 			</div>
-		{:else if isAdvancedLookup && lookups?.columns && lookups?.rows}
+		{:else if isAdvancedLookup && lookups?.columns}
 			<!-- Advanced lookup - show dropdown even in non-edit mode -->
 			<div class="input-wrapper">
 				<LookupDropdown
 					columns={[...lookups.columns]}
-					rows={[...lookups.rows]}
+					rows={[...(lookups.rows ?? [])]}
+					lazyUrl={lookups.lazy_url}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}

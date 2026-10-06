@@ -6,6 +6,10 @@ menu:
         page_id: 22
         icon: users
 
+      - name: Customer Ledger Entries
+        page_id: 25
+        icon: list
+
   - name: Settings
     icon: settings
     items:

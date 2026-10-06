@@ -25,6 +25,9 @@ export interface LookupData {
 	rows?: Array<{ _key: string; [key: string]: any }>;
 	simple?: Record<string, string>;
 	search_timeout?: number;
+	// Large related table: no rows are sent; the dropdown loads them on demand from this URL
+	lazy_url?: string;
+	total?: number;
 }
 
 // Table record type (generic)

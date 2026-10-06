@@ -210,6 +210,16 @@ export function formatOptionValue(
 }
 
 /**
+ * A lookup rendered as LookupDropdown (table-style dropdown): it has columns and either its
+ * rows (small related table, sent along) or a lazy_url to load them on demand (large table).
+ */
+export function isAdvancedLookup(
+	lookup?: { columns?: { source: string }[]; rows?: any[] | null; lazy_url?: string }
+): boolean {
+	return !!lookup?.columns?.length && (!!lookup.rows?.length || !!lookup.lazy_url);
+}
+
+/**
  * Format a lookup field value for display
  * @param value - The stored key value
  * @param lookups - Lookup data with simple map or rows/columns

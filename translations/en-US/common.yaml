@@ -39,6 +39,7 @@ common:
     settings: "Settings"
     jobs: "Jobs"
     customers: "Customers"
+    customer_ledger_entries: "Customer Ledger Entries"
     users: "Users"
     languages: "Languages"
     payment_terms: "Payment Terms"

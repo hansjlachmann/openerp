@@ -39,6 +39,7 @@ common:
     settings: "Indstillinger"
     jobs: "Opgaver"
     customers: "Debitorer"
+    customer_ledger_entries: "Debitorposter"
     users: "Brugere"
     languages: "Sprog"
     payment_terms: "Betalingsbetingelser"

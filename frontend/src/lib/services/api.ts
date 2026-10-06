@@ -81,6 +81,18 @@ export const api = {
 		};
 	},
 
+	// Rows for an on-demand dropdown (LookupData.lazy_url): matching search, or the row with key
+	async lookupRows(
+		lazyUrl: string,
+		params: { search?: string; key?: string }
+	): Promise<{ rows: Array<{ _key: string; [key: string]: any }>; total: number }> {
+		const query = new URLSearchParams();
+		if (params.search) query.append('search', params.search);
+		if (params.key) query.append('key', params.key);
+		const response = await fetch(`${lazyUrl}${query.toString() ? '?' + query.toString() : ''}`);
+		return handleApiResponse(response, 'load lookup rows');
+	},
+
 	async getRecordIDs(tableName: string, sortBy?: string): Promise<string[]> {
 		const url = `${API_BASE}/tables/${tableName}/ids${sortBy ? '?sort_by=' + sortBy : ''}`;
 		const response = await fetch(url);

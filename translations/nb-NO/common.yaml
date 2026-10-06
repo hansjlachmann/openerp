@@ -39,6 +39,7 @@ common:
     settings: "Innstillinger"
     jobs: "Jobber"
     customers: "Kunder"
+    customer_ledger_entries: "Kundeposter"
     users: "Brukere"
     languages: "Språk"
     payment_terms: "Betalingsbetingelser"

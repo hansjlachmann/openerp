@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"net/url"
@@ -251,6 +252,23 @@ func TestInsertDuplicateCompositeKey(t *testing.T) {
 	if err := (&tables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
+	// The related records must exist (table relations are checked on insert)
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&tables.User{}, &tables.UserRole{}, &tables.Company{}} {
+		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+			t.Fatalf("create table: %v", err)
+		}
+	}
+	for _, stmt := range []string{
+		`INSERT INTO "User" (user_id, user_name) VALUES ('HANS', 'Hans')`,
+		`INSERT INTO "User_Role" (code, description) VALUES ('READER', 'Reader')`,
+		`INSERT INTO "Company" (name) VALUES ('CRONUS'), ('OTHER')`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("%s: %v", stmt, err)
+		}
+	}
 
 	first := postJSON(t, app, "/api/tables/User_Member/insert", `{"user_id":"HANS","role_id":"READER","company":"CRONUS"}`)
 	if first["success"] != true {
@@ -269,5 +287,27 @@ func TestInsertDuplicateCompositeKey(t *testing.T) {
 	}
 	if msg, _ := dup["error"].(string); !strings.Contains(msg, "HANS,READER,CRONUS") {
 		t.Errorf("error = %q, want a duplicate message naming the full key HANS,READER,CRONUS", msg)
+	}
+}
+
+// A changed table relation field must point to an existing record on insert and modify
+// (on-demand dropdowns accept typed keys and rely on this check).
+func TestInsertRejectsUnknownRelationKey(t *testing.T) {
+	app := newTablesTestApp(t)
+	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	defer db.Close()
+	if err := (&tables.PaymentTerms{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO "TEST$Payment Terms" (code, description, active) VALUES ('30 DAYS', 'Net 30', 1)`); err != nil {
+		t.Fatal(err)
+	}
+	bad := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C1","name":"Acme","payment_terms_code":"NOPE"}`)
+	if bad["success"] != false || !strings.Contains(fmt.Sprint(bad["error"]), "NOPE") {
+		t.Errorf("insert with unknown payment terms = %v, want rejected naming NOPE", bad)
+	}
+	good := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C1","name":"Acme","payment_terms_code":"30 DAYS"}`)
+	if good["success"] != true {
+		t.Errorf("insert with existing payment terms failed: %v", good["error"])
 	}
 }

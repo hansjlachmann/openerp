@@ -110,8 +110,9 @@ func (s *Server) Setup() {
 
 	// Table routes
 	tables := api.Group("/tables/:table", middleware.PermissionCheck())
-	tables.Get("/ids", tablesHandler.GetRecordIDs)   // Lightweight IDs-only endpoint
-	tables.Get("/options", tablesHandler.GetOptions) // Fast options metadata only
+	tables.Get("/ids", tablesHandler.GetRecordIDs)         // Lightweight IDs-only endpoint
+	tables.Get("/options", tablesHandler.GetOptions)       // Fast options metadata only
+	tables.Get("/lookup/:field", tablesHandler.LookupRows) // On-demand dropdown rows (large related tables)
 	tables.Get("/list", tablesHandler.ListRecords)
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)
