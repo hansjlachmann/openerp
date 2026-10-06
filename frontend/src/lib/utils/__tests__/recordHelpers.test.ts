@@ -83,6 +83,14 @@ describe('getRecordKey', () => {
 		expect(getRecordKey(record)).toBe('ABC-001');
 	});
 
+	it('keeps the persisted key while the primary key is being edited', () => {
+		// The user is typing a new No. into a saved row: the key must not change per character
+		const record = { _key: 'C00020', no: 'Ab', name: 'Test' };
+		expect(getRecordKey(record, 'no')).toBe('C00020');
+		// Blank persisted key (setup table) is a valid key too
+		expect(getRecordKey({ _key: '', primary_key: 'x' }, 'primary_key')).toBe('');
+	});
+
 	it('returns fallback for record without ID', () => {
 		const record = { name: 'Test' };
 		const key = getRecordKey(record);

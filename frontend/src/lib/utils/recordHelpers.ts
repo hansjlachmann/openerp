@@ -146,6 +146,12 @@ export function getRecordKey(
 	// For new unsaved records, use the temporary ID
 	if (record._tempId) return record._tempId;
 
+	// An editable row is keyed by its persisted key (_key), not the live field values: the
+	// user may be typing a new primary key (BC/NAV Rename). Keying by the typed value gave
+	// the row a new key per character, so Svelte recreated it, the input lost the focus,
+	// and the blur saved the half-typed key and left editing.
+	if (record._key !== undefined) return String(record._key);
+
 	// Use the composite or single primary key value.
 	// An empty string is a valid, stable key (BC-style setup tables have a single
 	// blank primary key) — only fall through when there is no id at all. Returning a

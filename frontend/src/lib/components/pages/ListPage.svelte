@@ -255,7 +255,7 @@
 			const field = visibleColumns()[currentCellCol];
 			if (record) await handleCellBlur(record, currentCellRow, field?.source, true);
 		}
-		if (editableActive) exitToNavigation();
+		if (editableActive) exitToNavigation(false); // keep the focus in the search box
 		await onwindow({ ...request, offset: 0, limit: windowSize(rowsPerPage()) });
 		selectedIndex = records.length > 0 ? 0 : -1;
 	}
@@ -267,7 +267,11 @@
 	$effect(() => {
 		if (listPageElement && isNavigation && records.length > 0 && !modalOpen) {
 			setTimeout(() => {
-				listPageElement?.focus();
+				// Only when nothing else has the focus: never take it from a cell, the search
+				// box or another control the user moved to
+				const active = document.activeElement;
+				const unfocused = !active || active === document.body;
+				if (isNavigation && !modalOpen && unfocused) listPageElement?.focus();
 			}, 100);
 		}
 	});
@@ -604,8 +608,9 @@
 
 	// Editable copy of the records. _key holds each record's persisted primary key, so a
 	// record whose key field the user edits is still addressed by its stored key
+	// _saved holds the values last saved, so a row the user did not change is never written.
 	function toEditableRecords(): Array<Record<string, any>> {
-		return records.map(r => ({ ...r, _key: getRecordId(r, primaryKeyField, primaryKeyFieldsList) }));
+		return records.map(r => ({ ...r, _key: getRecordId(r, primaryKeyField, primaryKeyFieldsList), _saved: deepCopy(r) }));
 	}
 
 	// Ctrl+Insert (new line) or Alt+N (New) inserts a new row (BC). Not Ctrl+N: browsers
@@ -734,8 +739,9 @@
 		focusCellSelectedElement(currentCellRow, currentCellCol);
 	}
 
-	// Exit to navigation mode
-	function exitToNavigation() {
+	// Exit to navigation mode. focusPage = false when the user moved the focus elsewhere
+	// (e.g. clicked the search box): keep it there.
+	function exitToNavigation(focusPage: boolean = true) {
 		// Clean up empty new rows
 		cleanupEmptyNewRows();
 
@@ -746,7 +752,7 @@
 		editableRecords = [];
 		editableActive = false;
 
-		listPageElement?.focus();
+		if (focusPage) listPageElement?.focus();
 	}
 
 	// Confirm current cell value and move to target cell (enters cell-selected at target)
@@ -794,7 +800,9 @@
 
 	// Track saving state to prevent concurrent saves
 	let isSaving = $state(false);
-	let pendingSave: { record: Record<string, any>; rowIndex: number; fieldName?: string; leavingRow?: boolean } | null = null;
+	// Saves confirmed while another save runs, in order. A queue, not a single slot: with
+	// one slot a third quick edit overwrote the waiting one and that edit was never saved.
+	let pendingSaves: Array<{ record: Record<string, any>; rowIndex: number; fieldName?: string; leavingRow?: boolean }> = [];
 
 	// Header save indicator ("Saving..." / "✓ Saved"), the only feedback that a row committed
 	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
@@ -812,9 +820,14 @@
 	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, leavingRow: boolean = false) {
 		if (!page || !editableActive) return;
 
+		// An existing record the user did not change since it was last saved: nothing to
+		// validate or save (BC/NAV modifies only changed records). Moving through the cells
+		// of a list used to MODIFY every row passed — a write plus a list reload per key.
+		if (record._isNew !== true && record._saved && !hasUserEdits(record, record._saved)) return;
+
 		// If already saving, queue this save for later (must check before async validation)
 		if (isSaving) {
-			pendingSave = { record, rowIndex, fieldName, leavingRow };
+			pendingSaves.push({ record, rowIndex, fieldName, leavingRow });
 			return;
 		}
 
@@ -890,6 +903,7 @@
 					delete editableRecords[savedIndex]._isNew;
 					delete editableRecords[savedIndex]._pristine;
 					editableRecords[savedIndex]._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
+					editableRecords[savedIndex]._saved = deepCopy(stripInternalFields(editableRecords[savedIndex]));
 				}
 				markSaved();
 				// Trigger parent update if callback exists
@@ -908,6 +922,7 @@
 					Object.assign(record, savedRecord);
 					if (_tempId) record._tempId = _tempId;
 					record._key = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
+					record._saved = deepCopy(stripInternalFields(record));
 				}
 				markSaved();
 				// Trigger parent update if callback exists
@@ -920,8 +935,8 @@
 			saveState = 'idle';
 			const message = err instanceof Error ? err.message : t(ERR.FAILED_SAVE_RECORD);
 			toast.error(message);
-			// Revert the cell to its original value
-			const originalRecord = records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === (record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList)));
+			// Revert the cell to its last saved values
+			const originalRecord = record._saved ?? records.find(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === (record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList)));
 			if (!isNew && originalRecord) {
 				// Existing record - revert the row to its saved values (temp flags are kept)
 				Object.assign(record, deepCopy(originalRecord));
@@ -930,12 +945,11 @@
 			// the insert is retried on the next confirmed cell
 		} finally {
 			isSaving = false;
-			// Process any pending save
-			if (pendingSave) {
-				const { record: pendingRecord, rowIndex: pendingRowIndex, fieldName: pendingFieldName, leavingRow: pendingLeavingRow } = pendingSave;
-				pendingSave = null;
+			// Process the next queued save
+			const next = pendingSaves.shift();
+			if (next) {
 				// Use setTimeout to avoid stack overflow
-				setTimeout(() => handleCellBlur(pendingRecord, pendingRowIndex, pendingFieldName, pendingLeavingRow), 0);
+				setTimeout(() => handleCellBlur(next.record, next.rowIndex, next.fieldName, next.leavingRow), 0);
 			}
 		}
 	}
@@ -1498,8 +1512,9 @@
 	}
 
 	function focusCell(rowIndex: number, colIndex: number, selectAll: boolean = true) {
-		// Use a longer timeout to ensure Svelte has finished any re-renders
-		setTimeout(() => {
+		// Focus as soon as Svelte has updated the DOM: keys typed before the input has the
+		// focus are lost (a fixed 50 ms delay dropped characters typed quickly after the first)
+		afterRender(() => {
 			// Try direct input/select first (regular inputs and simple lookups)
 			const input = document.querySelector(
 				`input[data-row="${rowIndex}"][data-col="${colIndex}"], select[data-row="${rowIndex}"][data-col="${colIndex}"]`
@@ -1514,7 +1529,7 @@
 						placeCursorAtEnd(input);
 					}
 				}
-				return;
+				return true;
 			}
 			// Try container div (LookupDropdown/OptionDropdown wrapper) and focus the input inside
 			const container = document.querySelector(
@@ -1537,22 +1552,33 @@
 						combobox.focus({ preventScroll: true });
 					}
 				}
+				return true;
 			}
-		}, 50);
+			return false;
+		});
+	}
+
+	// Run a DOM step (focus) once Svelte has applied pending state; if its element is not
+	// there yet (a component still mounting), try once more a little later
+	function afterRender(step: () => boolean) {
+		tick().then(() => {
+			if (!step()) setTimeout(step, 50);
+		});
 	}
 
 	// Focus a cell-selected element (div with data-cell-row/data-cell-col)
 	function focusCellSelectedElement(row: number, col: number) {
-		setTimeout(() => {
+		afterRender(() => {
 			const el = document.querySelector(
 				`[data-cell-row="${row}"][data-cell-col="${col}"]`
 			) as HTMLElement | null;
-			if (el) {
-				el.focus({ preventScroll: true });
-				scrollCellIntoView(row, el);
-			}
-		}, 50);
+			if (!el) return false;
+			el.focus({ preventScroll: true });
+			scrollCellIntoView(row, el);
+			return true;
+		});
 	}
+
 
 	// Handle blur from cell-editing inputs
 	function handleEditingInputBlur() {
@@ -1560,14 +1586,20 @@
 		const blurredCol = currentCellCol;
 
 		setTimeout(() => {
-			// If state already transitioned (e.g., keyboard/click handler took over), skip
-			if (cellState === 'navigation') return;
+			// Only a blur while still editing means the user left the table. A key or click
+			// that moves to another cell first switches to cell-selected and removes this
+			// input (which blurs it): that handler saves the cell itself. Treating that blur as
+			// "left the table" saved the cell twice and went to navigation mode, whose delayed
+			// page focus then took the focus away from the next cell.
+			if (cellState !== 'cell-editing') return;
 
 			// If we've moved to a different cell, the transition was already handled
 			if (currentCellRow !== blurredRow || currentCellCol !== blurredCol) return;
 
-			// If focus left the table entirely, save and exit
-			if (!listPageElement?.contains(document.activeElement)) {
+			// If focus left the table (to another page, or the list's own search box or
+			// toolbar), save and exit. Lookup/option dropdowns render inside the cell.
+			const table = tableBodyElement?.closest('.table-container');
+			if (!table?.contains(document.activeElement)) {
 				const cols = visibleColumns();
 				const field = cols[blurredCol];
 				const record = displayRecords[blurredRow];
@@ -1577,7 +1609,7 @@
 					}
 					handleCellBlur(record, blurredRow, field.source, true);
 				}
-				exitToNavigation();
+				exitToNavigation(false);
 			}
 		}, 10);
 	}

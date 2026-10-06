@@ -332,8 +332,10 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - When a cell value is "confirmed" (see keyboard tables above), existing records call `modifyRecord`. New records follow the Record Entry rules above.
 - The `isSaving` guard must be set **before** any async validation to prevent race conditions from concurrent save events.
 - For existing rows, `table_relation` fields without an advanced lookup are checked via `api.validateField`; fields using `LookupDropdown` (advanced lookup) skip it since the component validates internally. New rows always validate the user's change (see above).
-- Failed saves of existing records revert to original values from the unmodified `records` array.
-- Concurrent save events are queued via `pendingSave` (including the field name) and processed after the current save completes.
+- **Only changed rows are saved**: every editable row carries `_saved` (its values as last saved, set in `toEditableRecords` and after each insert/modify). `handleCellBlur` returns at once for an existing row with no change against `_saved` — no validation, no MODIFY, no list reload. Moving through cells used to MODIFY every row passed (a write plus a reload per key, which also hit the 300 requests/minute rate limit).
+- Failed saves of existing records revert to `_saved`.
+- Concurrent save events are queued in order in `pendingSaves` (including the field name) and processed one by one after the current save completes. Never a single slot: a third quick edit overwrote the waiting one and was never saved.
+- `PageRenderer.handleListSave` reloads the list window without awaiting it, so the next cell's save never waits for a reload.
 - After an `await`, locate a new row by `_tempId` (never by a stale index) — `exitToNavigation()` can clear `editableRecords` and rows can be removed mid-save.
 
 ### Lookup Fields (ABSOLUTE RULE)
@@ -352,7 +354,10 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - **Re-open guard**: After `handleSelect` re-focuses the input, `onfocus` must NOT re-open the dropdown. The `selectHandled` flag prevents this — `openDropdown()` skips when `selectHandled` is true. The flag is cleared when the user types, toggles the dropdown, or presses ArrowDown to explicitly re-open.
 
 ### Focus Management
-- `focusCell(rowIndex, colIndex)` uses a 50ms timeout (for Svelte DOM updates) and handles three cell types:
+- **Row keys**: rows are keyed by `getRecordKey` — `_tempId`, then the persisted key `_key`, then the primary key. Never key an editable row by its live field values: typing a new primary key changed the key per character, Svelte recreated the row, the input lost the focus and the half-typed key was saved as a rename.
+- **Leaving the table while editing**: `handleEditingInputBlur` acts only while the state is still `cell-editing` and focus is outside `.table-container` (another page, or the list's own search box/toolbar): it saves the cell and calls `exitToNavigation(false)`, which keeps the focus where the user put it. Keyboard and click moves switch to `cell-selected` first and save the cell themselves, so the blur of the removed input is ignored. The page auto-focus (`listPageElement.focus()`) only takes the focus when nothing else has it.
+- `focusCell` / `focusCellSelectedElement` focus as soon as Svelte has updated the DOM (`afterRender`: `tick()`, one retry after 50 ms if the element is not there yet). A fixed 50 ms delay lost the characters typed right after the first one.
+- `focusCell(rowIndex, colIndex)` handles three cell types:
   - Direct `<input>` elements (via `input[data-row][data-col]`)
   - `<select>` elements (via `select[data-row][data-col]`)
   - `LookupDropdown` wrapper `<div>` containers (via `div[data-row][data-col]`, then focuses the inner `<input>`)
