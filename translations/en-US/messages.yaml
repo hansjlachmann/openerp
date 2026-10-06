@@ -112,7 +112,7 @@ messages:
   HELP_MENU_OPEN: "Open the selected item"
   HELP_SEC_LIST: "List page"
   HELP_LIST_ROWS: "Select the previous / next row"
-  HELP_LIST_FIRST_LAST: "First / last row"
+  HELP_LIST_FIRST_LAST: "First / last record of the whole list"
   HELP_LIST_PAGE: "One page up / down"
   HELP_LIST_OPEN: "Open the card, or edit the row if the list has no card"
   HELP_LIST_EDIT_CELLS: "Edit the cells of the selected row"

@@ -29,6 +29,14 @@ function buildQueryString(options?: ListOptions): string {
 
 	if (options.page) params.append('page', options.page.toString());
 	if (options.page_size) params.append('page_size', options.page_size.toString());
+	if (options.limit) {
+		params.append('offset', (options.offset ?? 0).toString());
+		params.append('limit', options.limit.toString());
+	}
+	if (options.search && options.search_fields && options.search_fields.length > 0) {
+		params.append('search', options.search);
+		params.append('search_fields', JSON.stringify(options.search_fields));
+	}
 	if (options.sort_by) params.append('sort_by', options.sort_by);
 	if (options.sort_order) params.append('sort_order', options.sort_order);
 

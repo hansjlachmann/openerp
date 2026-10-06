@@ -5,6 +5,7 @@ package tables
 import (
 	"database/sql"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -102,6 +103,11 @@ type JobQueueBase struct {
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
 	orderByFields []string
+	descending    bool // sort order of the current key (SetAscending)
+
+	// Free-text search (SetSearch): rows where any of the columns contains the text
+	searchColumns []string
+	searchText    string
 
 	// Pagination window for FindSet/FindSetBuffered (0 limit = all rows)
 	limit  int
@@ -990,6 +996,28 @@ func (t *JobQueueBase) SetCurrentKey(fields ...string) {
 	}
 }
 
+// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// The default is ascending.
+func (t *JobQueueBase) SetAscending(ascending bool) {
+	t.descending = !ascending
+}
+
+// SetSearch limits the records to those where any of the given fields contains text,
+// case-insensitive (the list page search box). Unknown fields are ignored; an empty
+// text clears the search.
+func (t *JobQueueBase) SetSearch(fields []string, text string) {
+	t.searchColumns = nil
+	t.searchText = strings.ToLower(strings.TrimSpace(text))
+	if t.searchText == "" {
+		return
+	}
+	for _, field := range fields {
+		if column, ok := t.columnName(field); ok {
+			t.searchColumns = append(t.searchColumns, column)
+		}
+	}
+}
+
 // HasColumn reports whether fieldName (case-insensitive) is a stored column of this
 // table. Only such names may be used in filters and sort keys.
 func (t *JobQueueBase) HasColumn(fieldName string) bool {
@@ -1034,20 +1062,38 @@ func (t *JobQueueBase) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
+	t.descending = false
+	t.searchColumns = nil
+	t.searchText = ""
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
 }
 
-// buildWhereClause builds WHERE clause from current filters
+// buildWhereClause builds WHERE clause from current filters and search
 func (t *JobQueueBase) buildWhereClause() (string, []interface{}) {
-	if len(t.filters) == 0 {
+	if len(t.filters) == 0 && t.searchText == "" {
 		return "1=1", nil
 	}
 
 	var conditions []string
 	var args []interface{}
+
+	if t.searchText != "" {
+		if len(t.searchColumns) == 0 {
+			conditions = append(conditions, "1=0") // searching, but in no valid column
+		} else {
+			// LIKE wildcards in the text are matched literally
+			pattern := "%" + strings.NewReplacer("\\", "\\\\", "%", "\\%", "_", "\\_").Replace(t.searchText) + "%"
+			var ors []string
+			for _, column := range t.searchColumns {
+				ors = append(ors, "LOWER(CAST("+column+" AS TEXT)) LIKE ? ESCAPE '\\'")
+				args = append(args, pattern)
+			}
+			conditions = append(conditions, "("+strings.Join(ors, " OR ")+")")
+		}
+	}
 
 	for _, filter := range t.filters {
 		if filter.invalidField {
@@ -1123,13 +1169,23 @@ func (t *JobQueueBase) parseFilterExpression(fieldName, expr string) (string, []
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key
+// getOrderByClause builds ORDER BY clause from current key and direction. The primary
+// key columns always follow the current key, so the order is unique and paging
+// (SetPage) never repeats or skips rows when the key has duplicate values.
 func (t *JobQueueBase) getOrderByClause() string {
-	if len(t.orderByFields) > 0 {
-		return strings.Join(t.orderByFields, ", ")
+	pk := []string{"no", }
+	columns := append([]string{}, t.orderByFields...)
+	for _, column := range pk {
+		if !slices.Contains(columns, column) {
+			columns = append(columns, column)
+		}
 	}
-	// Default: order by primary key
-	return "no"
+	if t.descending {
+		for i := range columns {
+			columns[i] += " DESC"
+		}
+	}
+	return strings.Join(columns, ", ")
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most

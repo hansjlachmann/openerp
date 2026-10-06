@@ -29,6 +29,8 @@
 	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
+	import { tick } from 'svelte';
+	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
 
 	interface Props {
@@ -39,6 +41,11 @@
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		currentFilters?: TableFilter[];
+		// Windowed loading (PageRenderer): records is a window of the list starting at
+		// windowOffset; total counts all matching records; onwindow loads another window
+		total?: number;
+		windowOffset?: number;
+		onwindow?: (request: ListWindowRequest) => Promise<void>;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		onrowclick?: (record: Record<string, any>) => void;
 		onsave?: (record: Record<string, any>, isNew: boolean) => Promise<void>;
@@ -54,6 +61,9 @@
 		options = {},
 		lookups = {},
 		currentFilters = [],
+		total = records.length,
+		windowOffset = 0,
+		onwindow,
 		onaction,
 		onrowclick,
 		onsave,
@@ -143,58 +153,112 @@
 	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string }>>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
-	// Filter records by search query
-	const filteredRecords = $derived(() => {
-		const sourceRecords = editableActive ? editableRecords : records;
-		if (!searchQuery.trim()) return sourceRecords;
+	// Rows shown: the loaded window of the list. Search and sort run on the server
+	// (PageRenderer), over all records; editableRecords is the window's editable copy.
+	const displayRecords = $derived(editableActive ? editableRecords : records);
 
-		const query = searchQuery.toLowerCase().trim();
-		const columns = visibleColumns();
+	// More records exist after the loaded window
+	const moreBelow = $derived(windowOffset + records.length < total);
 
-		return sourceRecords.filter(record => {
-			// A new, uncommitted row is always shown: it is blank, so it would never match the
-			// search, and the user must see the row they are entering (BC shows it too)
-			if (record._isNew) return true;
-			// Search across all visible columns
-			return columns.some(field => {
-				const value = record[field.source];
-				if (value == null) return false;
-				return String(value).toLowerCase().includes(query);
-			});
-		});
-	});
+	// Window position `index` is the last row of the whole list (new rows the user is
+	// entering count too): moving down from it creates a new row (BC)
+	function isLastRow(index: number): boolean {
+		return index >= displayRecords.length - 1 && !moreBelow;
+	}
 
-	// Sort records
-	const sortedRecords = $derived(() => {
-		const sourceRecords = filteredRecords();
-		if (!sortField) return sourceRecords;
+	// A user-edited new row that is not inserted yet (Record Entry): the window must not
+	// be replaced while it exists, or the user's input would be lost
+	function hasUncommittedNewRow(): boolean {
+		return editableActive && editableRecords.some((r) => r._isNew && !isEmptyNewRecord(r));
+	}
 
-		const field = sortField; // TypeScript now knows field is non-null
-		return [...sourceRecords].sort((a, b) => {
-			const aVal = a[field];
-			const bVal = b[field];
+	// Window loads run one at a time; a caller arriving during a load waits for it
+	let windowLoad: Promise<void> | null = null;
+	async function loadWindow(request: ListWindowRequest) {
+		while (windowLoad) await windowLoad;
+		windowLoad = (async () => {
+			await onwindow?.(request);
+			await tick();
+		})();
+		try {
+			await windowLoad;
+		} finally {
+			windowLoad = null;
+		}
+	}
 
-			// Handle null/undefined
-			if (aVal == null && bVal == null) return 0;
-			if (aVal == null) return sortDirection === 'asc' ? -1 : 1;
-			if (bVal == null) return sortDirection === 'asc' ? 1 : -1;
+	// Load the window around absolute row `absRow` when it is outside the loaded rows or
+	// within a page of an edge with more rows beyond. Returns the row's window position,
+	// clamped to the loaded rows.
+	async function windowIndexOf(absRow: number): Promise<number> {
+		while (windowLoad) await windowLoad;
+		const target = Math.max(0, Math.min(absRow, Math.max(total, displayRecords.length) - 1));
+		const perPage = rowsPerPage();
+		if (onwindow && needsShift(target - windowOffset, perPage, records.length, windowOffset, total) && !hasUncommittedNewRow()) {
+			if (editableActive) cleanupEmptyNewRows();
+			await loadWindow({ offset: windowOffsetFor(target, perPage, total), limit: windowSize(perPage) });
+			if (editableActive) editableRecords = toEditableRecords();
+		}
+		return Math.max(0, Math.min(target - windowOffset, displayRecords.length - 1));
+	}
 
-			// Compare based on type
-			let comparison = 0;
-			if (typeof aVal === 'number' && typeof bVal === 'number') {
-				comparison = aVal - bVal;
-			} else if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
-				comparison = aVal === bVal ? 0 : aVal ? 1 : -1;
-			} else {
-				comparison = String(aVal).localeCompare(String(bVal));
-			}
+	// Mouse wheel / scrollbar (navigation mode): near the top or bottom of the loaded
+	// window, load the window around the rows in view and keep them in place (BC
+	// "loading more"). Keyboard moves load windows through windowIndexOf.
+	let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+	function handleTableScroll(event: Event) {
+		if (!onwindow || !isNavigation) return;
+		const container = event.currentTarget as HTMLElement;
+		clearTimeout(scrollTimer);
+		scrollTimer = setTimeout(() => shiftWindowForScroll(container), 80);
+	}
 
-			return sortDirection === 'asc' ? comparison : -comparison;
-		});
-	});
+	async function shiftWindowForScroll(container: HTMLElement) {
+		const row = tableBodyElement?.querySelector('tr') as HTMLElement | null;
+		if (!onwindow || windowLoad || pendingTarget !== null || !row || row.offsetHeight === 0) return;
+		const rowHeight = row.offsetHeight;
+		const perPage = rowsPerPage();
+		const firstVisible = Math.floor(container.scrollTop / rowHeight);
+		const nearTop = windowOffset > 0 && firstVisible < perPage;
+		const nearBottom = moreBelow && firstVisible + perPage >= records.length - perPage;
+		if (!nearTop && !nearBottom) return;
 
-	// Records to display
-	const displayRecords = $derived(sortedRecords());
+		const absFirst = windowOffset + firstVisible;
+		const newOffset = windowOffsetFor(absFirst, perPage, total);
+		if (newOffset === windowOffset) return;
+		const absSelected = windowOffset + selectedIndex;
+		const withinRow = container.scrollTop - firstVisible * rowHeight;
+
+		await loadWindow({ offset: newOffset, limit: windowSize(perPage) });
+		container.scrollTop = (absFirst - windowOffset) * rowHeight + withinRow;
+		// Keep the selected record selected if it is still loaded; don't scroll to it
+		const index = Math.max(0, Math.min(absSelected - windowOffset, displayRecords.length - 1));
+		if (index !== selectedIndex) {
+			skipAutoScroll = true;
+			selectedIndex = index;
+		}
+	}
+
+	// Search box: runs on the server over all records, shortly after the user stops typing
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+	function handleSearchInput() {
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(() => applySearchAndSort({ search: searchQuery }), 300);
+	}
+
+	// New search or sort: leave cell editing (the cell is saved, as when focus leaves the
+	// table), then load the first window of the new result
+	async function applySearchAndSort(request: ListWindowRequest) {
+		if (!onwindow) return;
+		if (editableActive && !isNavigation && currentCellRow >= 0) {
+			const record = displayRecords[currentCellRow];
+			const field = visibleColumns()[currentCellCol];
+			if (record) await handleCellBlur(record, currentCellRow, field?.source, true);
+		}
+		if (editableActive) exitToNavigation();
+		await onwindow({ ...request, offset: 0, limit: windowSize(rowsPerPage()) });
+		selectedIndex = records.length > 0 ? 0 : -1;
+	}
 
 	// Track list page element for focus
 	let listPageElement: HTMLDivElement | null = null;
@@ -276,20 +340,22 @@
 		}
 	});
 
-	// Reset selection when search query changes
+	// Keep the selection on a loaded row when the window gets shorter (search, delete)
 	$effect(() => {
-		// Depend on searchQuery
-		searchQuery;
-		// Reset to first row if current selection is out of bounds
-		const filtered = filteredRecords();
-		if (selectedIndex >= filtered.length) {
-			selectedIndex = filtered.length > 0 ? 0 : -1;
+		if (selectedIndex >= displayRecords.length) {
+			selectedIndex = displayRecords.length > 0 ? displayRecords.length - 1 : -1;
 		}
 	});
 
-	// Auto-scroll selected row into view
+	// Auto-scroll selected row into view (not after a window shift caused by the user
+	// scrolling: that would scroll the list back to the selection)
+	let skipAutoScroll = false;
 	$effect(() => {
 		if (selectedIndex >= 0 && tableBodyElement) {
+			if (skipAutoScroll) {
+				skipAutoScroll = false;
+				return;
+			}
 			scrollRowIntoView(selectedIndex);
 		}
 	});
@@ -713,6 +779,11 @@
 		// Find the target row again (by identity), then clamp to the valid range
 		let adjustedTargetRow = targetRecord ? displayIndexOf(targetRecord) : targetRow;
 		if (adjustedTargetRow < 0) adjustedTargetRow = targetRow;
+		// Outside the loaded window (or near its edge): load the window around it first
+		if (onwindow && needsShift(adjustedTargetRow, rowsPerPage(), records.length, windowOffset, total)) {
+			const index = await windowIndexOf(windowOffset + adjustedTargetRow);
+			if (index >= 0) adjustedTargetRow = index;
+		}
 		adjustedTargetRow = Math.max(0, Math.min(adjustedTargetRow, displayRecords.length - 1));
 		const adjustedTargetCol = Math.max(0, Math.min(targetCol, cols.length - 1));
 
@@ -1026,13 +1097,13 @@
 		switch (event.key) {
 			case 'ArrowUp':
 				event.preventDefault();
-				if (rowIndex > 0) {
+				if (rowIndex > 0 || windowOffset > 0) {
 					confirmAndMoveTo(rowIndex - 1, colIndex);
 				}
 				break;
 			case 'ArrowDown':
 				event.preventDefault();
-				if (rowIndex < displayRecords.length - 1) {
+				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Past the last row: save current cell, then create a new row (BC behavior)
@@ -1043,11 +1114,11 @@
 			case 'PageDown':
 				// Confirm value + move a page down in the same column
 				event.preventDefault();
-				confirmAndMoveTo(Math.min(displayRecords.length - 1, rowIndex + rowsPerPage()), colIndex);
+				confirmAndMoveTo(rowIndex + rowsPerPage(), colIndex);
 				break;
 			case 'PageUp':
 				event.preventDefault();
-				confirmAndMoveTo(Math.max(0, rowIndex - rowsPerPage()), colIndex);
+				confirmAndMoveTo(rowIndex - rowsPerPage(), colIndex);
 				break;
 			case 'ArrowLeft':
 				event.preventDefault();
@@ -1069,14 +1140,14 @@
 					// Move left, wrap to previous row
 					if (colIndex > 0) {
 						confirmAndMoveTo(rowIndex, colIndex - 1);
-					} else if (rowIndex > 0) {
+					} else if (rowIndex > 0 || windowOffset > 0) {
 						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
 					}
 				} else {
 					// Move right, wrap to next row
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < displayRecords.length - 1) {
+					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
 						// Last column of the last row: save and open a new blank row (BC)
@@ -1091,7 +1162,7 @@
 					record[field.source] = !record[field.source];
 					editableRecords = [...editableRecords];
 				}
-				if (rowIndex < displayRecords.length - 1) {
+				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
 					// Save current cell, then create new row at end
@@ -1180,7 +1251,7 @@
 						shouldNavigate = allSelected || !!atStart;
 					}
 
-					if (shouldNavigate && rowIndex > 0) {
+					if (shouldNavigate && (rowIndex > 0 || windowOffset > 0)) {
 						event.preventDefault();
 						confirmAndMoveTo(rowIndex - 1, colIndex);
 					}
@@ -1202,7 +1273,7 @@
 
 					if (shouldNavigate) {
 						event.preventDefault();
-						if (rowIndex < displayRecords.length - 1) {
+						if (!isLastRow(rowIndex)) {
 							confirmAndMoveTo(rowIndex + 1, colIndex);
 						} else {
 							const currentRecord = displayRecords[rowIndex];
@@ -1263,13 +1334,13 @@
 				if (event.shiftKey) {
 					if (colIndex > 0) {
 						confirmAndMoveTo(rowIndex, colIndex - 1);
-					} else if (rowIndex > 0) {
+					} else if (rowIndex > 0 || windowOffset > 0) {
 						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
 					}
 				} else {
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < displayRecords.length - 1) {
+					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
 						// Last column of the last row: save and open a new blank row (BC)
@@ -1280,12 +1351,12 @@
 			case 'PageDown':
 				if (isSelectElement) break;
 				event.preventDefault();
-				confirmAndMoveTo(Math.min(displayRecords.length - 1, rowIndex + rowsPerPage()), colIndex);
+				confirmAndMoveTo(rowIndex + rowsPerPage(), colIndex);
 				break;
 			case 'PageUp':
 				if (isSelectElement) break;
 				event.preventDefault();
-				confirmAndMoveTo(Math.max(0, rowIndex - rowsPerPage()), colIndex);
+				confirmAndMoveTo(rowIndex - rowsPerPage(), colIndex);
 				break;
 			case 'F2':
 				// Exit cell-editing → return to cell-selected (keep current value)
@@ -1321,7 +1392,7 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
-				if (rowIndex < displayRecords.length - 1) {
+				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
 					const currentRecord = displayRecords[rowIndex];
@@ -1353,13 +1424,13 @@
 				if (event.shiftKey) {
 					if (colIndex > 0) {
 						confirmAndMoveTo(rowIndex, colIndex - 1);
-					} else if (rowIndex > 0) {
+					} else if (rowIndex > 0 || windowOffset > 0) {
 						confirmAndMoveTo(rowIndex - 1, cols.length - 1);
 					}
 				} else {
 					if (colIndex < cols.length - 1) {
 						confirmAndMoveTo(rowIndex, colIndex + 1);
-					} else if (rowIndex < displayRecords.length - 1) {
+					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
 						// Last column of the last row: save and open a new blank row (BC)
@@ -1370,7 +1441,7 @@
 			case 'Enter':
 				// Only handle Enter when dropdown is closed (LookupDropdown preventDefault's Enter when open)
 				event.preventDefault();
-				if (rowIndex < displayRecords.length - 1) {
+				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
 					const currentRecord = displayRecords[rowIndex];
@@ -1851,6 +1922,8 @@
 			map['ArrowUp'] = moveUp;
 			map['Home'] = moveFirst;
 			map['End'] = moveLast;
+			map['Ctrl+Home'] = moveFirst;
+			map['Ctrl+End'] = moveLast;
 			map['PageDown'] = movePageDown;
 			map['PageUp'] = movePageUp;
 			map['Enter'] = () => {
@@ -1877,17 +1950,36 @@
 		return map;
 	});
 
-	// Navigation functions
-	function moveDown() {
-		if (selectedIndex < displayRecords.length - 1) {
-			selectedIndex++;
+	// Navigation functions. Positions are absolute (offset + window position) so the
+	// selection can move past the loaded window; windowIndexOf loads the window around it
+	// Keys pressed while a window loads are not lost: they move pendingTarget, and the
+	// running move goes on to the latest target once the load is done
+	let pendingTarget: number | null = null;
+
+	// Absolute position the next relative move starts from
+	function currentRow(): number {
+		return pendingTarget ?? windowOffset + Math.max(selectedIndex, 0);
+	}
+
+	async function moveToRow(absRow: number) {
+		if (displayRecords.length === 0) return;
+		const running = pendingTarget !== null;
+		pendingTarget = Math.max(0, Math.min(absRow, total - 1));
+		if (running) return;
+		while (pendingTarget !== null) {
+			const target: number = pendingTarget;
+			const index = await windowIndexOf(target);
+			if (pendingTarget === target) pendingTarget = null;
+			selectedIndex = index;
 		}
 	}
 
+	function moveDown() {
+		moveToRow(currentRow() + 1);
+	}
+
 	function moveUp() {
-		if (selectedIndex > 0) {
-			selectedIndex--;
-		}
+		moveToRow(currentRow() - 1);
 	}
 
 	// Rows per page for PageUp/PageDown: as many rows as fit in the visible list area
@@ -1900,27 +1992,21 @@
 	}
 
 	function movePageDown() {
-		if (displayRecords.length > 0) {
-			selectedIndex = Math.min(displayRecords.length - 1, Math.max(selectedIndex, 0) + rowsPerPage());
-		}
+		moveToRow(currentRow() + rowsPerPage());
 	}
 
 	function movePageUp() {
-		if (displayRecords.length > 0) {
-			selectedIndex = Math.max(0, selectedIndex - rowsPerPage());
-		}
+		moveToRow(currentRow() - rowsPerPage());
 	}
 
+	// Home / Ctrl+Home: first record of the whole list
 	function moveFirst() {
-		if (displayRecords.length > 0) {
-			selectedIndex = 0;
-		}
+		moveToRow(0);
 	}
 
+	// End / Ctrl+End: last record of the whole list
 	function moveLast() {
-		if (displayRecords.length > 0) {
-			selectedIndex = displayRecords.length - 1;
-		}
+		moveToRow(total - 1);
 	}
 
 	async function openCard() {
@@ -1952,8 +2038,14 @@
 			.map(item => item.field);
 	});
 
-	// Toggle sort on a column
+	// FlowFields are computed, not stored: the server can not sort on them
+	function isSortable(fieldSource: string): boolean {
+		return !(page.page.flow_fields ?? []).includes(fieldSource);
+	}
+
+	// Toggle sort on a column (on the server, over all records)
 	function handleSort(fieldSource: string) {
+		if (!isSortable(fieldSource)) return;
 		if (sortField === fieldSource) {
 			// Toggle direction if same field
 			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -1962,6 +2054,7 @@
 			sortField = fieldSource;
 			sortDirection = 'asc';
 		}
+		applySearchAndSort({ sort: { field: sortField, direction: sortDirection } });
 	}
 
 	// Column resize handlers
@@ -2054,6 +2147,8 @@
 	// Clear search
 	function clearSearch() {
 		searchQuery = '';
+		clearTimeout(searchTimer);
+		applySearchAndSort({ search: '' });
 		searchInputElement?.focus();
 	}
 
@@ -2152,6 +2247,7 @@
 						placeholder={t(LIST.SEARCH_PLACEHOLDER)}
 						bind:value={searchQuery}
 						bind:this={searchInputElement}
+						oninput={handleSearchInput}
 					/>
 					{#if searchQuery}
 						<button
@@ -2265,7 +2361,7 @@
 			/>
 		{/if}
 
-		<div class="table-container">
+		<div class="table-container" onscroll={handleTableScroll}>
 		<table class="table">
 			<thead>
 				<tr>
@@ -2276,6 +2372,7 @@
 						<th style="width: {getColumnWidth(field)}px">
 							<div class="th-content">
 								<span class="th-label">{getFieldCaption(field.source, captions, field.caption)}</span>
+								{#if isSortable(field.source)}
 								<button
 									type="button"
 									class="sort-btn"
@@ -2303,6 +2400,7 @@
 										</svg>
 									{/if}
 								</button>
+								{/if}
 							</div>
 							<!-- Resize handle -->
 							<button
@@ -2322,11 +2420,12 @@
 						class={cn(
 							isNavigation ? 'cursor-pointer' : '',
 							isNavigation && selectedIndex === index && 'selected',
-							record._isNew && 'new-row'
+							record._isNew && 'new-row',
+							(windowOffset + index) % 2 === 1 ? 'row-even' : 'row-odd'
 						)}
 					>
 						{#if showRowNumbers}
-							<td class="row-number-cell">{index + 1}</td>
+							<td class="row-number-cell">{windowOffset + index + 1}</td>
 						{/if}
 						{#each visibleColumns() as field, colIndex}
 							<td class="p-0 border-r border-b border-gray-300 dark:border-gray-600">
@@ -2571,7 +2670,7 @@
 						{/each}
 					</tr>
 				{/each}
-				{#if page.page.editable && !searchQuery.trim() && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+				{#if page.page.editable && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
 					<!-- BC-style trailing blank row: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}
@@ -2591,15 +2690,11 @@
 
 	<div class="status-bar">
 		<span class="text-sm text-gray-600 dark:text-gray-400">
-			{#if searchQuery}
-				{displayRecords.length} of {records.length} record{records.length !== 1 ? 's' : ''} (filtered)
-			{:else}
-				{records.length} record{records.length !== 1 ? 's' : ''}
-			{/if}
+			{total} record{total !== 1 ? 's' : ''}{searchQuery ? ' (filtered)' : ''}
 			{#if isNavigation && selectedIndex >= 0 && selectedIndex < displayRecords.length}
-				• Row {selectedIndex + 1} selected
+				• Row {windowOffset + selectedIndex + 1} selected
 			{:else if !isNavigation && currentCellRow >= 0 && currentCellCol >= 0}
-				• Cell [{currentCellRow + 1}, {currentCellCol + 1}] {isCellEditing ? '(editing)' : '(selected)'}
+				• Cell [{windowOffset + currentCellRow + 1}, {currentCellCol + 1}] {isCellEditing ? '(editing)' : '(selected)'}
 			{/if}
 		</span>
 	</div>
@@ -2864,13 +2959,14 @@
 		@apply dark:border-gray-700 dark:hover:bg-gray-700;
 	}
 
-	/* Zebra striping - alternating row colors */
-	.table tbody tr:nth-child(even) {
+	/* Zebra striping - alternating row colors, by position in the whole list (the
+	   loaded window starts at any offset) */
+	.table tbody tr.row-even {
 		@apply bg-gray-50;
 		@apply dark:bg-gray-800/50;
 	}
 
-	.table tbody tr:nth-child(odd) {
+	.table tbody tr.row-odd {
 		@apply bg-white;
 		@apply dark:bg-gray-900;
 	}
