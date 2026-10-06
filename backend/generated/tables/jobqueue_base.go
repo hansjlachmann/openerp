@@ -333,9 +333,39 @@ func (t *JobQueueBase) SyncKeys(db database.Executor, company string, dbType dat
 	tableName := fmt.Sprintf("%s$%s", company, JobQueueTableName)
 	siftCompany := company
 	_ = tableName // no keys: nothing to index
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range jobQueueBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, JobQueueTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, JobQueueTableName, keys)
+}
+
+// jobQueueBaseSIFTSpecs are the table's keys with sum_index_fields
+func jobQueueBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *JobQueueBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, JobQueueTableName), t.company
+	var results []sift.VerifyResult
+	for _, spec := range jobQueueBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, JobQueueTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: JobQueueTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, JobQueueTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -650,6 +680,17 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.No)
 	}
+	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("no") {
+			renamed = append(renamed, renamedKey{"no", t.oldValues["no"], t.No})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND no = ?`,
@@ -664,6 +705,13 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Job_Queue: %v\n", err)
 		return false
+	}
+	for _, r := range renamed {
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to Job_Queue: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -740,6 +788,44 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *JobQueueBase) SetDB(db database.Executor) {
+	t.db = db
+}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *JobQueueBase) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+		"no": {{"Job_Queue_Entry", false, "job_queue_no"}, },
+	}
+	companies := []string{t.company}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete removes the record from the database
@@ -826,7 +912,9 @@ func (t *JobQueueBase) CalcFieldsForRecords(records []map[string]interface{}, fi
 // calcForRecords_number_of_entries calculates the number_of_entries FlowField for a set of records
 // CalcFormula: Count(Job_Queue_Entry.entry_no)
 func (t *JobQueueBase) calcForRecords_number_of_entries(records []map[string]interface{}) {
-	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName), false
+	_ = useSIFT
 
 	// Distinct key values of the records
 	seen := make(map[string]bool, len(records))
@@ -860,7 +948,11 @@ func (t *JobQueueBase) calcForRecords_number_of_entries(records []map[string]int
 		if len(whereClauses) > 0 {
 			whereClause = strings.Join(whereClauses, " AND ")
 		}
-		query := fmt.Sprintf(`SELECT job_queue_no, COUNT(*) FROM "%s" WHERE %s GROUP BY job_queue_no`, tableName, whereClause)
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(`SELECT job_queue_no, %s FROM "%s" WHERE %s GROUP BY job_queue_no`, agg, tableName, whereClause)
 		query = t.convertPlaceholders(query, len(args))
 
 		rows, err := t.db.Query(query, args...)
@@ -887,7 +979,9 @@ func (t *JobQueueBase) calcForRecords_number_of_entries(records []map[string]int
 // Helper methods for FlowField calculations
 
 func (t *JobQueueBase) calcCountJob_Queue_Entry() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName), false
+	_ = useSIFT
 
 	// Build WHERE clause from FlowFilters
 	var whereClauses []string
@@ -899,7 +993,12 @@ func (t *JobQueueBase) calcCountJob_Queue_Entry() int {
 	if len(whereClauses) > 0 {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(`SELECT %s FROM "%s" WHERE %s`, agg, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2396,6 +2495,20 @@ func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  true,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *JobQueueBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of Job_Queue", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *JobQueueBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 

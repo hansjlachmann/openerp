@@ -87,6 +87,12 @@ table:
       type: "[]byte"
       db_name: profile_photo
 
+    # FlowFilter (NAV FieldClass FlowFilter): not stored — the user sets it ("Filter totals
+    # by" in the filter pane) and the FlowFields below apply it to the entries' Posting Date
+    - name: date_filter
+      type: types.Date
+      flow_filter: true
+
     # FlowFields - calculated from Customer Ledger Entry
     - name: balance_lcy
       type: types.Decimal
@@ -101,6 +107,9 @@ table:
         - field: open
           type: const
           value: "true"
+        - field: posting_date
+          type: filter
+          value: date_filter
 
     - name: sales_lcy
       type: types.Decimal
@@ -112,6 +121,9 @@ table:
         - field: customer_no
           type: field
           value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
 
     - name: no_of_ledger_entries
       type: int
@@ -123,3 +135,6 @@ table:
         - field: customer_no
           type: field
           value: no
+        - field: posting_date
+          type: filter
+          value: date_filter

@@ -24,6 +24,8 @@ export interface PageMetadata {
 	// identify records even when the PK is not shown on the page (e.g. setup tables).
 	primary_key_fields?: string[];
 	flow_fields?: string[]; // computed fields: not sortable/searchable on the server
+	// FlowFilter fields of the source table (e.g. Date Filter): "Filter totals by" in the filter pane
+	flow_filter_fields?: Array<{ name: string; kind: string; caption: string }>;
 }
 
 export interface Layout {

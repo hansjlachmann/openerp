@@ -8,16 +8,47 @@
 	import { getFieldCaption as getFieldCaptionUtil } from '$lib/utils/fieldHelpers';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import { t, BTN, FILTER as FLT } from '$lib/services/i18n.svelte';
+	import { toast } from '$lib/stores/toast';
+	import { currentLanguage } from '$lib/stores/session';
+	import { get } from 'svelte/store';
+	import { toApiFlowFilter, dateFilterHint } from '$lib/utils/flowFilter';
+	import { getDateFormatPattern } from '$lib/utils/fieldHelpers';
 
 	interface Props {
 		page: PageDefinition;
 		captions?: Record<string, string>;
 		currentFilters?: TableFilter[];
-		onApply: (filters: TableFilter[]) => void;
+		// FlowFilters (e.g. Date Filter) as typed — "Filter totals by" (BC)
+		currentFlowFilters?: TableFilter[];
+		onApply: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
 		onClose: () => void;
 	}
 
-	let { page, captions = {}, currentFilters = [], onApply, onClose }: Props = $props();
+	let { page, captions = {}, currentFilters = [], currentFlowFilters = [], onApply, onClose }: Props = $props();
+
+	// FlowFilter fields of the source table and their typed expressions
+	const flowFilterFields = $derived(page.page.flow_filter_fields ?? []);
+	let flowValues = $state<Record<string, string>>({});
+	$effect(() => {
+		flowValues = Object.fromEntries(currentFlowFilters.map((f) => [f.field, f.expression]));
+	});
+
+	// The typed FlowFilters, or null after telling the user which one cannot be read
+	function readFlowFilters(): TableFilter[] | null {
+		const locale = get(currentLanguage);
+		const out: TableFilter[] = [];
+		for (const field of flowFilterFields) {
+			const expression = (flowValues[field.name] ?? '').trim();
+			if (!expression) continue;
+			const result = toApiFlowFilter(expression, field.kind, locale);
+			if (result.error !== undefined) {
+				toast.error(t(FLT.INVALID, field.caption, result.error));
+				return null;
+			}
+			out.push({ field: field.name, expression });
+		}
+		return out;
+	}
 
 	// Saved filter presets (views)
 	interface FilterPreset {
@@ -102,8 +133,10 @@
 		activePresetName = null; // Clear active preset when manually changing filters
 	}
 
-	// Apply filters
+	// Apply filters (list filters and FlowFilters together)
 	function applyFilters() {
+		const flowFilters = readFlowFilters();
+		if (flowFilters === null) return;
 		const filters: TableFilter[] = activeFilters
 			.filter((f) => f.expression && f.expression.trim() !== '')
 			.map((f) => ({
@@ -111,14 +144,15 @@
 				expression: f.expression.trim()
 			}));
 
-		onApply(filters);
+		onApply(filters, flowFilters);
 	}
 
 	// Clear all filters
 	function handleClearAll() {
 		activeFilters = [];
+		flowValues = {};
 		activePresetName = null;
-		onApply([]);
+		onApply([], []);
 	}
 
 	// Apply a saved preset
@@ -268,7 +302,9 @@
 	});
 </script>
 
-<div class="filter-pane">
+<!-- data-own-keys: keys typed in the pane are not list shortcuts (Enter in a filter field
+     also opened the selected record) -->
+<div class="filter-pane" data-own-keys>
 	<Card>
 		{#snippet header()}
 			<div class="filter-header">
@@ -504,6 +540,29 @@
 					{/if}
 				</div>
 			{/if}
+
+			<!-- FlowFilters (BC "Filter totals by"): limit the FlowFields, e.g. to a Date Filter period -->
+			{#if flowFilterFields.length > 0}
+				<h4 class="section-title totals-title">{t(FLT.TOTALS_BY)}</h4>
+				<div class="active-filters">
+					{#each flowFilterFields as field (field.name)}
+						<div class="filter-row">
+							<div class="filter-field-tag">
+								<span class="filter-field-name">{field.caption}</span>
+							</div>
+							<input
+								type="text"
+								class="filter-expression-input"
+								value={flowValues[field.name] ?? ''}
+								oninput={(e) => (flowValues[field.name] = e.currentTarget.value)}
+								onkeydown={handleKeyDown}
+								onblur={applyFilters}
+								placeholder={field.kind === 'date' ? dateFilterHint(getDateFormatPattern(get(currentLanguage))) : t(FLT.ENTER_EXPRESSION)}
+							/>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 		<!-- Filter help -->
@@ -528,6 +587,10 @@
 />
 
 <style>
+	.totals-title {
+		margin-top: 1rem;
+	}
+
 	.filter-pane {
 		@apply w-80 flex-shrink-0;
 	}

@@ -215,9 +215,39 @@ func (t *UserPreferencesBase) SyncKeys(db database.Executor, company string, dbT
 		fmt.Sprintf("%s$User_Preferences$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range userPreferencesBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, UserPreferencesTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, UserPreferencesTableName, keys)
+}
+
+// userPreferencesBaseSIFTSpecs are the table's keys with sum_index_fields
+func userPreferencesBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *UserPreferencesBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName), t.company
+	var results []sift.VerifyResult
+	for _, spec := range userPreferencesBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, UserPreferencesTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: UserPreferencesTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, UserPreferencesTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -579,6 +609,12 @@ func (t *UserPreferencesBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *UserPreferencesBase) SetDB(db database.Executor) {
+	t.db = db
 }
 
 // Delete removes the record from the database
@@ -1718,6 +1754,20 @@ func (t *UserPreferencesBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *UserPreferencesBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of User_Preferences", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *UserPreferencesBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 

@@ -18,6 +18,9 @@
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
+	import { apiFlowFilters } from '$lib/utils/flowFilter';
+	import { currentLanguage } from '$lib/stores/session';
+	import { get } from 'svelte/store';
 
 	interface Props {
 		pageid: number;
@@ -60,6 +63,8 @@
 
 	// Filters for list pages - parse initialFilter if provided (format: "field=expression")
 	let currentFilters: import('$lib/types/api').TableFilter[] = $state(parseInitialFilter(initialFilter));
+	// FlowFilters as typed in the filter pane (e.g. Date Filter "01.01.26..31.03.26"); sent as ISO
+	let currentFlowFilters: import('$lib/types/api').TableFilter[] = $state([]);
 
 	function parseInitialFilter(filter: string | undefined): import('$lib/types/api').TableFilter[] {
 		if (!filter) return [];
@@ -234,6 +239,10 @@
 			}
 			if (currentFilters.length > 0) {
 				listOptions.filters = currentFilters;
+			}
+			const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
+			if (flowFilters.length > 0) {
+				listOptions.flow_filters = flowFilters;
 			}
 			if (listSearch.trim()) {
 				// FlowFields are computed, not stored: the server can not search them
@@ -473,8 +482,9 @@
 	}
 
 	// Handle filter change from list page
-	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[]) {
+	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[], flowFilters: import('$lib/types/api').TableFilter[] = []) {
 		currentFilters = filters;
+		currentFlowFilters = flowFilters;
 		await loadListData(0);
 	}
 
@@ -550,6 +560,7 @@
 			{options}
 			{lookups}
 			{currentFilters}
+			{currentFlowFilters}
 			total={listTotal}
 			{windowOffset}
 			{returnUrl}

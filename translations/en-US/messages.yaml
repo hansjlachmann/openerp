@@ -169,6 +169,8 @@ messages:
   FILTER_ALL: "*All"
   FILTER_SAVE_VIEW: "Save as new view"
   FILTER_LIST_BY: "Filter list by:"
+  FILTER_TOTALS_BY: "Filter totals by:"
+  FILTER_INVALID: "%1: cannot read \"%2\""
   FILTER_ADD: "Filter..."
   FILTER_SELECT_FIELD: "Select field..."
   FILTER_ENTER_EXPRESSION: "Enter filter expression..."
@@ -199,10 +201,17 @@ messages:
   CU_REPORT_DATE: "Report Date"
   CU_REPORT_CANCELLED: "Report cancelled."
 
+  # Verify SIFT (codeunit 50110)
+  SIFT_VERIFY_CHECKING: "Checking SIFT totals of %1..."
+  SIFT_VERIFY_OK: "Checked %1 SIFT keys: all totals match the entries."
+  SIFT_VERIFY_DIFFERENCES: "%1 SIFT key(s) have totals that differ from the entries: %2. Run the job with parameter REPAIR to rebuild them."
+  SIFT_VERIFY_REPAIRED: "Rebuilt %1 SIFT key(s) whose totals differed from the entries: %2."
+  SIFT_VERIFY_BAD_PARAMETER: "Unknown parameter \"%1\". Use VERIFY or REPAIR."
+
   # Demo data (codeunit 50100)
   DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."
   DEMO_DATA_NOT_EMPTY: "Company \"%1\" already has customers. Demo data is only created in a company without customers."
-  DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL or LARGE."
+  DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL, LARGE or HEAVY."
   DEMO_DATA_INSERT_FAILED: "Could not create %1 %2: %3. No demo data was created."
   DEMO_DATA_SETUP: "Creating countries and payment terms..."
   DEMO_DATA_CUSTOMERS: "Creating customers..."

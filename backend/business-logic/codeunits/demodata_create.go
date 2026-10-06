@@ -16,7 +16,7 @@ import (
 // DemoDataCreate - Codeunit 50100: Create Demo Data
 //
 // Run from the Job Queue (Run action or the scheduler) in the company to fill. The
-// job's parameter selects the size: SMALL (default) or LARGE. The company must not
+// job's parameter selects the size: SMALL (default), LARGE or HEAVY. The company must not
 // have customers yet; nothing is written if any part fails. Every run is logged as a
 // Job Queue Entry.
 const DemoDataCreateID = 50100

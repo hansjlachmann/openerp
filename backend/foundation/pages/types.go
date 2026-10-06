@@ -30,6 +30,16 @@ type PageMetadata struct {
 	// FlowFields (populated at request time) are computed, not stored: list pages can
 	// not sort or search on them server-side.
 	FlowFields []string `yaml:"-" json:"flow_fields,omitempty"`
+	// FlowFilterFields (populated at request time): the source table's FlowFilter fields
+	// (e.g. Date Filter), offered in the filter pane under "Filter totals by"
+	FlowFilterFields []FlowFilterField `yaml:"-" json:"flow_filter_fields,omitempty"`
+}
+
+// FlowFilterField is a FlowFilter field as the page sends it: name, kind and caption
+type FlowFilterField struct {
+	Name    string `json:"name"`
+	Kind    string `json:"kind"` // date, bool, int, text, code
+	Caption string `json:"caption"`
 }
 
 // Layout defines the page layout structure

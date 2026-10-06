@@ -201,9 +201,39 @@ func (t *UserMemberBase) SyncKeys(db database.Executor, company string, dbType d
 		fmt.Sprintf("%s$User_Member$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range userMemberBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, UserMemberTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, UserMemberTableName, keys)
+}
+
+// userMemberBaseSIFTSpecs are the table's keys with sum_index_fields
+func userMemberBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *UserMemberBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := UserMemberTableName, ""
+	var results []sift.VerifyResult
+	for _, spec := range userMemberBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, UserMemberTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: UserMemberTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, UserMemberTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -491,6 +521,12 @@ func (t *UserMemberBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *UserMemberBase) SetDB(db database.Executor) {
+	t.db = db
 }
 
 // Delete removes the record from the database
@@ -1413,6 +1449,20 @@ func (t *UserMemberBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: true,
 			FlowField:  false,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *UserMemberBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of User_Member", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *UserMemberBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 

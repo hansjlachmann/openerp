@@ -313,3 +313,72 @@ func (g generator) sqlite() (create, drop []string) {
 	}
 	return create, drop
 }
+
+// expectedSelect is the fresh GROUP BY over the entries (what the totals must hold), with
+// sums rounded on SQLite, whose REAL totals pick up float noise when maintained by deltas.
+func (g generator) expectedSelect() string {
+	var keys, sums []string
+	for _, c := range g.spec.Fields {
+		keys = append(keys, g.keyValue(c, ""))
+	}
+	for _, c := range g.spec.Sums {
+		sums = append(sums, g.rounded("SUM("+g.sumValue(c, "")+")", c))
+	}
+	return fmt.Sprintf("SELECT %s, %s, COUNT(*) FROM %s GROUP BY %s",
+		strings.Join(keys, ", "), strings.Join(sums, ", "), q(g.entry), strings.Join(keys, ", "))
+}
+
+// totalsSelect reads the totals table in the same column order as expectedSelect.
+func (g generator) totalsSelect() string {
+	var sums []string
+	for _, c := range g.spec.Sums {
+		sums = append(sums, g.rounded(c.Name, c))
+	}
+	return fmt.Sprintf("SELECT %s, %s, cnt FROM %s", strings.Join(g.names(g.spec.Fields), ", "), strings.Join(sums, ", "), q(g.sift))
+}
+
+func (g generator) rounded(expr string, c Column) string {
+	if !g.pg() && c.Kind == KindDecimal {
+		return "ROUND(" + expr + ", 4)"
+	}
+	return expr
+}
+
+// VerifyKey compares a SIFT key's totals with a fresh sum over the entries and returns the
+// number of totals rows that differ (wrong sums or count, missing, or left over).
+func VerifyKey(db database.Executor, dbType database.DBType, company, table, entryTable string, spec KeySpec) (int, error) {
+	g := generator{dbType: dbType, spec: spec, entry: entryTable, sift: TableName(company, table, spec.Name)}
+	query := fmt.Sprintf("SELECT COUNT(*) FROM (SELECT * FROM (%s EXCEPT %s) AS missing UNION ALL SELECT * FROM (%s EXCEPT %s) AS extra) AS differences",
+		g.expectedSelect(), g.totalsSelect(), g.totalsSelect(), g.expectedSelect())
+	var n int
+	if err := db.QueryRow(query).Scan(&n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// RebuildKey refills a SIFT key's totals from the entries in one transaction. On Postgres
+// the entry table is locked against writes meanwhile, so no posting is missed or counted twice.
+func RebuildKey(db database.Executor, dbType database.DBType, company, table, entryTable string, spec KeySpec) error {
+	g := generator{dbType: dbType, spec: spec, entry: entryTable, sift: TableName(company, table, spec.Name)}
+	return inTx(db, func(tx database.Executor) error {
+		if g.pg() {
+			if _, err := tx.Exec("LOCK TABLE " + q(g.entry) + " IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec("DELETE FROM " + q(g.sift)); err != nil {
+			return err
+		}
+		_, err := tx.Exec(g.fill())
+		return err
+	})
+}
+
+// VerifyResult is the outcome of checking one SIFT key's totals.
+type VerifyResult struct {
+	Table       string
+	Key         string
+	Differences int  // totals rows that did not match the entries
+	Rebuilt     bool // the totals were rebuilt (repair)
+}

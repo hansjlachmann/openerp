@@ -386,3 +386,222 @@ func TestFlowFieldsFromSIFTMatchEntries(t *testing.T) {
 		t.Errorf("totals rows = %d, want 1..40 for 20 customers", totalsRows)
 	}
 }
+
+// Customer Date Filter (FlowFilter) applied to Posting Date: FlowFields with a date filter
+// read the customer_open_date totals and must equal sums over the entries in that period,
+// on the card (CalcFields) and in the list (CalcFieldsForRecords); without a filter they
+// are unchanged.
+func TestDateFilterFlowFields(t *testing.T) {
+	db := newTestDB(t)
+	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	const entries = `"demo01$Customer Ledger Entry"`
+	expected := func(no, cond string, args ...interface{}) [3]float64 {
+		t.Helper()
+		var balance, sales, count float64
+		q := `SELECT
+			(SELECT COALESCE(SUM(CAST(remaining_amt_lcy AS REAL)), 0) FROM ` + entries + ` WHERE customer_no = ? AND open = 1 AND ` + cond + `),
+			(SELECT COALESCE(SUM(CAST(sales_lcy AS REAL)), 0) FROM ` + entries + ` WHERE customer_no = ? AND ` + cond + `),
+			(SELECT COUNT(*) FROM ` + entries + ` WHERE customer_no = ? AND ` + cond + `)`
+		all := append(append(append([]interface{}{no}, args...), append([]interface{}{no}, args...)...), append([]interface{}{no}, args...)...)
+		if err := db.QueryRow(q, all...).Scan(&balance, &sales, &count); err != nil {
+			t.Fatal(err)
+		}
+		return [3]float64{balance, sales, count}
+	}
+	same := func(label string, got, want [3]float64) {
+		t.Helper()
+		for i := range got {
+			if math.Abs(got[i]-want[i]) > 0.005 {
+				t.Errorf("%s: (balance, sales, count) = %v, want %v", label, got, want)
+				return
+			}
+		}
+	}
+
+	cases := []struct {
+		filter string
+		cond   string
+		args   []interface{}
+	}{
+		{"", "1=1", nil},
+		{"2026-04-01..2026-06-30", "posting_date BETWEEN ? AND ?", []interface{}{"2026-04-01", "2026-06-30"}},
+		{"..2026-03-31", "posting_date <= ?", []interface{}{"2026-03-31"}},
+		{"2026-09-01..", "posting_date >= ?", []interface{}{"2026-09-01"}},
+		{"2026-01-01..2026-01-31|2026-08-01..2026-08-31", "(posting_date BETWEEN ? AND ? OR posting_date BETWEEN ? AND ?)", []interface{}{"2026-01-01", "2026-01-31", "2026-08-01", "2026-08-31"}},
+	}
+	for _, tc := range cases {
+		// Card path
+		for _, no := range []string{"C00010", "C00080", "C00150"} {
+			var cust tables.Customer
+			cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+			if !cust.Get(no) {
+				t.Fatalf("customer %s not found", no)
+			}
+			if err := cust.SetFlowFilter("date_filter", tc.filter); err != nil {
+				t.Fatalf("SetFlowFilter(%q): %v", tc.filter, err)
+			}
+			cust.CalcFields()
+			got := [3]float64{cust.Balance_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
+			same("card "+no+" filter "+tc.filter, got, expected(no, tc.cond, tc.args...))
+		}
+
+		// List path (all 20 customers at once)
+		var list tables.Customer
+		list.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		if err := list.SetFlowFilter("date_filter", tc.filter); err != nil {
+			t.Fatal(err)
+		}
+		var records []map[string]interface{}
+		if list.FindSet() {
+			records = append(records, list.ToMap())
+			for list.Next() {
+				records = append(records, list.ToMap())
+			}
+		}
+		list.CalcFieldsForRecords(records)
+		for _, rec := range records {
+			no := rec["no"].(string)
+			var got [3]float64
+			fmt.Sscan(fmt.Sprint(rec["balance_lcy"]), &got[0])
+			fmt.Sscan(fmt.Sprint(rec["sales_lcy"]), &got[1])
+			fmt.Sscan(fmt.Sprint(rec["no_of_ledger_entries"]), &got[2])
+			same("list "+no+" filter "+tc.filter, got, expected(no, tc.cond, tc.args...))
+		}
+	}
+
+	// Invalid expressions and unknown FlowFilter fields are rejected
+	var cust tables.Customer
+	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	for _, bad := range []string{"31.03.26", "2026-13-01..", "yesterday"} {
+		if err := cust.SetFlowFilter("date_filter", bad); err == nil {
+			t.Errorf("SetFlowFilter(%q) accepted", bad)
+		}
+	}
+	if err := cust.SetFlowFilter("name", "x"); err == nil {
+		t.Error("SetFlowFilter on a normal field accepted")
+	}
+}
+
+// Renaming a customer (changing its No.) carries the new No. over to its Customer Ledger
+// Entries (BC/NAV Rename) — Customer No. and Sell-to Customer No. — and the SIFT totals move
+// with them. A rename rolled back with its transaction leaves everything as it was.
+func TestRenameCustomerUpdatesLedgerEntries(t *testing.T) {
+	db := newTestDB(t)
+	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	count := func(where string, args ...interface{}) int {
+		t.Helper()
+		var n int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM "demo01$Customer Ledger Entry" WHERE `+where, args...).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	balance := func(no string) float64 {
+		t.Helper()
+		var c tables.Customer
+		c.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		if !c.Get(no) {
+			t.Fatalf("customer %s not found", no)
+		}
+		c.CalcFields()
+		return c.Balance_lcy.Float64()
+	}
+	entries := count("customer_no = ?", "C00010")
+	sellTo := count("sell_to_customer_no = ?", "C00010")
+	wantBalance := balance("C00010")
+	if entries == 0 {
+		t.Fatal("C00010 has no entries")
+	}
+
+	rename := func(from, to string) *tables.Customer {
+		var c tables.Customer
+		c.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		if !c.Get(from) {
+			t.Fatalf("customer %s not found", from)
+		}
+		c.No = types.NewCode(to)
+		return &c
+	}
+
+	// Rolled back: nothing changes (load the record first: the test DB has one connection,
+	// which the transaction then holds)
+	c := rename("C00010", "C99999")
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.SetDB(tx)
+	if !c.Modify(true) {
+		t.Fatal("Modify in transaction failed")
+	}
+	_ = tx.Rollback()
+	if count("customer_no = ?", "C00010") != entries || count("customer_no = ?", "C99999") != 0 {
+		t.Fatal("rolled-back rename changed the ledger entries")
+	}
+
+	// Committed rename: entries and totals follow
+	c = rename("C00010", "C99999")
+	if !c.Modify(true) {
+		t.Fatalf("rename failed: %v", c.TriggerError())
+	}
+	if got := count("customer_no = ?", "C99999"); got != entries {
+		t.Errorf("entries on C99999 = %d, want %d", got, entries)
+	}
+	if got := count("sell_to_customer_no = ?", "C99999"); got != sellTo {
+		t.Errorf("sell-to entries on C99999 = %d, want %d", got, sellTo)
+	}
+	if got := count("customer_no = ? OR sell_to_customer_no = ?", "C00010", "C00010"); got != 0 {
+		t.Errorf("%d entries still refer to C00010", got)
+	}
+	if got := balance("C99999"); math.Abs(got-wantBalance) > 0.005 {
+		t.Errorf("balance after rename = %.2f, want %.2f", got, wantBalance)
+	}
+	var totalsRows int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "demo01$Customer Ledger Entry$SIFT$customer_open" WHERE customer_no = 'C00010'`).Scan(&totalsRows); err != nil || totalsRows != 0 {
+		t.Errorf("SIFT totals still on C00010 (%d rows, %v)", totalsRows, err)
+	}
+}
+
+// HEAVY: 200 customers with about 1,000 entries each over two years (generation only — the
+// insert is measured on Postgres, not in unit tests).
+func TestGenerateHeavy(t *testing.T) {
+	var gen generatorFile
+	var setup setupData
+	var small customersFile
+	for name, out := range map[string]interface{}{"generator.yaml": &gen, "setup.yaml": &setup, "customers.yaml": &small} {
+		if err := loadYAML(name, out); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rng := newRand()
+	customers := append(append([]customerData{}, small.Customers...), generateCustomers(rng, gen, setup, heavyCustomerCount-len(small.Customers))...)
+	dueDays := map[string]int{}
+	for _, pt := range setup.PaymentTerms {
+		dueDays[pt.Code] = pt.DueDays
+	}
+	entries := generateEntries(rng, customers, dueDays, today, Heavy)
+	if len(customers) != 200 {
+		t.Fatalf("%d customers", len(customers))
+	}
+	perCustomer := len(entries) / len(customers)
+	if perCustomer < 800 || perCustomer > 1100 {
+		t.Errorf("%d entries per customer, want about 1,000", perCustomer)
+	}
+	oldest := today
+	for _, e := range entries {
+		if e.date.Before(oldest) {
+			oldest = e.date
+		}
+	}
+	if span := today.Sub(oldest).Hours() / 24; span < 700 {
+		t.Errorf("entries span %.0f days, want about 730", span)
+	}
+	if size, err := ParseSize("heavy"); err != nil || size != Heavy {
+		t.Errorf("ParseSize(heavy) = %v, %v", size, err)
+	}
+	t.Logf("HEAVY: %d customers, %d entries", len(customers), len(entries))
+}

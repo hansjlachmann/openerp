@@ -5,7 +5,8 @@ import type {
 	TableRecord,
 	LookupData,
 	CodeunitResult,
-	ValidateFieldResult
+	ValidateFieldResult,
+	TableFilter
 } from '$types/api';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 import type { CompanyInfo } from '$lib/utils/company';
@@ -32,6 +33,9 @@ function buildQueryString(options?: ListOptions): string {
 	if (options.limit) {
 		params.append('offset', (options.offset ?? 0).toString());
 		params.append('limit', options.limit.toString());
+	}
+	if (options.flow_filters && options.flow_filters.length > 0) {
+		params.append('flow_filters', JSON.stringify(options.flow_filters));
 	}
 	if (options.search && options.search_fields && options.search_fields.length > 0) {
 		params.append('search', options.search);
@@ -105,8 +109,9 @@ export const api = {
 		return handleApiResponse<T>(response, `get ${tableName} ${id}`);
 	},
 
-	async getRecordWithCaptions<T = TableRecord>(tableName: string, id: string): Promise<DataWithCaptions<T>> {
-		const response = await fetch(recordUrl(tableName, 'card', id));
+	async getRecordWithCaptions<T = TableRecord>(tableName: string, id: string, flowFilters?: TableFilter[]): Promise<DataWithCaptions<T>> {
+		const query = flowFilters && flowFilters.length > 0 ? `?flow_filters=${encodeURIComponent(JSON.stringify(flowFilters))}` : '';
+		const response = await fetch(recordUrl(tableName, 'card', id) + query);
 		return handleApiResponseWithCaptions<T>(response, `get ${tableName} ${id}`);
 	},
 

@@ -196,9 +196,39 @@ func (t *UserRoleBase) SyncKeys(db database.Executor, company string, dbType dat
 		fmt.Sprintf("%s$User_Role$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range userRoleBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, UserRoleTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, UserRoleTableName, keys)
+}
+
+// userRoleBaseSIFTSpecs are the table's keys with sum_index_fields
+func userRoleBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *UserRoleBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := UserRoleTableName, ""
+	var results []sift.VerifyResult
+	for _, spec := range userRoleBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, UserRoleTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: UserRoleTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, UserRoleTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -403,6 +433,17 @@ func (t *UserRoleBase) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.Code)
 	}
+	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			renamed = append(renamed, renamedKey{"code", t.oldValues["code"], t.Code})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
@@ -417,6 +458,13 @@ func (t *UserRoleBase) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify User_Role: %v\n", err)
 		return false
+	}
+	for _, r := range renamed {
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to User_Role: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -450,6 +498,57 @@ func (t *UserRoleBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *UserRoleBase) SetDB(db database.Executor) {
+	t.db = db
+}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *UserRoleBase) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+		"code": {{"Permission", true, "role_id"}, {"User_Member", true, "role_id"}, },
+	}
+	var companies []string
+	rows, err := t.db.Query(`SELECT name FROM "Company"`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			rows.Close()
+			return err
+		}
+		companies = append(companies, name)
+	}
+	rows.Close()
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete removes the record from the database
@@ -1320,6 +1419,20 @@ func (t *UserRoleBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *UserRoleBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of User_Role", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *UserRoleBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 

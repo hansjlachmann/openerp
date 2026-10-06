@@ -210,9 +210,39 @@ func (t *PermissionBase) SyncKeys(db database.Executor, company string, dbType d
 		fmt.Sprintf("%s$Permission$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
-	keys := []sift.Key{
+	var keys []sift.Key
+	for _, spec := range permissionBaseSIFTSpecs() {
+		keys = append(keys, sift.BuildKey(dbType, siftCompany, PermissionTableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, PermissionTableName, keys)
+}
+
+// permissionBaseSIFTSpecs are the table's keys with sum_index_fields
+func permissionBaseSIFTSpecs() []sift.KeySpec {
+	return []sift.KeySpec{
+	}
+}
+
+// VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
+// repair it rebuilds the keys whose totals differ.
+func (t *PermissionBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+	tableName, siftCompany := PermissionTableName, ""
+	var results []sift.VerifyResult
+	for _, spec := range permissionBaseSIFTSpecs() {
+		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, PermissionTableName, tableName, spec)
+		if err != nil {
+			return results, fmt.Errorf("%s: %w", spec.Name, err)
+		}
+		result := sift.VerifyResult{Table: PermissionTableName, Key: spec.Name, Differences: n}
+		if n > 0 && repair {
+			if err := sift.RebuildKey(t.db, t.dbType, siftCompany, PermissionTableName, tableName, spec); err != nil {
+				return results, fmt.Errorf("%s: %w", spec.Name, err)
+			}
+			result.Rebuilt = true
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 // ========================================
@@ -536,6 +566,12 @@ func (t *PermissionBase) hasFieldChanged(fieldName string) bool {
 	}
 
 	return false
+}
+
+// SetDB changes the database executor of the record without touching its values — e.g. to
+// run a Modify (with its rename cascade) inside a transaction.
+func (t *PermissionBase) SetDB(db database.Executor) {
+	t.db = db
 }
 
 // Delete removes the record from the database
@@ -1611,6 +1647,20 @@ func (t *PermissionBase) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+	}
+}
+
+// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// FlowFilter field); FlowFields applying it use it from then on. "" clears it.
+func (t *PermissionBase) SetFlowFilter(field, expr string) error {
+	switch field {
+	}
+	return fmt.Errorf("%q is not a FlowFilter field of Permission", field)
+}
+
+// GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
+func (t *PermissionBase) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+	return []tables.FlowFilterFieldInfo{
 	}
 }
 
