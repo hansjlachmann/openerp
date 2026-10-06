@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.78](https://github.com/hansjlachmann/openerp/compare/v0.1.77...v0.1.78) (2026-10-06)
+
+
+### Features
+
+* on-demand dropdowns, Customer Ledger Entries page, drilldown return ([82589ec](https://github.com/hansjlachmann/openerp/commit/82589ecadded4a0d34b7bb989c2e87348d2a246d))
+* SIFT totals tables for FlowFields (BC/NAV SumIndexFields) ([a69a2ad](https://github.com/hansjlachmann/openerp/commit/a69a2ad7c1069dabd23d0e176cc15b4b63297d4c))
+
+
+### Bug Fixes
+
+* keep focus and save only real changes when editing list cells ([f2c08e1](https://github.com/hansjlachmann/openerp/commit/f2c08e1f15f6e1eef2f6b40ca058e93eb26943ed))
+
 ## [0.1.77](https://github.com/hansjlachmann/openerp/compare/v0.1.76...v0.1.77) (2026-10-06)
 
 
