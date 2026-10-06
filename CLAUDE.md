@@ -240,7 +240,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Key | Action |
 |-----|--------|
 | ArrowUp / ArrowDown | Move row selection up/down |
-| Home / End | Select first / last row |
+| Home / End, Ctrl+Home / Ctrl+End | Select the first / last record of the whole list (loads that window) |
 | PageUp / PageDown | Move row selection one page (the rows that fit in the visible list) up/down |
 | Enter | If `card_page_id` set: open card page. Otherwise: enter cell-selected on first editable cell |
 | F2 | Enter cell-selected on first editable cell of selected row |
@@ -304,7 +304,7 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - The values a row was initialized with are kept in `_pristine`. Only changes away from them count as user edits (`hasUserEdits`) — init-supplied defaults never do.
 - Only one untouched new row can exist at a time — clicking New again focuses the existing one.
 - New rows are marked with `_isNew: true` and a `_tempId` for stable keyed rendering.
-- Editable lists render a **trailing blank row** after the last record; clicking it starts a new record. ArrowDown/Enter past the last data row does the same.
+- Editable lists render a **trailing blank row** after the last record (only when the loaded window reaches the end of the list); clicking it starts a new record. ArrowDown/Enter past the last record of the whole list does the same — "last" is decided by `isLastRow()` (window end and no rows beyond it per `total`), never by `displayRecords.length - 1` alone.
 - If `card_page_id` is set with `modal_card: true`, New opens a modal card instead of adding an inline row.
 
 ### Record Entry (BC/NAV insert lifecycle) (ABSOLUTE RULE)
@@ -362,9 +362,10 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - **LookupDropdown keyboard wrapper**: The `<div data-row data-col>` wrapper has an `onkeydown={handleLookupCellKeyDown}` handler that intercepts Tab/Enter/Escape/F2 after they bubble up from LookupDropdown. Keys already handled by LookupDropdown (e.g., ArrowDown when dropdown is open) are skipped via `event.defaultPrevented` check.
 
 ### Search and Sorting
-- **Search**: Case-insensitive substring match across all visible columns. Filters `displayRecords` reactively. New, uncommitted rows (`_isNew`) are always shown, so Alt+N works while a search is active.
-- **Row indexes are displayed positions (ABSOLUTE RULE)**: `selectedIndex`, `currentCellRow`, `rowIndex`, `prevRow` etc. are positions in `displayRecords` (after search and sort) — never index `records` or `editableRecords` with them. Read rows as `displayRecords[i]`; the selected saved record is `findSelectedRecord()`. Insert/remove rows in `editableRecords` by identity (`insertRowAfter`, `filter(r => r !== row)`) and map back with `displayIndexOf()`. After an `await`, update the row object itself, not `editableRecords[index]`. Mixing the index spaces made Edit/Delete act on the wrong record and cell edits land in the wrong row when the list was searched or sorted.
-- **Column sorting**: Click column headers to sort. Toggle asc/desc on same column. Type-aware comparison: numbers compared numerically, booleans by value, strings via `localeCompare`.
+- **Windowed loading (ABSOLUTE RULE)**: a list never loads the whole table. `PageRenderer` loads a **window** — the rows that fit on the page plus two pages above and below, at most 200 (`utils/listWindow.ts`) — with `offset`/`limit`, and keeps `total` (all matching records). `displayRecords` is that window (`editableActive ? editableRecords : records`); `windowOffset + index` is the position in the whole list. Moving past the window or within a page of its edge (keys, mouse wheel/scrollbar) loads the window around the target: navigation keys go through `moveToRow` → `windowIndexOf`, cell modes through `confirmAndMoveTo` (which saves the leaving cell first). Keys pressed during a load are queued (`pendingTarget`), never dropped. The window is never replaced while a user-edited, uncommitted new row exists (`hasUncommittedNewRow`). Rendering all rows was measured at ~40 s for 10,000 customers — never go back to loading everything.
+- **Search**: Case-insensitive "contains" over the visible stored columns, **on the server** (`search` + `search_fields` on `/list`, generated `SetSearch`), 300 ms after typing stops; it covers all records, not only the loaded window. FlowFields are computed, not stored, so they are not searchable. New, uncommitted rows (`_isNew`) stay visible, so Alt+N works while a search is active.
+- **Row indexes are displayed positions (ABSOLUTE RULE)**: `selectedIndex`, `currentCellRow`, `rowIndex`, `prevRow` etc. are positions in `displayRecords` (the loaded window, after server search and sort) — never index `records` or `editableRecords` with them. Read rows as `displayRecords[i]`; the selected saved record is `findSelectedRecord()`. Insert/remove rows in `editableRecords` by identity (`insertRowAfter`, `filter(r => r !== row)`) and map back with `displayIndexOf()`. After an `await`, update the row object itself, not `editableRecords[index]`. Mixing the index spaces made Edit/Delete act on the wrong record and cell edits land in the wrong row when the list was searched or sorted.
+- **Column sorting**: Click column headers to sort **on the server** (`sort_by` + `sort_order` asc/desc, generated `SetAscending`), over all records. Toggle asc/desc on the same column. The primary key always follows the sort key in `ORDER BY`, so consecutive windows never overlap or skip rows. FlowField columns (`page.flow_fields`) have no sort button.
 
 ### Column Customization
 - Users can hide, reorder, and resize columns via the Customize dialog.

@@ -17,6 +17,7 @@
 	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
+	import { estimateRowsPerPage, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
 
 	interface Props {
 		pageid: number;
@@ -40,6 +41,15 @@
 	// Data for the page
 	let record: Record<string, any> = $state({});
 	let records: Array<Record<string, any>> = $state([]);
+
+	// List pages load a window of rows (the visible page plus two pages each way, see
+	// listWindow.ts); search and sort run on the server over all records
+	let listTotal = $state(0);
+	let windowOffset = $state(0);
+	let windowLimit = $state(windowSize(estimateRowsPerPage(typeof window !== 'undefined' ? window.innerHeight : 800)));
+	let listSearch = $state('');
+	let listSort = $state<ListWindowRequest['sort']>(null);
+	let listLoadSeq = 0; // only the latest request may set the rows (fast typing in search)
 
 	// Track if record was successfully loaded (for distinguishing new vs existing)
 	let isExistingRecord = $state(false);
@@ -201,33 +211,66 @@
 		}
 	}
 
-	// Load data for list page
-	async function loadListData() {
+	// Load a window of the list (offset/limit, filters, search, sort). windowOffset and
+	// records change together when the response arrives, so they always match.
+	async function loadListData(offset: number = windowOffset) {
 		if (!page) return;
+		const seq = ++listLoadSeq;
 
 		try {
 			// Determine which fields are visible based on customizations
 			const visibleFields = getVisibleFields();
+			const flowFields = new Set(page.page.flow_fields ?? []);
 
 			// Load records with only visible fields to avoid expensive FlowField calculations
-			// Also apply current filters
-			const listOptions: import('$lib/types/api').ListOptions = {};
+			const listOptions: import('$lib/types/api').ListOptions = {
+				offset,
+				limit: windowLimit
+			};
 			if (visibleFields.length > 0) {
 				listOptions.fields = visibleFields;
 			}
 			if (currentFilters.length > 0) {
 				listOptions.filters = currentFilters;
 			}
+			if (listSearch.trim()) {
+				// FlowFields are computed, not stored: the server can not search them
+				listOptions.search = listSearch.trim();
+				listOptions.search_fields = visibleFields.filter((f) => !flowFields.has(f));
+			}
+			if (listSort) {
+				listOptions.sort_by = listSort.field;
+				listOptions.sort_order = listSort.direction;
+			}
 
 			// Fetch records, options, and lookups in a single API call
 			const response = await api.listRecordsWithOptions(page.page.source_table, listOptions);
-			records = response.list.records || [];
+			if (seq !== listLoadSeq) return;
+			const rows = response.list.records || [];
+			const total = response.list.total ?? rows.length;
+			// Past the end (rows deleted, search narrowed): load the last window instead
+			if (rows.length === 0 && total > 0 && offset > 0) {
+				return loadListData(Math.max(0, total - windowLimit));
+			}
+			records = rows;
+			listTotal = total;
+			windowOffset = offset;
 			options = response.options;
 			lookups = response.lookups || {};
 		} catch (err) {
+			if (seq !== listLoadSeq) return;
 			console.error('Error loading list data:', err);
 			records = [];
+			listTotal = 0;
 		}
+	}
+
+	// ListPage asks for another window: moved past the loaded rows, searched or sorted
+	async function handleListWindow(request: ListWindowRequest) {
+		if (request.limit !== undefined) windowLimit = request.limit;
+		if (request.search !== undefined) listSearch = request.search;
+		if (request.sort !== undefined) listSort = request.sort;
+		await loadListData(request.offset !== undefined ? Math.max(0, request.offset) : windowOffset);
 	}
 
 	// Get visible fields from page definition and user customizations
@@ -413,7 +456,7 @@
 	// Handle filter change from list page
 	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[]) {
 		currentFilters = filters;
-		await loadListData();
+		await loadListData(0);
 	}
 
 	// Navigation functions for card pages
@@ -488,6 +531,9 @@
 			{options}
 			{lookups}
 			{currentFilters}
+			total={listTotal}
+			{windowOffset}
+			onwindow={handleListWindow}
 			onaction={handleListAction}
 			onrowclick={handleRowClick}
 			onsave={handleListSave}

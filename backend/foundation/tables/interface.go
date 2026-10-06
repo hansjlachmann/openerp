@@ -46,6 +46,11 @@ type Table interface {
 	ClearFilters()
 	// SetCurrentKey sets the sort order by field(s)
 	SetCurrentKey(fields ...string)
+	// SetAscending sets the sort direction (default ascending). The primary key always
+	// follows the current key, so the order is unique and pages never overlap.
+	SetAscending(ascending bool)
+	// SetSearch keeps the records where any of the fields contains text (case-insensitive)
+	SetSearch(fields []string, text string)
 	// HasColumn reports whether a field name is a stored column (allowed in filters/sort)
 	HasColumn(field string) bool
 	// SetPage sets a pagination window for FindSet: at most limit rows, skipping

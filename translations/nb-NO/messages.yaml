@@ -112,7 +112,7 @@ messages:
   HELP_MENU_OPEN: "Åpne valgt punkt"
   HELP_SEC_LIST: "Listeside"
   HELP_LIST_ROWS: "Velg forrige / neste rad"
-  HELP_LIST_FIRST_LAST: "Første / siste rad"
+  HELP_LIST_FIRST_LAST: "Første / siste post i hele listen"
   HELP_LIST_PAGE: "Én side opp / ned"
   HELP_LIST_OPEN: "Åpne kortet, eller rediger raden hvis listen ikke har kort"
   HELP_LIST_EDIT_CELLS: "Rediger cellene i valgt rad"

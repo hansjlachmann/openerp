@@ -336,6 +336,13 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		}
 		table.SetCurrentKey(sortBy)
 	}
+	switch c.Query("sort_order", "asc") {
+	case "asc":
+	case "desc":
+		table.SetAscending(false)
+	default:
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
+	}
 
 	// Setup tables always have their single record present (BC-style)
 	if table.IsSetupTable() {
@@ -371,27 +378,39 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse pagination window (opt-in). When page_size > 0 the query is limited
-	// server-side and total reflects the full filtered count. Without page_size the
-	// entire result set is returned, preserving the frontend's client-side
-	// search/sort over the full data set.
+	// Search box: case-insensitive "contains" over the given columns (any of them)
+	if search := strings.TrimSpace(c.Query("search", "")); search != "" {
+		var searchFields []string
+		if err := json.Unmarshal([]byte(c.Query("search_fields", "[]")), &searchFields); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
+		}
+		for _, f := range searchFields {
+			if !table.HasColumn(f) {
+				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
+			}
+		}
+		table.SetSearch(searchFields, search)
+	}
+
+	// Pagination window (opt-in): offset/limit (list page windows) or page/page_size.
+	// Then total is the full filtered count. Without either the entire result set is
+	// returned (small tables, callers that need every row).
+	const maxPageSize = 1000
+	offset := max(c.QueryInt("offset", 0), 0)
+	limit := min(max(c.QueryInt("limit", 0), 0), maxPageSize)
 	page := c.QueryInt("page", 1)
 	if page < 1 {
 		page = 1
 	}
-	pageSize := c.QueryInt("page_size", 0)
-	if pageSize < 0 {
-		pageSize = 0
-	}
-	const maxPageSize = 1000
-	if pageSize > maxPageSize {
-		pageSize = maxPageSize
+	pageSize := min(max(c.QueryInt("page_size", 0), 0), maxPageSize)
+	if limit == 0 && pageSize > 0 {
+		limit, offset = pageSize, (page-1)*pageSize
 	}
 
 	total := 0
-	if pageSize > 0 {
+	if limit > 0 {
 		total = table.Count() // full filtered count, before applying the window
-		table.SetPage(pageSize, (page-1)*pageSize)
+		table.SetPage(limit, offset)
 	}
 
 	// Collect records (non-nil so an empty result serializes as [] rather than null,
@@ -435,11 +454,14 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		captions.Options[fieldName] = optionMap
 	}
 
-	// Pagination metadata: real values when a page_size was requested, otherwise
-	// the legacy single-page shape (all records reported as page 1).
-	respPage, respPageSize, respTotal := 1, len(records), len(records)
-	if pageSize > 0 {
-		respPage, respPageSize, respTotal = page, pageSize, total
+	// Pagination metadata: real values when a window was requested, otherwise the
+	// legacy single-page shape (all records reported as page 1).
+	respPage, respPageSize, respTotal, respOffset := 1, len(records), len(records), 0
+	if limit > 0 {
+		respPageSize, respTotal, respOffset = limit, total, offset
+		if pageSize > 0 {
+			respPage = page
+		}
 	}
 
 	response := apitypes.NewSuccessResponseWithCaptions(map[string]interface{}{
@@ -447,6 +469,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		"total":     respTotal,
 		"page":      respPage,
 		"page_size": respPageSize,
+		"offset":    respOffset,
 	}, captions)
 	return c.JSON(response)
 }

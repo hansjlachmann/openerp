@@ -45,6 +45,7 @@ export interface ListResponse<T = TableRecord> {
 	total: number;
 	page: number;
 	page_size: number;
+	offset?: number; // position of the first record in the full list (windowed loads)
 }
 
 // Filter types (BC/NAV style)
@@ -59,6 +60,10 @@ export interface ListOptions {
 	sort_order?: 'asc' | 'desc';
 	page?: number;
 	page_size?: number;
+	offset?: number; // window: skip this many records ...
+	limit?: number; // ... and return at most this many (total = all matching records)
+	search?: string; // case-insensitive "contains" over search_fields
+	search_fields?: string[];
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 }
 

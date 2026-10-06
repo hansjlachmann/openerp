@@ -27,6 +27,9 @@ type PageMetadata struct {
 	// PrimaryKeyFields is populated at request time from table metadata so the
 	// frontend knows the record key even when the PK is not shown (e.g. setup tables).
 	PrimaryKeyFields []string `yaml:"-" json:"primary_key_fields,omitempty"`
+	// FlowFields (populated at request time) are computed, not stored: list pages can
+	// not sort or search on them server-side.
+	FlowFields []string `yaml:"-" json:"flow_fields,omitempty"`
 }
 
 // Layout defines the page layout structure

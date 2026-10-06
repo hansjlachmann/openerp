@@ -35,7 +35,7 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 		title: 'HELP_SEC_LIST',
 		items: [
 			{ keys: ['↑', '↓'], description: 'HELP_LIST_ROWS' },
-			{ keys: ['Home', 'End'], description: 'HELP_LIST_FIRST_LAST' },
+			{ keys: ['Home', 'End', 'Ctrl+Home', 'Ctrl+End'], description: 'HELP_LIST_FIRST_LAST' },
 			{ keys: ['PgUp', 'PgDn'], description: 'HELP_LIST_PAGE' },
 			{ keys: ['Enter'], description: 'HELP_LIST_OPEN' },
 			{ keys: ['F2'], description: 'HELP_LIST_EDIT_CELLS' },

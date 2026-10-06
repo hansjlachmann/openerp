@@ -8,7 +8,7 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
-## 🔴 HIGH PRIORITY — Performance with large data (do this first)
+## Performance with large data ✅ DONE (steps A and B; open follow-ups under step B)
 
 Found with the LARGE demo data set (10,000 customers, 141,710 customer ledger entries, local
 Postgres, company `demo04`). Measured on the list API exactly as the frontend calls it:
@@ -52,33 +52,30 @@ Measured in Chromium (Playwright, production build) on demo04: the Customer list
 made fast enough — the list must render only the visible rows. Tried and rejected: `untrack` on the
 `{#each}` key (helps the dev build only, no change in production).
 
-### Step B — render only visible rows, then load lists in pages (BC behaviour; larger)
-- [ ] **B1 (first, fixes the 10,000-customer list):** virtualized rows in `ListPage.svelte` — render
-      only the rows in the viewport plus a buffer, with spacer rows above/below for the scroll height
-      (fixed row height). Data stays client-side, so search, sort and keyboard navigation keep working
-      on the full array. `scrollRowIntoView`, `focusCell`, `focusCellSelectedElement` and the
-      `data-row`/`data-cell-row` lookups must first scroll the target row into the rendered window.
+### Step B — windowed list loading ✅ DONE
+Lists load only the rows that fit on the page plus two pages above and below (max 200), with
+`offset`/`limit`; search and sort run on the server over all records (see CLAUDE.md "Windowed
+loading"). Measured on demo04 in Chromium: Customer list rendered in **0.94 s** (was 41 s).
+Verified in the browser: End/Ctrl+End/Home/Ctrl+Home across 10,000 records, PageDown and held
+ArrowDown across windows, mouse-wheel loading, server search and sort, editing a cell across a
+window edge (saved), ArrowDown on the last record opens a new row.
 
-BC loads a window of rows and fetches more while scrolling; search/sort/filter run on the server.
-- [ ] Frontend: `loadListData()` requests `page_size` (~100) and appends further pages when the
-      user scrolls near the end, presses PageDown/End/Ctrl+End, or ArrowDown past the loaded rows.
-      Show the server `total` as the record count.
-- [ ] Search → server side: new `search` query param on `/list` (case-insensitive substring over
-      the visible columns, columns validated with `HasColumn`, values as bind parameters).
-- [ ] Sort → server side: `sort_by` exists; add/verify `sort_order` (asc/desc) and a stable
-      secondary order on the primary key so pages don't overlap.
-- [ ] Keep the ListPage rules intact: row indexes stay positions in `displayRecords` (now the
-      loaded window); End/Ctrl+End must load the last page; new rows (`_isNew`), Record Entry
-      insert/modify, cell editing, trailing blank row and selection must keep working while
-      pages load. Refresh (F5) reloads from page 1 but keeps the selected record.
-- [ ] Render only the visible rows (virtualized list) if the DOM is still slow after paging.
-- [ ] Card navigation: `getRecordIDs` returns all keys (10,000 is fine; check at 100k+).
-- [ ] Lookups (`captions.lookups`) load all rows of the related table — page/search them too
-      when a related table is large.
-- [ ] Verify with demo04: Customer list and Customer Ledger Entries open in < 1 s, scrolling to
-      the end works, search finds rows not yet loaded, sort covers all rows, E2E tests pass.
-- [ ] Update CLAUDE.md "Generic List Page Behaviors" (search/sort/paging rules) and the
-      Keyboard Shortcuts help if key behaviour changes.
+Open follow-ups:
+- [ ] **Focus lost after editing a list cell** (pre-existing, also before windowing): type in a cell,
+      ArrowDown → the value is saved and the next cell shows as selected, but focus lands on
+      `.list-page`, so further arrow keys do nothing until the user clicks. Reproduced on demo01 with
+      the old and the new code.
+- [ ] Cell modes: arrow keys pressed while a window loads (holding the key across a window edge)
+      are partly lost — the handlers take the row from the focused cell, which moves only after the
+      load. Navigation mode queues them (`pendingTarget`); cell modes could do the same.
+- [ ] Customer Ledger Entries page is missing: the customer card's "Ledger Entries" action has
+      `run_page: 25`, but there is no page 25 definition.
+- [ ] Lookups (`captions.lookups`, `getLookupValues` in tables.go) still load every row of the related
+      table on each list/card response — page/search them when a related table gets large.
+- [ ] Card navigation (`/ids`) returns all keys in primary-key order and ignores the list's
+      sort/search/filter.
+- [ ] SQLite `LOWER()` only folds ASCII, so on SQLite the search is case-sensitive for æ/ø/å
+      (Postgres is fine).
 
 ---
 

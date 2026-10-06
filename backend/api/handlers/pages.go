@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
@@ -50,6 +51,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// Send the PK field names so the frontend can identify records even when the
 	// primary key is not displayed on the page (e.g. BC-style setup tables).
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
+	if factory, ok := tables.GetTableFactory(pageDef.Page.SourceTable); ok {
+		pageDef.Page.FlowFields = factory().GetFlowFields()
+	}
 	// Build a set for quick lookup
 	pkSet := make(map[string]bool, len(primaryKeyFields))
 	for _, pk := range primaryKeyFields {
