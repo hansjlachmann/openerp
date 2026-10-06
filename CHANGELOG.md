@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.80](https://github.com/hansjlachmann/openerp/compare/v0.1.79...v0.1.80) (2026-10-06)
+
+
+### Performance
+
+* remove the Customer Ledger Entry date SIFT key ([05316a2](https://github.com/hansjlachmann/openerp/commit/05316a28c9b63d6049a11cb16fa511ee3674243d))
+
 ## [0.1.79](https://github.com/hansjlachmann/openerp/compare/v0.1.78...v0.1.79) (2026-10-06)
 
 
