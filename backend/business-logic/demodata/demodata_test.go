@@ -464,9 +464,11 @@ func TestDateFilterFlowFields(t *testing.T) {
 		for _, rec := range records {
 			no := rec["no"].(string)
 			var got [3]float64
-			fmt.Sscan(fmt.Sprint(rec["balance_lcy"]), &got[0])
-			fmt.Sscan(fmt.Sprint(rec["sales_lcy"]), &got[1])
-			fmt.Sscan(fmt.Sprint(rec["no_of_ledger_entries"]), &got[2])
+			for i, field := range []string{"balance_lcy", "sales_lcy", "no_of_ledger_entries"} {
+				if _, err := fmt.Sscan(fmt.Sprint(rec[field]), &got[i]); err != nil {
+					t.Fatalf("%s %s = %v: %v", no, field, rec[field], err)
+				}
+			}
 			same("list "+no+" filter "+tc.filter, got, expected(no, tc.cond, tc.args...))
 		}
 	}
