@@ -495,6 +495,10 @@ func (t *LanguageBase) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
+// CalcFieldsForRecords is a no-op for tables without FlowFields
+func (t *LanguageBase) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+}
+
 // ========================================
 // BC/NAV-style Filtering and Search
 // ========================================

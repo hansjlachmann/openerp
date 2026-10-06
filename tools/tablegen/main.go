@@ -50,6 +50,12 @@ type Field struct {
 	SourceTable   string         `yaml:"source_table"` // Table to calculate from
 	SourceField   string         `yaml:"source_field"` // Field to aggregate
 	FlowFilters   []FlowFilter   `yaml:"flow_filters"` // Filter conditions
+
+	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
+	// source column to group by and the record map key holding its value. Set by
+	// prepareTemplateData; empty means CalcFieldsForRecords calculates per record.
+	BatchKeyField string `yaml:"-"`
+	BatchKeyValue string `yaml:"-"`
 }
 
 // FlowFilter represents a filter condition for FlowField calculation
@@ -256,6 +262,33 @@ func prepareTemplateData(def *TableDef) TemplateData {
 			data.FirstPrimaryKey = field
 		}
 	}
+
+	// FlowFields with a single "field" flow filter can be calculated for many records
+	// with one grouped query (CalcFieldsForRecords)
+	dbNames := make(map[string]string, len(def.Table.Fields))
+	for _, f := range def.Table.Fields {
+		dbNames[f.Name] = f.DBName
+	}
+	for i := range def.Table.Fields {
+		field := &def.Table.Fields[i]
+		if !field.FlowField {
+			continue
+		}
+		var keyFilters []FlowFilter
+		for _, ff := range field.FlowFilters {
+			if ff.Type == "field" {
+				keyFilters = append(keyFilters, ff)
+			}
+		}
+		if len(keyFilters) == 1 {
+			field.BatchKeyField = keyFilters[0].Field
+			field.BatchKeyValue = dbNames[keyFilters[0].Value]
+			if field.BatchKeyValue == "" {
+				field.BatchKeyValue = keyFilters[0].Value
+			}
+		}
+	}
+	data.TableDef = *def
 
 	return data
 }
@@ -1394,6 +1427,139 @@ func (t *{{ $.BaseStructName }}) calcFlowField_{{ .Name }}() {
 {{- end }}
 {{- end }}
 
+// CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
+// one grouped query per FlowField instead of one query per record. records are
+// ToMap() results; each gets its FlowField values under the field name. With no
+// field names, all FlowFields are calculated.
+func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+	if len(records) == 0 {
+		return
+	}
+	if len(fieldNames) == 0 {
+		fieldNames = t.GetFlowFields()
+	}
+	for _, fieldName := range fieldNames {
+		switch fieldName {
+		{{- range .Table.Fields }}
+		{{- if .FlowField }}
+		case "{{ .DBName }}":
+			t.calcForRecords_{{ .Name }}(records)
+		{{- end }}
+		{{- end }}
+		}
+	}
+}
+
+{{- range .Table.Fields }}
+{{- if .FlowField }}
+
+// calcForRecords_{{ .Name }} calculates the {{ .Name }} FlowField for a set of records
+// CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
+func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
+{{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["{{ .BatchKeyValue }}"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["{{ .BatchKeyValue }}"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	{{- if eq .CalcFormula "Count" }}
+	values := make(map[string]int, len(keys))
+	{{- else }}
+	values := make(map[string]{{ .Type }}, len(keys))
+	{{- end }}
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		{{- range .FlowFilters }}
+		{{- if eq .Type "const" }}
+		whereClauses = append(whereClauses, "{{ .Field }} = ?")
+		args = append(args, {{ .Value }})
+		{{- end }}
+		{{- end }}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "{{ .BatchKeyField }} IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+
+		{{- if eq .CalcFormula "Count" }}
+		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COUNT(*) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
+		{{- else }}
+		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
+		{{- end }}
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate {{ .Name }}: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			{{- if eq .CalcFormula "Count" }}
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+			{{- else }}
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+			{{- end }}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		{{- if eq .CalcFormula "Count" }}
+		rec["{{ .DBName }}"] = values[fmt.Sprint(rec["{{ .BatchKeyValue }}"])]
+		{{- else }}
+		v, ok := values[fmt.Sprint(rec["{{ .BatchKeyValue }}"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["{{ .DBName }}"] = v.String()
+		{{- end }}
+	}
+{{- else }}
+	// No single key field to group by: calculate per record
+	for _, rec := range records {
+		r := &{{ $.BaseStructName }}{db: t.db, company: t.company, dbType: t.dbType}
+		r.FromMap(rec)
+		r.calcFlowField_{{ .Name }}()
+		{{- if eq .Type "types.Decimal" }}
+		rec["{{ .DBName }}"] = r.{{ upperFirst .Name }}.String()
+		{{- else }}
+		rec["{{ .DBName }}"] = r.{{ upperFirst .Name }}
+		{{- end }}
+	}
+{{- end }}
+}
+{{- end }}
+{{- end }}
+
 // Helper methods for FlowField calculations
 {{- range .Table.Fields }}
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
@@ -1483,6 +1649,10 @@ func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 // Implemented for tables.Table interface compliance
 func (t *{{ .BaseStructName }}) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
+}
+
+// CalcFieldsForRecords is a no-op for tables without FlowFields
+func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
 }
 
 {{- end }}

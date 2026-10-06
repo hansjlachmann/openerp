@@ -33,19 +33,32 @@ paging support in `ListRecords` + generated `SetPage` is unused). Search, sort a
 navigation in `ListPage.svelte` work client-side on the full array, and every row is rendered.
 141,710 ledger entries = 132 MB JSON and a DOM the browser cannot handle.
 
-### Step A — batch FlowField calculation (small, low risk; do first)
-- [ ] tablegen: generate a set-based `CalcFieldsBatch(records, fields...)` (or a per-FlowField
-      `calc…ForKeys(keys)`) that runs **one** `SELECT <flow filter field>, SUM/COUNT(...) … WHERE
-      <const filters> AND <field> IN (…) GROUP BY <field>` per FlowField for all rows of the
-      result, and fills each record from the map (missing key = 0). Keep `CalcFields` for the card.
-- [ ] `ListRecords`: collect the rows first, then batch-calculate **only the requested** FlowFields
-      (`requestedFields ∩ flowFields`; all only when no `fields` param is sent).
-- [ ] Large `IN` lists: chunk keys (e.g. 1,000 per query) or, for an unfiltered list, use the
-      grouped query without `IN`.
-- [ ] Verify: Customer list (10,000 rows) < 1.5 s on Postgres; SQLite still works; FlowField
-      values identical to the per-row calculation (test on demo data); card page unchanged.
+### Step A — batch FlowField calculation ✅ DONE
+- [x] tablegen generates `CalcFieldsForRecords(records, fields...)` (in `tables.Table`): per FlowField
+      with one `field` flow filter, one `SELECT key, SUM/COUNT … GROUP BY key` — with an `IN` list for
+      up to 500 keys, over the whole source table for more. Other FlowFields fall back to per record.
+- [x] `ListRecords` reads all rows first, then batch-calculates only the requested FlowFields
+      (`flowFieldsToCalc`; all when no `fields` param). The card keeps `CalcFields`.
+- [x] Tests: values identical to per-record `CalcFields` on demo data (IN-list and whole-table
+      paths, customers without entries), only requested fields calculated.
+- [x] Measured on demo04 (Postgres): Customer list 28.4 s → **1.1–1.4 s**; a page of 100 rows
+      26 ms; sum of all balances equals the ledger total.
 
-### Step B — load lists in pages as you scroll (BC behaviour; larger)
+### Finding after step A — the browser needs ~40 s to render 10,000 rows
+Measured in Chromium (Playwright, production build) on demo04: the Customer list data arrives after
+1.4 s, but the rows appear only after **41 s**. Profile: garbage collection and Svelte's per-cell
+`{#if}` blocks (each cell renders the full state/type branch chain) ~20 s, the first layout of the
+10,000-row table (forced in `scrollRowIntoView`) ~6 s, DOM inserts ~4 s. Rendering every row cannot be
+made fast enough — the list must render only the visible rows. Tried and rejected: `untrack` on the
+`{#each}` key (helps the dev build only, no change in production).
+
+### Step B — render only visible rows, then load lists in pages (BC behaviour; larger)
+- [ ] **B1 (first, fixes the 10,000-customer list):** virtualized rows in `ListPage.svelte` — render
+      only the rows in the viewport plus a buffer, with spacer rows above/below for the scroll height
+      (fixed row height). Data stays client-side, so search, sort and keyboard navigation keep working
+      on the full array. `scrollRowIntoView`, `focusCell`, `focusCellSelectedElement` and the
+      `data-row`/`data-cell-row` lookups must first scroll the target row into the rendered window.
+
 BC loads a window of rows and fetches more while scrolling; search/sort/filter run on the server.
 - [ ] Frontend: `loadListData()` requests `page_size` (~100) and appends further pages when the
       user scrolls near the end, presses PageDown/End/Ctrl+End, or ArrowDown past the loaded rows.
