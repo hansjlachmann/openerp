@@ -1677,11 +1677,40 @@
 	// Handle delete record
 	async function handleDelete() {
 		if (selectedRecord) {
+			const deleted = selectedRecord;
 			confirm.show(
 				t(DLG.DELETE_RECORD_TITLE),
 				t(DLG.DELETE_RECORD_CONFIRM),
 				async () => {
-					await ondelete?.(selectedRecord);
+					if (deleted._isNew) {
+						// Not saved yet: just drop the row
+						editableRecords = editableRecords.filter(r => r !== deleted);
+					} else {
+						try {
+							await ondelete?.(deleted); // deletes and reloads the window (records)
+						} catch {
+							return; // the error was shown; keep the rows as they are
+						}
+						// In a cell mode the list shows editableRecords, its editable copy of the rows:
+						// rebuild it from the reloaded records (a stale copy kept showing the deleted
+						// row), keeping rows that are not saved yet
+						if (editableActive) {
+							const unsaved = editableRecords.filter(r => r._isNew && r !== deleted);
+							editableRecords = [...toEditableRecords(), ...unsaved];
+						}
+					}
+					// Stay on the same position: the record after the deleted one (BC)
+					const last = displayRecords.length - 1;
+					if (last < 0) {
+						if (editableActive) exitToNavigation();
+						selectedIndex = -1;
+						return;
+					}
+					selectedIndex = Math.min(selectedIndex, last);
+					if (editableActive && currentCellRow > last) {
+						currentCellRow = last;
+						focusCellSelectedElement(currentCellRow, currentCellCol);
+					}
 				}
 			);
 		}
@@ -1918,30 +1947,28 @@
 				// Close modal and return to list (triggered by Esc key or Back to List button)
 				closeModal();
 				break;
-			case 'Delete':
+			case 'Delete': {
 				const deleteRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
-				if (deleteRecordId && window.confirm(`Delete this ${modalCardPage.page.caption}?`)) {
-					// Mark as deleted BEFORE API call to prevent any pending auto-saves
+				if (!deleteRecordId) break;
+				// Same translated confirmation as Delete on the list (not the browser's confirm())
+				confirm.show(t(DLG.DELETE_RECORD_TITLE), t(DLG.DELETE_RECORD_CONFIRM), async () => {
+					// Mark as deleted BEFORE the API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
-
 					try {
 						await api.deleteRecord(page.page.source_table, deleteRecordId);
-
-						// Remove the record from the list
-						records = records.filter(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) !== deleteRecordId);
-
-						// Close the modal
+						// Closing with changes reloads the list window (rows and record count)
+						modalHadChanges = true;
 						closeModal();
-
 						toast.success(t(MSG.RECORD_DELETED_SUCCESS));
 					} catch (err) {
 						console.error('Delete error:', err);
-						toast.error(t(ERR.FAILED_DELETE));
+						toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
 						// Reset flag if delete failed
 						modalRecordDeleted = false;
 					}
-				}
+				});
 				break;
+			}
 			case 'Refresh':
 				// Reload the modal record with options
 				const refreshRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
