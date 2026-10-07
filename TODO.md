@@ -330,6 +330,11 @@ Open follow-ups:
       now insert a new record only when every primary key field has a value (`hasPrimaryKey`); record
       inputs set `autocomplete` (`new-password` for masked fields, `off` otherwise). Fixed in 0.1.82,
       confirmed on the demo environment.
+- [x] Deleting a record on an editable list (e.g. Users) after clicking a row left it on screen until
+      a reload: in cell-selected mode the list shows its editable copy (`editableRecords`), which was not
+      rebuilt from the reloaded window. `handleDelete` now rebuilds it (keeping unsaved new rows) and
+      keeps the selection on the next record. Delete in the modal card used the browser's English
+      `confirm()` and left the record count stale: now the translated dialog and a list reload.
 - [ ] List cells ignore per-field `editable: false` except for paste and F8 (typing/F2 still edit).
 - [x] Lookups on demand for large related tables (> 200 rows): `lazy_url` + `GET …/lookup/:field`
       with server search; relation values checked on insert/modify. demo04 Customer Ledger Entries
