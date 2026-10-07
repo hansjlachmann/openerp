@@ -40,8 +40,11 @@ cd backend/business-logic/tables
 ### Docker
 ```bash
 docker-compose up                    # Full stack (backend + frontend + postgres + nginx)
-docker-compose -f docker-compose.prod.yml up  # Production
+scripts/prod.sh pull && scripts/prod.sh up -d  # Production (settings/secrets in untracked prod.env)
+scripts/backup.sh                    # Production database backup (pg_dump, prunes old automatic dumps)
 ```
+
+Production operations (upgrade, backup/restore, reboot, ports, passwords): `docs/operations.md`. Server settings and secrets live in the untracked `prod.env` (template `prod.env.example`), never in the tracked `.env` (CI rewrites it with `APP_VERSION`). All prod services have `restart: unless-stopped`; only nginx (80/443) is published to the network — db on `127.0.0.1`, backend/frontend on `PUBLISH_HOST` (default `127.0.0.1`). Never put server addresses or other site details into the repository.
 
 ## Architecture
 

@@ -470,27 +470,25 @@ an OS upgrade and reboot.
       job limit) and in 0.1.82 (cancelled after ~45 min; re-running only the Docker job finished in
       4 min). Add `timeout-minutes: 30` to the Docker job so a hang fails fast and can be re-run; if it
       keeps happening, build arm64 on a native runner instead of under QEMU.
-- [ ] **Auto-start after reboot** — no service in `docker-compose.prod.yml` has a `restart:` policy,
-      so after a host reboot the stack stays down until someone runs `up -d` by hand. Add
-      `restart: unless-stopped` to `db`, `backend`, `frontend` and `nginx`.
-- [ ] **Only expose nginx** — `db` (5432), `backend` (8080) and `frontend` (3000) are published on
-      all host interfaces, so they are reachable from the network directly, bypassing nginx/HTTPS.
-      Publish only nginx's 80/443; the other services talk over the compose network.
-- [ ] **Postgres credentials** — `docker-compose.prod.yml` hardcodes `openerp`/`openerp`. Read the
-      password from `.env` (e.g. `POSTGRES_PASSWORD: ${DB_PASSWORD}` for `db`, `DB_PASSWORD` for
-      `backend`) and document changing it on an existing volume (`ALTER USER`, since the image
-      only applies `POSTGRES_PASSWORD` when initializing an empty volume).
-- [ ] **`JWT_SECRET` in production** — when unset, the backend logs a warning and uses a random
-      key per start (safe, but every restart logs all users out). Document setting it in `.env`
-      (`JWT_SECRET=$(openssl rand -hex 32)`); consider refusing to start in production without it.
-- [ ] **Automated backups** — add a script (e.g. `scripts/backup.sh`) that runs
-      `pg_dump -Fc` in the `db` container into a dated file outside the git checkout and prunes
-      files older than N days, plus a cron example. Copying backups off the host stays a separate,
-      site-specific step.
-- [ ] **Operations doc** — `docs/operations.md`: start/stop, what to do after a host reboot,
-      upgrading via `APP_VERSION` in `.env`, backup and restore (`pg_restore --clean`), and never
-      `docker compose down -v` / `docker volume prune` (deletes the database volume). Note that
-      compose must run from the checkout folder, since the volume name comes from the project name.
+- [x] **Auto-start after reboot** — all services in `docker-compose.prod.yml` have
+      `restart: unless-stopped`.
+- [x] **Only expose nginx** — db on `127.0.0.1:5432` (SSH tunnel for admin tools); backend/frontend
+      on `PUBLISH_HOST` (default `127.0.0.1`, for a tunnel/proxy on the same host; `0.0.0.0` only if a
+      proxy on another machine needs them); nginx 80/443 as before.
+- [x] **Postgres credentials** — read from `POSTGRES_PASSWORD` in the untracked `prod.env` (default
+      `openerp`, so existing installations keep working); changing it on an existing volume
+      (`ALTER USER` first) is in `docs/operations.md`.
+- [x] **`JWT_SECRET` in production** — set in `prod.env` (`openssl rand -hex 32`); the backend still
+      only warns when it is missing (user decision: no refusal to start).
+- [x] **Automated backups** — `scripts/backup.sh` (`pg_dump -Fc` via the db container into
+      `~/backups/openerp-auto-*.dump`, prunes only those after 14 days) + cron example. Verified
+      locally: dump restored into a scratch database matches the live one. Copying backups off the
+      host stays a separate, site-specific step.
+- [x] **Operations doc** — `docs/operations.md`; production runs through `scripts/prod.sh`
+      (`docker compose --env-file prod.env -f docker-compose.prod.yml`), so nothing tracked is edited on
+      the server and `git pull` no longer conflicts.
+- [ ] Switch production and the demo environment to `prod.env` (steps in `docs/operations.md`,
+      "Switching an existing installation"); then set up the backup cron and an off-host copy.
 
 ---
 

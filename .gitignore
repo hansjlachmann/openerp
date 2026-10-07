@@ -93,3 +93,6 @@ instant-build-script
 
 # Local reference material: NAV Classic 2.6 source code (not part of this project)
 nav-classic-260-code-txt/
+
+# Server settings with secrets (from prod.env.example)
+prod.env
