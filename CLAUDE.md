@@ -89,6 +89,7 @@ translations/            i18n JSON files
 - **Table registration**: When adding a new table, register it in `cmd/api-server/main.go` via `registry.RegisterTable(ID, &TableStruct{})`.
 - **Company-scoped tables**: All business data tables are prefixed with the company name (e.g., `"cronus$Customer"`). System tables (User, Language) are global.
 - **Database auto-detection**: If `DB_HOST` env var is set, uses PostgreSQL; otherwise SQLite with interactive prompts.
+- **Opening a table in code**: always `InitWithDBType(db, company, dbType)` with the session's/handler's database type — there is deliberately no `Init(db, company)`: the type decides the SQL placeholders, and the old SQLite default silently broke code on PostgreSQL (production).
 - **Table sync**: Additive schema changes (new tables/columns) happen automatically on startup. Destructive changes require migrations.
 - **Migrations**: Sequential versioned files in `backend/business-logic/migrations/`. Auto-registered via `init()`. Use `ctx.ForEachCompanyTable()` to apply across all companies. Supports distributed locking for Kubernetes.
 - **Extensions**: Custom tables/pages/codeunits use IDs 50,000-99,999. Core uses 1-49,999. Extensions are `.extend.yaml` files merged at build time via `extmerge`.

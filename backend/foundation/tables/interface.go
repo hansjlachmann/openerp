@@ -14,9 +14,8 @@ type Table interface {
 	// (a single record identified by a blank primary key)
 	IsSetupTable() bool
 
-	// Initialization - must be called before any operations
-	Init(db database.Executor, company string)
-	// InitWithDBType initializes with explicit database type (required for PostgreSQL)
+	// Initialization - must be called before any operations. There is no Init without the
+	// database type: it decides the SQL placeholders (a SQLite default broke PostgreSQL)
 	InitWithDBType(db database.Executor, company string, dbType database.DBType)
 	// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord)
 	InitRecord()

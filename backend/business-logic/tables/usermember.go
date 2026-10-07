@@ -19,11 +19,6 @@ func NewUserMember() *UserMember {
 	return &UserMember{}
 }
 
-// Init initializes the record with database context and sets up triggers
-func (t *UserMember) Init(db database.Executor, company string) {
-	t.InitWithDBType(db, company, database.DBTypeSQLite)
-}
-
 // InitWithDBType initializes the record with database context and type and sets up
 // triggers. The API creates tables via the tables.Table interface and calls this method,
 // so the wiring must live here for triggers and OnValidate_* overrides to fire.

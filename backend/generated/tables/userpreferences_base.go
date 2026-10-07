@@ -254,14 +254,9 @@ func (t *UserPreferencesBase) VerifySIFT(repair bool) ([]sift.VerifyResult, erro
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new UserPreferences record with database context
-// The db parameter can be either *sql.DB or *sql.Tx, allowing operations
-// to work seamlessly with or without explicit transactions
-func (t *UserPreferencesBase) Init(db database.Executor, company string) {
-	t.InitWithDBType(db, company, database.DBTypeSQLite)
-}
-
-// InitWithDBType initializes a new UserPreferences record with database context and type
+// InitWithDBType initializes a new UserPreferences record with database context and type.
+// db can be *sql.DB or *sql.Tx. There is no Init without the type: the type decides the SQL
+// placeholders, and a default (SQLite) silently broke code on PostgreSQL.
 func (t *UserPreferencesBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company

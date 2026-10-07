@@ -371,10 +371,11 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       user's `User_Preferences` rows (added `GetDBType()` getter to the tablegen template).
 - [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
       and Dimensions are simplified with no `table_relation`s; add proper relations.
-- [ ] Codeunits break on PostgreSQL: they open tables with `.Init(db, company)`, which always uses
-      the SQLite database type (`?` placeholders). Use `InitWithDBType(..., session DB type)` instead —
-      `codeunits/customer_mgt.go:32,49,63`, `paymentterms_mgt.go:29,44`,
-      `paymentterms_insert10.go:32,39`. (The table relation validators had the same bug; fixed.)
+- [x] Codeunits broke on PostgreSQL: they opened tables with `.Init(db, company)`, which always used the
+      SQLite database type (`?` placeholders). The three affected codeunits (50000–50002) were old CLI
+      leftovers that nothing registered or called — deleted. `Init` itself is removed from the `Table`
+      interface, the tablegen templates and the wrappers, so only `InitWithDBType` exists and the
+      compiler rejects the mistake. (The table relation validators had the same bug; fixed earlier.)
 
 ## Backend — Generated Table Scaffold Stubs
 
