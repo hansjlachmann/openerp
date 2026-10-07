@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.81](https://github.com/hansjlachmann/openerp/compare/v0.1.80...v0.1.81) (2026-10-07)
+
+
+### Features
+
+* rename a company with its data (BC/NAV Rename) ([ced09ba](https://github.com/hansjlachmann/openerp/commit/ced09babf0e7963ecb4d191cd193db93a35675de))
+
+
+### Bug Fixes
+
+* mask write-only secrets like the SMTP password (BC Masked) ([523e966](https://github.com/hansjlachmann/openerp/commit/523e96615e0eb2a0da8614ce4e8fc0166f3714e4))
+* never expose password hashes through the table API ([4ba1c69](https://github.com/hansjlachmann/openerp/commit/4ba1c69eb7a9ec5b3c070c5a9a9abd17f1422bf2))
+
+
+### Code Refactoring
+
+* remove Init without database type ([e91569f](https://github.com/hansjlachmann/openerp/commit/e91569f2a87541c591d4f3409a94fc517a4b4872))
+
 ## [0.1.80](https://github.com/hansjlachmann/openerp/compare/v0.1.79...v0.1.80) (2026-10-06)
 
 
