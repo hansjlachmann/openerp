@@ -431,18 +431,26 @@ func (t *CustomerLedgerEntryBase) CreateTableWithDBType(db database.Executor, co
 func (t *CustomerLedgerEntryBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, CustomerLedgerEntryTableName)
 	siftCompany := company
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no, open)`,
 		fmt.Sprintf("%s$Customer Ledger Entry$customer_open", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer_open: %w", err)
 	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_no)`,
 		fmt.Sprintf("%s$Customer Ledger Entry$customer", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index customer: %w", err)
 	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (document_type, document_no)`,
 		fmt.Sprintf("%s$Customer Ledger Entry$document", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index document: %w", err)
 	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (posting_date)`,
 		fmt.Sprintf("%s$Customer Ledger Entry$posting_date", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index posting_date: %w", err)
@@ -560,6 +568,17 @@ func (t *CustomerLedgerEntryBase) StoreOldValues() {
 	t.oldValues["closed_at_date"] = t.Closed_at_date
 	t.oldValues["bal_account_type"] = t.Bal_account_type
 	t.oldValues["bal_account_no"] = t.Bal_account_no
+}
+
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *CustomerLedgerEntryBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *CustomerLedgerEntryBase) IsGlobal() bool {
+	return false
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -857,6 +876,23 @@ func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("entry_no") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)

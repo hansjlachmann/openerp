@@ -141,8 +141,17 @@ func main() {
 	// Use NewManagerWithMigrations to enable versioned migrations
 	companyMgr := company.NewManagerWithMigrations(db, registry, blmigrations.GetAll())
 	if err := companyMgr.EnterCompany(companyName); err != nil {
-		// In Docker mode, auto-create the company if it doesn't exist
-		if dbHost != "" && strings.Contains(err.Error(), "does not exist") {
+		// In Docker mode, auto-create the company if it doesn't exist — only on an empty
+		// database: when other companies exist, COMPANY_NAME was renamed or deleted on
+		// purpose, so enter an existing one instead of creating an empty company again
+		existing, _ := companyMgr.ListCompanies()
+		if dbHost != "" && strings.Contains(err.Error(), "does not exist") && len(existing) > 0 {
+			fmt.Printf("Company '%s' not found; using existing company '%s'\n", companyName, existing[0])
+			companyName = existing[0]
+			if enterErr := companyMgr.EnterCompany(companyName); enterErr != nil {
+				log.Fatalf("Failed to enter company: %v", enterErr)
+			}
+		} else if dbHost != "" && strings.Contains(err.Error(), "does not exist") {
 			fmt.Printf("Company '%s' not found, creating...\n", companyName)
 			if createErr := companyMgr.CreateCompany(companyName); createErr != nil {
 				log.Fatalf("Failed to create company: %v", createErr)

@@ -75,6 +75,19 @@ func (sc *SessionCache) RemoveByUser(userID string) {
 	}
 }
 
+// RemoveByCompany removes all entries for a given company (renamed or deleted)
+func (sc *SessionCache) RemoveByCompany(company string) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	for key := range sc.entries {
+		// Keys are "userID:company"; user IDs contain no ':'
+		if _, c, ok := strings.Cut(key, ":"); ok && c == company {
+			delete(sc.entries, key)
+		}
+	}
+}
+
 // Stop stops the background cleanup goroutine
 func (sc *SessionCache) Stop() {
 	close(sc.stop)

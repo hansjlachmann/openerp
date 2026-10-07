@@ -7,7 +7,6 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/migrations"
-	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 )
 
 // MigrationRunner interface for running migrations
@@ -200,39 +199,10 @@ func (m *Manager) DeleteCompany(name string) error {
 		m.db.SetCurrentCompany("")
 	}
 
-	// SIFT totals: drop their triggers/functions and forget their definitions, so a
-	// company created later with the same name gets its totals built again
-	if err := sift.DropCompany(m.db.GetConnection(), m.db.GetDBType(), name); err != nil {
-		return fmt.Errorf("failed to drop SIFT totals: %w", err)
-	}
-
-	// Find all tables belonging to this company (Company$TableName pattern)
-	rows, err := m.db.GetConnection().Query(`
-		SELECT table_name
-		FROM information_schema.tables
-		WHERE table_schema = 'public'
-		AND table_name LIKE $1
-	`, name+"$%")
-	if err != nil {
-		return fmt.Errorf("failed to find company tables: %w", err)
-	}
-	defer rows.Close()
-
-	var tables []string
-	for rows.Next() {
-		var tableName string
-		if err := rows.Scan(&tableName); err != nil {
-			return fmt.Errorf("failed to read table name: %w", err)
-		}
-		tables = append(tables, tableName)
-	}
-
-	// Delete all company tables
-	for _, tableName := range tables {
-		_, err := m.db.GetConnection().Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, tableName))
-		if err != nil {
-			return fmt.Errorf("failed to drop table %s: %w", tableName, err)
-		}
+	// Its tables with their SIFT triggers, functions and definitions, so a company created
+	// later with the same name starts empty and gets its totals built again
+	if err := DropObjects(m.db.GetConnection(), m.db.GetDBType(), name); err != nil {
+		return fmt.Errorf("failed to drop company tables: %w", err)
 	}
 
 	// Delete field definitions for this company

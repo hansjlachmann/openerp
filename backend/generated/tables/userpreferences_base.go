@@ -211,6 +211,8 @@ func (t *UserPreferencesBase) CreateTableWithDBType(db database.Executor, compan
 func (t *UserPreferencesBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, UserPreferencesTableName)
 	siftCompany := company
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id, page_id, preference_type, preference_name)`,
 		fmt.Sprintf("%s$User_Preferences$Primary", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
@@ -287,6 +289,17 @@ func (t *UserPreferencesBase) StoreOldValues() {
 	t.oldValues["preference_data"] = t.Preference_data
 	t.oldValues["created_at"] = t.Created_at
 	t.oldValues["updated_at"] = t.Updated_at
+}
+
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *UserPreferencesBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *UserPreferencesBase) IsGlobal() bool {
+	return false
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -460,6 +473,32 @@ func (t *UserPreferencesBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("user_id") {
+			keyChanged = true
+		}
+		if t.hasFieldChanged("page_id") {
+			keyChanged = true
+		}
+		if t.hasFieldChanged("preference_type") {
+			keyChanged = true
+		}
+		if t.hasFieldChanged("preference_name") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)

@@ -304,8 +304,17 @@ Open follow-ups:
 - [x] Renaming a record updates related records (BC/NAV Rename): generated `renameReferences` from the
       YAML table relations, in one transaction with the modify. Verified: C00030 → C00030X moves all 36
       entries (and SIFT totals), a rename to an existing No. rolls back completely.
-- [ ] Renaming a **Company** record (Companies page) now updates User Member, but the company's tables
-      (`company$…`) keep the old prefix — block renaming companies or rename their tables too.
+- [x] Renaming a **Company** record moves its data: `Company.OnRename` renames all `old$…` tables,
+      indexes and sequences, rebuilds SIFT totals, updates User Member — one transaction, verified on
+      SQLite and Postgres incl. rollback after a late failure. On the way: `OnRename` is now called by
+      every generated `Modify` when a key changes; company delete via the API drops the SIFT objects
+      too and no longer uses `LIKE 'name$%'` (deleting `a_b` dropped the tables of `axb`); sessions of a
+      renamed/deleted company are dropped (the renaming user keeps working with a new cookie); startup
+      no longer re-creates a renamed `COMPANY_NAME`; global tables no longer get an index copy per
+      company (migration 007: 9 → 2 indexes per global table locally).
+- [ ] After renaming the company you work in, the menu bar shows the old company name until the next
+      page load (the server side follows at once). Needs a generic way for the list page to refresh
+      the session after a save.
 - [ ] A rename to an existing key fails with the generic "Failed to modify …"; say that the key exists.
 - [ ] Code fields in list cells are sent to the API lowercase (`fieldTypes` holds `types.Code`, the
       uppercase check compares with `code`); the backend uppercases them, so the stored value is right.
@@ -400,6 +409,21 @@ Fill in only where real per-table logic is actually needed — most are intentio
 ## Frontend
 
 From `frontend/README.md` (formerly "Next Steps") and inline markers.
+
+- [ ] **Copy/paste records on list pages (low priority).** Only on list pages that allow it: new page
+      YAML property `copy_paste_allowed: true` (CopyPasteAllowed). The user marks the records to copy
+      (multi-row selection), then pastes them; every pasted record is inserted (BC/NAV Insert, triggers
+      run). Two scenarios:
+      1. **Same table, new keys (composite primary key):** mark records, set a filter on the primary key
+         field(s) that should differ (e.g. a new role or company in User Member), paste — the filter's
+         values replace those key fields in the pasted records. A record whose resulting key already
+         exists is an error (report which).
+      2. **Between companies, same table:** mark records, switch company (Ctrl+O), open the same list
+         and paste. The records keep their primary keys, which must not exist in the target company yet
+         (error otherwise).
+      Open points: what to do when some records of a paste fail (all-or-nothing transaction is the
+      safer default), where the copied records are held across the company switch (server side vs.
+      browser storage), sensitive fields never copied, FlowFields not copied.
 
 - [ ] `frontend/src/lib/components/pages/PageRenderer.svelte:500` — only `List` and `Card`
       page types render; all other types hit the "not yet supported" fallback. Add support

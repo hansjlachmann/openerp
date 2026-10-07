@@ -89,6 +89,7 @@ func (s *Server) Setup() {
 	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
 	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit, s.jwtConfig, s.sessionCache)
 	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
+	tablesHandler.OnCompanyChanged(authHandler.CompanyChanged) // renamed/deleted company: sessions follow
 
 	// Translation routes
 	translationsHandler := handlers.NewTranslationsHandler()

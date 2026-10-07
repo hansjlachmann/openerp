@@ -150,6 +150,14 @@ func AuthMiddleware(config JWTConfig, db *sql.DB, dbType database.DBType, cache 
 			c.Locals("session", cached)
 			return c.Next()
 		}
+		// The token's company no longer exists (renamed or deleted by someone else): the
+		// session would read tables that are gone — continue unauthenticated (log in again)
+		if claims.Company != "" && !companyExists(db, claims.Company) {
+			ClearAuthCookie(c, config)
+			c.Locals("session", (*session.Session)(nil))
+			return c.Next()
+		}
+
 		// Build session from claims + DB reference
 		dbWrapper := database.WrapConnection(db, dbType)
 		sess := session.NewSession(dbWrapper, claims.Company, nil)
@@ -167,4 +175,14 @@ func AuthMiddleware(config JWTConfig, db *sql.DB, dbType database.DBType, cache 
 		c.Locals("session", sess)
 		return c.Next()
 	}
+}
+
+// companyExists reports whether a Company record named name exists. On a database error it
+// answers true, so a short outage does not log everybody out.
+func companyExists(db *sql.DB, name string) bool {
+	var found int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "Company" WHERE name = $1`, name).Scan(&found); err != nil {
+		return true
+	}
+	return found > 0
 }

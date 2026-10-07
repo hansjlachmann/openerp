@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"slices"
@@ -12,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -28,6 +30,14 @@ type TablesHandler struct {
 	db          *sql.DB
 	dbType      database.DBType
 	companyInit CompanyInitializer
+	// onCompanyChanged is called after a company was renamed (newName set) or deleted
+	// (newName ""), so sessions working in it can follow
+	onCompanyChanged func(c *fiber.Ctx, oldName, newName string)
+}
+
+// OnCompanyChanged sets the function called after a company was renamed or deleted.
+func (h *TablesHandler) OnCompanyChanged(fn func(c *fiber.Ctx, oldName, newName string)) {
+	h.onCompanyChanged = fn
 }
 
 // NewTablesHandler creates a new tables handler (defaults to SQLite)
@@ -705,7 +715,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	if !table.Insert(true) {
 		// A failed OnInsert trigger is a business rule the user broke: show its message
 		if trigErr := table.TriggerError(); trigErr != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(trigErr, language)))
 		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
 	}
@@ -793,9 +803,16 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		}
 		// A failed OnModify trigger is a business rule the user broke: show its message
 		if trigErr := table.TriggerError(); trigErr != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(trigErr, language)))
 		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(tableCaption, id).Message(language)))
+	}
+
+	// A renamed company: sessions working in it must follow (cookie, session cache)
+	if tableName == "Company" && h.onCompanyChanged != nil {
+		if oldName, newName := fmt.Sprint(parseRecordKey(id, table)), table.GetPrimaryKeyValue(); oldName != newName {
+			h.onCompanyChanged(c, oldName, newName)
+		}
 	}
 
 	// Calculate FlowFields for response
@@ -836,26 +853,21 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
-	// Capture company name before delete for table cleanup
-	var deletedCompanyName string
-	if tableName == "Company" {
-		deletedCompanyName = table.GetPrimaryKeyValue()
+	// Delete record (a Company with all its tables and SIFT objects, in one transaction)
+	deleted, txErr := h.deleteInTransaction(tableName, table)
+	if txErr != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(txErr.Error()))
 	}
-
-	// Delete record
-	if !table.Delete(true) {
+	if !deleted {
 		// A failed OnDelete trigger is a business rule the user broke: show its message
 		if trigErr := table.TriggerError(); trigErr != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(trigErr.Error()))
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(trigErr, language)))
 		}
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 	}
 
-	// Drop company-scoped tables after a Company is deleted
-	if deletedCompanyName != "" && h.dbType == database.DBTypePostgres {
-		h.dropCompanyTables(deletedCompanyName)
-	} else if deletedCompanyName != "" {
-		h.dropCompanyTablesSQLite(deletedCompanyName)
+	if tableName == "Company" && h.onCompanyChanged != nil {
+		h.onCompanyChanged(c, table.GetPrimaryKeyValue(), "")
 	}
 
 	response := apitypes.NewSuccessResponse(nil)
@@ -1028,6 +1040,42 @@ func (h *TablesHandler) modifyInTransaction(table ftables.Table) (bool, error) {
 	return true, nil
 }
 
+// deleteInTransaction deletes the record like table.Delete(true); deleting a Company also
+// drops all its tables and SIFT objects, in the same transaction, so a failure keeps the
+// company and its data. err is set only when the transaction itself fails.
+func (h *TablesHandler) deleteInTransaction(tableName string, table ftables.Table) (bool, error) {
+	setter, ok := table.(interface{ SetDB(database.Executor) })
+	if tableName != "Company" || !ok {
+		return table.Delete(true), nil
+	}
+	companyName := table.GetPrimaryKeyValue()
+	tx, err := h.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	setter.SetDB(tx)
+	defer setter.SetDB(h.db)
+	if !table.Delete(true) {
+		_ = tx.Rollback()
+		return false, nil
+	}
+	if err := company.DropObjects(tx, h.dbType, companyName); err != nil {
+		_ = tx.Rollback()
+		return false, fmt.Errorf("delete company %s: %w", companyName, err)
+	}
+	return true, tx.Commit()
+}
+
+// errorMessage is an error as shown to the user: AppErrors (e.g. from table triggers) in
+// the user's language, others as they are.
+func errorMessage(err error, language string) string {
+	var appErr *apperrors.AppError
+	if errors.As(err, &appErr) {
+		return appErr.Message(language)
+	}
+	return err.Error()
+}
+
 // checkRelation returns an error when value (a non-empty key) does not exist in the
 // table related to field. Fields without a table relation always pass.
 func (h *TablesHandler) checkRelation(table ftables.Table, company, language, field string, value interface{}) error {
@@ -1065,59 +1113,6 @@ func (h *TablesHandler) checkRelations(table ftables.Table, company, language st
 		}
 	}
 	return nil
-}
-
-// dropCompanyTables drops all "companyName$*" tables from PostgreSQL
-func (h *TablesHandler) dropCompanyTables(companyName string) {
-	rows, err := h.db.Query(`
-		SELECT table_name
-		FROM information_schema.tables
-		WHERE table_schema = 'public'
-		AND table_name LIKE $1
-	`, companyName+"$%")
-	if err != nil {
-		fmt.Printf("Warning: Failed to find company tables for '%s': %v\n", companyName, err)
-		return
-	}
-	defer rows.Close()
-
-	var tablesToDrop []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err == nil {
-			tablesToDrop = append(tablesToDrop, name)
-		}
-	}
-
-	for _, name := range tablesToDrop {
-		if _, err := h.db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)); err != nil {
-			fmt.Printf("Warning: Failed to drop table '%s': %v\n", name, err)
-		}
-	}
-}
-
-// dropCompanyTablesSQLite drops all "companyName$*" tables from SQLite
-func (h *TablesHandler) dropCompanyTablesSQLite(companyName string) {
-	rows, err := h.db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?`, companyName+"$%")
-	if err != nil {
-		fmt.Printf("Warning: Failed to find company tables for '%s': %v\n", companyName, err)
-		return
-	}
-	defer rows.Close()
-
-	var tablesToDrop []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err == nil {
-			tablesToDrop = append(tablesToDrop, name)
-		}
-	}
-
-	for _, name := range tablesToDrop {
-		if _, err := h.db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)); err != nil {
-			fmt.Printf("Warning: Failed to drop table '%s': %v\n", name, err)
-		}
-	}
 }
 
 // applyFlowFilters sets the FlowFilter fields (NAV FieldClass FlowFilter, e.g. Date Filter)
