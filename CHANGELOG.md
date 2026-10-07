@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.83](https://github.com/hansjlachmann/openerp/compare/v0.1.82...v0.1.83) (2026-10-07)
+
+
+### Documentation
+
+* TODO for the New User autofill fix and the hanging Docker build ([44aa460](https://github.com/hansjlachmann/openerp/commit/44aa460f8645db02afbaee65c24f89a1278a2af7))
+
 ## [0.1.82](https://github.com/hansjlachmann/openerp/compare/v0.1.81...v0.1.82) (2026-10-07)
 
 
