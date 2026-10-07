@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.84](https://github.com/hansjlachmann/openerp/compare/v0.1.83...v0.1.84) (2026-10-07)
+
+
+### Bug Fixes
+
+* harden the production setup ([e6fe154](https://github.com/hansjlachmann/openerp/commit/e6fe154c567cf8ec97a32538aa8f3468fb604abc))
+* remove deleted records from editable lists at once ([0055118](https://github.com/hansjlachmann/openerp/commit/0055118b6e50d1752ad1947cb4fb4818be8c8b3c))
+
 ## [0.1.83](https://github.com/hansjlachmann/openerp/compare/v0.1.82...v0.1.83) (2026-10-07)
 
 
