@@ -1,0 +1,74 @@
+package middleware
+
+import (
+	"database/sql"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+// A token naming a company that no longer exists (renamed or deleted) gives no session:
+// its tables are gone, so the user logs in again instead of hitting errors.
+func TestAuthMiddlewareCompanyGone(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`CREATE TABLE "Company" (name TEXT PRIMARY KEY); INSERT INTO "Company" VALUES ('alpha')`); err != nil {
+		t.Fatal(err)
+	}
+
+	config := JWTConfig{SecretKey: []byte("test-secret"), CookieName: "openerp_session", TokenExpiry: time.Hour}
+	cache := NewSessionCache()
+	defer cache.Stop()
+	app := fiber.New()
+	app.Use(AuthMiddleware(config, db, database.DBTypeSQLite, cache, nil))
+	app.Get("/", func(c *fiber.Ctx) error {
+		if sess, _ := c.Locals("session").(*session.Session); sess != nil {
+			return c.SendString(sess.GetCompany())
+		}
+		return c.SendString("-")
+	})
+
+	request := func(companyName string) (string, string) {
+		token, err := GenerateToken(config, "HANS", "Hans", companyName, "en-US", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Cookie", config.CookieName+"="+token)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := make([]byte, 64)
+		n, _ := resp.Body.Read(body)
+		return string(body[:n]), resp.Header.Get("Set-Cookie")
+	}
+
+	if got, _ := request("alpha"); got != "alpha" {
+		t.Errorf("existing company: session company %q, want alpha", got)
+	}
+	got, cookie := request("gone")
+	if got != "-" {
+		t.Errorf("missing company: session company %q, want no session", got)
+	}
+	if !strings.Contains(cookie, config.CookieName+"=;") && !strings.Contains(cookie, "Max-Age=0") && !strings.Contains(cookie, "expires=") {
+		t.Errorf("missing company: cookie not cleared: %q", cookie)
+	}
+
+	// A cached session of a renamed company is dropped with RemoveByCompany
+	cache.Set("HANS:alpha", session.NewSession(nil, "alpha", nil), time.Hour)
+	cache.Set("KARI:beta", session.NewSession(nil, "beta", nil), time.Hour)
+	cache.RemoveByCompany("alpha")
+	if cache.Get("HANS:alpha") != nil || cache.Get("KARI:beta") == nil {
+		t.Error("RemoveByCompany removed the wrong entries")
+	}
+}

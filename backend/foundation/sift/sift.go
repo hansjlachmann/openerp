@@ -125,7 +125,8 @@ func Sync(db database.Executor, dbType database.DBType, company, table string, k
 	return nil
 }
 
-// DropCompany removes all SIFT objects and definitions of a company (company deleted).
+// DropCompany removes all SIFT objects and definitions of a company (company deleted or
+// renamed). db may be a transaction.
 func DropCompany(db database.Executor, dbType database.DBType, company string) error {
 	if err := ensureDefinitionTable(db); err != nil {
 		return err
@@ -144,11 +145,29 @@ func DropCompany(db database.Executor, dbType database.DBType, company string) e
 		drops = append(drops, splitStatements(dropSQL))
 	}
 	_ = rows.Close()
+	// Inside a transaction a failed statement aborts the whole transaction on Postgres:
+	// isolate each one in a savepoint (company rename/delete run in a transaction)
+	_, isDB := db.(*sql.DB)
+	savepoints := dbType == database.DBTypePostgres && !isDB
 	for _, d := range drops {
 		// The entry table may already be gone; DROP TRIGGER ... ON a missing table fails
 		// on Postgres, so drop statement by statement and ignore those errors
 		for _, stmt := range d {
-			_, _ = db.Exec(stmt)
+			if !savepoints {
+				_, _ = db.Exec(stmt)
+				continue
+			}
+			if _, err := db.Exec(`SAVEPOINT sift_drop`); err != nil {
+				return err
+			}
+			if _, err := db.Exec(stmt); err != nil {
+				if _, err := db.Exec(`ROLLBACK TO SAVEPOINT sift_drop`); err != nil {
+					return err
+				}
+			}
+			if _, err := db.Exec(`RELEASE SAVEPOINT sift_drop`); err != nil {
+				return err
+			}
 		}
 	}
 	_, err = db.Exec(placeholders(dbType, `DELETE FROM "`+definitionTable+`" WHERE company = ?`), company)

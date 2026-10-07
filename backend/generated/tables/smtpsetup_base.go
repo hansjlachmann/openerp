@@ -284,6 +284,17 @@ func (t *SMTPSetupBase) StoreOldValues() {
 	t.oldValues["from_address"] = t.From_address
 }
 
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *SMTPSetupBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *SMTPSetupBase) IsGlobal() bool {
+	return true
+}
+
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
 func (t *SMTPSetupBase) convertPlaceholders(sql string, count int) string {
@@ -430,6 +441,23 @@ func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("primary_key") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := SMTPSetupTableName

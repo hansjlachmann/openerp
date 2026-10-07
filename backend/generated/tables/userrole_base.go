@@ -192,8 +192,10 @@ func (t *UserRoleBase) CreateTableWithDBType(db database.Executor, company strin
 func (t *UserRoleBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 	tableName := UserRoleTableName
 	siftCompany := ""
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (code)`,
-		fmt.Sprintf("%s$User_Role$Primary", company), tableName)); err != nil {
+		"User_Role$Primary", tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
 	var keys []sift.Key
@@ -263,6 +265,17 @@ func (t *UserRoleBase) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
 	t.oldValues["code"] = t.Code
 	t.oldValues["description"] = t.Description
+}
+
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *UserRoleBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *UserRoleBase) IsGlobal() bool {
+	return true
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -391,6 +404,23 @@ func (t *UserRoleBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := UserRoleTableName

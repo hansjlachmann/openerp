@@ -1309,8 +1309,14 @@ func (t *{{ .BaseStructName }}) SyncKeys(db database.Executor, company string, d
 	siftCompany := company
 {{- end }}
 {{- range .Table.Keys }}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(` + "`CREATE INDEX IF NOT EXISTS \"%s\" ON \"%s\" ({{ join .Fields \", \" }})`" + `,
+{{- if $.Table.Global }}
+		"{{ $.Table.Name }}${{ .Name }}", tableName)); err != nil {
+{{- else }}
 		fmt.Sprintf("%s${{ $.Table.Name }}${{ .Name }}", company), tableName)); err != nil {
+{{- end }}
 		return fmt.Errorf("failed to create index {{ .Name }}: %w", err)
 	}
 {{- end }}
@@ -1405,6 +1411,17 @@ func (t *{{ .BaseStructName }}) StoreOldValues() {
 	t.oldValues["{{ .DBName }}"] = t.{{ upperFirst .Name }}
 {{- end }}
 {{- end }}
+}
+
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *{{ .BaseStructName }}) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *{{ .BaseStructName }}) IsGlobal() bool {
+	return {{ .Table.Global }}
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -1682,6 +1699,27 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+{{- range .Table.Fields }}
+{{- if .PrimaryKey }}
+		if t.hasFieldChanged("{{ .DBName }}") {
+			keyChanged = true
+		}
+{{- end }}
+{{- end }}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 

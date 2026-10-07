@@ -197,8 +197,10 @@ func (t *UserMemberBase) CreateTableWithDBType(db database.Executor, company str
 func (t *UserMemberBase) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 	tableName := UserMemberTableName
 	siftCompany := ""
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id, role_id, company)`,
-		fmt.Sprintf("%s$User_Member$Primary", company), tableName)); err != nil {
+		"User_Member$Primary", tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
 	var keys []sift.Key
@@ -269,6 +271,17 @@ func (t *UserMemberBase) StoreOldValues() {
 	t.oldValues["user_id"] = t.User_id
 	t.oldValues["role_id"] = t.Role_id
 	t.oldValues["company"] = t.Company
+}
+
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *UserMemberBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *UserMemberBase) IsGlobal() bool {
+	return true
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -416,6 +429,29 @@ func (t *UserMemberBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("user_id") {
+			keyChanged = true
+		}
+		if t.hasFieldChanged("role_id") {
+			keyChanged = true
+		}
+		if t.hasFieldChanged("company") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := UserMemberTableName

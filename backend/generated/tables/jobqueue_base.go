@@ -412,6 +412,17 @@ func (t *JobQueueBase) StoreOldValues() {
 	t.oldValues["notify_on"] = t.Notify_on
 }
 
+// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// xRec), e.g. the old key in OnRename; nil when the record was not loaded.
+func (t *JobQueueBase) OldValue(fieldName string) interface{} {
+	return t.oldValues[fieldName]
+}
+
+// IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
+func (t *JobQueueBase) IsGlobal() bool {
+	return false
+}
+
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
 func (t *JobQueueBase) convertPlaceholders(sql string, count int) string {
@@ -578,6 +589,23 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
+		}
+	}
+	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// before it is written; xRec values are available through OldValue
+	keyChanged := false
+	if t.oldValues != nil {
+		if t.hasFieldChanged("no") {
+			keyChanged = true
+		}
+	}
+	if runTrigger && keyChanged {
+		if r, ok := t.self.(interface{ OnRename() error }); ok {
+			if err := r.OnRename(); err != nil {
+				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+				t.triggerErr = err
+				return false
+			}
 		}
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)

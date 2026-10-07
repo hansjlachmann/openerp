@@ -10,6 +10,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/api/middleware"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -499,6 +500,29 @@ func (h *AuthHandler) GetLanguages(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// CompanyChanged updates the sessions after a company was renamed (newName set) or deleted
+// (newName ""): cached sessions of the company are dropped — the auth middleware logs
+// their users out, as their token names a company that no longer exists — and the user
+// who renamed the company they work in gets a new token for the new name.
+func (h *AuthHandler) CompanyChanged(c *fiber.Ctx, oldName, newName string) {
+	h.sessionCache.RemoveByCompany(oldName)
+	sess := getSession(c)
+	if newName == "" || sess == nil || sess.GetCompany() != oldName || sess.GetUserID() == "" {
+		return
+	}
+	userID, userName, language, menu := sess.GetUserID(), sess.GetUserName(), sess.GetLanguage(), sess.GetMenu()
+	newSess := session.NewSession(database.WrapConnection(h.db, h.dbType), newName, nil)
+	newSess.SetUser(userID, userName, language, menu)
+	hasRoles, isSuper, perms := h.loadUserPermissions(userID, newName)
+	newSess.SetPermissions(hasRoles, isSuper, perms)
+	token, err := middleware.GenerateToken(h.jwtConfig, userID, userName, newName, language, menu)
+	if err != nil {
+		return
+	}
+	middleware.SetAuthCookie(c, h.jwtConfig, token)
+	h.sessionCache.Set(userID+":"+newName, newSess, h.jwtConfig.TokenExpiry)
+}
+
 // CreateCompany creates a new company
 // POST /api/auth/companies
 func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
@@ -515,16 +539,10 @@ func (h *AuthHandler) CreateCompany(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyRequired().Message("en-US")))
 	}
 
-	// Validate company name (alphanumeric, underscores, hyphens only)
-	name := strings.ToLower(strings.TrimSpace(requestBody.Name))
-	for _, r := range name {
-		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-') {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyInvalidName().Message("en-US")))
-		}
-	}
-
-	if len(name) < 2 || len(name) > 50 {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CompanyNameLength().Message("en-US")))
+	// Validate company name (a-z, 0-9, underscores, hyphens; 2-50 characters)
+	name, nameErr := company.NormalizeName(requestBody.Name)
+	if nameErr != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(nameErr, "en-US")))
 	}
 
 	// Check if company already exists
