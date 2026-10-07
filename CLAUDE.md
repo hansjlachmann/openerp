@@ -425,6 +425,7 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - The modal auto-saves on field changes (no explicit Save button) — mirrors Business Central behavior.
 - On modal close, if any changes were made (`modalHadChanges`), the list data is refreshed.
 - Save errors on new records set `modalSaveBlocked = true` to prevent further edits until cleared.
+- **Card insert waits for the key (ABSOLUTE RULE)**: a new record on a card (modal `handleModalSave`, page `handleCardSave`) is INSERTed only once every primary key field has a value (`hasPrimaryKey`); earlier field changes stay on the form and go with the insert. Inserting earlier failed with "… cannot be empty" and blocked the modal — e.g. Chrome/Edge password managers filling the User card's password before the User ID. Record inputs set `autocomplete` (`new-password` for masked fields, `off` otherwise) so browsers do not fill saved logins into them.
 
 ### Codeunit Execution from List Pages
 - Actions with `run_object: codeunit:ID` or `run_object: field:fieldname` execute codeunits via the job system.

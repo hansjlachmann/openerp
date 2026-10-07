@@ -14,7 +14,7 @@
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, hasPrimaryKey } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
@@ -379,7 +379,11 @@
 				await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
 				toast.success(t(MSG.RECORD_UPDATED));
 			} else {
-				// Insert new record
+				// Insert a new record only once its primary key is filled in (Record Entry
+				// rule); until then field changes stay on the form
+				if (!hasPrimaryKey(savedRecord, primaryKeyFieldsList)) {
+					return false;
+				}
 				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
 				// After successful insert, mark as existing for future saves
 				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);

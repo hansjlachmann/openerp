@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	getRecordId,
+	hasPrimaryKey,
 	isNewRecord,
 	getRecordKey,
 	deepCopy,
@@ -237,5 +238,17 @@ describe('findSelectedRecord', () => {
 		expect(findSelectedRecord(displayed, 1, records, true, 'user_id')).toBeNull();
 		expect(findSelectedRecord(displayed, -1, records, false, 'user_id')).toBeNull();
 		expect(findSelectedRecord(displayed, 5, records, false, 'user_id')).toBeNull();
+	});
+});
+
+describe('hasPrimaryKey', () => {
+	it('needs every primary key field filled in', () => {
+		expect(hasPrimaryKey({ user_id: 'HANS' }, ['user_id'])).toBe(true);
+		expect(hasPrimaryKey({ password: 'autofilled' }, ['user_id'])).toBe(false); // browser autofill before the key
+		expect(hasPrimaryKey({ user_id: '' }, ['user_id'])).toBe(false);
+		expect(hasPrimaryKey({ user_id: '  ' }, ['user_id'])).toBe(false);
+		expect(hasPrimaryKey({ a: 'X', b: '' }, ['a', 'b'])).toBe(false);
+		expect(hasPrimaryKey({ a: 'X', b: 0 }, ['a', 'b'])).toBe(true); // 0 is a value
+		expect(hasPrimaryKey({ user_id: 'HANS' }, [])).toBe(true); // no key metadata: the backend decides
 	});
 });
