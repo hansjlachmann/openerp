@@ -115,6 +115,7 @@ type FieldInfo struct {
 	PrimaryKey bool      // Whether this is the primary key
 	FlowField  bool      // Whether this is a computed FlowField
 	Sensitive  bool      // Never sent by the API, not filterable/sortable/searchable (YAML sensitive: true)
+	Masked     bool      // Write-only secret: sent as MaskedValue, settable (YAML masked: true)
 }
 
 // LookupColumnInfo defines a column to display in the lookup dropdown

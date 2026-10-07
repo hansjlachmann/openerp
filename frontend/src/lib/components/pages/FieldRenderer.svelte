@@ -127,7 +127,8 @@
 
 	// Determine input type based on field
 	const inputType = $derived(() => {
-		if (field.source === 'password') {
+		// Masked fields (table/page YAML masked: true) are secrets: never shown in clear text
+		if (field.masked) {
 			return 'password';
 		}
 		if (field.source.includes('email')) {

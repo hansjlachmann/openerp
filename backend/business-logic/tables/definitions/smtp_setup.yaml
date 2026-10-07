@@ -34,6 +34,7 @@ table:
       type: types.Text
       db_name: password
       length: 250
+      masked: true  # write-only: the API sends •••••••• when set, never the password
 
     - name: from_address
       type: types.Text

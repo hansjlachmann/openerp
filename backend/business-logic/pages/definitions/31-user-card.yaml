@@ -45,10 +45,11 @@ page:
       - name: Authentication
         caption: Authentication
         fields:
-          - source: password
+          - source: password      # virtual: the API hashes it into password_hash
             editable: true
             caption: Password
             importance: Promoted
+            masked: true
 
       - name: Timestamps
         caption: Timestamps

@@ -1715,6 +1715,7 @@ func (t *SMTPSetupBase) GetFields() []tables.FieldInfo {
 			Editable:   true,
 			PrimaryKey: false,
 			FlowField:  false,
+			Masked:     true,
 		},
 		{
 			Name:       "from_address",

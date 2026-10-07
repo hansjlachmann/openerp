@@ -75,6 +75,10 @@ type Field struct {
 	// Sensitive: never sent by the table API (e.g. User.password_hash), and not usable in
 	// filters, sorting, search or lookup columns; the API cannot set it either
 	Sensitive bool `yaml:"sensitive"`
+	// Masked (BC ExtendedDatatype Masked): a secret that can be set through the API but is
+	// never read back — responses carry tables.MaskedValue when it has a value (e.g.
+	// SMTP_Setup.password); not usable in filters, sorting, search or lookup columns
+	Masked bool `yaml:"masked"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -533,13 +537,19 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 	return nil
 }
 
-// validateSensitiveFields checks that sensitive fields are plain stored fields (not a key,
-// FlowField or FlowFilter) and that no table relation shows one of another table in its
-// dropdown — the dropdown rows would send it to the client.
+// validateSensitiveFields checks that sensitive and masked fields are plain stored fields
+// (not a key, FlowField or FlowFilter; masked ones Text/Code) and that no table relation
+// shows one of another table in its dropdown — the dropdown rows would send it to the client.
 func validateSensitiveFields(def *TableDef, byStruct map[string]*TableDef) error {
 	for _, f := range def.Table.Fields {
 		if f.Sensitive && (f.PrimaryKey || f.FlowField || f.FlowFilter) {
 			return fmt.Errorf("sensitive field %q cannot be a primary key, FlowField or FlowFilter", f.Name)
+		}
+		if f.Masked && (f.PrimaryKey || f.FlowField || f.FlowFilter || f.Sensitive) {
+			return fmt.Errorf("masked field %q cannot be a primary key, FlowField, FlowFilter or sensitive", f.Name)
+		}
+		if f.Masked && f.Type != "types.Text" && f.Type != "types.Code" {
+			return fmt.Errorf("masked field %q must be types.Text or types.Code, not %s", f.Name, f.Type)
 		}
 	}
 	for _, f := range def.Table.Fields {
@@ -556,12 +566,12 @@ func validateSensitiveFields(def *TableDef, byStruct map[string]*TableDef) error
 			shown = append(shown, col.Source)
 		}
 		for _, rf := range related.Table.Fields {
-			if !rf.Sensitive {
+			if !rf.Sensitive && !rf.Masked {
 				continue
 			}
 			for _, name := range shown {
 				if name == rf.Name {
-					return fmt.Errorf("table relation of %s shows sensitive field %s.%s", f.Name, related.Table.Name, rf.Name)
+					return fmt.Errorf("table relation of %s shows secret (sensitive/masked) field %s.%s", f.Name, related.Table.Name, rf.Name)
 				}
 			}
 		}
@@ -3634,6 +3644,9 @@ func (t *{{ .BaseStructName }}) GetFields() []tables.FieldInfo {
 			FlowField:  {{ .FlowField }},
 {{- if .Sensitive }}
 			Sensitive:  true,
+{{- end }}
+{{- if .Masked }}
+			Masked:     true,
 {{- end }}
 		},
 {{- end }}

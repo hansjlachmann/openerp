@@ -42,4 +42,21 @@ func TestValidateSensitiveFields(t *testing.T) {
 	if err := validateSensitiveFields(key, byStruct); err == nil {
 		t.Error("sensitive primary key accepted")
 	}
+
+	for _, f := range []Field{
+		{Name: "secret", Type: "types.Text", Masked: true, PrimaryKey: true},
+		{Name: "secret", Type: "int", Masked: true},
+		{Name: "secret", Type: "types.Text", Masked: true, Sensitive: true},
+	} {
+		def := &TableDef{}
+		def.Table.Fields = []Field{f}
+		if err := validateSensitiveFields(def, byStruct); err == nil {
+			t.Errorf("masked field %+v accepted", f)
+		}
+	}
+	ok2 := &TableDef{}
+	ok2.Table.Fields = []Field{{Name: "password", Type: "types.Text", Masked: true}}
+	if err := validateSensitiveFields(ok2, byStruct); err != nil {
+		t.Errorf("masked text field: %v", err)
+	}
 }
