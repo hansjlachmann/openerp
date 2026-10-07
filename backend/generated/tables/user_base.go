@@ -1865,6 +1865,7 @@ func (t *UserBase) GetFields() []tables.FieldInfo {
 			Editable:   true,
 			PrimaryKey: false,
 			FlowField:  false,
+			Sensitive:  true,
 		},
 		{
 			Name:       "language",

@@ -273,7 +273,7 @@ func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
 	// Columns shown in the dropdown (stored columns only), the key first
 	columns := []string{relInfo.Field}
 	for _, col := range relInfo.LookupColumns {
-		if col.Source != relInfo.Field && relTable.HasColumn(col.Source) {
+		if col.Source != relInfo.Field && ftables.IsQueryableColumn(relTable, col.Source) {
 			columns = append(columns, col.Source)
 		}
 	}
@@ -375,8 +375,8 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
 	if sortBy != "" {
-		// Field names end up in SQL text: only accept real columns of this table
-		if !table.HasColumn(sortBy) {
+		// Field names end up in SQL text: only accept real (non-sensitive) columns of this table
+		if !ftables.IsQueryableColumn(table, sortBy) {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
 		}
 		table.SetCurrentKey(sortBy)
@@ -419,8 +419,8 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// Parse query parameters
 	sortBy := c.Query("sort_by", "")
 	if sortBy != "" {
-		// Field names end up in SQL text: only accept real columns of this table
-		if !table.HasColumn(sortBy) {
+		// Field names end up in SQL text: only accept real (non-sensitive) columns of this table
+		if !ftables.IsQueryableColumn(table, sortBy) {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
 		}
 		table.SetCurrentKey(sortBy)
@@ -465,7 +465,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 
 		// Apply BC-style filters (field names end up in SQL text: only accept real columns)
 		for _, f := range apiFilters {
-			if !table.HasColumn(f.Field) {
+			if !ftables.IsQueryableColumn(table, f.Field) {
 				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
 			}
 			table.SetFilter(f.Field, f.Expression)
@@ -479,7 +479,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
 		}
 		for _, f := range searchFields {
-			if !table.HasColumn(f) {
+			if !ftables.IsQueryableColumn(table, f) {
 				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
 			}
 		}
@@ -511,9 +511,9 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// e.g. when a requested page is past the end of the data)
 	records := make([]map[string]interface{}, 0)
 	if table.FindSet() {
-		records = append(records, table.ToMap())
+		records = append(records, ftables.PublicMap(table))
 		for table.Next() {
-			records = append(records, table.ToMap())
+			records = append(records, ftables.PublicMap(table))
 		}
 	}
 
@@ -535,6 +535,9 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 
 	// Add field captions and types from metadata
 	for _, field := range table.GetFields() {
+		if field.Sensitive {
+			continue
+		}
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
 		captions.FieldTypes[field.Name] = string(field.Type)
 	}
@@ -613,6 +616,9 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	}
 
 	for _, field := range table.GetFields() {
+		if field.Sensitive {
+			continue
+		}
 		captions.Fields[field.Name] = ts.FieldCaption(tableName, field.Name, language)
 		captions.FieldTypes[field.Name] = string(field.Type)
 	}
@@ -626,7 +632,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		captions.Options[fieldName] = optionMap
 	}
 
-	response := apitypes.NewSuccessResponseWithCaptions(table.ToMap(), captions)
+	response := apitypes.NewSuccessResponseWithCaptions(ftables.PublicMap(table), captions)
 	return c.JSON(response)
 }
 
@@ -654,6 +660,11 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	var data map[string]interface{}
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+
+	// Sensitive fields (e.g. password_hash) cannot be set through the API
+	if err := rejectSensitiveFields(table, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// A changed table relation field must point to an existing record
@@ -707,7 +718,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		}
 	}
 
-	response := apitypes.NewSuccessResponse(table.ToMap())
+	response := apitypes.NewSuccessResponse(ftables.PublicMap(table))
 	return c.JSON(response)
 }
 
@@ -748,6 +759,11 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
+	// Sensitive fields (e.g. password_hash) cannot be set through the API
+	if err := rejectSensitiveFields(table, data); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+
 	// A changed table relation field must point to an existing record
 	if err := h.checkRelations(table, company, language, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
@@ -785,7 +801,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Calculate FlowFields for response
 	table.CalcFields(table.GetFlowFields()...)
 
-	response := apitypes.NewSuccessResponse(table.ToMap())
+	response := apitypes.NewSuccessResponse(ftables.PublicMap(table))
 	return c.JSON(response)
 }
 
@@ -844,6 +860,18 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 
 	response := apitypes.NewSuccessResponse(nil)
 	return c.JSON(response)
+}
+
+// rejectSensitiveFields returns an error when data sets a sensitive field (YAML sensitive:
+// true). Such fields are set by the server only (User.password_hash from the virtual
+// "password" field). A null value (an unchanged field) is allowed.
+func rejectSensitiveFields(table ftables.Table, data map[string]interface{}) error {
+	for name, value := range data {
+		if value != nil && ftables.IsSensitive(table, name) {
+			return fmt.Errorf("field %s cannot be set", name)
+		}
+	}
+	return nil
 }
 
 // validateChangedFields runs ValidateField (BC/NAV VALIDATE) for each field in data whose
@@ -915,7 +943,7 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 
 	table.InitRecord()
 
-	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
+	return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 }
 
 // ValidateField validates a single field value (BC/NAV VALIDATE).
@@ -950,6 +978,11 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
+	// Sensitive fields can neither be validated (set) nor hydrated through the API
+	if ftables.IsSensitive(table, req.Field) || rejectSensitiveFields(table, req.Record) != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+
 	// Hydrate from the in-progress record (plain assignment, no triggers)
 	if req.Record != nil {
 		table.FromMap(req.Record)
@@ -968,7 +1001,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		return c.JSON(apitypes.APIResponse{Success: false, Error: err.Error()})
 	}
 
-	return c.JSON(apitypes.NewSuccessResponse(table.ToMap()))
+	return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 }
 
 // modifyInTransaction runs table.Modify(true) in a database transaction (committed when it

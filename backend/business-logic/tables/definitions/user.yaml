@@ -33,6 +33,7 @@ table:
       db_name: password_hash
       caption: Password Hash
       description: Hashed password (bcrypt)
+      sensitive: true  # never sent by the API; set through the virtual "password" field
 
     - name: language
       type: types.Code
