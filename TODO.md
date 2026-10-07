@@ -324,6 +324,12 @@ Open follow-ups:
       no primary key fields — both fixed.
 - [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
       exists (BC: posted ledger entries are not editable).
+- [x] New User (modal card) failed with "User number cannot be empty" on Windows (Chrome and Edge):
+      the browser's password manager filled the saved login into the card's password field before a
+      User ID was typed, and the card inserted at once, then blocked the modal. Cards (modal and page)
+      now insert a new record only when every primary key field has a value (`hasPrimaryKey`); record
+      inputs set `autocomplete` (`new-password` for masked fields, `off` otherwise). Fixed in 0.1.82,
+      confirmed on the demo environment.
 - [ ] List cells ignore per-field `editable: false` except for paste and F8 (typing/F2 still edit).
 - [x] Lookups on demand for large related tables (> 200 rows): `lazy_url` + `GET …/lookup/:field`
       with server search; relation values checked on insert/modify. demo04 Customer Ledger Entries
@@ -454,6 +460,11 @@ From `docs/migrations.md`.
 Gaps in the production setup (`docker-compose.prod.yml`), found while recovering a server after
 an OS upgrade and reboot.
 
+- [ ] **CI: the frontend Docker image build sometimes hangs.** The "Build and push frontend" step
+      (multi-arch, arm64 emulated with QEMU) hung in the 0.1.68 release (cancelled after GitHub's 6 h
+      job limit) and in 0.1.82 (cancelled after ~45 min; re-running only the Docker job finished in
+      4 min). Add `timeout-minutes: 30` to the Docker job so a hang fails fast and can be re-run; if it
+      keeps happening, build arm64 on a native runner instead of under QEMU.
 - [ ] **Auto-start after reboot** — no service in `docker-compose.prod.yml` has a `restart:` policy,
       so after a host reboot the stack stays down until someone runs `up -d` by hand. Add
       `restart: unless-stopped` to `db`, `backend`, `frontend` and `nginx`.
@@ -491,7 +502,7 @@ below are retained as reference.
 
 Not yet done (follow-ups): localize notification email via i18n; per-job leases (currently one global
 `_scheduler_lock`); "In Process" start-entry lifecycle (codeunits still self-log their entries);
-encrypt the SMTP password at rest (masked in the API since 0.1.8x, still stored in plain text).
+encrypt the SMTP password at rest (masked in the API since 0.1.81, still stored in plain text).
 
 ### Goal
 Run `Job_Queue` records automatically on a recurring schedule (Minutes / Hourly / Daily / Weekly /
