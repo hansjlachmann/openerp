@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.82](https://github.com/hansjlachmann/openerp/compare/v0.1.81...v0.1.82) (2026-10-07)
+
+
+### Bug Fixes
+
+* insert a new card record only once its key is filled in ([b67c225](https://github.com/hansjlachmann/openerp/commit/b67c22570dcac071efde1da87cc714c982ca998e))
+
 ## [0.1.81](https://github.com/hansjlachmann/openerp/compare/v0.1.80...v0.1.81) (2026-10-07)
 
 
