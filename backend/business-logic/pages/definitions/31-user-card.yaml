@@ -50,11 +50,6 @@ page:
             caption: Password
             importance: Promoted
 
-          - source: password_hash
-            editable: false
-            visible: false
-            caption: Password Hash
-
       - name: Timestamps
         caption: Timestamps
         fields:

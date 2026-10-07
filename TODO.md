@@ -340,11 +340,15 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       **length** (SQLite ignores `TEXT(n)`), **required/not-empty**, and range at validate
       time. Clean fix: generate these checks into the `OnValidate` stubs from YAML metadata
       (tablegen change).
-- [ ] **Security: `password_hash` is returned by the API.** `/api/tables/User/list`, `/card/:id` and
-      the insert/modify responses include the bcrypt `password_hash` (generic `ToMap()`), so anyone
-      with read permission on User can fetch every user's hash for offline cracking. Strip it from
-      all User responses (e.g. a per-table hidden/sensitive-field flag in YAML honored by `ToMap`
-      consumers) — pairs with the SMTP password masking item.
+- [x] **Security: `password_hash` was returned by the API.** Fixed with a YAML field flag
+      `sensitive: true` (tablegen → `FieldInfo.Sensitive`): the table API strips sensitive fields from
+      every record it returns (`ftables.PublicMap`), rejects them in filters, sort and search
+      (`IsQueryableColumn` — a `LIKE` search on the hash would reveal it piece by piece) and in
+      insert/modify/validate payloads (the hash could be overwritten with a known one); tablegen rejects
+      relations whose dropdown shows one. The password is still set through the virtual `password` field.
+- [ ] SMTP password (`SMTP_Setup.password`) is still returned in plain text to anyone who can read
+      SMTP Setup. It cannot simply be `sensitive` (the admin must be able to set it): needs a write-only
+      field (accepted on modify, never returned, the card shows "•••• set") — see the SMTP item below.
 - [ ] HTTPS/TLS support
 - [ ] API versioning
 - [ ] WebSocket support for live updates

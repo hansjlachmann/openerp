@@ -72,6 +72,9 @@ type Field struct {
 	// FlowFilter (NAV FieldClass FlowFilter): not stored; holds a filter expression the
 	// user sets (e.g. Date Filter), applied by FlowFields with a flow filter of type "filter"
 	FlowFilter bool `yaml:"flow_filter"`
+	// Sensitive: never sent by the table API (e.g. User.password_hash), and not usable in
+	// filters, sorting, search or lookup columns; the API cannot set it either
+	Sensitive bool `yaml:"sensitive"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -229,6 +232,10 @@ func main() {
 			failed = true
 		}
 		if err := validateFlowFilters(p.def, byStruct); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
+			failed = true
+		}
+		if err := validateSensitiveFields(p.def, byStruct); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
 			failed = true
 		}
@@ -521,6 +528,42 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 			}
 			ff.FilterField = upperFirst(filter.Name)
 			ff.Kind, _ = flowFilterKind(filter)
+		}
+	}
+	return nil
+}
+
+// validateSensitiveFields checks that sensitive fields are plain stored fields (not a key,
+// FlowField or FlowFilter) and that no table relation shows one of another table in its
+// dropdown — the dropdown rows would send it to the client.
+func validateSensitiveFields(def *TableDef, byStruct map[string]*TableDef) error {
+	for _, f := range def.Table.Fields {
+		if f.Sensitive && (f.PrimaryKey || f.FlowField || f.FlowFilter) {
+			return fmt.Errorf("sensitive field %q cannot be a primary key, FlowField or FlowFilter", f.Name)
+		}
+	}
+	for _, f := range def.Table.Fields {
+		rel := f.TableRelation
+		if rel == nil {
+			continue
+		}
+		related, ok := byStruct[toPascalCase(rel.Table)]
+		if !ok {
+			continue
+		}
+		shown := []string{rel.Field, rel.DisplayField}
+		for _, col := range rel.LookupColumns {
+			shown = append(shown, col.Source)
+		}
+		for _, rf := range related.Table.Fields {
+			if !rf.Sensitive {
+				continue
+			}
+			for _, name := range shown {
+				if name == rf.Name {
+					return fmt.Errorf("table relation of %s shows sensitive field %s.%s", f.Name, related.Table.Name, rf.Name)
+				}
+			}
 		}
 	}
 	return nil
@@ -3556,6 +3599,9 @@ func (t *{{ .BaseStructName }}) GetFields() []tables.FieldInfo {
 			Editable:   {{ not .PrimaryKey }},
 			PrimaryKey: {{ .PrimaryKey }},
 			FlowField:  {{ .FlowField }},
+{{- if .Sensitive }}
+			Sensitive:  true,
+{{- end }}
 		},
 {{- end }}
 	}
