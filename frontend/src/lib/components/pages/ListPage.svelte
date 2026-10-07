@@ -33,7 +33,7 @@
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -1831,6 +1831,13 @@
 			return false;
 		}
 
+		// A new record is inserted only once its primary key is filled in (Record Entry rule):
+		// until then field changes stay on the form (e.g. a browser filling the password field
+		// of a new User before the User ID is typed must not insert a record without key)
+		if (modalIsNewRecord && !hasPrimaryKey(savedRecord, primaryKeyFieldsList)) {
+			return false;
+		}
+
 		// Save currently focused element before any state changes
 		const activeElement = document.activeElement;
 		const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
@@ -2581,6 +2588,7 @@
 									{:else}
 										<input
 											type={getCellInputType(field)}
+											autocomplete={field.masked ? 'new-password' : 'off'}
 											data-row={index}
 											data-col={colIndex}
 											class="edit-cell-input"

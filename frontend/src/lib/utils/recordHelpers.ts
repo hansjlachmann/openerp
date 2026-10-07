@@ -240,6 +240,17 @@ export function shouldInsertNewRecord(
 }
 
 /**
+ * Whether every primary key field of a record has a value. A new record on a card (modal or
+ * page) is only INSERTed once it does: inserting earlier fails with "… cannot be empty" —
+ * e.g. when a browser's password manager fills the User card's password field before the
+ * user typed a User ID. Values entered before stay on the form and go with the insert.
+ */
+export function hasPrimaryKey(record: Record<string, any>, primaryKeyFields: string[]): boolean {
+	// No key metadata: leave the decision to the backend (it rejects an empty key)
+	return primaryKeyFields.every(f => String(record[f] ?? '').trim() !== '');
+}
+
+/**
  * Check if a record has changed from its original state
  * Handles type coercion for number/string comparisons
  */

@@ -212,9 +212,12 @@
 				</select>
 			{:else}
 				<!-- Regular text field -->
+				<!-- autocomplete: browsers must not fill saved logins/addresses into record fields
+				     ("new-password" is the value Chrome/Edge respect for password inputs) -->
 				<input
 					id={field.source}
 					type={inputType()}
+					autocomplete={field.masked ? 'new-password' : 'off'}
 					class={cn('input', fieldStyle, error ? 'input-error' : '')}
 					value={value ?? ''}
 					{tabindex}
