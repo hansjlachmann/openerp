@@ -75,6 +75,10 @@ type Field struct {
 	DrilldownFilterValue string `yaml:"drilldown_filter_value,omitempty" json:"drilldown_filter_value,omitempty"` // Field on current record for filter value
 	PrimaryKey           bool   `yaml:"-" json:"primary_key,omitempty"`                                           // Is this the primary key field (populated at runtime)
 	Required             bool   `yaml:"-" json:"required,omitempty"`                                              // Is this field required (populated at runtime)
+	// Masked (BC ExtendedDatatype Masked): shown as a password input, never in clear text.
+	// Set in the page YAML (e.g. the User card's virtual password field) or taken from the
+	// table field's masked: true
+	Masked bool `yaml:"masked,omitempty" json:"masked,omitempty"`
 }
 
 // Action represents a page action/button

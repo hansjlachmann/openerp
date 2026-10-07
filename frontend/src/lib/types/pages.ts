@@ -57,6 +57,7 @@ export interface Field {
 	drilldown_filter_value?: string;
 	primary_key?: boolean;
 	required?: boolean;
+	masked?: boolean; // write-only secret (BC Masked): password input, value never shown
 }
 
 export interface Action {

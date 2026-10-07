@@ -672,7 +672,9 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	// Sensitive fields (e.g. password_hash) cannot be set through the API
+	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
+	// sent back as its placeholder keeps its stored value
+	ftables.DropMaskedPlaceholders(table, data)
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -769,7 +771,9 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	// Sensitive fields (e.g. password_hash) cannot be set through the API
+	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
+	// sent back as its placeholder keeps its stored value
+	ftables.DropMaskedPlaceholders(table, data)
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -997,7 +1001,13 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 
 	// Hydrate from the in-progress record (plain assignment, no triggers)
 	if req.Record != nil {
+		ftables.DropMaskedPlaceholders(table, req.Record)
 		table.FromMap(req.Record)
+	}
+
+	// A masked field sent back as its placeholder is unchanged: nothing to validate
+	if ftables.IsMasked(table, req.Field) && req.Value == ftables.MaskedValue {
+		return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 	}
 
 	// Validate field (runs OnValidate trigger)

@@ -14,6 +14,7 @@ import (
 type TableMetadata struct {
 	primaryKeys    map[string][]string          // table name -> primary key field names (supports composite keys)
 	requiredFields map[string]map[string]bool   // table name -> field name -> required
+	maskedFields   map[string]map[string]bool   // table name -> field name -> masked (write-only secret)
 	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
 	mu             sync.RWMutex
 }
@@ -32,6 +33,7 @@ type tableFieldDef struct {
 	Type       string `yaml:"type"`
 	PrimaryKey bool   `yaml:"primary_key"`
 	Required   bool   `yaml:"required"`
+	Masked     bool   `yaml:"masked"`
 }
 
 var (
@@ -45,6 +47,7 @@ func GetTableMetadata() *TableMetadata {
 		tableMetadata = &TableMetadata{
 			primaryKeys:    make(map[string][]string),
 			requiredFields: make(map[string]map[string]bool),
+			maskedFields:   make(map[string]map[string]bool),
 			fieldTypes:     make(map[string]map[string]string),
 		}
 		if err := tableMetadata.Load(); err != nil {
@@ -99,6 +102,7 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 	// Find all primary key fields, required fields, and field types
 	var pkFields []string
 	reqFields := make(map[string]bool)
+	maskFields := make(map[string]bool)
 	fTypes := make(map[string]string)
 	for _, field := range tableDef.Table.Fields {
 		if field.PrimaryKey {
@@ -106,6 +110,9 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		}
 		if field.Required {
 			reqFields[field.Name] = true
+		}
+		if field.Masked {
+			maskFields[field.Name] = true
 		}
 		if field.Type != "" {
 			fTypes[field.Name] = field.Type
@@ -119,6 +126,12 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 	}
 	if len(fTypes) > 0 {
 		tm.fieldTypes[metadataKey(tableDef.Table.Name)] = fTypes
+	}
+	if len(maskFields) > 0 {
+		if tm.maskedFields == nil {
+			tm.maskedFields = make(map[string]map[string]bool)
+		}
+		tm.maskedFields[metadataKey(tableDef.Table.Name)] = maskFields
 	}
 
 	return nil
@@ -149,6 +162,13 @@ func (tm *TableMetadata) GetFieldType(tableName, fieldName string) string {
 		return types[fieldName]
 	}
 	return ""
+}
+
+// IsFieldMasked returns whether a field of a table is masked (YAML masked: true)
+func (tm *TableMetadata) IsFieldMasked(tableName, fieldName string) bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.maskedFields[metadataKey(tableName)][fieldName]
 }
 
 // IsFieldRequired returns whether a field is required for a table

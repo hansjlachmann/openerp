@@ -101,6 +101,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				if tableMeta.IsFieldRequired(pageDef.Page.SourceTable, field.Source) {
 					field.Required = true
 				}
+				if tableMeta.IsFieldMasked(pageDef.Page.SourceTable, field.Source) {
+					field.Masked = true
+				}
 			}
 		}
 
@@ -117,6 +120,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				}
 				if tableMeta.IsFieldRequired(pageDef.Page.SourceTable, field.Source) {
 					field.Required = true
+				}
+				if tableMeta.IsFieldMasked(pageDef.Page.SourceTable, field.Source) {
+					field.Masked = true
 				}
 			}
 		}

@@ -355,9 +355,14 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       (`IsQueryableColumn` — a `LIKE` search on the hash would reveal it piece by piece) and in
       insert/modify/validate payloads (the hash could be overwritten with a known one); tablegen rejects
       relations whose dropdown shows one. The password is still set through the virtual `password` field.
-- [ ] SMTP password (`SMTP_Setup.password`) is still returned in plain text to anyone who can read
-      SMTP Setup. It cannot simply be `sensitive` (the admin must be able to set it): needs a write-only
-      field (accepted on modify, never returned, the card shows "•••• set") — see the SMTP item below.
+- [x] SMTP password (`SMTP_Setup.password`) was returned in plain text. Now **masked** (YAML
+      `masked: true`, BC ExtendedDatatype Masked): write-only — the API sends `••••••••` when set, the
+      placeholder sent back keeps the stored value, "" clears it, no filter/sort/search on it. Every
+      masked field (table YAML, or page YAML for the User card's virtual password) renders as a
+      password input on cards, list cells and modal cards (no more `field.source === 'password'`).
+- [ ] The SMTP password is still **stored** in plain text in the database (anyone with database
+      access or a backup can read it). Encrypt masked fields at rest with a server key (not
+      `JWT_SECRET`; e.g. `SECRETS_KEY`, AES-GCM), decrypted only by the mailer.
 - [ ] HTTPS/TLS support
 - [ ] API versioning
 - [ ] WebSocket support for live updates
@@ -486,7 +491,7 @@ below are retained as reference.
 
 Not yet done (follow-ups): localize notification email via i18n; per-job leases (currently one global
 `_scheduler_lock`); "In Process" start-entry lifecycle (codeunits still self-log their entries);
-mask/encrypt the SMTP password (currently stored and rendered in plain text).
+encrypt the SMTP password at rest (masked in the API since 0.1.8x, still stored in plain text).
 
 ### Goal
 Run `Job_Queue` records automatically on a recurring schedule (Minutes / Hourly / Daily / Weekly /
@@ -637,7 +642,7 @@ and New/Delete). The framework handles the rest:
   that accept an empty id for setup tables; the frontend api client omits the id segment when blank.
 
 Works for global or company-scoped tables. First consumer: `SMTP_Setup` (table 409). Follow-up:
-mask/encrypt setup fields flagged sensitive (e.g. the SMTP password) instead of plain text.
+encrypt masked setup fields (e.g. the SMTP password) at rest — the API already masks them.
 
 ---
 

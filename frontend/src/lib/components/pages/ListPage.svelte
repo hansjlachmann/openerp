@@ -138,8 +138,9 @@
 	}
 
 	/** Get the HTML input type for a cell-editing field */
-	function getCellInputType(fieldSource: string): string {
-		const ft = fieldTypes[fieldSource];
+	function getCellInputType(field: Field): string {
+		if (field.masked) return 'password'; // secret: typed without showing it
+		const ft = fieldTypes[field.source];
 		if (isDateType(ft)) return 'date';
 		if (isDateTimeType(ft)) return 'datetime-local';
 		return 'text';
@@ -2579,7 +2580,7 @@
 										</div>
 									{:else}
 										<input
-											type={getCellInputType(field.source)}
+											type={getCellInputType(field)}
 											data-row={index}
 											data-col={colIndex}
 											class="edit-cell-input"

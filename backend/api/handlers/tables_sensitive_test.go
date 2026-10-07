@@ -13,6 +13,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -154,5 +155,79 @@ func TestSensitiveFieldNotWritable(t *testing.T) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(storedHash(t, db, "HANS")), []byte("new-secret-789")); err != nil {
 		t.Errorf("new password not stored: %v", err)
+	}
+}
+
+// A masked field (SMTP password) is write-only: set through the API, sent back only as
+// MaskedValue; the placeholder sent back keeps it, "" clears it; it cannot be queried.
+func TestMaskedFieldWriteOnly(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := (&tables.SMTPSetup{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Get("/api/tables/:table/list", h.ListRecords)
+	app.Put("/api/tables/:table/modify", h.ModifyRecord)
+	app.Post("/api/tables/:table/validate", h.ValidateField)
+
+	stored := func() string {
+		var p string
+		if err := db.QueryRow(`SELECT password FROM "SMTP_Setup"`).Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	listed := func() interface{} {
+		_, out := getJSON(t, app, "/api/tables/SMTP_Setup/list") // creates the setup record
+		recs := out["data"].(map[string]interface{})["records"].([]interface{})
+		return recs[0].(map[string]interface{})["password"]
+	}
+
+	if got := listed(); got != "" {
+		t.Errorf("empty password listed as %q", got)
+	}
+	if status, out := sendJSON(t, app, "PUT", "/api/tables/SMTP_Setup/modify", `{"password":"s3cret!","smtp_server":"mail.example.com"}`); status != 200 {
+		t.Fatalf("set password: %d %v", status, out["error"])
+	} else if out["data"].(map[string]interface{})["password"] != ftables.MaskedValue {
+		t.Errorf("modify response password = %v, want the placeholder", out["data"].(map[string]interface{})["password"])
+	}
+	if stored() != "s3cret!" {
+		t.Fatalf("stored password = %q", stored())
+	}
+	if got := listed(); got != ftables.MaskedValue {
+		t.Errorf("listed password = %q, want the placeholder", got)
+	}
+
+	// The whole record sent back (placeholder included) keeps the password
+	if status, _ := sendJSON(t, app, "PUT", "/api/tables/SMTP_Setup/modify", `{"password":"`+ftables.MaskedValue+`","smtp_server":"smtp.example.com"}`); status != 200 || stored() != "s3cret!" {
+		t.Errorf("placeholder sent back: status %d, stored %q — want the old password kept", status, stored())
+	}
+	if _, out := sendJSON(t, app, "POST", "/api/tables/SMTP_Setup/validate", `{"field":"password","value":"`+ftables.MaskedValue+`","record":{"password":"`+ftables.MaskedValue+`"}}`); out["success"] != true {
+		t.Errorf("validate placeholder: %v", out["error"])
+	}
+
+	// Not queryable: a filter or sort would reveal it
+	for _, target := range []string{
+		"/api/tables/SMTP_Setup/list?sort_by=password",
+		"/api/tables/SMTP_Setup/list?filters=" + url.QueryEscape(`[{"field":"password","expression":"s*"}]`),
+		"/api/tables/SMTP_Setup/list?search=s3&search_fields=" + url.QueryEscape(`["password"]`),
+	} {
+		if status, _ := getJSON(t, app, target); status != 400 {
+			t.Errorf("%s: status %d, want 400", target, status)
+		}
+	}
+
+	// "" clears it
+	if status, _ := sendJSON(t, app, "PUT", "/api/tables/SMTP_Setup/modify", `{"password":""}`); status != 200 || stored() != "" {
+		t.Errorf("clear: status %d, stored %q", status, stored())
 	}
 }
