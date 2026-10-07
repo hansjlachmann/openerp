@@ -235,14 +235,9 @@ func (t *UserRoleBase) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 // BC/NAV-style Record Methods
 // ========================================
 
-// Init initializes a new UserRole record with database context
-// The db parameter can be either *sql.DB or *sql.Tx, allowing operations
-// to work seamlessly with or without explicit transactions
-func (t *UserRoleBase) Init(db database.Executor, company string) {
-	t.InitWithDBType(db, company, database.DBTypeSQLite)
-}
-
-// InitWithDBType initializes a new UserRole record with database context and type
+// InitWithDBType initializes a new UserRole record with database context and type.
+// db can be *sql.DB or *sql.Tx. There is no Init without the type: the type decides the SQL
+// placeholders, and a default (SQLite) silently broke code on PostgreSQL.
 func (t *UserRoleBase) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company

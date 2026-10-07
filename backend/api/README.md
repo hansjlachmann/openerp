@@ -244,7 +244,7 @@ case "YourTable":
 // Add list function
 func (h *TablesHandler) listYourTable(company, sortBy, sortOrder string) ([]map[string]interface{}, error) {
     var record tables.YourTable
-    record.Init(h.db, company)
+    record.InitWithDBType(h.db, company, h.dbType)
 
     if sortBy != "" {
         record.SetCurrentKey(sortBy)
