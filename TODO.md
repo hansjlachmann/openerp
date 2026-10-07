@@ -8,6 +8,26 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## ⭐ First priority (next session, from 2026-10-07)
+
+- [ ] **Demo (k3s, repo `pi-cluster`): add `jwt-secret` to `openerp-secret` with sops**, then restart the
+      backend. Until then every backend restart logs all users out (log: "No JWT_SECRET set"). PR #99
+      already wired the env var (`optional: true`). Steps, in the pi-cluster checkout:
+      1. `git pull`; `sops decrypt apps/staging/openerp/openerp-secret.yaml > /dev/null && echo "sops ok"`
+      2. `B64=$(openssl rand -hex 32 | tr -d '\n' | base64 | tr -d '\n')`
+         `sops set apps/staging/openerp/openerp-secret.yaml '["data"]["jwt-secret"]' "\"$B64\""`; `unset B64`
+      3. Check: `grep -c "jwt-secret: ENC\[" apps/staging/openerp/openerp-secret.yaml` → 1;
+         `sops decrypt … | grep -c "jwt-secret:"` → 1; `git diff --stat` → only that file
+      4. Commit + push (or PR), `flux reconcile kustomization apps --with-source`
+      5. `kubectl -n openerp rollout restart deploy/openerp-backend`; logs must no longer show "No JWT_SECRET"
+      6. Log in, restart the backend again, reload: still logged in
+- [ ] **Production: upgrade 0.1.74 → 0.1.84** and switch to `prod.env` / `scripts/prod.sh` (steps:
+      `docs/operations.md`, "Switching an existing installation"; backup first; `APP_VERSION=0.1.84`,
+      new `JWT_SECRET`). Then the backup cron, and optionally rename the company with the invalid
+      technical name (keep its Display Name).
+
+---
+
 ## Feature: SIFT (Sum Index Fields) — Phase 1: foundation ✅ DONE
 
 Implemented as planned below (`backend/foundation/sift`, tablegen, `SyncKeys`); first key: Customer
