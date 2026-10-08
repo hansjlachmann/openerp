@@ -727,6 +727,12 @@
 		focusCellSelectedElement(row, col);
 	}
 
+	// A repeater field with editable: false, or a FlowField (computed), can be selected and
+	// copied, never changed
+	function isCellEditable(field: Field | undefined): boolean {
+		return !!field && field.editable !== false && !(page.page.flow_fields ?? []).includes(field.source);
+	}
+
 	// Enter cell-editing state from cell-selected
 	function enterCellEditing(clearContent: boolean = false, typedChar?: string) {
 		if (cellState !== 'cell-selected') return;
@@ -734,7 +740,7 @@
 		const cols = visibleColumns();
 		const field = cols[currentCellCol];
 		const record = displayRecords[currentCellRow];
-		if (!field || !record) return;
+		if (!field || !record || !isCellEditable(field)) return;
 
 		// Snapshot current value for Escape revert
 		cellEditSnapshot = record[field.source];
@@ -1201,7 +1207,7 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
-				if (isBoolean) {
+				if (isBoolean && isCellEditable(field)) {
 					// Toggle checkbox + move down
 					record[field.source] = !record[field.source];
 					editableRecords = [...editableRecords];
@@ -1222,7 +1228,7 @@
 				break;
 			case 'Delete':
 				event.preventDefault();
-				if (!isBoolean) {
+				if (!isBoolean && isCellEditable(field)) {
 					record[field.source] = '';
 					editableRecords = [...editableRecords];
 				}
@@ -1237,6 +1243,7 @@
 				// Space on boolean: toggle checkbox
 				if (isBoolean) {
 					event.preventDefault();
+					if (!isCellEditable(field)) break;
 					record[field.source] = !record[field.source];
 					editableRecords = [...editableRecords];
 					handleCellBlur(record, rowIndex, field.source);
@@ -2642,6 +2649,7 @@
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
 											<input type="checkbox" checked={record[field.source]}
+												disabled={!isCellEditable(field)}
 												onclick={() => {
 													record[field.source] = !record[field.source];
 													handleCellBlur(record, index);
@@ -2659,17 +2667,19 @@
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
 											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{#if lookups[field.source]?.rows?.length}{formatLookupValue(record[field.source], lookups[field.source])}{:else}{formatCellValue(record[field.source], field.source)}{/if}</span></span>
-											<!-- svelte-ignore a11y_click_events_have_key_events -->
-											<span
-												class="cell-selected-lookup-arrow"
-												onclick={(e) => {
-													e.stopPropagation();
-													enterCellEditing(false);
-												}}
-												role="button"
-												tabindex="-1"
-												aria-label="Open lookup"
-											>▼</span>
+											{#if isCellEditable(field)}
+												<!-- svelte-ignore a11y_click_events_have_key_events -->
+												<span
+													class="cell-selected-lookup-arrow"
+													onclick={(e) => {
+														e.stopPropagation();
+														enterCellEditing(false);
+													}}
+													role="button"
+													tabindex="-1"
+													aria-label="Open lookup"
+												>▼</span>
+											{/if}
 										</div>
 									{:else if options[field.source]}
 										<!-- Cell-selected with option: show value + dropdown arrow -->
@@ -2682,17 +2692,19 @@
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
 											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{formatOptionValue(record[field.source], options[field.source])}</span></span>
-											<!-- svelte-ignore a11y_click_events_have_key_events -->
-											<span
-												class="cell-selected-lookup-arrow"
-												onclick={(e) => {
-													e.stopPropagation();
-													enterCellEditing(false);
-												}}
-												role="button"
-												tabindex="-1"
-												aria-label="Open options"
-											>▼</span>
+											{#if isCellEditable(field)}
+												<!-- svelte-ignore a11y_click_events_have_key_events -->
+												<span
+													class="cell-selected-lookup-arrow"
+													onclick={(e) => {
+														e.stopPropagation();
+														enterCellEditing(false);
+													}}
+													role="button"
+													tabindex="-1"
+													aria-label="Open options"
+												>▼</span>
+											{/if}
 										</div>
 									{:else}
 										<div
@@ -2716,7 +2728,7 @@
 										onclick={() => handleCellClick(index, colIndex)}
 									>
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
-											{#if page.page.editable}
+											{#if page.page.editable && isCellEditable(field)}
 												<input type="checkbox" checked={record[field.source]}
 													onclick={async (e) => {
 														e.stopPropagation();
