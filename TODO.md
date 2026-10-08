@@ -781,10 +781,10 @@ Follow-ups (not done):
       fix are still orphaned in `$User_Preferences`; clean them up once if it matters.
 - [ ] Init endpoint filter context — seed a new row from the list's current filters (BC seeds a
       journal line from its batch). Pass filters when the first journal page needs it.
-- [ ] Editing a primary key cell of a record loaded from the database: `getRecordKey` keys such
-      rows by their PK values (only new rows use `_tempId`), so each keystroke changes the row's key
-      and Svelte may re-create the row mid-edit (focus loss). Not yet reproduced — verify, then key
-      editable rows by `_key` (their persisted key) instead.
+- [x] Editing a primary key cell of a record loaded from the database: `getRecordKey` keyed such
+      rows by their PK values, so each keystroke changed the row's key. Already fixed: editable rows
+      carry `_key` (`toEditableRecords`) and `getRecordKey` uses it before the field values
+      (`utils/recordHelpers.ts`, unit-tested); renaming in the list verified by hand on 0.1.85.
 - [ ] Known deviation from BC: picking a value in a `LookupDropdown` saves when focus leaves the cell
       (CLAUDE.md "LookupDropdown Select vs Blur" ABSOLUTE RULE), while BC validates — and inserts —
       on the pick itself (screenshot 04). Kept on purpose; revisit if it matters.
