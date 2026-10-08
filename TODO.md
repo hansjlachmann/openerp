@@ -23,6 +23,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `scripts/backup.sh`) installed and tested.
 - [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
 - [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
+- [ ] **Production: set `NAV_PROXY_URL` in `prod.env` before upgrading past 0.1.84** — the NAV proxy
+      address is no longer built in (`docs/operations.md`, "NAV report proxy"); without it NAV reports fail.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
@@ -509,6 +511,13 @@ an OS upgrade and reboot.
       the server and `git pull` no longer conflicts.
 - [x] Switch production to `prod.env` and set up the backup cron (2026-10-08; the demo runs on k3s, not
       compose). The off-host copy is open under "First priority".
+- [ ] **(Medium priority) Remove installation-specific details from the git history.** Older commits
+      (code and two commit messages) contain details of a customer installation; the code no longer
+      does (`NAV_PROXY_URL`). Rewrite with `git filter-repo` (replace-text + replace-message), force-push
+      `main`, the affected tags and branches; then reset every clone (`git fetch && git reset --hard
+      origin/main`), ask GitHub Support to purge cached commits and PR refs, and fix the commit links in
+      `CHANGELOG.md`. The released backend images up to 0.1.84 contain the same detail: once production
+      runs a newer release, delete those image versions (or make the package private).
 - [ ] **(Low priority) Production: renew the TLS certificate before it expires** — replace the
       certificate and key in `certs/` on the server, then `scripts/prod.sh restart nginx`.
 
