@@ -8,6 +8,7 @@
 	import { onMount } from 'svelte';
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
+	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import { t, MODAL } from '$lib/services/i18n.svelte';
 
 	interface Props {
@@ -25,6 +26,8 @@
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		onclearerror?: () => void;
+		// The list's filters, search and sort: record navigation follows the list
+		navigationQuery?: NavigationQuery;
 	}
 
 	let {
@@ -41,7 +44,8 @@
 		onclose,
 		onaction,
 		onsave,
-		onclearerror
+		onclearerror,
+		navigationQuery
 	}: Props = $props();
 
 	// Get primary key field name from page definition
@@ -115,7 +119,7 @@
 	async function loadRecordIds() {
 		try {
 			// Use lightweight IDs-only endpoint
-			recordIds = await api.getRecordIDs(page.page.source_table);
+			recordIds = await api.getRecordIDs(page.page.source_table, navigationQuery);
 
 			// Find current record index
 			const currentRecordId = getRecordId(record, primaryKeyField);
@@ -131,7 +135,7 @@
 	// Handle pop-out to new window
 	function handlePopOut() {
 		const recordId = getRecordId(record, primaryKeyField);
-		const url = `/pages/${page.page.id}${recordId ? `/${recordId}` : ''}`;
+		const url = withNavigationQuery(`/pages/${page.page.id}${recordId ? `/${recordId}` : ''}`, navigationQuery);
 		window.open(url, '_blank', 'width=1200,height=800');
 		onclose?.();
 	}

@@ -1,3 +1,4 @@
+import type { NavigationQuery } from '$lib/utils/recordNavigation';
 import type {
 	ApiResponse,
 	ListResponse,
@@ -97,8 +98,10 @@ export const api = {
 		return handleApiResponse(response, 'load lookup rows');
 	},
 
-	async getRecordIDs(tableName: string, sortBy?: string): Promise<string[]> {
-		const url = `${API_BASE}/tables/${tableName}/ids${sortBy ? '?sort_by=' + sortBy : ''}`;
+	// Keys of the records in list order; with the list's filters, search and sort (card navigation)
+	async getRecordIDs(tableName: string, query?: NavigationQuery): Promise<string[]> {
+		const params = buildQueryString(query);
+		const url = `${API_BASE}/tables/${tableName}/ids${params ? '?' + params : ''}`;
 		const response = await fetch(url);
 		const data = await handleApiResponse<{ ids: string[] }>(response, `get ${tableName} IDs`);
 		return data.ids;
