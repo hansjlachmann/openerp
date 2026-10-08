@@ -1882,7 +1882,9 @@
 
 		modalSaving = true;
 		try {
-			const recordId = getRecordId(savedRecord, primaryKeyField, primaryKeyFieldsList);
+			// An existing record is addressed by its key as loaded: the form may hold a changed
+			// key (rename, BC/NAV), which the record does not have until this modify saves it
+			const recordId = getRecordId(modalIsNewRecord ? savedRecord : modalOriginalRecord, primaryKeyField, primaryKeyFieldsList);
 
 			if (modalIsNewRecord) {
 				// Insert new record
@@ -2850,6 +2852,9 @@
 		onsave={handleModalSave}
 		onclearerror={handleClearError}
 		navigationQuery={cardNavigationQuery}
+		onnavigate={(rec) => {
+			modalOriginalRecord = deepCopy(rec);
+		}}
 	/>
 {/if}
 

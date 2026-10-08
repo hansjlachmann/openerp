@@ -5,7 +5,7 @@
 	import type { PageDefinition } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { api } from '$lib/services/api';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
@@ -28,6 +28,8 @@
 		onclearerror?: () => void;
 		// The list's filters, search and sort: record navigation follows the list
 		navigationQuery?: NavigationQuery;
+		// Moved to another record (Previous/Next): it is the saved state to compare edits with
+		onnavigate?: (record: Record<string, any>) => void;
 	}
 
 	let {
@@ -45,7 +47,8 @@
 		onaction,
 		onsave,
 		onclearerror,
-		navigationQuery
+		navigationQuery,
+		onnavigate
 	}: Props = $props();
 
 	// Get primary key field name from page definition
@@ -75,13 +78,22 @@
 		}
 	});
 
-	// Update current record index when record changes
+	// Update current record index when record changes. lastRecordId is the key the form showed
+	// before: a key changed directly from the record's own (rename, BC/NAV) keeps its place in
+	// the navigation; a key typed into a new, blank record does not.
+	let lastRecordId = '';
 	$effect(() => {
 		if (recordIdsLoaded && record) {
-			const currentRecordId = getRecordId(record, primaryKeyField);
-			if (currentRecordId) {
-				currentRecordIndex = recordIds.indexOf(currentRecordId);
+			const currentRecordId = getRecordId(record, primaryKeyField) ?? '';
+			const ids = untrack(() => recordIds);
+			const previous = untrack(() => currentRecordIndex);
+			const index = currentRecordId ? ids.indexOf(currentRecordId) : -1;
+			if (currentRecordId && index === -1 && previous >= 0 && ids[previous] === lastRecordId) {
+				recordIds = ids.map((id, i) => (i === previous ? currentRecordId : id));
+			} else if (currentRecordId) {
+				currentRecordIndex = index;
 			}
+			lastRecordId = currentRecordId;
 		}
 	});
 
@@ -149,6 +161,8 @@
 	async function navigateToRecord(recordId: string) {
 		try {
 			const newRecord = await api.getRecord(page.page.source_table, recordId);
+			// Before the form shows it: an auto-save must compare with this record, not the previous
+			onnavigate?.(newRecord);
 			record = newRecord;
 			currentRecordIndex = recordIds.indexOf(recordId);
 		} catch (err) {

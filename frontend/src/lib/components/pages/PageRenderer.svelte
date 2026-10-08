@@ -378,7 +378,14 @@
 		try {
 			if (isExistingRecord && currentRecordId) {
 				// Update existing record (only if we successfully loaded an existing record)
-				await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
+				const modified = await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
+				// Renamed (key changed, BC/NAV): address the record by its new key from now on
+				const newRecordId = getRecordId(modified, primaryKeyField, primaryKeyFieldsList);
+				if (newRecordId && newRecordId !== currentRecordId) {
+					recordIds = recordIds.map((id) => (id === currentRecordId ? newRecordId : id));
+					currentRecordId = newRecordId;
+					window.history.replaceState({}, '', withNavigationQuery(`/pages/${page.page.id}/${newRecordId}`, navigationQuery));
+				}
 				toast.success(t(MSG.RECORD_UPDATED));
 			} else {
 				// Insert a new record only once its primary key is filled in (Record Entry
