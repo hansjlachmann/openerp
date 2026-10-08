@@ -587,7 +587,7 @@ func (t *LanguageBase) renameReferences(field string, oldValue, newValue interfa
 		column string
 	}
 	references := map[string][]reference{
-		"code": {{"User", true, "language"}, },
+		"code": {{"Job_Queue", false, "notification_language"}, {"User", true, "language"}, },
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)

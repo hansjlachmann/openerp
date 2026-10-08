@@ -19,17 +19,19 @@ const (
 	ErrRequiredField    ErrorCode = "ERR_REQUIRED_FIELD"
 	ErrInvalidValue     ErrorCode = "ERR_INVALID_VALUE"
 	// Field validation (table triggers): %1 is the field's caption
-	ErrFieldTooLong     ErrorCode = "ERR_FIELD_TOO_LONG"
-	ErrFieldTooShort    ErrorCode = "ERR_FIELD_TOO_SHORT"
-	ErrFieldOutOfRange  ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
-	ErrFieldFormat      ErrorCode = "ERR_FIELD_FORMAT"
-	ErrRelatedNotFound  ErrorCode = "ERR_RELATED_NOT_FOUND"
-	ErrRelatedInactive  ErrorCode = "ERR_RELATED_INACTIVE"
-	ErrDeleteFailed     ErrorCode = "ERR_DELETE_FAILED"
-	ErrInsertFailed     ErrorCode = "ERR_INSERT_FAILED"
-	ErrModifyFailed     ErrorCode = "ERR_MODIFY_FAILED"
-	ErrEmptyPrimaryKey  ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
-	ErrTableNotFound    ErrorCode = "ERR_TABLE_NOT_FOUND"
+	ErrFieldTooLong    ErrorCode = "ERR_FIELD_TOO_LONG"
+	ErrFieldTooShort   ErrorCode = "ERR_FIELD_TOO_SHORT"
+	ErrFieldOutOfRange ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
+	ErrFieldFormat     ErrorCode = "ERR_FIELD_FORMAT"
+	ErrRelatedNotFound ErrorCode = "ERR_RELATED_NOT_FOUND"
+	ErrRelatedInactive ErrorCode = "ERR_RELATED_INACTIVE"
+	ErrEmailInvalid    ErrorCode = "ERR_EMAIL_INVALID"
+	ErrEmailDuplicate  ErrorCode = "ERR_EMAIL_DUPLICATE"
+	ErrDeleteFailed    ErrorCode = "ERR_DELETE_FAILED"
+	ErrInsertFailed    ErrorCode = "ERR_INSERT_FAILED"
+	ErrModifyFailed    ErrorCode = "ERR_MODIFY_FAILED"
+	ErrEmptyPrimaryKey ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
+	ErrTableNotFound   ErrorCode = "ERR_TABLE_NOT_FOUND"
 
 	// Session/Auth
 	ErrNoActiveSession    ErrorCode = "ERR_NO_ACTIVE_SESSION"
@@ -72,8 +74,8 @@ const (
 	ErrPermissionDenied ErrorCode = "ERR_PERMISSION_DENIED"
 
 	// Menu/Pages
-	ErrMenuNotFound  ErrorCode = "ERR_MENU_NOT_FOUND"
-	ErrPageNotFound  ErrorCode = "ERR_PAGE_NOT_FOUND"
+	ErrMenuNotFound ErrorCode = "ERR_MENU_NOT_FOUND"
+	ErrPageNotFound ErrorCode = "ERR_PAGE_NOT_FOUND"
 )
 
 // AppError represents an application error with translation support
@@ -186,6 +188,17 @@ func RelatedNotFound(table, field, value string) *AppError {
 // RelatedInactive: a table field refers to a record (value) that may not be used
 func RelatedInactive(table, field, value string) *AppError {
 	return &AppError{Code: ErrRelatedInactive, Table: table, Field: field, Params: []string{value}}
+}
+
+// EmailInvalid: a table field's e-mail address list holds an item (address) that is not
+// an e-mail address
+func EmailInvalid(table, field, address string) *AppError {
+	return &AppError{Code: ErrEmailInvalid, Table: table, Field: field, Params: []string{address}}
+}
+
+// EmailDuplicate: a table field's e-mail address list holds an address twice
+func EmailDuplicate(table, field, address string) *AppError {
+	return &AppError{Code: ErrEmailDuplicate, Table: table, Field: field, Params: []string{address}}
 }
 
 // DeleteFailed creates an error for failed delete operation

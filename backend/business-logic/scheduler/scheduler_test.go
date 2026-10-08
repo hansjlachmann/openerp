@@ -3,24 +3,32 @@ package scheduler
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// mockSender records the emails it is asked to send.
-type mockSender struct {
-	sent []string // recipient addresses, in order
+// sentMail is one message a mockSender was asked to send
+type sentMail struct {
+	to            []string
+	subject, body string
 }
 
-func (m *mockSender) Send(to, subject, body string) error {
-	m.sent = append(m.sent, to)
+// mockSender records the emails it is asked to send.
+type mockSender struct {
+	sent []sentMail
+}
+
+func (m *mockSender) Send(to []string, subject, body string) error {
+	m.sent = append(m.sent, sentMail{to, subject, body})
 	return nil
 }
 func (m *mockSender) Enabled() bool { return true }
@@ -157,17 +165,20 @@ func TestNotifyGating(t *testing.T) {
 		{"onerror/error", gtables.JobQueue_Notify_on.OnError, "a@b.com", errors.New("x"), true},
 		{"never/error", gtables.JobQueue_Notify_on.Never, "a@b.com", errors.New("x"), false},
 		{"blank-email/always", gtables.JobQueue_Notify_on.Always, "", nil, false},
+		{"separators-only/always", gtables.JobQueue_Notify_on.Always, " ; ", nil, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ms := &mockSender{}
-			s := &Scheduler{mailer: ms}
+			db := newTestDB(t)
+			defer func() { _ = db.Close() }()
+			s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
 			job := &tables.JobQueue{}
 			job.No = types.NewCode("J")
 			job.Notification_email = types.NewText(tc.email)
 			job.Notify_on = tc.notifyOn
 
-			s.notify(job, tc.runErr, types.Now())
+			s.notify(testCompany, job, jobqueue.Run{Start: time.Now(), End: time.Now(), Err: tc.runErr})
 
 			if got := len(ms.sent) == 1; got != tc.wantSent {
 				t.Errorf("sent=%d, wantSent=%v", len(ms.sent), tc.wantSent)
@@ -249,5 +260,63 @@ func TestIsDue(t *testing.T) {
 	}
 	if isDue(now.AddMinutes(5), now) {
 		t.Error("future next_start should not be due")
+	}
+}
+
+func TestNotifySendsToAllRecipients(t *testing.T) {
+	db := newTestDB(t)
+	defer func() { _ = db.Close() }()
+	ms := &mockSender{}
+	s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
+	job := &tables.JobQueue{}
+	job.No = types.NewCode("J1")
+	job.Description = types.NewText("Daily invoices")
+	job.Notification_email = types.NewText("ops@example.com; Hans <hans@example.com>;")
+	job.Notify_on = gtables.JobQueue_Notify_on.OnError
+	job.Status = gtables.JobQueue_Status.Error
+
+	s.notify(testCompany, job, jobqueue.Run{Start: time.Now(), End: time.Now(), Err: errors.New("disk full")})
+
+	if len(ms.sent) != 1 {
+		t.Fatalf("sent %d messages, want one message to all recipients", len(ms.sent))
+	}
+	m := ms.sent[0]
+	if len(m.to) != 2 || m.to[0] != "ops@example.com" || m.to[1] != "Hans <hans@example.com>" {
+		t.Errorf("recipients = %q", m.to)
+	}
+	if m.subject != "Job Queue J1 Daily invoices failed (test)" {
+		t.Errorf("subject = %q", m.subject)
+	}
+	for _, want := range []string{"Company: test\n", "No.: J1\n", "Result: Failed\n", "Error:\ndisk full\n", "does not run again"} {
+		if !strings.Contains(m.body, want) {
+			t.Errorf("body lacks %q:\n%s", want, m.body)
+		}
+	}
+}
+
+func TestNotifyInNotificationLanguage(t *testing.T) {
+	db := newTestDB(t)
+	defer func() { _ = db.Close() }()
+	ms := &mockSender{}
+	s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
+	job := &tables.JobQueue{}
+	job.No = types.NewCode("J1")
+	job.Notification_email = types.NewText("ops@example.com")
+	job.Notification_language = types.NewCode("NB-NO") // no Language record: the code itself
+	job.Notify_on = gtables.JobQueue_Notify_on.Always
+	job.Status = gtables.JobQueue_Status.Ready
+	job.Next_start = types.NewDateTimeFromTime(time.Date(2026, 10, 9, 2, 0, 0, 0, time.UTC))
+
+	s.notify(testCompany, job, jobqueue.Run{Start: time.Now(), End: time.Now()})
+
+	if len(ms.sent) != 1 {
+		t.Fatalf("sent %d messages, want 1", len(ms.sent))
+	}
+	m := ms.sent[0]
+	if m.subject != "Jobbkø J1 fullført (test)" {
+		t.Errorf("subject = %q", m.subject)
+	}
+	if !strings.Contains(m.body, "Resultat: Fullført\n") || !strings.Contains(m.body, "2026-10-09 02:00:00") {
+		t.Errorf("body not in Norwegian or without next start:\n%s", m.body)
 	}
 }

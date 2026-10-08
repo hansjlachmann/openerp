@@ -67,7 +67,7 @@ func (ctx *Context) ColumnExists(tableName, columnName string) (bool, error) {
 	case database.DBTypePostgres:
 		err := ctx.tx.QueryRow(`
 			SELECT COUNT(*) FROM information_schema.columns
-			WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+			WHERE table_schema = current_schema() AND table_name = $1 AND column_name = $2
 		`, tableName, strings.ToLower(columnName)).Scan(&count)
 		if err != nil {
 			return false, err
@@ -108,7 +108,7 @@ func (ctx *Context) TableExists(tableName string) (bool, error) {
 	case database.DBTypePostgres:
 		err := ctx.tx.QueryRow(`
 			SELECT table_name FROM information_schema.tables
-			WHERE table_schema = 'public' AND table_name = $1
+			WHERE table_schema = current_schema() AND table_name = $1
 		`, tableName).Scan(&name)
 		if err != nil {
 			if err.Error() == "sql: no rows in result set" {

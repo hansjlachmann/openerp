@@ -216,6 +216,24 @@ messages:
   DEMO_DATA_CUSTOMERS: "Opretter debitorer..."
   DEMO_DATA_ENTRIES: "Opretter debitorposter..."
 
+  # Opgavekø-notifikationer på e-mail (%1 opgave, %2 virksomhed)
+  JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Opgavekø %1 fuldført (%2)"
+  JOBQUEUE_MAIL_SUBJECT_ERROR: "Opgavekø %1 mislykkedes (%2)"
+  JOBQUEUE_MAIL_SUBJECT_TEST: "Opgavekø %1: test-e-mail (%2)"
+  JOBQUEUE_MAIL_RESULT: "Resultat"
+  JOBQUEUE_MAIL_SUCCEEDED: "Fuldført"
+  JOBQUEUE_MAIL_FAILED: "Mislykkedes"
+  JOBQUEUE_MAIL_STARTED: "Startet"
+  JOBQUEUE_MAIL_FINISHED: "Afsluttet"
+  JOBQUEUE_MAIL_ERROR: "Fejl"
+  JOBQUEUE_MAIL_STOPPED: "Opgavens status er nu Fejl: den kører ikke igen, før status sættes tilbage til Klar."
+  JOBQUEUE_MAIL_TEST_INTRO: "Dette er en test-e-mail. Notifikationer for denne opgave sendes til: %1"
+  JOBQUEUE_TEST_MAIL_SENT: "Test-e-mail sendt til %1."
+  JOBQUEUE_TEST_MAIL_PARTIAL: "Test-e-mail sendt til %1. Ikke sendt til: %2"
+  JOBQUEUE_TEST_MAIL_NO_RECIPIENTS: "Opgavekø %1 har ingen %2. Angiv en eller flere e-mailadresser, adskilt med ;."
+  JOBQUEUE_TEST_MAIL_NO_SMTP: "E-mail er ikke konfigureret. Aktivér SMTP-opsætning, og angiv SMTP-server og afsenderadresse."
+  JOBQUEUE_TEST_MAIL_FAILED: "Test-e-mailen kunne ikke sendes: %1"
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på, at du vil slette denne post?"
   DLG_DELETE_CONFIRM: "Er du sikker på, at du vil slette denne %1?"

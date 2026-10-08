@@ -50,35 +50,46 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
-## Feature: Job Queue — e-mail notification to one or more addresses (next feature)
+## Feature: Job Queue — e-mail notification to one or more addresses ✅ DONE (2026-10-08)
 
-Jobs run automatically already (scheduler, `recurrence` Minutes/Hourly/Daily/Weekly, see "Job Queue —
-Automatic / Scheduled Execution" below) and a run can e-mail **one** address: `Job_Queue.notification_email`
-(Text 100) gated by `notify_on` (Never / Always / On Error), sent by `Scheduler.notify`
-(`backend/business-logic/scheduler/scheduler.go`) through `foundation/mail` (`SMTPMailer.Send(to, …)`,
-one recipient) with the global SMTP Setup (table 409). New: notify **several** addresses per job.
+Tested by the user locally (docker compose, 2026-10-08): scheduled run of codeunit 50020 e-mailed
+through Gmail (app password) to two addresses. Goes into release 0.1.87.
 
-Design (proposed):
-- [ ] **Recipients.** Either (a) `notification_email` takes a list separated by `;` (as BC's e-mail
-      fields), length raised to 250 by a migration, or (b) a new table `Job Queue Notification
-      Recipient` (job no + e-mail, optional "notify on" per recipient) edited from the Job Queue card,
-      unlimited recipients. Recommendation: (a) — no new table/page, matches BC, enough for a few
-      addresses; (b) if recipients need their own notify-on or language.
-- [ ] **Validation.** `OnValidate_Notification_email` checks every address (`net/mail.ParseAddress`),
-      trims spaces, rejects empty items and duplicates, with a translated error naming the bad address.
-- [ ] **Sending.** `Mailer.Send` takes `[]string`; one SMTP message to all recipients (one `RCPT TO`
-      each, all in the `To:` header). A rejected recipient is logged and does not stop the others
-      (`smtp.SendMail` aborts on the first rejection — send per recipient, or use `smtp.Client`).
-- [ ] **Message.** Localize subject/body via i18n (open follow-up: `formatNotification` is English
-      only); include company, job no/description, codeunit, parameter, start/end time, status, error
-      text, and the next start for recurring jobs.
-- [ ] **"Send test e-mail"** action on the Job Queue card/list: sends the notification for the selected
-      job to its recipients without running it (checks addresses and SMTP Setup).
-- [ ] **UI.** Show `notification_email` and `notify_on` on the Job Queue card (page 672 list has them);
-      wider field.
-- [ ] **Tests.** Parsing/validation of address lists; scheduler sends to all recipients per
-      `notify_on` (fake mailer); one bad recipient does not block the rest; migration keeps existing
-      single addresses.
+A job e-mails the outcome of a scheduled run to **one or more** addresses, in the job's language.
+- [x] **Recipients:** `Job_Queue.notification_email` holds a list separated by `;` (or `,`), as BC's
+      e-mail fields: `ops@x.no; Hans <hans@x.no>`. The length is 250 (migration 9 widens the Postgres
+      column; existing addresses are kept). No separate recipients table: per-recipient Notify On
+      or language can still be added later as a table if needed.
+- [x] **Validation:** `OnValidate_Notification_email` checks every address (`mail.ParseAddressList`,
+      `net/mail`), drops empty items, rejects duplicates (without case), stores the list tidied
+      (`a; b`); translated errors `ERR_EMAIL_INVALID` / `ERR_EMAIL_DUPLICATE` name the bad address.
+      Not in `Validate()` (OnModify): a list saved before the check must not stop the scheduler
+      from rescheduling the job.
+- [x] **Sending:** `mail.Sender.Send(to []string, …)` sends one message in one SMTP session (one
+      `RCPT TO` each, all in `To:`); a rejected or invalid recipient is reported in a
+      `*mail.RecipientsError` and the others still get the message. STARTTLS/AUTH as
+      `smtp.SendMail`, plus dial/session timeouts; the subject is RFC 2047 encoded (æøå), `Date:`
+      header added.
+- [x] **Message:** translated (en-US, nb-NO, da-DK) in the job's new **Notification Language**
+      (`notification_language`, relation to Language; blank = default language): company display
+      name, job no/description, codeunit, parameter, result, start/end, error text, next start of a
+      recurring job, and a note when the job stopped in status Error. Shared by the scheduler and
+      the test action (`backend/business-logic/jobqueue`).
+- [x] **"Send Test E-mail"** action (codeunit 455) on the Job Queue list and card: sends a test
+      notification of the selected job (as saved) to its recipients without running it; tells
+      which addresses got it and which were rejected, or that SMTP Setup is not enabled.
+- [x] **UI:** new Job Queue Card (page 674, modal from the list) with General / Recurrence /
+      Notification sections; list shows Notification Language. Fixed on the way: DateTime fields
+      (e.g. Next Start) were blank on cards and in list cell editing — a `datetime-local` input
+      cannot show an RFC3339 value with a zone, and its value was sent without one
+      (`toDateTimeInput` / `fromDateTimeInput` in `utils/fieldHelpers.ts`).
+- [x] **Tests:** address list parsing; sending against a fake SMTP server (all recipients, one
+      rejected, all rejected); scheduler notifications (all recipients, Norwegian); validation
+      triggers; the test codeunit; migration 9 on SQLite and Postgres.
+- [ ] Follow-up: the modal card keeps showing the list as typed after a save (it does not reload
+      the record so focus is kept); the tidied list shows when the card is opened again.
+- [ ] Follow-up: action captions and card section captions are not translated (the YAML caption
+      is shown); `common.actions.*` exists but the pages do not use it.
 
 ---
 
@@ -659,6 +670,8 @@ New package (e.g. `backend/business-logic/scheduler`):
 - Overlap guard: skip a job whose latest entry is still `In Process` (or use a per-job lease).
 
 ### Email notification (post-run)
+(Implemented with the SMTP Setup table instead of env variables; several recipients, language and
+test e-mail: see "Job Queue — e-mail notification to one or more addresses" above.)
 After a scheduled run finishes, optionally email a notification to `notification_email`, gated by
 `notify_on`:
 - `Always` → email on both success and error.

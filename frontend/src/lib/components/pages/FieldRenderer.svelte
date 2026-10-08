@@ -2,7 +2,7 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
@@ -86,7 +86,8 @@
 	// Handle value change for text inputs
 	function handleChange(e: Event) {
 		const target = e.target as HTMLInputElement;
-		const newValue = target.value;
+		// datetime-local holds local time without a zone; the API takes RFC3339
+		const newValue = isDateTimeField ? fromDateTimeInput(target.value) : target.value;
 		value = newValue;
 		onchange?.(newValue);
 	}
@@ -219,7 +220,7 @@
 					type={inputType()}
 					autocomplete={field.masked ? 'new-password' : 'off'}
 					class={cn('input', fieldStyle, error ? 'input-error' : '')}
-					value={value ?? ''}
+					value={isDateTimeField ? toDateTimeInput(value) : (value ?? '')}
 					{tabindex}
 					oninput={handleChange}
 					onblur={() => onblur?.()}

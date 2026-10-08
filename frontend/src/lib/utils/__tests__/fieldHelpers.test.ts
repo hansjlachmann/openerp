@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isAdvancedLookup, formatLookupValue, isCodeType } from '../fieldHelpers';
+import { isAdvancedLookup, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput } from '../fieldHelpers';
 
 describe('isAdvancedLookup', () => {
 	const columns = [{ source: 'code' }];
@@ -30,5 +30,21 @@ describe('isCodeType', () => {
 	it('is false for other types', () => {
 		expect(isCodeType('types.Text')).toBe(false);
 		expect(isCodeType(undefined)).toBe(false);
+	});
+});
+
+describe('datetime-local input values', () => {
+	it('shows an API datetime as local time and sends it back as UTC', () => {
+		const iso = '2026-10-08T10:00:00Z';
+		const local = toDateTimeInput(iso);
+		expect(local).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+		expect(fromDateTimeInput(local)).toBe(iso);
+	});
+
+	it('is empty for no or an invalid value', () => {
+		expect(toDateTimeInput('')).toBe('');
+		expect(toDateTimeInput(undefined)).toBe('');
+		expect(toDateTimeInput('not a date')).toBe('');
+		expect(fromDateTimeInput('')).toBe('');
 	});
 });

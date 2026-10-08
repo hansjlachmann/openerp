@@ -8,15 +8,24 @@
 package mail
 
 import (
+	"crypto/tls"
+	"errors"
 	"fmt"
+	"mime"
+	"net"
+	netmail "net/mail"
 	"net/smtp"
 	"strings"
+	"time"
 )
 
 // Sender sends a plain-text email. Implemented by SMTPMailer and by test doubles.
 type Sender interface {
-	// Send delivers a plain-text message. Returns nil when sending is disabled.
-	Send(to, subject, body string) error
+	// Send delivers one plain-text message to all recipients (addresses as in an
+	// address list: "ops@example.com" or "Ops <ops@example.com>"). Returns nil when
+	// sending is disabled; a *RecipientsError when some recipients were rejected
+	// while the others got the message.
+	Send(to []string, subject, body string) error
 	// Enabled reports whether the sender will actually attempt delivery.
 	Enabled() bool
 }
@@ -46,37 +55,144 @@ func (m *SMTPMailer) Enabled() bool {
 	return m.cfg.Enabled && m.cfg.Host != "" && m.cfg.From != ""
 }
 
-// Send delivers a plain-text email. When disabled it is a no-op and returns nil.
-func (m *SMTPMailer) Send(to, subject, body string) error {
+// dialTimeout and sessionTimeout keep an unreachable or stalled server from blocking
+// the caller (the scheduler runs jobs one after another).
+const (
+	dialTimeout    = 30 * time.Second
+	sessionTimeout = 2 * time.Minute
+)
+
+// RecipientError is a recipient (as passed to Send) the message could not be sent to.
+type RecipientError struct {
+	Recipient string
+	Err       error
+}
+
+// RecipientsError reports the recipients that did not get the message. Sent counts
+// those that did (0: nothing was sent).
+type RecipientsError struct {
+	Rejected []RecipientError
+	Sent     int
+}
+
+func (e *RecipientsError) Error() string {
+	parts := make([]string, len(e.Rejected))
+	for i, r := range e.Rejected {
+		parts[i] = fmt.Sprintf("%s: %v", r.Recipient, r.Err)
+	}
+	return "mail: not sent to " + strings.Join(parts, "; ")
+}
+
+// Send delivers one plain-text message to all recipients in one SMTP session (one
+// RCPT TO each, all in the To header). A recipient the server rejects (or that is not
+// a valid address) does not stop the others: Send returns a *RecipientsError naming
+// it. When disabled it is a no-op and returns nil.
+func (m *SMTPMailer) Send(to []string, subject, body string) error {
 	if !m.Enabled() {
 		return nil
 	}
-	if to == "" {
-		return fmt.Errorf("mail: empty recipient")
+	var rejected []RecipientError
+	var envelope, header, typed []string
+	for _, item := range to {
+		addr, err := netmail.ParseAddress(item)
+		if err != nil {
+			rejected = append(rejected, RecipientError{item, err})
+			continue
+		}
+		envelope = append(envelope, addr.Address)
+		header = append(header, headerAddress(addr))
+		typed = append(typed, item)
+	}
+	if len(envelope) == 0 {
+		if len(rejected) > 0 {
+			return &RecipientsError{Rejected: rejected}
+		}
+		return fmt.Errorf("mail: no recipient")
 	}
 
-	var auth smtp.Auth
-	if m.cfg.Username != "" {
-		auth = smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
+	c, err := m.dial()
+	if err != nil {
+		return fmt.Errorf("mail: %w", err)
+	}
+	defer func() { _ = c.Close() }()
+
+	if err := c.Mail(m.cfg.From); err != nil {
+		return fmt.Errorf("mail: sender %s refused: %w", m.cfg.From, err)
+	}
+	sent := 0
+	for i, rcpt := range envelope {
+		if err := c.Rcpt(rcpt); err != nil {
+			rejected = append(rejected, RecipientError{typed[i], err})
+			continue
+		}
+		sent++
+	}
+	if sent == 0 {
+		return &RecipientsError{Rejected: rejected}
 	}
 
-	addr := m.cfg.Host + ":" + m.cfg.Port
-	msg := buildMessage(m.cfg.From, to, subject, body)
-	if err := smtp.SendMail(addr, auth, m.cfg.From, []string{to}, msg); err != nil {
-		return fmt.Errorf("mail: send to %s failed: %w", to, err)
+	w, err := c.Data()
+	if err != nil {
+		return fmt.Errorf("mail: send failed: %w", err)
+	}
+	if _, err := w.Write(buildMessage(m.cfg.From, strings.Join(header, ", "), subject, body)); err != nil {
+		return fmt.Errorf("mail: send failed: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("mail: send failed: %w", err)
+	}
+	_ = c.Quit()
+
+	if len(rejected) > 0 {
+		return &RecipientsError{Rejected: rejected, Sent: sent}
 	}
 	return nil
 }
 
+// dial opens the SMTP session as smtp.SendMail does (STARTTLS when the server offers
+// it, then AUTH when a user is set), with timeouts.
+func (m *SMTPMailer) dial() (*smtp.Client, error) {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(m.cfg.Host, m.cfg.Port), dialTimeout)
+	if err != nil {
+		return nil, err
+	}
+	_ = conn.SetDeadline(time.Now().Add(sessionTimeout))
+	c, err := smtp.NewClient(conn, m.cfg.Host)
+	if err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		if err := c.StartTLS(&tls.Config{ServerName: m.cfg.Host}); err != nil {
+			_ = c.Close()
+			return nil, err
+		}
+	}
+	if m.cfg.Username != "" {
+		if ok, _ := c.Extension("AUTH"); !ok {
+			_ = c.Close()
+			return nil, errors.New("server does not support authentication")
+		}
+		if err := c.Auth(smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)); err != nil {
+			_ = c.Close()
+			return nil, err
+		}
+	}
+	return c, nil
+}
+
 // buildMessage assembles a minimal RFC 5322 plain-text message. Header values are
-// stripped of CR/LF to prevent header injection from job-supplied subjects.
+// stripped of CR/LF to prevent header injection from job-supplied subjects; the
+// subject is RFC 2047 encoded (æ, ø, å).
 func buildMessage(from, to, subject, body string) []byte {
 	var b strings.Builder
 	b.WriteString("From: " + sanitizeHeader(from) + "\r\n")
 	b.WriteString("To: " + sanitizeHeader(to) + "\r\n")
-	b.WriteString("Subject: " + sanitizeHeader(subject) + "\r\n")
+	b.WriteString("Subject: " + mime.QEncoding.Encode("utf-8", sanitizeHeader(subject)) + "\r\n")
+	b.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
 	b.WriteString("MIME-Version: 1.0\r\n")
 	b.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
+	b.WriteString("Content-Transfer-Encoding: 8bit\r\n")
 	b.WriteString("\r\n")
 	b.WriteString(strings.ReplaceAll(body, "\n", "\r\n"))
 	return []byte(b.String())

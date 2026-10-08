@@ -216,6 +216,24 @@ messages:
   DEMO_DATA_CUSTOMERS: "Creating customers..."
   DEMO_DATA_ENTRIES: "Creating customer ledger entries..."
 
+  # Job Queue notification e-mails (%1 job, %2 company)
+  JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Job Queue %1 completed (%2)"
+  JOBQUEUE_MAIL_SUBJECT_ERROR: "Job Queue %1 failed (%2)"
+  JOBQUEUE_MAIL_SUBJECT_TEST: "Job Queue %1: test e-mail (%2)"
+  JOBQUEUE_MAIL_RESULT: "Result"
+  JOBQUEUE_MAIL_SUCCEEDED: "Completed"
+  JOBQUEUE_MAIL_FAILED: "Failed"
+  JOBQUEUE_MAIL_STARTED: "Started"
+  JOBQUEUE_MAIL_FINISHED: "Finished"
+  JOBQUEUE_MAIL_ERROR: "Error"
+  JOBQUEUE_MAIL_STOPPED: "The job's status is now Error: it does not run again until its status is set back to Ready."
+  JOBQUEUE_MAIL_TEST_INTRO: "This is a test e-mail. Notifications of this job are sent to: %1"
+  JOBQUEUE_TEST_MAIL_SENT: "Test e-mail sent to %1."
+  JOBQUEUE_TEST_MAIL_PARTIAL: "Test e-mail sent to %1. Not sent to: %2"
+  JOBQUEUE_TEST_MAIL_NO_RECIPIENTS: "Job Queue %1 has no %2. Enter one or more e-mail addresses, separated by ;."
+  JOBQUEUE_TEST_MAIL_NO_SMTP: "E-mail is not set up. Enable SMTP Setup and enter the SMTP server and the From address."
+  JOBQUEUE_TEST_MAIL_FAILED: "The test e-mail could not be sent: %1"
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Are you sure you want to delete this record?"
   DLG_DELETE_CONFIRM: "Are you sure you want to delete this %1?"

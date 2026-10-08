@@ -1,9 +1,14 @@
 package tables
 
 import (
+	"errors"
+
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/mail"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -72,7 +77,48 @@ func (t *JobQueue) Validate() error {
 	if err := ftables.CheckMaxLength(gtables.JobQueueTableName, "description_2", string(t.Description_2), 100); err != nil {
 		return err
 	}
+	// The addresses themselves are checked by OnValidate_Notification_email when a user
+	// changes them, not here: a list saved before that check must not stop the scheduler
+	// from rescheduling the job (it sends to the valid addresses and logs the others).
+	if err := ftables.CheckMaxLength(gtables.JobQueueTableName, "notification_email", string(t.Notification_email), 250); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+// ========================================
+// Field Validation Overrides
+// ========================================
+
+// OnValidate_Notification_email checks the notification address list (one or more
+// addresses separated by ";") and stores it tidied up: "a@x.no; b@x.no".
+func (t *JobQueue) OnValidate_Notification_email() error {
+	items, err := mail.ParseAddressList(t.Notification_email.String())
+	if err != nil {
+		var listErr *mail.AddressListError
+		if errors.As(err, &listErr) && listErr.Duplicate {
+			return apperrors.EmailDuplicate(gtables.JobQueueTableName, "notification_email", listErr.Address)
+		}
+		if errors.As(err, &listErr) {
+			return apperrors.EmailInvalid(gtables.JobQueueTableName, "notification_email", listErr.Address)
+		}
+		return err
+	}
+	t.Notification_email = types.NewText(mail.JoinAddressList(items))
+	return ftables.CheckMaxLength(gtables.JobQueueTableName, "notification_email", string(t.Notification_email), 250)
+}
+
+// OnValidate_Notification_language checks that the notification language exists
+func (t *JobQueue) OnValidate_Notification_language() error {
+	if t.Notification_language.IsEmpty() {
+		return nil
+	}
+	var language Language
+	language.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
+	if !language.Get(t.Notification_language) {
+		return apperrors.RelatedNotFound(gtables.JobQueueTableName, "notification_language", t.Notification_language.String())
+	}
 	return nil
 }
 

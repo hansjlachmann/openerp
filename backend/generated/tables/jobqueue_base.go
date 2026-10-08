@@ -87,6 +87,7 @@ type JobQueueBase struct {
 	Recurrence JobQueueRecurrence `db:"recurrence"`
 	Notification_email types.Text `db:"notification_email"`
 	Notify_on JobQueueNotify_on `db:"notify_on"`
+	Notification_language types.Code `db:"notification_language"`
 	// FlowField: Count(Job_Queue_Entry.entry_no)
 	Number_of_entries int
 
@@ -252,8 +253,9 @@ func GetJobQueueTableSchema() string {
 		minutes_between_run INTEGER,
 		recurring_job INTEGER,
 		recurrence INTEGER CHECK (recurrence >= 0 AND recurrence <= 5),
-		notification_email TEXT(100),
+		notification_email TEXT(250),
 		notify_on INTEGER CHECK (notify_on >= 0 AND notify_on <= 2),
+		notification_language TEXT(10),
 		number_of_entries INTEGER
 	`
 }
@@ -271,8 +273,9 @@ func GetJobQueuePostgresTableSchema() string {
 		minutes_between_run INTEGER,
 		recurring_job BOOLEAN,
 		recurrence INTEGER CHECK (recurrence >= 0 AND recurrence <= 5),
-		notification_email VARCHAR(100),
+		notification_email VARCHAR(250),
 		notify_on INTEGER CHECK (notify_on >= 0 AND notify_on <= 2),
+		notification_language VARCHAR(10),
 		number_of_entries INTEGER
 	`
 }
@@ -410,6 +413,7 @@ func (t *JobQueueBase) StoreOldValues() {
 	t.oldValues["recurrence"] = t.Recurrence
 	t.oldValues["notification_email"] = t.Notification_email
 	t.oldValues["notify_on"] = t.Notify_on
+	t.oldValues["notification_language"] = t.Notification_language
 }
 
 // OldValue returns a field's value as last read from or written to the database (BC/NAV
@@ -480,6 +484,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	var recurrenceInt int
 	var notification_emailNull sql.NullString
 	var notify_onInt int
+	var notification_languageNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -487,7 +492,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -505,6 +510,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 		&recurrenceInt,
 		&notification_emailNull,
 		&notify_onInt,
+		&notification_languageNull,
 	)
 
 	if err != nil {
@@ -530,6 +536,7 @@ func (t *JobQueueBase) GetByPK(no types.Code) bool {
 	t.Recurrence = JobQueueRecurrence(recurrenceInt)
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
+	t.Notification_language = types.NewCode(notification_languageNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -564,10 +571,11 @@ func (t *JobQueueBase) Insert(runTrigger bool) bool {
 		t.Recurrence,
 		t.Notification_email,
 		t.Notify_on,
+		t.Notification_language,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -609,10 +617,11 @@ func (t *JobQueueBase) InsertAll(records []*JobQueueBase, runTrigger bool) error
 			r.Recurrence,
 			r.Notification_email,
 			r.Notify_on,
+			r.Notification_language,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
-	columns := []string{"no", "description", "description_2", "status", "object_id_to_run", "parameter", "next_start", "minutes_between_run", "recurring_job", "recurrence", "notification_email", "notify_on"}
+	columns := []string{"no", "description", "description_2", "status", "object_id_to_run", "parameter", "next_start", "minutes_between_run", "recurring_job", "recurrence", "notification_email", "notify_on", "notification_language"}
 	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
 }
 
@@ -702,6 +711,10 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "notify_on = ?")
 			values = append(values, t.Notify_on)
 		}
+		if t.hasFieldChanged("notification_language") {
+			setClauses = append(setClauses, "notification_language = ?")
+			values = append(values, t.Notification_language)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -731,6 +744,8 @@ func (t *JobQueueBase) Modify(runTrigger bool) bool {
 		values = append(values, t.Notification_email)
 		setClauses = append(setClauses, "notify_on = ?")
 		values = append(values, t.Notify_on)
+		setClauses = append(setClauses, "notification_language = ?")
+		values = append(values, t.Notification_language)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -843,6 +858,10 @@ func (t *JobQueueBase) hasFieldChanged(fieldName string) bool {
 	case "notify_on":
 		if old, ok := oldValue.(JobQueueNotify_on); ok {
 			return t.Notify_on != old
+		}
+	case "notification_language":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Notification_language.Equal(old)
 		}
 	}
 
@@ -1222,6 +1241,8 @@ func (t *JobQueueBase) columnName(fieldName string) (string, bool) {
 		return "notification_email", true
 	case strings.ToLower("notify_on"):
 		return "notify_on", true
+	case strings.ToLower("notification_language"):
+		return "notification_language", true
 	}
 	return "", false
 }
@@ -1391,7 +1412,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1405,6 +1426,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	var recurrenceInt int
 	var notification_emailNull sql.NullString
 	var notify_onInt int
+	var notification_languageNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&noNull,
@@ -1419,6 +1441,7 @@ func (t *JobQueueBase) FindFirst() bool {
 		&recurrenceInt,
 		&notification_emailNull,
 		&notify_onInt,
+		&notification_languageNull,
 	)
 
 	if err != nil {
@@ -1440,6 +1463,7 @@ func (t *JobQueueBase) FindFirst() bool {
 	t.Recurrence = JobQueueRecurrence(recurrenceInt)
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
+	t.Notification_language = types.NewCode(notification_languageNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1454,7 +1478,7 @@ func (t *JobQueueBase) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1468,6 +1492,7 @@ func (t *JobQueueBase) FindLast() bool {
 	var recurrenceInt int
 	var notification_emailNull sql.NullString
 	var notify_onInt int
+	var notification_languageNull sql.NullString
 
 	err := t.db.QueryRow(query, args...).Scan(
 		&noNull,
@@ -1482,6 +1507,7 @@ func (t *JobQueueBase) FindLast() bool {
 		&recurrenceInt,
 		&notification_emailNull,
 		&notify_onInt,
+		&notification_languageNull,
 	)
 
 	if err != nil {
@@ -1503,6 +1529,7 @@ func (t *JobQueueBase) FindLast() bool {
 	t.Recurrence = JobQueueRecurrence(recurrenceInt)
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
+	t.Notification_language = types.NewCode(notification_languageNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1544,7 +1571,7 @@ func (t *JobQueueBase) FindSet() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1621,6 +1648,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 		var recurrenceInt int
 		var notification_emailNull sql.NullString
 		var notify_onInt int
+		var notification_languageNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&noNull,
@@ -1635,6 +1663,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 			&recurrenceInt,
 			&notification_emailNull,
 			&notify_onInt,
+			&notification_languageNull,
 		)
 
 		if err != nil {
@@ -1655,6 +1684,7 @@ func (t *JobQueueBase) Next(steps ...int) bool {
 		t.Recurrence = JobQueueRecurrence(recurrenceInt)
 		t.Notification_email = types.NewText(notification_emailNull.String)
 		t.Notify_on = JobQueueNotify_on(notify_onInt)
+		t.Notification_language = types.NewCode(notification_languageNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -1685,7 +1715,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 	orderBy := t.getOrderByClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1716,6 +1746,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 		var recurrenceInt int
 		var notification_emailNull sql.NullString
 		var notify_onInt int
+		var notification_languageNull sql.NullString
 
 		err := rows.Scan(
 			&noNull,
@@ -1730,6 +1761,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 			&recurrenceInt,
 			&notification_emailNull,
 			&notify_onInt,
+			&notification_languageNull,
 		)
 
 		if err != nil {
@@ -1748,6 +1780,7 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 		record.Recurrence = JobQueueRecurrence(recurrenceInt)
 		record.Notification_email = types.NewText(notification_emailNull.String)
 		record.Notify_on = JobQueueNotify_on(notify_onInt)
+		record.Notification_language = types.NewCode(notification_languageNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -1788,6 +1821,7 @@ func (t *JobQueueBase) copyFromBuffered(record *JobQueueBase) {
 	t.Recurrence = record.Recurrence
 	t.Notification_email = record.Notification_email
 	t.Notify_on = record.Notify_on
+	t.Notification_language = record.Notification_language
 	t.Number_of_entries = record.Number_of_entries
 	t.StoreOldValues()
 }
@@ -2204,6 +2238,20 @@ func (t *JobQueueBase) ValidateField(fieldName string, value interface{}) error 
 			return w.OnValidate_Notify_on()
 		}
 		return t.OnValidate_Notify_on()
+	case "notification_language":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Notification_language = v
+		} else if v, ok := value.(string); ok {
+			t.Notification_language = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field notification_language")
+		}
+		// Call OnValidate trigger (the wrapper's override if it defines one)
+		if w, ok := t.self.(interface{ OnValidate_Notification_language() error }); ok {
+			return w.OnValidate_Notification_language()
+		}
+		return t.OnValidate_Notification_language()
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2281,6 +2329,12 @@ func (t *JobQueueBase) OnValidate_Notify_on() error {
 	return nil
 }
 
+// OnValidate_Notification_language is the validation trigger for notification_language field (BC/NAV style)
+// Override this in the wrapper struct to add custom validation
+func (t *JobQueueBase) OnValidate_Notification_language() error {
+	return nil
+}
+
 // ========================================
 // Interface Implementation (tables.Table)
 // ========================================
@@ -2307,6 +2361,7 @@ func (t *JobQueueBase) ToMap() map[string]interface{} {
 		"recurrence": int(t.Recurrence),
 		"notification_email": t.Notification_email.String(),
 		"notify_on": int(t.Notify_on),
+		"notification_language": t.Notification_language.String(),
 		// FlowField: number_of_entries
 		"number_of_entries": t.Number_of_entries,
 	}
@@ -2414,6 +2469,11 @@ func (t *JobQueueBase) FromMap(data map[string]interface{}) {
 					break
 				}
 			}
+		}
+	}
+	if v, ok := data["notification_language"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Notification_language = types.NewCode(s)
 		}
 	}
 }
@@ -2530,7 +2590,7 @@ func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 		{
 			Name:       "notification_email",
 			Type:       tables.FieldTypeText,
-			Length:     100,
+			Length:     250,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -2540,6 +2600,15 @@ func (t *JobQueueBase) GetFields() []tables.FieldInfo {
 			Name:       "notify_on",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			Name:       "notification_language",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -2590,5 +2659,15 @@ func (t *JobQueueBase) GetOptionFields() map[string][]string {
 // GetTableRelationFields returns fields that have table relations (foreign keys)
 func (t *JobQueueBase) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
+		"notification_language": {
+			Table:        "Language",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 80},
+				{Source: "name", Width: 200},
+			},
+			SearchTimeout: 0,
+		},
 	}
 }

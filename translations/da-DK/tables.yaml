@@ -204,6 +204,7 @@ tables:
       recurrence: "Gentagelse"
       notification_email: "Notifikations-e-mail"
       notify_on: "Underret ved"
+      notification_language: "Notifikationssprog"
       number_of_entries: "Antal poster"
 
     # Option field values
