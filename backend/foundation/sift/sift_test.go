@@ -428,3 +428,88 @@ func TestVerifyAndRebuild(t *testing.T) {
 		assertConsistent(t, d, sumNames(testSpec))
 	}
 }
+
+// Suspend drops a table's totals for a bulk load; the next Sync builds them from all entries.
+// Inside a transaction that rolls back, the totals and their triggers stay as they were.
+func TestSuspendForBulkLoad(t *testing.T) {
+	insert := func(t *testing.T, d testDB, ex database.Executor, from, to int) {
+		for i := from; i <= to; i++ {
+			d.exec(t, ex, `INSERT INTO `+q(d.entry())+` (no, acct, open, amount, qty) VALUES (?, ?, ?, ?, ?)`, i, fmt.Sprintf("A%d", i%3), i%2 == 0, fmt.Sprintf("%d.25", i), i)
+		}
+	}
+	for _, d := range databases(t) {
+		insert(t, d, d.db, 1, 10)
+		syncSpec(t, d, testSpec)
+
+		// Rolled back: nothing changed, the triggers still maintain the totals
+		tx, err := d.db.Begin()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Suspend(tx, d.dbType, testCompany, testTable); err != nil {
+			t.Fatalf("%s Suspend: %v", d.dbType, err)
+		}
+		insert(t, d, tx, 11, 20)
+		if err := tx.Rollback(); err != nil {
+			t.Fatal(err)
+		}
+		insert(t, d, d.db, 21, 25)
+		assertConsistent(t, d, sumNames(testSpec))
+
+		// Committed: totals and definition gone during the load, rebuilt by Sync
+		tx, err = d.db.Begin()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Suspend(tx, d.dbType, testCompany, testTable); err != nil {
+			t.Fatalf("%s Suspend: %v", d.dbType, err)
+		}
+		insert(t, d, tx, 26, 60)
+		if exists, err := tableExists(tx, d.dbType, TableName(testCompany, testTable, testSpec.Name)); err != nil || exists {
+			t.Fatalf("%s: totals table still there after Suspend (%v)", d.dbType, err)
+		}
+		if err := tx.Commit(); err != nil {
+			t.Fatal(err)
+		}
+		var n int
+		if err := d.db.QueryRow(`SELECT COUNT(*) FROM "` + definitionTable + `" WHERE company = '` + testCompany + `'`).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("%s: %d definitions left after Suspend (%v)", d.dbType, n, err)
+		}
+		syncSpec(t, d, testSpec)
+		assertConsistent(t, d, sumNames(testSpec))
+		insert(t, d, d.db, 61, 65) // triggers active again
+		assertConsistent(t, d, sumNames(testSpec))
+	}
+}
+
+// Totals tables get the storage options (fillfactor for HOT updates, autovacuum thresholds)
+// on Postgres, and a table created without them gets them on the next Sync.
+func TestTotalsStorageOptionsPostgres(t *testing.T) {
+	for _, d := range databases(t) {
+		if d.dbType != database.DBTypePostgres {
+			continue
+		}
+		syncSpec(t, d, testSpec)
+		name := TableName(testCompany, testTable, testSpec.Name)
+		options := func() string {
+			var s sql.NullString
+			if err := d.db.QueryRow(`SELECT array_to_string(reloptions, ',') FROM pg_class WHERE relname = $1`, name).Scan(&s); err != nil {
+				t.Fatal(err)
+			}
+			return s.String
+		}
+		for _, want := range []string{"fillfactor=50", "autovacuum_vacuum_scale_factor=0", "autovacuum_vacuum_threshold=1000"} {
+			if !strings.Contains(options(), want) {
+				t.Fatalf("new totals table options %q, want %s", options(), want)
+			}
+		}
+		d.exec(t, d.db, `ALTER TABLE `+q(name)+` RESET (fillfactor, autovacuum_vacuum_scale_factor, autovacuum_vacuum_threshold, autovacuum_analyze_scale_factor, autovacuum_analyze_threshold)`)
+		if options() != "" {
+			t.Fatalf("options not reset: %q", options())
+		}
+		syncSpec(t, d, testSpec)
+		if !strings.Contains(options(), "fillfactor=50") {
+			t.Fatalf("Sync did not set the options on an existing totals table: %q", options())
+		}
+	}
+}

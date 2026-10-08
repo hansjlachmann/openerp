@@ -395,6 +395,32 @@ func (t *UserRoleBase) Insert(runTrigger bool) bool {
 	return true
 }
 
+// InsertAll inserts records in bulk (demo data, imports): multi-row INSERT statements, one
+// round trip per batch instead of one per record. With runTrigger every record's OnInsert
+// trigger runs first, as Insert(true) would; the first failure stops before anything is
+// written. Records are written with the receiver's database and company. Errors are
+// *tables.BatchInsertError (Index = the record in records). Use it in a transaction: a
+// failed batch leaves the earlier batches written.
+func (t *UserRoleBase) InsertAll(records []*UserRoleBase, runTrigger bool) error {
+	rows := make([][]interface{}, 0, len(records))
+	for i, r := range records {
+		r.triggerErr = nil
+		if runTrigger && r.onInsertFn != nil {
+			if err := r.onInsertFn(); err != nil {
+				r.triggerErr = err
+				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+			}
+		}
+		rows = append(rows, []interface{}{
+			r.Code,
+			r.Description,
+		})
+	}
+	tableName := UserRoleTableName
+	columns := []string{"code", "description"}
+	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+}
+
 // Modify updates the record in the database
 func (t *UserRoleBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)

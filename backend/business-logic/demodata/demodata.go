@@ -23,6 +23,8 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/sift"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -252,7 +254,16 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
+	// The entries' SIFT totals are built once after the load instead of updated per entry
+	if err := sift.Suspend(exec, dbType, company, tables.CustomerLedgerEntryTableName); err != nil {
+		rollback()
+		return Counts{}, err
+	}
 	if err := insertEntries(exec, company, dbType, entries, &counts, p); err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	if err := (&tables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType); err != nil {
 		rollback()
 		return Counts{}, err
 	}
@@ -350,8 +361,28 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 	for i, e := range entries {
 		e.entryNo = firstNo + i
 	}
-	for _, e := range entries {
-		var rec tables.CustomerLedgerEntry
+	// Multi-row inserts (InsertAll) in chunks: one round trip per chunk instead of one per
+	// entry (HEAVY: 190,000 entries); every entry still runs its OnInsert trigger
+	const chunk = 1000
+	batch := make([]*gtables.CustomerLedgerEntryBase, 0, chunk)
+	flush := func(first int) error {
+		if err := last.InsertAll(batch, true); err != nil {
+			var batchErr *ftables.BatchInsertError
+			key, cause := "", err
+			if errors.As(err, &batchErr) {
+				key, cause = fmt.Sprint(entries[first+batchErr.Index].entryNo), batchErr.Err
+			}
+			return &InsertError{Table: tables.CustomerLedgerEntryTableName, Key: key, Err: cause}
+		}
+		counts.LedgerEntries += len(batch)
+		for range batch {
+			p.step()
+		}
+		batch = batch[:0]
+		return nil
+	}
+	for i, e := range entries {
+		rec := &tables.CustomerLedgerEntry{}
 		rec.InitWithDBType(exec, company, dbType)
 		rec.Entry_no = e.entryNo
 		rec.Customer_no = types.NewCode(e.customerNo)
@@ -379,11 +410,15 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		if e.docType == gtables.CustomerLedgerEntry_Document_type.Payment {
 			rec.Bal_account_type = gtables.CustomerLedgerEntry_Bal_account_type.BankAccount
 		}
-		if !rec.Insert(true) {
-			return &InsertError{Table: tables.CustomerLedgerEntryTableName, Key: fmt.Sprint(e.entryNo), Err: insertErr(rec.TriggerError())}
+		batch = append(batch, &rec.CustomerLedgerEntryBase)
+		if len(batch) == chunk {
+			if err := flush(i + 1 - chunk); err != nil {
+				return err
+			}
 		}
-		counts.LedgerEntries++
-		p.step()
+	}
+	if len(batch) > 0 {
+		return flush(len(entries) - len(batch))
 	}
 	return nil
 }

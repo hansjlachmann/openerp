@@ -75,6 +75,15 @@ type Key struct {
 
 const definitionTable = "_sift_definition"
 
+// storageOptions are the Postgres storage parameters of every totals table. Each posting
+// updates a totals row; only the sum columns and cnt change (not indexed), so with free
+// space on the page (fillfactor) the update is HOT: the new row version stays on the page,
+// the index is not touched and the old version is pruned on the next page access. The
+// autovacuum settings suit small tables with very many updates (the default waits for 20 %
+// of the table to be dead): vacuum and analyze after a fixed number of changed rows.
+const storageOptions = "fillfactor = 50, autovacuum_vacuum_scale_factor = 0, autovacuum_vacuum_threshold = 1000, " +
+	"autovacuum_analyze_scale_factor = 0, autovacuum_analyze_threshold = 1000"
+
 // Sync makes the database match keys for one table of one company: keys that are new or
 // whose fingerprint changed are (re)built, keys no longer defined are dropped, unchanged
 // keys cost one small query. Each rebuild runs in its own transaction; on Postgres an
@@ -92,11 +101,15 @@ func Sync(db database.Executor, dbType database.DBType, company, table string, k
 		if def, ok := stored[key.Name]; ok && def.fingerprint == key.Fingerprint {
 			// Unchanged — unless its totals table is gone (company deleted and created
 			// again, manual drop, partial restore): then rebuild
-			exists, err := tableExists(db, dbType, TableName(company, table, key.Name))
+			name := TableName(company, table, key.Name)
+			exists, err := tableExists(db, dbType, name)
 			if err != nil {
 				return err
 			}
 			if exists {
+				if err := ensureStorageOptions(db, dbType, name); err != nil {
+					return fmt.Errorf("SIFT %s.%s: %w", table, key.Name, err)
+				}
 				delete(stored, key.Name)
 				continue
 			}
@@ -171,6 +184,56 @@ func DropCompany(db database.Executor, dbType database.DBType, company string) e
 		}
 	}
 	_, err = db.Exec(placeholders(dbType, `DELETE FROM "`+definitionTable+`" WHERE company = ?`), company)
+	return err
+}
+
+// Suspend drops the SIFT totals and triggers of one table of a company (and forgets their
+// definitions), so a bulk load inserts its entries without a totals update per row — which
+// is slow and leaves a dead row version per entry on Postgres. Afterwards the table's
+// SyncKeys builds the totals again in one pass. Use both in the load's transaction, so a
+// failed load restores the totals with everything else.
+func Suspend(db database.Executor, dbType database.DBType, company, table string) error {
+	if err := ensureDefinitionTable(db); err != nil {
+		return err
+	}
+	stored, err := storedDefinitions(db, dbType, company, table)
+	if err != nil {
+		return err
+	}
+	for name, def := range stored {
+		if err := runAll(db, def.drop); err != nil {
+			return fmt.Errorf("SIFT %s.%s: suspend: %w", table, name, err)
+		}
+	}
+	_, err = db.Exec(placeholders(dbType, `DELETE FROM "`+definitionTable+`" WHERE company = ? AND table_name = ?`), company, table)
+	return err
+}
+
+// ensureStorageOptions gives a totals table created before storageOptions existed its
+// settings (Postgres). Only pages written from now on keep the free space; a rebuild
+// (Verify SIFT REPAIR) rewrites the whole table.
+func ensureStorageOptions(db database.Executor, dbType database.DBType, name string) error {
+	if dbType != database.DBTypePostgres {
+		return nil
+	}
+	var options sql.NullString
+	if err := db.QueryRow(`SELECT array_to_string(reloptions, ',') FROM pg_class WHERE relname = $1 AND relkind = 'r'`, name).Scan(&options); err != nil {
+		return err
+	}
+	if strings.Contains(options.String, "fillfactor=50") {
+		return nil
+	}
+	_, err := db.Exec(`ALTER TABLE "` + strings.ReplaceAll(name, `"`, `""`) + `" SET (` + storageOptions + `)`)
+	return err
+}
+
+// vacuum runs VACUUM ANALYZE on a totals table after a bulk change (Postgres). VACUUM cannot
+// run inside a transaction: within one (db is not a *sql.DB) autovacuum is left to do it.
+func vacuum(db database.Executor, dbType database.DBType, name string) error {
+	if _, ok := db.(*sql.DB); !ok || dbType != database.DBTypePostgres {
+		return nil
+	}
+	_, err := db.Exec(`VACUUM ANALYZE "` + strings.ReplaceAll(name, `"`, `""`) + `"`)
 	return err
 }
 
