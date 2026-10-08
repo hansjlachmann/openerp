@@ -50,6 +50,38 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## Feature: Job Queue — e-mail notification to one or more addresses (next feature)
+
+Jobs run automatically already (scheduler, `recurrence` Minutes/Hourly/Daily/Weekly, see "Job Queue —
+Automatic / Scheduled Execution" below) and a run can e-mail **one** address: `Job_Queue.notification_email`
+(Text 100) gated by `notify_on` (Never / Always / On Error), sent by `Scheduler.notify`
+(`backend/business-logic/scheduler/scheduler.go`) through `foundation/mail` (`SMTPMailer.Send(to, …)`,
+one recipient) with the global SMTP Setup (table 409). New: notify **several** addresses per job.
+
+Design (proposed):
+- [ ] **Recipients.** Either (a) `notification_email` takes a list separated by `;` (as BC's e-mail
+      fields), length raised to 250 by a migration, or (b) a new table `Job Queue Notification
+      Recipient` (job no + e-mail, optional "notify on" per recipient) edited from the Job Queue card,
+      unlimited recipients. Recommendation: (a) — no new table/page, matches BC, enough for a few
+      addresses; (b) if recipients need their own notify-on or language.
+- [ ] **Validation.** `OnValidate_Notification_email` checks every address (`net/mail.ParseAddress`),
+      trims spaces, rejects empty items and duplicates, with a translated error naming the bad address.
+- [ ] **Sending.** `Mailer.Send` takes `[]string`; one SMTP message to all recipients (one `RCPT TO`
+      each, all in the `To:` header). A rejected recipient is logged and does not stop the others
+      (`smtp.SendMail` aborts on the first rejection — send per recipient, or use `smtp.Client`).
+- [ ] **Message.** Localize subject/body via i18n (open follow-up: `formatNotification` is English
+      only); include company, job no/description, codeunit, parameter, start/end time, status, error
+      text, and the next start for recurring jobs.
+- [ ] **"Send test e-mail"** action on the Job Queue card/list: sends the notification for the selected
+      job to its recipients without running it (checks addresses and SMTP Setup).
+- [ ] **UI.** Show `notification_email` and `notify_on` on the Job Queue card (page 672 list has them);
+      wider field.
+- [ ] **Tests.** Parsing/validation of address lists; scheduler sends to all recipients per
+      `notify_on` (fake mailer); one bad recipient does not block the rest; migration keeps existing
+      single addresses.
+
+---
+
 ## Feature: SIFT (Sum Index Fields) — Phase 1: foundation ✅ DONE
 
 Implemented as planned below (`backend/foundation/sift`, tablegen, `SyncKeys`); first key: Customer
