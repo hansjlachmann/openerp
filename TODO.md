@@ -23,8 +23,18 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `scripts/backup.sh`) installed and tested.
 - [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
 - [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
-- [ ] **Production: set `NAV_PROXY_URL` in `prod.env` before upgrading past 0.1.84** — the NAV proxy
-      address is no longer built in (`docs/operations.md`, "NAV report proxy"); without it NAV reports fail.
+- [ ] **Production: upgrade to 0.1.85** once its release is out — needs `git pull` (the compose file passes
+      `NAV_PROXY_URL`). `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08); the NAV
+      proxy address is no longer built in (`docs/operations.md`, "NAV report proxy"). First merge the
+      release PR "chore(main): release 0.1.85" and wait for the Build & Release run to push the images,
+      then on the server:
+      ```bash
+      cd ~/openerp && scripts/backup.sh && git pull
+      sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.85/' prod.env
+      scripts/prod.sh pull && scripts/prod.sh up -d
+      ```
+      Check: `scripts/prod.sh ps` (backend/frontend on 0.1.85), `scripts/prod.sh logs backend --since 5m |
+      grep -iE "migration|error|WARNING"`, the browser shows v0.1.85, and a NAV report Job Queue entry runs.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
