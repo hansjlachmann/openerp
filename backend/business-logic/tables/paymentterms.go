@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,14 +60,14 @@ func (t *PaymentTerms) OnRename() error {
 
 // Validate validates all fields
 func (t *PaymentTerms) Validate() error {
-	if t.Code.IsEmpty() {
-		return errors.New("code is required")
+	if err := ftables.CheckRequired(gtables.PaymentTermsTableName, "code", t.Code.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Code) > 10 {
-		return errors.New("code cannot exceed 10 characters")
+	if err := ftables.CheckMaxLength(gtables.PaymentTermsTableName, "code", string(t.Code), 10); err != nil {
+		return err
 	}
-	if len(t.Description) > 30 {
-		return errors.New("description cannot exceed 30 characters")
+	if err := ftables.CheckMaxLength(gtables.PaymentTermsTableName, "description", string(t.Description), 30); err != nil {
+		return err
 	}
 
 	return nil

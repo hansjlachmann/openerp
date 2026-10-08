@@ -1,8 +1,10 @@
 package tables
 
 import (
-	"errors"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"time"
+	"unicode/utf8"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -73,20 +75,20 @@ func (t *User) OnRename() error {
 
 // Validate validates all fields
 func (t *User) Validate() error {
-	if t.User_id.IsEmpty() {
-		return errors.New("user_id is required")
+	if err := ftables.CheckRequired(gtables.UserTableName, "user_id", t.User_id.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.User_id) > 50 {
-		return errors.New("user_id cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.UserTableName, "user_id", string(t.User_id), 50); err != nil {
+		return err
 	}
-	if len(t.User_name) > 100 {
-		return errors.New("user_name cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.UserTableName, "user_name", string(t.User_name), 100); err != nil {
+		return err
 	}
-	if len(t.Email) > 100 {
-		return errors.New("email cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.UserTableName, "email", string(t.Email), 100); err != nil {
+		return err
 	}
-	if len(t.Language) > 10 {
-		return errors.New("language cannot exceed 10 characters")
+	if err := ftables.CheckMaxLength(gtables.UserTableName, "language", string(t.Language), 10); err != nil {
+		return err
 	}
 
 	return nil
@@ -99,10 +101,10 @@ func (t *User) Validate() error {
 // SetPassword hashes and stores the password
 func (t *User) SetPassword(password string) error {
 	if password == "" {
-		return errors.New("password cannot be empty")
+		return apperrors.FieldRequired(gtables.UserTableName, "password")
 	}
-	if len(password) < 6 {
-		return errors.New("password must be at least 6 characters")
+	if utf8.RuneCountInString(password) < 6 {
+		return apperrors.FieldTooShort(gtables.UserTableName, "password", 6)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

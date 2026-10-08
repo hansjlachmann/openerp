@@ -238,7 +238,7 @@ func TestInsertReturnsTriggerError(t *testing.T) {
 	if out["success"] != false {
 		t.Fatalf("insert succeeded, want OnInsert to reject a 60-character name")
 	}
-	if msg, _ := out["error"].(string); !strings.Contains(msg, "name cannot exceed 50") {
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "Name cannot exceed 50 characters") {
 		t.Errorf("error = %q, want the OnInsert validation message", msg)
 	}
 }
@@ -391,5 +391,40 @@ func TestRecordIDsFollowListQuery(t *testing.T) {
 	}
 	if status, _ := ids("?sort_by=password_hash"); status != 400 {
 		t.Errorf("sort by an unknown/sensitive column: %d, want 400", status)
+	}
+}
+
+// Trigger messages reach the user in the session's language, with the field's caption.
+func TestValidateMessageInSessionLanguage(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := (&tables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: c.Get("X-Language")})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/validate", h.ValidateField)
+
+	for language, want := range map[string]string{"en-US": "Name must be at least 3 characters", "nb-NO": "Navn må ha minst 3 tegn"} {
+		req := httptest.NewRequest("POST", "/api/tables/Customer/validate", strings.NewReader(`{"field":"name","value":"AB","record":{"no":"C1"}}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Language", language)
+		resp, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := io.ReadAll(resp.Body)
+		var out map[string]interface{}
+		_ = json.Unmarshal(raw, &out)
+		if msg, _ := out["error"].(string); msg != want {
+			t.Errorf("%s: error %q, want %q", language, msg, want)
+		}
 	}
 }

@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,17 +60,17 @@ func (t *Menu) OnRename() error {
 
 // Validate validates all fields
 func (t *Menu) Validate() error {
-	if t.Code.IsEmpty() {
-		return errors.New("code is required")
+	if err := ftables.CheckRequired(gtables.MenuTableName, "code", t.Code.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Code) > 20 {
-		return errors.New("code cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.MenuTableName, "code", string(t.Code), 20); err != nil {
+		return err
 	}
-	if len(t.Description) > 50 {
-		return errors.New("description cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.MenuTableName, "description", string(t.Description), 50); err != nil {
+		return err
 	}
-	if len(t.Filename) > 50 {
-		return errors.New("filename cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.MenuTableName, "filename", string(t.Filename), 50); err != nil {
+		return err
 	}
 
 	return nil

@@ -1,7 +1,8 @@
 package tables
 
 import (
-	"errors"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,14 +61,14 @@ func (t *Language) OnRename() error {
 
 // Validate validates all fields
 func (t *Language) Validate() error {
-	if t.Code.IsEmpty() {
-		return errors.New("code is required")
+	if err := ftables.CheckRequired(gtables.LanguageTableName, "code", t.Code.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Code) > 10 {
-		return errors.New("code cannot exceed 10 characters")
+	if err := ftables.CheckMaxLength(gtables.LanguageTableName, "code", string(t.Code), 10); err != nil {
+		return err
 	}
-	if len(t.Name) > 50 {
-		return errors.New("name cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.LanguageTableName, "name", string(t.Name), 50); err != nil {
+		return err
 	}
 
 	// Validate translation_key format
@@ -84,14 +85,9 @@ func (t *Language) Validate() error {
 func (t *Language) validateTranslationKey() error {
 	key := t.Translation_key.String()
 
-	// Must be exactly 5 characters
-	if len(key) != 5 {
-		return errors.New("translation key must be exactly 5 characters (format: xx-XX)")
-	}
-
-	// Position 3 (index 2) must be a dash
-	if key[2] != '-' {
-		return errors.New("translation key must have a dash (-) at position 3 (format: xx-XX)")
+	// Exactly 5 characters with a dash at position 3
+	if len(key) != 5 || key[2] != '-' {
+		return apperrors.FieldFormat(gtables.LanguageTableName, "translation_key", "xx-XX")
 	}
 
 	return nil

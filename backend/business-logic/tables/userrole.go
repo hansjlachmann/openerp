@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -58,14 +58,14 @@ func (t *UserRole) OnRename() error {
 
 // Validate validates all fields
 func (t *UserRole) Validate() error {
-	if t.Code.IsEmpty() {
-		return errors.New("code is required")
+	if err := ftables.CheckRequired(gtables.UserRoleTableName, "code", t.Code.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Code) > 20 {
-		return errors.New("code cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.UserRoleTableName, "code", string(t.Code), 20); err != nil {
+		return err
 	}
-	if len(t.Description) > 50 {
-		return errors.New("description cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.UserRoleTableName, "description", string(t.Description), 50); err != nil {
+		return err
 	}
 
 	return nil

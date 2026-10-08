@@ -771,9 +771,11 @@ Follow-ups (not done):
 - [x] Trigger errors surface as a generic "insert/modify failed" — **fixed.** Tables keep the failing
       OnInsert/OnModify/OnDelete error (`TriggerError()`); the API returns it with 400 and the frontend
       shows it (delete toasts too). Database errors keep the generic message.
-- [ ] Trigger/validation messages are hardcoded English (`errors.New("name cannot exceed 50
-      characters")` in the table wrappers' `Validate()`), and users now see them. Move them to
-      `translations/*/errors.yaml` per the CLAUDE.md i18n rule.
+- [x] Trigger/validation messages were hardcoded English (`errors.New("name cannot exceed 50
+      characters")` in the table wrappers' `Validate()`). Now `ftables.Check*` / `apperrors.Field*`
+      errors that name the field: translated (`errors.yaml`, en-US/nb-NO/da-DK) with the field's caption
+      ("Navn må ha minst 3 tegn"); lengths count characters (50 × "ø" fits a 50-character field — bytes
+      were counted before); the tablegen wrapper template does the same.
 - [x] `User.OnDelete` preferences cascade missed — **fixed.** It deletes from the same company-less
       preferences table the handler uses, by exact user ID. Preferences of users deleted before this
       fix are still orphaned in `$User_Preferences`; clean them up once if it matters.

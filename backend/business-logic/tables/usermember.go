@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -58,21 +58,21 @@ func (t *UserMember) OnRename() error {
 
 // Validate validates all fields
 func (t *UserMember) Validate() error {
-	if t.User_id.IsEmpty() {
-		return errors.New("user_id is required")
+	if err := ftables.CheckRequired(gtables.UserMemberTableName, "user_id", t.User_id.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.User_id) > 50 {
-		return errors.New("user_id cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.UserMemberTableName, "user_id", string(t.User_id), 50); err != nil {
+		return err
 	}
-	if t.Role_id.IsEmpty() {
-		return errors.New("role_id is required")
+	if err := ftables.CheckRequired(gtables.UserMemberTableName, "role_id", t.Role_id.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Role_id) > 20 {
-		return errors.New("role_id cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.UserMemberTableName, "role_id", string(t.Role_id), 20); err != nil {
+		return err
 	}
 	// company is optional: blank = access to all companies
-	if len(t.Company) > 100 {
-		return errors.New("company cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.UserMemberTableName, "company", string(t.Company), 100); err != nil {
+		return err
 	}
 
 	return nil

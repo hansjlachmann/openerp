@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -17,6 +18,13 @@ const (
 	ErrValidationFailed ErrorCode = "ERR_VALIDATION_FAILED"
 	ErrRequiredField    ErrorCode = "ERR_REQUIRED_FIELD"
 	ErrInvalidValue     ErrorCode = "ERR_INVALID_VALUE"
+	// Field validation (table triggers): %1 is the field's caption
+	ErrFieldTooLong     ErrorCode = "ERR_FIELD_TOO_LONG"
+	ErrFieldTooShort    ErrorCode = "ERR_FIELD_TOO_SHORT"
+	ErrFieldOutOfRange  ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
+	ErrFieldFormat      ErrorCode = "ERR_FIELD_FORMAT"
+	ErrRelatedNotFound  ErrorCode = "ERR_RELATED_NOT_FOUND"
+	ErrRelatedInactive  ErrorCode = "ERR_RELATED_INACTIVE"
 	ErrDeleteFailed     ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed     ErrorCode = "ERR_INSERT_FAILED"
 	ErrModifyFailed     ErrorCode = "ERR_MODIFY_FAILED"
@@ -72,6 +80,9 @@ const (
 type AppError struct {
 	Code   ErrorCode
 	Params []string // %1, %2, %3 replacements
+	// Table and Field name a table field the error is about: its caption in the message's
+	// language becomes %1 (Params follow as %2, %3, ...)
+	Table, Field string
 }
 
 // Error implements the error interface
@@ -85,9 +96,14 @@ func (e *AppError) Message(language string) string {
 	key := "errors." + string(e.Code)
 	template := ts.Translate(key, language)
 
+	params := e.Params
+	if e.Field != "" {
+		params = append([]string{ts.FieldCaption(e.Table, e.Field, language)}, params...)
+	}
+
 	// Replace placeholders %1, %2, %3, etc. with params
 	result := template
-	for i, param := range e.Params {
+	for i, param := range params {
 		placeholder := "%" + string(rune('1'+i))
 		result = strings.ReplaceAll(result, placeholder, param)
 	}
@@ -135,6 +151,41 @@ func InvalidValue(fieldName, value string) *AppError {
 		Code:   ErrInvalidValue,
 		Params: []string{fieldName, value},
 	}
+}
+
+// FieldRequired: a table field that must have a value is empty
+func FieldRequired(table, field string) *AppError {
+	return &AppError{Code: ErrRequiredField, Table: table, Field: field}
+}
+
+// FieldTooLong: a table field's value has more than max characters
+func FieldTooLong(table, field string, max int) *AppError {
+	return &AppError{Code: ErrFieldTooLong, Table: table, Field: field, Params: []string{strconv.Itoa(max)}}
+}
+
+// FieldTooShort: a table field's value has fewer than min characters
+func FieldTooShort(table, field string, min int) *AppError {
+	return &AppError{Code: ErrFieldTooShort, Table: table, Field: field, Params: []string{strconv.Itoa(min)}}
+}
+
+// FieldOutOfRange: a table field's value is outside min..max
+func FieldOutOfRange(table, field, min, max string) *AppError {
+	return &AppError{Code: ErrFieldOutOfRange, Table: table, Field: field, Params: []string{min, max}}
+}
+
+// FieldFormat: a table field's value does not have the expected format (e.g. "xx-XX")
+func FieldFormat(table, field, format string) *AppError {
+	return &AppError{Code: ErrFieldFormat, Table: table, Field: field, Params: []string{format}}
+}
+
+// RelatedNotFound: a table field refers to a record (value) that does not exist
+func RelatedNotFound(table, field, value string) *AppError {
+	return &AppError{Code: ErrRelatedNotFound, Table: table, Field: field, Params: []string{value}}
+}
+
+// RelatedInactive: a table field refers to a record (value) that may not be used
+func RelatedInactive(table, field, value string) *AppError {
+	return &AppError{Code: ErrRelatedInactive, Table: table, Field: field, Params: []string{value}}
 }
 
 // DeleteFailed creates an error for failed delete operation

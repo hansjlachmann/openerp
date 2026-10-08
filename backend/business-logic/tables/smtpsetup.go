@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -61,20 +61,20 @@ func (t *SMTPSetup) OnRename() error {
 // Validate validates all fields
 func (t *SMTPSetup) Validate() error {
 	// primary_key is a blank singleton key (BC-style setup table) - no required check
-	if len(t.Primary_key) > 20 {
-		return errors.New("primary_key cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "primary_key", string(t.Primary_key), 20); err != nil {
+		return err
 	}
-	if len(t.Smtp_server) > 250 {
-		return errors.New("smtp_server cannot exceed 250 characters")
+	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "smtp_server", string(t.Smtp_server), 250); err != nil {
+		return err
 	}
-	if len(t.User_id) > 100 {
-		return errors.New("user_id cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "user_id", string(t.User_id), 100); err != nil {
+		return err
 	}
-	if len(t.Password) > 250 {
-		return errors.New("password cannot exceed 250 characters")
+	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "password", string(t.Password), 250); err != nil {
+		return err
 	}
-	if len(t.From_address) > 100 {
-		return errors.New("from_address cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "from_address", string(t.From_address), 100); err != nil {
+		return err
 	}
 
 	return nil

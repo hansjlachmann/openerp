@@ -1,7 +1,9 @@
 package tables
 
 import (
-	"errors"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
+	"unicode/utf8"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -62,23 +64,23 @@ func (t *Customer) OnRename() error {
 
 // Validate validates all fields
 func (t *Customer) Validate() error {
-	if t.No.IsEmpty() {
-		return errors.New("no is required")
+	if err := ftables.CheckRequired(gtables.CustomerTableName, "no", t.No.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.No) > 20 {
-		return errors.New("no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerTableName, "no", string(t.No), 20); err != nil {
+		return err
 	}
-	if len(t.Name) > 50 {
-		return errors.New("name cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerTableName, "name", string(t.Name), 50); err != nil {
+		return err
 	}
-	if len(t.Address) > 50 {
-		return errors.New("address cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerTableName, "address", string(t.Address), 50); err != nil {
+		return err
 	}
-	if len(t.Post_code) > 20 {
-		return errors.New("post_code cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerTableName, "post_code", string(t.Post_code), 20); err != nil {
+		return err
 	}
-	if len(t.City) > 50 {
-		return errors.New("city cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerTableName, "city", string(t.City), 50); err != nil {
+		return err
 	}
 
 	return nil
@@ -95,10 +97,10 @@ func (t *Customer) OnValidate_Payment_terms_code() error {
 		var relatedRecord PaymentTerms
 		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Payment_terms_code) {
-			return errors.New("payment terms code does not exist")
+			return apperrors.RelatedNotFound(gtables.CustomerTableName, "payment_terms_code", t.Payment_terms_code.String())
 		}
 		if !relatedRecord.Active {
-			return errors.New("payment terms is inactive and cannot be used")
+			return apperrors.RelatedInactive(gtables.CustomerTableName, "payment_terms_code", t.Payment_terms_code.String())
 		}
 	}
 	return nil
@@ -106,8 +108,8 @@ func (t *Customer) OnValidate_Payment_terms_code() error {
 
 // OnValidate_Name validates the name field
 func (t *Customer) OnValidate_Name() error {
-	if len(t.Name) > 0 && len(t.Name) < 3 {
-		return errors.New("name must be at least 3 characters")
+	if n := utf8.RuneCountInString(string(t.Name)); n > 0 && n < 3 {
+		return apperrors.FieldTooShort(gtables.CustomerTableName, "name", 3)
 	}
 	return nil
 }
