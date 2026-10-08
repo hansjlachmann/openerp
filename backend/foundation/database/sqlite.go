@@ -5,8 +5,37 @@ import (
 	"fmt"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
+
+// SQLiteDriver is the driver name the application opens SQLite with: go-sqlite3 with a
+// Unicode lower(). SQLite's built-in lower() only folds ASCII letters, so the list search
+// (LOWER(column) LIKE '%text%', text lowered in Go) did not find "Ørsta" when typing "ø".
+const SQLiteDriver = "sqlite3_openerp"
+
+func init() {
+	sql.Register(SQLiteDriver, &sqlite3.SQLiteDriver{
+		ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+			return conn.RegisterFunc("lower", unicodeLower, true)
+		},
+	})
+}
+
+// unicodeLower is lower() for SQLite: Unicode case folding like Go's strings.ToLower (and
+// Postgres' LOWER); NULL stays NULL, other values are lowered as their text.
+func unicodeLower(v any) any {
+	switch s := v.(type) {
+	case string:
+		return strings.ToLower(s)
+	case []byte:
+		if s == nil { // NULL
+			return nil
+		}
+		return strings.ToLower(string(s))
+	default:
+		return strings.ToLower(fmt.Sprint(s))
+	}
+}
 
 // DBType represents the type of database backend
 type DBType string
@@ -26,7 +55,7 @@ type Database struct {
 
 // CreateDatabase creates a new SQLite database file
 func CreateDatabase(path string) (*Database, error) {
-	conn, err := sql.Open("sqlite3", path)
+	conn, err := sql.Open(SQLiteDriver, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database: %w", err)
 	}
@@ -76,7 +105,7 @@ func CreateDatabase(path string) (*Database, error) {
 
 // OpenDatabase opens an existing SQLite database file
 func OpenDatabase(path string) (*Database, error) {
-	conn, err := sql.Open("sqlite3", path)
+	conn, err := sql.Open(SQLiteDriver, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

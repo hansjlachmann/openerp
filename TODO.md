@@ -371,8 +371,9 @@ Open follow-ups:
       window 422 ms → 55 ms (deep window 865 ms → 88 ms).
 - [ ] Card navigation (`/ids`) returns all keys in primary-key order and ignores the list's
       sort/search/filter.
-- [ ] SQLite `LOWER()` only folds ASCII, so on SQLite the search is case-sensitive for æ/ø/å
-      (Postgres is fine).
+- [x] SQLite `LOWER()` only folds ASCII, so on SQLite the search was case-sensitive for æ/ø/å
+      (Postgres is fine). The application opens SQLite with its own driver (`database.SQLiteDriver`)
+      whose `lower()` is Go's `strings.ToLower`.
 
 ---
 
