@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
+	import { navigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import type { TableFilter, LookupData, DialogResult } from '$lib/types/api';
 	import { goto } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
@@ -55,7 +56,8 @@
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
-		onrowclick?: (record: Record<string, any>) => void;
+		// Open the card page of a record; navigation = the list's query for the card's record navigation
+		onrowclick?: (record: Record<string, any>, navigation?: NavigationQuery) => void;
 		onsave?: (record: Record<string, any>, isNew: boolean) => Promise<void>;
 		ondelete?: (record: Record<string, any>) => Promise<void>;
 		onfilter?: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
@@ -2003,7 +2005,7 @@
 				await openModalCard(record);
 			} else {
 				// Navigate to full page
-				onrowclick?.(record);
+				onrowclick?.(record, cardNavigationQuery);
 			}
 		}
 	}
@@ -2120,7 +2122,7 @@
 				await openModalCard(selectedRecord);
 			} else {
 				// Navigate to full page
-				onrowclick?.(selectedRecord);
+				onrowclick?.(selectedRecord, cardNavigationQuery);
 			}
 		}
 	}
@@ -2141,6 +2143,20 @@
 			})
 			.map(item => item.field);
 	});
+
+	// The list's filters, search and sort (as sent to the server): a card opened from the list
+	// navigates through the same records in the same order
+	const cardNavigationQuery = $derived(
+		navigationQuery({
+			filters: currentFilters,
+			search: searchQuery,
+			search_fields: visibleColumns()
+				.map((f) => f.source)
+				.filter((source) => isSortable(source)),
+			sort_by: sortField ?? undefined,
+			sort_order: sortDirection
+		})
+	);
 
 	// FlowFields are computed, not stored: the server can not sort on them
 	function isSortable(fieldSource: string): boolean {
@@ -2833,6 +2849,7 @@
 		onaction={handleModalAction}
 		onsave={handleModalSave}
 		onclearerror={handleClearError}
+		navigationQuery={cardNavigationQuery}
 	/>
 {/if}
 

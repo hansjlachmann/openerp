@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import { onMount } from 'svelte';
 	import type { PageDefinition } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
@@ -28,9 +29,10 @@
 		initialFilter?: string;
 		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
 		initialSelect?: string; // record key to select (returning from a drilldown)
+		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
 	}
 
-	let { pageid, recordid, initialFilter, returnUrl, initialSelect }: Props = $props();
+	let { pageid, recordid, initialFilter, returnUrl, initialSelect, navigationQuery }: Props = $props();
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -205,7 +207,7 @@
 			// Load record IDs for navigation if enabled
 			if (page.page.enable_navigation && recordid) {
 				// Use lightweight IDs-only endpoint
-				recordIds = await api.getRecordIDs(page.page.source_table);
+				recordIds = await api.getRecordIDs(page.page.source_table, navigationQuery);
 
 				// Find current record index
 				currentRecordIndex = recordIds.indexOf(recordid);
@@ -446,11 +448,11 @@
 	}
 
 	// Handle row click in list page
-	function handleRowClick(clickedRecord: Record<string, any>) {
+	function handleRowClick(clickedRecord: Record<string, any>, navigation?: NavigationQuery) {
 		if (!page || !page.page.card_page_id) return;
 
 		const recordId = getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList);
-		window.location.href = `/pages/${page.page.card_page_id}/${recordId}`;
+		window.location.href = withNavigationQuery(`/pages/${page.page.card_page_id}/${recordId}`, navigation);
 	}
 
 	// Handle save notification from list page (inline editing)
@@ -495,7 +497,7 @@
 	// Navigation functions for card pages
 	function navigateToRecord(targetRecordId: string) {
 		if (!page) return;
-		window.location.href = `/pages/${page.page.id}/${targetRecordId}`;
+		window.location.href = withNavigationQuery(`/pages/${page.page.id}/${targetRecordId}`, navigationQuery);
 	}
 
 	// Create navigation actions using shared helper

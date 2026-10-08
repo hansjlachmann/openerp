@@ -382,22 +382,21 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Parse query parameters
-	sortBy := c.Query("sort_by", "")
-	if sortBy != "" {
-		// Field names end up in SQL text: only accept real (non-sensitive) columns of this table
-		if !ftables.IsQueryableColumn(table, sortBy) {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
-		}
-		table.SetCurrentKey(sortBy)
+	// The list's filters, search and sort: card navigation (First/Previous/Next/Last) moves
+	// through the records in the order and selection the list shows
+	if err := applyListQuery(c, table, language); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
-	// Collect IDs
-	var ids []string
+	// Collect IDs (the full key, comma-separated for composite keys, as the frontend's getRecordId)
+	ids := make([]string, 0)
 	if table.FindSet() {
-		ids = append(ids, table.GetPrimaryKeyValue())
-		for table.Next() {
-			ids = append(ids, table.GetPrimaryKeyValue())
+		for {
+			_, id := fullPrimaryKey(table)
+			ids = append(ids, id)
+			if !table.Next() {
+				break
+			}
 		}
 	}
 
@@ -405,6 +404,56 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 		"ids": ids,
 	})
 	return c.JSON(response)
+}
+
+// applyListQuery applies the list query parameters shared by /list and /ids: sort_by and
+// sort_order, filters (JSON [{field, expression}], BC filter expressions) and search with
+// search_fields (case-insensitive "contains"). Field names end up in SQL text: only real,
+// non-sensitive columns of the table are accepted.
+func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
+	if sortBy := c.Query("sort_by", ""); sortBy != "" {
+		if !ftables.IsQueryableColumn(table, sortBy) {
+			return errors.New(apperrors.InvalidSortField().Message(language))
+		}
+		table.SetCurrentKey(sortBy)
+	}
+	switch c.Query("sort_order", "asc") {
+	case "asc":
+	case "desc":
+		table.SetAscending(false)
+	default:
+		return errors.New(apperrors.InvalidSortField().Message(language))
+	}
+
+	if filtersParam := c.Query("filters", ""); filtersParam != "" {
+		var apiFilters []struct {
+			Field      string `json:"field"`
+			Expression string `json:"expression"`
+		}
+		if err := json.Unmarshal([]byte(filtersParam), &apiFilters); err != nil {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		for _, f := range apiFilters {
+			if !ftables.IsQueryableColumn(table, f.Field) {
+				return errors.New(apperrors.InvalidFilters().Message(language))
+			}
+			table.SetFilter(f.Field, f.Expression)
+		}
+	}
+
+	if search := strings.TrimSpace(c.Query("search", "")); search != "" {
+		var searchFields []string
+		if err := json.Unmarshal([]byte(c.Query("search_fields", "[]")), &searchFields); err != nil {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		for _, f := range searchFields {
+			if !ftables.IsQueryableColumn(table, f) {
+				return errors.New(apperrors.InvalidFilters().Message(language))
+			}
+		}
+		table.SetSearch(searchFields, search)
+	}
+	return nil
 }
 
 // ListRecords returns a list of records from a table
@@ -426,21 +475,9 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Parse query parameters
-	sortBy := c.Query("sort_by", "")
-	if sortBy != "" {
-		// Field names end up in SQL text: only accept real (non-sensitive) columns of this table
-		if !ftables.IsQueryableColumn(table, sortBy) {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
-		}
-		table.SetCurrentKey(sortBy)
-	}
-	switch c.Query("sort_order", "asc") {
-	case "asc":
-	case "desc":
-		table.SetAscending(false)
-	default:
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidSortField().Message(language)))
+	// Sort, filters and search
+	if err := applyListQuery(c, table, language); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
 	// Setup tables always have their single record present (BC-style)
@@ -460,40 +497,6 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		if err := json.Unmarshal([]byte(fieldsParam), &requestedFields); err != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
 		}
-	}
-
-	// Parse filters parameter (JSON array of filter expressions)
-	filtersParam := c.Query("filters", "")
-	if filtersParam != "" {
-		var apiFilters []struct {
-			Field      string `json:"field"`
-			Expression string `json:"expression"`
-		}
-		if err := json.Unmarshal([]byte(filtersParam), &apiFilters); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
-		}
-
-		// Apply BC-style filters (field names end up in SQL text: only accept real columns)
-		for _, f := range apiFilters {
-			if !ftables.IsQueryableColumn(table, f.Field) {
-				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
-			}
-			table.SetFilter(f.Field, f.Expression)
-		}
-	}
-
-	// Search box: case-insensitive "contains" over the given columns (any of them)
-	if search := strings.TrimSpace(c.Query("search", "")); search != "" {
-		var searchFields []string
-		if err := json.Unmarshal([]byte(c.Query("search_fields", "[]")), &searchFields); err != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
-		}
-		for _, f := range searchFields {
-			if !ftables.IsQueryableColumn(table, f) {
-				return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidFilters().Message(language)))
-			}
-		}
-		table.SetSearch(searchFields, search)
 	}
 
 	// Pagination window (opt-in): offset/limit (list page windows) or page/page_size.

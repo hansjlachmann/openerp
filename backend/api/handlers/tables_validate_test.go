@@ -355,3 +355,41 @@ func TestRenameToExistingKey(t *testing.T) {
 		t.Fatalf("rename to a free key: %d %v", status, out["error"])
 	}
 }
+
+// /ids applies the list's filters, search and sort, so card navigation follows the list.
+func TestRecordIDsFollowListQuery(t *testing.T) {
+	app := newTablesTestApp(t)
+	for _, c := range []struct{ no, name string }{{"C1", "Delta Sykkel"}, {"C2", "Alfa AS"}, {"C3", "Charlie Sykkel"}, {"C4", "Bravo AS"}} {
+		if out := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"`+c.no+`","name":"`+c.name+`"}`); out["success"] != true {
+			t.Fatalf("insert %s: %v", c.no, out["error"])
+		}
+	}
+	ids := func(query string) (int, string) {
+		resp, err := app.Test(httptest.NewRequest("GET", "/api/tables/Customer/ids"+query, nil), -1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := io.ReadAll(resp.Body)
+		var out struct {
+			Data struct {
+				IDs []string `json:"ids"`
+			} `json:"data"`
+		}
+		_ = json.Unmarshal(raw, &out)
+		return resp.StatusCode, strings.Join(out.Data.IDs, ",")
+	}
+	for _, tc := range []struct{ query, want string }{
+		{"", "C1,C2,C3,C4"},
+		{"?sort_by=name", "C2,C4,C3,C1"},
+		{"?sort_by=name&sort_order=desc", "C1,C3,C4,C2"},
+		{"?filters=" + url.QueryEscape(`[{"field":"no","expression":"C2..C3"}]`), "C2,C3"},
+		{"?search=sykkel&search_fields=" + url.QueryEscape(`["name"]`) + "&sort_by=name", "C3,C1"},
+	} {
+		if status, got := ids(tc.query); status != 200 || got != tc.want {
+			t.Errorf("ids%s = %d %q, want %q", tc.query, status, got, tc.want)
+		}
+	}
+	if status, _ := ids("?sort_by=password_hash"); status != 400 {
+		t.Errorf("sort by an unknown/sensitive column: %d, want 400", status)
+	}
+}

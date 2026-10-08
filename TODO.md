@@ -365,12 +365,14 @@ Open follow-ups:
       rebuilt from the reloaded window. `handleDelete` now rebuilds it (keeping unsaved new rows) and
       keeps the selection on the next record. Delete in the modal card used the browser's English
       `confirm()` and left the record count stale: now the translated dialog and a list reload.
-- [ ] List cells ignore per-field `editable: false` except for paste and F8 (typing/F2 still edit).
+- [x] List cells ignored per-field `editable: false` except for paste and F8 (typing/F2 still edited);
+      FlowField columns could be typed into too. `isCellEditable` in `ListPage` guards every way in.
 - [x] Lookups on demand for large related tables (> 200 rows): `lazy_url` + `GET …/lookup/:field`
       with server search; relation values checked on insert/modify. demo04 Customer Ledger Entries
       window 422 ms → 55 ms (deep window 865 ms → 88 ms).
-- [ ] Card navigation (`/ids`) returns all keys in primary-key order and ignores the list's
-      sort/search/filter.
+- [x] Card navigation (`/ids`) returned all keys in primary-key order and ignored the list's
+      sort/search/filter. `/ids` now applies the list query (shared `applyListQuery`); the list hands it
+      to the modal card (prop) and card pages (`?nav=`).
 - [x] SQLite `LOWER()` only folds ASCII, so on SQLite the search was case-sensitive for æ/ø/å
       (Postgres is fine). The application opens SQLite with its own driver (`database.SQLiteDriver`)
       whose `lower()` is Go's `strings.ToLower`.
