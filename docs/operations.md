@@ -10,7 +10,7 @@ holds:
 
 | File | Tracked | What |
 |---|---|---|
-| `prod.env` | no (`.gitignore`) | Server settings and secrets: `APP_VERSION`, `JWT_SECRET`, `POSTGRES_PASSWORD`, `PUBLISH_HOST`. Template: `prod.env.example` |
+| `prod.env` | no (`.gitignore`) | Server settings and secrets: `APP_VERSION`, `JWT_SECRET`, `POSTGRES_PASSWORD`, `PUBLISH_HOST`, `NAV_PROXY_URL`. Template: `prod.env.example` |
 | `certs/` | no | TLS certificate and key for nginx (`selfsigned.crt`, `selfsigned.key`) |
 
 Always use the wrapper `scripts/prod.sh` instead of plain `docker compose`. It passes
@@ -161,3 +161,11 @@ If the backend logs a password error afterwards, the two do not match: fix `prod
 `JWT_SECRET` signs the session cookies. Without it the backend generates a random key on every
 start (and logs a warning): sessions do not survive a restart. Set it once
 (`openssl rand -hex 32`) and keep it; changing it logs everyone out once.
+
+## NAV report proxy
+
+The NAV Report Runner codeunit (Job Queue) calls a NAV report proxy at `NAV_PROXY_URL` in
+`prod.env` (e.g. `http://<proxy-host>:5009`). Empty means `http://localhost:5009` — inside the
+backend container that is the container itself, so set the proxy's real address. Releases up to
+0.1.84 had the address built in; when upgrading from one of them, add `NAV_PROXY_URL` to
+`prod.env` before `scripts/prod.sh up -d`.
