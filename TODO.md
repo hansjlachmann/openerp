@@ -345,8 +345,8 @@ Open follow-ups:
       page load (the server side follows at once). Needs a generic way for the list page to refresh
       the session after a save.
 - [ ] A rename to an existing key fails with the generic "Failed to modify …"; say that the key exists.
-- [ ] Code fields in list cells are sent to the API lowercase (`fieldTypes` holds `types.Code`, the
-      uppercase check compares with `code`); the backend uppercases them, so the stored value is right.
+- [x] Code fields in list cells were sent to the API lowercase (`fieldTypes` holds `types.Code`, the
+      uppercase check compared with `code`) — fixed with `isCodeType` (`utils/fieldHelpers.ts`).
 - [x] Customer Ledger Entries page 25 (menu, drilldowns from the Customer list's Balance/Sales, card
       action "Ledger Entries"/Ctrl+F7 filtered to the customer). Found on the way: actions without
       `enabled: true` were disabled (Go bool default) and pages naming their table by registry name got

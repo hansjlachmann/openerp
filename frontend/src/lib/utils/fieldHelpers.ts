@@ -8,6 +8,13 @@ export function isDateType(fieldType: string | undefined): boolean {
 	return fieldType === 'types.Date' || fieldType === 'Date';
 }
 
+/** Check if a field type represents a Code (from YAML "types.Code" or Go "Code"): typed in any
+ * case, uppercased when the field is left (BC/NAV) */
+export function isCodeType(fieldType: string | undefined): boolean {
+	if (!fieldType) return false;
+	return fieldType === 'types.Code' || fieldType === 'Code' || fieldType === 'code';
+}
+
 /** Check if a field type represents a DateTime (from YAML "types.DateTime" or Go "DateTime") */
 export function isDateTimeType(fieldType: string | undefined): boolean {
 	if (!fieldType) return false;

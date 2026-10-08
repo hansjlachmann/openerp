@@ -26,7 +26,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
@@ -801,7 +801,7 @@
 		// Apply Code uppercase and save the previous cell
 		if (record) {
 			const field = cols[prevCol];
-			if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+			if (field && isCodeType(fieldTypes[field.source]) && typeof record[field.source] === 'string') {
 				record[field.source] = record[field.source].toUpperCase();
 			}
 			await handleCellBlur(record, prevRow, field?.source, targetRecord !== record);
@@ -1051,7 +1051,7 @@
 		const record = displayRecords[rowIndex];
 		if (!record || isEmptyNewRecord(record)) return;
 		const field = visibleColumns()[colIndex];
-		if (field && fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+		if (field && isCodeType(fieldTypes[field.source]) && typeof record[field.source] === 'string') {
 			record[field.source] = record[field.source].toUpperCase();
 		}
 		handleCellBlur(record, rowIndex, field?.source, true);
@@ -1323,7 +1323,7 @@
 							const currentRecord = displayRecords[rowIndex];
 							if (!isEmptyNewRecord(currentRecord)) {
 								const field = cols[colIndex];
-								if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+								if (field && isCodeType(fieldTypes[field.source]) && typeof currentRecord[field.source] === 'string') {
 									currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 								}
 								handleCellBlur(currentRecord, rowIndex, field?.source, true);
@@ -1443,7 +1443,7 @@
 					if (!isEmptyNewRecord(currentRecord)) {
 						// Save current cell, then create new row
 						const field = cols[colIndex];
-						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+						if (field && isCodeType(fieldTypes[field.source]) && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
 						handleCellBlur(currentRecord, rowIndex, field?.source, true);
@@ -1491,7 +1491,7 @@
 					const currentRecord = displayRecords[rowIndex];
 					if (!isEmptyNewRecord(currentRecord)) {
 						const field = cols[colIndex];
-						if (field && fieldTypes[field.source] === 'code' && typeof currentRecord[field.source] === 'string') {
+						if (field && isCodeType(fieldTypes[field.source]) && typeof currentRecord[field.source] === 'string') {
 							currentRecord[field.source] = currentRecord[field.source].toUpperCase();
 						}
 						handleCellBlur(currentRecord, rowIndex, field?.source, true);
@@ -1634,7 +1634,7 @@
 				const field = cols[blurredCol];
 				const record = displayRecords[blurredRow];
 				if (record && field) {
-					if (fieldTypes[field.source] === 'code' && typeof record[field.source] === 'string') {
+					if (isCodeType(fieldTypes[field.source]) && typeof record[field.source] === 'string') {
 						record[field.source] = record[field.source].toUpperCase();
 					}
 					handleCellBlur(record, blurredRow, field.source, true);
