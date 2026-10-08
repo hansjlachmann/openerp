@@ -341,9 +341,10 @@ Open follow-ups:
       renamed/deleted company are dropped (the renaming user keeps working with a new cookie); startup
       no longer re-creates a renamed `COMPANY_NAME`; global tables no longer get an index copy per
       company (migration 007: 9 → 2 indexes per global table locally).
-- [ ] After renaming the company you work in, the menu bar shows the old company name until the next
-      page load (the server side follows at once). Needs a generic way for the list page to refresh
-      the session after a save.
+- [x] After renaming the company you work in, the menu bar showed the old company name until the next
+      page load. Generic now: a response that re-issues the session cookie carries `X-Session-Changed`
+      (`middleware.SetAuthCookie`); the API helpers reload the session store when they see it, and the
+      menu bar reloads its companies when the current one is not among them.
 - [x] A rename to an existing key failed with the generic "Failed to modify …": `ModifyRecord` now checks
       the new full primary key first and answers 409 "<Table> <key> already exists".
 - [x] Code fields in list cells were sent to the API lowercase (`fieldTypes` holds `types.Code`, the

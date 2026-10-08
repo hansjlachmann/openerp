@@ -72,3 +72,30 @@ func TestAuthMiddlewareCompanyGone(t *testing.T) {
 		t.Error("RemoveByCompany removed the wrong entries")
 	}
 }
+
+// A response that re-issues the session cookie tells the frontend to reload its session
+// state (X-Session-Changed); other responses do not.
+func TestSetAuthCookieSignalsSessionChange(t *testing.T) {
+	config := JWTConfig{SecretKey: []byte("test"), CookieName: "openerp_session", TokenExpiry: time.Hour}
+	app := fiber.New()
+	app.Get("/reissue", func(c *fiber.Ctx) error {
+		SetAuthCookie(c, config, "token")
+		return c.SendStatus(200)
+	})
+	app.Get("/plain", func(c *fiber.Ctx) error { return c.SendStatus(200) })
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/reissue", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Header.Get(SessionChangedHeader) == "" || !strings.Contains(resp.Header.Get("Set-Cookie"), "openerp_session=token") {
+		t.Errorf("re-issued cookie: header %q, Set-Cookie %q", resp.Header.Get(SessionChangedHeader), resp.Header.Get("Set-Cookie"))
+	}
+	resp, err = app.Test(httptest.NewRequest("GET", "/plain", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Header.Get(SessionChangedHeader) != "" {
+		t.Error("X-Session-Changed on a response that did not change the session")
+	}
+}

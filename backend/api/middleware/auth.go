@@ -100,8 +100,14 @@ func ParseToken(config JWTConfig, tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
+// SessionChangedHeader is set on every response that re-issues the session cookie.
+const SessionChangedHeader = "X-Session-Changed"
+
 // SetAuthCookie sets the JWT as an HTTP-only cookie
 func SetAuthCookie(c *fiber.Ctx, config JWTConfig, token string) {
+	// The session (company, user) of this response differs from the request's: the frontend
+	// reloads its session state (e.g. the menu bar after renaming the current company)
+	c.Set(SessionChangedHeader, "1")
 	c.Cookie(&fiber.Cookie{
 		Name:     config.CookieName,
 		Value:    token,

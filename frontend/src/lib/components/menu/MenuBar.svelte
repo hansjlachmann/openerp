@@ -66,6 +66,18 @@
 		}
 	});
 
+	// The current company is not among the loaded companies (renamed while working in it):
+	// reload them for its display name — once per name, it may also be one without access
+	let companiesReloadedFor = '';
+	$effect(() => {
+		const name = $currentCompany;
+		if (!name || companies.length === 0 || companiesReloadedFor === name) return;
+		if (!companies.some((c) => c.name === name)) {
+			companiesReloadedFor = name;
+			api.getCompanies().then(comps => { companies = comps; }).catch(() => {});
+		}
+	});
+
 	onMount(async () => {
 		try {
 			// Load current user info from storage

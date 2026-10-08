@@ -1,6 +1,18 @@
 // API response handling utilities
 
 import type { ApiResponse, CaptionData } from '$types/api';
+import { session } from '$stores/session';
+
+/**
+ * The backend sends X-Session-Changed when a response re-issued the session cookie (e.g.
+ * renaming the company the user works in): reload the session state, so the menu bar and
+ * everything else showing the company or user follows at once.
+ */
+export function followSessionChange(response: Response): void {
+	if (response.headers?.get('X-Session-Changed')) {
+		void session.initialize();
+	}
+}
 
 /**
  * Result type for API calls that need both data and captions
@@ -33,6 +45,7 @@ export async function handleApiResponse<T>(
 	response: Response,
 	errorContext: string
 ): Promise<T> {
+	followSessionChange(response);
 	if (!response.ok) {
 		throw new Error(await parseApiError(response, errorContext));
 	}
@@ -52,6 +65,7 @@ export async function handleApiResponseVoid(
 	response: Response,
 	errorContext: string
 ): Promise<void> {
+	followSessionChange(response);
 	if (!response.ok) {
 		throw new Error(await parseApiError(response, errorContext));
 	}
@@ -69,6 +83,7 @@ export async function handleApiResponseFull<T = any>(
 	response: Response,
 	errorContext: string
 ): Promise<ApiResponse<T>> {
+	followSessionChange(response);
 	if (!response.ok) {
 		try {
 			const result: ApiResponse<T> = await response.json();
@@ -91,6 +106,7 @@ export async function handleApiResponseWithCaptions<T>(
 	response: Response,
 	errorContext: string
 ): Promise<DataWithCaptions<T>> {
+	followSessionChange(response);
 	if (!response.ok) {
 		throw new Error(await parseApiError(response, errorContext));
 	}
