@@ -50,15 +50,30 @@ table:
       db_name: recurrence
       options: ["Once", "Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
 
+    # One or more addresses separated by ";" (BC style), checked by OnValidate
     - name: notification_email
       type: types.Text
       db_name: notification_email
-      length: 100
+      length: 250
 
     - name: notify_on
       type: Option
       db_name: notify_on
       options: ["Never", "Always", "On Error"]
+
+    # Language of the notification e-mails; blank = the default language
+    - name: notification_language
+      type: types.Code
+      db_name: notification_language
+      length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: name
+            width: 200
 
     # FlowField - count of related Job Queue Entries
     - name: number_of_entries

@@ -216,6 +216,24 @@ messages:
   DEMO_DATA_CUSTOMERS: "Oppretter kunder..."
   DEMO_DATA_ENTRIES: "Oppretter kundeposter..."
 
+  # Jobbkø-varsler på e-post (%1 jobb, %2 selskap)
+  JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Jobbkø %1 fullført (%2)"
+  JOBQUEUE_MAIL_SUBJECT_ERROR: "Jobbkø %1 feilet (%2)"
+  JOBQUEUE_MAIL_SUBJECT_TEST: "Jobbkø %1: test-e-post (%2)"
+  JOBQUEUE_MAIL_RESULT: "Resultat"
+  JOBQUEUE_MAIL_SUCCEEDED: "Fullført"
+  JOBQUEUE_MAIL_FAILED: "Feilet"
+  JOBQUEUE_MAIL_STARTED: "Startet"
+  JOBQUEUE_MAIL_FINISHED: "Ferdig"
+  JOBQUEUE_MAIL_ERROR: "Feil"
+  JOBQUEUE_MAIL_STOPPED: "Jobbens status er nå Feil: den kjøres ikke igjen før statusen settes tilbake til Klar."
+  JOBQUEUE_MAIL_TEST_INTRO: "Dette er en test-e-post. Varsler for denne jobben sendes til: %1"
+  JOBQUEUE_TEST_MAIL_SENT: "Test-e-post sendt til %1."
+  JOBQUEUE_TEST_MAIL_PARTIAL: "Test-e-post sendt til %1. Ikke sendt til: %2"
+  JOBQUEUE_TEST_MAIL_NO_RECIPIENTS: "Jobbkø %1 har ingen %2. Skriv inn én eller flere e-postadresser, skilt med ;."
+  JOBQUEUE_TEST_MAIL_NO_SMTP: "E-post er ikke satt opp. Aktiver SMTP-oppsett og fyll inn SMTP-server og avsenderadresse."
+  JOBQUEUE_TEST_MAIL_FAILED: "Test-e-posten kunne ikke sendes: %1"
+
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på at du vil slette denne posten?"
   DLG_DELETE_CONFIRM: "Er du sikker på at du vil slette denne %1?"

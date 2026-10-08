@@ -14,6 +14,8 @@ errors:
   ERR_FIELD_FORMAT: "%1 skal have formatet %2"
   ERR_RELATED_NOT_FOUND: "%1 '%2' findes ikke"
   ERR_RELATED_INACTIVE: "%1 '%2' er inaktiv og kan ikke bruges"
+  ERR_EMAIL_INVALID: "%1: '%2' er ikke en gyldig e-mailadresse"
+  ERR_EMAIL_DUPLICATE: "%1: '%2' står der flere gange"
   ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
   ERR_INSERT_FAILED: "Kunne ikke indsætte %1"
   ERR_MODIFY_FAILED: "Kunne ikke ændre %1 %2"

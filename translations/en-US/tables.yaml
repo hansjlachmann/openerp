@@ -202,8 +202,9 @@ tables:
       minutes_between_run: "Minutes between Run"
       recurring_job: "Recurring Job"
       recurrence: "Recurrence"
-      notification_email: "Notification Email"
+      notification_email: "Notification E-mail"
       notify_on: "Notify On"
+      notification_language: "Notification Language"
       number_of_entries: "No. of Entries"
 
     # Option field values

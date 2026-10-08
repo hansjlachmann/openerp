@@ -65,5 +65,7 @@ pages:
   # Job Queue pages
   job_queue_list:
     caption: "Jobbkø"
+  job_queue_card:
+    caption: "Jobbkøkort"
   job_queue_entries_list:
     caption: "Jobbkøposter"

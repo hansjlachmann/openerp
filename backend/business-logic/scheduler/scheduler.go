@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
+	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -191,11 +192,18 @@ func (s *Scheduler) runJob(company string, job *tables.JobQueue) {
 	fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
 	defer fcodeunits.ClearCurrentContext()
 
-	start := types.Now()
+	start := time.Now()
 	runErr := s.execute(company, job)
+	end := time.Now()
 
 	s.finish(company, job.No.String(), runErr)
-	s.notify(job, runErr, start)
+	// The notification reports the job as saved after the run (status, next start)
+	var after tables.JobQueue
+	after.InitWithDBType(s.db, company, s.dbType)
+	if !after.Get(job.No.String()) {
+		after = *job
+	}
+	s.notify(company, &after, jobqueue.Run{Start: start, End: end, Err: runErr})
 }
 
 // execute looks up and runs the codeunit referenced by object_id_to_run.
@@ -269,55 +277,18 @@ func (s *Scheduler) finish(company, jobNo string, runErr error) {
 	}
 }
 
-// notify emails the job's notification_email according to notify_on.
-func (s *Scheduler) notify(job *tables.JobQueue, runErr error, start types.DateTime) {
-	to := strings.TrimSpace(job.Notification_email.String())
-	if to == "" {
+// notify e-mails the run's outcome to the job's notification addresses according to
+// notify_on, in the job's notification language. A rejected address is logged and
+// does not stop the others.
+func (s *Scheduler) notify(company string, job *tables.JobQueue, run jobqueue.Run) {
+	if !jobqueue.ShouldNotify(job, run.Err) {
 		return
 	}
-
-	send := false
-	switch job.Notify_on {
-	case gtables.JobQueue_Notify_on.Always:
-		send = true
-	case gtables.JobQueue_Notify_on.OnError:
-		send = runErr != nil
-	case gtables.JobQueue_Notify_on.Never:
-		send = false
+	lang := jobqueue.Language(s.db, s.dbType, company, job)
+	msg := jobqueue.RunMessage(job, jobqueue.CompanyName(s.db, s.dbType, company), run, lang)
+	if err := s.currentMailer().Send(jobqueue.Recipients(job), msg.Subject, msg.Body); err != nil {
+		log.Printf("Job Queue scheduler: notification e-mail of %s/%s: %v", company, job.No.String(), err)
 	}
-	if !send {
-		return
-	}
-
-	subject, body := formatNotification(job, runErr, start)
-	if err := s.currentMailer().Send(to, subject, body); err != nil {
-		log.Printf("Job Queue scheduler: notification email to %s failed: %v", to, err)
-	}
-}
-
-// formatNotification builds the notification subject and body.
-// TODO: localize via i18n once notification recipients carry a language.
-func formatNotification(job *tables.JobQueue, runErr error, start types.DateTime) (string, string) {
-	outcome := "Success"
-	if runErr != nil {
-		outcome = "Error"
-	}
-	desc := job.Description.String()
-	subject := fmt.Sprintf("Job Queue %s: %s", outcome, job.No.String())
-
-	var b strings.Builder
-	fmt.Fprintf(&b, "Job:         %s\n", job.No.String())
-	if desc != "" {
-		fmt.Fprintf(&b, "Description: %s\n", desc)
-	}
-	fmt.Fprintf(&b, "Codeunit:    %d\n", job.Object_id_to_run)
-	fmt.Fprintf(&b, "Outcome:     %s\n", outcome)
-	fmt.Fprintf(&b, "Started:     %s\n", start.String())
-	fmt.Fprintf(&b, "Finished:    %s\n", types.Now().String())
-	if runErr != nil {
-		fmt.Fprintf(&b, "\nError: %s\n", runErr.Error())
-	}
-	return subject, b.String()
 }
 
 // modify persists changes to a job, returning an error if the write fails.

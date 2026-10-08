@@ -1,0 +1,101 @@
+page:
+  id: 674
+  type: Card
+  name: Job Queue Card
+  source_table: Job_Queue
+  caption: Job Queue Card
+  list_page_id: 672
+  enable_navigation: true
+  editable: true
+  focus_field: "no"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: no
+            editable: true
+            importance: Promoted
+
+          - source: description
+            editable: true
+            importance: Promoted
+
+          - source: description_2
+            editable: true
+
+          - source: object_id_to_run
+            editable: true
+
+          - source: parameter
+            editable: true
+
+          - source: status
+            editable: true
+
+      - name: Recurrence
+        caption: Recurrence
+        fields:
+          - source: recurrence
+            editable: true
+
+          - source: minutes_between_run
+            editable: true
+
+          - source: next_start
+            editable: true
+
+      - name: Notification
+        caption: Notification
+        fields:
+          - source: notification_email
+            editable: true
+
+          - source: notify_on
+            editable: true
+
+          - source: notification_language
+            editable: true
+            table_relation: Language
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 672
+
+    - name: New
+      caption: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Send Test E-mail
+      caption: Send Test E-mail
+      promoted: true
+      enabled: true
+      run_object: codeunit:455
+
+    - name: Entries
+      caption: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      enabled: true
+      run_page: 673
+      run_page_filter_field: job_queue_no
+      run_page_filter_value: no
+
+    - name: Refresh
+      caption: Refresh
+      shortcut: F5
+      promoted: true
+      enabled: true

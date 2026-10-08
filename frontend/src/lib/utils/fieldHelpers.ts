@@ -61,6 +61,24 @@ export function formatDateTime(isoDateTime: string, locale: string): string {
 	}
 }
 
+/** Value of an `<input type="datetime-local">` for an API datetime (ISO/RFC3339, usually UTC):
+ * the user's local time as "YYYY-MM-DDTHH:mm". The input shows nothing for a value with a zone. */
+export function toDateTimeInput(isoDateTime: unknown): string {
+	if (!isoDateTime) return '';
+	const date = new Date(String(isoDateTime));
+	if (isNaN(date.getTime())) return '';
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** API datetime (RFC3339 UTC) for the local time a `datetime-local` input holds; "" when cleared */
+export function fromDateTimeInput(localDateTime: string): string {
+	if (!localDateTime) return '';
+	const date = new Date(localDateTime); // no zone: read as local time
+	if (isNaN(date.getTime())) return '';
+	return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 /** Get a locale-specific date format pattern string (e.g., "DD.MM.YYYY" for nb-NO) */
 export function getDateFormatPattern(locale: string): string {
 	try {

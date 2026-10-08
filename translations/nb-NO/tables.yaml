@@ -204,6 +204,7 @@ tables:
       recurrence: "Gjentakelse"
       notification_email: "Varsel-e-post"
       notify_on: "Varsle ved"
+      notification_language: "Varselspråk"
       number_of_entries: "Antall poster"
 
     # Option field values

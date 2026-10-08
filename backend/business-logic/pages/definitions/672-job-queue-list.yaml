@@ -4,6 +4,8 @@ page:
   name: Job Queue List
   source_table: Job_Queue
   caption: Job Queue
+  card_page_id: 674
+  modal_card: true
   editable: true
 
   layout:
@@ -40,9 +42,12 @@ page:
           width: 110
 
         - source: notification_email
-          width: 200
+          width: 250
 
         - source: notify_on
+          width: 110
+
+        - source: notification_language
           width: 110
 
         - source: number_of_entries
@@ -58,6 +63,12 @@ page:
       promoted: true
       enabled: true
       run_object: field:object_id_to_run
+
+    - name: Send Test E-mail
+      caption: Send Test E-mail
+      promoted: true
+      enabled: true
+      run_object: codeunit:455
 
     - name: New
       caption: New

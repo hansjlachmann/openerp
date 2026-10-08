@@ -27,7 +27,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
@@ -2637,6 +2637,22 @@
 												}}
 											/>
 										</div>
+									{:else if isDateTimeType(fieldTypes[field.source])}
+										<!-- datetime-local holds local time without a zone; the record keeps RFC3339 -->
+										<input
+											type="datetime-local"
+											autocomplete="off"
+											data-row={index}
+											data-col={colIndex}
+											class="edit-cell-input"
+											bind:value={() => toDateTimeInput(record[field.source]), (v) => (record[field.source] = fromDateTimeInput(v))}
+											onfocus={() => {
+												currentCellRow = index;
+												currentCellCol = colIndex;
+											}}
+											onblur={handleEditingInputBlur}
+											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+										/>
 									{:else}
 										<input
 											type={getCellInputType(field)}
