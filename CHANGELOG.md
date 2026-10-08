@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.85](https://github.com/hansjlachmann/openerp/compare/v0.1.84...v0.1.85) (2026-10-08)
+
+
+### Bug Fixes
+
+* card navigation follows the list's filters, search and sort ([ef36338](https://github.com/hansjlachmann/openerp/commit/ef36338bc9598526f38ae43349ca5c7667fa9063))
+* case-insensitive list search for æ, ø, å on SQLite ([fddf2d6](https://github.com/hansjlachmann/openerp/commit/fddf2d6253d8f8499b7a0a6f0a2edfe7ee82e34f))
+* list cells respect editable: false and FlowField columns ([72115fa](https://github.com/hansjlachmann/openerp/commit/72115fa7ed93a6a0a6ab9e1e9b41a7808fffec3c))
+* menu bar shows the new company name right after renaming it ([d99f743](https://github.com/hansjlachmann/openerp/commit/d99f74345c043374b2d3485dd15ecc79d31c1f76))
+* read the NAV proxy URL from NAV_PROXY_URL instead of a built-in address ([95f42ea](https://github.com/hansjlachmann/openerp/commit/95f42eab0f70c04533bdf6b89e3d64c9e157433a))
+* rename a record on its card ([9c5fbff](https://github.com/hansjlachmann/openerp/commit/9c5fbffcf894cd51357156dc09b63c37d8ee3c62))
+* say that the key exists when a record is renamed to an existing key ([19a4b47](https://github.com/hansjlachmann/openerp/commit/19a4b4739876b4f193f0a8fbbdaab1fce417a6b6))
+* uppercase Code fields in list cells before saving ([a31a53a](https://github.com/hansjlachmann/openerp/commit/a31a53a5c1cda3485796f11161faad3f7f42d7f9))
+
+
+### Performance
+
+* bulk-insert demo ledger entries and keep SIFT totals free of dead rows ([154e417](https://github.com/hansjlachmann/openerp/commit/154e4176268715d60a9b0f1fff941ee77e31e512))
+
+
+### Documentation
+
+* field type names the page metadata sends ([e0771c2](https://github.com/hansjlachmann/openerp/commit/e0771c23bc27ecc8693e61d01ffe7024d6f61e75))
+* TODO — demo jwt-secret done ([58bd585](https://github.com/hansjlachmann/openerp/commit/58bd585d018ee601248921a9b40f0245ca88fa58))
+* TODO — NAV_PROXY_URL before the next production upgrade, history cleanup ([abdf04b](https://github.com/hansjlachmann/openerp/commit/abdf04bac7392e28f6642750faa3b9f59002461c))
+* TODO — production NAV_PROXY_URL set, steps for the upgrade to 0.1.85 ([39dc3d9](https://github.com/hansjlachmann/openerp/commit/39dc3d9c72758da6834ffa0871dc0908a5f1e3b2))
+* TODO — production upgraded to 0.1.84, follow-ups ([06fd752](https://github.com/hansjlachmann/openerp/commit/06fd752138f50e1d819f7e112b67f4a0bf96b8d4))
+* TODO first priority — demo jwt-secret, production upgrade to 0.1.84 ([21b9d79](https://github.com/hansjlachmann/openerp/commit/21b9d79ef141c62bff049a1ed9923b06bb6bb83f))
+
 ## [0.1.84](https://github.com/hansjlachmann/openerp/compare/v0.1.83...v0.1.84) (2026-10-07)
 
 
