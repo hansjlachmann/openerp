@@ -16,10 +16,15 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       workstation — load it per shell with
       `export SOPS_AGE_KEY=$(kubectl -n flux-system get secret sops-age -o jsonpath='{.data.age\.agekey}' | base64 -d)`;
       Flux reverts `kubectl rollout restart` — restart with `kubectl -n openerp delete pod -l app=openerp-backend`.
-- [ ] **Production: upgrade 0.1.74 → 0.1.84** and switch to `prod.env` / `scripts/prod.sh` (steps:
-      `docs/operations.md`, "Switching an existing installation"; backup first; `APP_VERSION=0.1.84`,
-      new `JWT_SECRET`). Then the backup cron, and optionally rename the company with the invalid
-      technical name (keep its Display Name).
+- [x] **Production: upgraded to 0.1.84 and switched to `prod.env` / `scripts/prod.sh`** (2026-10-08).
+      Backup first; migration 7 applied (index count in the dump 408 → 223, all tables' data present);
+      new `JWT_SECRET`, sessions survive a backend restart; `PUBLISH_HOST=127.0.0.1` (users come in
+      through nginx on 443); `restart: unless-stopped` now active. Daily backup cron (02:15,
+      `scripts/backup.sh`) installed and tested.
+- [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
+- [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
+- [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
+      "Changing the database password"); lower risk now that 5432 is localhost only.
 
 ---
 
@@ -502,8 +507,10 @@ an OS upgrade and reboot.
 - [x] **Operations doc** — `docs/operations.md`; production runs through `scripts/prod.sh`
       (`docker compose --env-file prod.env -f docker-compose.prod.yml`), so nothing tracked is edited on
       the server and `git pull` no longer conflicts.
-- [ ] Switch production and the demo environment to `prod.env` (steps in `docs/operations.md`,
-      "Switching an existing installation"); then set up the backup cron and an off-host copy.
+- [x] Switch production to `prod.env` and set up the backup cron (2026-10-08; the demo runs on k3s, not
+      compose). The off-host copy is open under "First priority".
+- [ ] **(Low priority) Production: renew the TLS certificate before it expires** — replace the
+      certificate and key in `certs/` on the server, then `scripts/prod.sh restart nginx`.
 
 ---
 
