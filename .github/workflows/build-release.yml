@@ -127,6 +127,9 @@ jobs:
   docker:
     name: Docker Build & Push
     runs-on: ubuntu-latest
+    # The multi-arch build (arm64 under QEMU) has hung for hours (0.1.68, 0.1.82); a normal run
+    # takes ~7 minutes (0.1.85). Fail fast so the job can simply be re-run.
+    timeout-minutes: 30
     needs: [backend, frontend, release]
     # Only build Docker images when a release is created
     if: needs.release.outputs.release_created == 'true'
