@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.86](https://github.com/hansjlachmann/openerp/compare/v0.1.85...v0.1.86) (2026-10-08)
+
+
+### Bug Fixes
+
+* READER role can read Countries/Regions and SMTP Setup ([4e72c5a](https://github.com/hansjlachmann/openerp/commit/4e72c5a09ed4a19288a69b6bd35094e11b0feebc))
+* remove the intro line from the Keyboard Shortcuts help ([8f08ff1](https://github.com/hansjlachmann/openerp/commit/8f08ff16b70f7ce12a65e66748b8e19e0673678c))
+* translated validation messages with the field's caption ([c790709](https://github.com/hansjlachmann/openerp/commit/c7907092c67f1b97e2a4d95cc3d2dce0568e394c))
+
+
+### Documentation
+
+* TODO — Job Queue e-mail notification to one or more addresses ([e12da10](https://github.com/hansjlachmann/openerp/commit/e12da10460a4e129683433fa5f57e1644e411e49))
+* TODO — primary key cell keying was already fixed ([8ccaa01](https://github.com/hansjlachmann/openerp/commit/8ccaa0193da9b43fb1c805d3fdba03177fe8ea8e))
+* TODO — production upgrade to 0.1.85 planned, steps and checks ([c84c47c](https://github.com/hansjlachmann/openerp/commit/c84c47cbe7cf53d4163c3d44a78595953407f354))
+
+
+### CI/CD
+
+* fail the Docker build after 30 minutes instead of hanging ([076bab5](https://github.com/hansjlachmann/openerp/commit/076bab5689c95abe79d84d3e70e0ad8c3960ca1c))
+
 ## [0.1.85](https://github.com/hansjlachmann/openerp/compare/v0.1.84...v0.1.85) (2026-10-08)
 
 
