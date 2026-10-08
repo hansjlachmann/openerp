@@ -101,7 +101,6 @@ messages:
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Keyboard Shortcuts"
-  HELP_INTRO: "Keys work as in Microsoft Dynamics NAV and Business Central."
   HELP_CLOSE: "Close (Esc)"
   HELP_COL_KEYS: "Keys"
   HELP_COL_ACTION: "Action"

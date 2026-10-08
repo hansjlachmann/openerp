@@ -101,7 +101,6 @@ messages:
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Genvejstaster"
-  HELP_INTRO: "Tasterne virker som i Microsoft Dynamics NAV og Business Central."
   HELP_CLOSE: "Luk (Esc)"
   HELP_COL_KEYS: "Taster"
   HELP_COL_ACTION: "Handling"

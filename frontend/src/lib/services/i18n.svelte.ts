@@ -184,7 +184,6 @@ export const MENU = {
 
 export const HELP = {
 	TITLE: 'HELP_TITLE',
-	INTRO: 'HELP_INTRO',
 	CLOSE: 'HELP_CLOSE',
 	COL_KEYS: 'HELP_COL_KEYS',
 	COL_ACTION: 'HELP_COL_ACTION'
