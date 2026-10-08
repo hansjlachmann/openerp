@@ -33,7 +33,6 @@
 	<header class="help-header">
 		<div>
 			<h1 class="text-xl font-semibold text-gray-900 dark:text-gray-50">{t(HELP.TITLE)}</h1>
-			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(HELP.INTRO)}</p>
 		</div>
 		<button
 			type="button"
