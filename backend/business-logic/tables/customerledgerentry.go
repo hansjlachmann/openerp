@@ -1,7 +1,8 @@
 package tables
 
 import (
-	"errors"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -61,23 +62,23 @@ func (t *CustomerLedgerEntry) OnRename() error {
 
 // Validate validates all fields
 func (t *CustomerLedgerEntry) Validate() error {
-	if len(t.Customer_no) > 20 {
-		return errors.New("customer_no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "customer_no", string(t.Customer_no), 20); err != nil {
+		return err
 	}
-	if len(t.Sell_to_customer_no) > 20 {
-		return errors.New("sell_to_customer_no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "sell_to_customer_no", string(t.Sell_to_customer_no), 20); err != nil {
+		return err
 	}
-	if len(t.Document_no) > 20 {
-		return errors.New("document_no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "document_no", string(t.Document_no), 20); err != nil {
+		return err
 	}
-	if len(t.External_document_no) > 20 {
-		return errors.New("external_document_no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "external_document_no", string(t.External_document_no), 20); err != nil {
+		return err
 	}
-	if len(t.Description) > 100 {
-		return errors.New("description cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "description", string(t.Description), 100); err != nil {
+		return err
 	}
-	if len(t.Currency_code) > 10 {
-		return errors.New("currency_code cannot exceed 10 characters")
+	if err := ftables.CheckMaxLength(gtables.CustomerLedgerEntryTableName, "currency_code", string(t.Currency_code), 10); err != nil {
+		return err
 	}
 
 	return nil
@@ -93,7 +94,7 @@ func (t *CustomerLedgerEntry) OnValidate_Customer_no() error {
 		var relatedRecord Customer
 		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Customer_no) {
-			return errors.New("customer_no does not exist in Customer table")
+			return apperrors.RelatedNotFound(gtables.CustomerLedgerEntryTableName, "customer_no", t.Customer_no.String())
 		}
 	}
 	return nil
@@ -105,7 +106,7 @@ func (t *CustomerLedgerEntry) OnValidate_Sell_to_customer_no() error {
 		var relatedRecord Customer
 		relatedRecord.InitWithDBType(t.GetDB(), t.GetCompany(), t.GetDBType())
 		if !relatedRecord.Get(t.Sell_to_customer_no) {
-			return errors.New("sell_to_customer_no does not exist in Customer table")
+			return apperrors.RelatedNotFound(gtables.CustomerLedgerEntryTableName, "sell_to_customer_no", t.Sell_to_customer_no.String())
 		}
 	}
 	return nil

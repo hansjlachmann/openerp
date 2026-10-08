@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,17 +60,17 @@ func (t *JobQueue) OnRename() error {
 
 // Validate validates all fields
 func (t *JobQueue) Validate() error {
-	if t.No.IsEmpty() {
-		return errors.New("no is required")
+	if err := ftables.CheckRequired(gtables.JobQueueTableName, "no", t.No.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.No) > 20 {
-		return errors.New("no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueTableName, "no", string(t.No), 20); err != nil {
+		return err
 	}
-	if len(t.Description) > 100 {
-		return errors.New("description cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueTableName, "description", string(t.Description), 100); err != nil {
+		return err
 	}
-	if len(t.Description_2) > 100 {
-		return errors.New("description_2 cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueTableName, "description_2", string(t.Description_2), 100); err != nil {
+		return err
 	}
 
 	return nil

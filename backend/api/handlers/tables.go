@@ -689,7 +689,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
 	if err := validateChangedFields(table, tableName, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 
 	// Special handling for User table password
@@ -697,7 +697,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		if password, ok := data["password"].(string); ok && password != "" {
 			if userTable, ok := table.(*tables.User); ok {
 				if err := userTable.SetPassword(password); err != nil {
-					return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+					return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 				}
 			}
 		}
@@ -789,7 +789,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
 	if err := validateChangedFields(table, tableName, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 
 	// Special handling for User table password
@@ -797,7 +797,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		if password, ok := data["password"].(string); ok && password != "" {
 			if userTable, ok := table.(*tables.User); ok {
 				if err := userTable.SetPassword(password); err != nil {
-					return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+					return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 				}
 			}
 		}
@@ -1025,7 +1025,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	if err := table.ValidateField(req.Field, req.Value); err != nil {
 		return c.JSON(apitypes.APIResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   errorMessage(err, language),
 		})
 	}
 

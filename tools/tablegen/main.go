@@ -3760,12 +3760,12 @@ func (t *{{ .BaseStructName }}) GetTableRelationFields() map[string]tables.Table
 const businessTemplate = `package {{ .PackageName }}
 
 import (
-	"errors"
 {{- if .HasTimeField }}
 	"time"
-{{- end }}
 
+{{- end }}
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -3840,23 +3840,23 @@ func (t *{{ .StructName }}) Validate() error {
 {{- range .Table.Fields }}
 {{- if .Required }}
 	{{- if eq .Type "types.Code" }}
-	if t.{{ upperFirst .Name }}.IsEmpty() {
-		return errors.New("{{ .Name }} is required")
+	if err := ftables.CheckRequired(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}.IsEmpty()); err != nil {
+		return err
 	}
 	{{- else if eq .Type "string" }}
-	if t.{{ upperFirst .Name }} == "" {
-		return errors.New("{{ .Name }} is required")
+	if err := ftables.CheckRequired(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }} == ""); err != nil {
+		return err
 	}
 	{{- end }}
 {{- end }}
 {{- if .Length }}
-	if len(t.{{ upperFirst .Name }}) > {{ .Length }} {
-		return errors.New("{{ .Name }} cannot exceed {{ .Length }} characters")
+	if err := ftables.CheckMaxLength(gtables.{{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }}), {{ .Length }}); err != nil {
+		return err
 	}
 {{- end }}
 {{- if .Validation }}
-	if t.{{ upperFirst .Name }} < {{ .Validation.Min }} || t.{{ upperFirst .Name }} > {{ .Validation.Max }} {
-		return errors.New("{{ .Name }} must be between {{ .Validation.Min }} and {{ .Validation.Max }}")
+	if err := ftables.CheckRange(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}, {{ .Validation.Min }}, {{ .Validation.Max }}); err != nil {
+		return err
 	}
 {{- end }}
 {{- end }}

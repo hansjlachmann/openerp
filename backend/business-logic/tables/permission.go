@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -58,17 +58,17 @@ func (t *Permission) OnRename() error {
 
 // Validate validates all fields
 func (t *Permission) Validate() error {
-	if t.Role_id.IsEmpty() {
-		return errors.New("role_id is required")
+	if err := ftables.CheckRequired(gtables.PermissionTableName, "role_id", t.Role_id.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Role_id) > 20 {
-		return errors.New("role_id cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.PermissionTableName, "role_id", string(t.Role_id), 20); err != nil {
+		return err
 	}
-	if t.Table_name.IsEmpty() {
-		return errors.New("table_name is required")
+	if err := ftables.CheckRequired(gtables.PermissionTableName, "table_name", t.Table_name.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Table_name) > 100 {
-		return errors.New("table_name cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.PermissionTableName, "table_name", string(t.Table_name), 100); err != nil {
+		return err
 	}
 	return nil
 }

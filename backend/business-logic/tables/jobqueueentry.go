@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,17 +60,17 @@ func (t *JobQueueEntry) OnRename() error {
 
 // Validate validates all fields
 func (t *JobQueueEntry) Validate() error {
-	if len(t.Job_queue_no) > 20 {
-		return errors.New("job_queue_no cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueEntryTableName, "job_queue_no", string(t.Job_queue_no), 20); err != nil {
+		return err
 	}
-	if len(t.User_id) > 20 {
-		return errors.New("user_id cannot exceed 20 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueEntryTableName, "user_id", string(t.User_id), 20); err != nil {
+		return err
 	}
-	if len(t.Description) > 100 {
-		return errors.New("description cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueEntryTableName, "description", string(t.Description), 100); err != nil {
+		return err
 	}
-	if len(t.Error_message) > 250 {
-		return errors.New("error_message cannot exceed 250 characters")
+	if err := ftables.CheckMaxLength(gtables.JobQueueEntryTableName, "error_message", string(t.Error_message), 250); err != nil {
+		return err
 	}
 
 	return nil

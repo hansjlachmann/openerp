@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -60,14 +60,14 @@ func (t *CountryRegion) OnRename() error {
 
 // Validate validates all fields
 func (t *CountryRegion) Validate() error {
-	if t.Code.IsEmpty() {
-		return errors.New("code is required")
+	if err := ftables.CheckRequired(gtables.CountryRegionTableName, "code", t.Code.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Code) > 10 {
-		return errors.New("code cannot exceed 10 characters")
+	if err := ftables.CheckMaxLength(gtables.CountryRegionTableName, "code", string(t.Code), 10); err != nil {
+		return err
 	}
-	if len(t.Name) > 50 {
-		return errors.New("name cannot exceed 50 characters")
+	if err := ftables.CheckMaxLength(gtables.CountryRegionTableName, "name", string(t.Name), 50); err != nil {
+		return err
 	}
 
 	return nil

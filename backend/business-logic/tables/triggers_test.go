@@ -173,7 +173,7 @@ func TestTriggerErrorIsReported(t *testing.T) {
 	if c.Insert(true) {
 		t.Fatal("Insert succeeded, want OnInsert to reject a 60-character name")
 	}
-	if err := c.TriggerError(); err == nil || !strings.Contains(err.Error(), "name cannot exceed 50") {
+	if err := c.TriggerError(); err == nil || !strings.Contains(err.Error(), "Name cannot exceed 50 characters") {
 		t.Errorf("TriggerError() = %v, want the OnInsert validation message", err)
 	}
 

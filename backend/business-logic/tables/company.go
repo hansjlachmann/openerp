@@ -1,8 +1,8 @@
 package tables
 
 import (
-	"errors"
 	"fmt"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"sort"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
@@ -122,11 +122,11 @@ func syncCompanyKeys(db database.Executor, dbType database.DBType, companyName s
 
 // Validate validates all fields
 func (t *Company) Validate() error {
-	if t.Name.IsEmpty() {
-		return errors.New("name is required")
+	if err := ftables.CheckRequired(gtables.CompanyTableName, "name", t.Name.IsEmpty()); err != nil {
+		return err
 	}
-	if len(t.Name) > 100 {
-		return errors.New("name cannot exceed 100 characters")
+	if err := ftables.CheckMaxLength(gtables.CompanyTableName, "name", string(t.Name), 100); err != nil {
+		return err
 	}
 
 	return nil
