@@ -23,18 +23,28 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `scripts/backup.sh`) installed and tested.
 - [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
 - [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
-- [ ] **Production: upgrade to 0.1.85** once its release is out — needs `git pull` (the compose file passes
-      `NAV_PROXY_URL`). `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08); the NAV
-      proxy address is no longer built in (`docs/operations.md`, "NAV report proxy"). First merge the
-      release PR "chore(main): release 0.1.85" and wait for the Build & Release run to push the images,
-      then on the server:
+- [ ] **Production: upgrade 0.1.84 → 0.1.85** (planned for later). 0.1.85 is released (2026-10-08) and its
+      images are on ghcr.io; the demo (k3s) already runs it and was tested. What 0.1.85 brings: faster
+      HEAVY demo data and SIFT totals without dead rows (totals tables get new storage settings at startup,
+      no rebuild), Code fields uppercased in list cells, read-only list cells (`editable: false`, FlowFields),
+      "already exists" on a rename to an existing key, renaming on cards, card navigation following the
+      list, menu bar after a company rename, NAV proxy address from `NAV_PROXY_URL`.
+      `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08) — required from 0.1.85 on, the
+      address is no longer built in (`docs/operations.md`, "NAV report proxy"). `git pull` is needed: the
+      compose file now passes `NAV_PROXY_URL` to the backend. On the server:
       ```bash
-      cd ~/openerp && scripts/backup.sh && git pull
+      cd ~/openerp
+      scripts/backup.sh
+      git pull
       sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.85/' prod.env
+      grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.85 and the proxy address
       scripts/prod.sh pull && scripts/prod.sh up -d
+      scripts/prod.sh ps
+      scripts/prod.sh logs backend --since 5m | grep -iE "migration|SIFT|error|WARNING"
       ```
-      Check: `scripts/prod.sh ps` (backend/frontend on 0.1.85), `scripts/prod.sh logs backend --since 5m |
-      grep -iE "migration|error|WARNING"`, the browser shows v0.1.85, and a NAV report Job Queue entry runs.
+      Expected: backend/frontend `Up` on `0.1.85`; no errors and no "No JWT_SECRET" warning; the browser
+      shows v0.1.85 and the user stays logged in; a NAV report Job Queue entry runs (proves `NAV_PROXY_URL`).
+      Rollback: `APP_VERSION=0.1.84` in `prod.env`, then `scripts/prod.sh pull && scripts/prod.sh up -d`.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
