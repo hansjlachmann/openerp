@@ -545,11 +545,11 @@ From `docs/migrations.md`.
 Gaps in the production setup (`docker-compose.prod.yml`), found while recovering a server after
 an OS upgrade and reboot.
 
-- [ ] **CI: the frontend Docker image build sometimes hangs.** The "Build and push frontend" step
+- [x] **CI: the frontend Docker image build sometimes hangs.** The "Build and push frontend" step
       (multi-arch, arm64 emulated with QEMU) hung in the 0.1.68 release (cancelled after GitHub's 6 h
       job limit) and in 0.1.82 (cancelled after ~45 min; re-running only the Docker job finished in
-      4 min). Add `timeout-minutes: 30` to the Docker job so a hang fails fast and can be re-run; if it
-      keeps happening, build arm64 on a native runner instead of under QEMU.
+      4 min). The Docker job now has `timeout-minutes: 30` (0.1.85 took 7.5 min), so a hang fails fast
+      and can be re-run. If it keeps happening, build arm64 on a native runner instead of under QEMU.
 - [x] **Auto-start after reboot** — all services in `docker-compose.prod.yml` have
       `restart: unless-stopped`.
 - [x] **Only expose nginx** — db on `127.0.0.1:5432` (SSH tunnel for admin tools); backend/frontend
