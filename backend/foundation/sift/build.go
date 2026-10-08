@@ -170,7 +170,11 @@ func (g generator) createTable() string {
 	}
 	cols = append(cols, "cnt BIGINT NOT NULL DEFAULT 0")
 	cols = append(cols, "PRIMARY KEY ("+strings.Join(g.names(g.spec.Fields), ", ")+")")
-	return "CREATE TABLE " + q(g.sift) + " (" + strings.Join(cols, ", ") + ")"
+	create := "CREATE TABLE " + q(g.sift) + " (" + strings.Join(cols, ", ") + ")"
+	if g.pg() {
+		create += " WITH (" + storageOptions + ")"
+	}
+	return create
 }
 
 // fill adds up the existing entries once (initial build / rebuild).
@@ -279,6 +283,7 @@ $sift$`, q(fn), remove, g.addRow("NEW."))
 		fmt.Sprintf("CREATE OR REPLACE FUNCTION %s() RETURNS trigger LANGUAGE plpgsql AS $sift$\nBEGIN\n  TRUNCATE %s;\n  RETURN NULL;\nEND\n$sift$", q(truncFn), q(g.sift)),
 		fmt.Sprintf("CREATE TRIGGER %s AFTER TRUNCATE ON %s FOR EACH STATEMENT EXECUTE FUNCTION %s()", q(trgTrunc), q(g.entry), q(truncFn)),
 		g.fill(),
+		"ANALYZE " + q(g.sift), // statistics for the planner right away (allowed in a transaction)
 	}
 	drop = []string{
 		fmt.Sprintf("DROP TRIGGER IF EXISTS %s ON %s", q(trgRow), q(g.entry)),
@@ -358,10 +363,11 @@ func VerifyKey(db database.Executor, dbType database.DBType, company, table, ent
 }
 
 // RebuildKey refills a SIFT key's totals from the entries in one transaction. On Postgres
-// the entry table is locked against writes meanwhile, so no posting is missed or counted twice.
+// the entry table is locked against writes meanwhile, so no posting is missed or counted twice,
+// and afterwards (when db is not a transaction) VACUUM ANALYZE removes the replaced rows.
 func RebuildKey(db database.Executor, dbType database.DBType, company, table, entryTable string, spec KeySpec) error {
 	g := generator{dbType: dbType, spec: spec, entry: entryTable, sift: TableName(company, table, spec.Name)}
-	return inTx(db, func(tx database.Executor) error {
+	if err := inTx(db, func(tx database.Executor) error {
 		if g.pg() {
 			if _, err := tx.Exec("LOCK TABLE " + q(g.entry) + " IN SHARE ROW EXCLUSIVE MODE"); err != nil {
 				return err
@@ -372,7 +378,10 @@ func RebuildKey(db database.Executor, dbType database.DBType, company, table, en
 		}
 		_, err := tx.Exec(g.fill())
 		return err
-	})
+	}); err != nil {
+		return err
+	}
+	return vacuum(db, dbType, g.sift)
 }
 
 // VerifyResult is the outcome of checking one SIFT key's totals.

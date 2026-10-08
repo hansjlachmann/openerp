@@ -867,6 +867,73 @@ func (t *CustomerLedgerEntryBase) Insert(runTrigger bool) bool {
 	return true
 }
 
+// InsertAll inserts records in bulk (demo data, imports): multi-row INSERT statements, one
+// round trip per batch instead of one per record. With runTrigger every record's OnInsert
+// trigger runs first, as Insert(true) would; the first failure stops before anything is
+// written. Records are written with the receiver's database and company. Errors are
+// *tables.BatchInsertError (Index = the record in records). Use it in a transaction: a
+// failed batch leaves the earlier batches written.
+func (t *CustomerLedgerEntryBase) InsertAll(records []*CustomerLedgerEntryBase, runTrigger bool) error {
+	rows := make([][]interface{}, 0, len(records))
+	for i, r := range records {
+		r.triggerErr = nil
+		if runTrigger && r.onInsertFn != nil {
+			if err := r.onInsertFn(); err != nil {
+				r.triggerErr = err
+				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+			}
+		}
+		rows = append(rows, []interface{}{
+			r.Entry_no,
+			r.Customer_no,
+			r.Sell_to_customer_no,
+			r.Posting_date,
+			r.Document_date,
+			r.Document_type,
+			r.Document_no,
+			r.External_document_no,
+			r.Description,
+			r.Currency_code,
+			r.Amount,
+			r.Remaining_amount,
+			r.Closed_by_amount,
+			r.Original_amount_lcy,
+			r.Remaining_amt_lcy,
+			r.Amount_lcy,
+			r.Closed_by_amount_lcy,
+			r.Sales_lcy,
+			r.Profit_lcy,
+			r.Inv_discount_lcy,
+			r.Pmt_discount_date,
+			r.Pmt_disc_possible,
+			r.Pmt_disc_given_lcy,
+			r.Customer_posting_group,
+			r.Department_code,
+			r.Project_code,
+			r.Salesperson_code,
+			r.User_id,
+			r.Source_code,
+			r.Reason_code,
+			r.Journal_batch_name,
+			r.Transaction_no,
+			r.Applies_to_doc_type,
+			r.Applies_to_doc_no,
+			r.Applies_to_id,
+			r.Open,
+			r.Positive,
+			r.On_hold,
+			r.Due_date,
+			r.Closed_by_entry_no,
+			r.Closed_at_date,
+			r.Bal_account_type,
+			r.Bal_account_no,
+		})
+	}
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	columns := []string{"entry_no", "customer_no", "sell_to_customer_no", "posting_date", "document_date", "document_type", "document_no", "external_document_no", "description", "currency_code", "amount", "remaining_amount", "closed_by_amount", "original_amount_lcy", "remaining_amt_lcy", "amount_lcy", "closed_by_amount_lcy", "sales_lcy", "profit_lcy", "inv_discount_lcy", "pmt_discount_date", "pmt_disc_possible", "pmt_disc_given_lcy", "customer_posting_group", "department_code", "project_code", "salesperson_code", "user_id", "source_code", "reason_code", "journal_batch_name", "transaction_no", "applies_to_doc_type", "applies_to_doc_no", "applies_to_id", "open", "positive", "on_hold", "due_date", "closed_by_entry_no", "closed_at_date", "bal_account_type", "bal_account_no"}
+	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+}
+
 // Modify updates the record in the database
 func (t *CustomerLedgerEntryBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)

@@ -434,6 +434,36 @@ func (t *PermissionBase) Insert(runTrigger bool) bool {
 	return true
 }
 
+// InsertAll inserts records in bulk (demo data, imports): multi-row INSERT statements, one
+// round trip per batch instead of one per record. With runTrigger every record's OnInsert
+// trigger runs first, as Insert(true) would; the first failure stops before anything is
+// written. Records are written with the receiver's database and company. Errors are
+// *tables.BatchInsertError (Index = the record in records). Use it in a transaction: a
+// failed batch leaves the earlier batches written.
+func (t *PermissionBase) InsertAll(records []*PermissionBase, runTrigger bool) error {
+	rows := make([][]interface{}, 0, len(records))
+	for i, r := range records {
+		r.triggerErr = nil
+		if runTrigger && r.onInsertFn != nil {
+			if err := r.onInsertFn(); err != nil {
+				r.triggerErr = err
+				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+			}
+		}
+		rows = append(rows, []interface{}{
+			r.Role_id,
+			r.Table_name,
+			r.Can_read,
+			r.Can_insert,
+			r.Can_modify,
+			r.Can_delete,
+		})
+	}
+	tableName := PermissionTableName
+	columns := []string{"role_id", "table_name", "can_read", "can_insert", "can_modify", "can_delete"}
+	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+}
+
 // Modify updates the record in the database
 func (t *PermissionBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)

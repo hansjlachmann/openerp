@@ -78,24 +78,21 @@ Findings:
   removed (migration 006 drops its index); date-filtered Customer FlowFields sum the entries.
 - Right after the bulk load the totals had ~70 dead row versions per row (every posting updates the totals
   row); after autovacuum/VACUUM the reads are fast.
-- [ ] Loading HEAVY took 9 min (row-by-row Insert, two SIFT triggers per entry): batch inserts in the demo
-      loader would make it much faster.
-- [ ] **Performance: dead row versions in SIFT totals tables (Postgres).** Every posting UPDATEs its totals
-      row; MVCC leaves the old version until autovacuum runs, and the primary key index points at all of
-      them. Measured on demo05 right after loading HEAVY: ~70 row versions per totals row, a totals read no
-      faster than summing the entries; after VACUUM 0.23–0.42 ms. Fix, in order of effect:
-      1. Generated totals tables `WITH (fillfactor = 50)` — only sum columns and `cnt` change (not indexed),
-         so updates become HOT (heap-only): the new version stays on the page, the index is not touched,
-         and dead versions are pruned on the next page access without waiting for autovacuum.
-      2. Per-table autovacuum settings on totals tables (`autovacuum_vacuum_scale_factor = 0`,
-         `autovacuum_vacuum_threshold` ~1000, `autovacuum_analyze_threshold` similar): small tables with
-         very many updates.
-      3. `VACUUM ANALYZE` the totals tables after bulk operations (demo loader, `RebuildKey`, Verify SIFT
-         REPAIR) — after commit, VACUUM cannot run in a transaction. For very large loads: insert the entries
-         first and build the totals once (drop/recreate via sift.Sync), which avoids the dead versions and is
-         much faster.
-      Verify: load HEAVY again, check `n_dead_tup` in `pg_stat_user_tables` and the totals read time right
-      after the load; existing totals tables get the new storage settings via `ALTER TABLE … SET (…)` in Sync.
+- [x] Loading HEAVY took 9 min (row-by-row Insert, two SIFT triggers per entry). Now the ledger entries
+      go through the generated `InsertAll` (multi-row INSERT per 1,000 entries, OnInsert still runs) with
+      their SIFT totals suspended and built once at the end (`sift.Suspend` + `SyncKeys`, same
+      transaction). Local Postgres: 5 min 21 s → ~1 min (the rest is Postgres inserting 190,000 rows
+      into five indexes).
+- [x] **Performance: dead row versions in SIFT totals tables (Postgres).** Every posting UPDATEs its totals
+      row; MVCC left the old version until autovacuum ran (demo05 after HEAVY: ~70 row versions per totals
+      row, a totals read no faster than summing the entries). Fixed:
+      1. Totals tables are created `WITH (fillfactor = 50)` and per-table autovacuum thresholds
+         (`autovacuum_vacuum/analyze_scale_factor = 0`, `…_threshold = 1000`); `Sync` sets them on
+         existing totals tables (`ALTER TABLE … SET`, verified on all local companies at startup).
+         Updates are HOT: 78 % of 7,602 totals updates in one bulk UPDATE.
+      2. Bulk loads build the totals once (`sift.Suspend` + `SyncKeys`): after loading HEAVY the totals
+         table has 400 live and 0 dead rows (before: 189,662 dead).
+      3. `RebuildKey` (Verify SIFT REPAIR) runs `VACUUM ANALYZE` afterwards; a build runs `ANALYZE`.
 G/L Account / G/L Entry are out of the current scope.
 
 ## SIFT Phase 4: FlowFilter fields (Date Filter) ✅ DONE

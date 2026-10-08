@@ -580,6 +580,42 @@ func (t *JobQueueBase) Insert(runTrigger bool) bool {
 	return true
 }
 
+// InsertAll inserts records in bulk (demo data, imports): multi-row INSERT statements, one
+// round trip per batch instead of one per record. With runTrigger every record's OnInsert
+// trigger runs first, as Insert(true) would; the first failure stops before anything is
+// written. Records are written with the receiver's database and company. Errors are
+// *tables.BatchInsertError (Index = the record in records). Use it in a transaction: a
+// failed batch leaves the earlier batches written.
+func (t *JobQueueBase) InsertAll(records []*JobQueueBase, runTrigger bool) error {
+	rows := make([][]interface{}, 0, len(records))
+	for i, r := range records {
+		r.triggerErr = nil
+		if runTrigger && r.onInsertFn != nil {
+			if err := r.onInsertFn(); err != nil {
+				r.triggerErr = err
+				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+			}
+		}
+		rows = append(rows, []interface{}{
+			r.No,
+			r.Description,
+			r.Description_2,
+			r.Status,
+			r.Object_id_to_run,
+			r.Parameter,
+			r.Next_start,
+			r.Minutes_between_run,
+			r.Recurring_job,
+			r.Recurrence,
+			r.Notification_email,
+			r.Notify_on,
+		})
+	}
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
+	columns := []string{"no", "description", "description_2", "status", "object_id_to_run", "parameter", "next_start", "minutes_between_run", "recurring_job", "recurrence", "notification_email", "notify_on"}
+	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+}
+
 // Modify updates the record in the database
 func (t *JobQueueBase) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)

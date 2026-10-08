@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,7 +13,9 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 const testCompany = "demo01"
@@ -606,4 +609,37 @@ func TestGenerateHeavy(t *testing.T) {
 		t.Errorf("ParseSize(heavy) = %v, %v", size, err)
 	}
 	t.Logf("HEAVY: %d customers, %d entries", len(customers), len(entries))
+}
+
+// InsertAll runs every record's OnInsert trigger before writing: a failing trigger stops the
+// batch with the record's index and nothing of it is written.
+func TestInsertAllRunsTriggers(t *testing.T) {
+	db := newTestDB(t)
+	newEntry := func(no int, description string) *gtables.CustomerLedgerEntryBase {
+		rec := &tables.CustomerLedgerEntry{}
+		rec.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		rec.Entry_no = no
+		rec.Customer_no = types.NewCode("C00010")
+		rec.Description = types.NewText(description)
+		return &rec.CustomerLedgerEntryBase
+	}
+	var target tables.CustomerLedgerEntry
+	target.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+
+	tooLong := strings.Repeat("x", 101) // OnInsert → Validate: description max. 100
+	err := target.InsertAll([]*gtables.CustomerLedgerEntryBase{newEntry(1, "a"), newEntry(2, tooLong), newEntry(3, "c")}, true)
+	var batchErr *ftables.BatchInsertError
+	if !errors.As(err, &batchErr) || batchErr.Index != 1 || !batchErr.Trigger {
+		t.Fatalf("error %v, want a trigger BatchInsertError at index 1", err)
+	}
+	if n := count(t, db, tables.CustomerLedgerEntryTableName); n != 0 {
+		t.Fatalf("%d entries written after a failed trigger, want 0", n)
+	}
+
+	if err := target.InsertAll([]*gtables.CustomerLedgerEntryBase{newEntry(1, "a"), newEntry(2, "b")}, true); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, db, tables.CustomerLedgerEntryTableName); n != 2 {
+		t.Fatalf("%d entries, want 2", n)
+	}
 }
