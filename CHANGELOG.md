@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.87](https://github.com/hansjlachmann/openerp/compare/v0.1.86...v0.1.87) (2026-10-08)
+
+
+### Features
+
+* Job Queue e-mail notifications to several addresses ([020c1d3](https://github.com/hansjlachmann/openerp/commit/020c1d37ff9e21a5114a3f0c6356cdd889c4ebc7))
+
 ## [0.1.86](https://github.com/hansjlachmann/openerp/compare/v0.1.85...v0.1.86) (2026-10-08)
 
 
