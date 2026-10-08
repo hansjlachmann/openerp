@@ -347,6 +347,10 @@ Open follow-ups:
       menu bar reloads its companies when the current one is not among them.
 - [x] A rename to an existing key failed with the generic "Failed to modify …": `ModifyRecord` now checks
       the new full primary key first and answers 409 "<Table> <key> already exists".
+- [x] Renaming on a card: the modal card addressed the modify by the key typed on the form ("Customer
+      B00020 not found"); the card page kept the old key after a rename. Both now address the record by
+      its saved key and follow the new one; modal Previous/Next resets the compared record (it used to
+      auto-save the next record's values onto the previous one).
 - [x] Code fields in list cells were sent to the API lowercase (`fieldTypes` holds `types.Code`, the
       uppercase check compared with `code`) — fixed with `isCodeType` (`utils/fieldHelpers.ts`).
 - [x] Customer Ledger Entries page 25 (menu, drilldowns from the Customer list's Balance/Sales, card
