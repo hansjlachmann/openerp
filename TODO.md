@@ -723,8 +723,9 @@ Remaining:
 - [ ] Env flag for docker/CI (e.g. `DEMO_DATA_COMPANY=demo01`, `DEMO_DATA_SIZE=SMALL`): at startup create
       the company if missing and run `demodata.Create` when it has no customers, so Playwright E2E starts
       from known data.
-- [ ] Permissions: the READER role (migration 002) has no read permission on `Country_Region`; add it in a
-      new migration (also missing for `SMTP_Setup`).
+- [x] Permissions: the READER role (migration 002) had no read permission on `Country_Region` and
+      `SMTP_Setup` — migration 008 adds both (only when READER exists; an administrator's existing
+      permission is kept).
 - [ ] Company display name can only be set on the Companies page (11) after creating the company; the
       login page "New company" form takes only the technical name.
 - [ ] New business tables (items, sales documents, ...) get demo data in the same change.
