@@ -764,6 +764,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
+	_, oldKey := fullPrimaryKey(table)
 
 	// Parse request body
 	var data map[string]interface{}
@@ -796,6 +797,13 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 					return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 				}
 			}
+		}
+	}
+
+	// A rename to a key that another record already has (BC/NAV: "The record already exists")
+	if newLookup, newKey := fullPrimaryKey(table); newKey != oldKey {
+		if existing, err := h.getTable(tableName, company); err == nil && existing.Get(newLookup) {
+			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, newKey).Message(language)))
 		}
 	}
 
