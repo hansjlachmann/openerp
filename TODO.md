@@ -344,7 +344,8 @@ Open follow-ups:
 - [ ] After renaming the company you work in, the menu bar shows the old company name until the next
       page load (the server side follows at once). Needs a generic way for the list page to refresh
       the session after a save.
-- [ ] A rename to an existing key fails with the generic "Failed to modify …"; say that the key exists.
+- [x] A rename to an existing key failed with the generic "Failed to modify …": `ModifyRecord` now checks
+      the new full primary key first and answers 409 "<Table> <key> already exists".
 - [x] Code fields in list cells were sent to the API lowercase (`fieldTypes` holds `types.Code`, the
       uppercase check compared with `code`) — fixed with `isCodeType` (`utils/fieldHelpers.ts`).
 - [x] Customer Ledger Entries page 25 (menu, drilldowns from the Customer list's Balance/Sales, card

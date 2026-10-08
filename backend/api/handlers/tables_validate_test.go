@@ -64,6 +64,7 @@ func newTablesTestApp(t *testing.T) *fiber.App {
 	app.Post("/api/tables/:table/validate", h.ValidateField)
 	app.Post("/api/tables/:table/init", h.InitRecord)
 	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	app.Put("/api/tables/:table/modify/:id", h.ModifyRecord)
 	app.Get("/api/tables/:table/list", h.ListRecords)
 	app.Get("/api/tables/:table/ids", h.GetRecordIDs)
 	return app
@@ -309,5 +310,48 @@ func TestInsertRejectsUnknownRelationKey(t *testing.T) {
 	good := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"C1","name":"Acme","payment_terms_code":"30 DAYS"}`)
 	if good["success"] != true {
 		t.Errorf("insert with existing payment terms failed: %v", good["error"])
+	}
+}
+
+// Renaming a record to a key another record has fails with "already exists" (409), not the
+// generic "Failed to modify", and changes nothing; a rename to a free key still works.
+func TestRenameToExistingKey(t *testing.T) {
+	app := newTablesTestApp(t)
+	// The rename carries the new No. over to the ledger entries
+	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	defer db.Close()
+	if err := (&tables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	for _, no := range []string{"C1", "C2"} {
+		if out := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"`+no+`","name":"Customer `+no+`"}`); out["success"] != true {
+			t.Fatalf("insert %s: %v", no, out["error"])
+		}
+	}
+	put := func(id, body string) (int, map[string]interface{}) {
+		req := httptest.NewRequest("PUT", "/api/tables/Customer/modify/"+id, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := io.ReadAll(resp.Body)
+		var out map[string]interface{}
+		if err := json.Unmarshal(raw, &out); err != nil {
+			t.Fatal(err)
+		}
+		return resp.StatusCode, out
+	}
+
+	status, out := put("C1", `{"no":"C2"}`)
+	if msg, _ := out["error"].(string); status != 409 || !strings.Contains(msg, "C2") || !strings.Contains(msg, "already exists") {
+		t.Fatalf("rename to an existing key: %d %q, want 409 naming C2 as existing", status, msg)
+	}
+	if status, out := put("C1", `{"name":"Still here"}`); status != 200 {
+		t.Fatalf("C1 gone after the refused rename: %d %v", status, out["error"])
+	}
+
+	if status, out := put("C1", `{"no":"C3"}`); status != 200 {
+		t.Fatalf("rename to a free key: %d %v", status, out["error"])
 	}
 }
