@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -114,8 +115,11 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	// Get the dialog for progress updates
 	dialog := fcodeunits.GetCurrentDialog()
 
-	// NAV proxy service URL (hardcoded for customer environment)
-	baseURL := "http://10.217.10.86:5009"
+	// NAV proxy service URL, set per installation (prod.env); default for a proxy on the same host
+	baseURL := os.Getenv("NAV_PROXY_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:5009"
+	}
 
 	// Generate a unique job ID (exactly 20 alphanumeric characters)
 	// Format: YYMMDDHHMMSS (12 chars) + random alphanumeric (8 chars)
