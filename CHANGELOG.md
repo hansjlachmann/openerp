@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.88](https://github.com/hansjlachmann/openerp/compare/v0.1.87...v0.1.88) (2026-10-09)
+
+
+### Documentation
+
+* CHANGELOG links after the history rewrite, TODO follow-ups ([58d6d2b](https://github.com/hansjlachmann/openerp/commit/58d6d2b2d9f2ad90a2887536f8e6fd93d48fa000))
+* public repository rule — no confidential or installation details ([833c079](https://github.com/hansjlachmann/openerp/commit/833c07903f733850b8d404985ce25ce464f12245))
+* TODO — production upgrade straight to 0.1.87 ([e03e4c1](https://github.com/hansjlachmann/openerp/commit/e03e4c1c0998529c2e76d4b30cc2751b6150c239))
+
 ## [0.1.87](https://github.com/hansjlachmann/openerp/compare/v0.1.86...v0.1.87) (2026-10-08)
 
 
