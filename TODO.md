@@ -23,28 +23,36 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `scripts/backup.sh`) installed and tested.
 - [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
 - [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
-- [ ] **Production: upgrade 0.1.84 → 0.1.85** (planned for later). 0.1.85 is released (2026-10-08) and its
-      images are on ghcr.io; the demo (k3s) already runs it and was tested. What 0.1.85 brings: faster
-      HEAVY demo data and SIFT totals without dead rows (totals tables get new storage settings at startup,
-      no rebuild), Code fields uppercased in list cells, read-only list cells (`editable: false`, FlowFields),
-      "already exists" on a rename to an existing key, renaming on cards, card navigation following the
-      list, menu bar after a company rename, NAV proxy address from `NAV_PROXY_URL`.
-      `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08) — required from 0.1.85 on, the
-      address is no longer built in (`docs/operations.md`, "NAV report proxy"). `git pull` is needed: the
-      compose file now passes `NAV_PROXY_URL` to the backend. On the server:
+- [ ] **Production: upgrade 0.1.84 → 0.1.87** (planned for later; go straight to 0.1.87, released
+      2026-10-09). The demo (k3s) runs the new releases first.
+      What it brings since 0.1.84:
+      - 0.1.85: faster HEAVY demo data and SIFT totals without dead rows (totals tables get new
+        storage settings at startup, no rebuild), Code fields uppercased in list cells, read-only list
+        cells, "already exists" on a rename to an existing key, renaming on cards, card navigation
+        following the list, menu bar after a company rename, NAV proxy address from `NAV_PROXY_URL`.
+      - 0.1.86: translated validation messages naming the field.
+      - 0.1.87: Job Queue e-mail to several addresses, notification language, "Send Test E-mail",
+        Job Queue Card, DateTime fields (Next Start) shown and saved on cards.
+      Migrations 8 (READER reads Country/Region and SMTP Setup) and 9 (wider Notification E-mail) run
+      by themselves at startup. `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08)
+      — required from 0.1.85 on (`docs/operations.md`, "NAV report proxy"). `git pull` is needed: the
+      compose file passes `NAV_PROXY_URL` to the backend. On the server:
       ```bash
       cd ~/openerp
       scripts/backup.sh
       git pull
-      sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.85/' prod.env
-      grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.85 and the proxy address
+      sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.87/' prod.env
+      grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.87 and the proxy address
       scripts/prod.sh pull && scripts/prod.sh up -d
       scripts/prod.sh ps
-      scripts/prod.sh logs backend --since 5m | grep -iE "migration|SIFT|error|WARNING"
+      scripts/prod.sh logs backend --since 5m | grep -iE "migration|SIFT|scheduler|error|WARNING"
       ```
-      Expected: backend/frontend `Up` on `0.1.85`; no errors and no "No JWT_SECRET" warning; the browser
-      shows v0.1.85 and the user stays logged in; a NAV report Job Queue entry runs (proves `NAV_PROXY_URL`).
-      Rollback: `APP_VERSION=0.1.84` in `prod.env`, then `scripts/prod.sh pull && scripts/prod.sh up -d`.
+      Expected: backend/frontend `Up` on `0.1.87`; "Migration 8/9 completed"; no errors and no
+      "No JWT_SECRET" warning; the browser shows v0.1.87 and the user stays logged in; a NAV report Job
+      Queue entry runs (proves `NAV_PROXY_URL`). For job e-mails: SMTP Setup must be enabled (Gmail:
+      `smtp.gmail.com`, port 587, app password); check with "Send Test E-mail" on a job.
+      Rollback: `APP_VERSION=0.1.84` in `prod.env`, then `scripts/prod.sh pull && scripts/prod.sh up -d`
+      (migrations 8/9 are harmless for 0.1.84: a permission row and a wider column).
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
