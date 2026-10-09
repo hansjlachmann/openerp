@@ -152,6 +152,8 @@ messages:
   CARD_SELECT_OR_CREATE: "Vælg en post fra listen eller opret en ny."
   CARD_CREATE_NEW: "Opret ny"
   CARD_CLEAR_FORM: "Ryd formular"
+  CARD_HINT_NAVIGATE: "Bladr"
+  CARD_HINT_FIRST_LAST: "Første/sidste"
 
   # List Page
   LIST_SEARCH_PLACEHOLDER: "Søg... (Ctrl+F)"

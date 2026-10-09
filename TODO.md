@@ -97,10 +97,18 @@ A job e-mails the outcome of a scheduled run to **one or more** addresses, in th
 - [x] **Tests:** address list parsing; sending against a fake SMTP server (all recipients, one
       rejected, all rejected); scheduler notifications (all recipients, Norwegian); validation
       triggers; the test codeunit; migration 9 on SQLite and Postgres.
-- [ ] Follow-up: the modal card keeps showing the list as typed after a save (it does not reload
-      the record so focus is kept); the tidied list shows when the card is opened again.
-- [ ] Follow-up: action captions and card section captions are not translated (the YAML caption
-      is shown); `common.actions.*` exists but the pages do not use it.
+- [x] Follow-up: cards show values a trigger changed right after a save (the tidied e-mail list,
+      recalculated FlowFields) — `applyServerValues` updates only those fields, in place, and not a
+      field the user changed again meanwhile; the focus stays (2026-10-09).
+- [x] Follow-up: action and card section captions are translated (`common.actions.<name>`,
+      `common.sections.<name>`, name in snake case; a test checks every page in every language).
+      The page handler now translates a copy of the page (`PageDefinition.Clone`): it used to change
+      the registry's shared definition, so concurrent users could see each other's captions (2026-10-09).
+- [x] Follow-up: Option values are translated on pages (list cells, OptionDropdown, cards): the API
+      sends `tables.<table>.options.<field>.<value in snake case>` under the option index
+      (`optionCaptions`; records keep the index). Missing translations added (Customer Status
+      Released/Posted, Customer Ledger Entry Applies-to Doc. Type); a test checks every option of
+      every table in every language. The card's "Navigate • First/Last" hint is translated (2026-10-09).
 
 ---
 
@@ -1114,9 +1122,13 @@ unenforceable because omitted and `false` are indistinguishable; match `Editable
   in `SetFilter`, `SetRange`, `SetCurrentKey` and `ModifyAll`; an unknown filter field fails closed
   (`1=0`, so a mistyped filter can never widen a `DeleteAll`). The list/ids handlers reject unknown
   fields with 400. `SanitizeFieldName` (regex strip) was not used — an allowlist is stricter.
-- [ ] Filtering on FlowFields (e.g. Customer `balance_lcy`): `FilterPane` offers every repeater field,
-      but FlowFields are not columns, so the API now returns 400 "Invalid filters parameter" (before:
-      an SQL error). BC supports it via CalcFields; needs its own implementation.
+- [x] Filtering on FlowFields (e.g. Customer Balance `>10000`, No. of Entries `0`) — 2026-10-09:
+      Sum/Count FlowFields; the generated `SetFilter` applies the BC filter to a correlated subquery
+      (`flowFieldExpr`) that reads the source like `CalcFieldsForRecords` (SIFT totals of a covering
+      key, else the entries) with the FlowFilters set (Date Filter). `flowfilter` gained decimals
+      (decimal comma or point) and `<`, `<=`, `>`, `>=` (also for the Date Filter); the API validates
+      the expression and names the field (`ERR_FILTER_INVALID`). Verified on Postgres with demo data.
+      Sorting on FlowFields is still not offered.
 - Totals/footer row, grouping, FactBox pane, export to Excel/CSV, "Show as chart", row-level style
   expressions, expand/collapse rows.
 

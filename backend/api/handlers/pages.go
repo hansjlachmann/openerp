@@ -34,10 +34,12 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 
 	// Get page definition from registry
 	registry := pages.GetRegistry()
-	pageDef, err := registry.GetPage(pageID)
+	shared, err := registry.GetPage(pageID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(apitypes.NewErrorResponse(apperrors.PageNotFound(pageIDStr).Message("en-US")))
 	}
+	// The registry's definition is shared by all requests: translate and flag a copy
+	pageDef := shared.Clone()
 
 	// Get current session for captions
 	sess := getSession(c)
@@ -142,6 +144,17 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		pageDef.Page.Caption = translatedCaption
 	}
 
+	// Action and section captions: common.actions.<name> / common.sections.<name>, the YAML
+	// caption when there is no translation
+	for i := range pageDef.Page.Actions {
+		a := &pageDef.Page.Actions[i]
+		a.Caption = commonCaption(ts, "actions", a.Name, a.Caption, lang)
+	}
+	for i := range pageDef.Page.Layout.Sections {
+		sec := &pageDef.Page.Layout.Sections[i]
+		sec.Caption = commonCaption(ts, "sections", sec.Name, sec.Caption, lang)
+	}
+
 	// Build navigation translations for breadcrumbs
 	navigation := map[string]string{
 		"home": ts.CommonTranslation("navigation.home", lang),
@@ -153,6 +166,36 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		Captions:   captions,
 		Navigation: navigation,
 	})
+}
+
+// commonCaption translates an action or section name ("Send Test E-mail") with the key
+// common.<group>.<name as snake case> (send_test_e_mail); fallback when there is none.
+func commonCaption(ts *i18n.TranslationService, group, name, fallback, lang string) string {
+	key := group + "." + captionKey(name)
+	if translated := ts.CommonTranslation(key, lang); translated != "common."+key {
+		return translated
+	}
+	if fallback == "" {
+		return name
+	}
+	return fallback
+}
+
+// captionKey turns a name into a translation key: lower case, other characters "_"
+// ("Send Test E-mail" → "send_test_e_mail", "Back to List" → "back_to_list")
+func captionKey(name string) string {
+	var b strings.Builder
+	underscore := false
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			underscore = false
+		} else if !underscore && b.Len() > 0 {
+			b.WriteByte('_')
+			underscore = true
+		}
+	}
+	return strings.TrimSuffix(b.String(), "_")
 }
 
 // normalizePageName converts "Customer Card" to "customer_card"

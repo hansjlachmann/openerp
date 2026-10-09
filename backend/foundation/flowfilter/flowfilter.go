@@ -6,9 +6,13 @@
 // for one column from such an expression.
 //
 // Syntax (BC): alternatives separated by '|'; each alternative is a value, a range "a..b",
-// an open range "..b" or "a..", or "<>value". Text and Code accept '*' wildcards. Booleans
-// accept Yes/No, true/false, 1/0. Dates are ISO (YYYY-MM-DD) — the frontend converts the
-// user's local date format before sending.
+// an open range "..b" or "a..", "<>value", or a comparison "<value", "<=value", ">value",
+// ">=value". Text and Code accept '*' wildcards. Booleans accept Yes/No, true/false, 1/0.
+// Dates are ISO (YYYY-MM-DD) — the frontend converts the user's local date format before
+// sending. Decimals accept a decimal point or comma ("1500,50"), no thousands separators.
+//
+// The same syntax filters FlowFields in lists (Customer Balance ">10000"): there the
+// "column" is the FlowField's SQL expression (ClauseFor).
 package flowfilter
 
 import (
@@ -27,11 +31,20 @@ const (
 	KindInt  Kind = "int"
 	KindText Kind = "text"
 	KindCode Kind = "code"
+	// KindDecimal: FlowField sums (filtering a list on e.g. Balance)
+	KindDecimal Kind = "decimal"
 )
 
 // Clause returns the SQL condition (with ? placeholders) and its arguments that apply expr
 // to column. An empty expression means no filter: "" and no arguments.
 func Clause(column string, kind Kind, expr string) (string, []interface{}, error) {
+	return ClauseFor(column, nil, kind, expr)
+}
+
+// ClauseFor is Clause for a column that is an SQL expression with its own arguments (a
+// FlowField's subquery): the expression is repeated in each alternative, so its arguments
+// are repeated before that alternative's values.
+func ClauseFor(column string, columnArgs []interface{}, kind Kind, expr string) (string, []interface{}, error) {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
 		return "", nil, nil
@@ -48,6 +61,7 @@ func Clause(column string, kind Kind, expr string) (string, []interface{}, error
 			return "", nil, err
 		}
 		ors = append(ors, cond)
+		args = append(args, columnArgs...)
 		args = append(args, a...)
 	}
 	if len(ors) == 1 {
@@ -69,6 +83,17 @@ func alternative(column string, kind Kind, part string) (string, []interface{}, 
 			return "", nil, err
 		}
 		return column + " <> ?", []interface{}{v}, nil
+	}
+	if kind != KindBool {
+		for _, op := range []string{"<=", ">=", "<", ">"} {
+			if rest, ok := strings.CutPrefix(part, op); ok {
+				v, err := value(kind, strings.TrimSpace(rest))
+				if err != nil {
+					return "", nil, err
+				}
+				return column + " " + op + " ?", []interface{}{v}, nil
+			}
+		}
 	}
 
 	if kind != KindBool {
@@ -137,6 +162,16 @@ func value(kind Kind, s string) (interface{}, error) {
 			return nil, fmt.Errorf("%q is not a whole number", s)
 		}
 		return n, nil
+	case KindDecimal:
+		// A decimal comma (nb-NO, da-DK) is read as the decimal point
+		if !strings.Contains(s, ".") {
+			s = strings.Replace(s, ",", ".", 1)
+		}
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil || strings.ContainsAny(s, "eEnN") {
+			return nil, fmt.Errorf("%q is not a number", s)
+		}
+		return f, nil
 	case KindBool:
 		switch strings.ToLower(s) {
 		case "yes", "true", "1", "ja":

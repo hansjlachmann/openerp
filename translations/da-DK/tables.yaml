@@ -57,6 +57,8 @@ tables:
     options:
       status:
         open: "Åben"
+        released: "Frigivet"
+        posted: "Bogført"
         blocked: "Spærret"
         closed: "Lukket"
 
@@ -111,6 +113,14 @@ tables:
     # Option field values
     options:
       document_type:
+        " ": " "
+        payment: "Betaling"
+        invoice: "Faktura"
+        credit_memo: "Kreditnota"
+        finance_charge_memo: "Rentenota"
+        reminder: "Rykker"
+
+      applies_to_doc_type:
         " ": " "
         payment: "Betaling"
         invoice: "Faktura"

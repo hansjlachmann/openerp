@@ -57,6 +57,8 @@ tables:
     options:
       status:
         open: "Open"
+        released: "Released"
+        posted: "Posted"
         blocked: "Blocked"
         closed: "Closed"
 
@@ -111,6 +113,14 @@ tables:
     # Option field values
     options:
       document_type:
+        " ": " "
+        payment: "Payment"
+        invoice: "Invoice"
+        credit_memo: "Credit Memo"
+        finance_charge_memo: "Finance Charge Memo"
+        reminder: "Reminder"
+
+      applies_to_doc_type:
         " ": " "
         payment: "Payment"
         invoice: "Invoice"

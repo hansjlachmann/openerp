@@ -9,7 +9,7 @@
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
-	import { t, MODAL } from '$lib/services/i18n.svelte';
+	import { t, MODAL, CARD } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -284,7 +284,7 @@
 		{#if page.page.enable_navigation && recordIdsLoaded}
 			<div class="keyboard-hint">
 				<span class="text-xs text-gray-500 dark:text-gray-400">
-					<kbd>Ctrl+↑/↓</kbd> Navigate • <kbd>Ctrl+Home/End</kbd> First/Last
+					<kbd>Ctrl+↑/↓</kbd> {t(CARD.HINT_NAVIGATE)} • <kbd>Ctrl+Home/End</kbd> {t(CARD.HINT_FIRST_LAST)}
 				</span>
 			</div>
 		{/if}

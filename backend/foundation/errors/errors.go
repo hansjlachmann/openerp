@@ -27,6 +27,7 @@ const (
 	ErrRelatedInactive ErrorCode = "ERR_RELATED_INACTIVE"
 	ErrEmailInvalid    ErrorCode = "ERR_EMAIL_INVALID"
 	ErrEmailDuplicate  ErrorCode = "ERR_EMAIL_DUPLICATE"
+	ErrFilterInvalid   ErrorCode = "ERR_FILTER_INVALID"
 	ErrDeleteFailed    ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed    ErrorCode = "ERR_INSERT_FAILED"
 	ErrModifyFailed    ErrorCode = "ERR_MODIFY_FAILED"
@@ -199,6 +200,11 @@ func EmailInvalid(table, field, address string) *AppError {
 // EmailDuplicate: a table field's e-mail address list holds an address twice
 func EmailDuplicate(table, field, address string) *AppError {
 	return &AppError{Code: ErrEmailDuplicate, Table: table, Field: field, Params: []string{address}}
+}
+
+// FilterInvalid: a filter expression the user typed for a field is not valid for its type
+func FilterInvalid(table, field, expr string) *AppError {
+	return &AppError{Code: ErrFilterInvalid, Table: table, Field: field, Params: []string{expr}}
 }
 
 // DeleteFailed creates an error for failed delete operation

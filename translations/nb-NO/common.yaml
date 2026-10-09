@@ -22,6 +22,23 @@ common:
     print: "Skriv ut"
     export: "Eksporter"
     import: "Importer"
+    back_to_list: "Tilbake til listen"
+    entries: "Poster"
+    generate_ledger_entries: "Generer poster"
+    ledger_entries: "Poster"
+    run: "Kjør"
+    send_test_e_mail: "Send test-e-post"
+
+  # Card page sections (page YAML section name in snake case)
+  sections:
+    authentication: "Autentisering"
+    communication: "Kommunikasjon"
+    general: "Generelt"
+    invoicing: "Fakturering"
+    notification: "Varsling"
+    recurrence: "Gjentakelse"
+    statistics: "Statistikk"
+    timestamps: "Tidsstempler"
 
   # Common messages
   messages:

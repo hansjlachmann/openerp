@@ -2,6 +2,7 @@ package flowfilter
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -57,5 +58,43 @@ func TestClauseErrors(t *testing.T) {
 		if err := Validate(tt.kind, tt.expr); err == nil {
 			t.Errorf("%s %q: no error", tt.kind, tt.expr)
 		}
+	}
+}
+
+func TestComparisonsAndDecimals(t *testing.T) {
+	for _, tc := range []struct {
+		expr, clause string
+		args         []interface{}
+	}{
+		{">10000", "x > ?", []interface{}{10000.0}},
+		{">=1500,50", "x >= ?", []interface{}{1500.5}},
+		{"<0", "x < ?", []interface{}{0.0}},
+		{"<=-2.5", "x <= ?", []interface{}{-2.5}},
+		{"0|>100", "(x = ? OR x > ?)", []interface{}{0.0, 100.0}},
+		{"100..200", "x BETWEEN ? AND ?", []interface{}{100.0, 200.0}},
+	} {
+		clause, args, err := Clause("x", KindDecimal, tc.expr)
+		if err != nil || clause != tc.clause || !reflect.DeepEqual(args, tc.args) {
+			t.Errorf("%q: %q %v %v, want %q %v", tc.expr, clause, args, err, tc.clause, tc.args)
+		}
+	}
+	for _, bad := range []string{"abc", ">", "1.000,50", "1e5", "NaN"} {
+		if err := Validate(KindDecimal, bad); err == nil {
+			t.Errorf("%q accepted as a decimal filter", bad)
+		}
+	}
+	if clause, _, err := Clause("d", KindDate, ">2026-01-31"); err != nil || clause != "d > ?" {
+		t.Errorf("date comparison: %q, %v", clause, err)
+	}
+}
+
+func TestClauseForRepeatsColumnArgs(t *testing.T) {
+	clause, args, err := ClauseFor("(SELECT SUM(a) FROM s WHERE k = ?)", []interface{}{"K"}, KindDecimal, "0|>100")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "((SELECT SUM(a) FROM s WHERE k = ?) = ? OR (SELECT SUM(a) FROM s WHERE k = ?) > ?)"
+	if clause != want || !reflect.DeepEqual(args, []interface{}{"K", 0.0, "K", 100.0}) {
+		t.Errorf("got %q %v", clause, args)
 	}
 }

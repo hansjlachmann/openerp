@@ -15,7 +15,7 @@
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, hasPrimaryKey } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, hasPrimaryKey, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
@@ -378,7 +378,10 @@
 		try {
 			if (isExistingRecord && currentRecordId) {
 				// Update existing record (only if we successfully loaded an existing record)
+				const sentRecord = deepCopy(savedRecord);
 				const modified = await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
+				// Values a trigger changed (tidied, recalculated) show at once
+				applyServerValues(savedRecord, sentRecord, modified);
 				// Renamed (key changed, BC/NAV): address the record by its new key from now on
 				const newRecordId = getRecordId(modified, primaryKeyField, primaryKeyFieldsList);
 				if (newRecordId && newRecordId !== currentRecordId) {
@@ -393,7 +396,9 @@
 				if (!hasPrimaryKey(savedRecord, primaryKeyFieldsList)) {
 					return false;
 				}
+				const sentRecord = deepCopy(savedRecord);
 				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
+				applyServerValues(savedRecord, sentRecord, insertedRecord);
 				// After successful insert, mark as existing for future saves
 				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);
 				isExistingRecord = true;

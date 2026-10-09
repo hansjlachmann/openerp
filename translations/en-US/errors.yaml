@@ -16,6 +16,7 @@ errors:
   ERR_RELATED_INACTIVE: "%1 '%2' is inactive and cannot be used"
   ERR_EMAIL_INVALID: "%1: '%2' is not a valid e-mail address"
   ERR_EMAIL_DUPLICATE: "%1: '%2' is listed more than once"
+  ERR_FILTER_INVALID: "%1: '%2' is not a valid filter (e.g. 1000, >1000, 0..500, <>0, 100|200)"
   ERR_DELETE_FAILED: "Failed to delete %1 %2"
   ERR_INSERT_FAILED: "Failed to insert %1"
   ERR_MODIFY_FAILED: "Failed to modify %1 %2"

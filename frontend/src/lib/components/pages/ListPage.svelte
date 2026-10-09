@@ -34,7 +34,7 @@
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -1881,6 +1881,8 @@
 		const activeElementId = activeElement instanceof HTMLElement ? activeElement.id : null;
 
 		modalSaving = true;
+		// The values as sent: the server's changes (triggers) are taken over afterwards
+		const sentRecord = deepCopy(savedRecord);
 		try {
 			// An existing record is addressed by its key as loaded: the form may hold a changed
 			// key (rename, BC/NAV), which the record does not have until this modify saves it
@@ -1889,6 +1891,7 @@
 			if (modalIsNewRecord) {
 				// Insert new record
 				const responseData = await api.insertRecord(page.page.source_table, savedRecord);
+				applyServerValues(savedRecord, sentRecord, responseData);
 				// Add the new record to the list
 				records = [...records, responseData];
 				// After first save, it's no longer a new record
@@ -1901,6 +1904,7 @@
 			} else {
 				// Update existing record
 				const responseData = await api.modifyRecord(page.page.source_table, recordId!, savedRecord);
+				applyServerValues(savedRecord, sentRecord, responseData);
 
 				// Update the record in the list without full refresh
 				const index = records.findIndex(r => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === recordId);
@@ -1912,8 +1916,8 @@
 				modalHadChanges = true;
 				// No toast for modifications - too noisy with auto-save
 			}
-			// Note: We intentionally don't update modalRecord to avoid losing focus
-			// The user's edits are preserved and the save was successful
+			// The form record is not replaced (that would lose the focus): applyServerValues
+			// updated only the fields the server changed, in place
 
 			// Don't close modal - keep it open like Business Central
 			// Restore focus if it was lost during state updates

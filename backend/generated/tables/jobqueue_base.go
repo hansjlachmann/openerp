@@ -12,6 +12,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -1103,6 +1104,7 @@ type jobQueueBaseFilterCondition struct {
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
 	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
+	flowField    string        // Filter on a FlowField (filterExpr applied to its subquery)
 }
 
 // SetRange sets a range filter on a field (BC/NAV style)
@@ -1154,6 +1156,16 @@ func (t *JobQueueBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*jobQueueBaseFilterCondition)
 	}
+	if _, ok := t.FlowFieldFilterKind(fieldName); ok {
+		// A FlowField is not a column: the filter applies to its subquery (flowFieldExpr)
+		name := strings.ToLower(fieldName)
+		t.filters["flowfield:"+name] = &jobQueueBaseFilterCondition{
+			flowField:    name,
+			filterExpr:   filterExpr,
+			isExpression: true,
+		}
+		return
+	}
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
@@ -1167,6 +1179,43 @@ func (t *JobQueueBase) SetFilter(fieldName, filterExpr string) {
 		filterExpr:   filterExpr,
 		isExpression: true,
 	}
+}
+
+// FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
+// Count FlowFields, BC: SETFILTER on a FlowField) and the kind of its values.
+func (t *JobQueueBase) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
+	switch strings.ToLower(field) {
+	case "number_of_entries":
+		return flowfilter.KindInt, true
+	}
+	return "", false
+}
+
+// flowFieldExpr is the SQL expression computing FlowField field for each row of a query
+// on this table: a correlated subquery reading the source like CalcFieldsForRecords (the
+// SIFT totals of a covering key, else the entries), with the FlowFilters set on t.
+func (t *JobQueueBase) flowFieldExpr(field string) (string, []interface{}) {
+	outer := "\"" + fmt.Sprintf("%s$%s", t.company, JobQueueTableName) + "\""
+	_ = outer
+	switch strings.ToLower(field) {
+	case "number_of_entries":
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName), false
+	_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "job_queue_no = "+outer+".no")
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)"
+		}
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	}
+	return "NULL", nil
 }
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
@@ -1288,6 +1337,18 @@ func (t *JobQueueBase) buildWhereClause() (string, []interface{}) {
 	for _, filter := range t.filters {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
+		} else if filter.flowField != "" {
+			// BC filter syntax on the FlowField's value; an invalid expression matches no rows
+			// (the API validates it first and reports it)
+			kind, _ := t.FlowFieldFilterKind(filter.flowField)
+			expr, exprArgs := t.flowFieldExpr(filter.flowField)
+			clause, clauseArgs, err := flowfilter.ClauseFor(expr, exprArgs, kind, filter.filterExpr)
+			if err != nil {
+				conditions = append(conditions, "1=0")
+			} else if clause != "" {
+				conditions = append(conditions, clause)
+				args = append(args, clauseArgs...)
+			}
 		} else if filter.isExpression {
 			// Parse BC/NAV filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +17,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
@@ -324,6 +326,31 @@ func (h *TablesHandler) getLookupValuesAsInterface(tableName string, table ftabl
 	return result
 }
 
+// optionCaptions returns the option values of the table's Option fields in the user's
+// language: field → option index ("0", "1", …) → caption, from tables.<table>.options.
+// <field>.<value in snake case> ("On Hold" → on_hold); the YAML value when not translated.
+// Records carry the index, so only the displayed text changes with the language.
+func optionCaptions(tableName string, table ftables.Table, language string) map[string]map[string]string {
+	ts := i18n.GetInstance()
+	lang := normalizeLanguageCode(language)
+	options := make(map[string]map[string]string)
+	for fieldName, values := range table.GetOptionFields() {
+		optionMap := make(map[string]string, len(values))
+		for i, value := range values {
+			caption := value
+			key := captionKey(value)
+			if key != "" {
+				if translated := ts.OptionCaption(tableName, fieldName, key, lang); !strings.HasPrefix(translated, "tables.") {
+					caption = translated
+				}
+			}
+			optionMap[strconv.Itoa(i)] = caption
+		}
+		options[fieldName] = optionMap
+	}
+	return options
+}
+
 // GetOptions returns only the option field metadata (no records)
 // GET /api/tables/:table/options
 func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
@@ -343,15 +370,7 @@ func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
-	// Build options map
-	options := make(map[string]map[string]string)
-	for fieldName, optionValues := range table.GetOptionFields() {
-		optionMap := make(map[string]string)
-		for i, opt := range optionValues {
-			optionMap[fmt.Sprintf("%d", i)] = opt
-		}
-		options[fieldName] = optionMap
-	}
+	options := optionCaptions(tableName, table, language)
 
 	// Build lookups map for table relation fields
 	lookups := h.getLookupValues(tableName, table, company)
@@ -410,6 +429,12 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 // sort_order, filters (JSON [{field, expression}], BC filter expressions) and search with
 // search_fields (case-insensitive "contains"). Field names end up in SQL text: only real,
 // non-sensitive columns of the table are accepted.
+// flowFieldFilterer is implemented by generated tables with Sum/Count FlowFields: lists
+// can filter on them (the filter applies to a subquery computing the value)
+type flowFieldFilterer interface {
+	FlowFieldFilterKind(field string) (flowfilter.Kind, bool)
+}
+
 func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 	if sortBy := c.Query("sort_by", ""); sortBy != "" {
 		if !ftables.IsQueryableColumn(table, sortBy) {
@@ -434,6 +459,16 @@ func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 			return errors.New(apperrors.InvalidFilters().Message(language))
 		}
 		for _, f := range apiFilters {
+			// A Sum/Count FlowField (e.g. Customer Balance) filters on its calculated value
+			if ff, ok := table.(flowFieldFilterer); ok {
+				if kind, ok := ff.FlowFieldFilterKind(f.Field); ok {
+					if err := flowfilter.Validate(kind, f.Expression); err != nil {
+						return errors.New(apperrors.FilterInvalid(c.Params("table"), f.Field, f.Expression).Message(language))
+					}
+					table.SetFilter(f.Field, f.Expression)
+					continue
+				}
+			}
 			if !ftables.IsQueryableColumn(table, f.Field) {
 				return errors.New(apperrors.InvalidFilters().Message(language))
 			}
@@ -555,14 +590,8 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		captions.FieldTypes[field.Name] = string(field.Type)
 	}
 
-	// Add option field values
-	for fieldName, options := range table.GetOptionFields() {
-		optionMap := make(map[string]string)
-		for i, opt := range options {
-			optionMap[fmt.Sprintf("%d", i)] = opt
-		}
-		captions.Options[fieldName] = optionMap
-	}
+	// Option field values in the user's language
+	captions.Options = optionCaptions(tableName, table, language)
 
 	// Pagination metadata: real values when a window was requested, otherwise the
 	// legacy single-page shape (all records reported as page 1).
@@ -636,14 +665,8 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		captions.FieldTypes[field.Name] = string(field.Type)
 	}
 
-	// Add option field values
-	for fieldName, options := range table.GetOptionFields() {
-		optionMap := make(map[string]string)
-		for i, opt := range options {
-			optionMap[fmt.Sprintf("%d", i)] = opt
-		}
-		captions.Options[fieldName] = optionMap
-	}
+	// Option field values in the user's language
+	captions.Options = optionCaptions(tableName, table, language)
 
 	response := apitypes.NewSuccessResponseWithCaptions(ftables.PublicMap(table), captions)
 	return c.JSON(response)

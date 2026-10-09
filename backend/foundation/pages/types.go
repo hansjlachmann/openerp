@@ -120,3 +120,25 @@ type MenuItem struct {
 	Separator   bool   `yaml:"separator,omitempty" json:"separator,omitempty"`
 	Enabled     bool   `yaml:"enabled,omitempty" json:"enabled"`
 }
+
+// Clone returns a copy of the page definition that can be changed per request (translated
+// captions, primary key and required flags) without touching the registry's shared one.
+func (p *PageDefinition) Clone() *PageDefinition {
+	c := *p
+	m := &c.Page
+	m.Layout.Sections = make([]Section, len(p.Page.Layout.Sections))
+	for i, s := range p.Page.Layout.Sections {
+		s.Fields = append([]Field(nil), s.Fields...)
+		m.Layout.Sections[i] = s
+	}
+	if p.Page.Layout.Repeater != nil {
+		r := *p.Page.Layout.Repeater
+		r.Fields = append([]Field(nil), r.Fields...)
+		m.Layout.Repeater = &r
+	}
+	m.Actions = append([]Action(nil), p.Page.Actions...)
+	m.PrimaryKeyFields = append([]string(nil), p.Page.PrimaryKeyFields...)
+	m.FlowFields = append([]string(nil), p.Page.FlowFields...)
+	m.FlowFilterFields = append([]FlowFilterField(nil), p.Page.FlowFilterFields...)
+	return &c
+}

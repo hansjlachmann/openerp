@@ -1348,6 +1348,7 @@ type customerBaseFilterCondition struct {
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
 	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
+	flowField    string        // Filter on a FlowField (filterExpr applied to its subquery)
 }
 
 // SetRange sets a range filter on a field (BC/NAV style)
@@ -1399,6 +1400,16 @@ func (t *CustomerBase) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*customerBaseFilterCondition)
 	}
+	if _, ok := t.FlowFieldFilterKind(fieldName); ok {
+		// A FlowField is not a column: the filter applies to its subquery (flowFieldExpr)
+		name := strings.ToLower(fieldName)
+		t.filters["flowfield:"+name] = &customerBaseFilterCondition{
+			flowField:    name,
+			filterExpr:   filterExpr,
+			isExpression: true,
+		}
+		return
+	}
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
@@ -1412,6 +1423,111 @@ func (t *CustomerBase) SetFilter(fieldName, filterExpr string) {
 		filterExpr:   filterExpr,
 		isExpression: true,
 	}
+}
+
+// FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
+// Count FlowFields, BC: SETFILTER on a FlowField) and the kind of its values.
+func (t *CustomerBase) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
+	switch strings.ToLower(field) {
+	case "balance_lcy":
+		return flowfilter.KindDecimal, true
+	case "sales_lcy":
+		return flowfilter.KindDecimal, true
+	case "no_of_ledger_entries":
+		return flowfilter.KindInt, true
+	}
+	return "", false
+}
+
+// flowFieldExpr is the SQL expression computing FlowField field for each row of a query
+// on this table: a correlated subquery reading the source like CalcFieldsForRecords (the
+// SIFT totals of a covering key, else the entries), with the FlowFilters set on t.
+func (t *CustomerBase) flowFieldExpr(field string) (string, []interface{}) {
+	outer := "\"" + fmt.Sprintf("%s$%s", t.company, CustomerTableName) + "\""
+	_ = outer
+	switch strings.ToLower(field) {
+	case "balance_lcy":
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(remaining_amt_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_lcy":
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(sales_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "no_of_ledger_entries":
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)"
+		}
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	}
+	return "NULL", nil
 }
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
@@ -1533,6 +1649,18 @@ func (t *CustomerBase) buildWhereClause() (string, []interface{}) {
 	for _, filter := range t.filters {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
+		} else if filter.flowField != "" {
+			// BC filter syntax on the FlowField's value; an invalid expression matches no rows
+			// (the API validates it first and reports it)
+			kind, _ := t.FlowFieldFilterKind(filter.flowField)
+			expr, exprArgs := t.flowFieldExpr(filter.flowField)
+			clause, clauseArgs, err := flowfilter.ClauseFor(expr, exprArgs, kind, filter.filterExpr)
+			if err != nil {
+				conditions = append(conditions, "1=0")
+			} else if clause != "" {
+				conditions = append(conditions, clause)
+				args = append(args, clauseArgs...)
+			}
 		} else if filter.isExpression {
 			// Parse BC/NAV filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)

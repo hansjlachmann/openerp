@@ -152,6 +152,8 @@ messages:
   CARD_SELECT_OR_CREATE: "Select a record from the list or create a new one."
   CARD_CREATE_NEW: "Create New"
   CARD_CLEAR_FORM: "Clear Form"
+  CARD_HINT_NAVIGATE: "Navigate"
+  CARD_HINT_FIRST_LAST: "First/Last"
 
   # List Page
   LIST_SEARCH_PLACEHOLDER: "Search... (Ctrl+F)"

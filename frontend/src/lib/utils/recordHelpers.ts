@@ -201,6 +201,29 @@ export function sameFieldValue(a: any, b: any): boolean {
 }
 
 /**
+ * Take over the values the server changed while saving a card (a trigger tidied a field,
+ * e.g. an e-mail list stored as "a; b", or recalculated a FlowField) into the form record,
+ * in place so the inputs and their focus stay. Only fields the user has not changed again
+ * since the save was sent (form value still equals the sent value) are updated.
+ * @param form - The record the card's inputs are bound to
+ * @param sent - The values as they were sent (a copy taken before the request)
+ * @param saved - The record the API returned
+ */
+export function applyServerValues(
+	form: Record<string, any>,
+	sent: Record<string, any>,
+	saved: Record<string, any> | null | undefined
+): void {
+	if (!saved) return;
+	for (const [key, value] of Object.entries(saved)) {
+		if (key.startsWith('_')) continue;
+		if (sameFieldValue(value, sent[key])) continue; // unchanged by the server
+		if (key in form && !sameFieldValue(form[key], sent[key])) continue; // edited meanwhile
+		form[key] = value;
+	}
+}
+
+/**
  * Remove internal underscore-prefixed flags (_isNew, _tempId, _pristine, ...) before a
  * record is sent to the API.
  */

@@ -109,6 +109,8 @@ type FlowFilter struct {
 	// Derived for type "filter": the FlowFilter field's struct field and flowfilter kind
 	FilterField string `yaml:"-"`
 	Kind        string `yaml:"-"`
+	// Derived for type "field": the database column of the current table's field
+	ValueColumn string `yaml:"-"`
 }
 
 // LookupColumn defines a column to display in the lookup dropdown
@@ -163,6 +165,8 @@ type TemplateData struct {
 	UsesSIFT         bool          // imports the sift package (own SIFT keys or FlowFields reading totals)
 	UsesFlowFilter   bool          // imports the flowfilter package (table has FlowFilter fields)
 	EncryptedFields  []Field       // fields stored encrypted (encrypted: true)
+	// HasFilterableFlowField: Sum/Count FlowFields lists can filter on (FlowFieldFilterKind)
+	HasFilterableFlowField bool
 }
 
 // SIFTKeyData is a key with sum index fields, as the templates need it
@@ -413,7 +417,12 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		data.SIFTKeys = append(data.SIFTKeys, kd)
 	}
 	data.UsesSIFT = true // SyncKeys always calls sift.Sync (drops totals of removed keys)
-	data.UsesFlowFilter = len(def.FlowFilterFields) > 0
+	for _, f := range def.Table.Fields {
+		if f.FlowField && (f.CalcFormula == "Sum" || f.CalcFormula == "Count") {
+			data.HasFilterableFlowField = true
+		}
+	}
+	data.UsesFlowFilter = len(def.FlowFilterFields) > 0 || data.HasFilterableFlowField
 
 	return data
 }
@@ -521,6 +530,16 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 		}
 		for j := range f.FlowFilters {
 			ff := &f.FlowFilters[j]
+			if ff.Type == "field" {
+				for _, own := range def.Table.Fields {
+					if own.Name == ff.Value && !own.FlowField && !own.FlowFilter {
+						ff.ValueColumn = own.DBName
+					}
+				}
+				if ff.ValueColumn == "" {
+					return fmt.Errorf("FlowField %s: flow filter on %s uses %q, which is not a stored field of %s", f.Name, ff.Field, ff.Value, def.Table.Name)
+				}
+			}
 			if ff.Type != "filter" {
 				continue
 			}
@@ -2490,6 +2509,9 @@ type {{ lowerFirst .BaseStructName }}FilterCondition struct {
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
 	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
+{{- if .HasFilterableFlowField }}
+	flowField    string        // Filter on a FlowField (filterExpr applied to its subquery)
+{{- end }}
 }
 
 // SetRange sets a range filter on a field (BC/NAV style)
@@ -2541,6 +2563,18 @@ func (t *{{ .BaseStructName }}) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*{{ lowerFirst .BaseStructName }}FilterCondition)
 	}
+{{- if .HasFilterableFlowField }}
+	if _, ok := t.FlowFieldFilterKind(fieldName); ok {
+		// A FlowField is not a column: the filter applies to its subquery (flowFieldExpr)
+		name := strings.ToLower(fieldName)
+		t.filters["flowfield:"+name] = &{{ lowerFirst .BaseStructName }}FilterCondition{
+			flowField:    name,
+			filterExpr:   filterExpr,
+			isExpression: true,
+		}
+		return
+	}
+{{- end }}
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
@@ -2555,6 +2589,72 @@ func (t *{{ .BaseStructName }}) SetFilter(fieldName, filterExpr string) {
 		isExpression: true,
 	}
 }
+
+{{ if .HasFilterableFlowField -}}
+// FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
+// Count FlowFields, BC: SETFILTER on a FlowField) and the kind of its values.
+func (t *{{ .BaseStructName }}) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
+	switch strings.ToLower(field) {
+{{- range .Table.Fields }}
+{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+	case "{{ .DBName }}":
+{{- if eq .CalcFormula "Count" }}
+		return flowfilter.KindInt, true
+{{- else }}
+		return flowfilter.KindDecimal, true
+{{- end }}
+{{- end }}
+{{- end }}
+	}
+	return "", false
+}
+
+// flowFieldExpr is the SQL expression computing FlowField field for each row of a query
+// on this table: a correlated subquery reading the source like CalcFieldsForRecords (the
+// SIFT totals of a covering key, else the entries), with the FlowFilters set on t.
+func (t *{{ .BaseStructName }}) flowFieldExpr(field string) (string, []interface{}) {
+{{- if .Table.Global }}
+	outer := "\"" + {{ .StructName }}TableName + "\""
+{{- else }}
+	outer := "\"" + fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName) + "\""
+{{- end }}
+	_ = outer
+	switch strings.ToLower(field) {
+{{- range .Table.Fields }}
+{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+	case "{{ .DBName }}":
+{{- template "flowSource" . }}
+		var whereClauses []string
+		var args []interface{}
+		{{- range .FlowFilters }}
+		{{- if eq .Type "const" }}
+		whereClauses = append(whereClauses, "{{ .Field }} = ?")
+		args = append(args, {{ .Value }})
+		{{- else if eq .Type "field" }}
+		whereClauses = append(whereClauses, "{{ .Field }} = "+outer+".{{ .ValueColumn }}")
+		{{- end }}
+		{{- end }}
+		{{- template "flowFilterWhere" . }}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		{{- if eq .CalcFormula "Count" }}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)"
+		}
+		{{- else }}
+		agg := "COALESCE(SUM({{ .SourceField }}), 0)"
+		{{- end }}
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+{{- end }}
+{{- end }}
+	}
+	return "NULL", nil
+}
+
+{{ end -}}
 
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Unknown fields are ignored (the primary key order is used if none remain).
@@ -2655,6 +2755,20 @@ func (t *{{ .BaseStructName }}) buildWhereClause() (string, []interface{}) {
 	for _, filter := range t.filters {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
+{{- if .HasFilterableFlowField }}
+		} else if filter.flowField != "" {
+			// BC filter syntax on the FlowField's value; an invalid expression matches no rows
+			// (the API validates it first and reports it)
+			kind, _ := t.FlowFieldFilterKind(filter.flowField)
+			expr, exprArgs := t.flowFieldExpr(filter.flowField)
+			clause, clauseArgs, err := flowfilter.ClauseFor(expr, exprArgs, kind, filter.filterExpr)
+			if err != nil {
+				conditions = append(conditions, "1=0")
+			} else if clause != "" {
+				conditions = append(conditions, clause)
+				args = append(args, clauseArgs...)
+			}
+{{- end }}
 		} else if filter.isExpression {
 			// Parse BC/NAV filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)

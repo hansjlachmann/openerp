@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	applyServerValues,
 	getRecordId,
 	hasPrimaryKey,
 	isNewRecord,
@@ -250,5 +251,30 @@ describe('hasPrimaryKey', () => {
 		expect(hasPrimaryKey({ a: 'X', b: '' }, ['a', 'b'])).toBe(false);
 		expect(hasPrimaryKey({ a: 'X', b: 0 }, ['a', 'b'])).toBe(true); // 0 is a value
 		expect(hasPrimaryKey({ user_id: 'HANS' }, [])).toBe(true); // no key metadata: the backend decides
+	});
+});
+
+describe('applyServerValues', () => {
+	it('takes over values the server changed, in place', () => {
+		const form: Record<string, any> = { no: 'J1', notification_email: 'a@x.no;b@x.no ', number_of_entries: 3 };
+		const sent = { ...form };
+		applyServerValues(form, sent, { no: 'J1', notification_email: 'a@x.no; b@x.no', number_of_entries: 4 });
+		expect(form).toEqual({ no: 'J1', notification_email: 'a@x.no; b@x.no', number_of_entries: 4 });
+	});
+
+	it('keeps a field the user changed while the save was running', () => {
+		const sent = { no: 'J1', description: 'Old', notification_email: 'a@x.no;b@x.no' };
+		const form: Record<string, any> = { ...sent, description: 'Typed meanwhile' };
+		applyServerValues(form, sent, { no: 'J1', description: 'Old trimmed', notification_email: 'a@x.no; b@x.no' });
+		expect(form.description).toBe('Typed meanwhile');
+		expect(form.notification_email).toBe('a@x.no; b@x.no');
+	});
+
+	it('ignores typed differences and internal fields', () => {
+		const form: Record<string, any> = { status: '1', _key: 'J1' };
+		applyServerValues(form, { ...form }, { status: 1, _key: 'other' });
+		expect(form).toEqual({ status: '1', _key: 'J1' });
+		applyServerValues(form, { ...form }, null);
+		expect(form.status).toBe('1');
 	});
 });
