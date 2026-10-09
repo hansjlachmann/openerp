@@ -35,12 +35,15 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
         Job Queue Card, DateTime fields (Next Start) shown and saved on cards.
       Migrations 8 (READER reads Country/Region and SMTP Setup) and 9 (wider Notification E-mail) run
       by themselves at startup. `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08)
-      — required from 0.1.85 on (`docs/operations.md`, "NAV report proxy"). `git pull` is needed: the
-      compose file passes `NAV_PROXY_URL` to the backend. On the server:
+      — required from 0.1.85 on (`docs/operations.md`, "NAV report proxy"). The checkout must be
+      updated (the compose file passes `NAV_PROXY_URL` to the backend). **The git history was rewritten
+      on 2026-10-09, so `git pull` fails on the server's old checkout** — reset it instead; `git status`
+      first must show no changes to tracked files (settings are in the untracked `prod.env`). On the server:
       ```bash
       cd ~/openerp
       scripts/backup.sh
-      git pull
+      git status --short                                   # must be empty (untracked prod.env is not listed)
+      git fetch --force --prune --prune-tags origin && git reset --hard origin/main
       sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.87/' prod.env
       grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.87 and the proxy address
       scripts/prod.sh pull && scripts/prod.sh up -d
@@ -588,13 +591,25 @@ an OS upgrade and reboot.
       the server and `git pull` no longer conflicts.
 - [x] Switch production to `prod.env` and set up the backup cron (2026-10-08; the demo runs on k3s, not
       compose). The off-host copy is open under "First priority".
-- [ ] **(Medium priority) Remove installation-specific details from the git history.** Older commits
-      (code and two commit messages) contain details of a customer installation; the code no longer
-      does (`NAV_PROXY_URL`). Rewrite with `git filter-repo` (replace-text + replace-message), force-push
-      `main`, the affected tags and branches; then reset every clone (`git fetch && git reset --hard
-      origin/main`), ask GitHub Support to purge cached commits and PR refs, and fix the commit links in
-      `CHANGELOG.md`. The released backend images up to 0.1.84 contain the same detail: once production
-      runs a newer release, delete those image versions (or make the package private).
+- [x] **Remove installation-specific details from the git history** (2026-10-09). Scanned every
+      file version, commit and tag message, PRs, comments, issues and release notes: the only details
+      were the NAV proxy's internal address (old code + one commit message) and the production
+      certificate's file name (one commit message); no keys, certificates, passwords, tokens or
+      customer data. Rewritten with `git filter-repo` (address → `localhost` in code,
+      `<nav-proxy-host>` / `<certificate>` in messages) and old build outputs removed from history
+      (`api-server`, `openerp-cli`, `test.db-wal/-shm`; 137 → 53 MB). Every branch and tag has the same
+      files as before (main byte-identical); `main`, the release-please branch and all 87 tags
+      force-pushed; CHANGELOG and all 87 release notes point to the new commits. Rule added to
+      `CLAUDE.md` ("Public Repository (ABSOLUTE RULE)"); `.gitignore` also covers backups/dumps.
+- [ ] **Follow-ups of the history rewrite (user):**
+      - Ask GitHub Support (support.github.com → "Remove sensitive data") to purge cached views of the
+        old commits and the pull request refs (`refs/pull/*` cannot be force-pushed; PRs up to #119
+        still point to the old commits). There are no forks.
+      - Every other clone (workstation, production server) must be reset, not pulled:
+        `git fetch --force --prune --prune-tags origin && git reset --hard origin/main`.
+      - The backend images up to 0.1.84 on ghcr.io contain the old address: delete those package
+        versions (or make the package private) once production runs 0.1.85 or newer — production
+        runs 0.1.84 today.
 - [ ] **(Low priority) Production: renew the TLS certificate before it expires** — replace the
       certificate and key in `certs/` on the server, then `scripts/prod.sh restart nginx`.
 
