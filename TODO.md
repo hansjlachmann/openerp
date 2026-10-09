@@ -602,9 +602,10 @@ an OS upgrade and reboot.
       force-pushed; CHANGELOG and all 87 release notes point to the new commits. Rule added to
       `CLAUDE.md` ("Public Repository (ABSOLUTE RULE)"); `.gitignore` also covers backups/dumps.
 - [ ] **Follow-ups of the history rewrite (user):**
-      - Ask GitHub Support (support.github.com → "Remove sensitive data") to purge cached views of the
-        old commits and the pull request refs (`refs/pull/*` cannot be force-pushed; PRs up to #119
-        still point to the old commits). There are no forks.
+      - GitHub Support purge of cached views of the old commits and the pull request refs
+        (`refs/pull/*` cannot be force-pushed; PRs up to #119 still point to the old commits; no
+        forks): **ticket submitted 2026-10-09** (Repositories → Repository features → Branches,
+        "General question"), waiting for the reply. Done when an old commit URL no longer opens.
       - Every other clone (workstation, production server) must be reset, not pulled:
         `git fetch --force --prune --prune-tags origin && git reset --hard origin/main`.
       - The backend images up to 0.1.84 on ghcr.io contain the old address: delete those package
