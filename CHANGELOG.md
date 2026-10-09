@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.90](https://github.com/hansjlachmann/openerp/compare/v0.1.89...v0.1.90) (2026-10-09)
+
+
+### Features
+
+* filter lists on FlowFields; translated buttons, sections and option values ([317cbb7](https://github.com/hansjlachmann/openerp/commit/317cbb7388abd4e43d88f09b327d26083252348a))
+
 ## [0.1.89](https://github.com/hansjlachmann/openerp/compare/v0.1.88...v0.1.89) (2026-10-09)
 
 
