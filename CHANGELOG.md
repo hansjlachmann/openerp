@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.89](https://github.com/hansjlachmann/openerp/compare/v0.1.88...v0.1.89) (2026-10-09)
+
+
+### Features
+
+* encrypt secret fields at rest (encrypted: true), SMTP password first ([c0915c8](https://github.com/hansjlachmann/openerp/commit/c0915c8ad0b2ec7c43bec501a9327f97456975b1))
+
+
+### Documentation
+
+* TODO — GitHub Support purge requested ([711e1a8](https://github.com/hansjlachmann/openerp/commit/711e1a867e9b507d1843af4ed133161499091d9d))
+
 ## [0.1.88](https://github.com/hansjlachmann/openerp/compare/v0.1.87...v0.1.88) (2026-10-09)
 
 
