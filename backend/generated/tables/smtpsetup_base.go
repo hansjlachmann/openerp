@@ -4,13 +4,16 @@ package tables
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -405,6 +408,11 @@ func (t *SMTPSetupBase) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
+	if err := t.encryptSecrets(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		t.triggerErr = err
+		return false
+	}
 	tableName := SMTPSetupTableName
 
 	// Collect arguments for INSERT
@@ -448,6 +456,9 @@ func (t *SMTPSetupBase) InsertAll(records []*SMTPSetupBase, runTrigger bool) err
 				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
 			}
 		}
+		if err := r.encryptSecrets(); err != nil {
+			return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+		}
 		rows = append(rows, []interface{}{
 			r.Primary_key,
 			r.Enabled,
@@ -461,6 +472,93 @@ func (t *SMTPSetupBase) InsertAll(records []*SMTPSetupBase, runTrigger bool) err
 	tableName := SMTPSetupTableName
 	columns := []string{"primary_key", "enabled", "smtp_server", "smtp_server_port", "user_id", "password", "from_address"}
 	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+}
+
+// ========================================
+// Encrypted fields (encrypted: true)
+// ========================================
+
+// encryptSecrets stores the encrypted fields encrypted (secrets.Encrypt) when they hold a
+// new value as typed. Without an encryption key (neither OPENERP_ENCRYPTION_KEY nor
+// JWT_SECRET set — development) the value stays as typed; the backend warns at startup.
+func (t *SMTPSetupBase) encryptSecrets() error {
+	if v := t.Password.String(); v != "" && !secrets.IsEncrypted(v) {
+		// Encrypted, the value must still fit the 250-character column
+		if len(v) > 154 {
+			return apperrors.FieldTooLong(SMTPSetupTableName, "password", 154)
+		}
+		stored, err := secrets.Encrypt(v)
+		if err != nil && !errors.Is(err, secrets.ErrNoKey) {
+			return err
+		}
+		if err == nil {
+			t.Password = types.NewText(stored)
+		}
+	}
+	return nil
+}
+
+// PlainPassword returns password decrypted, for the server code that uses the
+// secret (never send it to the client). secrets.ErrDecrypt means it was encrypted with
+// another key: it has to be entered again.
+func (t *SMTPSetupBase) PlainPassword() (string, error) {
+	return secrets.Decrypt(t.Password.String())
+}
+
+// EncryptStoredSecrets encrypts the values of encrypted fields that are stored as typed
+// (saved before the field was encrypted, or without a key) in the table of the receiver's
+// company. Run at startup; does nothing without a key. Returns how many it encrypted.
+func (t *SMTPSetupBase) EncryptStoredSecrets() (int, error) {
+	if secrets.Source() == "" {
+		return 0, nil
+	}
+	tableName := SMTPSetupTableName
+	done := 0
+	{
+		rows, err := t.db.Query(fmt.Sprintf(`SELECT primary_key, password FROM "%s" WHERE password <> ''`, tableName))
+		if err != nil {
+			return done, err
+		}
+		type plainRow struct {
+			key   []interface{}
+			value string
+		}
+		var plain []plainRow
+		for rows.Next() {
+			key := make([]interface{}, 1)
+			dest := make([]interface{}, 0, len(key)+1)
+			for i := range key {
+				dest = append(dest, &key[i])
+			}
+			var value string
+			dest = append(dest, &value)
+			if err := rows.Scan(dest...); err != nil {
+				_ = rows.Close()
+				return done, err
+			}
+			if !secrets.IsEncrypted(value) {
+				plain = append(plain, plainRow{key, value})
+			}
+		}
+		if err := rows.Close(); err != nil {
+			return done, err
+		}
+		for _, r := range plain {
+			if len(r.value) > 154 {
+				return done, apperrors.FieldTooLong(SMTPSetupTableName, "password", 154)
+			}
+			stored, err := secrets.Encrypt(r.value)
+			if err != nil {
+				return done, err
+			}
+			sqlStr := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET password = ? WHERE primary_key = ?`, tableName), 1+len(r.key))
+			if _, err := t.db.Exec(sqlStr, append([]interface{}{stored}, r.key...)...); err != nil {
+				return done, err
+			}
+			done++
+		}
+	}
+	return done, nil
 }
 
 // Modify updates the record in the database
@@ -490,6 +588,11 @@ func (t *SMTPSetupBase) Modify(runTrigger bool) bool {
 				return false
 			}
 		}
+	}
+	if err := t.encryptSecrets(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		t.triggerErr = err
+		return false
 	}
 	tableName := SMTPSetupTableName
 

@@ -45,6 +45,8 @@ services:
       APP_VERSION: ${APP_VERSION:-latest}
       # Without it every restart logs all users out (random key per start)
       JWT_SECRET: ${JWT_SECRET:-}
+      # Encrypts the SMTP password in the database (empty: derived from JWT_SECRET)
+      OPENERP_ENCRYPTION_KEY: ${OPENERP_ENCRYPTION_KEY:-}
       # NAV report proxy used by the NAV Report Runner codeunit (empty: http://localhost:5009)
       NAV_PROXY_URL: ${NAV_PROXY_URL:-}
     depends_on:

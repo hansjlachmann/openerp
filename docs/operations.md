@@ -10,7 +10,7 @@ holds:
 
 | File | Tracked | What |
 |---|---|---|
-| `prod.env` | no (`.gitignore`) | Server settings and secrets: `APP_VERSION`, `JWT_SECRET`, `POSTGRES_PASSWORD`, `PUBLISH_HOST`, `NAV_PROXY_URL`. Template: `prod.env.example` |
+| `prod.env` | no (`.gitignore`) | Server settings and secrets: `APP_VERSION`, `JWT_SECRET`, `OPENERP_ENCRYPTION_KEY` (optional), `POSTGRES_PASSWORD`, `PUBLISH_HOST`, `NAV_PROXY_URL`. Template: `prod.env.example` |
 | `certs/` | no | TLS certificate and key for nginx (`selfsigned.crt`, `selfsigned.key`) |
 
 Always use the wrapper `scripts/prod.sh` instead of plain `docker compose`. It passes
@@ -160,7 +160,23 @@ If the backend logs a password error afterwards, the two do not match: fix `prod
 
 `JWT_SECRET` signs the session cookies. Without it the backend generates a random key on every
 start (and logs a warning): sessions do not survive a restart. Set it once
-(`openssl rand -hex 32`) and keep it; changing it logs everyone out once.
+(`openssl rand -hex 32`) and keep it; changing it logs everyone out once — and, unless
+`OPENERP_ENCRYPTION_KEY` is set, the SMTP password has to be entered again (next section).
+
+## Encrypted secrets (SMTP password)
+
+The SMTP password in SMTP Setup is stored encrypted (AES-256-GCM), so a database dump or
+backup does not reveal it. The key is `OPENERP_ENCRYPTION_KEY` in `prod.env` (optional) — when
+it is empty, a key derived from `JWT_SECRET` is used, so nothing has to be set up. At startup the
+backend logs `✓ Stored secrets encrypted (key from …)` and encrypts a password that was saved
+before (`✓ SMTP password encrypted`, once). Without either key (development) the password is
+stored as typed and the backend warns.
+
+If the key changes (a new `OPENERP_ENCRYPTION_KEY`, or a new `JWT_SECRET` while
+`OPENERP_ENCRYPTION_KEY` is empty), the stored password can no longer be read: job e-mails stop
+(the log says "enter the SMTP password again") and "Send Test E-mail" says so. Enter the password
+again in SMTP Setup. To be able to change `JWT_SECRET` without this, set
+`OPENERP_ENCRYPTION_KEY` once (`openssl rand -hex 32`) and enter the SMTP password again.
 
 ## NAV report proxy
 

@@ -232,6 +232,7 @@ messages:
   JOBQUEUE_TEST_MAIL_PARTIAL: "Test e-mail sent to %1. Not sent to: %2"
   JOBQUEUE_TEST_MAIL_NO_RECIPIENTS: "Job Queue %1 has no %2. Enter one or more e-mail addresses, separated by ;."
   JOBQUEUE_TEST_MAIL_NO_SMTP: "E-mail is not set up. Enable SMTP Setup and enter the SMTP server and the From address."
+  JOBQUEUE_TEST_MAIL_BAD_PASSWORD: "The %1 in %2 cannot be read: the encryption key has changed. Enter the password again."
   JOBQUEUE_TEST_MAIL_FAILED: "The test e-mail could not be sent: %1"
 
   # Dialog Messages

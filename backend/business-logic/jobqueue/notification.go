@@ -176,14 +176,20 @@ func (b *body) job(job *tables.JobQueue) {
 
 // LoadSMTPConfig reads the single SMTP_Setup record (a BC-style setup table with a
 // blank primary key) and builds a mail.Config. If the record is missing or not
-// enabled, a disabled config is returned.
-func LoadSMTPConfig(db database.Executor, dbType database.DBType) mail.Config {
+// enabled, a disabled config is returned. The stored password is decrypted; when that
+// fails (secrets.ErrDecrypt: the encryption key changed) the config is disabled and
+// the error returned — the password has to be entered again.
+func LoadSMTPConfig(db database.Executor, dbType database.DBType) (mail.Config, error) {
 	var setup tables.SMTPSetup
 	// SMTP_Setup is a global setup table; the company argument is ignored and the
 	// single record is keyed by a blank primary key.
 	setup.InitWithDBType(db, "", dbType)
 
 	if setup.Get("") && setup.Enabled {
+		password, err := setup.PlainPassword()
+		if err != nil {
+			return mail.Config{Enabled: false}, err
+		}
 		port := setup.Smtp_server_port
 		if port <= 0 {
 			port = 587
@@ -193,9 +199,9 @@ func LoadSMTPConfig(db database.Executor, dbType database.DBType) mail.Config {
 			Host:     setup.Smtp_server.String(),
 			Port:     strconv.Itoa(port),
 			Username: setup.User_id.String(),
-			Password: setup.Password.String(),
+			Password: password,
 			From:     setup.From_address.String(),
-		}
+		}, nil
 	}
-	return mail.Config{Enabled: false}
+	return mail.Config{Enabled: false}, nil
 }

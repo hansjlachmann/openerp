@@ -82,13 +82,18 @@ func (c *JobQueueSendTestMail) Run(record interface{}) (fcodeunits.Result, error
 		}
 		return fcodeunits.Result{}, err
 	}
-	mailer := newTestMailer(jobqueue.LoadSMTPConfig(c.db, c.dbType))
+	cfg, err := jobqueue.LoadSMTPConfig(c.db, c.dbType)
+	if err != nil {
+		return fcodeunits.Result{}, errors.New(ts.MessageWithParams("JOBQUEUE_TEST_MAIL_BAD_PASSWORD", lang,
+			ts.FieldCaption(gtables.SMTPSetupTableName, "password", lang), ts.TableCaption(gtables.SMTPSetupTableName, lang)))
+	}
+	mailer := newTestMailer(cfg)
 	if !mailer.Enabled() {
 		return fcodeunits.Result{}, errors.New(ts.Message("JOBQUEUE_TEST_MAIL_NO_SMTP", lang))
 	}
 
 	msg := jobqueue.TestMessage(&job, jobqueue.CompanyName(c.db, c.dbType, c.company), jobqueue.Language(c.db, c.dbType, c.company, &job))
-	err := mailer.Send(recipients, msg.Subject, msg.Body)
+	err = mailer.Send(recipients, msg.Subject, msg.Body)
 	var rcptErr *mail.RecipientsError
 	switch {
 	case err == nil:

@@ -232,6 +232,7 @@ messages:
   JOBQUEUE_TEST_MAIL_PARTIAL: "Test-e-post sendt til %1. Ikke sendt til: %2"
   JOBQUEUE_TEST_MAIL_NO_RECIPIENTS: "Jobbkø %1 har ingen %2. Skriv inn én eller flere e-postadresser, skilt med ;."
   JOBQUEUE_TEST_MAIL_NO_SMTP: "E-post er ikke satt opp. Aktiver SMTP-oppsett og fyll inn SMTP-server og avsenderadresse."
+  JOBQUEUE_TEST_MAIL_BAD_PASSWORD: "%1 i %2 kan ikke leses: krypteringsnøkkelen er endret. Skriv inn passordet på nytt."
   JOBQUEUE_TEST_MAIL_FAILED: "Test-e-posten kunne ikke sendes: %1"
 
   # Dialog Messages

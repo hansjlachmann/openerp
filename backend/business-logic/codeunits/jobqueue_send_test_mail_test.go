@@ -11,6 +11,7 @@ import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
+	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
@@ -124,5 +125,22 @@ func TestJobQueueSendTestMail(t *testing.T) {
 	mailer.rejects = map[string]bool{"ops@example.com": true, "hans@example.com": true}
 	if _, err := run(); err == nil || !strings.HasPrefix(err.Error(), "The test e-mail could not be sent") {
 		t.Errorf("all rejected: error %v", err)
+	}
+
+	// The SMTP password was encrypted with a key that is no longer set
+	restore := secrets.SetKeyForTest("old key")
+	var setup tables.SMTPSetup
+	setup.InitWithDBType(db, "", database.DBTypeSQLite)
+	setup.Enabled = true
+	setup.Smtp_server = types.NewText("smtp.example.com")
+	setup.From_address = types.NewText("jobs@example.com")
+	setup.Password = types.NewText("app password")
+	if !setup.Insert(true) {
+		t.Fatal("insert SMTP setup")
+	}
+	restore()
+	defer secrets.SetKeyForTest("new key")()
+	if _, err := run(); err == nil || err.Error() != "The Password in SMTP Setup cannot be read: the encryption key has changed. Enter the password again." {
+		t.Errorf("undecryptable password: error %v", err)
 	}
 }

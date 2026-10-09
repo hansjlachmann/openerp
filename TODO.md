@@ -473,9 +473,19 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       placeholder sent back keeps the stored value, "" clears it, no filter/sort/search on it. Every
       masked field (table YAML, or page YAML for the User card's virtual password) renders as a
       password input on cards, list cells and modal cards (no more `field.source === 'password'`).
-- [ ] The SMTP password is still **stored** in plain text in the database (anyone with database
-      access or a backup can read it). Encrypt masked fields at rest with a server key (not
-      `JWT_SECRET`; e.g. `SECRETS_KEY`, AES-GCM), decrypted only by the mailer.
+- [x] **SMTP password encrypted at rest** (2026-10-09, next release after 0.1.87): new table YAML
+      property `encrypted: true` (requires `masked`, `types.Text`; tablegen refuses other
+      combinations and columns too short): AES-256-GCM (`backend/foundation/secrets`, stored as
+      `enc:v1:…`), encrypted by the generated Insert/Modify/InsertAll, decrypted only by the
+      generated `Plain<Field>()` for the server code that uses it (`PlainPassword` in
+      `jobqueue.LoadSMTPConfig`); values saved before are encrypted at startup
+      (`tables.EncryptStoredSecrets`, every table with encrypted fields). User passwords stay
+      bcrypt hashes (`sensitive: true`) — only compared, never decrypted. Key: `OPENERP_ENCRYPTION_KEY`, else derived
+      from `JWT_SECRET` (with its own label) — so production and the demo need no new setting; the
+      price is that changing `JWT_SECRET` then requires entering the SMTP password again (set
+      `OPENERP_ENCRYPTION_KEY` to decouple them, `docs/operations.md`). A password that cannot be
+      decrypted stops job e-mails (logged) and "Send Test E-mail" says to enter it again.
+      Passwords up to 154 bytes (the encrypted form must fit the 250-character column).
 - [ ] HTTPS/TLS support
 - [ ] API versioning
 - [ ] WebSocket support for live updates

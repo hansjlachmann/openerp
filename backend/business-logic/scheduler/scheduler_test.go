@@ -12,6 +12,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -247,6 +248,21 @@ func TestLoadSMTPConfigFromDB(t *testing.T) {
 	}
 	if cfg.From != "from@example.com" {
 		t.Errorf("from = %q", cfg.From)
+	}
+
+	// The stored (encrypted) password is decrypted for the mailer
+	defer secrets.SetKeyForTest("test key")()
+	var st tables.SMTPSetup
+	st.InitWithDBType(db, "", database.DBTypeSQLite)
+	if !st.Get("") {
+		t.Fatal("get SMTP setup")
+	}
+	st.Password = types.NewText("app password")
+	if !st.Modify(true) {
+		t.Fatal("modify SMTP setup")
+	}
+	if cfg := s.loadSMTPConfig(); cfg.Password != "app password" {
+		t.Errorf("password = %q, want the decrypted password", cfg.Password)
 	}
 }
 

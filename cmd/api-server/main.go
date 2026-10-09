@@ -16,6 +16,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/objects"
+	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -169,7 +170,29 @@ func main() {
 
 	fmt.Printf("✓ Company entered: %s\n", companyName)
 
-	fmt.Printf("✓ Per-request JWT sessions enabled\n\n")
+	fmt.Printf("✓ Per-request JWT sessions enabled\n")
+
+	// Fields with encrypted: true (the SMTP password) are stored encrypted with a key from
+	// the environment; values saved before that are encrypted now.
+	secretsDBType := database.DBTypeSQLite
+	if dbHost != "" {
+		secretsDBType = database.DBTypePostgres
+	}
+	if src := secrets.Source(); src != "" {
+		fmt.Printf("✓ Stored secrets encrypted (key from %s)\n", src)
+		companies, err := companyMgr.ListCompanies()
+		if err != nil {
+			log.Printf("WARNING: encrypt stored secrets: %v", err)
+		}
+		if n, err := tables.EncryptStoredSecrets(db.GetConnection(), secretsDBType, companies); err != nil {
+			log.Printf("WARNING: %v", err)
+		} else if n > 0 {
+			fmt.Printf("✓ %d stored secret(s) encrypted\n", n)
+		}
+	} else {
+		log.Println("WARNING: No OPENERP_ENCRYPTION_KEY or JWT_SECRET set - the SMTP password is stored unencrypted")
+	}
+	fmt.Println()
 
 	// Create and setup API server
 	var server *api.Server

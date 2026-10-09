@@ -1,6 +1,10 @@
 package tables
 
 import (
+	"fmt"
+	"sort"
+
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -82,4 +86,43 @@ func ListTableNames() []string {
 func TableExists(name string) bool {
 	_, ok := tableRegistry[name]
 	return ok
+}
+
+// EncryptStoredSecrets encrypts values of encrypted fields (encrypted: true in the table
+// YAML) that are stored as typed — saved before the field was encrypted or while no key
+// was set — in every table that has such fields: global tables once, company tables in
+// each company. Run at startup; does nothing without an encryption key. Returns how many
+// values it encrypted.
+func EncryptStoredSecrets(db database.Executor, dbType database.DBType, companies []string) (int, error) {
+	type secretTable interface {
+		ftables.Table
+		IsGlobal() bool
+		EncryptStoredSecrets() (int, error)
+	}
+	total := 0
+	names := make([]string, 0, len(tableRegistry))
+	for name := range tableRegistry {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		probe, ok := tableRegistry[name]().(secretTable)
+		if !ok {
+			continue // no encrypted fields
+		}
+		scopes := companies
+		if probe.IsGlobal() {
+			scopes = []string{""}
+		}
+		for _, company := range scopes {
+			t := tableRegistry[name]().(secretTable)
+			t.InitWithDBType(db, company, dbType)
+			n, err := t.EncryptStoredSecrets()
+			total += n
+			if err != nil {
+				return total, fmt.Errorf("encrypt stored secrets of %s (%s): %w", name, company, err)
+			}
+		}
+	}
+	return total, nil
 }

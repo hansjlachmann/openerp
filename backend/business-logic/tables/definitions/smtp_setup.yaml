@@ -34,7 +34,8 @@ table:
       type: types.Text
       db_name: password
       length: 250
-      masked: true  # write-only: the API sends •••••••• when set, never the password
+      masked: true     # write-only: the API sends •••••••• when set, never the password
+      encrypted: true  # stored encrypted (AES-256-GCM); the mailer reads it with PlainPassword()
 
     - name: from_address
       type: types.Text

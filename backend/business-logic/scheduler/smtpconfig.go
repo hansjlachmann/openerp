@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"log"
+
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
 )
@@ -17,7 +19,12 @@ func (s *Scheduler) currentMailer() mail.Sender {
 	return mail.NewSMTPMailer(cfg)
 }
 
-// loadSMTPConfig reads the SMTP_Setup record (jobqueue.LoadSMTPConfig)
+// loadSMTPConfig reads the SMTP_Setup record (jobqueue.LoadSMTPConfig). A password that
+// cannot be decrypted is logged; notifications are then not sent.
 func (s *Scheduler) loadSMTPConfig() mail.Config {
-	return jobqueue.LoadSMTPConfig(s.db, s.dbType)
+	cfg, err := jobqueue.LoadSMTPConfig(s.db, s.dbType)
+	if err != nil {
+		log.Printf("Job Queue scheduler: SMTP Setup: %v — enter the SMTP password again", err)
+	}
+	return cfg
 }

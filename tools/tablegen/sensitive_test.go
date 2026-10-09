@@ -60,3 +60,33 @@ func TestValidateSensitiveFields(t *testing.T) {
 		t.Errorf("masked text field: %v", err)
 	}
 }
+
+func TestValidateEncryptedFields(t *testing.T) {
+	ok := &TableDef{}
+	ok.Table.Fields = []Field{{Name: "password", Type: "types.Text", Length: 250, Masked: true, Encrypted: true}}
+	if err := validateSensitiveFields(ok, nil); err != nil {
+		t.Errorf("masked encrypted text field: %v", err)
+	}
+	for _, f := range []Field{
+		{Name: "secret", Type: "types.Text", Length: 250, Encrypted: true},                                // not masked
+		{Name: "secret", Type: "types.Code", Length: 250, Masked: true, Encrypted: true},                  // Code is uppercased
+		{Name: "secret", Type: "types.Text", Length: 50, Masked: true, Encrypted: true},                   // too short
+		{Name: "secret", Type: "types.Text", Length: 250, Masked: true, Sensitive: true, Encrypted: true}, // hash: sensitive
+	} {
+		def := &TableDef{}
+		def.Table.Fields = []Field{f}
+		if err := validateSensitiveFields(def, nil); err == nil {
+			t.Errorf("encrypted field %+v accepted", f)
+		}
+	}
+}
+
+func TestMaxEncryptedPlain(t *testing.T) {
+	// "enc:v1:" + base64 (no padding) of nonce 12 + secret + tag 16 (secrets.EncryptedLength)
+	if got := encryptedLength(154); got != 250 {
+		t.Errorf("encryptedLength(154) = %d, want 250", got)
+	}
+	if got := maxEncryptedPlain(250); got != 154 {
+		t.Errorf("maxEncryptedPlain(250) = %d, want 154", got)
+	}
+}

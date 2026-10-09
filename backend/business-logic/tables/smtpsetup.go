@@ -70,9 +70,8 @@ func (t *SMTPSetup) Validate() error {
 	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "user_id", string(t.User_id), 100); err != nil {
 		return err
 	}
-	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "password", string(t.Password), 250); err != nil {
-		return err
-	}
+	// password: encrypted: true in the YAML — the generated Insert/Modify check its length
+	// (as typed, so that it fits the column encrypted) and store it encrypted
 	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "from_address", string(t.From_address), 100); err != nil {
 		return err
 	}

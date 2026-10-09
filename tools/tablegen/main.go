@@ -79,6 +79,11 @@ type Field struct {
 	// never read back — responses carry tables.MaskedValue when it has a value (e.g.
 	// SMTP_Setup.password); not usable in filters, sorting, search or lookup columns
 	Masked bool `yaml:"masked"`
+	// Encrypted: a masked secret the server has to read back in clear (e.g. the SMTP
+	// password it logs in with) is stored encrypted (backend/foundation/secrets, AES-256-GCM)
+	// — Insert/Modify/InsertAll encrypt it, Plain<Field>() decrypts it. Requires masked and
+	// types.Text. Not for values that are only compared (user passwords: hash them, sensitive).
+	Encrypted bool `yaml:"encrypted"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -157,6 +162,7 @@ type TemplateData struct {
 	SIFTKeys         []SIFTKeyData // this table's keys with sum_index_fields
 	UsesSIFT         bool          // imports the sift package (own SIFT keys or FlowFields reading totals)
 	UsesFlowFilter   bool          // imports the flowfilter package (table has FlowFilter fields)
+	EncryptedFields  []Field       // fields stored encrypted (encrypted: true)
 }
 
 // SIFTKeyData is a key with sum index fields, as the templates need it
@@ -350,6 +356,9 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		if field.Type == "int" && !field.FlowField {
 			data.HasIntField = true
 		}
+		if field.Encrypted {
+			data.EncryptedFields = append(data.EncryptedFields, *field)
+		}
 		// Track first primary key field (for tables with composite keys)
 		if field.PrimaryKey && data.FirstPrimaryKey == nil {
 			data.FirstPrimaryKey = field
@@ -537,6 +546,22 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 	return nil
 }
 
+// encryptedLength is the stored length of a secret of n bytes: "enc:v1:" + base64 without
+// padding of nonce (12) + secret + GCM tag (16). Must match secrets.EncryptedLength.
+func encryptedLength(n int) int {
+	return len("enc:v1:") + (4*(12+n+16)+2)/3
+}
+
+// maxEncryptedPlain is the longest secret (bytes) whose encrypted form fits a column of
+// the given length
+func maxEncryptedPlain(length int) int {
+	n := 0
+	for encryptedLength(n+1) <= length {
+		n++
+	}
+	return n
+}
+
 // validateSensitiveFields checks that sensitive and masked fields are plain stored fields
 // (not a key, FlowField or FlowFilter; masked ones Text/Code) and that no table relation
 // shows one of another table in its dropdown — the dropdown rows would send it to the client.
@@ -550,6 +575,12 @@ func validateSensitiveFields(def *TableDef, byStruct map[string]*TableDef) error
 		}
 		if f.Masked && f.Type != "types.Text" && f.Type != "types.Code" {
 			return fmt.Errorf("masked field %q must be types.Text or types.Code, not %s", f.Name, f.Type)
+		}
+		if f.Encrypted && (!f.Masked || f.Type != "types.Text") {
+			return fmt.Errorf("encrypted field %q must be masked and types.Text (an encrypted value is never sent by the API)", f.Name)
+		}
+		if f.Encrypted && maxEncryptedPlain(f.Length) < 16 {
+			return fmt.Errorf("encrypted field %q: length %d is too short for an encrypted value (at least %d)", f.Name, f.Length, encryptedLength(16))
 		}
 	}
 	for _, f := range def.Table.Fields {
@@ -749,6 +780,7 @@ func templateFuncs() template.FuncMap {
 		"tableNameVar":       getTableNameVarCode,
 		"filterSetExpr":      filterSetExpr,
 		"flowFilterKind":     func(f Field) string { k, _ := flowFilterKind(f); return k },
+		"maxEncryptedPlain":  maxEncryptedPlain,
 	}
 }
 
@@ -1028,6 +1060,9 @@ import (
 {{- if .HasBlobField }}
 	"encoding/base64"
 {{- end }}
+{{- if .EncryptedFields }}
+	"errors"
+{{- end }}
 	"fmt"
 	"slices"
 {{- if .HasIntField }}
@@ -1039,9 +1074,15 @@ import (
 {{- end }}
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+{{- if .EncryptedFields }}
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+{{- end }}
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 {{- if .UsesFlowFilter }}
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
+{{- end }}
+{{- if .EncryptedFields }}
+	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 {{- end }}
 {{- if .UsesSIFT }}
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
@@ -1670,6 +1711,13 @@ func (t *{{ .BaseStructName }}) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
+{{- if .EncryptedFields }}
+	if err := t.encryptSecrets(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		t.triggerErr = err
+		return false
+	}
+{{- end }}
 
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
@@ -1716,6 +1764,11 @@ func (t *{{ .BaseStructName }}) InsertAll(records []*{{ .BaseStructName }}, runT
 				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
 			}
 		}
+{{- if .EncryptedFields }}
+		if err := r.encryptSecrets(); err != nil {
+			return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
+		}
+{{- end }}
 		rows = append(rows, []interface{}{
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -1733,6 +1786,105 @@ func (t *{{ .BaseStructName }}) InsertAll(records []*{{ .BaseStructName }}, runT
 	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
 }
 
+{{ if .EncryptedFields -}}
+// ========================================
+// Encrypted fields (encrypted: true)
+// ========================================
+
+// encryptSecrets stores the encrypted fields encrypted (secrets.Encrypt) when they hold a
+// new value as typed. Without an encryption key (neither OPENERP_ENCRYPTION_KEY nor
+// JWT_SECRET set — development) the value stays as typed; the backend warns at startup.
+func (t *{{ .BaseStructName }}) encryptSecrets() error {
+{{- range .EncryptedFields }}
+	if v := t.{{ upperFirst .Name }}.String(); v != "" && !secrets.IsEncrypted(v) {
+		// Encrypted, the value must still fit the {{ .Length }}-character column
+		if len(v) > {{ maxEncryptedPlain .Length }} {
+			return apperrors.FieldTooLong({{ $.StructName }}TableName, "{{ .Name }}", {{ maxEncryptedPlain .Length }})
+		}
+		stored, err := secrets.Encrypt(v)
+		if err != nil && !errors.Is(err, secrets.ErrNoKey) {
+			return err
+		}
+		if err == nil {
+			t.{{ upperFirst .Name }} = types.NewText(stored)
+		}
+	}
+{{- end }}
+	return nil
+}
+{{- range .EncryptedFields }}
+
+// Plain{{ upperFirst .Name }} returns {{ .Name }} decrypted, for the server code that uses the
+// secret (never send it to the client). secrets.ErrDecrypt means it was encrypted with
+// another key: it has to be entered again.
+func (t *{{ $.BaseStructName }}) Plain{{ upperFirst .Name }}() (string, error) {
+	return secrets.Decrypt(t.{{ upperFirst .Name }}.String())
+}
+{{- end }}
+
+// EncryptStoredSecrets encrypts the values of encrypted fields that are stored as typed
+// (saved before the field was encrypted, or without a key) in the table of the receiver's
+// company. Run at startup; does nothing without a key. Returns how many it encrypted.
+func (t *{{ .BaseStructName }}) EncryptStoredSecrets() (int, error) {
+	if secrets.Source() == "" {
+		return 0, nil
+	}
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
+	done := 0
+{{- range .EncryptedFields }}
+	{
+		rows, err := t.db.Query(fmt.Sprintf(` + "`SELECT {{ range $.Table.Fields }}{{ if .PrimaryKey }}{{ .DBName }}, {{ end }}{{ end }}{{ .DBName }} FROM \"%s\" WHERE {{ .DBName }} <> ''`" + `, tableName))
+		if err != nil {
+			return done, err
+		}
+		type plainRow struct {
+			key   []interface{}
+			value string
+		}
+		var plain []plainRow
+		for rows.Next() {
+			key := make([]interface{}, {{ pkCount $.Table.Fields }})
+			dest := make([]interface{}, 0, len(key)+1)
+			for i := range key {
+				dest = append(dest, &key[i])
+			}
+			var value string
+			dest = append(dest, &value)
+			if err := rows.Scan(dest...); err != nil {
+				_ = rows.Close()
+				return done, err
+			}
+			if !secrets.IsEncrypted(value) {
+				plain = append(plain, plainRow{key, value})
+			}
+		}
+		if err := rows.Close(); err != nil {
+			return done, err
+		}
+		for _, r := range plain {
+			if len(r.value) > {{ maxEncryptedPlain .Length }} {
+				return done, apperrors.FieldTooLong({{ $.StructName }}TableName, "{{ .Name }}", {{ maxEncryptedPlain .Length }})
+			}
+			stored, err := secrets.Encrypt(r.value)
+			if err != nil {
+				return done, err
+			}
+			sqlStr := t.convertPlaceholders(fmt.Sprintf(` + "`UPDATE \"%s\" SET {{ .DBName }} = ? WHERE {{ range $i, $f := $.Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }} = ?{{ if not (isLastPK $i $.Table.Fields) }} AND {{ end }}{{ end }}{{ end }}`" + `, tableName), 1+len(r.key))
+			if _, err := t.db.Exec(sqlStr, append([]interface{}{stored}, r.key...)...); err != nil {
+				return done, err
+			}
+			done++
+		}
+	}
+{{- end }}
+	return done, nil
+}
+
+{{ end -}}
 // Modify updates the record in the database
 func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 	// Call OnModify trigger if requested (via function reference set by wrapper)
@@ -1765,6 +1917,13 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 			}
 		}
 	}
+{{- if .EncryptedFields }}
+	if err := t.encryptSecrets(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		t.triggerErr = err
+		return false
+	}
+{{- end }}
 
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
