@@ -96,3 +96,9 @@ nav-classic-260-code-txt/
 
 # Server settings with secrets (from prod.env.example)
 prod.env
+
+# Database dumps and backups (scripts/backup.sh) — never in the public repo
+backups/
+*.dump
+*.sql.gz
+openerp-cli

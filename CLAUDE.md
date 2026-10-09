@@ -8,6 +8,15 @@ OpenERP is a full-stack ERP system inspired by Microsoft Dynamics NAV/Business C
 
 **Required runtimes**: Go 1.24, Node.js 22. Always target these versions.
 
+## Public Repository (ABSOLUTE RULE)
+
+This repository is **public** on GitHub, and so are its issues, pull requests, release notes and the container images on ghcr.io. Everything committed or pushed is readable by anyone, and stays in the git history even after it is deleted from the files.
+- **Never** put confidential or installation-specific details into tracked files, commit messages, PR/issue text or release notes: server hostnames, domains, IP addresses (also private ones like `10.x` / `192.168.x`), ports of internal services, user names on servers, paths on servers, customer or company names of installations, certificate names/issuers/expiry, passwords, tokens, API keys, SMTP credentials, private keys and certificates (`*.pfx`, `*.p12`, `*.key`, `*.pem`, `certs/`), database dumps, backups and real customer data.
+- Site settings come from the environment: untracked `prod.env` (template `prod.env.example` with placeholders only), Kubernetes secrets, or tables such as SMTP Setup. Code defaults are generic (`localhost`), never a real address — e.g. the NAV proxy is `NAV_PROXY_URL`, default `http://localhost:5009`.
+- Describe production work generically in `TODO.md` and docs ("Production: upgraded to 0.1.84"), never with its host, domain or address. Examples use `example.com` / `x.no` style placeholders.
+- Do not commit build outputs or local data: binaries (`api-server`), SQLite databases (`*.db`, `-wal`, `-shm`), `.env` files other than the CI-managed `.env` (only `APP_VERSION`).
+- **Before every commit and push**, check the diff and the commit message for such details (e.g. `git diff --cached | grep -nE '([0-9]{1,3}\.){3}[0-9]{1,3}|BEGIN .*PRIVATE KEY|password\s*[:=]'`). If something slipped into a pushed commit, deleting it in a new commit is not enough — tell the user: it needs a history rewrite (`git filter-repo`), a force-push and a GitHub Support purge of cached commits and PR refs.
+
 ## Build & Run Commands
 
 ### Backend (Go 1.24)
