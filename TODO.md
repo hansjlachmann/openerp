@@ -473,7 +473,7 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       placeholder sent back keeps the stored value, "" clears it, no filter/sort/search on it. Every
       masked field (table YAML, or page YAML for the User card's virtual password) renders as a
       password input on cards, list cells and modal cards (no more `field.source === 'password'`).
-- [x] **SMTP password encrypted at rest** (2026-10-09, next release after 0.1.87): new table YAML
+- [x] **SMTP password encrypted at rest** (2026-10-09, release 0.1.89): new table YAML
       property `encrypted: true` (requires `masked`, `types.Text`; tablegen refuses other
       combinations and columns too short): AES-256-GCM (`backend/foundation/secrets`, stored as
       `enc:v1:…`), encrypted by the generated Insert/Modify/InsertAll, decrypted only by the
@@ -621,6 +621,19 @@ an OS upgrade and reboot.
       - The backend images up to 0.1.84 on ghcr.io contain the old address: delete those package
         versions (or make the package private) once production runs 0.1.85 or newer — production
         runs 0.1.84 today.
+- [ ] **(Low priority) Public demo (k3s) — remaining risks** (reviewed 2026-10-09; login required,
+      behind Cloudflare, secrets in sops, database only inside the cluster):
+      - Never enter real SMTP details on the demo: anyone with Job Queue / SMTP Setup rights could
+        send e-mail to any address through that account ("Send Test E-mail", job notifications).
+      - Demo visitors get a read-only role (READER) or one without Job Queue, Companies, Users and
+        SMTP Setup — admin rights allow heavy jobs (HEAVY demo data, jobs every minute), new
+        companies and users, which can exhaust the Raspberry Pi's CPU and disk.
+      - Data visitors enter is visible to other visitors: reset the demo database regularly (e.g. a
+        CronJob restoring a clean dump) and say so on the login page.
+      - Backups are on the same node as the database: copy them off the cluster.
+      - Security headers (frontend/nginx): `Strict-Transport-Security`, `frame-ancestors` /
+        `X-Frame-Options` (the login page can be framed today), a `Content-Security-Policy`.
+      - Use a long random database password in the demo's secret (it looks short).
 - [ ] **(Low priority) Production: renew the TLS certificate before it expires** — replace the
       certificate and key in `certs/` on the server, then `scripts/prod.sh restart nginx`.
 
