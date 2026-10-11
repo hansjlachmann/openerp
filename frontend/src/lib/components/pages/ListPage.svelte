@@ -636,7 +636,7 @@
 			} else if (page.page.editable) {
 				// Toggle inline edit mode
 				if (isNavigation) {
-					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, editColumn());
 				} else {
 					exitToNavigation();
 				}
@@ -1690,6 +1690,12 @@
 		}, 10);
 	}
 
+	// Column where Edit / Ctrl+E / F2 start editing: the one clicked last
+	let editStartCol = 0;
+	function editColumn(): number {
+		return editStartCol >= 0 && editStartCol < visibleColumns().length ? editStartCol : 0;
+	}
+
 	// Handle click on a cell in read-only display
 	function handleCellClick(rowIndex: number, colIndex: number, event?: MouseEvent) {
 		if (isNavigation) {
@@ -1699,12 +1705,10 @@
 				return;
 			}
 			clearSelection();
-			if (page.page.editable) {
-				selectedIndex = rowIndex;
-				enterCellSelected(rowIndex, colIndex);
-			} else {
-				handleRowClick(rowIndex);
-			}
+			// One click only selects the row (BC): editing starts with Edit / Ctrl+E / F2, in the
+			// column clicked last
+			editStartCol = colIndex;
+			handleRowClick(rowIndex);
 		} else {
 			// Already in editable state, move to clicked cell
 			confirmAndMoveTo(rowIndex, colIndex);
@@ -1713,12 +1717,8 @@
 
 	// Handle click on the trailing blank row: start a new record at the end (BC/NAV)
 	async function handlePlaceholderRowClick() {
-		if (isNavigation) {
-			if (!editableActive) {
-				editableRecords = toEditableRecords();
-				editableActive = true;
-			}
-		} else if (currentCellRow >= 0 && currentCellCol >= 0) {
+		if (isNavigation) return; // shown in edit mode only
+		if (currentCellRow >= 0 && currentCellCol >= 0) {
 			// Confirm the cell being left, as a click on any other cell does
 			await confirmAndMoveTo(currentCellRow, currentCellCol);
 		}
@@ -2105,18 +2105,17 @@
 				if (page.page.card_page_id) {
 					openCard();
 				} else if (page.page.editable && selectedIndex >= 0) {
-					enterCellSelected(selectedIndex, 0);
+					enterCellSelected(selectedIndex, editColumn());
 				}
 			};
 			if (page.page.editable) {
 				map['F2'] = () => {
-					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, editColumn());
 				};
 				map['Ctrl+E'] = () => {
-					if (selectedIndex >= 0) enterCellSelected(selectedIndex, 0);
+					if (selectedIndex >= 0) enterCellSelected(selectedIndex, editColumn());
 				};
 			}
-			map['F5'] = () => handleAction('Refresh');
 			map['Ctrl+D'] = () => {
 				if (multiSelected) handleBulkDelete();
 				else if (selectedRecord) handleDelete();
@@ -3061,7 +3060,7 @@
 										}}
 									>
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
-											{#if page.page.editable && isCellEditable(field)}
+											{#if page.page.editable && isCellEditable(field) && !isNavigation}
 												<input type="checkbox" checked={record[field.source]}
 													onclick={async (e) => {
 														e.stopPropagation();
@@ -3077,7 +3076,8 @@
 													}}
 												/>
 											{:else}
-												<input type="checkbox" checked={record[field.source]} disabled class="cursor-not-allowed" />
+												<!-- Outside edit mode a checkbox only shows the value; the click selects the row -->
+												<input type="checkbox" checked={record[field.source]} disabled tabindex="-1" class="pointer-events-none" />
 											{/if}
 										{:else if field.primary_key && page.page.card_page_id && isNavigation}
 											<button
@@ -3125,8 +3125,8 @@
 						{/each}
 					</tr>
 				{/each}
-				{#if page.page.editable && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
-					<!-- BC-style trailing blank row: click it to start a new record -->
+				{#if page.page.editable && !isNavigation && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+					<!-- BC-style trailing blank row, in edit mode only: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}
 							<td class="row-number-cell"></td>

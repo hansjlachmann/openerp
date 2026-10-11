@@ -102,12 +102,6 @@ page:
       promoted: true
       enabled: true
 
-    - name: Refresh
-      caption: Refresh
-      shortcut: F5
-      promoted: true
-      enabled: true
-
     - name: Ledger Entries
       caption: Ledger Entries
       shortcut: Ctrl+F7

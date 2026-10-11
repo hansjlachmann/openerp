@@ -4,6 +4,21 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- The page background in the saved theme from the first paint: the app renders in the
+		     browser only (ssr = false), so without this every page load flashed white in dark mode
+		     until the app had started. Colors: BC page background (tailwind gray-900 / white). -->
+		<style>
+			html { background-color: #ffffff; }
+			html.dark { background-color: #121212; color-scheme: dark; }
+		</style>
+		<script>
+			// Same key and default as $lib/stores/theme.ts (dark unless "light" is saved)
+			try {
+				if (localStorage.getItem('theme') !== 'light') document.documentElement.classList.add('dark');
+			} catch (e) {
+				document.documentElement.classList.add('dark');
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

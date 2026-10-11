@@ -93,9 +93,3 @@ page:
       run_page: 673
       run_page_filter_field: job_queue_no
       run_page_filter_value: no
-
-    - name: Refresh
-      caption: Refresh
-      shortcut: F5
-      promoted: true
-      enabled: true

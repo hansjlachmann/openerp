@@ -42,8 +42,3 @@ page:
           width: 100
 
   actions:
-    - name: Refresh
-      caption: Refresh
-      shortcut: F5
-      promoted: true
-      enabled: true

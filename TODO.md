@@ -1048,7 +1048,31 @@ Postgres. **Freeze pane left out** (decided with the user). The notes below are 
 - Header drag-to-reorder via `createDragAndDrop`, writing the same `order` field the Customize modal
   writes — one persistence format, two editors.
 
-### Phase 3 — Action bar & context menu
+### Phase 3 — Actions: selection scope, right-click menu, Actions menu (NEXT, planned 2026-10-11)
+Updated plan (agreed with the user; not started). Findings in today's code: the list toolbar shows
+only `promoted` actions (a non-promoted one is reachable only by its shortcut); icons are picked by
+action name in `ListPage.svelte`; **bug:** `run_page` works on cards but does nothing on lists;
+**bug:** Edit is disabled on read-only lists even when they have a card page; Run and Send Test
+E-mail act on the cursor row only, also with several rows selected.
+- [ ] **Actions on a selection** — action YAML `scope: selection` runs the action for every selected
+      record: one confirmation ("Run Hello World for 5 records?"), then record after record in one
+      progress dialog ("Record 2 of 5"), a summary at the end ("4 completed, 1 failed: J03 – …"); a
+      failure does not stop the others. First users: Job Queue Run and Send Test E-mail. Actions
+      without it keep acting on the cursor row.
+- [ ] **Right-click menu on rows** — Edit, New, Delete and the page's row actions; right-clicking a
+      row outside the selection selects it first (BC); with several rows selected the menu acts on
+      them ("Delete 5 records"); Esc / click outside closes it.
+- [ ] **Related pages from lists** — fix `run_page` on list actions (open filtered to the cursor row
+      via `run_page_filter_field`/`run_page_filter_value`, with the usual back link); add Ledger
+      Entries (Ctrl+F7) to the Customer List and Entries to the Job Queue list.
+- [ ] **YAML-driven toolbar** — `icon:` per action (new, edit, delete, refresh, run, mail, entries,
+      …) instead of the name switch; `visible: false`; **non-promoted actions in one "Actions ▾"
+      menu** at the end of the toolbar (decided: one menu, not BC category menus); Edit enabled on
+      read-only lists that have a card page.
+- [ ] Translations (3 languages), unit tests (scope/enablement), browser check (Run on 3 jobs,
+      Ledger Entries from a customer, right-click menu), CLAUDE.md list-page rules.
+
+#### Original plan (Phase 3)
 Backend `Action` struct (`backend/foundation/pages/types.go:64-72`) — additive, all optional:
 `category` (New / Process / Report / Related / Actions), `image` (icon name, replacing the hardcoded
 name-based switch at `ListPage.svelte:1879-1887`), `scope` (page / row / selection), `visible`

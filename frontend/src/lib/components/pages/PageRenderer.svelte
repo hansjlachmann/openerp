@@ -542,6 +542,22 @@
 	);
 
 	// Handle closing the card page
+	// The loading skeleton appears only when loading takes longer than this: a page that loads
+	// quickly (the usual case) shows no flash of placeholder before its content
+	const skeletonDelay = 1000;
+	let showSkeleton = $state(false);
+	// One loading period from the page definition through its data: the timer does not
+	// restart between the two
+	const loading = $derived(pageLoading || dataLoading);
+	$effect(() => {
+		if (!loading) {
+			showSkeleton = false;
+			return;
+		}
+		const timer = setTimeout(() => (showSkeleton = true), skeletonDelay);
+		return () => clearTimeout(timer);
+	});
+
 	function handleCardClose() {
 		if (page?.page.list_page_id) {
 			window.location.href = `/pages/${page.page.list_page_id}`;
@@ -552,15 +568,14 @@
 	}
 </script>
 
-{#if pageLoading}
-	<!-- Initial loading - show list skeleton as default -->
-	<ListPageSkeleton />
-{:else if dataLoading && page}
-	<!-- Page definition loaded, show type-specific skeleton while data loads -->
-	{#if page.page.type === 'Card'}
-		<CardPageSkeleton />
-	{:else}
-		<ListPageSkeleton />
+{#if pageLoading || (dataLoading && page)}
+	<!-- Loading: the skeleton only after skeletonDelay — a quick load shows no placeholder -->
+	{#if showSkeleton}
+		{#if page?.page.type === 'Card'}
+			<CardPageSkeleton />
+		{:else}
+			<ListPageSkeleton />
+		{/if}
 	{/if}
 {:else if error}
 	<div class="flex items-center justify-center h-full">

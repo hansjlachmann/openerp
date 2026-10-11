@@ -57,8 +57,3 @@ page:
       caption: Delete
       shortcut: Ctrl+D
       promoted: true
-
-    - name: Refresh
-      caption: Refresh
-      shortcut: F5
-      promoted: true
