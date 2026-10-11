@@ -292,9 +292,18 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Ctrl+E | Enter cell-selected (same as F2) |
 | Alt+N / Ctrl+Insert | Insert new row |
 | Ctrl+F | Focus search input and select all text |
-| Ctrl+D | Delete selected record |
+| Ctrl+D | Delete the selected record — with several rows selected, all of them (one confirmation, one transaction) |
+| Shift+ArrowUp / ArrowDown / PageUp / PageDown / Home / End | Select the rows from the anchor to the new cursor row |
+| Ctrl+A | Select every record of the list (all matching the filters and search, also those not loaded) |
+| Ctrl+click / Shift+click | Add/remove a row / select the rows from the anchor to the clicked row (stays in navigation mode, also on editable lists) |
 | F5 | Refresh list data |
-| Escape | Navigate to home (`/`) |
+| Escape | With several rows selected: back to the cursor row; otherwise navigate to home (`/`) |
+
+### Multi-row selection (ABSOLUTE RULE)
+- Every list supports it, in **navigation mode only**: `selection` (`utils/selection.ts`, unit-tested) holds record **keys** (`getRecordId`), never row positions — windows, search and sort move rows. `all` (Ctrl+A) means every record matching the list's query, also those not loaded; Shift ranges past the loaded window take the keys from `/ids` with the list's query (`selectionQuery`: filters, FlowFilters, search, sort).
+- With one record or none selected the list behaves as before (actions use the cursor row, `selectedIndex`). Plain moves and plain clicks collapse a multi-selection; entering a cell (`enterCellSelected`) clears it; a new filter, search or sort clears it (BC); Esc collapses it before it would close the list.
+- Delete acts on the selection (`handleBulkDelete` → `PageRenderer.handleListBulkDelete` → `DELETE /api/tables/:table/delete-many` with `{keys}` or `{all: true}` plus the list's query from `listQuery()`, the same query as the list windows): one transaction, each record's OnDelete trigger, the first refusal rolls back all and names the record; at most 10,000 records. Other actions (Edit, Run, …) still use the cursor row — acting on a selection comes with per-action scopes (Phase 3).
+- Selected rows use the `selected` row style; the cursor row of a multi-selection gets `cursor-row`. Ctrl/Shift+mousedown is `preventDefault`ed so the browser does not select text.
 
 ### Keyboard: Cell-Selected Mode
 

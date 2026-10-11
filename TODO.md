@@ -993,7 +993,19 @@ row context menu.
 - Grouping precedent to copy: `MenuGroup {Name, Icon, Items}` (`backend/foundation/pages/types.go:80-85`).
 - Dropdown keyboard pattern to mirror: `OptionDropdown.svelte` `handleKeydown` (`:95`).
 
-### Phase 1 — Selection & bulk actions
+### Phase 1 — Selection & bulk actions ✅ DONE (2026-10-11)
+Done as decided with the user: on **every** list, **highlight only** (no checkbox column).
+Ctrl/Shift+click, Shift+arrows/PageUp/PageDown/Home/End, Ctrl+A (all records of the list, also
+not loaded), Esc back to one row; selection by key (`utils/selection.ts`), ranges past the loaded
+window via `/ids`; cleared on a new filter/search/sort and when a cell is entered. Delete acts on
+the selection through `DELETE /api/tables/:table/delete-many` (keys or all + the list's query, one
+transaction, OnDelete per record, first refusal rolls back and is named, max 10,000). Status bar
+translated ("3 of 1,250 selected", "All 1,250 selected"). `/ids` now also applies FlowFilters.
+Verified in the browser on Postgres (20 customers; 538 ledger entries with 145 loaded). Running
+other actions on a selection is left for Phase 3 (per-action scope).
+The original notes below predate windowed loading and server-side sort/search; kept for history.
+
+#### Original plan (Phase 1)
 - **Fix first:** `selectedRecord` (`:329`) and `moveDown`/`moveUp`/`moveLast` (`:1684-1706`) index
   `records` instead of `displayRecords` — so the highlighted row and the acted-on record diverge
   whenever search or sort is active. This is a live bug; multi-select is built on top of it.

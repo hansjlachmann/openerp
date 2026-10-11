@@ -9,7 +9,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
-	import { t, MSG, ERR, DLG } from '$lib/services/i18n.svelte';
+	import { t, MSG, ERR, DLG, BTN } from '$lib/services/i18n.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
@@ -220,6 +220,30 @@
 		}
 	}
 
+	// The list's query: filters, FlowFilters, search over the visible stored fields, sort.
+	// Shared by the windows of the list and "delete all selected", so both mean the same records.
+	function listQuery(visibleFields = getVisibleFields(), flowFields = new Set(page?.page.flow_fields ?? [])) {
+		const query: import('$lib/types/api').ListOptions = {};
+		if (!page) return query;
+		if (currentFilters.length > 0) {
+			query.filters = currentFilters;
+		}
+		const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
+		if (flowFilters.length > 0) {
+			query.flow_filters = flowFilters;
+		}
+		if (listSearch.trim()) {
+			// FlowFields are computed, not stored: the server can not search them
+			query.search = listSearch.trim();
+			query.search_fields = visibleFields.filter((f) => !flowFields.has(f));
+		}
+		if (listSort) {
+			query.sort_by = listSort.field;
+			query.sort_order = listSort.direction;
+		}
+		return query;
+	}
+
 	// Load a window of the list (offset/limit, filters, search, sort). windowOffset and
 	// records change together when the response arrives, so they always match.
 	async function loadListData(offset: number = windowOffset) {
@@ -233,27 +257,12 @@
 
 			// Load records with only visible fields to avoid expensive FlowField calculations
 			const listOptions: import('$lib/types/api').ListOptions = {
+				...listQuery(visibleFields, flowFields),
 				offset,
 				limit: windowLimit
 			};
 			if (visibleFields.length > 0) {
 				listOptions.fields = visibleFields;
-			}
-			if (currentFilters.length > 0) {
-				listOptions.filters = currentFilters;
-			}
-			const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
-			if (flowFilters.length > 0) {
-				listOptions.flow_filters = flowFilters;
-			}
-			if (listSearch.trim()) {
-				// FlowFields are computed, not stored: the server can not search them
-				listOptions.search = listSearch.trim();
-				listOptions.search_fields = visibleFields.filter((f) => !flowFields.has(f));
-			}
-			if (listSort) {
-				listOptions.sort_by = listSort.field;
-				listOptions.sort_order = listSort.direction;
 			}
 
 			// Fetch records, options, and lookups in a single API call
@@ -499,6 +508,20 @@
 		}
 	}
 
+	// Delete the records selected on the list (multi-select): one transaction on the server;
+	// when a record cannot be deleted nothing is, and the message names it
+	async function handleListBulkDelete(request: { keys?: string[]; all?: boolean }, count: number) {
+		if (!page) return;
+		try {
+			const deleted = await api.deleteRecords(page.page.source_table, request, request.all ? listQuery() : undefined);
+			await loadListData();
+			toast.success(t(MSG.RECORDS_DELETED, deleted.toLocaleString(get(currentLanguage))));
+		} catch (err) {
+			toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
+			throw err;
+		}
+	}
+
 	// Handle filter change from list page
 	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[], flowFilters: import('$lib/types/api').TableFilter[] = []) {
 		currentFilters = filters;
@@ -588,6 +611,7 @@
 			onrowclick={handleRowClick}
 			onsave={handleListSave}
 			ondelete={handleListDelete}
+			onbulkdelete={handleListBulkDelete}
 			onfilter={handleFilterChange}
 		/>
 	{:else}
@@ -604,7 +628,7 @@
 	open={$confirm.open}
 	title={$confirm.title}
 	message={$confirm.message}
-	confirmText="Delete"
+	confirmText={t(BTN.DELETE)}
 	variant="danger"
 	onconfirm={confirm.confirm}
 	oncancel={confirm.cancel}

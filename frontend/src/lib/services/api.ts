@@ -99,6 +99,26 @@ export const api = {
 	},
 
 	// Keys of the records in list order; with the list's filters, search and sort (card navigation)
+	/**
+	 * Delete several records in one transaction (list multi-select): the given keys, or with
+	 * all every record the list shows — query carries the list's filters and search. A record
+	 * that cannot be deleted rolls back all; the error names it. Returns the number deleted.
+	 */
+	async deleteRecords(
+		tableName: string,
+		request: { keys?: string[]; all?: boolean },
+		query?: ListOptions
+	): Promise<number> {
+		const params = request.all ? buildQueryString(query) : '';
+		const response = await fetch(`${API_BASE}/tables/${tableName}/delete-many${params ? '?' + params : ''}`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(request)
+		});
+		const data = await handleApiResponse<{ deleted: number }>(response, `delete ${tableName} records`);
+		return data.deleted;
+	},
+
 	async getRecordIDs(tableName: string, query?: NavigationQuery): Promise<string[]> {
 		const params = buildQueryString(query);
 		const url = `${API_BASE}/tables/${tableName}/ids${params ? '?' + params : ''}`;

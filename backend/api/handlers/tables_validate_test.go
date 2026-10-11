@@ -67,6 +67,7 @@ func newTablesTestApp(t *testing.T) *fiber.App {
 	app.Put("/api/tables/:table/modify/:id", h.ModifyRecord)
 	app.Get("/api/tables/:table/list", h.ListRecords)
 	app.Get("/api/tables/:table/ids", h.GetRecordIDs)
+	app.Delete("/api/tables/:table/delete-many", h.DeleteRecords)
 	return app
 }
 

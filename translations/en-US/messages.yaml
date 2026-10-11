@@ -15,6 +15,7 @@ messages:
   MSG_RECORD_CREATED: "Record created"
   MSG_RECORD_UPDATED: "Record updated"
   MSG_RECORD_DELETED: "Record deleted"
+  MSG_RECORDS_DELETED: "%1 records deleted"
   MSG_RECORD_SAVED: "Record saved successfully"
   MSG_RECORD_DELETED_SUCCESS: "Record deleted successfully"
 
@@ -114,16 +115,19 @@ messages:
   HELP_MENU_OPEN: "Open the selected item"
   HELP_SEC_LIST: "List page"
   HELP_LIST_ROWS: "Select the previous / next row"
+  HELP_LIST_SELECT_RANGE: "Select several rows from the current row"
+  HELP_LIST_SELECT_ALL: "Select all records of the list"
+  HELP_LIST_SELECT_CLICK: "Add a row to / remove it from the selection; select the rows up to the clicked one"
   HELP_LIST_FIRST_LAST: "First / last record of the whole list"
   HELP_LIST_PAGE: "One page up / down"
   HELP_LIST_OPEN: "Open the card, or edit the row if the list has no card"
   HELP_LIST_EDIT_CELLS: "Edit the cells of the selected row"
   HELP_LIST_EDIT: "Edit the selected record"
   HELP_LIST_NEW: "New record"
-  HELP_LIST_DELETE: "Delete the selected record"
+  HELP_LIST_DELETE: "Delete the selected record(s)"
   HELP_LIST_SEARCH: "Search"
   HELP_LIST_REFRESH: "Refresh"
-  HELP_LIST_ESCAPE: "Back to the main menu"
+  HELP_LIST_ESCAPE: "With several rows selected: back to one row; otherwise back to the main menu"
   HELP_SEC_CELLS: "Editing in a list"
   HELP_CELL_ARROWS: "Save and move to the cell above / below / left / right"
   HELP_CELL_TAB: "Save and move to the next / previous cell (a new row after the last cell)"
@@ -164,6 +168,14 @@ messages:
   LIST_TOGGLE_FILTERS: "Toggle filter pane"
   LIST_CUSTOMIZE: "Customize"
   LIST_FILTER: "Filter"
+  LIST_RECORD_COUNT_ONE: "1 record"
+  LIST_RECORD_COUNT: "%1 records"
+  LIST_FILTERED: "(filtered)"
+  LIST_ROW_SELECTED: "Row %1 selected"
+  LIST_SELECTED_COUNT: "%1 of %2 selected"
+  LIST_ALL_SELECTED: "All %1 selected"
+  LIST_CELL_SELECTED: "Cell [%1, %2] (selected)"
+  LIST_CELL_EDITING: "Cell [%1, %2] (editing)"
 
   # Filter Pane
   FILTER_TITLE: "Filter %1"
@@ -240,6 +252,8 @@ messages:
 
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Are you sure you want to delete this record?"
+  DLG_DELETE_RECORDS_TITLE: "Delete Records"
+  DLG_DELETE_RECORDS_CONFIRM: "Delete the %1 selected records?"
   DLG_DELETE_CONFIRM: "Are you sure you want to delete this %1?"
   DLG_CONFIRM_DEFAULT: "Are you sure?"
 

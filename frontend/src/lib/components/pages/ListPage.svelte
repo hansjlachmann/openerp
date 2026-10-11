@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import { navigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
-	import type { TableFilter, LookupData, DialogResult } from '$lib/types/api';
+	import type { TableFilter, LookupData, DialogResult, ListOptions } from '$lib/types/api';
 	import { goto } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
@@ -33,6 +33,17 @@
 	import { tick } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
+	import {
+		emptySelection,
+		isMultiSelection,
+		isSelected,
+		rangeKeys,
+		selectAll,
+		selectionCount,
+		selectRange,
+		toggleKey,
+		type ListSelection
+	} from '$lib/utils/selection';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
 	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues } from '$lib/utils/recordHelpers';
 
@@ -60,6 +71,8 @@
 		onrowclick?: (record: Record<string, any>, navigation?: NavigationQuery) => void;
 		onsave?: (record: Record<string, any>, isNew: boolean) => Promise<void>;
 		ondelete?: (record: Record<string, any>) => Promise<void>;
+		// Delete the selected records (multi-select): keys, or all with the list's query
+		onbulkdelete?: (request: { keys?: string[]; all?: boolean }, count: number) => Promise<void>;
 		onfilter?: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
 	}
 
@@ -81,6 +94,7 @@
 		onrowclick,
 		onsave,
 		ondelete,
+		onbulkdelete,
 		onfilter
 	}: Props = $props();
 
@@ -306,6 +320,9 @@
 				} else if (isCellSelected) {
 					// Back to navigation mode
 					exitToNavigation();
+				} else if (multiSelected) {
+					// Several rows selected: back to the cursor row
+					clearSelection();
 				} else {
 					closeList();
 				}
@@ -346,6 +363,15 @@
 
 	// Track selected row index
 	let selectedIndex = $state(-1);
+
+	// Multi-row selection (BC): Ctrl/Shift+click, Shift+arrows, Ctrl+A — in navigation mode
+	// only. Records by key (never by row position: windows, search and sort move rows). With
+	// one record or none selected the list behaves as before: actions use the cursor row.
+	let selection = $state<ListSelection>(emptySelection());
+	const multiSelected = $derived(isMultiSelection(selection, total));
+	const selectedCount = $derived(selectionCount(selection, total));
+	// All keys of the list in its order, for Shift ranges past the loaded window
+	let allKeysCache: { query: string; keys: string[] } | null = null;
 
 	// Track table body element for scrolling
 	let tableBodyElement: HTMLElement | null = null;
@@ -580,6 +606,12 @@
 
 	// Handle action clicks
 	async function handleAction(actionName: string) {
+		// Several rows selected: Delete deletes them all (other actions use the cursor row)
+		if (actionName === 'Delete' && multiSelected && isNavigation) {
+			handleBulkDelete();
+			return;
+		}
+
 		// Check if the action has a run_object
 		const action = page.page.actions?.find(a => a.name === actionName);
 		if (action?.run_object) {
@@ -710,6 +742,8 @@
 	function enterCellSelected(row: number, col: number) {
 		const cols = visibleColumns();
 		if (row < 0 || col < 0 || col >= cols.length) return;
+		// Multi-select exists in navigation mode only: editing a cell is about one row
+		clearSelection();
 
 		// Initialize editable records if not active
 		if (!editableActive) {
@@ -1654,8 +1688,14 @@
 	}
 
 	// Handle click on a cell in read-only display
-	function handleCellClick(rowIndex: number, colIndex: number) {
+	function handleCellClick(rowIndex: number, colIndex: number, event?: MouseEvent) {
 		if (isNavigation) {
+			// Ctrl/Shift+click selects rows (stays in navigation mode, also on editable lists)
+			if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+				handleSelectionClick(rowIndex, event);
+				return;
+			}
+			clearSelection();
 			if (page.page.editable) {
 				selectedIndex = rowIndex;
 				enterCellSelected(rowIndex, colIndex);
@@ -2030,14 +2070,34 @@
 
 		// Add navigation shortcuts only when in navigation mode
 		if (isNavigation) {
-			map['ArrowDown'] = moveDown;
-			map['ArrowUp'] = moveUp;
-			map['Home'] = moveFirst;
-			map['End'] = moveLast;
-			map['Ctrl+Home'] = moveFirst;
-			map['Ctrl+End'] = moveLast;
-			map['PageDown'] = movePageDown;
-			map['PageUp'] = movePageUp;
+			// A plain move collapses a multi-selection to the cursor row (BC)
+			const plain = (move: () => void) => () => {
+				clearSelection();
+				move();
+			};
+			map['ArrowDown'] = plain(moveDown);
+			map['ArrowUp'] = plain(moveUp);
+			map['Home'] = plain(moveFirst);
+			map['End'] = plain(moveLast);
+			map['Ctrl+Home'] = plain(moveFirst);
+			map['Ctrl+End'] = plain(moveLast);
+			map['PageDown'] = plain(movePageDown);
+			map['PageUp'] = plain(movePageUp);
+			// Shift extends the selection from the anchor
+			map['Shift+ArrowDown'] = () => extendSelectionTo(currentRow() + 1);
+			map['Shift+ArrowUp'] = () => extendSelectionTo(currentRow() - 1);
+			map['Shift+PageDown'] = () => extendSelectionTo(currentRow() + rowsPerPage());
+			map['Shift+PageUp'] = () => extendSelectionTo(currentRow() - rowsPerPage());
+			map['Shift+Home'] = () => extendSelectionTo(0);
+			map['Shift+End'] = () => extendSelectionTo(total - 1);
+			map['Ctrl+Shift+Home'] = () => extendSelectionTo(0);
+			map['Ctrl+Shift+End'] = () => extendSelectionTo(total - 1);
+			// Ctrl+A: every record of the list (not in the search box: there it selects the text)
+			map['Ctrl+A'] = ((event?: KeyboardEvent) => {
+				const target = event?.target;
+				if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return false;
+				if (total > 0) selection = selectAll(selection);
+			}) as () => void;
 			map['Enter'] = () => {
 				if (page.page.card_page_id) {
 					openCard();
@@ -2055,7 +2115,8 @@
 			}
 			map['F5'] = () => handleAction('Refresh');
 			map['Ctrl+D'] = () => {
-				if (selectedRecord) handleDelete();
+				if (multiSelected) handleBulkDelete();
+				else if (selectedRecord) handleDelete();
 			};
 		}
 
@@ -2163,6 +2224,100 @@
 			sort_order: sortDirection
 		})
 	);
+
+	// ---- Multi-row selection (navigation mode) ----
+
+	function rowKey(record: Record<string, any> | undefined): string {
+		return getRecordId(record, primaryKeyField, primaryKeyFieldsList) ?? '';
+	}
+
+	// The list's query — filters, FlowFilters, search, sort — for /ids and "delete all"
+	function selectionQuery(): ListOptions {
+		return {
+			...(cardNavigationQuery ?? {}),
+			flow_filters: apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, locale)
+		};
+	}
+
+	// All keys of the list in its order (cached until the query or the record count changes)
+	async function allKeys(): Promise<string[]> {
+		const query = selectionQuery();
+		const id = JSON.stringify(query) + '#' + total;
+		if (allKeysCache?.query !== id) {
+			allKeysCache = { query: id, keys: await api.getRecordIDs(page.page.source_table, query) };
+		}
+		return allKeysCache.keys;
+	}
+
+	// Keys of the absolute rows from..to: out of the loaded window, or out of all keys when the
+	// range reaches past it
+	async function keysBetween(from: number, to: number): Promise<string[]> {
+		const lo = Math.min(from, to);
+		const hi = Math.max(from, to);
+		if (lo >= windowOffset && hi < windowOffset + displayRecords.length) {
+			return rangeKeys(displayRecords.map(rowKey), windowOffset, from, to);
+		}
+		return rangeKeys(await allKeys(), 0, from, to);
+	}
+
+	function clearSelection() {
+		selection = emptySelection();
+	}
+
+	// Ctrl+click adds/removes a row, Shift+click selects from the anchor to the row
+	async function handleSelectionClick(index: number, event: MouseEvent) {
+		const row = windowOffset + index;
+		if (event.shiftKey) {
+			const anchor = selection.anchor ?? windowOffset + Math.max(selectedIndex, 0);
+			selection = selectRange(anchor, await keysBetween(anchor, row));
+		} else {
+			const current = selectedIndex >= 0 ? rowKey(displayRecords[selectedIndex]) : null;
+			const all = selection.all ? await allKeys() : undefined;
+			selection = toggleKey(selection, rowKey(displayRecords[index]), row, current, all);
+		}
+		selectedIndex = index;
+		listPageElement?.focus();
+	}
+
+	// Shift+arrows/PageUp/PageDown/Home/End: move the cursor, select from the anchor to it
+	async function extendSelectionTo(target: number) {
+		if (total === 0) return;
+		const anchor = selection.anchor ?? currentRow();
+		const row = Math.max(0, Math.min(target, total - 1));
+		await moveToRow(row);
+		selection = selectRange(anchor, await keysBetween(anchor, row));
+	}
+
+	// Delete the selected records: one confirmation, one transaction on the server
+	function handleBulkDelete() {
+		const count = selectedCount;
+		const request = selection.all ? { all: true } : { keys: [...selection.keys] };
+		confirm.show(
+			t(DLG.DELETE_RECORDS_TITLE),
+			t(DLG.DELETE_RECORDS_CONFIRM, count.toLocaleString(locale)),
+			async () => {
+				try {
+					await onbulkdelete?.(request, count); // deletes and reloads the window
+				} catch {
+					return; // the error (naming the record) was shown; nothing was deleted
+				}
+				clearSelection();
+				allKeysCache = null;
+				selectedIndex = Math.min(Math.max(selectedIndex, 0), displayRecords.length - 1);
+			}
+		);
+	}
+
+	// A new filter, search or sort starts a new selection (BC)
+	$effect(() => {
+		void currentFilters;
+		void currentFlowFilters;
+		void searchQuery;
+		void sortField;
+		void sortDirection;
+		selection = emptySelection();
+		allKeysCache = null;
+	});
 
 	// FlowFields are computed, not stored: the server can not sort on them
 	function isSortable(fieldSource: string): boolean {
@@ -2546,7 +2701,8 @@
 					<tr
 						class={cn(
 							isNavigation ? 'cursor-pointer' : '',
-							isNavigation && selectedIndex === index && 'selected',
+							isNavigation && (multiSelected ? isSelected(selection, rowKey(record)) : selectedIndex === index) && 'selected',
+							isNavigation && multiSelected && selectedIndex === index && 'cursor-row',
 							record._isNew && 'new-row',
 							(windowOffset + index) % 2 === 1 ? 'row-even' : 'row-odd'
 						)}
@@ -2763,7 +2919,11 @@
 									<!-- svelte-ignore a11y_click_events_have_key_events -->
 									<div
 										class={cn('read-cell-content', getFieldStyleClasses(field))}
-										onclick={() => handleCellClick(index, colIndex)}
+										onclick={(e) => handleCellClick(index, colIndex, e)}
+										onmousedown={(e) => {
+											// Ctrl/Shift+click selects rows: no browser text selection
+											if (isNavigation && (e.shiftKey || e.ctrlKey || e.metaKey)) e.preventDefault();
+										}}
 									>
 										{#if typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool'}
 											{#if page.page.editable && isCellEditable(field)}
@@ -2790,6 +2950,12 @@
 												class="primary-key-link"
 												onclick={(e) => {
 													e.stopPropagation();
+													// Ctrl/Shift+click on the No. selects rows like on any other cell
+													if (isNavigation && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+														handleSelectionClick(index, e);
+														return;
+													}
+													clearSelection();
 													handlePrimaryKeyClick(index);
 												}}
 											>
@@ -2844,11 +3010,15 @@
 
 	<div class="status-bar">
 		<span class="text-sm text-gray-600 dark:text-gray-400">
-			{total} record{total !== 1 ? 's' : ''}{searchQuery ? ' (filtered)' : ''}
-			{#if isNavigation && selectedIndex >= 0 && selectedIndex < displayRecords.length}
-				• Row {windowOffset + selectedIndex + 1} selected
+			{total === 1 ? t(LIST.RECORD_COUNT_ONE) : t(LIST.RECORD_COUNT, total.toLocaleString(locale))}{searchQuery ? ' ' + t(LIST.FILTERED) : ''}
+			{#if isNavigation && multiSelected}
+				• {selection.all
+					? t(LIST.ALL_SELECTED, total.toLocaleString(locale))
+					: t(LIST.SELECTED_COUNT, selectedCount.toLocaleString(locale), total.toLocaleString(locale))}
+			{:else if isNavigation && selectedIndex >= 0 && selectedIndex < displayRecords.length}
+				• {t(LIST.ROW_SELECTED, (windowOffset + selectedIndex + 1).toLocaleString(locale))}
 			{:else if !isNavigation && currentCellRow >= 0 && currentCellCol >= 0}
-				• Cell [{windowOffset + currentCellRow + 1}, {currentCellCol + 1}] {isCellEditing ? '(editing)' : '(selected)'}
+				• {t(isCellEditing ? LIST.CELL_EDITING : LIST.CELL_SELECTED, String(windowOffset + currentCellRow + 1), String(currentCellCol + 1))}
 			{/if}
 		</span>
 	</div>
@@ -3150,6 +3320,15 @@
 	:global(.dark) .table tbody tr.selected .read-cell-content,
 	:global(.dark) .table tbody tr.selected .primary-key-link {
 		color: white !important;
+	}
+
+	/* Cursor row while several rows are selected (it may be selected or not) */
+	.table tbody tr.cursor-row td:first-child {
+		box-shadow: inset 3px 0 0 #008489;
+	}
+
+	:global(.dark) .table tbody tr.cursor-row td:first-child {
+		box-shadow: inset 3px 0 0 #37a1a5;
 	}
 
 	.table tbody tr.new-row {

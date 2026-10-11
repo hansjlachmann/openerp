@@ -15,6 +15,7 @@ messages:
   MSG_RECORD_CREATED: "Post oprettet"
   MSG_RECORD_UPDATED: "Post opdateret"
   MSG_RECORD_DELETED: "Post slettet"
+  MSG_RECORDS_DELETED: "%1 poster slettet"
   MSG_RECORD_SAVED: "Post gemt"
   MSG_RECORD_DELETED_SUCCESS: "Post slettet"
 
@@ -114,16 +115,19 @@ messages:
   HELP_MENU_OPEN: "Åbn det valgte punkt"
   HELP_SEC_LIST: "Listeside"
   HELP_LIST_ROWS: "Vælg forrige / næste række"
+  HELP_LIST_SELECT_RANGE: "Markér flere rækker fra den aktuelle række"
+  HELP_LIST_SELECT_ALL: "Markér alle poster i listen"
+  HELP_LIST_SELECT_CLICK: "Føj en række til / fjern den fra markeringen; markér rækkerne frem til den klikkede"
   HELP_LIST_FIRST_LAST: "Første / sidste post i hele listen"
   HELP_LIST_PAGE: "Én side op / ned"
   HELP_LIST_OPEN: "Åbn kortet, eller rediger rækken hvis listen ikke har et kort"
   HELP_LIST_EDIT_CELLS: "Rediger cellerne i den valgte række"
   HELP_LIST_EDIT: "Rediger den valgte post"
   HELP_LIST_NEW: "Ny post"
-  HELP_LIST_DELETE: "Slet den valgte post"
+  HELP_LIST_DELETE: "Slet de(n) valgte post(er)"
   HELP_LIST_SEARCH: "Søg"
   HELP_LIST_REFRESH: "Opdater"
-  HELP_LIST_ESCAPE: "Tilbage til hovedmenuen"
+  HELP_LIST_ESCAPE: "Med flere rækker markeret: tilbage til én række; ellers tilbage til hovedmenuen"
   HELP_SEC_CELLS: "Redigering i en liste"
   HELP_CELL_ARROWS: "Gem og flyt til cellen over / under / til venstre / til højre"
   HELP_CELL_TAB: "Gem og flyt til næste / forrige celle (ny række efter sidste celle)"
@@ -164,6 +168,14 @@ messages:
   LIST_TOGGLE_FILTERS: "Vis/skjul filterrude"
   LIST_CUSTOMIZE: "Tilpas"
   LIST_FILTER: "Filter"
+  LIST_RECORD_COUNT_ONE: "1 post"
+  LIST_RECORD_COUNT: "%1 poster"
+  LIST_FILTERED: "(filtreret)"
+  LIST_ROW_SELECTED: "Række %1 valgt"
+  LIST_SELECTED_COUNT: "%1 af %2 markeret"
+  LIST_ALL_SELECTED: "Alle %1 markeret"
+  LIST_CELL_SELECTED: "Celle [%1, %2] (valgt)"
+  LIST_CELL_EDITING: "Celle [%1, %2] (redigeres)"
 
   # Filter Pane
   FILTER_TITLE: "Filtrer %1"
@@ -240,6 +252,8 @@ messages:
 
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på, at du vil slette denne post?"
+  DLG_DELETE_RECORDS_TITLE: "Slet poster"
+  DLG_DELETE_RECORDS_CONFIRM: "Slet de %1 markerede poster?"
   DLG_DELETE_CONFIRM: "Er du sikker på, at du vil slette denne %1?"
   DLG_CONFIRM_DEFAULT: "Er du sikker?"
 

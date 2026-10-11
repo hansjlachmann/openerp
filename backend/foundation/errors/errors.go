@@ -19,20 +19,22 @@ const (
 	ErrRequiredField    ErrorCode = "ERR_REQUIRED_FIELD"
 	ErrInvalidValue     ErrorCode = "ERR_INVALID_VALUE"
 	// Field validation (table triggers): %1 is the field's caption
-	ErrFieldTooLong    ErrorCode = "ERR_FIELD_TOO_LONG"
-	ErrFieldTooShort   ErrorCode = "ERR_FIELD_TOO_SHORT"
-	ErrFieldOutOfRange ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
-	ErrFieldFormat     ErrorCode = "ERR_FIELD_FORMAT"
-	ErrRelatedNotFound ErrorCode = "ERR_RELATED_NOT_FOUND"
-	ErrRelatedInactive ErrorCode = "ERR_RELATED_INACTIVE"
-	ErrEmailInvalid    ErrorCode = "ERR_EMAIL_INVALID"
-	ErrEmailDuplicate  ErrorCode = "ERR_EMAIL_DUPLICATE"
-	ErrFilterInvalid   ErrorCode = "ERR_FILTER_INVALID"
-	ErrDeleteFailed    ErrorCode = "ERR_DELETE_FAILED"
-	ErrInsertFailed    ErrorCode = "ERR_INSERT_FAILED"
-	ErrModifyFailed    ErrorCode = "ERR_MODIFY_FAILED"
-	ErrEmptyPrimaryKey ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
-	ErrTableNotFound   ErrorCode = "ERR_TABLE_NOT_FOUND"
+	ErrFieldTooLong       ErrorCode = "ERR_FIELD_TOO_LONG"
+	ErrFieldTooShort      ErrorCode = "ERR_FIELD_TOO_SHORT"
+	ErrFieldOutOfRange    ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
+	ErrFieldFormat        ErrorCode = "ERR_FIELD_FORMAT"
+	ErrRelatedNotFound    ErrorCode = "ERR_RELATED_NOT_FOUND"
+	ErrRelatedInactive    ErrorCode = "ERR_RELATED_INACTIVE"
+	ErrEmailInvalid       ErrorCode = "ERR_EMAIL_INVALID"
+	ErrEmailDuplicate     ErrorCode = "ERR_EMAIL_DUPLICATE"
+	ErrFilterInvalid      ErrorCode = "ERR_FILTER_INVALID"
+	ErrDeleteTooMany      ErrorCode = "ERR_DELETE_TOO_MANY"
+	ErrDeleteRecordFailed ErrorCode = "ERR_DELETE_RECORD_FAILED"
+	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
+	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
+	ErrModifyFailed       ErrorCode = "ERR_MODIFY_FAILED"
+	ErrEmptyPrimaryKey    ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
+	ErrTableNotFound      ErrorCode = "ERR_TABLE_NOT_FOUND"
 
 	// Session/Auth
 	ErrNoActiveSession    ErrorCode = "ERR_NO_ACTIVE_SESSION"
@@ -205,6 +207,17 @@ func EmailDuplicate(table, field, address string) *AppError {
 // FilterInvalid: a filter expression the user typed for a field is not valid for its type
 func FilterInvalid(table, field, expr string) *AppError {
 	return &AppError{Code: ErrFilterInvalid, Table: table, Field: field, Params: []string{expr}}
+}
+
+// DeleteTooMany: a bulk delete selected more records than one delete may remove
+func DeleteTooMany(max int) *AppError {
+	return &AppError{Code: ErrDeleteTooMany, Params: []string{strconv.Itoa(max)}}
+}
+
+// DeleteRecordFailed: a record of a bulk delete could not be deleted (reason: its trigger's
+// message); nothing was deleted
+func DeleteRecordFailed(tableCaption, key, reason string) *AppError {
+	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, reason}}
 }
 
 // DeleteFailed creates an error for failed delete operation

@@ -118,6 +118,7 @@ func (s *Server) Setup() {
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)
 	tables.Put("/modify/:id", tablesHandler.ModifyRecord)
+	tables.Delete("/delete-many", tablesHandler.DeleteRecords) // list multi-select (DELETE: delete permission)
 	tables.Delete("/delete/:id", tablesHandler.DeleteRecord)
 	tables.Post("/validate", tablesHandler.ValidateField)
 	tables.Post("/init", tablesHandler.InitRecord)

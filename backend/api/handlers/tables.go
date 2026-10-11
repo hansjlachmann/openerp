@@ -403,6 +403,9 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 
 	// The list's filters, search and sort: card navigation (First/Previous/Next/Last) moves
 	// through the records in the order and selection the list shows
+	if err := applyFlowFilters(c, table); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
 	if err := applyListQuery(c, table, language); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -425,16 +428,16 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// applyListQuery applies the list query parameters shared by /list and /ids: sort_by and
-// sort_order, filters (JSON [{field, expression}], BC filter expressions) and search with
-// search_fields (case-insensitive "contains"). Field names end up in SQL text: only real,
-// non-sensitive columns of the table are accepted.
 // flowFieldFilterer is implemented by generated tables with Sum/Count FlowFields: lists
 // can filter on them (the filter applies to a subquery computing the value)
 type flowFieldFilterer interface {
 	FlowFieldFilterKind(field string) (flowfilter.Kind, bool)
 }
 
+// applyListQuery applies the list query parameters shared by /list, /ids and
+// /delete-many: sort_by and sort_order, filters (JSON [{field, expression}], BC filter
+// expressions) and search with search_fields (case-insensitive "contains"). Field names end
+// up in SQL text: only real, non-sensitive columns of the table are accepted.
 func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 	if sortBy := c.Query("sort_by", ""); sortBy != "" {
 		if !ftables.IsQueryableColumn(table, sortBy) {
@@ -910,6 +913,116 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 
 	response := apitypes.NewSuccessResponse(nil)
 	return c.JSON(response)
+}
+
+// maxDeleteMany caps one bulk delete: it runs in one transaction, with each record's
+// OnDelete trigger.
+const maxDeleteMany = 10000
+
+// DeleteRecords deletes several records at once (list multi-select, BC: delete the selected
+// lines). Body {"keys": [...]} with record IDs as in /delete/:id, or {"all": true} for every
+// record the list shows, with the list's query parameters (filters, flow_filters, search,
+// search_fields). One transaction: each record's OnDelete trigger runs, and the first record
+// that cannot be deleted rolls back everything; the error names it.
+// DELETE /api/tables/:table/delete-many
+func (h *TablesHandler) DeleteRecords(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := getSession(c)
+	if sess == nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	sessCompany := sess.GetCompany()
+	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
+
+	var req struct {
+		Keys []string `json:"keys"`
+		All  bool     `json:"all"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+	table, err := h.getTable(tableName, sessCompany)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	keys := req.Keys
+	if req.All {
+		// Every record the list shows: the same filters and search as /list
+		if err := applyFlowFilters(c, table); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+		if err := applyListQuery(c, table, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+		keys = nil
+		if table.FindSet() {
+			for {
+				_, id := fullPrimaryKey(table)
+				keys = append(keys, id)
+				if len(keys) > maxDeleteMany || !table.Next() {
+					break
+				}
+			}
+		}
+	}
+	if len(keys) > maxDeleteMany {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.DeleteTooMany(maxDeleteMany).Message(language)))
+	}
+	if len(keys) == 0 {
+		return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"deleted": 0}))
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+	var companies []string
+	for _, id := range keys {
+		record, err := h.getTable(tableName, sessCompany)
+		if err != nil {
+			_ = tx.Rollback()
+			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+		}
+		setter, ok := record.(interface{ SetDB(database.Executor) })
+		if !ok {
+			_ = tx.Rollback()
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
+		}
+		setter.SetDB(tx)
+		if (id == "" && !record.IsSetupTable()) || !record.Get(parseRecordKey(id, record)) {
+			_ = tx.Rollback()
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
+		}
+		if !record.Delete(true) {
+			_ = tx.Rollback()
+			// A failed OnDelete trigger is a business rule: name the record and the reason
+			if trigErr := record.TriggerError(); trigErr != nil {
+				return c.Status(400).JSON(apitypes.NewErrorResponse(
+					apperrors.DeleteRecordFailed(tableCaption, id, errorMessage(trigErr, language)).Message(language)))
+			}
+			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
+		}
+		if tableName == "Company" {
+			// A company takes its tables and SIFT objects along (as DeleteRecord)
+			name := record.GetPrimaryKeyValue()
+			if err := company.DropObjects(tx, h.dbType, name); err != nil {
+				_ = tx.Rollback()
+				return c.Status(500).JSON(apitypes.NewErrorResponse(fmt.Sprintf("delete company %s: %v", name, err)))
+			}
+			companies = append(companies, name)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+	if h.onCompanyChanged != nil {
+		for _, name := range companies {
+			h.onCompanyChanged(c, name, "")
+		}
+	}
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"deleted": len(keys)}))
 }
 
 // rejectSensitiveFields returns an error when data sets a sensitive field (YAML sensitive:
