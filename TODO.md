@@ -23,8 +23,10 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `scripts/backup.sh`) installed and tested.
 - [ ] **Production: optionally rename the company with the invalid technical name** (keep its Display Name).
 - [ ] **Production: copy the backups to another machine** — `~/backups` is on the server's own disk.
-- [ ] **Production: upgrade 0.1.84 → 0.1.87** (planned for later; go straight to 0.1.87, released
-      2026-10-09). The demo (k3s) runs the new releases first.
+- [ ] **Production: upgrade 0.1.84 → 0.1.91** (planned for later). **0.1.89 and 0.1.90 have no
+      frontend image on ghcr.io** (the arm64 frontend build hung, and a full re-run skipped the image
+      step) — use 0.1.91, the release with the fixed frontend build; check that both images exist
+      before upgrading. The demo (k3s) runs the new releases first.
       What it brings since 0.1.84:
       - 0.1.85: faster HEAVY demo data and SIFT totals without dead rows (totals tables get new
         storage settings at startup, no rebuild), Code fields uppercased in list cells, read-only list
@@ -33,6 +35,10 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       - 0.1.86: translated validation messages naming the field.
       - 0.1.87: Job Queue e-mail to several addresses, notification language, "Send Test E-mail",
         Job Queue Card, DateTime fields (Next Start) shown and saved on cards.
+      - 0.1.89: SMTP password stored encrypted (key derived from `JWT_SECRET`; nothing to set up).
+      - 0.1.90: filtering lists on FlowFields (Balance >10000), translated buttons, sections and
+        option values.
+      - 0.1.91: frontend image build fixed (no new function).
       Migrations 8 (READER reads Country/Region and SMTP Setup) and 9 (wider Notification E-mail) run
       by themselves at startup. `NAV_PROXY_URL` is already set in the server's `prod.env` (2026-10-08)
       — required from 0.1.85 on (`docs/operations.md`, "NAV report proxy"). The checkout must be
@@ -44,14 +50,14 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       scripts/backup.sh
       git status --short                                   # must be empty (untracked prod.env is not listed)
       git fetch --force --prune --prune-tags origin && git reset --hard origin/main
-      sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.87/' prod.env
-      grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.87 and the proxy address
+      sed -i 's/^APP_VERSION=.*/APP_VERSION=0.1.91/' prod.env
+      grep -E '^(APP_VERSION|NAV_PROXY_URL)=' prod.env    # must show 0.1.91 and the proxy address
       scripts/prod.sh pull && scripts/prod.sh up -d
       scripts/prod.sh ps
       scripts/prod.sh logs backend --since 5m | grep -iE "migration|SIFT|scheduler|error|WARNING"
       ```
-      Expected: backend/frontend `Up` on `0.1.87`; "Migration 8/9 completed"; no errors and no
-      "No JWT_SECRET" warning; the browser shows v0.1.87 and the user stays logged in; a NAV report Job
+      Expected: backend/frontend `Up` on `0.1.91`; "Migration 8/9 completed"; no errors and no
+      "No JWT_SECRET" warning; the browser shows v0.1.91 and the user stays logged in; a NAV report Job
       Queue entry runs (proves `NAV_PROXY_URL`). For job e-mails: SMTP Setup must be enabled (Gmail:
       `smtp.gmail.com`, port 587, app password); check with "Send Test E-mail" on a job.
       Rollback: `APP_VERSION=0.1.84` in `prod.env`, then `scripts/prod.sh pull && scripts/prod.sh up -d`
