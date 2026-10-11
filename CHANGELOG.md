@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.92](https://github.com/hansjlachmann/openerp/compare/v0.1.91...v0.1.92) (2026-10-11)
+
+
+### Features
+
+* column header menus, sorting by caption and on FlowFields ([6e07893](https://github.com/hansjlachmann/openerp/commit/6e07893182baf0595ba64015b08fd2f8742799ce))
+* select several rows on lists and delete them together ([ecad83a](https://github.com/hansjlachmann/openerp/commit/ecad83a1d7e3afdfee2e1fe3150aa4016f2b77a0))
+
+
+### Bug Fixes
+
+* login asks for the company last and names a missing company access ([1511548](https://github.com/hansjlachmann/openerp/commit/1511548c4c7c0d4d919bcff03411c4fcde2cc8f7))
+
+
+### Documentation
+
+* TODO — old backend images deleted from ghcr.io ([f55e37a](https://github.com/hansjlachmann/openerp/commit/f55e37a3ee4760a5da619ff70f9bba03dac47063))
+* TODO — production upgraded to 0.1.91 ([42b7225](https://github.com/hansjlachmann/openerp/commit/42b722524f8f3820e4b5b3b57326270fc01500a0))
+
 ## [0.1.91](https://github.com/hansjlachmann/openerp/compare/v0.1.90...v0.1.91) (2026-10-11)
 
 
