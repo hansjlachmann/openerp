@@ -75,6 +75,7 @@ messages:
   ERR_LOGIN_FAILED: "Login failed"
   ERR_INVALID_CREDENTIALS: "Invalid credentials"
   ERR_GENERIC_RETRY: "An error occurred. Please try again."
+  ERR_LOGIN_NO_COMPANY_ACCESS: "User ID %1 does not have access to company %2"
   ERR_SETUP_MISSING_FIELDS: "Please fill in all required fields"
   ERR_PASSWORD_MISMATCH: "Passwords do not match"
   ERR_PASSWORD_TOO_SHORT: "Password must be at least 6 characters"

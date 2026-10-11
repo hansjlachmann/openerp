@@ -75,6 +75,7 @@ messages:
   ERR_LOGIN_FAILED: "Login fejlede"
   ERR_INVALID_CREDENTIALS: "Ugyldige legitimationsoplysninger"
   ERR_GENERIC_RETRY: "Der opstod en fejl. Prøv venligst igen."
+  ERR_LOGIN_NO_COMPANY_ACCESS: "Bruger-id %1 har ikke adgang til virksomheden %2"
   ERR_SETUP_MISSING_FIELDS: "Udfyld venligst alle obligatoriske felter"
   ERR_PASSWORD_MISMATCH: "Adgangskoderne stemmer ikke overens"
   ERR_PASSWORD_TOO_SHORT: "Adgangskoden skal være mindst 6 tegn"

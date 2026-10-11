@@ -75,6 +75,7 @@ messages:
   ERR_LOGIN_FAILED: "Innlogging feilet"
   ERR_INVALID_CREDENTIALS: "Ugyldige legitimasjoner"
   ERR_GENERIC_RETRY: "Det oppstod en feil. Vennligst prøv igjen."
+  ERR_LOGIN_NO_COMPANY_ACCESS: "Bruker-ID %1 har ikke tilgang til selskapet %2"
   ERR_SETUP_MISSING_FIELDS: "Vennligst fyll ut alle obligatoriske felt"
   ERR_PASSWORD_MISMATCH: "Passordene stemmer ikke overens"
   ERR_PASSWORD_TOO_SHORT: "Passordet må være minst 6 tegn"

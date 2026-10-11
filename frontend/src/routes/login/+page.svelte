@@ -111,6 +111,10 @@
 		} catch (err: any) {
 			if (err.status === 401) {
 				error = t(ERR.INVALID_CREDENTIALS);
+			} else if (err.status === 403) {
+				// Valid user, but no User Member entry for this company
+				const selected = companies.find((c) => c.name === company);
+				error = t(ERR.LOGIN_NO_COMPANY_ACCESS, userID.toUpperCase(), selected ? companyLabel(selected) : company);
 			} else {
 				error = t(ERR.GENERIC_RETRY);
 			}
@@ -320,27 +324,7 @@
 				{t(LOGIN.BACK_TO_LOGIN)}
 			</button>
 		{:else}
-			<!-- Login Form -->
-			<div class="form-group">
-				<label for="company">{t(LOGIN.COMPANY)}</label>
-				<div class="company-row">
-					<select
-						id="company"
-						bind:value={company}
-						disabled={loading || companies.length === 0}
-						class="company-select"
-					>
-						{#if companies.length === 0}
-							<option value="">{t(LOGIN.LOADING_COMPANIES)}</option>
-						{:else}
-							{#each companies as c (c.name)}
-								<option value={c.name}>{companyLabel(c)}</option>
-							{/each}
-						{/if}
-					</select>
-				</div>
-			</div>
-
+			<!-- Login Form: User ID, Password, Company -->
 			<div class="form-group">
 				<label for="userid">{t(LOGIN.USER_ID)}</label>
 				<!-- svelte-ignore a11y_autofocus -->
@@ -366,6 +350,26 @@
 					disabled={loading}
 					onkeypress={handleKeyPress}
 				/>
+			</div>
+
+			<div class="form-group">
+				<label for="company">{t(LOGIN.COMPANY)}</label>
+				<div class="company-row">
+					<select
+						id="company"
+						bind:value={company}
+						disabled={loading || companies.length === 0}
+						class="company-select"
+					>
+						{#if companies.length === 0}
+							<option value="">{t(LOGIN.LOADING_COMPANIES)}</option>
+						{:else}
+							{#each companies as c (c.name)}
+								<option value={c.name}>{companyLabel(c)}</option>
+							{/each}
+						{/if}
+					</select>
+				</div>
 			</div>
 
 			<button class="login-button" onclick={handleLogin} disabled={loading}>
