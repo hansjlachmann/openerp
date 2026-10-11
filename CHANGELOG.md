@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.91](https://github.com/hansjlachmann/openerp/compare/v0.1.90...v0.1.91) (2026-10-11)
+
+
+### Bug Fixes
+
+* frontend image build no longer hangs on arm64 ([b40868b](https://github.com/hansjlachmann/openerp/commit/b40868badb5c0545d3a2d694168bd22af0f6aa52))
+
 ## [0.1.90](https://github.com/hansjlachmann/openerp/compare/v0.1.89...v0.1.90) (2026-10-09)
 
 
