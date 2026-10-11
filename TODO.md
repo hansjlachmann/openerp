@@ -600,9 +600,10 @@ an OS upgrade and reboot.
         "General question"), waiting for the reply. Done when an old commit URL no longer opens.
       - Every other clone (workstation, production server) must be reset, not pulled:
         `git fetch --force --prune --prune-tags origin && git reset --hard origin/main`.
-      - The backend images up to 0.1.84 on ghcr.io contain the old address: delete those package
-        versions (or make the package private) — production runs 0.1.91 since 2026-10-11, so they
-        are no longer needed (keep 0.1.85+; the demo runs a newer release too).
+      - [x] Backend images up to 0.1.84 deleted from ghcr.io (2026-10-11): 514 package versions —
+        0.1.1–0.1.84, their commit tags and all untagged parts (the per-architecture manifests that
+        hold the binaries). Kept: 0.1.85–0.1.91 and `latest`, checked complete (amd64 + arm64).
+        Rollback is possible to 0.1.85 at the oldest. Frontend images never contained it.
 - [ ] **(Low priority) Public demo (k3s) — remaining risks** (reviewed 2026-10-09; login required,
       behind Cloudflare, secrets in sops, database only inside the cluster):
       - Never enter real SMTP details on the demo: anyone with Job Queue / SMTP Setup rights could
