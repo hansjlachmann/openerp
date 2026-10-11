@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.94](https://github.com/hansjlachmann/openerp/compare/v0.1.93...v0.1.94) (2026-10-11)
+
+
+### Documentation
+
+* TODO and CLAUDE.md — actions on a selection are not wanted ([ef6521d](https://github.com/hansjlachmann/openerp/commit/ef6521d407ba96947b879b55f193d43dba293de5))
+
 ## [0.1.93](https://github.com/hansjlachmann/openerp/compare/v0.1.92...v0.1.93) (2026-10-11)
 
 
