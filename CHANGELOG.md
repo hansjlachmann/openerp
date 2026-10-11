@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.93](https://github.com/hansjlachmann/openerp/compare/v0.1.92...v0.1.93) (2026-10-11)
+
+
+### Bug Fixes
+
+* one click selects a list row, no Refresh action, no loading flash ([ba91fd5](https://github.com/hansjlachmann/openerp/commit/ba91fd5cb2c492a41991257746612b440c9a526c))
+
+
+### Performance
+
+* open pages inside the app instead of reloading it ([403c5e0](https://github.com/hansjlachmann/openerp/commit/403c5e059fb5a51e7329632d724a2cefbbf3d7cd))
+
 ## [0.1.92](https://github.com/hansjlachmann/openerp/compare/v0.1.91...v0.1.92) (2026-10-11)
 
 
