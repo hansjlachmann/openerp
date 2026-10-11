@@ -929,12 +929,18 @@ func (t *PermissionBase) parseFilterExpression(fieldName, expr string) (string, 
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *PermissionBase) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *PermissionBase) getOrderByClause() (string, []interface{}) {
 	pk := []string{"role_id", "table_name", }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -945,7 +951,7 @@ func (t *PermissionBase) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -1104,7 +1110,8 @@ func (t *PermissionBase) FindSet() bool {
 	}
 	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
@@ -1231,7 +1238,8 @@ func (t *PermissionBase) FindSetBuffered() bool {
 	t.currentBufferPos = -1
 	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())

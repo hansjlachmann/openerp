@@ -30,6 +30,9 @@ type PageMetadata struct {
 	// FlowFields (populated at request time) are computed, not stored: list pages can
 	// not sort or search on them server-side.
 	FlowFields []string `yaml:"-" json:"flow_fields,omitempty"`
+	// SortableFlowFields (populated at request time): the FlowFields lists can sort on
+	// (Sum/Count, sorted on the server by their calculated value)
+	SortableFlowFields []string `yaml:"-" json:"sortable_flow_fields,omitempty"`
 	// FlowFilterFields (populated at request time): the source table's FlowFilter fields
 	// (e.g. Date Filter), offered in the filter pane under "Filter totals by"
 	FlowFilterFields []FlowFilterField `yaml:"-" json:"flow_filter_fields,omitempty"`
@@ -139,6 +142,7 @@ func (p *PageDefinition) Clone() *PageDefinition {
 	m.Actions = append([]Action(nil), p.Page.Actions...)
 	m.PrimaryKeyFields = append([]string(nil), p.Page.PrimaryKeyFields...)
 	m.FlowFields = append([]string(nil), p.Page.FlowFields...)
+	m.SortableFlowFields = append([]string(nil), p.Page.SortableFlowFields...)
 	m.FlowFilterFields = append([]FlowFilterField(nil), p.Page.FlowFilterFields...)
 	return &c
 }

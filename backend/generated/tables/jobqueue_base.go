@@ -1224,6 +1224,11 @@ func (t *JobQueueBase) flowFieldExpr(field string) (string, []interface{}) {
 func (t *JobQueueBase) SetCurrentKey(fields ...string) {
 	t.orderByFields = nil
 	for _, field := range fields {
+		// A Sum/Count FlowField sorts on its calculated value (flowFieldExpr, see getOrderByClause)
+		if _, ok := t.FlowFieldFilterKind(field); ok {
+			t.orderByFields = append(t.orderByFields, "flowfield:"+strings.ToLower(field))
+			continue
+		}
 		column, ok := t.columnName(field)
 		if !ok {
 			fmt.Printf("Error: SetCurrentKey on unknown field %q of Job_Queue\n", field)
@@ -1420,12 +1425,24 @@ func (t *JobQueueBase) parseFilterExpression(fieldName, expr string) (string, []
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *JobQueueBase) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *JobQueueBase) getOrderByClause() (string, []interface{}) {
 	pk := []string{"no", }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+		if name, ok := strings.CutPrefix(column, "flowfield:"); ok {
+			expr, exprArgs := t.flowFieldExpr(name)
+			columns = append(columns, expr)
+			args = append(args, exprArgs...)
+			continue
+		}
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -1436,7 +1453,7 @@ func (t *JobQueueBase) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -1629,7 +1646,8 @@ func (t *JobQueueBase) FindSet() bool {
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
@@ -1773,7 +1791,8 @@ func (t *JobQueueBase) FindSetBuffered() bool {
 	t.currentBufferPos = -1
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())

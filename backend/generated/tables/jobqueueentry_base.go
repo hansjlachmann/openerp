@@ -1009,12 +1009,18 @@ func (t *JobQueueEntryBase) parseFilterExpression(fieldName, expr string) (strin
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *JobQueueEntryBase) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *JobQueueEntryBase) getOrderByClause() (string, []interface{}) {
 	pk := []string{"entry_no", }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -1025,7 +1031,7 @@ func (t *JobQueueEntryBase) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -1192,7 +1198,8 @@ func (t *JobQueueEntryBase) FindSet() bool {
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
@@ -1323,7 +1330,8 @@ func (t *JobQueueEntryBase) FindSetBuffered() bool {
 	t.currentBufferPos = -1
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())

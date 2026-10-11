@@ -23,7 +23,8 @@ export interface PageMetadata {
 	// Primary key field names from the source table (sent by the backend), used to
 	// identify records even when the PK is not shown on the page (e.g. setup tables).
 	primary_key_fields?: string[];
-	flow_fields?: string[]; // computed fields: not sortable/searchable on the server
+	flow_fields?: string[]; // computed fields: not searchable on the server
+	sortable_flow_fields?: string[]; // FlowFields lists can sort on (Sum/Count, by their value)
 	// FlowFilter fields of the source table (e.g. Date Filter): "Filter totals by" in the filter pane
 	flow_filter_fields?: Array<{ name: string; kind: string; caption: string }>;
 }

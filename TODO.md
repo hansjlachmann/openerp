@@ -1024,7 +1024,15 @@ The original notes below predate windowed loading and server-side sort/search; k
   one confirm for the whole batch, per-row failures collected and surfaced together rather than
   aborting, one refresh at the end instead of per row.
 
-### Phase 2 — Column header menus
+### Phase 2 — Column header menus ✅ DONE (2026-10-11)
+Done: clicking a caption sorts (arrow shows it); ▾ menu per header — Sort Ascending/Descending,
+Filter to This Value (cursor row's value, through the filter pane), Clear Filter, Hide Column;
+drag a header onto another to move the column (same storage as Customize). Sum/Count FlowFields
+(Balance, Sales, No. of Entries) sortable on the server by their value (same subquery as the
+FlowField filters, SIFT totals where possible). All texts translated. Verified in the browser on
+Postgres. **Freeze pane left out** (decided with the user). The notes below are the original plan.
+
+#### Original plan (Phase 2)
 - New `ColumnHeaderMenu.svelte` — a caret menu per `<th>`: Sort Ascending, Sort Descending, Filter to
   this value, Clear filter, Hide column, Freeze pane up to this column.
 - Sort drives the existing client-side `sortField`/`sortDirection`. **Note:** the backend never reads

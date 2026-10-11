@@ -2662,6 +2662,13 @@ func (t *{{ .BaseStructName }}) flowFieldExpr(field string) (string, []interface
 func (t *{{ .BaseStructName }}) SetCurrentKey(fields ...string) {
 	t.orderByFields = nil
 	for _, field := range fields {
+{{- if .HasFilterableFlowField }}
+		// A Sum/Count FlowField sorts on its calculated value (flowFieldExpr, see getOrderByClause)
+		if _, ok := t.FlowFieldFilterKind(field); ok {
+			t.orderByFields = append(t.orderByFields, "flowfield:"+strings.ToLower(field))
+			continue
+		}
+{{- end }}
 		column, ok := t.columnName(field)
 		if !ok {
 			fmt.Printf("Error: SetCurrentKey on unknown field %q of {{ .Table.Name }}\n", field)
@@ -2840,12 +2847,26 @@ func (t *{{ .BaseStructName }}) parseFilterExpression(fieldName, expr string) (s
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *{{ .BaseStructName }}) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *{{ .BaseStructName }}) getOrderByClause() (string, []interface{}) {
 	pk := []string{ {{- range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}"{{ $f.DBName }}", {{ end }}{{ end -}} }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+{{- if .HasFilterableFlowField }}
+		if name, ok := strings.CutPrefix(column, "flowfield:"); ok {
+			expr, exprArgs := t.flowFieldExpr(name)
+			columns = append(columns, expr)
+			args = append(args, exprArgs...)
+			continue
+		}
+{{- end }}
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -2856,7 +2877,7 @@ func (t *{{ .BaseStructName }}) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -3128,7 +3149,8 @@ func (t *{{ .BaseStructName }}) FindSet() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
 {{- end }}
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s%s`" + `, tableName, where, orderBy, t.getLimitClause())
@@ -3307,7 +3329,8 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
 {{- end }}
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s%s`" + `, tableName, where, orderBy, t.getLimitClause())

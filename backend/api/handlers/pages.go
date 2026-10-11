@@ -56,6 +56,14 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	if factory, ok := tables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		tbl := factory()
 		pageDef.Page.FlowFields = tbl.GetFlowFields()
+		pageDef.Page.SortableFlowFields = nil
+		if ff, ok := tbl.(flowFieldFilterer); ok {
+			for _, f := range pageDef.Page.FlowFields {
+				if _, sortable := ff.FlowFieldFilterKind(f); sortable {
+					pageDef.Page.SortableFlowFields = append(pageDef.Page.SortableFlowFields, f)
+				}
+			}
+		}
 		pageDef.Page.FlowFilterFields = nil
 		lang := normalizeLanguageCode(sess.GetLanguage())
 		if lang == "" {

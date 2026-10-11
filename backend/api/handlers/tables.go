@@ -440,7 +440,12 @@ type flowFieldFilterer interface {
 // up in SQL text: only real, non-sensitive columns of the table are accepted.
 func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 	if sortBy := c.Query("sort_by", ""); sortBy != "" {
-		if !ftables.IsQueryableColumn(table, sortBy) {
+		// A stored column, or a Sum/Count FlowField (sorted on its calculated value)
+		sortable := ftables.IsQueryableColumn(table, sortBy)
+		if ff, ok := table.(flowFieldFilterer); ok && !sortable {
+			_, sortable = ff.FlowFieldFilterKind(sortBy)
+		}
+		if !sortable {
 			return errors.New(apperrors.InvalidSortField().Message(language))
 		}
 		table.SetCurrentKey(sortBy)

@@ -1837,12 +1837,18 @@ func (t *CustomerLedgerEntryBase) parseFilterExpression(fieldName, expr string) 
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *CustomerLedgerEntryBase) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *CustomerLedgerEntryBase) getOrderByClause() (string, []interface{}) {
 	pk := []string{"entry_no", }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -1853,7 +1859,7 @@ func (t *CustomerLedgerEntryBase) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -2222,7 +2228,8 @@ func (t *CustomerLedgerEntryBase) FindSet() bool {
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
@@ -2454,7 +2461,8 @@ func (t *CustomerLedgerEntryBase) FindSetBuffered() bool {
 	t.currentBufferPos = -1
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())

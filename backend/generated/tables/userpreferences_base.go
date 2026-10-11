@@ -983,12 +983,18 @@ func (t *UserPreferencesBase) parseFilterExpression(fieldName, expr string) (str
 	return whereClause, args
 }
 
-// getOrderByClause builds ORDER BY clause from current key and direction. The primary
-// key columns always follow the current key, so the order is unique and paging
-// (SetPage) never repeats or skips rows when the key has duplicate values.
-func (t *UserPreferencesBase) getOrderByClause() string {
+// getOrderByClause builds ORDER BY clause from current key and direction, with the
+// arguments of its placeholders (a FlowField key sorts on its subquery, which may have
+// some; they follow the WHERE arguments). The primary key columns always follow the
+// current key, so the order is unique and paging (SetPage) never repeats or skips rows
+// when the key has duplicate values.
+func (t *UserPreferencesBase) getOrderByClause() (string, []interface{}) {
 	pk := []string{"user_id", "page_id", "preference_type", "preference_name", }
-	columns := append([]string{}, t.orderByFields...)
+	var columns []string
+	var args []interface{}
+	for _, column := range t.orderByFields {
+		columns = append(columns, column)
+	}
 	for _, column := range pk {
 		if !slices.Contains(columns, column) {
 			columns = append(columns, column)
@@ -999,7 +1005,7 @@ func (t *UserPreferencesBase) getOrderByClause() string {
 			columns[i] += " DESC"
 		}
 	}
-	return strings.Join(columns, ", ")
+	return strings.Join(columns, ", "), args
 }
 
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
@@ -1160,7 +1166,8 @@ func (t *UserPreferencesBase) FindSet() bool {
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
@@ -1288,7 +1295,8 @@ func (t *UserPreferencesBase) FindSetBuffered() bool {
 	t.currentBufferPos = -1
 	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
 	where, args := t.buildWhereClause()
-	orderBy := t.getOrderByClause()
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
 	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())

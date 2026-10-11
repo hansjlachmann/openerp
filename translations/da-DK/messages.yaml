@@ -176,6 +176,13 @@ messages:
   LIST_ALL_SELECTED: "Alle %1 markeret"
   LIST_CELL_SELECTED: "Celle [%1, %2] (valgt)"
   LIST_CELL_EDITING: "Celle [%1, %2] (redigeres)"
+  LIST_SORT_ASC: "Sortér stigende"
+  LIST_SORT_DESC: "Sortér faldende"
+  LIST_FILTER_TO_VALUE: "Filtrer på denne værdi"
+  LIST_CLEAR_FILTER: "Ryd filter"
+  LIST_HIDE_COLUMN: "Skjul kolonne"
+  LIST_COLUMN_MENU: "Kolonneindstillinger"
+  LIST_DRAG_COLUMN: "Træk for at flytte kolonnen"
 
   # Filter Pane
   FILTER_TITLE: "Filtrer %1"

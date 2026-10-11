@@ -33,6 +33,8 @@
 	import { tick } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
+	import ColumnHeaderMenu, { type ColumnMenuItem } from './ColumnHeaderMenu.svelte';
+	import { filterValueFor, hideColumn, moveColumn, withFilter, withoutFilter } from '$lib/utils/columnHeader';
 	import {
 		emptySelection,
 		isMultiSelection,
@@ -307,8 +309,9 @@
 	// Window-level keyboard shortcuts (to capture before browser handles them)
 	$effect(() => {
 		function handleGlobalKeydown(event: KeyboardEvent) {
-			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open
-			if (modalOpen || get(companySwitchOpen)) return;
+			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open, or the column
+			// header menu (it handles its own keys, Esc closes it)
+			if (modalOpen || get(companySwitchOpen) || columnMenu) return;
 
 			// Handle Escape specially - works even in input fields (NAV/BC behavior)
 			if (event.key === 'Escape') {
@@ -2219,7 +2222,7 @@
 			search: searchQuery,
 			search_fields: visibleColumns()
 				.map((f) => f.source)
-				.filter((source) => isSortable(source)),
+				.filter((source) => isSearchable(source)),
 			sort_by: sortField ?? undefined,
 			sort_order: sortDirection
 		})
@@ -2319,9 +2322,104 @@
 		allKeysCache = null;
 	});
 
-	// FlowFields are computed, not stored: the server can not sort on them
+	// Stored fields sort on the server; FlowFields only when the backend lists them as
+	// sortable (Sum/Count: sorted by their calculated value)
 	function isSortable(fieldSource: string): boolean {
+		if (!(page.page.flow_fields ?? []).includes(fieldSource)) return true;
+		return (page.page.sortable_flow_fields ?? []).includes(fieldSource);
+	}
+
+	// Search runs over stored fields only: a FlowField is computed
+	function isSearchable(fieldSource: string): boolean {
 		return !(page.page.flow_fields ?? []).includes(fieldSource);
+	}
+
+	// ---- Column header menu (BC): sort, filter to this value, clear filter, hide ----
+	let columnMenu = $state<{ anchor: HTMLElement; field: Field } | null>(null);
+
+	function setSort(fieldSource: string, direction: 'asc' | 'desc') {
+		if (!isSortable(fieldSource)) return;
+		sortField = fieldSource;
+		sortDirection = direction;
+		applySearchAndSort({ sort: { field: fieldSource, direction } });
+	}
+
+	function columnMenuItems(field: Field): ColumnMenuItem[] {
+		const source = field.source;
+		const sortable = isSortable(source);
+		// "Filter to this value": the cursor row's value in this column
+		const expression = filterValueFor(selectedRecord?.[source]);
+		const filtered = currentFilters.some((f) => f.field === source);
+		const items: ColumnMenuItem[] = [
+			{
+				label: t(LIST.SORT_ASC),
+				disabled: !sortable,
+				checked: sortField === source && sortDirection === 'asc',
+				action: () => setSort(source, 'asc')
+			},
+			{
+				label: t(LIST.SORT_DESC),
+				disabled: !sortable,
+				checked: sortField === source && sortDirection === 'desc',
+				action: () => setSort(source, 'desc')
+			},
+			{
+				label: t(LIST.FILTER_TO_VALUE),
+				disabled: expression === null,
+				separatorBefore: true,
+				action: () => onfilter?.(withFilter(currentFilters, source, expression!), currentFlowFilters)
+			}
+		];
+		if (filtered) {
+			items.push({
+				label: t(LIST.CLEAR_FILTER),
+				action: () => onfilter?.(withoutFilter(currentFilters, source), currentFlowFilters)
+			});
+		}
+		items.push({
+			label: t(LIST.HIDE_COLUMN),
+			separatorBefore: true,
+			disabled: visibleColumns().length <= 1,
+			action: () => handleSaveCustomizations(hideColumn(columnCustomizations, source))
+		});
+		return items;
+	}
+
+	function openColumnMenu(anchor: HTMLElement, field: Field) {
+		columnMenu = columnMenu?.field.source === field.source ? null : { anchor, field };
+	}
+
+	// Drag a header onto another one to move the column (saved like the Customize dialog)
+	let draggedColumn = $state<string | null>(null);
+	let dragOverColumn = $state<string | null>(null);
+
+	function handleColumnDragStart(event: DragEvent, source: string) {
+		if (isResizing) {
+			event.preventDefault();
+			return;
+		}
+		draggedColumn = source;
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData('text/plain', source);
+		}
+	}
+
+	function handleColumnDrop(target: string) {
+		const source = draggedColumn;
+		draggedColumn = null;
+		dragOverColumn = null;
+		if (!source || source === target) return;
+		// The full column order as shown, hidden columns included
+		const order = (page.page.layout.repeater?.fields || [])
+			.map((field, index) => ({ field, index }))
+			.sort(
+				(a, b) =>
+					(columnCustomizations[a.field.source]?.order ?? a.index) -
+					(columnCustomizations[b.field.source]?.order ?? b.index)
+			)
+			.map(({ field }) => ({ source: field.source, visible: isItemVisible(field, columnCustomizations) }));
+		handleSaveCustomizations(moveColumn(columnCustomizations, order, source, target));
 	}
 
 	// Toggle sort on a column (on the server, over all records)
@@ -2651,38 +2749,75 @@
 						<th class="row-number-header">#</th>
 					{/if}
 					{#each visibleColumns() as field}
-						<th style="width: {getColumnWidth(field)}px">
-							<div class="th-content">
-								<span class="th-label">{getFieldCaption(field.source, captions, field.caption)}</span>
+						<th
+							style="width: {getColumnWidth(field)}px"
+							class:drag-over={dragOverColumn === field.source && draggedColumn !== field.source}
+							ondragover={(e) => {
+								if (!draggedColumn) return;
+								e.preventDefault();
+								dragOverColumn = field.source;
+							}}
+							ondragleave={() => {
+								if (dragOverColumn === field.source) dragOverColumn = null;
+							}}
+							ondrop={(e) => {
+								e.preventDefault();
+								handleColumnDrop(field.source);
+							}}
+						>
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="th-content"
+								draggable="true"
+								title={t(LIST.DRAG_COLUMN)}
+								ondragstart={(e) => handleColumnDragStart(e, field.source)}
+								ondragend={() => {
+									draggedColumn = null;
+									dragOverColumn = null;
+								}}
+							>
 								{#if isSortable(field.source)}
-								<button
-									type="button"
-									class="sort-btn"
-									onclick={(e) => {
-										e.stopPropagation();
-										handleSort(field.source);
-									}}
-									title={sortField === field.source
-										? `Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`
-										: 'Sort ascending'}
-								>
-									{#if sortField === field.source}
-										{#if sortDirection === 'asc'}
-											<svg class="sort-icon" viewBox="0 0 24 24" fill="currentColor">
-												<path d="M7 14l5-5 5 5H7z"/>
-											</svg>
-										{:else}
-											<svg class="sort-icon" viewBox="0 0 24 24" fill="currentColor">
-												<path d="M7 10l5 5 5-5H7z"/>
+									<!-- Clicking the caption sorts (again: the other direction), BC -->
+									<button
+										type="button"
+										class="th-label th-sort"
+										onclick={(e) => {
+											e.stopPropagation();
+											handleSort(field.source);
+										}}
+										title={sortField === field.source && sortDirection === 'asc' ? t(LIST.SORT_DESC) : t(LIST.SORT_ASC)}
+									>
+										<span>{getFieldCaption(field.source, captions, field.caption)}</span>
+										{#if sortField === field.source}
+											<!-- An arrow, unlike the ▾ of the column menu -->
+											<svg class="sort-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												{#if sortDirection === 'asc'}
+													<path d="M12 19V5M6 11l6-6 6 6"/>
+												{:else}
+													<path d="M12 5v14M6 13l6 6 6-6"/>
+												{/if}
 											</svg>
 										{/if}
-									{:else}
-										<svg class="sort-icon sort-icon-inactive" viewBox="0 0 24 24" fill="currentColor">
-											<path d="M7 10l5 5 5-5H7z"/>
-										</svg>
-									{/if}
-								</button>
+									</button>
+								{:else}
+									<span class="th-label">{getFieldCaption(field.source, captions, field.caption)}</span>
 								{/if}
+								<button
+									type="button"
+									class="column-menu-btn"
+									class:open={columnMenu?.field.source === field.source}
+									aria-label={t(LIST.COLUMN_MENU)}
+									aria-haspopup="menu"
+									title={t(LIST.COLUMN_MENU)}
+									onclick={(e) => {
+										e.stopPropagation();
+										openColumnMenu(e.currentTarget, field);
+									}}
+								>
+									<svg class="sort-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+										<path d="M7 10l5 5 5-5H7z"/>
+									</svg>
+								</button>
 							</div>
 							<!-- Resize handle -->
 							<button
@@ -3024,6 +3159,11 @@
 	</div>
 </div>
 
+<!-- Column header menu -->
+{#if columnMenu}
+	<ColumnHeaderMenu anchor={columnMenu.anchor} items={columnMenuItems(columnMenu.field)} onclose={() => (columnMenu = null)} />
+{/if}
+
 <!-- Modal Card -->
 {#if modalOpen && modalCardPage}
 	<ModalCardPage
@@ -3248,10 +3388,43 @@
 
 	.th-label {
 		flex: 1;
+		min-width: 0;
 		color: inherit;
+		overflow-wrap: anywhere; /* a long caption wraps, the menu button stays visible */
 	}
 
-	.sort-btn {
+	/* The caption sorts: looks like the caption, not like a button */
+	.th-sort {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding: 0;
+		font: inherit;
+		font-weight: inherit;
+		text-align: left;
+		background: none;
+		border: none;
+		cursor: pointer;
+	}
+
+	.th-sort:hover span {
+		text-decoration: underline;
+	}
+
+	th.drag-over {
+		box-shadow: inset 3px 0 0 #008489;
+	}
+
+	:global(.dark) th.drag-over {
+		box-shadow: inset 3px 0 0 #37a1a5;
+	}
+
+	.th-content[draggable='true'] {
+		cursor: grab;
+	}
+
+	.column-menu-btn {
+		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -3264,18 +3437,26 @@
 		transition: opacity 0.15s;
 	}
 
-	.sort-btn:hover {
+	.column-menu-btn:hover,
+	.column-menu-btn.open {
 		opacity: 1;
 		background: rgba(0, 0, 0, 0.06);
 	}
 
-	:global(.dark) .sort-btn:hover {
+	:global(.dark) .column-menu-btn:hover,
+	:global(.dark) .column-menu-btn.open {
 		background: rgba(255, 255, 255, 0.1);
 	}
 
 	.sort-icon {
 		width: 16px;
 		height: 16px;
+	}
+
+	.sort-arrow {
+		width: 14px;
+		height: 14px;
+		flex-shrink: 0;
 	}
 
 	.sort-icon-inactive {
