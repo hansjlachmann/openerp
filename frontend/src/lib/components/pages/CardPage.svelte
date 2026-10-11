@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import FieldRenderer from './FieldRenderer.svelte';
@@ -320,7 +321,7 @@
 				map[normalizedShortcut] = () => {
 					// Handle run_page, run_object, or regular action (same as button click)
 					if (action.run_page) {
-						window.location.href = runPageUrl(action);
+						goto(runPageUrl(action));
 					} else if (action.run_object) {
 						handleRunObject(action.run_object);
 					} else {
@@ -453,7 +454,7 @@
 					tabindex={-1}
 					onclick={() => {
 						if (action.run_page) {
-							window.location.href = runPageUrl(action);
+							goto(runPageUrl(action));
 						} else if (action.run_object) {
 							handleRunObject(action.run_object);
 						} else {

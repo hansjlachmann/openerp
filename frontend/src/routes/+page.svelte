@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
 	import { fetchMenu, clearMenuCache } from '$lib/services/pages';
@@ -33,7 +34,7 @@
 
 	function navigateToPage(pageId: number) {
 		sessionStorage.setItem(LAST_MENU_PAGE_KEY, String(pageId));
-		window.location.href = `/pages/${pageId}`;
+		goto(`/pages/${pageId}`); // inside the app: no reload, no flash
 	}
 
 	function menuItems(): HTMLButtonElement[] {

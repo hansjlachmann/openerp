@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto, replaceState } from '$app/navigation';
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import { onMount } from 'svelte';
 	import type { PageDefinition } from '$lib/types/pages';
@@ -346,7 +347,7 @@
 				isExistingRecord = false; // Reset for new record
 				currentRecordId = undefined;
 				// Update URL to remove the recordid
-				window.history.replaceState({}, '', `/pages/${page.page.id}`);
+				replaceState(`/pages/${page.page.id}`, {});
 				break;
 			case 'Delete':
 				// Get record ID from record object or recordid prop
@@ -364,7 +365,7 @@
 									// Try to find the associated list page by convention
 									// Customer Card (21) -> Customer List (22)
 									const listPageId = page!.page.id + 1;
-									window.location.href = `/pages/${listPageId}`;
+									goto(`/pages/${listPageId}`);
 								}
 							} catch (err) {
 								console.error('Delete error:', err);
@@ -396,7 +397,7 @@
 				if (newRecordId && newRecordId !== currentRecordId) {
 					recordIds = recordIds.map((id) => (id === currentRecordId ? newRecordId : id));
 					currentRecordId = newRecordId;
-					window.history.replaceState({}, '', withNavigationQuery(`/pages/${page.page.id}/${newRecordId}`, navigationQuery));
+					replaceState(withNavigationQuery(`/pages/${page.page.id}/${newRecordId}`, navigationQuery), {});
 				}
 				toast.success(t(MSG.RECORD_UPDATED));
 			} else {
@@ -416,7 +417,7 @@
 				// Navigate to the proper URL with the new record ID
 				if (newRecordId && page.page.id) {
 					// Update URL without full page reload
-					window.history.replaceState({}, '', `/pages/${page.page.id}/${newRecordId}`);
+					replaceState(`/pages/${page.page.id}/${newRecordId}`, {});
 				}
 			}
 			return true;
@@ -434,14 +435,14 @@
 			case 'New':
 				// Navigate to card page in new mode
 				if (page.page.card_page_id) {
-					window.location.href = `/pages/${page.page.card_page_id}`;
+					goto(`/pages/${page.page.card_page_id}`);
 				}
 				break;
 			case 'Edit':
 				if (selectedRecord && page.page.card_page_id) {
 					// Navigate to card page with record ID
 					const editRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
-					window.location.href = `/pages/${page.page.card_page_id}/${editRecordId}`;
+					goto(`/pages/${page.page.card_page_id}/${editRecordId}`);
 				}
 				break;
 			case 'Delete':
@@ -473,7 +474,7 @@
 		if (!page || !page.page.card_page_id) return;
 
 		const recordId = getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList);
-		window.location.href = withNavigationQuery(`/pages/${page.page.card_page_id}/${recordId}`, navigation);
+		goto(withNavigationQuery(`/pages/${page.page.card_page_id}/${recordId}`, navigation));
 	}
 
 	// Handle save notification from list page (inline editing)
@@ -532,7 +533,7 @@
 	// Navigation functions for card pages
 	function navigateToRecord(targetRecordId: string) {
 		if (!page) return;
-		window.location.href = withNavigationQuery(`/pages/${page.page.id}/${targetRecordId}`, navigationQuery);
+		goto(withNavigationQuery(`/pages/${page.page.id}/${targetRecordId}`, navigationQuery));
 	}
 
 	// Create navigation actions using shared helper
@@ -560,7 +561,7 @@
 
 	function handleCardClose() {
 		if (page?.page.list_page_id) {
-			window.location.href = `/pages/${page.page.list_page_id}`;
+			goto(`/pages/${page.page.list_page_id}`);
 		} else {
 			// Fallback: go back in history
 			window.history.back();

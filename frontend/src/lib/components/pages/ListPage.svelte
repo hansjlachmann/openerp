@@ -390,7 +390,7 @@
 	// card action — as BC closes the page), otherwise to the main menu
 	function closeList() {
 		if (returnUrl) {
-			window.location.href = returnUrl;
+			goto(returnUrl);
 		} else {
 			goto('/');
 		}
@@ -3104,10 +3104,10 @@
 													e.stopPropagation();
 													const filterValue = record[field.drilldown_filter_value || ''] ?? '';
 													// Back to this list, on this record, with Esc or the close button
-													window.location.href = withReturn(
+													goto(withReturn(
 														`/pages/${field.drilldown}?filter=${encodeURIComponent(`${field.drilldown_filter_field}=${filterValue}`)}`,
 														getRecordId(record, primaryKeyField, primaryKeyFieldsList)
-													);
+													));
 												}}
 											>
 												{formatCellValue(record[field.source], field.source)}

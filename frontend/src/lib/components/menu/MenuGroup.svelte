@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import type { MenuGroup as MenuGroupType } from '$lib/types/pages';
 	import { clickOutside } from '$lib/actions/clickOutside';
 
@@ -22,13 +23,13 @@
 	}
 
 	function handleMenuItemClick(pageId: number) {
-		window.location.href = `/pages/${pageId}`;
+		goto(`/pages/${pageId}`); // inside the app: no reload, no flash
 		closeMenu();
 	}
 
 	function handleFlatItemClick() {
 		if (group.page_id) {
-			window.location.href = `/pages/${group.page_id}`;
+			goto(`/pages/${group.page_id}`);
 		}
 	}
 </script>

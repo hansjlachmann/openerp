@@ -6,7 +6,11 @@
 </script>
 
 <div class="page-container">
-	<PageRenderer pageid={data.pageId} recordid={data.recordId} initialFilter={data.filter} returnUrl={data.returnUrl} initialSelect={data.select} />
+	<!-- A new PageRenderer for every navigation: pages open inside the app (goto), and
+	     PageRenderer loads its page in onMount — reused, it would keep showing the old page -->
+	{#key data}
+		<PageRenderer pageid={data.pageId} recordid={data.recordId} initialFilter={data.filter} returnUrl={data.returnUrl} initialSelect={data.select} />
+	{/key}
 </div>
 
 <style>
