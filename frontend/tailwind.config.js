@@ -1,45 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 
-// Business Central color palette, sampled from docs/BC-Screenshot-LightMode.png and
-// docs/BC-Screenshot-DarkMode.png. Components use Tailwind's gray/blue/primary classes,
-// so those scales are retuned here to BC values instead of editing every component.
+// Colors are CSS variables holding RGB triplets ("18 18 18"), set in src/app.css: the
+// default values are the Business Central palette (light and dark mode, sampled from
+// docs/BC-Screenshot-LightMode.png and docs/BC-Screenshot-DarkMode.png), and a theme
+// (src/lib/theme) overrides them at run time. Components keep using Tailwind's
+// gray/blue/primary classes; `<alpha-value>` keeps opacity modifiers (bg-gray-900/50) working.
 //
-// Neutrals: each step serves its light-mode role (text/borders on white) and its
-// dark-mode role (surfaces/borders/text on #121212):
-//   50  #f7f7f7  dark: primary text           100 #f2f2f3  light: hover background
-//   200 #e5e7e9  light: neutral tile, borders 300 #d3d6da  light: divider
-//   400 #a4b0c4  dark: secondary text         500 #737d8a  muted text
-//   600 #505c6d  light: secondary text        700 #303032  dark: separators, inputs
-//   800 #1e1e1e  dark: raised surface         900 #121212  dark: page background
-const bcGray = {
-	50: '#f7f7f7',
-	100: '#f2f2f3',
-	200: '#e5e7e9',
-	300: '#d3d6da',
-	400: '#a4b0c4',
-	500: '#737d8a',
-	600: '#505c6d',
-	700: '#303032',
-	800: '#1e1e1e',
-	900: '#121212',
-	950: '#0a0a0a'
-};
-
-// BC teal accent (BC has no blue accent): 400 = dark-mode links, 500 = tiles,
-// 600 = light-mode links/actions, 900 = dark-mode notification bar
-const bcTeal = {
-	50: '#e6f3f4',
-	100: '#cce8ea',
-	200: '#99d1d4',
-	300: '#66b9bf',
-	400: '#37a1a5',
-	500: '#00838f',
-	600: '#008489',
-	700: '#006e72',
-	800: '#00585c',
-	900: '#003a3e',
-	950: '#002a2d'
-};
+// Neutrals (--gray-N): each step serves its light-mode role (text/borders on white) and its
+// dark-mode role (surfaces/borders/text on the dark page):
+//   50  light: secondary bg, dark: primary text   100 light: hover background
+//   200 light: neutral tile, borders              300 light: divider
+//   400 dark: secondary text                      500 muted text
+//   600 light: secondary text                     700 dark: separators, inputs
+//   800 dark: raised surface                      900 dark: page background
+// Accent (--accent-N, BC teal): 400 = dark-mode links, 500 = tiles, 600 = light-mode
+// links/actions, 900 = dark-mode notification bar.
+const steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+const scale = (name) =>
+	Object.fromEntries(steps.map((n) => [n, `rgb(var(--${name}-${n}) / <alpha-value>)`]));
+const color = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
@@ -47,16 +26,17 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				gray: bcGray,
-				blue: bcTeal,
-				primary: bcTeal,
-				nav: {
-					blue: '#282828', // BC app bar (same in light and dark mode)
-					lightblue: '#008489' // BC accent
-				}
+				gray: scale('gray'),
+				blue: scale('accent'),
+				primary: scale('accent'),
+				surface: color('surface'), // panels, cards, dropdowns (light mode: white)
+				page: color('page-bg'), // page background
+				fg: color('fg'), // body text
+				heading: color('heading'), // page and section titles (light mode)
+				appbar: { DEFAULT: color('appbar'), fg: color('appbar-fg') } // BC app bar
 			},
 			fontFamily: {
-				sans: ['Segoe UI', 'system-ui', 'sans-serif']
+				sans: ['var(--font-sans)']
 			}
 		}
 	},

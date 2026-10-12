@@ -255,16 +255,16 @@
 </script>
 
 {#if loading}
-	<div class="menu-bar bg-nav-blue text-white">
+	<div class="menu-bar bg-appbar text-appbar-fg">
 		<div class="px-4 py-2 text-sm">{t(MSG.LOADING)}</div>
 	</div>
 {:else}
-	<nav class="menu-bar bg-nav-blue text-white">
+	<nav class="menu-bar bg-appbar text-appbar-fg">
 		<div class="flex items-center gap-2 w-full">
 			<!-- Home button -->
 			<a
 				href="/"
-				class="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded transition-colors font-semibold border-r border-white/20 mr-2"
+				class="flex items-center gap-2 px-4 py-2 hover:bg-appbar-fg/10 rounded transition-colors font-semibold border-r border-appbar-fg/20 mr-2"
 				title={t(MENU.HOME)}
 			>
 				<svg
@@ -285,7 +285,7 @@
 			</a>
 
 			<!-- Session information -->
-			<div class="flex items-center gap-4 text-sm text-white/80 border-r border-white/20 pr-4 mr-2">
+			<div class="flex items-center gap-4 text-sm text-appbar-fg/80 border-r border-appbar-fg/20 pr-4 mr-2">
 				{#if $currentCompany}
 					<span class="font-medium">{companyLabelFor(companies, $currentCompany)}</span>
 				{/if}
@@ -302,11 +302,11 @@
 
 			<!-- User menu -->
 			{#if $currentUser}
-				<div class="relative border-l border-white/20 pl-3 ml-2">
+				<div class="relative border-l border-appbar-fg/20 pl-3 ml-2">
 					<button
 						data-user-menu
 						onclick={toggleUserMenu}
-						class="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded transition-colors"
+						class="flex items-center gap-2 px-3 py-2 hover:bg-appbar-fg/10 rounded transition-colors"
 						title={t(MENU.USER_MENU)}
 					>
 						<svg
@@ -342,7 +342,7 @@
 
 					<!-- User dropdown menu -->
 					{#if showUserMenu}
-						<div data-user-dropdown class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+						<div data-user-dropdown class="absolute right-0 mt-2 w-56 bg-surface dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
 							<div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
 								<p class="text-sm font-medium text-gray-900 dark:text-white">{$currentUser.user_name}</p>
 								<p class="text-xs text-gray-500 dark:text-gray-400">{$currentUser.email || $currentUser.user_id}</p>
@@ -392,7 +392,7 @@
 
 									<!-- Language submenu -->
 									{#if showLanguageMenu}
-										<div class="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+										<div class="absolute right-full top-0 mr-1 w-48 bg-surface dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
 											{#each languages as lang}
 												<button
 													onclick={() => handleLanguageChange(lang.code)}
@@ -473,7 +473,7 @@
 
 										<!-- Company submenu -->
 										{#if showCompanyMenu}
-											<div class="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+											<div class="absolute right-full top-0 mr-1 w-48 bg-surface dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
 												{#each companies as company (company.name)}
 													<button
 														onclick={() => handleCompanyChange(company.name)}
@@ -565,7 +565,7 @@
 			<!-- Theme toggle button -->
 			<button
 				onclick={toggleTheme}
-				class="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded transition-colors"
+				class="flex items-center gap-2 px-3 py-2 hover:bg-appbar-fg/10 rounded transition-colors"
 				title={currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
 				aria-label="Toggle theme"
 			>
@@ -605,7 +605,7 @@
 			</button>
 
 			<!-- Version -->
-			<span class="text-xs text-white/70 pl-2 border-l border-white/20">v{version}</span>
+			<span class="text-xs text-appbar-fg/70 pl-2 border-l border-appbar-fg/20">v{version}</span>
 		</div>
 	</nav>
 {/if}

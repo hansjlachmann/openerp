@@ -527,7 +527,7 @@
 			{#each customizedSections() as section}
 				<Card>
 					{#snippet header()}
-						<h3 class="text-lg font-semibold text-nav-blue dark:text-blue-400">
+						<h3 class="text-lg font-semibold text-heading dark:text-blue-400">
 							{section.caption}
 						</h3>
 					{/snippet}
@@ -572,11 +572,11 @@
 	.card-page {
 		@apply flex flex-col flex-1 min-h-0;
 		@apply relative;
-		@apply bg-white;
+		@apply bg-surface;
 	}
 
 	:global(.dark) .card-page {
-		background-color: #121212; /* gray-900 */
+		background-color: rgb(var(--gray-900)); /* gray-900 */
 	}
 
 
@@ -624,7 +624,7 @@
 	}
 
 	:global(.dark) .empty-state-icon {
-		color: #505c6d; /* gray-600 */
+		color: rgb(var(--gray-600)); /* gray-600 */
 	}
 
 	.empty-state-icon svg {
@@ -636,7 +636,7 @@
 	}
 
 	:global(.dark) .empty-state-title {
-		color: #d3d6da; /* gray-300 */
+		color: rgb(var(--gray-300)); /* gray-300 */
 	}
 
 	.empty-state-text {
@@ -644,7 +644,7 @@
 	}
 
 	:global(.dark) .empty-state-text {
-		color: #a4b0c4; /* gray-400 */
+		color: rgb(var(--gray-400)); /* gray-400 */
 	}
 
 	.card-page :global(.edge-nav-btn:not(:disabled):hover) {
@@ -653,12 +653,12 @@
 
 	/* Ensure PageHeader stays at top */
 	.card-page :global(.page-header) {
-		@apply sticky top-0 z-10 bg-white;
+		@apply sticky top-0 z-10 bg-surface;
 		@apply mb-4;
 	}
 
 	:global(.dark) .card-page :global(.page-header) {
-		background-color: #121212; /* gray-900 */
+		background-color: rgb(var(--gray-900)); /* gray-900 */
 	}
 
 	/* Error banner styles */

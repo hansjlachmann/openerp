@@ -58,12 +58,12 @@
 
 	.skeleton-header {
 		@apply flex items-center justify-between px-6 py-4;
-		@apply bg-white border-b border-gray-200;
+		@apply bg-surface border-b border-gray-200;
 	}
 
 	:global(.dark) .skeleton-header {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-sections {
@@ -71,12 +71,12 @@
 	}
 
 	.skeleton-card {
-		@apply bg-white border border-gray-200 rounded-lg overflow-hidden;
+		@apply bg-surface border border-gray-200 rounded-lg overflow-hidden;
 	}
 
 	:global(.dark) .skeleton-card {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-card-header {
@@ -84,7 +84,7 @@
 	}
 
 	:global(.dark) .skeleton-card-header {
-		border-color: #303032;
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-card-body {

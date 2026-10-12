@@ -323,7 +323,7 @@
 	.field-group :global(input.input),
 	.field-group :global(select.select) {
 		@apply w-full py-2 px-3;
-		@apply bg-white border border-gray-300 rounded-md;
+		@apply bg-surface border border-gray-300 rounded-md;
 		@apply text-gray-900 text-base;
 		@apply transition-all duration-150;
 		@apply outline-none;
@@ -383,7 +383,7 @@
 
 	:global(.dark) .field-group :global(input.input:focus),
 	:global(.dark) .field-group :global(select.select:focus) {
-		border-color: #00838f; /* blue-500 */
+		border-color: rgb(var(--accent-500)); /* blue-500 */
 		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
@@ -398,7 +398,7 @@
 
 	.checkbox-wrapper input[type="checkbox"] {
 		@apply w-5 h-5 cursor-pointer;
-		accent-color: #00838f;
+		accent-color: rgb(var(--accent-500));
 	}
 
 	.checkbox-wrapper.readonly input[type="checkbox"] {

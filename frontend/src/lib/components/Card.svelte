@@ -88,7 +88,7 @@
 
 <style>
 	.card {
-		@apply bg-white border border-gray-200 rounded-lg;
+		@apply bg-surface border border-gray-200 rounded-lg;
 		@apply shadow-sm;
 	}
 

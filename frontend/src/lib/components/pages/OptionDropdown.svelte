@@ -199,7 +199,7 @@
 	}
 
 	.option-trigger {
-		@apply w-full px-3 py-2 pr-8 text-left bg-white border border-gray-300 rounded-md;
+		@apply w-full px-3 py-2 pr-8 text-left bg-surface border border-gray-300 rounded-md;
 		@apply text-gray-900 text-base cursor-pointer;
 		@apply transition-all duration-150;
 		@apply outline-none;
@@ -217,9 +217,9 @@
 	}
 
 	:global(.dark) .option-trigger {
-		background-color: var(--color-bg-input, #1e1e1e);
-		border-color: var(--color-border-secondary, #303032);
-		color: var(--color-text-primary, #f7f7f7);
+		background-color: var(--color-bg-input, rgb(var(--gray-800)));
+		border-color: var(--color-border-secondary, rgb(var(--gray-700)));
+		color: var(--color-text-primary, rgb(var(--gray-50)));
 	}
 
 	:global(.dark) .option-trigger:hover {
@@ -227,7 +227,7 @@
 	}
 
 	:global(.dark) .option-trigger:focus {
-		border-color: #00838f;
+		border-color: rgb(var(--accent-500));
 		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
@@ -291,14 +291,14 @@
 		min-width: 100%;
 		max-height: 300px;
 		margin-top: 2px;
-		@apply bg-white border border-gray-300 rounded shadow-lg;
+		@apply bg-surface border border-gray-300 rounded shadow-lg;
 		overflow: hidden;
 	}
 
 	/* Dark mode: rows on the blank page background, highlighted row grey */
 	:global(.dark) .option-panel {
-		background-color: #121212;
-		border-color: #303032;
+		background-color: rgb(var(--gray-900));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.option-body {
@@ -312,11 +312,11 @@
 	}
 
 	:global(.dark) .option-row {
-		color: var(--color-text-primary, #f7f7f7);
+		color: var(--color-text-primary, rgb(var(--gray-50)));
 	}
 
 	:global(.dark) .option-row:hover {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.option-row.selected {
@@ -332,7 +332,7 @@
 	}
 
 	:global(.dark) .option-row.focused {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.option-row.selected.focused {
@@ -340,6 +340,6 @@
 	}
 
 	:global(.dark) .option-row.selected.focused {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 </style>

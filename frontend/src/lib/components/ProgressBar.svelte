@@ -95,7 +95,7 @@
 	}
 
 	:global(.dark) .progress-bar {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.progress-fill {
@@ -104,7 +104,7 @@
 	}
 
 	:global(.dark) .progress-fill {
-		background-color: #00838f;
+		background-color: rgb(var(--accent-500));
 	}
 
 	.progress-text {
@@ -113,6 +113,6 @@
 	}
 
 	:global(.dark) .progress-text {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 </style>

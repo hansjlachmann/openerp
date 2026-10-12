@@ -108,15 +108,15 @@
 		z-index: 60;
 		min-width: 210px;
 		padding: 4px 0;
-		background: #ffffff;
-		border: 1px solid #d1d5db;
+		background: rgb(var(--surface));
+		border: 1px solid rgb(var(--gray-300));
 		border-radius: 4px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	}
 
 	:global(.dark) .column-menu {
-		background: #1f1f1f;
-		border-color: #303032;
+		background: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.column-menu-item {
@@ -126,49 +126,49 @@
 		padding: 6px 12px 6px 6px;
 		font-size: 0.875rem;
 		text-align: left;
-		color: #212121;
+		color: rgb(var(--fg));
 		background: transparent;
 		border: none;
 		cursor: pointer;
 	}
 
 	:global(.dark) .column-menu-item {
-		color: #f7f7f7;
+		color: rgb(var(--gray-50));
 	}
 
 	.column-menu-item:hover:not(:disabled),
 	.column-menu-item:focus-visible {
-		background: #cce8ea;
+		background: rgb(var(--accent-100));
 		outline: none;
 	}
 
 	:global(.dark) .column-menu-item:hover:not(:disabled),
 	:global(.dark) .column-menu-item:focus-visible {
-		background: #00585c;
+		background: rgb(var(--accent-800));
 	}
 
 	.column-menu-item:disabled {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 		cursor: default;
 	}
 
 	.column-menu-check {
 		display: inline-block;
 		width: 1.25rem;
-		color: #008489;
+		color: rgb(var(--accent-600));
 	}
 
 	:global(.dark) .column-menu-check {
-		color: #37a1a5;
+		color: rgb(var(--accent-400));
 	}
 
 	.column-menu-separator {
 		height: 1px;
 		margin: 4px 0;
-		background: #d1d5db;
+		background: rgb(var(--gray-300));
 	}
 
 	:global(.dark) .column-menu-separator {
-		background: #303032;
+		background: rgb(var(--gray-700));
 	}
 </style>

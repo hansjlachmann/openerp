@@ -207,7 +207,7 @@
 	}
 
 	:global(.dark) .progress-title {
-		color: #f2f2f3;
+		color: rgb(var(--gray-100));
 	}
 
 	.progress-body {
@@ -219,7 +219,7 @@
 	}
 
 	:global(.dark) .status-message {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	.progress-container {
@@ -231,7 +231,7 @@
 	}
 
 	:global(.dark) .progress-bar-track {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.progress-bar-fill {
@@ -243,7 +243,7 @@
 	}
 
 	:global(.dark) .progress-percent {
-		color: #d3d6da;
+		color: rgb(var(--gray-300));
 	}
 
 	.error-container {
@@ -283,7 +283,7 @@
 	}
 
 	:global(.dark) .confirm-message {
-		color: #d3d6da;
+		color: rgb(var(--gray-300));
 	}
 
 	.confirm-buttons {
@@ -308,7 +308,7 @@
 	}
 
 	:global(.dark) .input-label {
-		color: #d3d6da;
+		color: rgb(var(--gray-300));
 	}
 
 	.required-mark {
@@ -317,17 +317,17 @@
 
 	.input-control {
 		@apply w-full px-3 py-2 text-sm border border-gray-300 rounded-md;
-		@apply bg-white text-gray-900;
+		@apply bg-surface text-gray-900;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 	}
 
 	:global(.dark) .input-control {
-		background-color: #303032;
-		border-color: #505c6d;
-		color: #f2f2f3;
+		background-color: rgb(var(--gray-700));
+		border-color: rgb(var(--gray-600));
+		color: rgb(var(--gray-100));
 	}
 
 	:global(.dark) .input-control:focus {
-		border-color: #00838f;
+		border-color: rgb(var(--accent-500));
 	}
 </style>

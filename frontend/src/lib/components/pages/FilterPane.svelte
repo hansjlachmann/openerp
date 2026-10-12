@@ -640,7 +640,7 @@
 	}
 
 	.filter-title {
-		@apply text-lg font-semibold text-nav-blue dark:text-blue-400;
+		@apply text-lg font-semibold text-heading dark:text-blue-400;
 	}
 
 	.close-btn {
@@ -690,7 +690,7 @@
 	.rename-input {
 		@apply w-full px-2 py-1 text-sm;
 		@apply border border-blue-500 rounded;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-surface dark:bg-gray-800;
 		@apply text-gray-900 dark:text-gray-100;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500;
 	}
@@ -708,7 +708,7 @@
 
 	.preset-menu {
 		@apply absolute right-0 top-full mt-1 z-50;
-		@apply bg-white dark:bg-gray-800 rounded-md shadow-lg;
+		@apply bg-surface dark:bg-gray-800 rounded-md shadow-lg;
 		@apply border border-gray-200 dark:border-gray-700;
 		@apply py-1 min-w-[150px];
 	}
@@ -765,7 +765,7 @@
 	.filter-expression-input {
 		@apply w-full px-3 py-2 text-sm;
 		@apply border border-gray-300 dark:border-gray-600 rounded;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-surface dark:bg-gray-800;
 		@apply text-gray-900 dark:text-gray-100;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 	}
@@ -784,7 +784,7 @@
 	.field-selector-inline {
 		@apply w-full px-3 py-2 text-sm;
 		@apply border border-blue-500 rounded;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-surface dark:bg-gray-800;
 		@apply text-gray-900 dark:text-gray-100;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500;
 	}

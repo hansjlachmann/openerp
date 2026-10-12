@@ -70,12 +70,12 @@
 
 	.skeleton-header {
 		@apply flex items-center justify-between px-6 py-4;
-		@apply bg-white border-b border-gray-200;
+		@apply bg-surface border-b border-gray-200;
 	}
 
 	:global(.dark) .skeleton-header {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-table {
@@ -83,16 +83,16 @@
 	}
 
 	:global(.dark) .skeleton-table {
-		border-color: #303032;
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-thead {
-		@apply flex bg-white px-4 py-3 border-b border-gray-300;
+		@apply flex bg-surface px-4 py-3 border-b border-gray-300;
 	}
 
 	:global(.dark) .skeleton-thead {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-th {
@@ -100,11 +100,11 @@
 	}
 
 	.skeleton-tbody {
-		@apply bg-white;
+		@apply bg-surface;
 	}
 
 	:global(.dark) .skeleton-tbody {
-		background-color: #121212;
+		background-color: rgb(var(--gray-900));
 	}
 
 	.skeleton-tr {
@@ -112,7 +112,7 @@
 	}
 
 	:global(.dark) .skeleton-tr {
-		border-color: #303032;
+		border-color: rgb(var(--gray-700));
 	}
 
 	.skeleton-tr.even {
@@ -132,7 +132,7 @@
 	}
 
 	:global(.dark) .skeleton-status {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 </style>

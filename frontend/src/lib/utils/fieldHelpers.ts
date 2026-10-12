@@ -183,7 +183,7 @@ export function getFieldStyleClasses(field: Field | { style?: string; importance
 	// Style-based coloring
 	switch (field.style) {
 		case 'Strong':
-			classes.push('text-nav-blue dark:text-blue-400 font-bold');
+			classes.push('text-heading dark:text-blue-400 font-bold');
 			break;
 		case 'Attention':
 			classes.push('text-orange-600 dark:text-orange-400 font-medium');

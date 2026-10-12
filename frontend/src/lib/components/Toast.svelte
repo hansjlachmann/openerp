@@ -86,7 +86,7 @@
 	:global(.dark) .toast-info {
 		background-color: rgba(0, 131, 143, 0.15);
 		border-color: rgba(0, 131, 143, 0.3);
-		color: #66b9bf;
+		color: rgb(var(--accent-300));
 	}
 
 	.toast-icon {

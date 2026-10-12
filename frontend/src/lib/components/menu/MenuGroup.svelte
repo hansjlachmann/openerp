@@ -37,7 +37,7 @@
 {#if isFlatItem}
 	<!-- Flat menu item - direct link, no dropdown -->
 	<button
-		class="menu-button px-4 py-2 hover:bg-white/10 rounded transition-colors flex items-center gap-2"
+		class="menu-button px-4 py-2 hover:bg-appbar-fg/10 rounded transition-colors flex items-center gap-2"
 		onclick={handleFlatItemClick}
 	>
 		{#if group.icon}
@@ -49,7 +49,7 @@
 	<!-- Grouped menu item - has dropdown -->
 	<div class="menu-group relative" use:clickOutside={{ callback: closeMenu, enabled: isOpen }}>
 		<button
-			class="menu-button px-4 py-2 hover:bg-white/10 rounded transition-colors flex items-center gap-2"
+			class="menu-button px-4 py-2 hover:bg-appbar-fg/10 rounded transition-colors flex items-center gap-2"
 			onclick={toggleMenu}
 		>
 			{#if group.icon}
@@ -60,7 +60,7 @@
 		</button>
 
 		{#if isOpen && group.items}
-			<div class="menu-dropdown absolute top-full left-0 mt-1 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-200 min-w-64 z-50">
+			<div class="menu-dropdown absolute top-full left-0 mt-1 bg-surface text-gray-800 rounded-lg shadow-xl border border-gray-200 min-w-64 z-50">
 				{#each group.items as item}
 					{#if item.separator}
 						<div class="menu-separator border-t border-gray-200 my-1"></div>
@@ -71,7 +71,7 @@
 							disabled={!item.page_id}
 						>
 							{#if item.icon}
-								<span class="icon text-nav-blue mt-0.5">{item.icon}</span>
+								<span class="icon text-heading mt-0.5">{item.icon}</span>
 							{/if}
 							<div class="flex-1">
 								<div class="font-medium text-gray-900">{item.name}</div>

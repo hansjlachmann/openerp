@@ -470,7 +470,7 @@
 	}
 
 	.lookup-input {
-		@apply w-full px-2 py-1 pr-8 text-left bg-white border border-gray-300 rounded;
+		@apply w-full px-2 py-1 pr-8 text-left bg-surface border border-gray-300 rounded;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 		@apply disabled:opacity-50 disabled:cursor-not-allowed;
 		min-height: 2rem;
@@ -478,9 +478,9 @@
 	}
 
 	:global(.dark) .lookup-input {
-		background-color: var(--color-bg-input, #1e1e1e);
-		border-color: var(--color-border-secondary, #303032);
-		color: var(--color-text-primary, #f7f7f7);
+		background-color: var(--color-bg-input, rgb(var(--gray-800)));
+		border-color: var(--color-border-secondary, rgb(var(--gray-700)));
+		color: var(--color-text-primary, rgb(var(--gray-50)));
 	}
 
 	.lookup-input.input-error {
@@ -496,7 +496,7 @@
 	}
 
 	:global(.dark) .lookup-arrow-btn:hover {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.lookup-arrow {
@@ -549,14 +549,14 @@
 		min-width: 100%;
 		max-height: 300px;
 		margin-top: 2px;
-		@apply bg-white border border-gray-300 rounded shadow-lg;
+		@apply bg-surface border border-gray-300 rounded shadow-lg;
 		overflow: hidden;
 	}
 
 	/* Dark mode: rows on the blank page background, highlighted row grey */
 	:global(.dark) .lookup-panel {
-		background-color: #121212;
-		border-color: #303032;
+		background-color: rgb(var(--gray-900));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.lookup-header {
@@ -566,8 +566,8 @@
 	}
 
 	:global(.dark) .lookup-header {
-		background-color: #1e1e1e;
-		border-color: #303032;
+		background-color: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-700));
 	}
 
 	.lookup-header-cell {
@@ -576,7 +576,7 @@
 	}
 
 	:global(.dark) .lookup-header-cell {
-		color: var(--color-text-secondary, #a4b0c4);
+		color: var(--color-text-secondary, rgb(var(--gray-400)));
 	}
 
 	.lookup-body {
@@ -590,7 +590,7 @@
 	}
 
 	:global(.dark) .lookup-row:hover {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.lookup-row.selected {
@@ -606,7 +606,7 @@
 	}
 
 	:global(.dark) .lookup-row.focused {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.lookup-row.selected.focused {
@@ -614,7 +614,7 @@
 	}
 
 	:global(.dark) .lookup-row.selected.focused {
-		background-color: #303032;
+		background-color: rgb(var(--gray-700));
 	}
 
 	.lookup-cell {
@@ -623,8 +623,8 @@
 	}
 
 	:global(.dark) .lookup-cell {
-		border-color: var(--color-border-secondary, #303032);
-		color: var(--color-text-primary, #f7f7f7);
+		border-color: var(--color-border-secondary, rgb(var(--gray-700)));
+		color: var(--color-text-primary, rgb(var(--gray-50)));
 	}
 
 	.lookup-cell:last-child {

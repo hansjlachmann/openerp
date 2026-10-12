@@ -82,20 +82,20 @@
 
 <style>
 	.page-header {
-		@apply bg-white border-b border-gray-200 px-6 py-4;
+		@apply bg-surface border-b border-gray-200 px-6 py-4;
 	}
 
 	:global(.dark) .page-header {
-		background-color: #1e1e1e; /* gray-800 */
-		border-color: #303032; /* gray-700 */
+		background-color: rgb(var(--gray-800)); /* gray-800 */
+		border-color: rgb(var(--gray-700)); /* gray-700 */
 	}
 
 	.header-title {
-		@apply text-2xl font-bold text-nav-blue;
+		@apply text-2xl font-bold text-heading;
 	}
 
 	:global(.dark) .header-title {
-		color: #37a1a5; /* blue-400 */
+		color: rgb(var(--accent-400)); /* blue-400 */
 	}
 
 	.header-subtitle {
@@ -103,7 +103,7 @@
 	}
 
 	:global(.dark) .header-subtitle {
-		color: #a4b0c4; /* gray-400 */
+		color: rgb(var(--gray-400)); /* gray-400 */
 	}
 
 	.close-button {
@@ -111,11 +111,11 @@
 	}
 
 	:global(.dark) .close-button {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	:global(.dark) .close-button:hover {
-		color: #f2f2f3;
-		background-color: #303032;
+		color: rgb(var(--gray-100));
+		background-color: rgb(var(--gray-700));
 	}
 </style>

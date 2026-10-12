@@ -94,7 +94,7 @@
 <div class="container mx-auto px-4 py-8">
 	<div class="max-w-4xl mx-auto">
 		<div class="text-center mb-8">
-			<h1 class="text-3xl font-bold text-nav-blue dark:text-blue-400 mb-2">{t(HOME.TITLE)}</h1>
+			<h1 class="text-3xl font-bold text-heading dark:text-blue-400 mb-2">{t(HOME.TITLE)}</h1>
 			<p class="text-gray-600 dark:text-gray-400">
 				{t(HOME.DESCRIPTION)}
 			</p>
@@ -123,7 +123,7 @@
 											data-group={groupIndex}
 											data-page-id={item.page_id}
 											onclick={() => navigateToPage(item.page_id!)}
-											class="menu-item block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
+											class="menu-item block text-heading dark:text-blue-400 hover:underline cursor-pointer"
 										>
 											{item.name}
 										</button>
@@ -136,7 +136,7 @@
 									data-group={groupIndex}
 									data-page-id={group.page_id}
 									onclick={() => navigateToPage(group.page_id!)}
-									class="menu-item block text-nav-blue dark:text-blue-400 hover:underline cursor-pointer"
+									class="menu-item block text-heading dark:text-blue-400 hover:underline cursor-pointer"
 								>
 									{group.name}
 								</button>

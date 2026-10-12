@@ -91,14 +91,14 @@
 	}
 
 	.modal-content {
-		@apply bg-white rounded-lg shadow-2xl;
+		@apply bg-surface rounded-lg shadow-2xl;
 		@apply w-full max-h-[90vh] overflow-hidden;
 		@apply flex flex-col;
 		animation: modalFadeIn 0.2s ease-out;
 	}
 
 	:global(.dark) .modal-content {
-		background-color: #1e1e1e; /* gray-800 */
+		background-color: rgb(var(--gray-800)); /* gray-800 */
 	}
 
 	@keyframes modalFadeIn {

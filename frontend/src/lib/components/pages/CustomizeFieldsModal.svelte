@@ -230,11 +230,11 @@
 
 	.customize-header {
 		@apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-surface dark:bg-gray-800;
 	}
 
 	.customize-title {
-		@apply text-xl font-bold text-nav-blue dark:text-blue-400;
+		@apply text-xl font-bold text-heading dark:text-blue-400;
 	}
 
 	.customize-subtitle {
@@ -251,7 +251,7 @@
 	}
 
 	.field-item {
-		@apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
+		@apply bg-surface dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 		@apply hover:border-blue-300 dark:hover:border-blue-700 transition-colors;
 		@apply flex items-center gap-2;
 		cursor: grab;
@@ -313,7 +313,7 @@
 
 	.section-select {
 		@apply text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-600;
-		@apply bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+		@apply bg-surface dark:bg-gray-700 text-gray-900 dark:text-gray-100;
 		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 		@apply cursor-pointer;
 	}
@@ -326,7 +326,7 @@
 	.customize-footer {
 		@apply flex items-center justify-between px-6 py-4;
 		@apply border-t border-gray-200 dark:border-gray-700;
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-surface dark:bg-gray-800;
 	}
 
 	.footer-actions {

@@ -3470,18 +3470,18 @@
 	/* BC column header: light background with bold dark text (dark mode: dark header) */
 	.table th {
 		@apply px-4 py-3 text-left text-sm font-bold;
-		background-color: #ffffff;
-		color: #212121;
-		border-right: 1px solid #e5e7e9;
-		border-bottom: 1px solid #d3d6da;
+		background-color: rgb(var(--surface));
+		color: rgb(var(--fg));
+		border-right: 1px solid rgb(var(--gray-200));
+		border-bottom: 1px solid rgb(var(--gray-300));
 		position: sticky;
 		top: 0;
 		z-index: 10;
 	}
 
 	:global(.dark) .table th {
-		background-color: #1e1e1e;
-		color: #f7f7f7;
+		background-color: rgb(var(--gray-800));
+		color: rgb(var(--gray-50));
 		border-right-color: rgba(255, 255, 255, 0.1);
 		border-bottom-color: rgba(255, 255, 255, 0.2);
 	}
@@ -3504,15 +3504,15 @@
 		max-width: 50px;
 		text-align: center;
 		font-size: 0.75rem;
-		color: #737d8a;
-		border-right: 1px solid #d3d6da;
-		border-bottom: 1px solid #d3d6da;
+		color: rgb(var(--gray-500));
+		border-right: 1px solid rgb(var(--gray-300));
+		border-bottom: 1px solid rgb(var(--gray-300));
 	}
 
 	:global(.dark) .row-number-cell {
 		color: white;
 		background-color: rgb(30 30 30); /* gray-800 - matches normal columns */
-		border-color: #505c6d; /* gray-600 */
+		border-color: rgb(var(--gray-600)); /* gray-600 */
 	}
 
 	.resize-handle {
@@ -3571,11 +3571,11 @@
 	}
 
 	th.drag-over {
-		box-shadow: inset 3px 0 0 #008489;
+		box-shadow: inset 3px 0 0 rgb(var(--accent-600));
 	}
 
 	:global(.dark) th.drag-over {
-		box-shadow: inset 3px 0 0 #37a1a5;
+		box-shadow: inset 3px 0 0 rgb(var(--accent-400));
 	}
 
 	.th-content[draggable='true'] {
@@ -3635,49 +3635,44 @@
 	}
 
 	.table tbody tr.row-odd {
-		@apply bg-white;
+		@apply bg-surface;
 		@apply dark:bg-gray-900;
 	}
 
+	/* Selected rows: --row-selected (app.css; light: accent-100, dark: a neutral gray lighter
+	   than the hover row, so many selected rows do not dominate the list) */
 	.table tbody tr.selected {
-		background-color: #cce8ea !important; /* bg-blue-100 */
+		background-color: rgb(var(--row-selected)) !important;
 	}
 
 	.table tbody tr.selected:hover {
-		background-color: #cce8ea !important;
+		background-color: rgb(var(--row-selected-hover)) !important;
 	}
 
-	/* Dark mode: a neutral gray, lighter than the hover row (#303032), so many selected rows
-	   do not dominate the list */
 	:global(.dark) .table tbody tr.selected {
-		background-color: #3c4047 !important;
-		color: #f7f7f7;
-	}
-
-	:global(.dark) .table tbody tr.selected:hover {
-		background-color: #454a52 !important;
+		color: rgb(var(--gray-50));
 	}
 
 	:global(.dark) .table tbody tr.selected td,
 	:global(.dark) .table tbody tr.selected .read-cell-content {
-		color: #f7f7f7 !important;
+		color: rgb(var(--gray-50)) !important;
 	}
 
 	/* Cursor row while several rows are selected (it may be selected or not) */
 	.table tbody tr.cursor-row td:first-child {
-		box-shadow: inset 3px 0 0 #008489;
+		box-shadow: inset 3px 0 0 rgb(var(--accent-600));
 	}
 
 	:global(.dark) .table tbody tr.cursor-row td:first-child {
-		box-shadow: inset 3px 0 0 #37a1a5;
+		box-shadow: inset 3px 0 0 rgb(var(--accent-400));
 	}
 
 	.table tbody tr.new-row {
-		background-color: #e6f3f4 !important;
+		background-color: rgb(var(--accent-50)) !important;
 	}
 
 	:global(.dark) .table tbody tr.new-row {
-		background-color: #003a3e !important; /* Dark teal background for new rows */
+		background-color: rgb(var(--accent-900)) !important; /* Dark teal background for new rows */
 	}
 
 	.table td {
@@ -3692,9 +3687,9 @@
 	}
 
 	:global(.dark) .status-bar {
-		background-color: #1e1e1e; /* gray-800 */
-		border-color: #303032; /* gray-700 */
-		color: #d3d6da; /* gray-300 */
+		background-color: rgb(var(--gray-800)); /* gray-800 */
+		border-color: rgb(var(--gray-700)); /* gray-700 */
+		color: rgb(var(--gray-300)); /* gray-300 */
 	}
 
 	.lookup-cell-wrapper {
@@ -3743,7 +3738,7 @@
 	}
 
 	:global(.dark) tbody tr:not(.selected) td.p-0 {
-		background: #121212; /* BC dark mode: list rows on the page background */
+		background: rgb(var(--gray-900)); /* BC dark mode: list rows on the page background */
 	}
 
 	/* Selected rows - make td background transparent to show row highlight */
@@ -3811,26 +3806,26 @@
 		flex-shrink: 0;
 		padding: 0 4px;
 		font-size: 0.5rem;
-		color: #737d8a;
+		color: rgb(var(--gray-500));
 		cursor: pointer;
 		line-height: 1;
 	}
 
 	.cell-selected-lookup-arrow:hover {
-		color: #008489;
+		color: rgb(var(--accent-600));
 	}
 
 	:global(.dark) .cell-selected-lookup-arrow {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	:global(.dark) .cell-selected-lookup-arrow:hover {
-		color: #37a1a5;
+		color: rgb(var(--accent-400));
 	}
 
 	/* Primary key link - looks like a hyperlink */
 	.primary-key-link {
-		color: #008489;
+		color: rgb(var(--accent-600));
 		text-decoration: underline;
 		background: none;
 		border: none;
@@ -3841,15 +3836,15 @@
 	}
 
 	.primary-key-link:hover {
-		color: #006e72;
+		color: rgb(var(--accent-700));
 	}
 
 	:global(.dark) .primary-key-link {
-		color: #37a1a5;
+		color: rgb(var(--accent-400));
 	}
 
 	:global(.dark) .primary-key-link:hover {
-		color: #66b9bf;
+		color: rgb(var(--accent-300));
 	}
 
 	/* Quick Search Styles */
@@ -3863,12 +3858,12 @@
 	}
 
 	:global(.dark) .search-icon {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	.search-input {
 		@apply pl-9 pr-8 py-1.5 text-sm rounded-md border border-gray-300;
-		@apply bg-white text-gray-900;
+		@apply bg-surface text-gray-900;
 		@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 		width: 200px;
 		transition: width 0.2s ease;
@@ -3883,17 +3878,17 @@
 	}
 
 	:global(.dark) .search-input {
-		background-color: #303032;
-		border-color: #505c6d;
+		background-color: rgb(var(--gray-700));
+		border-color: rgb(var(--gray-600));
 		color: white;
 	}
 
 	:global(.dark) .search-input::placeholder {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	:global(.dark) .search-input:focus {
-		border-color: #00838f;
+		border-color: rgb(var(--accent-500));
 		box-shadow: 0 0 0 2px rgba(0, 131, 143, 0.3);
 	}
 
@@ -3903,12 +3898,12 @@
 	}
 
 	:global(.dark) .clear-search-btn {
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	:global(.dark) .clear-search-btn:hover {
-		color: #d3d6da;
-		background-color: #505c6d;
+		color: rgb(var(--gray-300));
+		background-color: rgb(var(--gray-600));
 	}
 
 	/* Header save indicator (same as CardPage) */
@@ -3937,26 +3932,16 @@
 		cursor: pointer;
 	}
 
-	/* Value in the selected cell looks like selected text (BC): blue in light mode, grey in
-	   dark mode. Typing replaces it; F2 puts the cursor at the end. */
+	/* Value in the selected cell looks like selected text (BC): --text-sel-* (app.css; blue in
+	   light mode, grey in dark mode). Typing replaces it; F2 puts the cursor at the end. */
 	.cell-selected-text {
-		background-color: #0078d4;
-		color: #ffffff;
-	}
-
-	:global(.dark) .cell-selected-text {
-		background-color: #505c6d;
-		color: #f7f7f7;
+		background-color: rgb(var(--text-sel-bg));
+		color: rgb(var(--text-sel-fg));
 	}
 
 	/* Text selected inside a cell being edited: same colors */
 	.edit-cell-input::selection {
-		background-color: #0078d4;
-		color: #ffffff;
-	}
-
-	:global(.dark) .edit-cell-input::selection {
-		background-color: #505c6d;
-		color: #f7f7f7;
+		background-color: rgb(var(--text-sel-bg));
+		color: rgb(var(--text-sel-fg));
 	}
 </style>

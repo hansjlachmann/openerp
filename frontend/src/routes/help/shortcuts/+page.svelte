@@ -99,7 +99,7 @@
 		text-align: left;
 		font-weight: 600;
 		padding: 0.375rem 0.5rem;
-		color: #505c6d;
+		color: rgb(var(--gray-600));
 		border-bottom: 1px solid #e0e0e0;
 	}
 
@@ -116,7 +116,7 @@
 
 	.key-sep {
 		margin: 0 0.25rem;
-		color: #a4b0c4;
+		color: rgb(var(--gray-400));
 	}
 
 	kbd {
@@ -127,24 +127,24 @@
 		font-size: 0.8125rem;
 		text-align: center;
 		color: #212121;
-		background: #f7f7f7;
+		background: rgb(var(--gray-50));
 		border: 1px solid #c8c8c8;
 		border-bottom-width: 2px;
 		border-radius: 0.25rem;
 	}
 
 	:global(.dark) .help-table th {
-		color: #a4b0c4;
-		border-bottom-color: #303032;
+		color: rgb(var(--gray-400));
+		border-bottom-color: rgb(var(--gray-700));
 	}
 
 	:global(.dark) .help-table td {
-		border-bottom-color: #303032;
+		border-bottom-color: rgb(var(--gray-700));
 	}
 
 	:global(.dark) kbd {
-		color: #f7f7f7;
-		background: #1e1e1e;
-		border-color: #505c6d;
+		color: rgb(var(--gray-50));
+		background: rgb(var(--gray-800));
+		border-color: rgb(var(--gray-600));
 	}
 </style>
