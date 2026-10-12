@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.96](https://github.com/hansjlachmann/openerp/compare/v0.1.95...v0.1.96) (2026-10-12)
+
+
+### Features
+
+* **home:** Welcome to EasyopenERP, tip to learn the keyboard shortcuts ([5acaf14](https://github.com/hansjlachmann/openerp/commit/5acaf14cb318609a93b68e516685907794ae1a59))
+* **theme:** color themes per user, chosen in an Appearance dialog ([f480212](https://github.com/hansjlachmann/openerp/commit/f480212de4d20a553a50f98ad40f37dcf4cd1349))
+* **theme:** every user can install, update and remove their own themes ([594486a](https://github.com/hansjlachmann/openerp/commit/594486a15e9887c8822f653a4690912bb6426140))
+* **theme:** font, font size and list density per user ([b174eaf](https://github.com/hansjlachmann/openerp/commit/b174eaf15fcf5b1abd7b0bca57f525a4ac789768))
+* **theme:** install Omarchy themes from GitHub ([1b8e68a](https://github.com/hansjlachmann/openerp/commit/1b8e68a4b5f6272e1dea03a1e5c74622d794ad9b))
+* **theme:** installed themes are per user ([ab60a01](https://github.com/hansjlachmann/openerp/commit/ab60a0147e4f9a77548e7a6b2c3cbee09862a298))
+* **theme:** link to the Omarchy theme gallery in the install box ([9966bb0](https://github.com/hansjlachmann/openerp/commit/9966bb0674e2aab4850a17f1467e29d5cc26453e))
+* **theme:** wallpapers of installed themes ([4c17845](https://github.com/hansjlachmann/openerp/commit/4c178453ffa86f966540141f1b17d84b433b9b85))
+
+
+### Code Refactoring
+
+* **theme:** colors as CSS variables (no visual change) ([7b96820](https://github.com/hansjlachmann/openerp/commit/7b968204b48cecc60d445c6ebbf1fd814bf11fdf))
+
+
+### Documentation
+
+* TODO — list and card adjustments of 2026-10-12, Ctrl+F7 note for Phase 3 ([ade08ed](https://github.com/hansjlachmann/openerp/commit/ade08ed4d3645b1f3485083c631becfb6ed852a3))
+* TODO — themes and appearance done, codeunit permission gap (high priority) ([83f58e8](https://github.com/hansjlachmann/openerp/commit/83f58e853b763c4002898b5fee105b5644b4d056))
+
 ## [0.1.95](https://github.com/hansjlachmann/openerp/compare/v0.1.94...v0.1.95) (2026-10-12)
 
 
