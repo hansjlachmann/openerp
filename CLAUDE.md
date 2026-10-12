@@ -8,6 +8,12 @@ OpenERP is a full-stack ERP system inspired by Microsoft Dynamics NAV/Business C
 
 **Required runtimes**: Go 1.24, Node.js 22. Always target these versions.
 
+## Business Logic (ABSOLUTE RULE)
+
+**Business logic is always coded in the backend** — in the YAML definitions (tables, fields, relations, FlowFields, keys, pages' sources) or in the Go code (table triggers `OnInsert`/`OnModify`/`OnDelete`/`OnRename`/`OnValidate_*`, codeunits, `backend/business-logic/…`). Business rules, validations, calculations, defaults, posting and delete rules never live in the frontend: the frontend only shows data, collects input and calls the API, and the backend enforces every rule (also for API calls that do not come from the UI).
+- Definition: a change that does not affect the backend is **not** business logic by definition (layout, navigation, keyboard handling, styling, client-side convenience). A change that adds or changes a business rule must be made in the backend YAML or Go code.
+- Business logic work is collected in `TODO.md` under "Business Logic (later)".
+
 ## Public Repository (ABSOLUTE RULE)
 
 This repository is **public** on GitHub, and so are its issues, pull requests, release notes and the container images on ghcr.io. Everything committed or pushed is readable by anyone, and stays in the git history even after it is deleted from the files.

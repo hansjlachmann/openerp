@@ -35,6 +35,51 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## Business Logic (later)
+
+All business logic updates are collected here and dealt with later (decided by the user
+2026-10-12): rules in table triggers, posting, new business tables. Framework, UI and operations
+work goes on in the other sections.
+
+### Delete rules (data safety)
+- [ ] OnDelete checks so a delete cannot leave orphaned or inconsistent data — more important now
+      that lists delete several records at once (bulk delete rolls back all and names the record).
+      Examples: a customer with ledger entries (BC: not with open entries / a balance), a payment
+      term or country/region still used by customers, a language still set on users or Job Queue
+      jobs, a user role still assigned in User Members, a menu still assigned to users. Each a
+      translated message naming the reason (`apperrors`, CLAUDE.md trigger rule).
+
+### Posting and ledger entries
+- [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
+      exists (BC: posted ledger entries are not editable).
+- [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
+      and Dimensions are simplified with no `table_relation`s; add proper relations.
+
+### New business tables
+- [ ] New business tables (items, sales documents, ...) get demo data in the same change.
+
+### Generated table trigger stubs
+
+These come from the tablegen template (`tools/tablegen/main.go:2751,2762,2803`) and are
+stamped into every generated table file. Each carries three stubs:
+`// TODO: Add checks for related records (if any)` (in `OnDelete`),
+`// TODO: Update related records if needed`, and
+`// TODO: Add your custom business logic methods here`.
+
+Fill in only where real per-table logic is actually needed — most are intentional boilerplate.
+
+- [ ] `backend/business-logic/tables/customer.go` (46, 52, 125)
+- [ ] `backend/business-logic/tables/customerledgerentry.go` (45, 51, 115)
+- [ ] `backend/business-logic/tables/paymentterms.go` (44, 50, 77)
+- [ ] `backend/business-logic/tables/jobqueue.go` (44, 50, 80)
+- [ ] `backend/business-logic/tables/jobqueueentry.go` (44, 50, 80)
+- [ ] `backend/business-logic/tables/menu.go` (44, 50, 80)
+- [ ] `backend/business-logic/tables/language.go` (44, 50, 124)
+- [ ] `backend/business-logic/tables/user.go` (58)
+- [ ] `backend/business-logic/tables/userpreferences.go` (48, 65)
+
+---
+
 ## Feature: Job Queue — e-mail notification to one or more addresses ✅ DONE (2026-10-08)
 
 Tested by the user locally (docker compose, 2026-10-08): scheduled run of codeunit 50020 e-mailed
@@ -403,8 +448,6 @@ Open follow-ups:
       action "Ledger Entries"/Ctrl+F7 filtered to the customer). Found on the way: actions without
       `enabled: true` were disabled (Go bool default) and pages naming their table by registry name got
       no primary key fields — both fixed.
-- [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
-      exists (BC: posted ledger entries are not editable).
 - [x] New User (modal card) failed with "User number cannot be empty" on Windows (Chrome and Edge):
       the browser's password manager filled the saved login into the card's password field before a
       User ID was typed, and the card inserted at once, then blocked the modal. Cards (modal and page)
@@ -488,33 +531,11 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       DropColumn/RenameColumn already used native modern-SQLite syntax.
 - [x] `backend/business-logic/tables/user.go` — `User.OnDelete` now cascade-deletes the
       user's `User_Preferences` rows (added `GetDBType()` getter to the tablegen template).
-- [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
-      and Dimensions are simplified with no `table_relation`s; add proper relations.
 - [x] Codeunits broke on PostgreSQL: they opened tables with `.Init(db, company)`, which always used the
       SQLite database type (`?` placeholders). The three affected codeunits (50000–50002) were old CLI
       leftovers that nothing registered or called — deleted. `Init` itself is removed from the `Table`
       interface, the tablegen templates and the wrappers, so only `InitWithDBType` exists and the
       compiler rejects the mistake. (The table relation validators had the same bug; fixed earlier.)
-
-## Backend — Generated Table Scaffold Stubs
-
-These come from the tablegen template (`tools/tablegen/main.go:2751,2762,2803`) and are
-stamped into every generated table file. Each carries three stubs:
-`// TODO: Add checks for related records (if any)` (in `OnDelete`),
-`// TODO: Update related records if needed`, and
-`// TODO: Add your custom business logic methods here`.
-
-Fill in only where real per-table logic is actually needed — most are intentional boilerplate.
-
-- [ ] `backend/business-logic/tables/customer.go` (46, 52, 125)
-- [ ] `backend/business-logic/tables/customerledgerentry.go` (45, 51, 115)
-- [ ] `backend/business-logic/tables/paymentterms.go` (44, 50, 77)
-- [ ] `backend/business-logic/tables/jobqueue.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/jobqueueentry.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/menu.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/language.go` (44, 50, 124)
-- [ ] `backend/business-logic/tables/user.go` (58)
-- [ ] `backend/business-logic/tables/userpreferences.go` (48, 65)
 
 ## Frontend
 
@@ -771,7 +792,6 @@ Remaining:
       permission is kept).
 - [ ] Company display name can only be set on the Companies page (11) after creating the company; the
       login page "New company" form takes only the technical name.
-- [ ] New business tables (items, sales documents, ...) get demo data in the same change.
 
 ---
 
