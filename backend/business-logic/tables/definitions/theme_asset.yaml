@@ -15,7 +15,7 @@ table:
         table: Theme
         field: code
 
-    # preview, thumb, bg-1 .. bg-5
+    # preview, thumb, bg-1 .. bg-5 (wallpapers), tb-1 .. tb-5 (their thumbnails)
     - name: name
       type: types.Code
       db_name: name

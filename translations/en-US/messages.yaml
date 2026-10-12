@@ -141,6 +141,12 @@ messages:
   APPEARANCE_REMOVE: "Remove"
   APPEARANCE_REMOVE_CONFIRM: "Remove the theme \"%1\"? Users who chose it get the default theme."
   APPEARANCE_FROM: "from %1"
+  APPEARANCE_WALLPAPER: "Wallpaper"
+  APPEARANCE_WALLPAPER_NONE: "None"
+  APPEARANCE_NO_WALLPAPERS: "The theme in use has no wallpapers. Themes installed from GitHub often bring some."
+  APPEARANCE_WALLPAPER_OPACITY: "Wallpaper visibility"
+  APPEARANCE_WALLPAPER_BLUR: "Wallpaper blur"
+  APPEARANCE_PANEL_OPACITY: "Panel opacity"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Keyboard Shortcuts"

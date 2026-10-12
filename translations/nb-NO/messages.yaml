@@ -141,6 +141,12 @@ messages:
   APPEARANCE_REMOVE: "Fjern"
   APPEARANCE_REMOVE_CONFIRM: "Fjerne temaet «%1»? Brukere som har valgt det, får standardtemaet."
   APPEARANCE_FROM: "fra %1"
+  APPEARANCE_WALLPAPER: "Bakgrunnsbilde"
+  APPEARANCE_WALLPAPER_NONE: "Ingen"
+  APPEARANCE_NO_WALLPAPERS: "Temaet som er i bruk, har ingen bakgrunnsbilder. Temaer installert fra GitHub har ofte noen."
+  APPEARANCE_WALLPAPER_OPACITY: "Bakgrunnsbildets synlighet"
+  APPEARANCE_WALLPAPER_BLUR: "Bakgrunnsbildets uskarphet"
+  APPEARANCE_PANEL_OPACITY: "Panelenes dekkevne"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Hurtigtaster"

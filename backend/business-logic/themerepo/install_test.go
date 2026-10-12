@@ -140,7 +140,7 @@ func TestInstallRefreshAndDelete(t *testing.T) {
 	}
 	var asset tables.ThemeAsset
 	asset.InitWithDBType(in.DB, "", in.DBType)
-	for _, name := range []string{"preview", "thumb", "bg-1", "bg-2"} {
+	for _, name := range []string{"preview", "thumb", "bg-1", "bg-2", "tb-1", "tb-2"} {
 		if !asset.GetByPK(types.NewCode("STARSEND"), types.NewCode(name)) {
 			t.Errorf("asset %s missing", name)
 			continue

@@ -5,7 +5,7 @@
 	import { session } from '$stores/session';
 	import { currentUser } from '$lib/stores/user';
 	import { toast } from '$lib/stores/toast';
-	import { theme } from '$lib/stores/theme';
+	import { theme, wallpaperUrl } from '$lib/stores/theme';
 	import { loadTranslations } from '$lib/services/i18n.svelte';
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
@@ -41,6 +41,11 @@
 		}
 	});
 </script>
+
+{#if $wallpaperUrl && !detached}
+	<!-- Wallpaper of the active theme (Appearance); app.css: .wallpaper-layer, has-wallpaper -->
+	<div class="wallpaper-layer" aria-hidden="true" style:background-image={`url("${$wallpaperUrl}")`}></div>
+{/if}
 
 <div class="min-h-screen flex flex-col">
 	{#if !detached}

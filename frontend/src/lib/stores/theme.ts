@@ -5,6 +5,7 @@ import { api } from '$lib/services/api';
 import {
 	applyMode,
 	cacheFor,
+	themeAssetUrl,
 	THEME_CACHE_KEY,
 	type Appearance,
 	type AppearanceSettings,
@@ -35,9 +36,41 @@ let cache: ThemeCache | null = browser ? readCache() : null;
 /** The user's appearance from the backend (null until loaded / logged out) */
 export const appearance = writable<Appearance | null>(null);
 
+/** URL of the wallpaper shown now (the active theme's chosen wallpaper), null for none */
+export const wallpaperUrl = writable<string | null>(null);
+
+/**
+ * The wallpaper of a mode: the setting names bg-1 … bg-5 of the active theme; a theme with
+ * fewer wallpapers shows its first, a theme without wallpapers none.
+ */
+export function wallpaperFor(a: Appearance | null, mode: Mode): string | null {
+	const name = a?.settings.wallpaper;
+	const th = a ? (mode === 'light' ? a.light : a.dark) : null;
+	if (!name || !th || th.source !== 'github' || !th.wallpapers) return null;
+	const n = Number(name.slice(3));
+	return themeAssetUrl(th, `bg-${n >= 1 && n <= th.wallpapers ? n : 1}`);
+}
+
+/** Wallpaper layer, its opacity/blur and the panel opacity (CSS variables on <html>) */
+function applyWallpaper(mode: Mode) {
+	const a = get(appearance);
+	const url = wallpaperFor(a, mode);
+	wallpaperUrl.set(url);
+	const html = document.documentElement;
+	html.classList.toggle('has-wallpaper', !!url);
+	if (url && a) {
+		html.style.setProperty('--wp-opacity', String(Math.min(Math.max(a.settings.wallpaper_opacity, 0), 100) / 100));
+		html.style.setProperty('--wp-blur', `${Math.min(Math.max(a.settings.wallpaper_blur, 0), 20)}px`);
+		html.style.setProperty('--panel-alpha', String(Math.min(Math.max(a.settings.panel_opacity, 75), 100) / 100));
+	} else {
+		for (const v of ['--wp-opacity', '--wp-blur', '--panel-alpha']) html.style.removeProperty(v);
+	}
+}
+
 function show(mode: Mode) {
 	if (!browser) return;
 	applyMode(mode, cache?.[mode] ?? {});
+	applyWallpaper(mode);
 	setString(THEME_STORAGE_KEY, mode);
 	if (cache) {
 		cache.mode = mode;
@@ -103,6 +136,7 @@ export function chooseTheme(t: Theme): Promise<Appearance> {
 /** Forgets the user's appearance (logout); the cached colors stay for the login page */
 export function clearAppearance() {
 	appearance.set(null);
+	if (browser) applyWallpaper(get(modeStore));
 }
 
 // Initialize the mode on page load (app.html has applied the cached colors already)

@@ -79,7 +79,7 @@ type UserPersonalizationBase struct {
 	Light_theme types.Code `db:"light_theme"`
 	Dark_theme types.Code `db:"dark_theme"`
 	Mode UserPersonalizationMode `db:"mode"`
-	Wallpaper types.Code `db:"wallpaper"`
+	Wallpaper types.Text `db:"wallpaper"`
 	Wallpaper_opacity int `db:"wallpaper_opacity"`
 	Wallpaper_blur int `db:"wallpaper_blur"`
 	Panel_opacity int `db:"panel_opacity"`
@@ -519,7 +519,7 @@ func (t *UserPersonalizationBase) GetByPK(user_id types.Code) bool {
 	t.Light_theme = types.NewCode(light_themeNull.String)
 	t.Dark_theme = types.NewCode(dark_themeNull.String)
 	t.Mode = UserPersonalizationMode(modeInt)
-	t.Wallpaper = types.NewCode(wallpaperNull.String)
+	t.Wallpaper = types.NewText(wallpaperNull.String)
 	t.Wallpaper_opacity = wallpaper_opacityVal
 	t.Wallpaper_blur = wallpaper_blurVal
 	t.Panel_opacity = panel_opacityVal
@@ -789,7 +789,7 @@ func (t *UserPersonalizationBase) hasFieldChanged(fieldName string) bool {
 			return t.Mode != old
 		}
 	case "wallpaper":
-		if old, ok := oldValue.(types.Code); ok {
+		if old, ok := oldValue.(types.Text); ok {
 			return !t.Wallpaper.Equal(old)
 		}
 	case "wallpaper_opacity":
@@ -1243,7 +1243,7 @@ func (t *UserPersonalizationBase) FindFirst() bool {
 	t.Light_theme = types.NewCode(light_themeNull.String)
 	t.Dark_theme = types.NewCode(dark_themeNull.String)
 	t.Mode = UserPersonalizationMode(modeInt)
-	t.Wallpaper = types.NewCode(wallpaperNull.String)
+	t.Wallpaper = types.NewText(wallpaperNull.String)
 	t.Font = UserPersonalizationFont(fontInt)
 	t.Density = UserPersonalizationDensity(densityInt)
 	t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
@@ -1302,7 +1302,7 @@ func (t *UserPersonalizationBase) FindLast() bool {
 	t.Light_theme = types.NewCode(light_themeNull.String)
 	t.Dark_theme = types.NewCode(dark_themeNull.String)
 	t.Mode = UserPersonalizationMode(modeInt)
-	t.Wallpaper = types.NewCode(wallpaperNull.String)
+	t.Wallpaper = types.NewText(wallpaperNull.String)
 	t.Font = UserPersonalizationFont(fontInt)
 	t.Density = UserPersonalizationDensity(densityInt)
 	t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
@@ -1451,7 +1451,7 @@ func (t *UserPersonalizationBase) Next(steps ...int) bool {
 		t.Light_theme = types.NewCode(light_themeNull.String)
 		t.Dark_theme = types.NewCode(dark_themeNull.String)
 		t.Mode = UserPersonalizationMode(modeInt)
-		t.Wallpaper = types.NewCode(wallpaperNull.String)
+		t.Wallpaper = types.NewText(wallpaperNull.String)
 		t.Font = UserPersonalizationFont(fontInt)
 		t.Density = UserPersonalizationDensity(densityInt)
 		t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
@@ -1541,7 +1541,7 @@ func (t *UserPersonalizationBase) FindSetBuffered() bool {
 		record.Light_theme = types.NewCode(light_themeNull.String)
 		record.Dark_theme = types.NewCode(dark_themeNull.String)
 		record.Mode = UserPersonalizationMode(modeInt)
-		record.Wallpaper = types.NewCode(wallpaperNull.String)
+		record.Wallpaper = types.NewText(wallpaperNull.String)
 		record.Font = UserPersonalizationFont(fontInt)
 		record.Density = UserPersonalizationDensity(densityInt)
 		record.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
@@ -1803,10 +1803,10 @@ func (t *UserPersonalizationBase) ValidateField(fieldName string, value interfac
 		return t.OnValidate_Mode()
 	case "wallpaper":
 		// Set field value
-		if v, ok := value.(types.Code); ok {
+		if v, ok := value.(types.Text); ok {
 			t.Wallpaper = v
 		} else if v, ok := value.(string); ok {
-			t.Wallpaper = types.NewCode(v)
+			t.Wallpaper = types.NewText(v)
 		} else {
 			return fmt.Errorf("invalid type for field wallpaper")
 		}
@@ -2159,7 +2159,7 @@ func (t *UserPersonalizationBase) FromMap(data map[string]interface{}) {
 	}
 	if v, ok := data["wallpaper"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Wallpaper = types.NewCode(s)
+			t.Wallpaper = types.NewText(s)
 		}
 	}
 	if v, ok := data["wallpaper_opacity"]; ok && v != nil {
@@ -2292,7 +2292,7 @@ func (t *UserPersonalizationBase) GetFields() []tables.FieldInfo {
 		},
 		{
 			Name:       "wallpaper",
-			Type:       tables.FieldTypeCode,
+			Type:       tables.FieldTypeText,
 			Length:     20,
 			Required:   false,
 			Editable:   true,

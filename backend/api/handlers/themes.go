@@ -153,7 +153,7 @@ func (h *ThemesHandler) DeleteTheme(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(map[string]string{"code": code}))
 }
 
-var assetNameRe = regexp.MustCompile(`^(preview|thumb|bg-[1-5])$`)
+var assetNameRe = regexp.MustCompile(`^(preview|thumb|bg-[1-5]|tb-[1-5])$`)
 
 // GetThemeAsset serves an image of an installed theme. The images were re-encoded on
 // install; they are sent with their exact type, no sniffing and a CSP that allows nothing,
@@ -287,7 +287,7 @@ func (h *ThemesHandler) SaveAppearance(c *fiber.Ctx) error {
 		rec.Mode = gtables.UserPersonalizationMode(i)
 	}
 	if in.Wallpaper != nil {
-		rec.Wallpaper = types.NewCode(*in.Wallpaper)
+		rec.Wallpaper = types.NewText(*in.Wallpaper)
 	}
 	if in.WallpaperOpacity != nil {
 		rec.Wallpaper_opacity = *in.WallpaperOpacity

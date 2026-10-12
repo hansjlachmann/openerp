@@ -37,7 +37,7 @@ table:
 
     # Wallpaper: asset name of the dark/light theme (blank = none), its opacity and blur
     - name: wallpaper
-      type: types.Code
+      type: types.Text
       db_name: wallpaper
       caption: Wallpaper
       length: 20

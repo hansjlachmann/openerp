@@ -105,6 +105,8 @@ func TestAppearanceDefaultsSaveAndChecks(t *testing.T) {
 		`{"font_size":300}`:                 "between 80 and 150",
 		`{"mode":"sepia"}`:                  "",
 		`{"font":"comic_sans"}`:             "",
+		`{"wallpaper":"../../etc/passwd"}`:  "format",
+		`{"wallpaper":"bg-9"}`:              "format",
 	}
 	for body, want := range bad {
 		code, out := putJSON(t, app, "/api/appearance", body)

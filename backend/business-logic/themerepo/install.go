@@ -160,6 +160,9 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 		}
 		n++
 		assets = append(assets, asset{fmt.Sprintf("bg-%d", n), img})
+		if tb, err := themes.Thumbnail(img); err == nil {
+			assets = append(assets, asset{fmt.Sprintf("tb-%d", n), tb}) // for the wallpaper picker
+		}
 		if thumbSource == nil {
 			thumbSource = &img
 		}

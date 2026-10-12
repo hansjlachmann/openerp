@@ -214,6 +214,42 @@
 	}
 }
 
+/* Wallpaper (Appearance): a fixed layer behind the page (routes/+layout.svelte), blended over
+   the solid page background (<html>) with --wp-opacity, so text on the bare page stays
+   readable. While it is shown, the page containers are transparent and the panels take the
+   user's panel opacity (--panel-alpha, 0.75 .. 1); dropdowns, dialogs, the sticky column
+   header and the selected row stay opaque. No backdrop-filter: it would make every panel a
+   stacking context and trap the dropdowns inside it. */
+.wallpaper-layer {
+	position: fixed;
+	inset: calc(var(--wp-blur, 0px) * -2);
+	z-index: -1;
+	background-size: cover;
+	background-position: center;
+	opacity: var(--wp-opacity, 0.25);
+	filter: blur(var(--wp-blur, 0px));
+	pointer-events: none;
+}
+
+/* Tailwind backgrounds take their alpha from --tw-bg-opacity (keeps the zebra rows) */
+html.has-wallpaper :is(.menu-bar, nav[aria-label='Breadcrumb'], .list-page tbody tr) {
+	--tw-bg-opacity: var(--panel-alpha, 1) !important;
+}
+
+html.has-wallpaper :is(.card, .status-bar, .page-header, .filter-pane) {
+	background-color: rgb(var(--surface) / var(--panel-alpha, 1)) !important;
+}
+
+html.dark.has-wallpaper :is(.card, .status-bar, .page-header, .filter-pane) {
+	background-color: rgb(var(--gray-800) / var(--panel-alpha, 1)) !important;
+}
+
+html.has-wallpaper body,
+html.has-wallpaper .card-page,
+html.has-wallpaper .card-page .page-header {
+	background-color: transparent !important;
+}
+
 /* Scrollbar styling - wide, BC colors (sampled from docs/BC-Screenshot-*.png) */
 ::-webkit-scrollbar {
 	width: 16px;

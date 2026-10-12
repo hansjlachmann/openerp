@@ -141,6 +141,12 @@ messages:
   APPEARANCE_REMOVE: "Fjern"
   APPEARANCE_REMOVE_CONFIRM: "Fjern temaet \"%1\"? Brugere, der har valgt det, får standardtemaet."
   APPEARANCE_FROM: "fra %1"
+  APPEARANCE_WALLPAPER: "Baggrundsbillede"
+  APPEARANCE_WALLPAPER_NONE: "Ingen"
+  APPEARANCE_NO_WALLPAPERS: "Temaet i brug har ingen baggrundsbilleder. Temaer installeret fra GitHub har ofte nogle."
+  APPEARANCE_WALLPAPER_OPACITY: "Baggrundsbilledets synlighed"
+  APPEARANCE_WALLPAPER_BLUR: "Baggrundsbilledets sløring"
+  APPEARANCE_PANEL_OPACITY: "Panelernes dækkeevne"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Genvejstaster"

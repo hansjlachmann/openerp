@@ -5,8 +5,8 @@
 	import { t, APPEARANCE } from '$lib/services/i18n.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
-	import { appearance, chooseTheme, loadAppearance } from '$lib/stores/theme';
-	import type { Theme, ThemeList } from '$lib/theme/apply';
+	import { appearance, chooseTheme, loadAppearance, saveAppearance } from '$lib/stores/theme';
+	import { themeAssetUrl, type AppearanceSettings, type Theme, type ThemeList } from '$lib/theme/apply';
 
 	interface Props {
 		onclose: () => void;
@@ -24,6 +24,28 @@
 	const lightThemes = $derived(themes.filter((th) => th.mode === 'light'));
 	const darkThemes = $derived(themes.filter((th) => th.mode === 'dark'));
 	const settings = $derived($appearance?.settings);
+	/** The theme in use now (the slot of the current mode) — its wallpapers can be chosen */
+	const activeTheme = $derived($appearance ? ($appearance.settings.mode === 'light' ? $appearance.light : $appearance.dark) : null);
+	const wallpaperCount = $derived(activeTheme?.source === 'github' ? activeTheme.wallpapers : 0);
+
+	async function save(patch: Partial<AppearanceSettings>) {
+		try {
+			await saveAppearance(patch);
+		} catch (err: any) {
+			toast.error(err?.message ?? String(err));
+		}
+	}
+
+	// Sliders: the change shows at once (CSS variables), the save follows when the slider rests
+	let sliderTimer: ReturnType<typeof setTimeout> | undefined;
+	function slide(field: 'wallpaper_opacity' | 'wallpaper_blur' | 'panel_opacity', value: number) {
+		const html = document.documentElement;
+		if (field === 'wallpaper_opacity') html.style.setProperty('--wp-opacity', String(value / 100));
+		if (field === 'wallpaper_blur') html.style.setProperty('--wp-blur', `${value}px`);
+		if (field === 'panel_opacity') html.style.setProperty('--panel-alpha', String(value / 100));
+		clearTimeout(sliderTimer);
+		sliderTimer = setTimeout(() => save({ [field]: value }), 400);
+	}
 
 	async function reload() {
 		try {
@@ -192,6 +214,61 @@
 			</form>
 		{/if}
 
+		{#if settings && activeTheme}
+			<section class="theme-section wallpaper-section">
+				<h3 class="section-title">{t(APPEARANCE.WALLPAPER)} <span class="current-mode">— {activeTheme.name}</span></h3>
+				{#if wallpaperCount === 0}
+					<p class="hint">{t(APPEARANCE.NO_WALLPAPERS)}</p>
+				{:else}
+					<div class="wallpaper-grid" role="radiogroup" aria-label={t(APPEARANCE.WALLPAPER)}>
+						<button
+							type="button"
+							role="radio"
+							aria-checked={!settings.wallpaper}
+							class="wallpaper-option none"
+							class:selected={!settings.wallpaper}
+							onclick={() => save({ wallpaper: '' })}
+						>
+							{t(APPEARANCE.WALLPAPER_NONE)}
+						</button>
+						{#each Array.from({ length: wallpaperCount }, (_, i) => i + 1) as n (n)}
+							<button
+								type="button"
+								role="radio"
+								aria-checked={settings.wallpaper === `bg-${n}`}
+								aria-label={`${t(APPEARANCE.WALLPAPER)} ${n}`}
+								class="wallpaper-option"
+								class:selected={settings.wallpaper === `bg-${n}`}
+								onclick={() => save({ wallpaper: `bg-${n}` })}
+								data-wallpaper={`bg-${n}`}
+							>
+								<img src={themeAssetUrl(activeTheme, `tb-${n}`)} alt="" loading="lazy" />
+							</button>
+						{/each}
+					</div>
+					{#if settings.wallpaper}
+						<div class="sliders">
+							<label>
+								<span>{t(APPEARANCE.WALLPAPER_OPACITY)}</span>
+								<input type="range" min="0" max="100" step="5" value={settings.wallpaper_opacity}
+									oninput={(e) => slide('wallpaper_opacity', +e.currentTarget.value)} />
+							</label>
+							<label>
+								<span>{t(APPEARANCE.WALLPAPER_BLUR)}</span>
+								<input type="range" min="0" max="20" step="1" value={settings.wallpaper_blur}
+									oninput={(e) => slide('wallpaper_blur', +e.currentTarget.value)} />
+							</label>
+							<label>
+								<span>{t(APPEARANCE.PANEL_OPACITY)}</span>
+								<input type="range" min="75" max="100" step="1" value={settings.panel_opacity}
+									oninput={(e) => slide('panel_opacity', +e.currentTarget.value)} />
+							</label>
+						</div>
+					{/if}
+				{/if}
+			</section>
+		{/if}
+
 		{#each [{ list: lightThemes, mode: 'light', title: APPEARANCE.LIGHT_THEMES }, { list: darkThemes, mode: 'dark', title: APPEARANCE.DARK_THEMES }] as section (section.mode)}
 			<section class="theme-section" data-mode={section.mode}>
 				<h3 class="section-title">
@@ -300,6 +377,38 @@
 
 	.theme-name {
 		@apply mt-2 flex items-center justify-between text-sm text-fg;
+	}
+
+	.wallpaper-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+		gap: 0.5rem;
+	}
+
+	.wallpaper-option {
+		@apply h-20 rounded border-2 border-gray-200 dark:border-gray-700 overflow-hidden text-sm text-fg;
+		@apply hover:border-primary-500 focus-visible:border-primary-500;
+	}
+
+	.wallpaper-option.selected {
+		@apply border-primary-600 dark:border-primary-400;
+	}
+
+	.wallpaper-option img {
+		@apply w-full h-full object-cover;
+	}
+
+	.sliders {
+		@apply mt-3 grid gap-2;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	}
+
+	.sliders label {
+		@apply flex flex-col text-sm text-gray-600 dark:text-gray-400 gap-1;
+	}
+
+	.sliders input[type='range'] {
+		accent-color: rgb(var(--accent-600));
 	}
 
 	.theme-source {

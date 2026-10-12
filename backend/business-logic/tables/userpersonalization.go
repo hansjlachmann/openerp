@@ -1,6 +1,8 @@
 package tables
 
 import (
+	"regexp"
+
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -18,6 +20,8 @@ import (
 type UserPersonalization struct {
 	gtables.UserPersonalizationBase
 }
+
+var wallpaperName = regexp.MustCompile(`^bg-[1-5]$`)
 
 // Limits of the appearance settings
 const (
@@ -122,6 +126,10 @@ func (t *UserPersonalization) Validate() error {
 		if err := ftables.CheckRange(table, "font_size", t.Font_size, FontSizeMin, FontSizeMax); err != nil {
 			return err
 		}
+	}
+	// Wallpaper: blank (none) or one of the active theme's wallpapers bg-1 … bg-5
+	if w := t.Wallpaper.String(); w != "" && !wallpaperName.MatchString(w) {
+		return apperrors.FieldFormat(table, "wallpaper", "bg-1 … bg-5")
 	}
 	if !t.Mode.IsValid() {
 		return apperrors.FieldOutOfRange(table, "mode", "0", "1")
