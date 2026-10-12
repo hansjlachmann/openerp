@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.95](https://github.com/hansjlachmann/openerp/compare/v0.1.94...v0.1.95) (2026-10-12)
+
+
+### Features
+
+* **list:** copy/paste of records, drag-select and keyboard filtering with Ctrl+F7 ([da07e34](https://github.com/hansjlachmann/openerp/commit/da07e34399c131a91180b3d0fd5d7dfc6aaaf68e))
+
+
+### Bug Fixes
+
+* "Error Loading Page" explains an expired session and offers a new login ([228c15b](https://github.com/hansjlachmann/openerp/commit/228c15b97d83430f6aac2c72ff82a59f0d317771))
+
+
+### Documentation
+
+* business logic rule (backend only) and a Business Logic section in the TODO ([48739dc](https://github.com/hansjlachmann/openerp/commit/48739dc69dab8cd725af6c5a8d74c42698fa17cc))
+
 ## [0.1.94](https://github.com/hansjlachmann/openerp/compare/v0.1.93...v0.1.94) (2026-10-11)
 
 
