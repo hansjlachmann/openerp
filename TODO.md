@@ -30,6 +30,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       v0.1.91, login works, a NAV report Job Queue entry runs (`NAV_PROXY_URL` from `prod.env`).
       Next upgrades: back to plain `git pull`, then `APP_VERSION=…`, `scripts/prod.sh pull && up -d`
       (`docs/operations.md`). 0.1.89 and 0.1.90 have no frontend image — never use them.
+- [ ] **Security: permission check on codeunits** — any logged-in user can run any codeunit; see
+      "⚠ Security: codeunits run without a permission check" below (decide the rule first).
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
@@ -43,8 +45,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       roles can start demo data (50100), SIFT Verify/Repair (50110), the NAV Report Runner or Send Test
       E-mail. Decide the rule (BC: execute permission per object, e.g. a Permission row for the codeunit,
       or at least Modify/Insert on the codeunit's `SourceTable()`), check it in both handlers and in the
-      Job Queue (a scheduled job runs as the user who set it up?), add tests. The theme install endpoints
-      check their permission themselves for this reason.
+      Job Queue (a scheduled job runs as the user who set it up?), add tests. (Theme install/update/remove
+      are endpoints, not codeunits, and open to every user for their own themes — not affected.)
 
 ## Feature: Themes and appearance ✅ DONE (2026-10-12)
 
