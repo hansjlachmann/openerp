@@ -704,7 +704,7 @@ func (t *UserBase) renameReferences(field string, oldValue, newValue interface{}
 		column string
 	}
 	references := map[string][]reference{
-		"user_id": {{"User_Personalization", true, "user_id"}, {"User_Member", true, "user_id"}, },
+		"user_id": {{"User_Personalization", true, "user_id"}, {"User_Theme", true, "user_id"}, {"User_Member", true, "user_id"}, },
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)

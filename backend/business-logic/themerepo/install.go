@@ -73,8 +73,9 @@ func NewInstaller(db *sql.DB, dbType database.DBType) *Installer {
 	return in
 }
 
-// Install installs the theme of a GitHub repository URL. Installing a repository that is
-// installed already refreshes it.
+// Install adds the theme of a GitHub repository URL to the user's themes. A repository that
+// is installed already (by any user) is only added to the user's themes — the files are
+// stored once — without downloading it again (Refresh updates it).
 func (in *Installer) Install(ctx context.Context, repoURL, userID string) (Result, error) {
 	repo, err := themes.ParseRepoURL(repoURL)
 	if err != nil {
@@ -92,7 +93,18 @@ func (in *Installer) Install(ctx context.Context, repoURL, userID string) (Resul
 	if err != nil {
 		return Result{}, err
 	}
-	if !existing && in.count() >= MaxInstalledThemes {
+	if existing {
+		var rec tables.Theme
+		rec.InitWithDBType(in.DB, "", in.DBType)
+		if !rec.Get(code) {
+			return Result{}, ErrNotInstalled
+		}
+		if err := tables.AddUserTheme(in.DB, in.DBType, userID, code); err != nil {
+			return Result{}, err
+		}
+		return Result{Code: code, Name: rec.Name.String(), Mode: modeName(rec.Mode), Commit: rec.Commit_sha.String(), Unchanged: true}, nil
+	}
+	if in.count() >= MaxInstalledThemes {
 		return Result{}, ErrTooMany
 	}
 	return in.install(ctx, repo, code, userID, "")
@@ -227,6 +239,10 @@ func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, comm
 		return fmt.Errorf("saving theme %s failed", code)
 	}
 
+	if err := tables.AddUserTheme(tx, in.DBType, userID, code); err != nil {
+		return err
+	}
+
 	var old tables.ThemeAsset
 	old.InitWithDBType(tx, "", in.DBType)
 	old.SetRange("theme_code", code)
@@ -246,6 +262,75 @@ func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, comm
 		}
 	}
 	return nil
+}
+
+// LinkInstallers adds every installed theme to the themes of the user who installed it,
+// when it is not in anybody's themes (themes installed before themes were per user). Run
+// at startup; does nothing when every theme has a user.
+func LinkInstallers(db *sql.DB, dbType database.DBType) (int, error) {
+	var rec tables.Theme
+	rec.InitWithDBType(db, "", dbType)
+	type orphan struct{ code, user string }
+	var orphans []orphan
+	if rec.FindSet() {
+		for {
+			var links tables.UserTheme
+			links.InitWithDBType(db, "", dbType)
+			links.SetRange("theme_code", rec.Code.String())
+			if links.Count() == 0 && rec.Installed_by.String() != "" {
+				orphans = append(orphans, orphan{rec.Code.String(), rec.Installed_by.String()})
+			}
+			if !rec.Next() {
+				break
+			}
+		}
+	}
+	for _, o := range orphans {
+		if err := tables.AddUserTheme(db, dbType, o.user, o.code); err != nil {
+			return 0, err
+		}
+	}
+	return len(orphans), nil
+}
+
+// Remove takes an installed theme off the user's themes; the files are deleted when no user
+// has the theme any more. removed is false when the user did not have it.
+func (in *Installer) Remove(userID, code string) (removed bool, err error) {
+	if _, ok := themes.Builtin(code); ok {
+		return false, ErrBuiltin
+	}
+	tx, err := in.DB.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	var link tables.UserTheme
+	link.InitWithDBType(tx, "", in.DBType)
+	if !link.GetByPK(types.NewCode(userID), types.NewCode(code)) {
+		_ = tx.Rollback()
+		return false, nil
+	}
+	if !link.Delete(true) {
+		return false, fmt.Errorf("removing theme %s failed", code)
+	}
+	var others tables.UserTheme
+	others.InitWithDBType(tx, "", in.DBType)
+	others.SetRange("theme_code", code)
+	if others.Count() == 0 {
+		var rec tables.Theme
+		rec.InitWithDBType(tx, "", in.DBType)
+		if rec.Get(code) && !rec.Delete(true) {
+			return false, fmt.Errorf("deleting theme %s failed", code)
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 var codeChars = regexp.MustCompile(`[^A-Z0-9]+`)

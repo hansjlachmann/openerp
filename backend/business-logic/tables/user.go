@@ -61,11 +61,16 @@ func (t *User) OnDelete(db database.Executor, company string) error {
 	prefs.SetRange("user_id", t.User_id.String())
 	prefs.DeleteAll()
 
-	// The user's appearance (global table)
+	// The user's appearance and theme list (global tables); an installed theme nobody has
+	// any more stays until it is deleted on the Themes page
 	var pers UserPersonalization
 	pers.InitWithDBType(db, "", t.GetDBType())
 	pers.SetRange("user_id", t.User_id.String())
 	pers.DeleteAll()
+	var links UserTheme
+	links.InitWithDBType(db, "", t.GetDBType())
+	links.SetRange("user_id", t.User_id.String())
+	links.DeleteAll()
 	return nil
 }
 

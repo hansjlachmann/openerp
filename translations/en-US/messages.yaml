@@ -143,7 +143,7 @@ messages:
   APPEARANCE_UPDATED: "Theme \"%1\" updated"
   APPEARANCE_UP_TO_DATE: "Theme \"%1\" is up to date"
   APPEARANCE_REMOVE: "Remove"
-  APPEARANCE_REMOVE_CONFIRM: "Remove the theme \"%1\"? Users who chose it get the default theme."
+  APPEARANCE_REMOVE_CONFIRM: "Remove the theme \"%1\" from your themes? Other users who added it keep it."
   APPEARANCE_FROM: "from %1"
   APPEARANCE_WALLPAPER: "Wallpaper"
   APPEARANCE_WALLPAPER_NONE: "None"

@@ -155,7 +155,7 @@ func (t *UserPersonalization) OnValidate_Dark_theme() error {
 
 func (t *UserPersonalization) checkThemeSlot(field, code, mode string) error {
 	table := gtables.UserPersonalizationTableName
-	theme, ok := ThemeByCode(t.GetDB(), t.GetDBType(), code)
+	theme, ok := UserThemeByCode(t.GetDB(), t.GetDBType(), t.User_id.String(), code)
 	if !ok {
 		return apperrors.RelatedNotFound(table, field, code)
 	}

@@ -801,7 +801,7 @@ func (t *ThemeBase) renameReferences(field string, oldValue, newValue interface{
 		column string
 	}
 	references := map[string][]reference{
-		"code": {{"Theme_Asset", true, "theme_code"}, },
+		"code": {{"Theme_Asset", true, "theme_code"}, {"User_Theme", true, "theme_code"}, },
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)

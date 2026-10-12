@@ -323,3 +323,11 @@ tables:
       height: "Height"
       sha256: "SHA-256"
       data: "Data"
+
+  # User Theme (Table 5163)
+  user_theme:
+    caption: "User Theme"
+    fields:
+      user_id: "User ID"
+      theme_code: "Theme Code"
+      added_at: "Added At"

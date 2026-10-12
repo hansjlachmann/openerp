@@ -63,8 +63,9 @@ type appearanceResponse struct {
 	Dark     themes.Theme       `json:"dark"`
 }
 
-// themeList is the theme gallery: every theme a user can choose, and what the user may do
-// with installed themes (Theme table permissions)
+// themeList is the user's theme gallery: the built-in themes and the installed themes the
+// user added, and what the user may do (Theme table permissions: Insert = install and
+// remove from the own themes, Modify = update)
 type themeList struct {
 	Themes     []themes.Theme `json:"themes"`
 	CanInstall bool           `json:"can_install"`
@@ -72,19 +73,20 @@ type themeList struct {
 	CanDelete  bool           `json:"can_delete"`
 }
 
-// ListThemes returns the themes a user can choose: built-in, then installed
+// ListThemes returns the themes the user can choose: built-in, then the user's installed ones
 // GET /api/themes
 func (h *ThemesHandler) ListThemes(c *fiber.Ctx) error {
 	sess := getSession(c)
-	if sess == nil {
+	if sess == nil || sess.GetUserID() == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
-	list := append(append([]themes.Theme{}, themes.Builtins()...), tables.InstalledThemes(h.db, h.dbType)...)
+	list := append(append([]themes.Theme{}, themes.Builtins()...), tables.UserThemes(h.db, h.dbType, sess.GetUserID())...)
+	canInstall := sess.HasPermission(gtables.ThemeTableName, session.PermInsert)
 	return c.JSON(apitypes.NewSuccessResponse(themeList{
 		Themes:     list,
-		CanInstall: sess.HasPermission(gtables.ThemeTableName, session.PermInsert),
+		CanInstall: canInstall,
 		CanRefresh: sess.HasPermission(gtables.ThemeTableName, session.PermModify),
-		CanDelete:  sess.HasPermission(gtables.ThemeTableName, session.PermDelete),
+		CanDelete:  canInstall,
 	}))
 }
 
@@ -108,12 +110,16 @@ func (h *ThemesHandler) InstallTheme(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(res))
 }
 
-// RefreshTheme downloads an installed theme again (Modify permission on Theme)
+// RefreshTheme downloads one of the user's installed themes again (Modify permission on
+// Theme); the files are shared, so every user who has the theme gets the update
 // POST /api/themes/:code/refresh
 func (h *ThemesHandler) RefreshTheme(c *fiber.Ctx) error {
 	sess, lang, err := h.themeAdmin(c, session.PermModify)
 	if err != nil {
 		return err
+	}
+	if !tables.UserHasTheme(h.db, h.dbType, sess.GetUserID(), c.Params("code")) {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(themeErrorMessage(themerepo.ErrNotInstalled, lang)))
 	}
 	res, rerr := h.installer.Refresh(context.Background(), c.Params("code"), sess.GetUserID())
 	if rerr != nil {
@@ -122,33 +128,22 @@ func (h *ThemesHandler) RefreshTheme(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(res))
 }
 
-// DeleteTheme removes an installed theme and its images (Delete permission on Theme)
+// DeleteTheme removes an installed theme from the user's themes (Insert permission on Theme,
+// like installing); its files are deleted when no user has it any more. Deleting a theme
+// for every user is done on the Themes page (Delete permission).
 // DELETE /api/themes/:code
 func (h *ThemesHandler) DeleteTheme(c *fiber.Ctx) error {
-	_, lang, err := h.themeAdmin(c, session.PermDelete)
+	sess, lang, err := h.themeAdmin(c, session.PermInsert)
 	if err != nil {
 		return err
 	}
 	code := c.Params("code")
-	if _, builtin := themes.Builtin(code); builtin {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(themeErrorMessage(themerepo.ErrBuiltin, lang)))
+	removed, rerr := h.installer.Remove(sess.GetUserID(), code)
+	if rerr != nil {
+		return c.Status(themeErrorStatus(rerr)).JSON(apitypes.NewErrorResponse(themeErrorMessage(rerr, lang)))
 	}
-	tx, terr := h.db.Begin()
-	if terr != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(gtables.ThemeTableName, code).Message(lang)))
-	}
-	var rec tables.Theme
-	rec.InitWithDBType(tx, "", h.dbType)
-	if !rec.Get(code) {
-		_ = tx.Rollback()
+	if !removed {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(themeErrorMessage(themerepo.ErrNotInstalled, lang)))
-	}
-	if !rec.Delete(true) {
-		_ = tx.Rollback()
-		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(gtables.ThemeTableName, code).Message(lang)))
-	}
-	if err := tx.Commit(); err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(gtables.ThemeTableName, code).Message(lang)))
 	}
 	return c.JSON(apitypes.NewSuccessResponse(map[string]string{"code": code}))
 }
@@ -161,11 +156,12 @@ var assetNameRe = regexp.MustCompile(`^(preview|thumb|bg-[1-5]|tb-[1-5])$`)
 // the browser may keep them.
 // GET /api/themes/:code/assets/:name
 func (h *ThemesHandler) GetThemeAsset(c *fiber.Ctx) error {
-	if sess := getSession(c); sess == nil || sess.GetUserID() == "" {
+	sess := getSession(c)
+	if sess == nil || sess.GetUserID() == "" {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	name := c.Params("name")
-	if !assetNameRe.MatchString(name) {
+	if !assetNameRe.MatchString(name) || !tables.UserHasTheme(h.db, h.dbType, sess.GetUserID(), c.Params("code")) {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	var rec tables.ThemeAsset
@@ -348,7 +344,7 @@ func (h *ThemesHandler) load(userID string) (*tables.UserPersonalization, bool) 
 // default theme of its mode.
 func (h *ThemesHandler) appearanceOf(rec *tables.UserPersonalization, saved bool) appearanceResponse {
 	slot := func(code, fallback string) themes.Theme {
-		if t, ok := tables.ThemeByCode(h.db, h.dbType, code); ok {
+		if t, ok := tables.UserThemeByCode(h.db, h.dbType, rec.User_id.String(), code); ok {
 			return t
 		}
 		t, _ := themes.Builtin(fallback)

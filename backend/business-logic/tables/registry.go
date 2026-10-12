@@ -45,6 +45,9 @@ func init() {
 	RegisterTableFactory("Theme_Asset", gtables.ThemeAssetTableID, func() ftables.Table {
 		return &ThemeAsset{}
 	})
+	RegisterTableFactory("User_Theme", gtables.UserThemeTableID, func() ftables.Table {
+		return &UserTheme{}
+	})
 	RegisterTableFactory("Language", gtables.LanguageTableID, func() ftables.Table {
 		return &Language{}
 	})

@@ -323,3 +323,11 @@ tables:
       height: "Højde"
       sha256: "SHA-256"
       data: "Data"
+
+  # Brugertema (Table 5163)
+  user_theme:
+    caption: "Brugertema"
+    fields:
+      user_id: "Bruger-id"
+      theme_code: "Temakode"
+      added_at: "Tilføjet"

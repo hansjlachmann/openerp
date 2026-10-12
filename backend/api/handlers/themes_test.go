@@ -12,6 +12,8 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	"github.com/hansjlachmann/openerp/backend/foundation/themes"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 func newThemesTestApp(t *testing.T, userID string) *fiber.App {
@@ -23,7 +25,7 @@ func newThemesTestApp(t *testing.T, userID string) *fiber.App {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}} {
+	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}, &tables.UserTheme{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
 		}
@@ -37,6 +39,8 @@ func newThemesTestApp(t *testing.T, userID string) *fiber.App {
 	app.Get("/api/themes", h.ListThemes)
 	app.Get("/api/appearance", h.GetAppearance)
 	app.Put("/api/appearance", h.SaveAppearance)
+	app.Get("/api/themes/:code/assets/:name", h.GetThemeAsset)
+	app.Delete("/api/themes/:code", h.DeleteTheme)
 	return app
 }
 
@@ -145,5 +149,67 @@ func TestListThemes(t *testing.T) {
 		if !codes[c] {
 			t.Errorf("theme %s missing from %v", c, codes)
 		}
+	}
+}
+
+// Installed themes are per user: a user sees, chooses and gets the images of only the
+// themes they added
+func TestInstalledThemesArePerUser(t *testing.T) {
+	admin := newThemesTestApp(t, "ADMIN")
+	hans := newThemesTestApp(t, "HANS")
+
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	nord, _ := themes.Builtin("NORD")
+	tok, _ := json.Marshal(nord.Tokens)
+	var th tables.Theme
+	th.InitWithDBType(db, "", database.DBTypeSQLite)
+	th.Code, th.Name, th.Tokens, th.Installed_by = types.NewCode("DUNE"), types.NewText("Dune"), types.NewText(string(tok)), types.NewCode("ADMIN")
+	th.Repo_url = types.NewText("https://github.com/o/omarchy-dune-theme")
+	if !th.Insert(true) {
+		t.Fatalf("insert theme: %v", th.TriggerError())
+	}
+	var asset tables.ThemeAsset
+	asset.InitWithDBType(db, "", database.DBTypeSQLite)
+	asset.Theme_code, asset.Name, asset.Content_type, asset.Data = types.NewCode("DUNE"), types.NewCode("bg-1"), types.NewText("image/jpeg"), []byte{0xff, 0xd8, 0xff}
+	if !asset.Insert(true) {
+		t.Fatal("insert asset")
+	}
+	if err := tables.AddUserTheme(db, database.DBTypeSQLite, "ADMIN", "DUNE"); err != nil {
+		t.Fatal(err)
+	}
+
+	listed := func(app *fiber.App) bool {
+		_, out := getJSON(t, app, "/api/themes")
+		for _, item := range out["data"].(map[string]interface{})["themes"].([]interface{}) {
+			if item.(map[string]interface{})["code"] == "DUNE" {
+				return true
+			}
+		}
+		return false
+	}
+	if !listed(admin) || listed(hans) {
+		t.Errorf("listed: ADMIN %v, HANS %v (want true, false)", listed(admin), listed(hans))
+	}
+	status := func(app *fiber.App) int {
+		resp, _ := app.Test(httptest.NewRequest("GET", "/api/themes/DUNE/assets/bg-1", nil))
+		return resp.StatusCode
+	}
+	if status(admin) != 200 || status(hans) != 404 {
+		t.Errorf("asset: ADMIN %d, HANS %d (want 200, 404)", status(admin), status(hans))
+	}
+	if code, out := putJSON(t, hans, "/api/appearance", `{"dark_theme":"DUNE"}`); code != 400 {
+		t.Errorf("HANS chose ADMIN's theme: %d %v", code, out)
+	}
+	if code, _ := putJSON(t, admin, "/api/appearance", `{"dark_theme":"DUNE"}`); code != 200 {
+		t.Errorf("ADMIN could not choose his theme: %d", code)
+	}
+	// HANS cannot remove ADMIN's theme
+	resp, _ := hans.Test(httptest.NewRequest("DELETE", "/api/themes/DUNE", nil))
+	if resp.StatusCode != 404 || !listed(admin) {
+		t.Errorf("HANS remove = %d, ADMIN still has it %v", resp.StatusCode, listed(admin))
 	}
 }

@@ -1,0 +1,36 @@
+table:
+  id: 5163
+  name: User_Theme
+  caption: User Theme
+  description: The installed themes a user has added (each user sees only their own; the files are stored once in Theme / Theme_Asset)
+  global: true
+  fields:
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      caption: User ID
+      primary_key: true
+      length: 50
+      table_relation:
+        table: User
+        field: user_id
+
+    - name: theme_code
+      type: types.Code
+      db_name: theme_code
+      caption: Theme Code
+      primary_key: true
+      length: 50
+      table_relation:
+        table: Theme
+        field: code
+
+    - name: added_at
+      type: types.DateTime
+      db_name: added_at
+      caption: Added At
+
+  keys:
+    - name: Primary
+      fields: [user_id, theme_code]
+      clustered: true

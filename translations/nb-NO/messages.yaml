@@ -143,7 +143,7 @@ messages:
   APPEARANCE_UPDATED: "Temaet «%1» er oppdatert"
   APPEARANCE_UP_TO_DATE: "Temaet «%1» er allerede oppdatert"
   APPEARANCE_REMOVE: "Fjern"
-  APPEARANCE_REMOVE_CONFIRM: "Fjerne temaet «%1»? Brukere som har valgt det, får standardtemaet."
+  APPEARANCE_REMOVE_CONFIRM: "Fjerne temaet «%1» fra dine temaer? Andre brukere som har lagt det til, beholder det."
   APPEARANCE_FROM: "fra %1"
   APPEARANCE_WALLPAPER: "Bakgrunnsbilde"
   APPEARANCE_WALLPAPER_NONE: "Ingen"

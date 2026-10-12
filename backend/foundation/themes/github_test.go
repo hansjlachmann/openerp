@@ -78,7 +78,7 @@ func newFakeGitHub(t *testing.T, files map[string][]byte) *fakeGitHub {
 		}
 		switch {
 		case strings.HasPrefix(r.URL.Path, "/api/repos/o/r/commits/"):
-			fmt.Fprint(w, g.commit)
+			_, _ = fmt.Fprint(w, g.commit)
 		case r.URL.Path == "/api/repos/o/r/git/trees/"+g.commit:
 			_ = json.NewEncoder(w).Encode(map[string]any{"sha": g.commit, "tree": g.tree, "truncated": g.truncated})
 		case strings.HasPrefix(r.URL.Path, "/raw/o/r/"+g.commit+"/"):
@@ -228,7 +228,7 @@ func TestFetchLimits(t *testing.T) {
 		g := newFakeGitHub(t, map[string][]byte{"colors.toml": colors})
 		g.handle = func(w http.ResponseWriter, r *http.Request) bool {
 			if strings.Contains(r.URL.Path, "/commits/") {
-				fmt.Fprint(w, "../../etc/passwd")
+				_, _ = fmt.Fprint(w, "../../etc/passwd")
 				return true
 			}
 			return false

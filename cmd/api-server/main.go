@@ -13,6 +13,7 @@ import (
 	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
 	"github.com/hansjlachmann/openerp/backend/business-logic/scheduler"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/business-logic/themerepo"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/objects"
@@ -63,6 +64,9 @@ func main() {
 	}
 	if err := registry.RegisterTable(gtables.ThemeAssetTableID, &tables.ThemeAsset{}); err != nil {
 		log.Printf("Warning: Failed to register Theme_Asset: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.UserThemeTableID, &tables.UserTheme{}); err != nil {
+		log.Printf("Warning: Failed to register User_Theme: %v\n", err)
 	}
 	if err := registry.RegisterTable(gtables.LanguageTableID, &tables.Language{}); err != nil {
 		log.Printf("Warning: Failed to register Language: %v\n", err)
@@ -200,6 +204,13 @@ func main() {
 		}
 	} else {
 		log.Println("WARNING: No OPENERP_ENCRYPTION_KEY or JWT_SECRET set - the SMTP password is stored unencrypted")
+	}
+	// Installed themes are per user (User_Theme); themes installed before that belong to the
+	// user who installed them
+	if n, err := themerepo.LinkInstallers(db.GetConnection(), secretsDBType); err != nil {
+		log.Printf("WARNING: link installed themes to their users: %v", err)
+	} else if n > 0 {
+		fmt.Printf("✓ %d installed theme(s) added to the themes of the user who installed them\n", n)
 	}
 	fmt.Println()
 

@@ -26,9 +26,10 @@ import (
 
 // fakeGitHub serves repositories owner/name → files at a commit
 type fakeGitHub struct {
-	mu    sync.Mutex
-	repos map[string]*fakeRepo
-	srv   *httptest.Server
+	mu       sync.Mutex
+	repos    map[string]*fakeRepo
+	srv      *httptest.Server
+	requests int
 }
 
 type fakeRepo struct {
@@ -41,11 +42,12 @@ func newFakeGitHub(t *testing.T) *fakeGitHub {
 	g.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g.mu.Lock()
 		defer g.mu.Unlock()
+		g.requests++
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
 		switch {
 		case len(parts) >= 6 && parts[0] == "api" && parts[4] == "commits":
 			if repo := g.repos[parts[2]+"/"+parts[3]]; repo != nil {
-				fmt.Fprint(w, repo.commit)
+				_, _ = fmt.Fprint(w, repo.commit)
 				return
 			}
 		case len(parts) >= 7 && parts[0] == "api" && parts[5] == "trees":
@@ -100,7 +102,7 @@ func newTestInstaller(t *testing.T, g *fakeGitHub) *Installer {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.Theme{}, &tables.ThemeAsset{}, &tables.UserPersonalization{}} {
+	}{&tables.Theme{}, &tables.ThemeAsset{}, &tables.UserPersonalization{}, &tables.UserTheme{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +156,7 @@ func TestInstallRefreshAndDelete(t *testing.T) {
 	}
 
 	// A user can choose it for dark mode, not for light mode
-	p := tables.DefaultUserPersonalization("ANNA")
+	p := tables.DefaultUserPersonalization("ADMIN") // the user who installed it
 	p.InitWithDBType(in.DB, "", in.DBType)
 	p.Dark_theme = types.NewCode("STARSEND")
 	if !p.Insert(true) {
@@ -243,5 +245,92 @@ func TestDisplayNames(t *testing.T) {
 		if got := displayName(in); got != want {
 			t.Errorf("displayName(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestThemesArePerUser(t *testing.T) {
+	g := newFakeGitHub(t)
+	img := testPNG(t, 32, 20, color.RGBA{200, 100, 50, 255})
+	g.set("o/omarchy-dune-theme", commitA, map[string][]byte{
+		"colors.toml":       []byte("background = \"#101010\"\nforeground = \"#eeeeee\"\n"),
+		"backgrounds/1.png": img,
+	})
+	in := newTestInstaller(t, g)
+	ctx := context.Background()
+	db, dt := in.DB, in.DBType
+	codes := func(user string) []string {
+		var out []string
+		for _, th := range tables.UserThemes(db, dt, user) {
+			out = append(out, th.Code)
+		}
+		return out
+	}
+
+	if _, err := in.Install(ctx, "https://github.com/o/omarchy-dune-theme", "ADMIN"); err != nil {
+		t.Fatal(err)
+	}
+	if got := codes("ADMIN"); len(got) != 1 || got[0] != "DUNE" {
+		t.Fatalf("ADMIN themes = %v", got)
+	}
+	// HANS does not have it: not listed, cannot choose it
+	if got := codes("HANS"); len(got) != 0 {
+		t.Errorf("HANS themes = %v, want none", got)
+	}
+	p := tables.DefaultUserPersonalization("HANS")
+	p.InitWithDBType(db, "", dt)
+	p.Dark_theme = types.NewCode("DUNE")
+	if p.Insert(true) {
+		t.Error("HANS chose a theme he has not added")
+	}
+
+	// HANS installs the same repository: added to his themes without downloading again
+	before := g.requests
+	res, err := in.Install(ctx, "https://github.com/o/omarchy-dune-theme", "HANS")
+	if err != nil || res.Code != "DUNE" || !res.Unchanged || g.requests != before {
+		t.Fatalf("second install = %+v, %v, %d requests", res, err, g.requests-before)
+	}
+	if got := codes("HANS"); len(got) != 1 {
+		t.Errorf("HANS themes = %v", got)
+	}
+
+	// ADMIN removes it: HANS keeps it, the files stay
+	if removed, err := in.Remove("ADMIN", "DUNE"); err != nil || !removed {
+		t.Fatalf("remove = %v, %v", removed, err)
+	}
+	if len(codes("ADMIN")) != 0 || len(codes("HANS")) != 1 {
+		t.Errorf("after ADMIN removed: ADMIN %v, HANS %v", codes("ADMIN"), codes("HANS"))
+	}
+	if removed, _ := in.Remove("ADMIN", "DUNE"); removed {
+		t.Error("removed twice")
+	}
+	// HANS removes it too: nobody has it, theme and images are deleted
+	if removed, err := in.Remove("HANS", "DUNE"); err != nil || !removed {
+		t.Fatalf("remove = %v, %v", removed, err)
+	}
+	if _, ok := tables.ThemeByCode(db, dt, "DUNE"); ok {
+		t.Error("theme kept after the last user removed it")
+	}
+	var asset tables.ThemeAsset
+	asset.InitWithDBType(db, "", dt)
+	if asset.GetByPK(types.NewCode("DUNE"), types.NewCode("bg-1")) {
+		t.Error("images kept after the last user removed the theme")
+	}
+	if _, err := in.Remove("HANS", "TOKYO-NIGHT"); !errors.Is(err, ErrBuiltin) {
+		t.Errorf("remove built-in: %v", err)
+	}
+
+	// Themes installed before themes were per user go to the user who installed them
+	if _, err := in.Install(ctx, "https://github.com/o/omarchy-dune-theme", "ADMIN"); err != nil {
+		t.Fatal(err)
+	}
+	var links tables.UserTheme
+	links.InitWithDBType(db, "", dt)
+	links.SetRange("theme_code", "DUNE")
+	links.DeleteAll()
+	if n, err := LinkInstallers(db, dt); err != nil || n != 1 || len(codes("ADMIN")) != 1 {
+		t.Errorf("LinkInstallers = %d, %v; ADMIN %v", n, err, codes("ADMIN"))
+	}
+	if n, _ := LinkInstallers(db, dt); n != 0 {
+		t.Errorf("LinkInstallers again = %d, want 0", n)
 	}
 }
