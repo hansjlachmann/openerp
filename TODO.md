@@ -1062,7 +1062,27 @@ Postgres. **Freeze pane left out** (decided with the user). The notes below are 
 - Header drag-to-reorder via `createDragAndDrop`, writing the same `order` field the Customize modal
   writes — one persistence format, two editors.
 
-### Phase 3 — Actions: right-click menu, related pages, Actions menu (NEXT, planned 2026-10-11)
+### List and card adjustments ✅ DONE (2026-10-12)
+- [x] **Click and drag selects rows** (navigation mode): from the pressed row to the row under the
+      mouse; near the top/bottom edge the list scrolls on. A plain click selects one row.
+- [x] **Ctrl+F7 shows/hides the filter pane** (NAV Table Filter), also from inside the pane. The field
+      picker gets the cursor with the dropdown closed: Alt+↓, arrows, Enter adds the field (arrows on
+      the closed picker only move the highlight), the cursor goes to its value box, Enter applies and
+      the cursor stays. Esc in the pane closes the pane, not the list. Ctrl+F7 on cards stays the
+      page action (Ledger Entries / Entries); on lists the filter pane wins over a page action.
+- [x] Copy/paste of records — see Frontend.
+- [x] Card pages: the "Ctrl+↑/↓ Navigate • Ctrl+Home/End First/Last" hint label is removed.
+- [x] Dark mode: selected rows are a neutral gray (`#3c4047`) instead of teal.
+- [x] "Error Loading Page" explains an expired session and offers a new login.
+
+### Phase 3 — Actions: right-click menu, related pages, Actions menu (MEDIUM priority, planned 2026-10-11)
+Priority (user, 2026-10-12): the right-click menu and related pages are **medium priority**, kept for
+later; the YAML-driven toolbar after them. Open decision before starting: the list shortcut for
+Ledger Entries / Entries (see below). Code found on 2026-10-12: `CardPage.svelte` `runPageUrl`
+(filter + `withReturn` back link from `utils/returnUrl.ts`) is the pattern to reuse in
+`ListPage.svelte` `handleAction` (it handles `run_object`, Edit, New, Delete, but not `run_page`);
+the Edit disable rule is in the toolbar's `isDisabled` (`page.page.editable !== true`, ignoring
+`card_page_id`).
 Updated plan (agreed with the user; not started). Findings in today's code: the list toolbar shows
 only `promoted` actions (a non-promoted one is reachable only by its shortcut); icons are picked by
 action name in `ListPage.svelte`; **bug:** `run_page` works on cards but does nothing on lists;
@@ -1074,7 +1094,9 @@ actions keep acting on the cursor row; only Delete acts on a multi-selection.
       them ("Delete 5 records"); Esc / click outside closes it.
 - [ ] **Related pages from lists** — fix `run_page` on list actions (open filtered to the cursor row
       via `run_page_filter_field`/`run_page_filter_value`, with the usual back link); add Ledger
-      Entries (Ctrl+F7) to the Customer List and Entries to the Job Queue list.
+      Entries to the Customer List and Entries to the Job Queue list. **Shortcut to decide:** Ctrl+F7
+      is the filter pane on lists since 2026-10-12, so these list actions need another key (cards
+      keep Ctrl+F7).
 - [ ] **YAML-driven toolbar** — `icon:` per action (new, edit, delete, refresh, run, mail, entries,
       …) instead of the name switch; `visible: false`; **non-promoted actions in one "Actions ▾"
       menu** at the end of the toolbar (decided: one menu, not BC category menus); Edit enabled on
