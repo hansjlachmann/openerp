@@ -4,8 +4,9 @@
 	import { api } from '$lib/services/api';
 	import { t, APPEARANCE } from '$lib/services/i18n.svelte';
 	import { toast } from '$lib/stores/toast';
-	import { appearance, chooseTheme } from '$lib/stores/theme';
-	import type { Theme } from '$lib/theme/apply';
+	import { confirm } from '$lib/stores/confirm';
+	import { appearance, chooseTheme, loadAppearance } from '$lib/stores/theme';
+	import type { Theme, ThemeList } from '$lib/theme/apply';
 
 	interface Props {
 		onclose: () => void;
@@ -13,20 +14,69 @@
 
 	let { onclose }: Props = $props();
 
-	let themes = $state<Theme[]>([]);
+	let list = $state<ThemeList>({ themes: [], can_install: false, can_refresh: false, can_delete: false });
 	let busy = $state(false);
+	let installUrl = $state('');
+	let installing = $state(false);
+
+	const themes = $derived(list.themes);
 
 	const lightThemes = $derived(themes.filter((th) => th.mode === 'light'));
 	const darkThemes = $derived(themes.filter((th) => th.mode === 'dark'));
 	const settings = $derived($appearance?.settings);
 
-	onMount(async () => {
+	async function reload() {
 		try {
-			themes = await api.getThemes();
+			list = await api.getThemes();
 		} catch (err: any) {
 			toast.error(err?.message ?? String(err));
 		}
-	});
+	}
+
+	onMount(reload);
+
+	async function install(event: SubmitEvent) {
+		event.preventDefault();
+		if (installing || !installUrl.trim()) return;
+		installing = true;
+		try {
+			const res = await api.installTheme(installUrl.trim());
+			toast.success(t(res.unchanged ? APPEARANCE.UP_TO_DATE : APPEARANCE.INSTALLED, res.name));
+			installUrl = '';
+			await reload();
+		} catch (err: any) {
+			toast.error(err?.message ?? String(err));
+		} finally {
+			installing = false;
+		}
+	}
+
+	async function refresh(th: Theme) {
+		if (busy) return;
+		busy = true;
+		try {
+			const res = await api.refreshTheme(th.code);
+			toast.success(t(res.unchanged ? APPEARANCE.UP_TO_DATE : APPEARANCE.UPDATED, res.name));
+			await reload();
+			await loadAppearance();
+		} catch (err: any) {
+			toast.error(err?.message ?? String(err));
+		} finally {
+			busy = false;
+		}
+	}
+
+	function remove(th: Theme) {
+		confirm.show(t(APPEARANCE.REMOVE), t(APPEARANCE.REMOVE_CONFIRM, th.name), async () => {
+			try {
+				await api.deleteTheme(th.code);
+				await reload();
+				await loadAppearance();
+			} catch (err: any) {
+				toast.error(err?.message ?? String(err));
+			}
+		}, { confirmText: t(APPEARANCE.REMOVE), variant: 'danger' });
+	}
 
 	function inUse(th: Theme): boolean {
 		if (!settings) return false;
@@ -95,7 +145,20 @@
 				<span class="in-use-badge">✓ {t(APPEARANCE.IN_USE)}</span>
 			{/if}
 		</div>
+		{#if th.source === 'github'}
+			<div class="theme-source">{t(APPEARANCE.FROM, th.author ?? '')}</div>
+		{/if}
 	</button>
+	{#if th.source === 'github' && (list.can_refresh || list.can_delete)}
+		<div class="theme-actions">
+			{#if list.can_refresh}
+				<button type="button" class="link-btn" disabled={busy} onclick={() => refresh(th)}>{t(APPEARANCE.REFRESH)}</button>
+			{/if}
+			{#if list.can_delete}
+				<button type="button" class="link-btn danger" disabled={busy} onclick={() => remove(th)}>{t(APPEARANCE.REMOVE)}</button>
+			{/if}
+		</div>
+	{/if}
 {/snippet}
 
 <Modal open={true} {onclose} size="expanded" title={t(APPEARANCE.TITLE)}>
@@ -105,6 +168,29 @@
 			<button type="button" class="close-btn" onclick={onclose} aria-label={t(APPEARANCE.CLOSE)}>×</button>
 		</div>
 		<p class="hint">{t(APPEARANCE.HINT)}</p>
+
+		{#if list.can_install}
+			<form class="install-box" onsubmit={install}>
+				<label for="theme-install-url" class="section-title">{t(APPEARANCE.INSTALL_TITLE)}</label>
+				<div class="install-row">
+					<input
+						id="theme-install-url"
+						type="url"
+						class="install-input"
+						placeholder="https://github.com/owner/omarchy-…-theme"
+						autocomplete="off"
+						spellcheck="false"
+						maxlength="300"
+						bind:value={installUrl}
+						disabled={installing}
+					/>
+					<button type="submit" class="install-btn" disabled={installing || !installUrl.trim()}>
+						{installing ? t(APPEARANCE.INSTALLING) : t(APPEARANCE.INSTALL)}
+					</button>
+				</div>
+				<p class="install-hint">{t(APPEARANCE.INSTALL_HINT)}</p>
+			</form>
+		{/if}
 
 		{#each [{ list: lightThemes, mode: 'light', title: APPEARANCE.LIGHT_THEMES }, { list: darkThemes, mode: 'dark', title: APPEARANCE.DARK_THEMES }] as section (section.mode)}
 			<section class="theme-section" data-mode={section.mode}>
@@ -116,7 +202,7 @@
 				</h3>
 				<div class="theme-grid">
 					{#each section.list as th (th.code)}
-						{@render themeCard(th)}
+						<div class="theme-cell">{@render themeCard(th)}</div>
 					{/each}
 				</div>
 			</section>
@@ -214,6 +300,46 @@
 
 	.theme-name {
 		@apply mt-2 flex items-center justify-between text-sm text-fg;
+	}
+
+	.theme-source {
+		@apply text-xs text-gray-500 dark:text-gray-400 truncate;
+	}
+
+	.theme-cell {
+		@apply flex flex-col;
+	}
+
+	.theme-actions {
+		@apply flex gap-3 px-1 pt-1;
+	}
+
+	.link-btn {
+		@apply text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50;
+	}
+
+	.link-btn.danger {
+		@apply text-red-700 dark:text-red-400;
+	}
+
+	.install-box {
+		@apply mb-6 p-3 rounded-lg border border-gray-200 dark:border-gray-700;
+	}
+
+	.install-row {
+		@apply flex gap-2;
+	}
+
+	.install-input {
+		@apply flex-1 px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-surface dark:bg-gray-700 text-fg;
+	}
+
+	.install-btn {
+		@apply px-4 py-1.5 text-sm rounded bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-600;
+	}
+
+	.install-hint {
+		@apply mt-2 text-xs text-gray-500 dark:text-gray-400;
 	}
 
 	.in-use-badge {

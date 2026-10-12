@@ -1,0 +1,83 @@
+table:
+  id: 5160
+  name: Theme
+  caption: Theme
+  description: Color themes installed from GitHub (Omarchy theme repositories); built-in themes are not stored
+  global: true  # Global table - every user of every company can choose an installed theme
+  fields:
+    - name: code
+      type: types.Code
+      db_name: code
+      caption: Code
+      primary_key: true
+      length: 50
+      required: true
+
+    - name: name
+      type: types.Text
+      db_name: name
+      caption: Name
+      length: 100
+
+    - name: mode
+      type: Option
+      db_name: mode
+      caption: Mode
+      options: ["Dark", "Light"]
+
+    # The repository it was installed from and the commit it is pinned to
+    - name: repo_url
+      type: types.Text
+      db_name: repo_url
+      caption: Repository
+      length: 250
+
+    - name: repo_ref
+      type: types.Text
+      db_name: repo_ref
+      caption: Branch/Tag
+      length: 100
+
+    - name: commit_sha
+      type: types.Text
+      db_name: commit_sha
+      caption: Commit
+      length: 40
+
+    - name: author
+      type: types.Text
+      db_name: author
+      caption: Author
+      length: 100
+
+    # Normalized color tokens (JSON, backend/foundation/themes) — colors only
+    - name: tokens
+      type: types.Text
+      db_name: tokens
+      caption: Tokens
+
+    - name: wallpapers
+      type: int
+      db_name: wallpapers
+      caption: Wallpapers
+
+    - name: installed_by
+      type: types.Code
+      db_name: installed_by
+      caption: Installed By
+      length: 50
+
+    - name: installed_at
+      type: types.DateTime
+      db_name: installed_at
+      caption: Installed At
+
+    - name: updated_at
+      type: types.DateTime
+      db_name: updated_at
+      caption: Updated At
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

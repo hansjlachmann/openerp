@@ -287,3 +287,39 @@ tables:
       density:
         comfortable: "Comfortable"
         compact: "Compact"
+
+  # Theme (Table 5160)
+  theme:
+    caption: "Theme"
+    fields:
+      code: "Code"
+      name: "Name"
+      mode: "Mode"
+      repo_url: "Repository"
+      repo_ref: "Branch/Tag"
+      commit_sha: "Commit"
+      author: "Author"
+      tokens: "Tokens"
+      wallpapers: "Wallpapers"
+      installed_by: "Installed By"
+      installed_at: "Installed At"
+      updated_at: "Updated At"
+
+    # Option field values
+    options:
+      mode:
+        dark: "Dark"
+        light: "Light"
+
+  # Theme Asset (Table 5161)
+  theme_asset:
+    caption: "Theme Asset"
+    fields:
+      theme_code: "Theme Code"
+      name: "Name"
+      content_type: "Content Type"
+      size: "Size"
+      width: "Width"
+      height: "Height"
+      sha256: "SHA-256"
+      data: "Data"

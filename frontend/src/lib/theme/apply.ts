@@ -23,7 +23,31 @@ export interface Theme {
 	source: 'builtin' | 'github';
 	author?: string;
 	repo_url?: string;
+	/** Commit an installed theme is pinned to (asset URLs carry it) */
+	version?: string;
+	/** Number of wallpapers (assets bg-1 … bg-n) */
+	wallpapers: number;
 	tokens: ThemeTokens;
+}
+
+export interface ThemeList {
+	themes: Theme[];
+	can_install: boolean;
+	can_refresh: boolean;
+	can_delete: boolean;
+}
+
+export interface ThemeInstallResult {
+	code: string;
+	name: string;
+	mode: Mode;
+	commit: string;
+	unchanged: boolean;
+}
+
+/** URL of an image of an installed theme (preview, thumb, bg-1 …), cache-busted by commit */
+export function themeAssetUrl(theme: Pick<Theme, 'code' | 'version'>, name: string): string {
+	return `/api/themes/${encodeURIComponent(theme.code)}/assets/${encodeURIComponent(name)}?v=${encodeURIComponent(theme.version ?? '')}`;
 }
 
 export interface AppearanceSettings {

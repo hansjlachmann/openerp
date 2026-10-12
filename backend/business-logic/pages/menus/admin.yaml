@@ -60,3 +60,7 @@ menu:
       - name: Permissions
         page_id: 35
         icon: lock
+
+      - name: Themes
+        page_id: 36
+        icon: palette

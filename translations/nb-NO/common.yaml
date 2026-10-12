@@ -69,6 +69,7 @@ common:
     user_roles: "Brukerroller"
     user_members: "Brukertilganger"
     permissions: "Rettigheter"
+    themes: "Temaer"
 
   # Common terms
   terms:

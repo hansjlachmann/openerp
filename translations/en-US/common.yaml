@@ -69,6 +69,7 @@ common:
     user_roles: "User Roles"
     user_members: "User Members"
     permissions: "Permissions"
+    themes: "Themes"
 
   # Common terms
   terms:

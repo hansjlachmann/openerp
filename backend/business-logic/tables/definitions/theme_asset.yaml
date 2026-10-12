@@ -1,0 +1,63 @@
+table:
+  id: 5161
+  name: Theme_Asset
+  caption: Theme Asset
+  description: Images of an installed theme (preview, thumbnail, wallpapers), re-encoded on install
+  global: true
+  fields:
+    - name: theme_code
+      type: types.Code
+      db_name: theme_code
+      caption: Theme Code
+      primary_key: true
+      length: 50
+      table_relation:
+        table: Theme
+        field: code
+
+    # preview, thumb, bg-1 .. bg-5
+    - name: name
+      type: types.Code
+      db_name: name
+      caption: Name
+      primary_key: true
+      length: 20
+
+    - name: content_type
+      type: types.Text
+      db_name: content_type
+      caption: Content Type
+      length: 30
+
+    - name: size
+      type: int
+      db_name: size
+      caption: Size
+
+    - name: width
+      type: int
+      db_name: width
+      caption: Width
+
+    - name: height
+      type: int
+      db_name: height
+      caption: Height
+
+    - name: sha256
+      type: types.Text
+      db_name: sha256
+      caption: SHA-256
+      length: 64
+
+    # The image bytes — never sent by the table API (served by /api/themes/:code/assets/:name)
+    - name: data
+      type: "[]byte"
+      db_name: data
+      caption: Data
+      sensitive: true
+
+  keys:
+    - name: Primary
+      fields: [theme_code, name]
+      clustered: true

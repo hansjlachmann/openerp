@@ -49,6 +49,10 @@ services:
       OPENERP_ENCRYPTION_KEY: ${OPENERP_ENCRYPTION_KEY:-}
       # NAV report proxy used by the NAV Report Runner codeunit (empty: http://localhost:5009)
       NAV_PROXY_URL: ${NAV_PROXY_URL:-}
+      # Themes from GitHub (Appearance dialog): optional token against GitHub's download limit
+      # (60/hour without) and the GitHub owners themes may come from (empty: any)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      THEME_ALLOWED_OWNERS: ${THEME_ALLOWED_OWNERS:-}
     depends_on:
       db:
         condition: service_healthy

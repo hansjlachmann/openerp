@@ -21,8 +21,12 @@ func newThemesTestApp(t *testing.T, userID string) *fiber.App {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := (&tables.UserPersonalization{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
-		t.Fatalf("create table: %v", err)
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}} {
+		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+			t.Fatalf("create table: %v", err)
+		}
 	}
 	h := NewThemesHandler(db, database.DBTypeSQLite)
 	app := fiber.New()
@@ -125,7 +129,12 @@ func TestAppearanceDefaultsSaveAndChecks(t *testing.T) {
 func TestListThemes(t *testing.T) {
 	app := newThemesTestApp(t, "ANNA")
 	_, out := getJSON(t, app, "/api/themes")
-	list, _ := out["data"].([]interface{})
+	data, _ := out["data"].(map[string]interface{})
+	list, _ := data["themes"].([]interface{})
+	// No roles assigned: the permission system is not configured, everything is allowed
+	if data["can_install"] != true || data["can_delete"] != true {
+		t.Errorf("permissions = %v", data)
+	}
 	codes := map[string]bool{}
 	for _, item := range list {
 		codes[item.(map[string]interface{})["code"].(string)] = true

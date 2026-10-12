@@ -41,11 +41,6 @@ func DefaultUserPersonalization(userID string) *UserPersonalization {
 	return p
 }
 
-// ThemeByCode finds a theme the user can choose.
-func ThemeByCode(code string) (themes.Theme, bool) {
-	return themes.Builtin(code)
-}
-
 // NewUserPersonalization creates a new UserPersonalization instance
 func NewUserPersonalization() *UserPersonalization {
 	return &UserPersonalization{}
@@ -142,17 +137,17 @@ func (t *UserPersonalization) Validate() error {
 
 // OnValidate_Light_theme checks that the light theme exists and is made for light mode
 func (t *UserPersonalization) OnValidate_Light_theme() error {
-	return checkThemeSlot("light_theme", t.Light_theme.String(), "light")
+	return t.checkThemeSlot("light_theme", t.Light_theme.String(), "light")
 }
 
 // OnValidate_Dark_theme checks that the dark theme exists and is made for dark mode
 func (t *UserPersonalization) OnValidate_Dark_theme() error {
-	return checkThemeSlot("dark_theme", t.Dark_theme.String(), "dark")
+	return t.checkThemeSlot("dark_theme", t.Dark_theme.String(), "dark")
 }
 
-func checkThemeSlot(field, code, mode string) error {
+func (t *UserPersonalization) checkThemeSlot(field, code, mode string) error {
 	table := gtables.UserPersonalizationTableName
-	theme, ok := ThemeByCode(code)
+	theme, ok := ThemeByCode(t.GetDB(), t.GetDBType(), code)
 	if !ok {
 		return apperrors.RelatedNotFound(table, field, code)
 	}

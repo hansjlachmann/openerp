@@ -9,7 +9,7 @@ import type {
 	ValidateFieldResult,
 	TableFilter
 } from '$types/api';
-import type { Appearance, AppearanceSettings, Theme } from '$lib/theme/apply';
+import type { Appearance, AppearanceSettings, ThemeInstallResult, ThemeList } from '$lib/theme/apply';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 import type { CompanyInfo } from '$lib/utils/company';
 
@@ -360,10 +360,33 @@ export const api = {
 	},
 
 	// Appearance: color themes and the user's personalization
-	async getThemes(): Promise<Theme[]> {
+	/** The theme gallery and what the user may do with installed themes */
+	async getThemes(): Promise<ThemeList> {
 		const response = await fetch(`${API_BASE}/themes`);
-		const result = await handleApiResponseFull<Theme[]>(response, 'get themes');
-		return result.data || [];
+		const result = await handleApiResponseFull<ThemeList>(response, 'get themes');
+		return result.data ?? { themes: [], can_install: false, can_refresh: false, can_delete: false };
+	},
+
+	/** Installs the theme of a GitHub repository (the backend downloads and checks it) */
+	async installTheme(url: string): Promise<ThemeInstallResult> {
+		const response = await fetch(`${API_BASE}/themes/install`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ url })
+		});
+		const result = await handleApiResponseFull<ThemeInstallResult>(response, 'install theme');
+		return result.data!;
+	},
+
+	async refreshTheme(code: string): Promise<ThemeInstallResult> {
+		const response = await fetch(`${API_BASE}/themes/${encodeURIComponent(code)}/refresh`, { method: 'POST' });
+		const result = await handleApiResponseFull<ThemeInstallResult>(response, 'refresh theme');
+		return result.data!;
+	},
+
+	async deleteTheme(code: string): Promise<void> {
+		const response = await fetch(`${API_BASE}/themes/${encodeURIComponent(code)}`, { method: 'DELETE' });
+		await handleApiResponseFull(response, 'delete theme');
 	},
 
 	async getAppearance(): Promise<Appearance & { saved: boolean }> {

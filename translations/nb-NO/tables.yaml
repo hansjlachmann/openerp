@@ -287,3 +287,39 @@ tables:
       density:
         comfortable: "Luftig"
         compact: "Kompakt"
+
+  # Tema (Table 5160)
+  theme:
+    caption: "Tema"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      mode: "Modus"
+      repo_url: "Repository"
+      repo_ref: "Gren/tagg"
+      commit_sha: "Commit"
+      author: "Forfatter"
+      tokens: "Fargedata"
+      wallpapers: "Bakgrunnsbilder"
+      installed_by: "Installert av"
+      installed_at: "Installert"
+      updated_at: "Oppdatert"
+
+    # Option field values
+    options:
+      mode:
+        dark: "Mørk"
+        light: "Lys"
+
+  # Temaressurs (Table 5161)
+  theme_asset:
+    caption: "Temaressurs"
+    fields:
+      theme_code: "Temakode"
+      name: "Navn"
+      content_type: "Innholdstype"
+      size: "Størrelse"
+      width: "Bredde"
+      height: "Høyde"
+      sha256: "SHA-256"
+      data: "Data"

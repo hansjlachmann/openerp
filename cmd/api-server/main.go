@@ -58,6 +58,12 @@ func main() {
 	if err := registry.RegisterTable(gtables.UserPersonalizationTableID, &tables.UserPersonalization{}); err != nil {
 		log.Printf("Warning: Failed to register User_Personalization: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.ThemeTableID, &tables.Theme{}); err != nil {
+		log.Printf("Warning: Failed to register Theme: %v\n", err)
+	}
+	if err := registry.RegisterTable(gtables.ThemeAssetTableID, &tables.ThemeAsset{}); err != nil {
+		log.Printf("Warning: Failed to register Theme_Asset: %v\n", err)
+	}
 	if err := registry.RegisterTable(gtables.LanguageTableID, &tables.Language{}); err != nil {
 		log.Printf("Warning: Failed to register Language: %v\n", err)
 	}

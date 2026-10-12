@@ -74,6 +74,7 @@ describe('theme variables and app.css', () => {
 			name: mode,
 			mode,
 			source: 'builtin',
+			wallpapers: 0,
 			tokens: tokens({ mode, vars: Object.fromEntries(ALL_THEME_VAR_NAMES.filter((n) => !/gray|accent/.test(n)).map((n) => [n.slice(2), '#123456'])) })
 		});
 		const a: Appearance = {

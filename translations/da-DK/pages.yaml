@@ -34,6 +34,10 @@ pages:
   languages:
     caption: "Sprog"
 
+  # Theme pages
+  themes:
+    caption: "Temaer"
+
   # Menu pages
   menus:
     caption: "Menuer"

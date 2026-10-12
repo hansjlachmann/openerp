@@ -37,6 +37,16 @@ func LoginRateLimit() fiber.Handler {
 	})
 }
 
+// ThemeInstallRateLimit returns a strict limiter for installing/refreshing themes: each
+// request downloads up to 30 MB from GitHub and decodes the images.
+func ThemeInstallRateLimit() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:          5,
+		Expiration:   1 * time.Minute,
+		LimitReached: rateLimitReached,
+	})
+}
+
 // rateLimitReached responds with 429 in the app's standard {success, error} envelope.
 func rateLimitReached(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{

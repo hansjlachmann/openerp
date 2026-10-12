@@ -1,5 +1,11 @@
 package themes
 
+import (
+	"encoding/json"
+	"errors"
+	"regexp"
+)
+
 // Steps are the steps of the gray and accent ramps (Tailwind's scale).
 var Steps = [11]int{50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950}
 
@@ -67,4 +73,31 @@ func bcDarkTokens() Tokens {
 			ScrollTrack: "#2c2c2c", ScrollThumb: "#9f9f9f", ScrollThumbHover: "#bdbdbd",
 		},
 	}
+}
+
+var tokenColor = regexp.MustCompile(`^#[0-9a-f]{6}$`)
+
+// ErrTokens is returned for stored tokens that are not a valid theme.
+var ErrTokens = errors.New("invalid theme tokens")
+
+// ParseTokens reads stored tokens (Theme.tokens) and checks them strictly: known version
+// and mode, and every color exactly #rrggbb — whatever wrote the record.
+func ParseTokens(s string) (Tokens, error) {
+	var t Tokens
+	if err := json.Unmarshal([]byte(s), &t); err != nil {
+		return Tokens{}, ErrTokens
+	}
+	if t.Version != TokensVersion || (t.Mode != "light" && t.Mode != "dark") {
+		return Tokens{}, ErrTokens
+	}
+	v := t.Vars
+	vals := append(append(t.Gray[:0:0], t.Gray[:]...), t.Accent[:]...)
+	vals = append(vals, v.PageBg, v.Surface, v.Fg, v.Heading, v.Appbar, v.AppbarFg, v.RowSelected,
+		v.RowSelectedHover, v.TextSelBg, v.TextSelFg, v.ScrollTrack, v.ScrollThumb, v.ScrollThumbHover)
+	for _, c := range vals {
+		if !tokenColor.MatchString(c) {
+			return Tokens{}, ErrTokens
+		}
+	}
+	return t, nil
 }

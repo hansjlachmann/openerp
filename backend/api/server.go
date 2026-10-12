@@ -142,6 +142,10 @@ func (s *Server) Setup() {
 
 	// Appearance: color themes and the user's personalization (theme per mode, wallpaper, font)
 	api.Get("/themes", themesHandler.ListThemes)
+	api.Post("/themes/install", middleware.ThemeInstallRateLimit(), themesHandler.InstallTheme) // downloads from GitHub
+	api.Post("/themes/:code/refresh", middleware.ThemeInstallRateLimit(), themesHandler.RefreshTheme)
+	api.Delete("/themes/:code", themesHandler.DeleteTheme)
+	api.Get("/themes/:code/assets/:name", themesHandler.GetThemeAsset)
 	api.Get("/appearance", themesHandler.GetAppearance)
 	api.Put("/appearance", themesHandler.SaveAppearance)
 

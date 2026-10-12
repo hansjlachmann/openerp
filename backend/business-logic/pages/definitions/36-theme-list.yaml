@@ -1,0 +1,46 @@
+page:
+  id: 36
+  type: List
+  name: Themes
+  source_table: Theme
+  caption: Themes
+  # Themes are installed, updated and chosen in the Appearance dialog (user menu); this
+  # list shows where they came from. Delete removes a theme and its images.
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 160
+          primary_key: true
+
+        - source: name
+          width: 180
+
+        - source: mode
+          width: 100
+
+        - source: author
+          width: 140
+
+        - source: repo_url
+          width: 340
+
+        - source: commit_sha
+          width: 120
+
+        - source: wallpapers
+          width: 130
+
+        - source: installed_by
+          width: 130
+
+        - source: updated_at
+          width: 170
+
+  actions:
+    - name: Delete
+      caption: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

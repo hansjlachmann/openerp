@@ -14,7 +14,11 @@ type Theme struct {
 	Source  string `json:"source"` // "builtin" or "github"
 	Author  string `json:"author,omitempty"`
 	RepoURL string `json:"repo_url,omitempty"`
-	Tokens  Tokens `json:"tokens"`
+	// Version is the commit an installed theme is pinned to; asset URLs carry it, so a
+	// refreshed theme's images are not taken from the browser cache
+	Version    string `json:"version,omitempty"`
+	Wallpapers int    `json:"wallpapers"` // number of wallpapers (assets bg-1 … bg-n)
+	Tokens     Tokens `json:"tokens"`
 }
 
 // The default themes: the Business Central palette, the defaults in app.css.
