@@ -59,12 +59,17 @@ func NewTablesHandlerFull(db *sql.DB, dbType database.DBType, companyInit Compan
 
 // getTable creates a table instance by name using the registry
 func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, error) {
+	return h.getTableOn(h.db, tableName, company)
+}
+
+// getTableOn is getTable on another executor (a transaction)
+func (h *TablesHandler) getTableOn(exec database.Executor, tableName, company string) (ftables.Table, error) {
 	factory, ok := tables.GetTableFactory(tableName)
 	if !ok {
 		return nil, apperrors.TableNotFound(tableName)
 	}
 	table := factory()
-	table.InitWithDBType(h.db, company, h.dbType)
+	table.InitWithDBType(exec, company, h.dbType)
 	return table, nil
 }
 
@@ -692,13 +697,6 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
-	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
-
-	// Create table instance
-	table, err := h.getTable(tableName, company)
-	if err != nil {
-		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
-	}
 
 	// Parse request body
 	var data map[string]interface{}
@@ -706,54 +704,9 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
-	// sent back as its placeholder keeps its stored value
-	ftables.DropMaskedPlaceholders(table, data)
-	if err := rejectSensitiveFields(table, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
-	}
-
-	// A changed table relation field must point to an existing record
-	if err := h.checkRelations(table, company, language, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
-	}
-
-	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
-	if err := validateChangedFields(table, tableName, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
-	}
-
-	// Special handling for User table password
-	if tableName == "User" {
-		if password, ok := data["password"].(string); ok && password != "" {
-			if userTable, ok := table.(*tables.User); ok {
-				if err := userTable.SetPassword(password); err != nil {
-					return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
-				}
-			}
-		}
-	}
-
-	// Check for empty primary key
-	pkValue := table.GetPrimaryKeyValue()
-	if pkValue == "" {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.EmptyPrimaryKey(tableCaption).Message(language)))
-	}
-
-	// Check if record already exists (all primary key fields, for composite keys too)
-	pkLookup, pkDisplay := fullPrimaryKey(table)
-	existingTable, _ := h.getTable(tableName, company)
-	if existingTable.Get(pkLookup) {
-		return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, pkDisplay).Message(language)))
-	}
-
-	// Insert record
-	if !table.Insert(true) {
-		// A failed OnInsert trigger is a business rule the user broke: show its message
-		if trigErr := table.TriggerError(); trigErr != nil {
-			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(trigErr, language)))
-		}
-		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableCaption).Message(language)))
+	table, status, msg := h.insertOne(h.db, tableName, company, language, data)
+	if msg != "" {
+		return c.Status(status).JSON(apitypes.NewErrorResponse(msg))
 	}
 
 	// Initialize company-scoped tables when a new Company is created
@@ -814,7 +767,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	}
 
 	// A changed table relation field must point to an existing record
-	if err := h.checkRelations(table, company, language, data); err != nil {
+	if err := h.checkRelations(h.db, table, company, language, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
@@ -918,6 +871,208 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 
 	response := apitypes.NewSuccessResponse(nil)
 	return c.JSON(response)
+}
+
+// insertOne runs a record insert as the API does it (InsertRecord, and each record of a
+// paste): masked placeholders dropped, sensitive fields refused, table relations checked,
+// changed fields validated (OnValidate), key not empty and not existing, Insert(true) with
+// OnInsert. exec is the database or the paste's transaction. On failure it returns the
+// HTTP status and the message for the user; msg is "" on success.
+func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, language string, data map[string]interface{}) (table ftables.Table, status int, msg string) {
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
+	table, err := h.getTableOn(exec, tableName, company)
+	if err != nil {
+		return nil, 404, apperrors.TableNotFound(tableName).Message(language)
+	}
+
+	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
+	// sent back as its placeholder keeps its stored value
+	ftables.DropMaskedPlaceholders(table, data)
+	if err := rejectSensitiveFields(table, data); err != nil {
+		return nil, 400, err.Error()
+	}
+
+	// A changed table relation field must point to an existing record
+	if err := h.checkRelations(exec, table, company, language, data); err != nil {
+		return nil, 400, err.Error()
+	}
+
+	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
+	if err := validateChangedFields(table, tableName, data); err != nil {
+		return nil, 400, errorMessage(err, language)
+	}
+
+	// Special handling for User table password
+	if tableName == "User" {
+		if password, ok := data["password"].(string); ok && password != "" {
+			if userTable, ok := table.(*tables.User); ok {
+				if err := userTable.SetPassword(password); err != nil {
+					return nil, 400, errorMessage(err, language)
+				}
+			}
+		}
+	}
+
+	// Check for empty primary key
+	if table.GetPrimaryKeyValue() == "" {
+		return nil, 400, apperrors.EmptyPrimaryKey(tableCaption).Message(language)
+	}
+
+	// Check if record already exists (all primary key fields, for composite keys too)
+	pkLookup, pkDisplay := fullPrimaryKey(table)
+	existingTable, _ := h.getTableOn(exec, tableName, company)
+	if existingTable.Get(pkLookup) {
+		return nil, 409, apperrors.DuplicateRecord(tableCaption, pkDisplay).Message(language)
+	}
+
+	// Insert record
+	if !table.Insert(true) {
+		// A failed OnInsert trigger is a business rule the user broke: show its message
+		if trigErr := table.TriggerError(); trigErr != nil {
+			return nil, 400, errorMessage(trigErr, language)
+		}
+		return nil, 500, apperrors.InsertFailed(tableCaption).Message(language)
+	}
+	return table, 200, ""
+}
+
+// maxCopyRecords caps one copy/paste on a list (Ctrl+C / Ctrl+V)
+const maxCopyRecords = 1000
+
+// copyableMap is a record as copied (list copy/paste): its stored fields without
+// FlowFields, FlowFilter fields and secrets (sensitive, masked/encrypted)
+func copyableMap(table ftables.Table) map[string]interface{} {
+	m := table.ToMap()
+	for _, f := range table.GetFields() {
+		if f.Sensitive || f.Masked || f.FlowField {
+			delete(m, f.Name)
+		}
+	}
+	for _, ff := range table.GetFlowFilterFields() {
+		delete(m, ff.Name)
+	}
+	return m
+}
+
+// selectedKeys returns the record keys of a multi-select request: the given keys, or with
+// all every record the list shows (filters, flow_filters, search as /list). At most max+1
+// keys are collected, so the caller can tell there are too many.
+func selectedKeys(c *fiber.Ctx, table ftables.Table, language string, keys []string, all bool, max int) ([]string, error) {
+	if !all {
+		return keys, nil
+	}
+	if err := applyFlowFilters(c, table); err != nil {
+		return nil, err
+	}
+	if err := applyListQuery(c, table, language); err != nil {
+		return nil, err
+	}
+	keys = nil
+	if table.FindSet() {
+		for {
+			_, id := fullPrimaryKey(table)
+			keys = append(keys, id)
+			if len(keys) > max || !table.Next() {
+				break
+			}
+		}
+	}
+	return keys, nil
+}
+
+// CopyRecords returns the records to copy on a list (Ctrl+C, list multi-select): body
+// {"keys": [...]} or {"all": true} with the list's query parameters. Stored fields only
+// (copyableMap); at most maxCopyRecords.
+// POST /api/tables/:table/copy
+func (h *TablesHandler) CopyRecords(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := getSession(c)
+	if sess == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	company := sess.GetCompany()
+	language := sess.GetLanguage()
+	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
+
+	var req struct {
+		Keys []string `json:"keys"`
+		All  bool     `json:"all"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+	table, err := h.getTable(tableName, company)
+	if err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+	keys, err := selectedKeys(c, table, language, req.Keys, req.All, maxCopyRecords)
+	if err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+	if len(keys) > maxCopyRecords {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CopyTooMany(maxCopyRecords).Message(language)))
+	}
+	records := make([]map[string]interface{}, 0, len(keys))
+	for _, id := range keys {
+		record, _ := h.getTable(tableName, company)
+		if !record.Get(parseRecordKey(id, record)) {
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
+		}
+		records = append(records, copyableMap(record))
+	}
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"records": records}))
+}
+
+// InsertRecords inserts several records at once (list paste, Ctrl+V): body {"records":
+// [...]}. One transaction: each record goes through insertOne (validation, relations,
+// OnInsert); the first one that fails rolls back all and is named. Returns the keys of
+// the inserted records.
+// POST /api/tables/:table/insert-many
+func (h *TablesHandler) InsertRecords(c *fiber.Ctx) error {
+	tableName := c.Params("table")
+	sess := getSession(c)
+	if sess == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	company := sess.GetCompany()
+	language := sess.GetLanguage()
+
+	var req struct {
+		Records []map[string]interface{} `json:"records"`
+	}
+	// A company is more than a record (its tables are created with it): never pasted
+	if err := c.BodyParser(&req); err != nil || tableName == "Company" {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+	if _, err := h.getTable(tableName, company); err != nil {
+		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+	if len(req.Records) > maxCopyRecords {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.CopyTooMany(maxCopyRecords).Message(language)))
+	}
+	keys := make([]string, 0, len(req.Records))
+	if len(req.Records) == 0 {
+		return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"inserted": 0, "keys": keys}))
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+	for i, data := range req.Records {
+		table, status, msg := h.insertOne(tx, tableName, company, language, data)
+		if msg != "" {
+			_ = tx.Rollback()
+			return c.Status(status).JSON(apitypes.NewErrorResponse(
+				apperrors.PasteRecordFailed(i+1, len(req.Records), msg).Message(language)))
+		}
+		_, id := fullPrimaryKey(table)
+		keys = append(keys, id)
+	}
+	if err := tx.Commit(); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	}
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"inserted": len(keys), "keys": keys}))
 }
 
 // maxDeleteMany caps one bulk delete: it runs in one transaction, with each record's
@@ -1171,7 +1326,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	}
 
 	// Check table relation: verify the value exists in the related table
-	if err := h.checkRelation(table, company, language, req.Field, req.Value); err != nil {
+	if err := h.checkRelation(h.db, table, company, language, req.Field, req.Value); err != nil {
 		return c.JSON(apitypes.APIResponse{Success: false, Error: err.Error()})
 	}
 
@@ -1240,7 +1395,7 @@ func errorMessage(err error, language string) string {
 
 // checkRelation returns an error when value (a non-empty key) does not exist in the
 // table related to field. Fields without a table relation always pass.
-func (h *TablesHandler) checkRelation(table ftables.Table, company, language, field string, value interface{}) error {
+func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Table, company, language, field string, value interface{}) error {
 	valueStr, ok := value.(string)
 	if !ok || valueStr == "" {
 		return nil
@@ -1249,7 +1404,7 @@ func (h *TablesHandler) checkRelation(table ftables.Table, company, language, fi
 	if !hasRelation {
 		return nil
 	}
-	relTable, err := h.getTable(relInfo.Table, company)
+	relTable, err := h.getTableOn(exec, relInfo.Table, company)
 	if err != nil {
 		return nil // related table not registered: nothing to check against
 	}
@@ -1263,14 +1418,14 @@ func (h *TablesHandler) checkRelation(table ftables.Table, company, language, fi
 // checkRelations checks every table relation field in data whose value differs from the
 // record's current value (insert/modify). The page's dropdowns are not the only guard:
 // on-demand dropdowns (large related tables) accept a typed key and rely on this check.
-func (h *TablesHandler) checkRelations(table ftables.Table, company, language string, data map[string]interface{}) error {
+func (h *TablesHandler) checkRelations(exec database.Executor, table ftables.Table, company, language string, data map[string]interface{}) error {
 	current := table.ToMap()
 	for field := range table.GetTableRelationFields() {
 		value, ok := data[field]
 		if !ok || fmt.Sprint(current[field]) == fmt.Sprint(value) {
 			continue
 		}
-		if err := h.checkRelation(table, company, language, field, value); err != nil {
+		if err := h.checkRelation(exec, table, company, language, field, value); err != nil {
 			return err
 		}
 	}

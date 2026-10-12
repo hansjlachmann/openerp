@@ -64,10 +64,12 @@ func mapRouteToOperation(c *fiber.Ctx) session.PermissionOperation {
 		return session.PermRead
 	case "POST":
 		// Initializing a new record is the first step of inserting one
-		if strings.HasSuffix(path, "/insert") || strings.HasSuffix(path, "/init") {
+		// /insert-many: a list paste inserts records
+		if strings.HasSuffix(path, "/insert") || strings.HasSuffix(path, "/init") || strings.HasSuffix(path, "/insert-many") {
 			return session.PermInsert
 		}
-		if strings.HasSuffix(path, "/validate") {
+		// /copy: a list copy reads records
+		if strings.HasSuffix(path, "/validate") || strings.HasSuffix(path, "/copy") {
 			return session.PermRead
 		}
 		return ""

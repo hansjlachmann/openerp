@@ -19,6 +19,8 @@ errors:
   ERR_FILTER_INVALID: "%1: '%2' is not a valid filter (e.g. 1000, >1000, 0..500, <>0, 100|200)"
   ERR_DELETE_TOO_MANY: "More than %1 records are selected: delete them in smaller parts (filter the list first)."
   ERR_DELETE_RECORD_FAILED: "%1 %2 cannot be deleted: %3 Nothing was deleted."
+  ERR_COPY_TOO_MANY: "More than %1 records: copy and paste them in smaller parts (filter the list first)."
+  ERR_PASTE_RECORD_FAILED: "Record %1 of %2 cannot be pasted: %3 Nothing was pasted."
   ERR_DELETE_FAILED: "Failed to delete %1 %2"
   ERR_INSERT_FAILED: "Failed to insert %1"
   ERR_MODIFY_FAILED: "Failed to modify %1 %2"

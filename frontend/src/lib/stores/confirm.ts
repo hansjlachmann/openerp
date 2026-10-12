@@ -6,6 +6,9 @@ interface ConfirmState {
 	title: string;
 	message: string;
 	action: (() => Promise<void>) | null;
+	// Button text and style (default: a red "Delete", the usual confirmation)
+	confirmText?: string;
+	variant?: 'danger' | 'warning' | 'info';
 }
 
 const initialState: ConfirmState = {
@@ -26,13 +29,20 @@ function createConfirmStore() {
 		 * @param title - Modal title
 		 * @param message - Confirmation message
 		 * @param action - Async action to execute on confirm
+		 * @param options - Button text and style (default: a red Delete button)
 		 */
-		show(title: string, message: string, action: () => Promise<void>) {
+		show(
+			title: string,
+			message: string,
+			action: () => Promise<void>,
+			options: { confirmText?: string; variant?: 'danger' | 'warning' | 'info' } = {}
+		) {
 			set({
 				open: true,
 				title,
 				message,
-				action
+				action,
+				...options
 			});
 		},
 

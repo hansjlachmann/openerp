@@ -21,6 +21,10 @@ type PageMetadata struct {
 	// the user leaves the row, not on the first validated field. For pages where the user
 	// types a composite key (e.g. User Members), so no half-entered key is ever saved.
 	DelayedInsert *bool    `yaml:"delayed_insert,omitempty" json:"delayed_insert,omitempty"`
+	// CopyPasteAllowed (BC CopyPasteAllowed): on list pages, Ctrl+C copies the selected
+	// records and Ctrl+V inserts them (same table; new keys from the list's filters, or
+	// another company)
+	CopyPasteAllowed *bool `yaml:"copy_paste_allowed,omitempty" json:"copy_paste_allowed,omitempty"`
 	FocusField    string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout        Layout   `yaml:"layout" json:"layout"`
 	Actions       []Action `yaml:"actions,omitempty" json:"actions,omitempty"`

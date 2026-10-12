@@ -117,6 +117,8 @@ func (s *Server) Setup() {
 	tables.Get("/list", tablesHandler.ListRecords)
 	tables.Get("/card/:id", tablesHandler.GetRecord)
 	tables.Post("/insert", tablesHandler.InsertRecord)
+	tables.Post("/insert-many", tablesHandler.InsertRecords) // list paste (insert permission)
+	tables.Post("/copy", tablesHandler.CopyRecords)          // list copy (read permission)
 	tables.Put("/modify/:id", tablesHandler.ModifyRecord)
 	tables.Delete("/delete-many", tablesHandler.DeleteRecords) // list multi-select (DELETE: delete permission)
 	tables.Delete("/delete/:id", tablesHandler.DeleteRecord)

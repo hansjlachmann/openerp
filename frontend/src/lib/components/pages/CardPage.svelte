@@ -408,14 +408,6 @@
 </script>
 
 <div class="card-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={cardPageElement}>
-	<!-- Keyboard shortcuts hint -->
-	{#if navigationEnabled}
-		<div class="keyboard-hint">
-			<span class="text-xs text-gray-500 dark:text-gray-400">
-				<kbd>Ctrl+↑/↓</kbd> {t(CARD.HINT_NAVIGATE)} • <kbd>Ctrl+Home/End</kbd> {t(CARD.HINT_FIRST_LAST)}
-			</span>
-		</div>
-	{/if}
 
 	<!-- Edge Navigation Buttons (Business Central style) -->
 	{#if navigationEnabled}
@@ -579,7 +571,7 @@
 <style>
 	.card-page {
 		@apply flex flex-col flex-1 min-h-0;
-		@apply relative; /* For keyboard-hint positioning */
+		@apply relative;
 		@apply bg-white;
 	}
 
@@ -587,21 +579,7 @@
 		background-color: #121212; /* gray-900 */
 	}
 
-	.keyboard-hint {
-		@apply absolute top-4 right-4 z-40;
-		@apply bg-white dark:bg-gray-800;
-		@apply px-3 py-1.5 rounded-md;
-		@apply shadow-sm border border-gray-200 dark:border-gray-700;
-		@apply opacity-70 hover:opacity-100;
-		@apply transition-opacity duration-200;
-	}
 
-	.keyboard-hint kbd {
-		@apply bg-gray-100 dark:bg-gray-700;
-		@apply px-1.5 py-0.5 rounded;
-		@apply text-xs font-mono;
-		@apply border border-gray-300 dark:border-gray-600;
-	}
 
 	.sections-container {
 		@apply flex flex-col gap-4 overflow-y-auto flex-1 min-h-0;

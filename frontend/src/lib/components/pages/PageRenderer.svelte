@@ -544,6 +544,21 @@
 		}
 	}
 
+	// Paste records copied on a list (Ctrl+V): one transaction on the server; when a record
+	// cannot be inserted nothing is, and the message names it. Returns the inserted keys.
+	async function handleListPaste(records: Record<string, unknown>[]): Promise<string[]> {
+		if (!page) return [];
+		try {
+			const keys = await api.insertRecords(page.page.source_table, records);
+			await loadListData();
+			toast.success(t(MSG.RECORDS_PASTED, keys.length.toLocaleString(get(currentLanguage))));
+			return keys;
+		} catch (err) {
+			toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_SAVE_RECORD));
+			throw err;
+		}
+	}
+
 	// Handle filter change from list page
 	async function handleFilterChange(filters: import('$lib/types/api').TableFilter[], flowFilters: import('$lib/types/api').TableFilter[] = []) {
 		currentFilters = filters;
@@ -660,6 +675,7 @@
 			onsave={handleListSave}
 			ondelete={handleListDelete}
 			onbulkdelete={handleListBulkDelete}
+			onpaste={handleListPaste}
 			onfilter={handleFilterChange}
 		/>
 	{:else}
@@ -676,8 +692,8 @@
 	open={$confirm.open}
 	title={$confirm.title}
 	message={$confirm.message}
-	confirmText={t(BTN.DELETE)}
-	variant="danger"
+	confirmText={$confirm.confirmText ?? t(BTN.DELETE)}
+	variant={$confirm.variant ?? 'danger'}
 	onconfirm={confirm.confirm}
 	oncancel={confirm.cancel}
 />

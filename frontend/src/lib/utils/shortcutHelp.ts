@@ -38,6 +38,9 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 			{ keys: ['Shift+↑', 'Shift+↓', 'Shift+PgUp', 'Shift+PgDn', 'Shift+Home', 'Shift+End'], description: 'HELP_LIST_SELECT_RANGE' },
 			{ keys: ['Ctrl+A'], description: 'HELP_LIST_SELECT_ALL' },
 			{ keys: ['Ctrl+Click', 'Shift+Click'], description: 'HELP_LIST_SELECT_CLICK' },
+			{ keys: ['Click+Drag'], description: 'HELP_LIST_SELECT_DRAG' },
+			{ keys: ['Ctrl+C'], description: 'HELP_LIST_COPY_RECORDS' },
+			{ keys: ['Ctrl+V'], description: 'HELP_LIST_PASTE_RECORDS' },
 			{ keys: ['Home', 'End', 'Ctrl+Home', 'Ctrl+End'], description: 'HELP_LIST_FIRST_LAST' },
 			{ keys: ['PgUp', 'PgDn'], description: 'HELP_LIST_PAGE' },
 			{ keys: ['Enter'], description: 'HELP_LIST_OPEN' },
@@ -46,6 +49,7 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 			{ keys: ['Alt+N', 'Ctrl+Insert'], description: 'HELP_LIST_NEW' },
 			{ keys: ['Ctrl+D'], description: 'HELP_LIST_DELETE' },
 			{ keys: ['Ctrl+F'], description: 'HELP_LIST_SEARCH' },
+			{ keys: ['Ctrl+F7'], description: 'HELP_LIST_FILTER_PANE' },
 			{ keys: ['Esc'], description: 'HELP_LIST_ESCAPE' }
 		]
 	},

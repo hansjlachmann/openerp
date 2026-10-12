@@ -19,6 +19,8 @@ errors:
   ERR_FILTER_INVALID: "%1: '%2' er ikke et gyldig filter (f.eks. 1000, >1000, 0..500, <>0, 100|200)"
   ERR_DELETE_TOO_MANY: "Mer enn %1 poster er merket: slett dem i mindre deler (filtrer listen først)."
   ERR_DELETE_RECORD_FAILED: "%1 %2 kan ikke slettes: %3 Ingenting ble slettet."
+  ERR_COPY_TOO_MANY: "Mer enn %1 poster: kopier og lim dem inn i mindre deler (filtrer listen først)."
+  ERR_PASTE_RECORD_FAILED: "Post %1 av %2 kan ikke limes inn: %3 Ingenting ble limt inn."
   ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
   ERR_INSERT_FAILED: "Kunne ikke opprette %1"
   ERR_MODIFY_FAILED: "Kunne ikke endre %1 %2"

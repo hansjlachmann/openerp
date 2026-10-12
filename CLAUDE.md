@@ -300,10 +300,13 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 | Ctrl+E | Enter cell-selected (same as F2) |
 | Alt+N / Ctrl+Insert | Insert new row |
 | Ctrl+F | Focus search input and select all text |
+| Ctrl+F7 | Show/hide the filter pane (NAV Table Filter); also works from inside the pane. The pane opens with the field picker focused (dropdown closed): Alt+↓, arrows, Enter adds the field (arrows on the closed picker only move the highlight) and the cursor goes to its value box; Enter applies and the cursor stays there. Esc in the pane closes the pane, not the list |
 | Ctrl+D | Delete the selected record — with several rows selected, all of them (one confirmation, one transaction) |
 | Shift+ArrowUp / ArrowDown / PageUp / PageDown / Home / End | Select the rows from the anchor to the new cursor row |
 | Ctrl+A | Select every record of the list (all matching the filters and search, also those not loaded) |
 | Ctrl+click / Shift+click | Add/remove a row / select the rows from the anchor to the clicked row (stays in navigation mode, also on editable lists) |
+| Click and drag | Select the rows from the pressed row to the row under the mouse; near the top/bottom edge the list scrolls on (`handleRowMouseDown` / `dragAutoScroll`); a plain click selects one row |
+| Ctrl+C / Ctrl+V | Copy the selected records / paste the copied records — on lists with `copy_paste_allowed: true` only (see below) |
 | Escape | With several rows selected: back to the cursor row; otherwise navigate to home (`/`) |
 
 ### Multi-row selection (ABSOLUTE RULE)
@@ -311,6 +314,11 @@ The list page uses a spreadsheet-style 3-state cell model (like Excel/LibreOffic
 - With one record or none selected the list behaves as before (actions use the cursor row, `selectedIndex`). Plain moves and plain clicks collapse a multi-selection; entering a cell (`enterCellSelected`) clears it; a new filter, search or sort clears it (BC); Esc collapses it before it would close the list.
 - Delete acts on the selection (`handleBulkDelete` → `PageRenderer.handleListBulkDelete` → `DELETE /api/tables/:table/delete-many` with `{keys}` or `{all: true}` plus the list's query from `listQuery()`, the same query as the list windows): one transaction, each record's OnDelete trigger, the first refusal rolls back all and names the record; at most 10,000 records. Other actions (Edit, Run, …) always use the cursor row — running them on a selection is not wanted (decided 2026-10-11).
 - Selected rows use the `selected` row style; the cursor row of a multi-selection gets `cursor-row`. Ctrl/Shift+mousedown is `preventDefault`ed so the browser does not select text.
+
+### Copy/paste of records (page `copy_paste_allowed: true`, BC CopyPasteAllowed)
+- Navigation mode only (in cell modes Ctrl+C/V copy a cell value, and in inputs or with selected text the browser handles them). Handled in the window-level key handler, not the list's element shortcuts, so they work without focus on the list (pasting into an empty list). Ctrl+C copies the selected records (multi-selection, Ctrl+A = all of the list's query, else the cursor row): `POST /api/tables/:table/copy` returns their stored fields (`copyableMap`: no FlowFields, FlowFilter fields, sensitive or masked/encrypted fields), kept with the table and company in the browser tab (`utils/recordClipboard.ts`, sessionStorage — it survives a company switch).
+- Ctrl+V pastes into the same table only: each primary key field the list is filtered on with one exact value replaces the copied value (`keyValuesFromFilters` — e.g. User Members filtered on role CLERK), otherwise keys stay (pasting into another company). One confirmation (a "Paste" button, `confirm.show(…, {confirmText, variant})`), then `POST /api/tables/:table/insert-many`: one transaction, every record through `insertOne` — the same steps as a single insert (relations, OnValidate, duplicate check, OnInsert); the first failure rolls back all and is named ("Record 2 of 3 cannot be pasted: …"). At most 1,000 records; Company is never pasted. The pasted records are selected afterwards. The permission check maps `/copy` to read and `/insert-many` to insert.
+- Pasting from Excel or between different tables is out of scope (decided 2026-10-12).
 
 ### Keyboard: Cell-Selected Mode
 

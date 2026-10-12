@@ -17,6 +17,7 @@ export interface PageMetadata {
 	enable_navigation?: boolean;
 	// BC/NAV DelayedInsert: insert a new list row only when the user leaves the row
 	delayed_insert?: boolean;
+	copy_paste_allowed?: boolean; // list Ctrl+C copies the selected records, Ctrl+V pastes them
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];

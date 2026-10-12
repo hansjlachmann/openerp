@@ -103,7 +103,7 @@ export const commonShortcuts = {
 	PREVIOUS: 'PageUp',
 	RENAME: 'F2',
 	CANCEL: 'Escape',
-	STATISTICS: 'Ctrl+F7',
+	FILTER: 'Ctrl+F7', // NAV Table Filter: show/hide the filter pane
 	CLOSE: 'Alt+F4'
 };
 

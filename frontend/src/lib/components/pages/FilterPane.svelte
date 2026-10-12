@@ -11,6 +11,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { currentLanguage } from '$lib/stores/session';
 	import { get } from 'svelte/store';
+	import { onMount, tick } from 'svelte';
 	import { toApiFlowFilter, dateFilterHint } from '$lib/utils/flowFilter';
 	import { getDateFormatPattern } from '$lib/utils/fieldHelpers';
 
@@ -95,8 +96,21 @@
 		return allFields().filter((field) => !activeFieldSet.has(field.source));
 	});
 
-	// Selected field for adding new filter
+	// Field picker for adding a filter: open when the pane opens (Ctrl+F7 or the Filter
+	// button), so the keyboard flow is Alt+↓, arrows, Enter → the new filter's value box
+	let fieldPickerOpen = $state(false);
 	let selectedFieldToAdd = $state('');
+	// ↑/↓ on a closed select fires change in Chrome/Firefox: browsing only moves the
+	// highlighted field, Enter (or a pick in the open dropdown / with the mouse) adds it
+	let browsingFields = false;
+	let paneElement: HTMLDivElement | undefined = $state();
+
+	onMount(async () => {
+		if (availableFields().length === 0) return;
+		fieldPickerOpen = true;
+		await tick();
+		paneElement?.querySelector<HTMLSelectElement>('.field-selector-inline')?.focus();
+	});
 
 	// Get field caption by source
 	function getFieldCaptionBySource(fieldSource: string): string {
@@ -113,11 +127,35 @@
 	}
 
 	// Add a new filter field
-	function handleAddField() {
+	async function handleAddField() {
 		if (!selectedFieldToAdd) return;
 
 		activeFilters = [...activeFilters, { field: selectedFieldToAdd, expression: '' }];
 		selectedFieldToAdd = '';
+		fieldPickerOpen = false;
+		// The cursor goes to the new filter's value box
+		await tick();
+		paneElement
+			?.querySelector<HTMLInputElement>(`[data-filter-index="${activeFilters.length - 1}"]`)
+			?.focus();
+	}
+
+	function handleFieldPickerKeyDown(e: KeyboardEvent) {
+		if (['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key) && !e.altKey) {
+			browsingFields = true;
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			browsingFields = false;
+			handleAddField();
+		}
+	}
+
+	function handleFieldPickerChange() {
+		if (browsingFields) {
+			browsingFields = false;
+			return;
+		}
+		handleAddField();
 	}
 
 	// Remove a filter field
@@ -304,7 +342,7 @@
 
 <!-- data-own-keys: keys typed in the pane are not list shortcuts (Enter in a filter field
      also opened the selected record) -->
-<div class="filter-pane" data-own-keys>
+<div class="filter-pane" data-own-keys bind:this={paneElement}>
 	<Card>
 		{#snippet header()}
 			<div class="filter-header">
@@ -492,6 +530,7 @@
 							<input
 								type="text"
 								class="filter-expression-input"
+								data-filter-index={index}
 								value={filter.expression}
 								oninput={(e) => handleFilterChange(index, e.currentTarget.value)}
 								onkeydown={handleKeyDown}
@@ -506,7 +545,7 @@
 			<!-- Add filter button -->
 			{#if availableFields().length > 0}
 				<div class="add-filter-row">
-					<button class="add-filter-btn" onclick={() => (selectedFieldToAdd = 'show')}>
+					<button class="add-filter-btn" onclick={() => (fieldPickerOpen = true)}>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-4 w-4"
@@ -524,12 +563,13 @@
 						<span>{t(FLT.ADD)}</span>
 					</button>
 
-					{#if selectedFieldToAdd === 'show'}
+					{#if fieldPickerOpen}
 						<!-- svelte-ignore a11y_autofocus -->
 						<select
 							class="field-selector-inline"
 							bind:value={selectedFieldToAdd}
-							onchange={handleAddField}
+							onkeydown={handleFieldPickerKeyDown}
+							onchange={handleFieldPickerChange}
 							autofocus
 						>
 							<option value="">{t(FLT.SELECT_FIELD)}</option>

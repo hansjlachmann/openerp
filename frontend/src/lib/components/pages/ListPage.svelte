@@ -28,12 +28,13 @@
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
 	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
-	import { currentLanguage } from '$lib/stores/session';
+	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import ColumnHeaderMenu, { type ColumnMenuItem } from './ColumnHeaderMenu.svelte';
+	import { keyValuesFromFilters, loadClipboard, recordsToPaste, saveClipboard } from '$lib/utils/recordClipboard';
 	import { filterValueFor, hideColumn, moveColumn, withFilter, withoutFilter } from '$lib/utils/columnHeader';
 	import {
 		emptySelection,
@@ -75,6 +76,8 @@
 		ondelete?: (record: Record<string, any>) => Promise<void>;
 		// Delete the selected records (multi-select): keys, or all with the list's query
 		onbulkdelete?: (request: { keys?: string[]; all?: boolean }, count: number) => Promise<void>;
+		// Insert copied records (Ctrl+V, copy_paste_allowed); returns the inserted keys
+		onpaste?: (records: Record<string, unknown>[]) => Promise<string[]>;
 		onfilter?: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
 	}
 
@@ -97,6 +100,7 @@
 		onsave,
 		ondelete,
 		onbulkdelete,
+		onpaste,
 		onfilter
 	}: Props = $props();
 
@@ -313,6 +317,15 @@
 			// header menu (it handles its own keys, Esc closes it)
 			if (modalOpen || get(companySwitchOpen) || columnMenu) return;
 
+			// Esc in the filter pane closes the pane (not the list) and returns to the list
+			if (event.key === 'Escape' && event.target instanceof Element && event.target.closest('.filter-pane')) {
+				event.preventDefault();
+				event.stopPropagation();
+				handleCloseFilterPane();
+				listPageElement?.focus();
+				return;
+			}
+
 			// Handle Escape specially - works even in input fields (NAV/BC behavior)
 			if (event.key === 'Escape') {
 				event.preventDefault();
@@ -332,10 +345,31 @@
 				return;
 			}
 
-			// Skip other shortcuts if we're in an input field (but not cell-editing inputs in the table)
-			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-
 			const shortcutKey = getShortcutKey(event);
+
+			// Ctrl+F7 (NAV Table Filter): show/hide the filter pane — also from a filter field
+			if (shortcutKey === commonShortcuts.FILTER) {
+				event.preventDefault();
+				event.stopPropagation();
+				handleToggleFilters();
+				if (!filterPaneOpen) listPageElement?.focus();
+				return;
+			}
+
+			// Skip other shortcuts if we're in an input field (but not cell-editing inputs in the table)
+			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+
+			// Ctrl+C / Ctrl+V: copy and paste records (lists that allow it) in navigation mode —
+			// here, not in the list's own shortcuts, so they also work when the list has no focus
+			// (an empty list to paste into). Selected text is left to the browser.
+			if (page.page.copy_paste_allowed && isNavigation && (shortcutKey === 'Ctrl+C' || shortcutKey === 'Ctrl+V')) {
+				if (shortcutKey === 'Ctrl+C' && String(window.getSelection() ?? '').trim() !== '') return;
+				event.preventDefault();
+				event.stopPropagation();
+				if (shortcutKey === 'Ctrl+C') handleCopyRecords();
+				else handlePasteRecords();
+				return;
+			}
 
 			// Check if this matches any action shortcut (normalize the action shortcut for comparison)
 			const action = page.page.actions?.find(a => a.shortcut && normalizeShortcut(a.shortcut) === shortcutKey);
@@ -2266,6 +2300,68 @@
 		selection = emptySelection();
 	}
 
+	// ---- Click and drag selects rows (navigation mode) ----
+	// Pressing the mouse button on a row and moving over other rows selects every row from the
+	// first to the one under the mouse; near the top/bottom edge of the list it scrolls on.
+	let dragSelect: { anchor: number; lastRow: number } | null = null;
+	let dragPointerY = 0;
+	let dragScrollTimer: ReturnType<typeof setInterval> | null = null;
+
+	function handleRowMouseDown(index: number, event: MouseEvent) {
+		if (!isNavigation || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) return;
+		dragSelect = { anchor: windowOffset + index, lastRow: windowOffset + index };
+		dragPointerY = event.clientY;
+		event.preventDefault(); // no browser text selection while dragging; the click still happens
+		window.addEventListener('mousemove', handleDragMouseMove);
+		window.addEventListener('mouseup', endDragSelect, { once: true });
+		dragScrollTimer = setInterval(dragAutoScroll, 60);
+	}
+
+	async function handleRowDragOver(index: number) {
+		if (!dragSelect || !isNavigation) return;
+		const row = windowOffset + index;
+		if (row === dragSelect.lastRow) return;
+		const anchor = dragSelect.anchor;
+		dragSelect.lastRow = row;
+		selectedIndex = index;
+		const keys = await keysBetween(anchor, row);
+		if (dragSelect && dragSelect.lastRow === row) selection = selectRange(anchor, keys);
+	}
+
+	function handleDragMouseMove(event: MouseEvent) {
+		dragPointerY = event.clientY;
+	}
+
+	// While dragging near the top or bottom edge, scroll the list and select the row now under
+	// the mouse (moving rows under a still mouse fire no mouseenter)
+	function dragAutoScroll() {
+		const container = tableBodyElement?.closest('.table-container') as HTMLElement | null;
+		if (!dragSelect || !container) return;
+		const box = container.getBoundingClientRect();
+		const header = (container.querySelector('thead') as HTMLElement | null)?.offsetHeight ?? 0;
+		let step = 0;
+		if (dragPointerY < box.top + header + 24) step = -24;
+		else if (dragPointerY > box.bottom - 24) step = 24;
+		if (step === 0) return;
+		container.scrollTop += step;
+		const y = Math.min(Math.max(dragPointerY, box.top + header + 2), box.bottom - 2);
+		const row = document.elementFromPoint(box.left + 8, y)?.closest('tr[data-row-index]') as HTMLElement | null;
+		if (row?.dataset.rowIndex) handleRowDragOver(Number(row.dataset.rowIndex));
+	}
+
+	function endDragSelect() {
+		dragSelect = null;
+		window.removeEventListener('mousemove', handleDragMouseMove);
+		if (dragScrollTimer) clearInterval(dragScrollTimer);
+		dragScrollTimer = null;
+		listPageElement?.focus();
+	}
+
+	// Leaving the page while dragging: stop the scroll timer and listeners
+	$effect(() => () => {
+		if (dragSelect) endDragSelect();
+	});
+
 	// Ctrl+click adds/removes a row, Shift+click selects from the anchor to the row
 	async function handleSelectionClick(index: number, event: MouseEvent) {
 		const row = windowOffset + index;
@@ -2307,6 +2403,65 @@
 				allKeysCache = null;
 				selectedIndex = Math.min(Math.max(selectedIndex, 0), displayRecords.length - 1);
 			}
+		);
+	}
+
+	// ---- Copy/paste of records (page copy_paste_allowed, BC CopyPasteAllowed) ----
+
+	// Ctrl+C: copy the selected records (or the cursor row) — their stored fields, from the
+	// server — into the browser tab's clipboard
+	async function handleCopyRecords() {
+		const request = selection.all
+			? { all: true }
+			: multiSelected
+				? { keys: [...selection.keys] }
+				: selectedRecord
+					? { keys: [rowKey(selectedRecord)] }
+					: null;
+		if (!request) return;
+		try {
+			const records = await api.copyRecords(page.page.source_table, request, request.all ? selectionQuery() : undefined);
+			saveClipboard({ table: page.page.source_table, company: get(currentCompany) ?? '', records });
+			toast.success(
+				records.length === 1 ? t(MSG.RECORD_COPIED) : t(MSG.RECORDS_COPIED, records.length.toLocaleString(locale))
+			);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : String(err));
+		}
+	}
+
+	// Ctrl+V: insert the copied records into this table — with the key values the list is
+	// filtered on (e.g. another role), or as they are in another company. One confirmation,
+	// one transaction; the pasted records are selected afterwards.
+	function handlePasteRecords() {
+		const clip = loadClipboard();
+		if (!clip || clip.records.length === 0) {
+			toast.info(t(MSG.CLIPBOARD_EMPTY));
+			return;
+		}
+		if (clip.table !== page.page.source_table) {
+			toast.error(t(MSG.CLIPBOARD_OTHER_TABLE, clip.table));
+			return;
+		}
+		const records = recordsToPaste(clip.records, keyValuesFromFilters(currentFilters, primaryKeyFieldsList));
+		const company = get(currentCompany) ?? '';
+		let message = t(DLG.PASTE_RECORDS_CONFIRM, records.length.toLocaleString(locale), page.page.caption);
+		if (clip.company && clip.company !== company) message += ' ' + t(DLG.PASTE_FROM_COMPANY, clip.company);
+		confirm.show(
+			t(DLG.PASTE_RECORDS_TITLE),
+			message,
+			async () => {
+				let keys: string[] = [];
+				try {
+					keys = (await onpaste?.(records)) ?? [];
+				} catch {
+					return; // the error (naming the record) was shown; nothing was pasted
+				}
+				if (keys.length > 0) {
+					selection = { keys: new Set(keys), all: false, anchor: null };
+				}
+			},
+			{ confirmText: t(BTN.PASTE), variant: 'info' }
 		);
 	}
 
@@ -2832,7 +2987,11 @@
 			</thead>
 			<tbody bind:this={tableBodyElement}>
 				{#each displayRecords as record, index (getRecordKey(record, primaryKeyField, primaryKeyFieldsList))}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<tr
+						data-row-index={index}
+						onmousedown={(e) => handleRowMouseDown(index, e)}
+						onmouseenter={() => handleRowDragOver(index)}
 						class={cn(
 							isNavigation ? 'cursor-pointer' : '',
 							isNavigation && (multiSelected ? isSelected(selection, rowKey(record)) : selectedIndex === index) && 'selected',
@@ -3488,19 +3647,20 @@
 		background-color: #cce8ea !important;
 	}
 
+	/* Dark mode: a neutral gray, lighter than the hover row (#303032), so many selected rows
+	   do not dominate the list */
 	:global(.dark) .table tbody tr.selected {
-		background-color: #00585c !important; /* bg-blue-800 */
-		color: white;
+		background-color: #3c4047 !important;
+		color: #f7f7f7;
 	}
 
 	:global(.dark) .table tbody tr.selected:hover {
-		background-color: #00585c !important;
+		background-color: #454a52 !important;
 	}
 
 	:global(.dark) .table tbody tr.selected td,
-	:global(.dark) .table tbody tr.selected .read-cell-content,
-	:global(.dark) .table tbody tr.selected .primary-key-link {
-		color: white !important;
+	:global(.dark) .table tbody tr.selected .read-cell-content {
+		color: #f7f7f7 !important;
 	}
 
 	/* Cursor row while several rows are selected (it may be selected or not) */

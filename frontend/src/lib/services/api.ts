@@ -100,6 +100,39 @@ export const api = {
 
 	// Keys of the records in list order; with the list's filters, search and sort (card navigation)
 	/**
+	 * The records to copy (list Ctrl+C): the given keys, or with all every record the list
+	 * shows (query: the list's filters and search). Stored fields only, at most 1,000.
+	 */
+	async copyRecords(
+		tableName: string,
+		request: { keys?: string[]; all?: boolean },
+		query?: ListOptions
+	): Promise<Record<string, unknown>[]> {
+		const params = request.all ? buildQueryString(query) : '';
+		const response = await fetch(`${API_BASE}/tables/${tableName}/copy${params ? '?' + params : ''}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(request)
+		});
+		const data = await handleApiResponse<{ records: Record<string, unknown>[] }>(response, `copy ${tableName} records`);
+		return data.records;
+	},
+
+	/**
+	 * Insert several records in one transaction (list Ctrl+V): a record that cannot be
+	 * inserted rolls back all; the error names it. Returns the keys of the inserted records.
+	 */
+	async insertRecords(tableName: string, records: Record<string, unknown>[]): Promise<string[]> {
+		const response = await fetch(`${API_BASE}/tables/${tableName}/insert-many`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ records })
+		});
+		const data = await handleApiResponse<{ keys: string[] }>(response, `paste ${tableName} records`);
+		return data.keys;
+	},
+
+	/**
 	 * Delete several records in one transaction (list multi-select): the given keys, or with
 	 * all every record the list shows — query carries the list's filters and search. A record
 	 * that cannot be deleted rolls back all; the error names it. Returns the number deleted.

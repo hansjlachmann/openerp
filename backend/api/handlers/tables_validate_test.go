@@ -68,6 +68,8 @@ func newTablesTestApp(t *testing.T) *fiber.App {
 	app.Get("/api/tables/:table/list", h.ListRecords)
 	app.Get("/api/tables/:table/ids", h.GetRecordIDs)
 	app.Delete("/api/tables/:table/delete-many", h.DeleteRecords)
+	app.Post("/api/tables/:table/copy", h.CopyRecords)
+	app.Post("/api/tables/:table/insert-many", h.InsertRecords)
 	return app
 }
 

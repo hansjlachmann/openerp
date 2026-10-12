@@ -9,7 +9,7 @@
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
-	import { t, MODAL, CARD } from '$lib/services/i18n.svelte';
+	import { t, MODAL } from '$lib/services/i18n.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -280,14 +280,6 @@
 	</div>
 
 	<div class="modal-body">
-		<!-- Keyboard shortcuts hint -->
-		{#if page.page.enable_navigation && recordIdsLoaded}
-			<div class="keyboard-hint">
-				<span class="text-xs text-gray-500 dark:text-gray-400">
-					<kbd>Ctrl+↑/↓</kbd> {t(CARD.HINT_NAVIGATE)} • <kbd>Ctrl+Home/End</kbd> {t(CARD.HINT_FIRST_LAST)}
-				</span>
-			</div>
-		{/if}
 
 		<CardPage
 			{page}
@@ -356,38 +348,16 @@
 		@apply flex-1 flex flex-col p-6;
 		@apply bg-gray-50;
 		@apply overflow-hidden; /* Prevent modal-body from scrolling */
-		@apply relative; /* For keyboard-hint positioning */
+		@apply relative;
 	}
 
 	:global(.dark) .modal-body {
 		background-color: #121212; /* gray-900 */
 	}
 
-	.keyboard-hint {
-		@apply absolute top-4 right-4 z-40;
-		@apply bg-white;
-		@apply px-3 py-1.5 rounded-md;
-		@apply shadow-sm border border-gray-200;
-		@apply opacity-70 hover:opacity-100;
-		@apply transition-opacity duration-200;
-	}
 
-	:global(.dark) .keyboard-hint {
-		background-color: #1e1e1e; /* gray-800 */
-		border-color: #303032; /* gray-700 */
-	}
 
-	.keyboard-hint kbd {
-		@apply bg-gray-100;
-		@apply px-1.5 py-0.5 rounded;
-		@apply text-xs font-mono;
-		@apply border border-gray-300;
-	}
 
-	:global(.dark) .keyboard-hint kbd {
-		background-color: #303032; /* gray-700 */
-		border-color: #505c6d; /* gray-600 */
-	}
 
 
 	/* Hover effect */

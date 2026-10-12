@@ -541,20 +541,14 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
 
 From `frontend/README.md` (formerly "Next Steps") and inline markers.
 
-- [ ] **Copy/paste records on list pages (low priority).** Only on list pages that allow it: new page
-      YAML property `copy_paste_allowed: true` (CopyPasteAllowed). The user marks the records to copy
-      (multi-row selection), then pastes them; every pasted record is inserted (BC/NAV Insert, triggers
-      run). Two scenarios:
-      1. **Same table, new keys (composite primary key):** mark records, set a filter on the primary key
-         field(s) that should differ (e.g. a new role or company in User Member), paste — the filter's
-         values replace those key fields in the pasted records. A record whose resulting key already
-         exists is an error (report which).
-      2. **Between companies, same table:** mark records, switch company (Ctrl+O), open the same list
-         and paste. The records keep their primary keys, which must not exist in the target company yet
-         (error otherwise).
-      Open points: what to do when some records of a paste fail (all-or-nothing transaction is the
-      safer default), where the copied records are held across the company switch (server side vs.
-      browser storage), sensitive fields never copied, FlowFields not copied.
+- [x] **Copy/paste records on list pages** (2026-10-12): page property `copy_paste_allowed: true`
+      (on User Members, Permissions, Payment Terms, Countries/Regions). Ctrl+C copies the selected
+      records (stored fields from `POST …/copy`, kept in the browser tab, survive a company switch);
+      Ctrl+V inserts them into the same table — key values from exact filters on key fields (e.g.
+      READER members pasted as CLERK), or as they are in another company — in one transaction
+      (`POST …/insert-many`, same checks and triggers as a single insert, first failure rolls back
+      all and is named, max 1,000). Verified in the browser on Postgres. Excel paste and pasting
+      between different tables are out of scope (decided by the user).
 
 - [ ] `frontend/src/lib/components/pages/PageRenderer.svelte:500` — only `List` and `Card`
       page types render; all other types hit the "not yet supported" fallback. Add support

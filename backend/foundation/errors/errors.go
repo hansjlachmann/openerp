@@ -30,6 +30,8 @@ const (
 	ErrFilterInvalid      ErrorCode = "ERR_FILTER_INVALID"
 	ErrDeleteTooMany      ErrorCode = "ERR_DELETE_TOO_MANY"
 	ErrDeleteRecordFailed ErrorCode = "ERR_DELETE_RECORD_FAILED"
+	ErrCopyTooMany        ErrorCode = "ERR_COPY_TOO_MANY"
+	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
 	ErrModifyFailed       ErrorCode = "ERR_MODIFY_FAILED"
@@ -217,7 +219,27 @@ func DeleteTooMany(max int) *AppError {
 // DeleteRecordFailed: a record of a bulk delete could not be deleted (reason: its trigger's
 // message); nothing was deleted
 func DeleteRecordFailed(tableCaption, key, reason string) *AppError {
-	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, reason}}
+	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, sentence(reason)}}
+}
+
+// CopyTooMany: a copy or paste holds more records than one copy/paste may (max)
+func CopyTooMany(max int) *AppError {
+	return &AppError{Code: ErrCopyTooMany, Params: []string{strconv.Itoa(max)}}
+}
+
+// PasteRecordFailed: record n of total of a paste could not be inserted (reason: the
+// insert's message, naming the record); nothing was pasted
+func PasteRecordFailed(n, total int, reason string) *AppError {
+	return &AppError{Code: ErrPasteRecordFailed, Params: []string{strconv.Itoa(n), strconv.Itoa(total), sentence(reason)}}
+}
+
+// sentence ends a message that is followed by another sentence with a full stop
+func sentence(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.HasSuffix(s, ".") || strings.HasSuffix(s, "!") || strings.HasSuffix(s, "?") {
+		return s
+	}
+	return s + "."
 }
 
 // DeleteFailed creates an error for failed delete operation
