@@ -35,6 +35,45 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
+## ⚠ Security: codeunits run without a permission check (HIGH priority, found 2026-10-12)
+
+- [ ] `POST /api/codeunits/run` and `POST /api/jobs/start` (`backend/api/handlers/codeunits.go`,
+      `jobs.go`) run **any** registered codeunit by ID for any logged-in user — no permission check
+      (the table permission middleware only covers `/api/tables/:table/...`). E.g. a user with read-only
+      roles can start demo data (50100), SIFT Verify/Repair (50110), the NAV Report Runner or Send Test
+      E-mail. Decide the rule (BC: execute permission per object, e.g. a Permission row for the codeunit,
+      or at least Modify/Insert on the codeunit's `SourceTable()`), check it in both handlers and in the
+      Job Queue (a scheduled job runs as the user who set it up?), add tests. The theme install endpoints
+      check their permission themselves for this reason.
+
+## Feature: Themes and appearance ✅ DONE (2026-10-12)
+
+Per-user appearance in the user menu's "Appearance" dialog (BC User Personalization), Omarchy themes
+installed from GitHub. Five local commits (`ff14b49` … `c740652`), each verified separately:
+- [x] Colors are CSS variables (RGB triplets in `app.css`, Tailwind colors point at them) — BC Light/Dark
+      pixel-identical (screenshots of 13 views in both modes).
+- [x] Themes: a light-mode and a dark-mode theme per user (table `User_Personalization` 5162), the
+      sun/moon button switches between them; built-in BC Light/Dark, Tokyo Night, Nord, Gruvbox,
+      Catppuccin Latte, Solarized Light; colors normalized with a contrast guard; first paint from a cache.
+- [x] Install from GitHub by repository URL (tables `Theme` 5160, `Theme_Asset` 5161, page 36 Themes):
+      `colors.toml` (both Omarchy forms) or `alacritty.toml`, preview, wallpapers — tested with
+      r-bart/omarchy-starsend-theme, TyRichards/omarchy-super-game-bro-theme,
+      robzolkos/omarchy-robzee84-theme. Security: URL/host allowlist, only theme files, size limits,
+      images re-encoded, CSP on images, commit pinning, permissions, rate limit (CLAUDE.md).
+- [x] Wallpapers with visibility, blur and panel opacity (75–100 %).
+- [x] Font (self-hosted Inter / IBM Plex Sans, system, serif, monospace), font size, list density.
+
+Open follow-ups:
+- [ ] Login page and the Keyboard Shortcuts window still use fixed BC colors (`routes/login`,
+      `routes/help/shortcuts` — about 60 hex values); convert to the theme variables.
+- [ ] Column captions wrap at 110–125 % font size (fixed pixel column widths); consider scaling the
+      widths with `--font-scale`.
+- [ ] The rate-limit message "Too many requests" (`middleware/ratelimit.go`) is English only.
+- [ ] Status colors (red/green/yellow toasts, errors) are not taken from themes yet.
+- [ ] Production: optionally set `GITHUB_TOKEN` / `THEME_ALLOWED_OWNERS` in `prod.env` (`prod.env.example`).
+
+---
+
 ## Business Logic (later)
 
 All business logic updates are collected here and dealt with later (decided by the user
