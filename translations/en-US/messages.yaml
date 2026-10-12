@@ -147,6 +147,16 @@ messages:
   APPEARANCE_WALLPAPER_OPACITY: "Wallpaper visibility"
   APPEARANCE_WALLPAPER_BLUR: "Wallpaper blur"
   APPEARANCE_PANEL_OPACITY: "Panel opacity"
+  APPEARANCE_TEXT: "Text and lists"
+  APPEARANCE_FONT: "Font"
+  APPEARANCE_FONT_DEFAULT: "Default"
+  APPEARANCE_FONT_SYSTEM: "System font"
+  APPEARANCE_FONT_SERIF: "Serif"
+  APPEARANCE_FONT_MONOSPACE: "Monospace"
+  APPEARANCE_FONT_SIZE: "Font size"
+  APPEARANCE_DENSITY: "List rows"
+  APPEARANCE_DENSITY_COMFORTABLE: "Comfortable"
+  APPEARANCE_DENSITY_COMPACT: "Compact"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Keyboard Shortcuts"

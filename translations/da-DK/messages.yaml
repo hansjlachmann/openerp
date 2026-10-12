@@ -147,6 +147,16 @@ messages:
   APPEARANCE_WALLPAPER_OPACITY: "Baggrundsbilledets synlighed"
   APPEARANCE_WALLPAPER_BLUR: "Baggrundsbilledets sløring"
   APPEARANCE_PANEL_OPACITY: "Panelernes dækkeevne"
+  APPEARANCE_TEXT: "Tekst og lister"
+  APPEARANCE_FONT: "Skrifttype"
+  APPEARANCE_FONT_DEFAULT: "Standard"
+  APPEARANCE_FONT_SYSTEM: "Systemskrifttype"
+  APPEARANCE_FONT_SERIF: "Serif"
+  APPEARANCE_FONT_MONOSPACE: "Fast bredde"
+  APPEARANCE_FONT_SIZE: "Skriftstørrelse"
+  APPEARANCE_DENSITY: "Listelinjer"
+  APPEARANCE_DENSITY_COMFORTABLE: "Luftig"
+  APPEARANCE_DENSITY_COMPACT: "Kompakt"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Genvejstaster"

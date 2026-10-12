@@ -6,7 +6,17 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { appearance, chooseTheme, loadAppearance, saveAppearance } from '$lib/stores/theme';
-	import { themeAssetUrl, type AppearanceSettings, type Theme, type ThemeList } from '$lib/theme/apply';
+	import { FONT_SIZES, FONTS, themeAssetUrl, type AppearanceSettings, type Theme, type ThemeList } from '$lib/theme/apply';
+
+	/** Caption keys of the fonts (messages.yaml) */
+	const fontCaption: Record<string, string> = {
+		default: APPEARANCE.FONT_DEFAULT,
+		system: APPEARANCE.FONT_SYSTEM,
+		inter: 'Inter',
+		ibm_plex_sans: 'IBM Plex Sans',
+		serif: APPEARANCE.FONT_SERIF,
+		monospace: APPEARANCE.FONT_MONOSPACE
+	};
 
 	interface Props {
 		onclose: () => void;
@@ -214,6 +224,37 @@
 			</form>
 		{/if}
 
+		{#if settings}
+			<section class="theme-section text-section">
+				<h3 class="section-title">{t(APPEARANCE.TEXT)}</h3>
+				<div class="text-controls">
+					<label>
+						<span>{t(APPEARANCE.FONT)}</span>
+						<select value={settings.font} onchange={(e) => save({ font: e.currentTarget.value })} data-appearance-font>
+							{#each FONTS as f (f)}
+								<option value={f}>{fontCaption[f].startsWith('APPEARANCE_') ? t(fontCaption[f]) : fontCaption[f]}</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						<span>{t(APPEARANCE.FONT_SIZE)}</span>
+						<select value={String(settings.font_size)} onchange={(e) => save({ font_size: +e.currentTarget.value })} data-appearance-size>
+							{#each FONT_SIZES as size (size)}
+								<option value={String(size)}>{size === 0 ? t(APPEARANCE.FONT_DEFAULT) : `${size} %`}</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						<span>{t(APPEARANCE.DENSITY)}</span>
+						<select value={settings.density} onchange={(e) => save({ density: e.currentTarget.value as AppearanceSettings['density'] })} data-appearance-density>
+							<option value="comfortable">{t(APPEARANCE.DENSITY_COMFORTABLE)}</option>
+							<option value="compact">{t(APPEARANCE.DENSITY_COMPACT)}</option>
+						</select>
+					</label>
+				</div>
+			</section>
+		{/if}
+
 		{#if settings && activeTheme}
 			<section class="theme-section wallpaper-section">
 				<h3 class="section-title">{t(APPEARANCE.WALLPAPER)} <span class="current-mode">— {activeTheme.name}</span></h3>
@@ -377,6 +418,19 @@
 
 	.theme-name {
 		@apply mt-2 flex items-center justify-between text-sm text-fg;
+	}
+
+	.text-controls {
+		@apply grid gap-3;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	}
+
+	.text-controls label {
+		@apply flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-400;
+	}
+
+	.text-controls select {
+		@apply px-2 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-surface dark:bg-gray-700 text-fg;
 	}
 
 	.wallpaper-grid {

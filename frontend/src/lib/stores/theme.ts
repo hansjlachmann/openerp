@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import { getString, setString } from '$lib/utils/storage';
 import { api } from '$lib/services/api';
 import {
+	applyLayout,
 	applyMode,
 	cacheFor,
 	themeAssetUrl,
@@ -70,6 +71,7 @@ function applyWallpaper(mode: Mode) {
 function show(mode: Mode) {
 	if (!browser) return;
 	applyMode(mode, cache?.[mode] ?? {});
+	applyLayout(cache?.classes ?? [], cache?.scale ?? 1);
 	applyWallpaper(mode);
 	setString(THEME_STORAGE_KEY, mode);
 	if (cache) {

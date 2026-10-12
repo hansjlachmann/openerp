@@ -214,6 +214,40 @@
 	}
 }
 
+/* Font, font size and list density (Appearance): classes and --font-scale on <html>, set by
+   src/lib/stores/theme.ts and, before the first paint, by the inline script in app.html.
+   Inter and IBM Plex Sans are self-hosted (@fontsource, imported in +layout.svelte): no
+   request to a font service; a font file is only downloaded when it is used. */
+html {
+	font-size: calc(var(--font-scale, 1) * 100%);
+}
+
+html.font-system {
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html.font-inter {
+	--font-sans: 'Inter Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+html.font-ibm-plex-sans {
+	--font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+html.font-serif {
+	--font-sans: Georgia, Cambria, 'Times New Roman', serif;
+}
+
+html.font-monospace {
+	--font-sans: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+/* List rows (ListPage .table td): comfortable = the BC rows as before, compact = no padding */
+html.density-compact {
+	--cell-py: 0px;
+	--cell-lh: 1.15;
+}
+
 /* Wallpaper (Appearance): a fixed layer behind the page (routes/+layout.svelte), blended over
    the solid page background (<html>) with --wp-opacity, so text on the bare page stays
    readable. While it is shown, the page containers are transparent and the panels take the

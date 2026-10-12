@@ -143,12 +143,46 @@ export interface ThemeCache {
 	mode: Mode;
 	light: Record<string, string>;
 	dark: Record<string, string>;
+	/** Classes on <html>: font-*, density-compact (app.css) */
+	classes?: string[];
+	/** Font size factor (1 = default) */
+	scale?: number;
+}
+
+/** The fonts of the Appearance dialog; "default" is --font-sans of app.css (Segoe UI) */
+export const FONTS = ['default', 'system', 'inter', 'ibm_plex_sans', 'serif', 'monospace'] as const;
+
+/** Font size choices in percent (0 = default, 100 %) */
+export const FONT_SIZES = [0, 90, 110, 125] as const;
+
+/** Classes and font scale of the settings (font, density) */
+export function layoutOf(settings: AppearanceSettings): { classes: string[]; scale: number } {
+	const classes: string[] = [];
+	if (settings.font && settings.font !== 'default' && (FONTS as readonly string[]).includes(settings.font)) {
+		classes.push(`font-${settings.font.replace(/_/g, '-')}`);
+	}
+	if (settings.density === 'compact') classes.push('density-compact');
+	const pct = settings.font_size >= 80 && settings.font_size <= 150 ? settings.font_size : 100;
+	return { classes, scale: pct / 100 };
+}
+
+/** Classes on <html> the appearance owns (removed before new ones are added) */
+export const LAYOUT_CLASS = /^(font-[a-z-]+|density-compact)$/;
+
+export function applyLayout(classes: string[], scale: number, el: HTMLElement = document.documentElement) {
+	for (const c of [...el.classList]) if (LAYOUT_CLASS.test(c)) el.classList.remove(c);
+	for (const c of classes) if (LAYOUT_CLASS.test(c)) el.classList.add(c);
+	if (scale !== 1) el.style.setProperty('--font-scale', String(scale));
+	else el.style.removeProperty('--font-scale');
 }
 
 export function cacheFor(appearance: Appearance): ThemeCache {
+	const { classes, scale } = layoutOf(appearance.settings);
 	return {
 		mode: appearance.settings.mode,
 		light: tokensToVars(appearance.light.tokens),
-		dark: tokensToVars(appearance.dark.tokens)
+		dark: tokensToVars(appearance.dark.tokens),
+		classes,
+		scale
 	};
 }

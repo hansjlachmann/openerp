@@ -1,5 +1,11 @@
 <script lang="ts">
 	import '../app.css';
+	// Self-hosted fonts of the Appearance dialog (files load only when the font is used)
+	import '@fontsource-variable/inter';
+	import '@fontsource/ibm-plex-sans/400.css';
+	import '@fontsource/ibm-plex-sans/500.css';
+	import '@fontsource/ibm-plex-sans/600.css';
+	import '@fontsource/ibm-plex-sans/700.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { session } from '$stores/session';

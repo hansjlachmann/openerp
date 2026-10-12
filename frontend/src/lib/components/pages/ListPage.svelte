@@ -3676,9 +3676,9 @@
 	}
 
 	.table td {
-		padding: 2px 6px;
+		padding: var(--cell-py, 2px) 6px; /* density: app.css */
 		font-size: 0.875rem;
-		line-height: 1.3;
+		line-height: var(--cell-lh, 1.3);
 		vertical-align: bottom;
 	}
 

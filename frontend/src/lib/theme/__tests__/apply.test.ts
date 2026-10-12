@@ -3,8 +3,11 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
 	ALL_THEME_VAR_NAMES,
+	FONTS,
 	STEPS,
+	applyLayout,
 	cacheFor,
+	layoutOf,
 	hexToTriplet,
 	tokensToVars,
 	type Appearance,
@@ -105,4 +108,39 @@ describe('appearance translations', () => {
 			expect(keys.filter((k) => !new RegExp(`^\\s+${k}:`, 'm').test(file))).toEqual([]);
 		});
 	}
+});
+
+describe('font, size and density', () => {
+	const base = {
+		light_theme: 'BC-LIGHT', dark_theme: 'BC-DARK', mode: 'dark' as const, wallpaper: '', wallpaper_opacity: 25,
+		wallpaper_blur: 0, panel_opacity: 92, font: 'default', font_size: 0, density: 'comfortable' as const
+	};
+	it('defaults change nothing', () => {
+		expect(layoutOf(base)).toEqual({ classes: [], scale: 1 });
+	});
+	it('maps the settings to classes and a scale', () => {
+		expect(layoutOf({ ...base, font: 'ibm_plex_sans', font_size: 125, density: 'compact' })).toEqual({
+			classes: ['font-ibm-plex-sans', 'density-compact'],
+			scale: 1.25
+		});
+	});
+	it('ignores unknown fonts and sizes out of range', () => {
+		expect(layoutOf({ ...base, font: 'comic"; x', font_size: 900 })).toEqual({ classes: [], scale: 1 });
+	});
+	it('every font has a rule in app.css', () => {
+		const css = readFileSync(resolve(__dirname, '../../../app.css'), 'utf8');
+		for (const f of FONTS.filter((f) => f !== 'default')) {
+			expect(css).toContain(`html.font-${f.replace(/_/g, '-')} {`);
+		}
+	});
+	it('applyLayout replaces only its own classes', () => {
+		const el = document.createElement('html');
+		el.classList.add('dark', 'font-serif', 'has-wallpaper');
+		applyLayout(['font-inter', 'density-compact', 'evil class'], 1.1, el);
+		expect([...el.classList].sort()).toEqual(['dark', 'density-compact', 'font-inter', 'has-wallpaper']);
+		expect(el.style.getPropertyValue('--font-scale')).toBe('1.1');
+		applyLayout([], 1, el);
+		expect([...el.classList].sort()).toEqual(['dark', 'has-wallpaper']);
+		expect(el.style.getPropertyValue('--font-scale')).toBe('');
+	});
 });
