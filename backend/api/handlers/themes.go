@@ -64,8 +64,8 @@ type appearanceResponse struct {
 }
 
 // themeList is the user's theme gallery: the built-in themes and the installed themes the
-// user added, and what the user may do (Theme table permissions: Insert = install and
-// remove from the own themes, Modify = update)
+// user added. Every user may install, update and remove their own themes (the flags stay
+// for the frontend; deleting a theme for everybody is the Themes page, Delete permission).
 type themeList struct {
 	Themes     []themes.Theme `json:"themes"`
 	CanInstall bool           `json:"can_install"`
@@ -81,19 +81,13 @@ func (h *ThemesHandler) ListThemes(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 	list := append(append([]themes.Theme{}, themes.Builtins()...), tables.UserThemes(h.db, h.dbType, sess.GetUserID())...)
-	canInstall := sess.HasPermission(gtables.ThemeTableName, session.PermInsert)
-	return c.JSON(apitypes.NewSuccessResponse(themeList{
-		Themes:     list,
-		CanInstall: canInstall,
-		CanRefresh: sess.HasPermission(gtables.ThemeTableName, session.PermModify),
-		CanDelete:  canInstall,
-	}))
+	return c.JSON(apitypes.NewSuccessResponse(themeList{Themes: list, CanInstall: true, CanRefresh: true, CanDelete: true}))
 }
 
-// InstallTheme installs the theme of a GitHub repository (Insert permission on Theme)
+// InstallTheme adds the theme of a GitHub repository to the user's themes (any user)
 // POST /api/themes/install {"url": "https://github.com/owner/repo"}
 func (h *ThemesHandler) InstallTheme(c *fiber.Ctx) error {
-	sess, lang, err := h.themeAdmin(c, session.PermInsert)
+	sess, lang, err := h.themeUser(c)
 	if err != nil {
 		return err
 	}
@@ -110,11 +104,10 @@ func (h *ThemesHandler) InstallTheme(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(res))
 }
 
-// RefreshTheme downloads one of the user's installed themes again (Modify permission on
-// Theme); the files are shared, so every user who has the theme gets the update
+// RefreshTheme downloads one of the user's installed themes again; the files are shared, so every user who has the theme gets the update
 // POST /api/themes/:code/refresh
 func (h *ThemesHandler) RefreshTheme(c *fiber.Ctx) error {
-	sess, lang, err := h.themeAdmin(c, session.PermModify)
+	sess, lang, err := h.themeUser(c)
 	if err != nil {
 		return err
 	}
@@ -128,12 +121,11 @@ func (h *ThemesHandler) RefreshTheme(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(res))
 }
 
-// DeleteTheme removes an installed theme from the user's themes (Insert permission on Theme,
-// like installing); its files are deleted when no user has it any more. Deleting a theme
+// DeleteTheme removes an installed theme from the user's themes; its files are deleted when no user has it any more. Deleting a theme
 // for every user is done on the Themes page (Delete permission).
 // DELETE /api/themes/:code
 func (h *ThemesHandler) DeleteTheme(c *fiber.Ctx) error {
-	sess, lang, err := h.themeAdmin(c, session.PermInsert)
+	sess, lang, err := h.themeUser(c)
 	if err != nil {
 		return err
 	}
@@ -186,18 +178,15 @@ func (h *ThemesHandler) GetThemeAsset(c *fiber.Ctx) error {
 	return c.Send(rec.Data)
 }
 
-// themeAdmin checks the session and the Theme permission for installing, refreshing or
-// deleting themes. On failure the response is written and returned as err.
-func (h *ThemesHandler) themeAdmin(c *fiber.Ctx, op session.PermissionOperation) (*session.Session, string, error) {
+// themeUser checks the session for installing, updating or removing the user's own themes —
+// every logged-in user may (the themes are per user; downloads are limited by the
+// installer and the rate limit). On failure the response is written and returned as err.
+func (h *ThemesHandler) themeUser(c *fiber.Ctx) (*session.Session, string, error) {
 	sess := getSession(c)
 	if sess == nil || sess.GetUserID() == "" {
 		return nil, "en-US", c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
-	lang := getLanguageOrDefault(sess)
-	if !sess.HasPermission(gtables.ThemeTableName, op) {
-		return nil, lang, c.Status(fiber.StatusForbidden).JSON(apitypes.NewErrorResponse(apperrors.PermissionDenied(string(op), gtables.ThemeTableName).Message(lang)))
-	}
-	return sess, lang, nil
+	return sess, getLanguageOrDefault(sess), nil
 }
 
 // themeErrors maps install/refresh errors to their messages (messages.yaml)

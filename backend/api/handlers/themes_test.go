@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"strings"
@@ -137,7 +138,6 @@ func TestListThemes(t *testing.T) {
 	_, out := getJSON(t, app, "/api/themes")
 	data, _ := out["data"].(map[string]interface{})
 	list, _ := data["themes"].([]interface{})
-	// No roles assigned: the permission system is not configured, everything is allowed
 	if data["can_install"] != true || data["can_delete"] != true {
 		t.Errorf("permissions = %v", data)
 	}
@@ -211,5 +211,45 @@ func TestInstalledThemesArePerUser(t *testing.T) {
 	resp, _ := hans.Test(httptest.NewRequest("DELETE", "/api/themes/DUNE", nil))
 	if resp.StatusCode != 404 || !listed(admin) {
 		t.Errorf("HANS remove = %d, ADMIN still has it %v", resp.StatusCode, listed(admin))
+	}
+}
+
+// Every user may manage their own themes, also a user whose roles give no Theme permission
+func TestThemesWithoutThemePermission(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}, &tables.UserTheme{}} {
+		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := NewThemesHandler(db, database.DBTypeSQLite)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		sess := &session.Session{UserID: "CLERK", Company: "TEST", Language: "en-US"}
+		sess.SetPermissions(true, false, map[string]session.TablePermission{"CUSTOMER": {Read: true}})
+		c.Locals("session", sess)
+		return c.Next()
+	})
+	app.Get("/api/themes", h.ListThemes)
+	app.Post("/api/themes/install", h.InstallTheme)
+	app.Delete("/api/themes/:code", h.DeleteTheme)
+
+	_, out := getJSON(t, app, "/api/themes")
+	if data := out["data"].(map[string]interface{}); data["can_install"] != true {
+		t.Errorf("can_install = %v", data["can_install"])
+	}
+	// Reaches the installer (a bad URL is refused there, not by a permission check)
+	if out := postJSON(t, app, "/api/themes/install", `{"url":"https://example.com/a/b"}`); !strings.Contains(fmt.Sprint(out["error"]), "GitHub") {
+		t.Errorf("install = %v", out)
+	}
+	resp, _ := app.Test(httptest.NewRequest("DELETE", "/api/themes/NOPE", nil))
+	if resp.StatusCode != 404 {
+		t.Errorf("remove = %d, want 404 (not 403)", resp.StatusCode)
 	}
 }
