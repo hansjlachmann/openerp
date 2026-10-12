@@ -8,6 +8,9 @@
 	import { appearance, chooseTheme, loadAppearance, saveAppearance } from '$lib/stores/theme';
 	import { FONT_SIZES, FONTS, themeAssetUrl, type AppearanceSettings, type Theme, type ThemeList } from '$lib/theme/apply';
 
+	/** Gallery of community themes (opens in a new tab; the user copies a repository URL from it) */
+	const OMARCHY_THEMES_URL = 'https://omarchy.org/themes/';
+
 	/** Caption keys of the fonts (messages.yaml) */
 	const fontCaption: Record<string, string> = {
 		default: APPEARANCE.FONT_DEFAULT,
@@ -221,6 +224,7 @@
 					</button>
 				</div>
 				<p class="install-hint">{t(APPEARANCE.INSTALL_HINT)}</p>
+				<a class="install-link" href={OMARCHY_THEMES_URL} target="_blank" rel="noopener noreferrer">{t(APPEARANCE.BROWSE_THEMES)} ↗</a>
 			</form>
 		{/if}
 
@@ -503,6 +507,10 @@
 
 	.install-hint {
 		@apply mt-2 text-xs text-gray-500 dark:text-gray-400;
+	}
+
+	.install-link {
+		@apply inline-block mt-1 text-xs text-primary-600 dark:text-primary-400 hover:underline;
 	}
 
 	.in-use-badge {

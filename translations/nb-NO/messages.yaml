@@ -132,6 +132,7 @@ messages:
   THEME_ERR_FAILED: "Temaet kunne ikke installeres: %1"
   APPEARANCE_INSTALL_TITLE: "Installer et tema fra GitHub"
   APPEARANCE_INSTALL_HINT: "Omarchy-temaer: adressen til et GitHub-repository med colors.toml (eller alacritty.toml). Bare farger og bakgrunnsbilder hentes. Du er ansvarlig for rettighetene til bildene."
+  APPEARANCE_BROWSE_THEMES: "Bla gjennom Omarchy-temaer"
   APPEARANCE_INSTALL: "Installer"
   APPEARANCE_INSTALLING: "Installerer…"
   APPEARANCE_INSTALLED: "Temaet «%1» er installert"
