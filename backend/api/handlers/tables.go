@@ -262,7 +262,7 @@ func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
 	fieldName := c.Params("field")
 	sess := getSession(c)
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 	company := sess.GetCompany()
 	language := sess.GetLanguage()
@@ -358,7 +358,7 @@ func (h *TablesHandler) GetOptions(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -389,7 +389,7 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -506,7 +506,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -629,7 +629,7 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -687,7 +687,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -776,7 +776,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -876,7 +876,7 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -934,7 +934,7 @@ func (h *TablesHandler) DeleteRecords(c *fiber.Ctx) error {
 	tableName := c.Params("table")
 	sess := getSession(c)
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 	sessCompany := sess.GetCompany()
 	language := sess.GetLanguage()
@@ -1098,7 +1098,7 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()
@@ -1124,7 +1124,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	company := sess.GetCompany()

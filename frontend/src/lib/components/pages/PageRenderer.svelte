@@ -10,7 +10,8 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
-	import { t, MSG, ERR, DLG, BTN } from '$lib/services/i18n.svelte';
+	import { t, MSG, ERR, DLG, BTN, PAGE_ERR } from '$lib/services/i18n.svelte';
+	import Button from '../Button.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
@@ -45,6 +46,14 @@
 	let pageLoading = $state(true);  // Loading page definition
 	let dataLoading = $state(false); // Loading data after page definition is known
 	let error = $state<string | null>(null);
+	let sessionExpired = $state(false); // the page request found no valid session (401)
+	let errorStatus = $state(0); // HTTP status of a failed page request
+
+	// A new login: full load of the login page (login starts the app fresh)
+	function logInAgain() {
+		currentUser.clear();
+		window.location.href = '/login';
+	}
 
 	// Data for the page
 	let record: Record<string, any> = $state({});
@@ -93,7 +102,19 @@
 			// Fetch page definition
 			const response = await fetch(`/api/pages/${pageid}`);
 			if (!response.ok) {
-				throw new Error(`Failed to load page: ${response.statusText}`);
+				// 401: no valid session any more (expired, or e.g. after an update) — offer a new login.
+				// The texts are translated in the template: translations may still be loading here.
+				sessionExpired = response.status === 401;
+				errorStatus = response.status;
+				let serverMessage = '';
+				if (!sessionExpired) {
+					try {
+						serverMessage = (await response.json())?.error ?? '';
+					} catch {
+						// not JSON (e.g. a proxy error page while the server restarts)
+					}
+				}
+				throw new Error(serverMessage);
 			}
 
 			const result = await response.json();
@@ -578,12 +599,23 @@
 			<ListPageSkeleton />
 		{/if}
 	{/if}
-{:else if error}
+{:else if error !== null}
+	<!-- error is "" for a failed page request: the screen translates its status -->
 	<div class="flex items-center justify-center h-full">
 		<div class="text-center">
 			<div class="text-red-600 dark:text-red-400 text-5xl mb-4">⚠</div>
-			<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Error Loading Page</h2>
-			<p class="text-gray-600 dark:text-gray-400">{error}</p>
+			<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">{t(PAGE_ERR.TITLE)}</h2>
+			<p class="text-gray-600 dark:text-gray-400 max-w-md">
+				{sessionExpired
+					? t(PAGE_ERR.SESSION_EXPIRED)
+					: error || t(PAGE_ERR.LOAD_FAILED, String(errorStatus))}
+			</p>
+			<div class="mt-6 flex justify-center gap-3">
+				<Button variant="primary" onclick={logInAgain}>{t(PAGE_ERR.LOG_IN_AGAIN)}</Button>
+				{#if !sessionExpired}
+					<Button variant="secondary" onclick={() => window.location.reload()}>{t(PAGE_ERR.TRY_AGAIN)}</Button>
+				{/if}
+			</div>
 		</div>
 	</div>
 {:else if page}

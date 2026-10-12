@@ -38,7 +38,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	// Capture session context for use in codeunit

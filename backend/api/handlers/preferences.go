@@ -39,7 +39,7 @@ func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	language := getLanguageOrDefault(sess)
@@ -85,7 +85,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	language := getLanguageOrDefault(sess)
@@ -163,7 +163,7 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 	sess := getSession(c)
 
 	if sess == nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	language := getLanguageOrDefault(sess)

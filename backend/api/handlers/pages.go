@@ -44,7 +44,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// Get current session for captions
 	sess := getSession(c)
 	if sess == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
 	}
 
 	// Get table metadata for primary key info
