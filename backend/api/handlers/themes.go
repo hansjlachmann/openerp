@@ -1,0 +1,212 @@
+package handlers
+
+import (
+	"database/sql"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/themes"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+)
+
+// ThemesHandler serves the color themes and the user's appearance (User_Personalization).
+type ThemesHandler struct {
+	db     *sql.DB
+	dbType database.DBType
+}
+
+// NewThemesHandler creates a themes handler
+func NewThemesHandler(db *sql.DB, dbType database.DBType) *ThemesHandler {
+	return &ThemesHandler{db: db, dbType: dbType}
+}
+
+// Option values of the appearance as the API names them (index = option value)
+var (
+	appearanceModes     = []string{"dark", "light"}
+	appearanceFonts     = []string{"default", "system", "inter", "ibm_plex_sans", "serif", "monospace"}
+	appearanceDensities = []string{"comfortable", "compact"}
+)
+
+// appearanceSettings is the user's appearance as the API sends and receives it. On PUT
+// every field is optional: only the fields sent change (the mode toggle sends only mode).
+type appearanceSettings struct {
+	LightTheme       *string `json:"light_theme,omitempty"`
+	DarkTheme        *string `json:"dark_theme,omitempty"`
+	Mode             *string `json:"mode,omitempty"`
+	Wallpaper        *string `json:"wallpaper,omitempty"`
+	WallpaperOpacity *int    `json:"wallpaper_opacity,omitempty"`
+	WallpaperBlur    *int    `json:"wallpaper_blur,omitempty"`
+	PanelOpacity     *int    `json:"panel_opacity,omitempty"`
+	Font             *string `json:"font,omitempty"`
+	FontSize         *int    `json:"font_size,omitempty"`
+	Density          *string `json:"density,omitempty"`
+}
+
+// appearanceResponse is the user's settings plus the tokens of both theme slots, so the
+// frontend can switch the mode without another request.
+type appearanceResponse struct {
+	Saved    bool               `json:"saved"` // false: the user has no record yet (defaults)
+	Settings appearanceSettings `json:"settings"`
+	Light    themes.Theme       `json:"light"`
+	Dark     themes.Theme       `json:"dark"`
+}
+
+// ListThemes returns the themes a user can choose
+// GET /api/themes
+func (h *ThemesHandler) ListThemes(c *fiber.Ctx) error {
+	if getSession(c) == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	return c.JSON(apitypes.NewSuccessResponse(themes.Builtins()))
+}
+
+// GetAppearance returns the user's appearance
+// GET /api/appearance
+func (h *ThemesHandler) GetAppearance(c *fiber.Ctx) error {
+	sess := getSession(c)
+	if sess == nil || sess.GetUserID() == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	rec, exists := h.load(sess.GetUserID())
+	return c.JSON(apitypes.NewSuccessResponse(appearanceOf(rec, exists)))
+}
+
+// SaveAppearance changes the user's appearance; the table's triggers check the values
+// PUT /api/appearance
+func (h *ThemesHandler) SaveAppearance(c *fiber.Ctx) error {
+	sess := getSession(c)
+	if sess == nil || sess.GetUserID() == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(apitypes.NewErrorResponse(apperrors.NoActiveSession().Message("en-US")))
+	}
+	language := getLanguageOrDefault(sess)
+	var in appearanceSettings
+	if err := c.BodyParser(&in); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+	}
+
+	rec, exists := h.load(sess.GetUserID())
+	table := gtables.UserPersonalizationTableName
+	if in.LightTheme != nil {
+		rec.Light_theme = types.NewCode(*in.LightTheme)
+	}
+	if in.DarkTheme != nil {
+		rec.Dark_theme = types.NewCode(*in.DarkTheme)
+	}
+	if in.Mode != nil {
+		i := optionIndex(appearanceModes, *in.Mode)
+		if i < 0 {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.FieldOutOfRange(table, "mode", "dark", "light").Message(language)))
+		}
+		rec.Mode = gtables.UserPersonalizationMode(i)
+	}
+	if in.Wallpaper != nil {
+		rec.Wallpaper = types.NewCode(*in.Wallpaper)
+	}
+	if in.WallpaperOpacity != nil {
+		rec.Wallpaper_opacity = *in.WallpaperOpacity
+	}
+	if in.WallpaperBlur != nil {
+		rec.Wallpaper_blur = *in.WallpaperBlur
+	}
+	if in.PanelOpacity != nil {
+		rec.Panel_opacity = *in.PanelOpacity
+	}
+	if in.Font != nil {
+		i := optionIndex(appearanceFonts, *in.Font)
+		if i < 0 {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidValue("font", *in.Font).Message(language)))
+		}
+		rec.Font = gtables.UserPersonalizationFont(i)
+	}
+	if in.FontSize != nil {
+		rec.Font_size = *in.FontSize
+	}
+	if in.Density != nil {
+		i := optionIndex(appearanceDensities, *in.Density)
+		if i < 0 {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidValue("density", *in.Density).Message(language)))
+		}
+		rec.Density = gtables.UserPersonalizationDensity(i)
+	}
+	rec.Updated_at = types.NewDateTimeFromTime(time.Now())
+
+	var ok bool
+	if exists {
+		ok = rec.Modify(true)
+	} else {
+		ok = rec.Insert(true)
+	}
+	if !ok {
+		if err := rec.TriggerError(); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.ModifyFailed(table, sess.GetUserID()).Message(language)))
+	}
+	return c.JSON(apitypes.NewSuccessResponse(appearanceOf(rec, true)))
+}
+
+// load reads the user's record; a user without one gets the defaults (exists = false).
+func (h *ThemesHandler) load(userID string) (*tables.UserPersonalization, bool) {
+	rec := &tables.UserPersonalization{}
+	rec.InitWithDBType(h.db, "", h.dbType)
+	if rec.GetByPK(types.NewCode(userID)) {
+		return rec, true
+	}
+	def := tables.DefaultUserPersonalization(userID)
+	def.InitWithDBType(h.db, "", h.dbType)
+	return def, false
+}
+
+// appearanceOf builds the response; a slot whose theme no longer exists falls back to the
+// default theme of its mode.
+func appearanceOf(rec *tables.UserPersonalization, saved bool) appearanceResponse {
+	slot := func(code, fallback string) themes.Theme {
+		if t, ok := tables.ThemeByCode(code); ok {
+			return t
+		}
+		t, _ := themes.Builtin(fallback)
+		return t
+	}
+	light := slot(rec.Light_theme.String(), themes.DefaultLight)
+	dark := slot(rec.Dark_theme.String(), themes.DefaultDark)
+	str := func(s string) *string { return &s }
+	num := func(n int) *int { return &n }
+	return appearanceResponse{
+		Saved: saved,
+		Settings: appearanceSettings{
+			LightTheme:       str(light.Code),
+			DarkTheme:        str(dark.Code),
+			Mode:             str(optionName(appearanceModes, int(rec.Mode))),
+			Wallpaper:        str(rec.Wallpaper.String()),
+			WallpaperOpacity: num(rec.Wallpaper_opacity),
+			WallpaperBlur:    num(rec.Wallpaper_blur),
+			PanelOpacity:     num(rec.Panel_opacity),
+			Font:             str(optionName(appearanceFonts, int(rec.Font))),
+			FontSize:         num(rec.Font_size),
+			Density:          str(optionName(appearanceDensities, int(rec.Density))),
+		},
+		Light: light,
+		Dark:  dark,
+	}
+}
+
+func optionIndex(names []string, name string) int {
+	for i, n := range names {
+		if n == name {
+			return i
+		}
+	}
+	return -1
+}
+
+func optionName(names []string, i int) string {
+	if i >= 0 && i < len(names) {
+		return names[i]
+	}
+	return names[0]
+}

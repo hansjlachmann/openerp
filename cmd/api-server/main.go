@@ -55,6 +55,9 @@ func main() {
 	if err := registry.RegisterTable(tables.UserPreferencesTableID, &tables.UserPreferences{}); err != nil {
 		log.Printf("Warning: Failed to register UserPreferences: %v\n", err)
 	}
+	if err := registry.RegisterTable(gtables.UserPersonalizationTableID, &tables.UserPersonalization{}); err != nil {
+		log.Printf("Warning: Failed to register User_Personalization: %v\n", err)
+	}
 	if err := registry.RegisterTable(gtables.LanguageTableID, &tables.Language{}); err != nil {
 		log.Printf("Warning: Failed to register Language: %v\n", err)
 	}

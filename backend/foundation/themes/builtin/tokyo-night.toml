@@ -1,0 +1,13 @@
+# Tokyo Night (https://github.com/folke/tokyonight.nvim), Omarchy colors.toml form
+mode = "dark"
+accent = "#7aa2f7"
+background = "#1a1b26"
+lighter_background = "#24283b"
+darker_background = "#16161e"
+foreground = "#c0caf5"
+muted = "#737aa2"
+selection = "#283457"
+red = "#f7768e"
+yellow = "#e0af68"
+green = "#9ece6a"
+cyan = "#7dcfff"

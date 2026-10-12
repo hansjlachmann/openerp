@@ -60,6 +60,12 @@ func (t *User) OnDelete(db database.Executor, company string) error {
 	prefs.InitWithDBType(db, "", t.GetDBType())
 	prefs.SetRange("user_id", t.User_id.String())
 	prefs.DeleteAll()
+
+	// The user's appearance (global table)
+	var pers UserPersonalization
+	pers.InitWithDBType(db, "", t.GetDBType())
+	pers.SetRange("user_id", t.User_id.String())
+	pers.DeleteAll()
 	return nil
 }
 

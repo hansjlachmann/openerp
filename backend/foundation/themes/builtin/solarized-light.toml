@@ -1,0 +1,13 @@
+# Solarized Light (https://ethanschoonover.com/solarized), Omarchy colors.toml form
+mode = "light"
+accent = "#268bd2"
+background = "#fdf6e3"
+darker_background = "#eee8d5"
+foreground = "#586e75"
+muted = "#93a1a1"
+selection = "#eee8d5"
+selection_foreground = "#073642"
+red = "#dc322f"
+yellow = "#b58900"
+green = "#859900"
+cyan = "#2aa198"

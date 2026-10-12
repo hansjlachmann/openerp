@@ -1,0 +1,13 @@
+# Newer Omarchy form (fixture)
+mode                     = "dark"
+accent                   = "#e0913f"
+selection                = "#1c2f33"
+muted                    = "#617877"
+background               = "#05090a"
+dark_background          = "#030607"
+darker_background        = "#010304"
+lighter_background       = "#0e1719"
+foreground               = "#c3d2d0"
+hyprland_active_border   = "rgba(f0913fee) rgba(f0913f55) 45deg"
+red                      = "#d2705c"
+blue                     = "#8299aa"

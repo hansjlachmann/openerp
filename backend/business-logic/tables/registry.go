@@ -36,6 +36,9 @@ func init() {
 	RegisterTableFactory("User_preferences", gtables.UserPreferencesTableID, func() ftables.Table {
 		return &UserPreferences{}
 	})
+	RegisterTableFactory("User_Personalization", gtables.UserPersonalizationTableID, func() ftables.Table {
+		return &UserPersonalization{}
+	})
 	RegisterTableFactory("Language", gtables.LanguageTableID, func() ftables.Table {
 		return &Language{}
 	})

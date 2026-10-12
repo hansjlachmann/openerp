@@ -1,0 +1,75 @@
+package themes
+
+import (
+	"embed"
+	"fmt"
+	"sync"
+)
+
+// Theme is a color theme the user can choose.
+type Theme struct {
+	Code    string `json:"code"`
+	Name    string `json:"name"`
+	Mode    string `json:"mode"`   // "light" or "dark"
+	Source  string `json:"source"` // "builtin" or "github"
+	Author  string `json:"author,omitempty"`
+	RepoURL string `json:"repo_url,omitempty"`
+	Tokens  Tokens `json:"tokens"`
+}
+
+// The default themes: the Business Central palette, the defaults in app.css.
+const (
+	DefaultLight = "BC-LIGHT"
+	DefaultDark  = "BC-DARK"
+)
+
+//go:embed builtin/*.toml
+var builtinFS embed.FS
+
+// Built-in themes besides BC Light/Dark: Omarchy-style colors.toml files in builtin/,
+// normalized like a theme installed from GitHub.
+var builtinFiles = []struct{ code, name, file string }{
+	{"TOKYO-NIGHT", "Tokyo Night", "tokyo-night.toml"},
+	{"NORD", "Nord", "nord.toml"},
+	{"GRUVBOX", "Gruvbox", "gruvbox.toml"},
+	{"CATPPUCCIN-LATTE", "Catppuccin Latte", "catppuccin-latte.toml"},
+	{"SOLARIZED-LIGHT", "Solarized Light", "solarized-light.toml"},
+}
+
+var (
+	builtinOnce   sync.Once
+	builtinThemes []Theme
+)
+
+// Builtins returns the built-in themes: BC Light, BC Dark, then the others.
+func Builtins() []Theme {
+	builtinOnce.Do(func() {
+		builtinThemes = []Theme{
+			{Code: DefaultLight, Name: "Business Central Light", Mode: "light", Source: "builtin", Tokens: bcLightTokens()},
+			{Code: DefaultDark, Name: "Business Central Dark", Mode: "dark", Source: "builtin", Tokens: bcDarkTokens()},
+		}
+		for _, b := range builtinFiles {
+			data, err := builtinFS.ReadFile("builtin/" + b.file)
+			if err != nil {
+				panic(fmt.Sprintf("built-in theme %s: %v", b.file, err))
+			}
+			p, err := ParsePalette("colors.toml", data)
+			if err != nil {
+				panic(fmt.Sprintf("built-in theme %s: %v", b.file, err))
+			}
+			t := Normalize(p)
+			builtinThemes = append(builtinThemes, Theme{Code: b.code, Name: b.name, Mode: t.Mode, Source: "builtin", Tokens: t})
+		}
+	})
+	return builtinThemes
+}
+
+// Builtin returns the built-in theme with the code.
+func Builtin(code string) (Theme, bool) {
+	for _, t := range Builtins() {
+		if t.Code == code {
+			return t, true
+		}
+	}
+	return Theme{}, false
+}

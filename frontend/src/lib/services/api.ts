@@ -9,6 +9,7 @@ import type {
 	ValidateFieldResult,
 	TableFilter
 } from '$types/api';
+import type { Appearance, AppearanceSettings, Theme } from '$lib/theme/apply';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
 import type { CompanyInfo } from '$lib/utils/company';
 
@@ -356,6 +357,30 @@ export const api = {
 			body: JSON.stringify({ name })
 		});
 		return handleApiResponseFull<{ name: string; message: string }>(response, 'create company');
+	},
+
+	// Appearance: color themes and the user's personalization
+	async getThemes(): Promise<Theme[]> {
+		const response = await fetch(`${API_BASE}/themes`);
+		const result = await handleApiResponseFull<Theme[]>(response, 'get themes');
+		return result.data || [];
+	},
+
+	async getAppearance(): Promise<Appearance & { saved: boolean }> {
+		const response = await fetch(`${API_BASE}/appearance`);
+		const result = await handleApiResponseFull<Appearance & { saved: boolean }>(response, 'get appearance');
+		return result.data!;
+	},
+
+	/** Changes only the fields given; the backend checks them (User_Personalization) */
+	async saveAppearance(patch: Partial<AppearanceSettings>): Promise<Appearance> {
+		const response = await fetch(`${API_BASE}/appearance`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(patch)
+		});
+		const result = await handleApiResponseFull<Appearance>(response, 'save appearance');
+		return result.data!;
 	},
 
 	// Version

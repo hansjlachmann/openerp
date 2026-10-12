@@ -254,3 +254,36 @@ tables:
         success: "Udført"
         in_process: "Igangværende"
         error: "Fejl"
+
+  # User Personalization (Table 5162)
+  user_personalization:
+    caption: "Brugertilpasning"
+    fields:
+      user_id: "Bruger-id"
+      light_theme: "Lyst tema"
+      dark_theme: "Mørkt tema"
+      mode: "Tilstand"
+      wallpaper: "Baggrundsbillede"
+      wallpaper_opacity: "Baggrundsbilledets synlighed %"
+      wallpaper_blur: "Baggrundsbilledets sløring"
+      panel_opacity: "Panelernes dækkeevne %"
+      font: "Skrifttype"
+      font_size: "Skriftstørrelse %"
+      density: "Tæthed"
+      updated_at: "Opdateret"
+
+    # Option field values
+    options:
+      mode:
+        dark: "Mørk"
+        light: "Lys"
+      font:
+        default: "Standard"
+        system: "System"
+        inter: "Inter"
+        ibm_plex_sans: "IBM Plex Sans"
+        serif: "Serif"
+        monospace: "Fast bredde"
+      density:
+        comfortable: "Luftig"
+        compact: "Kompakt"

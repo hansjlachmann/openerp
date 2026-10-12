@@ -1,0 +1,13 @@
+# Nord (https://www.nordtheme.com), Omarchy colors.toml form
+mode = "dark"
+accent = "#88c0d0"
+background = "#2e3440"
+lighter_background = "#3b4252"
+darker_background = "#242933"
+foreground = "#d8dee9"
+muted = "#7b88a1"
+selection = "#434c5e"
+red = "#bf616a"
+yellow = "#ebcb8b"
+green = "#a3be8c"
+cyan = "#8fbcbb"

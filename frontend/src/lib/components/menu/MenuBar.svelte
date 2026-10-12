@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { theme } from '$lib/stores/theme';
+	import { theme, loadAppearance, clearAppearance } from '$lib/stores/theme';
 	import { currentUser } from '$lib/stores/user';
 	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
@@ -10,6 +10,7 @@
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { getShortcutKey } from '$lib/utils/shortcuts';
 	import CompanySwitchDialog from './CompanySwitchDialog.svelte';
+	import AppearanceDialog from './AppearanceDialog.svelte';
 	import { SHORTCUT_HELP_URL, SHORTCUT_HELP_WINDOW } from '$lib/utils/shortcutHelp';
 	import { companyLabel, companyLabelFor, type CompanyInfo } from '$lib/utils/company';
 
@@ -30,6 +31,7 @@
 	let changingCompany = $state(false);
 	let version = $state('...');
 	let showCompanyDialog = $state(false);
+	let showAppearanceDialog = $state(false);
 	let focusBeforeDialog: HTMLElement | null = null;
 
 	$effect(() => {
@@ -60,8 +62,12 @@
 		if (userID !== prevUserID) {
 			prevUserID = userID;
 			if (userID) {
-				// User just logged in - reload companies (filtered by access)
+				// User just logged in - reload companies (filtered by access) and the user's
+				// appearance (themes, mode)
 				api.getCompanies().then(comps => { companies = comps; }).catch(() => {});
+				loadAppearance().catch(() => {});
+			} else {
+				clearAppearance();
 			}
 		}
 	});
@@ -509,6 +515,29 @@
 									</div>
 								{/if}
 
+								<!-- Appearance: themes for light and dark mode -->
+								<button
+									onclick={() => { showUserMenu = false; showAppearanceDialog = true; }}
+									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+									data-appearance-menu
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+										/>
+									</svg>
+									{t(MENU.APPEARANCE)}
+								</button>
+
 								<!-- Keyboard shortcuts help (detached window) -->
 								<button
 									onclick={openShortcutHelp}
@@ -608,6 +637,10 @@
 			<span class="text-xs text-appbar-fg/70 pl-2 border-l border-appbar-fg/20">v{version}</span>
 		</div>
 	</nav>
+{/if}
+
+{#if showAppearanceDialog}
+	<AppearanceDialog onclose={() => (showAppearanceDialog = false)} />
 {/if}
 
 {#if showCompanyDialog}

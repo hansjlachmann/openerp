@@ -110,6 +110,14 @@ messages:
   MENU_USER_MENU: "Brugermenu"
   MENU_SIGN_OUT: "Log ud"
   MENU_SHORTCUTS: "Genvejstaster"
+  MENU_APPEARANCE: "Udseende"
+  APPEARANCE_TITLE: "Udseende"
+  APPEARANCE_HINT: "Vælg et tema til lys tilstand og et til mørk tilstand. Sol/måne-knappen i menulinjen skifter mellem dem."
+  APPEARANCE_LIGHT_THEMES: "Lys tilstand"
+  APPEARANCE_DARK_THEMES: "Mørk tilstand"
+  APPEARANCE_IN_USE: "I brug"
+  APPEARANCE_CURRENT_MODE: "aktuel"
+  APPEARANCE_CLOSE: "Luk"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Genvejstaster"

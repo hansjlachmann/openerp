@@ -1,0 +1,21 @@
+# alacritty.toml (fixture)
+[window]
+padding.x = 25
+
+[font]
+size = 12.0
+
+[colors.primary]
+background = "#214130"
+foreground = "#88a827"
+
+[colors.selection]
+text = "#214130"
+background = "#88a827"
+
+[colors.normal]
+black = "#416828"
+blue = "#88a827"
+
+[colors.bright]
+black = "#416828"

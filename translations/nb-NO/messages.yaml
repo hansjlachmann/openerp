@@ -110,6 +110,14 @@ messages:
   MENU_USER_MENU: "Brukermeny"
   MENU_SIGN_OUT: "Logg ut"
   MENU_SHORTCUTS: "Hurtigtaster"
+  MENU_APPEARANCE: "Utseende"
+  APPEARANCE_TITLE: "Utseende"
+  APPEARANCE_HINT: "Velg et tema for lys modus og et for mørk modus. Sol/måne-knappen i menylinjen bytter mellom dem."
+  APPEARANCE_LIGHT_THEMES: "Lys modus"
+  APPEARANCE_DARK_THEMES: "Mørk modus"
+  APPEARANCE_IN_USE: "I bruk"
+  APPEARANCE_CURRENT_MODE: "gjeldende"
+  APPEARANCE_CLOSE: "Lukk"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Hurtigtaster"

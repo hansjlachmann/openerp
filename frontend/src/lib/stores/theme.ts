@@ -1,51 +1,111 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import { getString, setString } from '$lib/utils/storage';
+import { api } from '$lib/services/api';
+import {
+	applyMode,
+	cacheFor,
+	THEME_CACHE_KEY,
+	type Appearance,
+	type AppearanceSettings,
+	type Mode,
+	type Theme,
+	type ThemeCache
+} from '$lib/theme/apply';
 
-type Theme = 'light' | 'dark';
-
+// Same keys and default as the inline script in app.html (dark unless "light" is saved)
 const THEME_STORAGE_KEY = 'theme';
 
-// Get initial theme from localStorage or default to dark
-function getInitialTheme(): Theme {
+function getInitialMode(): Mode {
 	if (!browser) return 'dark';
-
-	const stored = getString(THEME_STORAGE_KEY) as Theme | null;
-	if (stored) return stored;
-
-	// Default to dark mode for first-time users
-	return 'dark';
+	return getString(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
 }
 
-function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>(getInitialTheme());
+function readCache(): ThemeCache | null {
+	try {
+		const raw = getString(THEME_CACHE_KEY);
+		return raw ? (JSON.parse(raw) as ThemeCache) : null;
+	} catch {
+		return null;
+	}
+}
 
-	return {
-		subscribe,
-		toggle: () => {
-			update((currentTheme) => {
-				const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-				if (browser) {
-					setString(THEME_STORAGE_KEY, newTheme);
-					document.documentElement.classList.toggle('dark', newTheme === 'dark');
-				}
-				return newTheme;
-			});
-		},
-		set: (theme: Theme) => {
-			set(theme);
-			if (browser) {
-				setString(THEME_STORAGE_KEY, theme);
-				document.documentElement.classList.toggle('dark', theme === 'dark');
-			}
+let cache: ThemeCache | null = browser ? readCache() : null;
+
+/** The user's appearance from the backend (null until loaded / logged out) */
+export const appearance = writable<Appearance | null>(null);
+
+function show(mode: Mode) {
+	if (!browser) return;
+	applyMode(mode, cache?.[mode] ?? {});
+	setString(THEME_STORAGE_KEY, mode);
+	if (cache) {
+		cache.mode = mode;
+		setString(THEME_CACHE_KEY, JSON.stringify(cache));
+	}
+}
+
+/** Takes an appearance from the backend: caches both slots' colors and shows its mode */
+function adopt(a: Appearance) {
+	appearance.set(a);
+	cache = cacheFor(a);
+	modeStore.set(a.settings.mode);
+	show(a.settings.mode);
+}
+
+const modeStore = writable<Mode>(getInitialMode());
+
+/** The current mode (light/dark); toggle() switches between the user's two theme slots */
+export const theme = {
+	subscribe: modeStore.subscribe,
+	toggle: () => {
+		const mode: Mode = get(modeStore) === 'light' ? 'dark' : 'light';
+		modeStore.set(mode);
+		show(mode);
+		if (get(appearance)) {
+			saveAppearance({ mode }).catch(() => {});
 		}
-	};
+	},
+	set: (mode: Mode) => {
+		modeStore.set(mode);
+		show(mode);
+	}
+};
+
+/**
+ * Loads the user's appearance after login / app start. A user without a saved record
+ * keeps the mode this browser had (before themes, the mode lived only here).
+ */
+export async function loadAppearance() {
+	const a = await api.getAppearance();
+	if (!a.saved && a.settings.mode !== get(modeStore)) {
+		a.settings.mode = get(modeStore);
+		adopt(a);
+		saveAppearance({ mode: a.settings.mode }).catch(() => {});
+		return;
+	}
+	adopt(a);
 }
 
-export const theme = createThemeStore();
+/** Saves settings; the backend checks them and returns the new appearance, which is shown */
+export async function saveAppearance(patch: Partial<AppearanceSettings>): Promise<Appearance> {
+	const a = await api.saveAppearance(patch);
+	adopt(a);
+	return a;
+}
 
-// Initialize theme on page load
+/** Chooses a theme: it takes the slot of its mode, and the app switches to that mode */
+export function chooseTheme(t: Theme): Promise<Appearance> {
+	const slot = t.mode === 'light' ? 'light_theme' : 'dark_theme';
+	return saveAppearance({ [slot]: t.code, mode: t.mode });
+}
+
+/** Forgets the user's appearance (logout); the cached colors stay for the login page */
+export function clearAppearance() {
+	appearance.set(null);
+}
+
+// Initialize the mode on page load (app.html has applied the cached colors already)
 if (browser) {
-	const currentTheme = getInitialTheme();
-	document.documentElement.classList.toggle('dark', currentTheme === 'dark');
+	applyMode(getInitialMode(), cache?.[getInitialMode()] ?? {});
 }

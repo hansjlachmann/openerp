@@ -15,6 +15,7 @@ errors:
   ERR_RELATED_NOT_FOUND: "%1 '%2' does not exist"
   ERR_RELATED_INACTIVE: "%1 '%2' is inactive and cannot be used"
   ERR_EMAIL_INVALID: "%1: '%2' is not a valid e-mail address"
+  ERR_THEME_WRONG_MODE: "%1: the theme '%2' is made for the other mode"
   ERR_EMAIL_DUPLICATE: "%1: '%2' is listed more than once"
   ERR_FILTER_INVALID: "%1: '%2' is not a valid filter (e.g. 1000, >1000, 0..500, <>0, 100|200)"
   ERR_DELETE_TOO_MANY: "More than %1 records are selected: delete them in smaller parts (filter the list first)."

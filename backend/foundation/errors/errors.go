@@ -27,6 +27,7 @@ const (
 	ErrRelatedInactive    ErrorCode = "ERR_RELATED_INACTIVE"
 	ErrEmailInvalid       ErrorCode = "ERR_EMAIL_INVALID"
 	ErrEmailDuplicate     ErrorCode = "ERR_EMAIL_DUPLICATE"
+	ErrThemeWrongMode     ErrorCode = "ERR_THEME_WRONG_MODE"
 	ErrFilterInvalid      ErrorCode = "ERR_FILTER_INVALID"
 	ErrDeleteTooMany      ErrorCode = "ERR_DELETE_TOO_MANY"
 	ErrDeleteRecordFailed ErrorCode = "ERR_DELETE_RECORD_FAILED"
@@ -199,6 +200,11 @@ func RelatedInactive(table, field, value string) *AppError {
 // an e-mail address
 func EmailInvalid(table, field, address string) *AppError {
 	return &AppError{Code: ErrEmailInvalid, Table: table, Field: field, Params: []string{address}}
+}
+
+// ThemeWrongMode: a theme slot (light/dark theme) holds a theme made for the other mode
+func ThemeWrongMode(table, field, theme string) *AppError {
+	return &AppError{Code: ErrThemeWrongMode, Table: table, Field: field, Params: []string{theme}}
 }
 
 // EmailDuplicate: a table field's e-mail address list holds an address twice

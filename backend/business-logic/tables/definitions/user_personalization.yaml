@@ -1,0 +1,86 @@
+table:
+  id: 5162
+  name: User_Personalization
+  caption: User Personalization
+  description: Appearance of the user interface per user (BC User Personalization)
+  global: true  # Global table - the same appearance in every company
+  fields:
+    - name: user_id
+      type: types.Code
+      db_name: user_id
+      caption: User ID
+      primary_key: true
+      length: 50
+      required: true
+      table_relation:
+        table: User
+        field: user_id
+
+    # Theme used in light mode / dark mode (code of a built-in or installed theme)
+    - name: light_theme
+      type: types.Code
+      db_name: light_theme
+      caption: Light Theme
+      length: 50
+
+    - name: dark_theme
+      type: types.Code
+      db_name: dark_theme
+      caption: Dark Theme
+      length: 50
+
+    - name: mode
+      type: Option
+      db_name: mode
+      caption: Mode
+      options: ["Dark", "Light"]
+
+    # Wallpaper: asset name of the dark/light theme (blank = none), its opacity and blur
+    - name: wallpaper
+      type: types.Code
+      db_name: wallpaper
+      caption: Wallpaper
+      length: 20
+
+    - name: wallpaper_opacity
+      type: int
+      db_name: wallpaper_opacity
+      caption: Wallpaper Opacity %
+
+    - name: wallpaper_blur
+      type: int
+      db_name: wallpaper_blur
+      caption: Wallpaper Blur
+
+    - name: panel_opacity
+      type: int
+      db_name: panel_opacity
+      caption: Panel Opacity %
+
+    - name: font
+      type: Option
+      db_name: font
+      caption: Font
+      options: ["Default", "System", "Inter", "IBM Plex Sans", "Serif", "Monospace"]
+
+    # Font size in percent of the default (0 = default)
+    - name: font_size
+      type: int
+      db_name: font_size
+      caption: Font Size %
+
+    - name: density
+      type: Option
+      db_name: density
+      caption: Density
+      options: ["Comfortable", "Compact"]
+
+    - name: updated_at
+      type: types.DateTime
+      db_name: updated_at
+      caption: Updated At
+
+  keys:
+    - name: Primary
+      fields: [user_id]
+      clustered: true

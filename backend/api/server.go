@@ -87,6 +87,7 @@ func (s *Server) Setup() {
 	tablesHandler := handlers.NewTablesHandlerFull(s.db, s.dbType, s.companyInit)
 	pagesHandler := handlers.NewPagesHandler()
 	preferencesHandler := handlers.NewPreferencesHandlerWithDBType(s.db, s.dbType)
+	themesHandler := handlers.NewThemesHandler(s.db, s.dbType)
 	authHandler := handlers.NewAuthHandlerFull(s.db, s.dbType, s.companyInit, s.jwtConfig, s.sessionCache)
 	codeunitsHandler := handlers.NewCodeunitsHandlerWithDBType(s.db, s.dbType)
 	tablesHandler.OnCompanyChanged(authHandler.CompanyChanged) // renamed/deleted company: sessions follow
@@ -138,6 +139,11 @@ func (s *Server) Setup() {
 	api.Get("/preferences/:page_id/:type", preferencesHandler.GetPreferences)
 	api.Post("/preferences/:page_id/:type", preferencesHandler.SavePreference)
 	api.Delete("/preferences/:page_id/:type/:name", preferencesHandler.DeletePreference)
+
+	// Appearance: color themes and the user's personalization (theme per mode, wallpaper, font)
+	api.Get("/themes", themesHandler.ListThemes)
+	api.Get("/appearance", themesHandler.GetAppearance)
+	api.Put("/appearance", themesHandler.SaveAppearance)
 
 	// Codeunit routes (generic handler)
 	api.Post("/codeunits/run", codeunitsHandler.RunCodeunit)

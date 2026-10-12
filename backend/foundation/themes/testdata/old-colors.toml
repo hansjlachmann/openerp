@@ -1,0 +1,10 @@
+# Older Omarchy form (fixture)
+accent = "#ff7edb"
+cursor = "#f97e72"
+foreground = "#ffffff"
+background = "#000000"
+selection_foreground = "#ffffff"
+selection_background = "#614d85"
+color0 = "#262335"
+color4 = "#03edf9"
+color8 = "#495495"

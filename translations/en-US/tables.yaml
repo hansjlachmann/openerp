@@ -254,3 +254,36 @@ tables:
         success: "Success"
         in_process: "In Process"
         error: "Error"
+
+  # User Personalization (Table 5162)
+  user_personalization:
+    caption: "User Personalization"
+    fields:
+      user_id: "User ID"
+      light_theme: "Light Theme"
+      dark_theme: "Dark Theme"
+      mode: "Mode"
+      wallpaper: "Wallpaper"
+      wallpaper_opacity: "Wallpaper Opacity %"
+      wallpaper_blur: "Wallpaper Blur"
+      panel_opacity: "Panel Opacity %"
+      font: "Font"
+      font_size: "Font Size %"
+      density: "Density"
+      updated_at: "Updated At"
+
+    # Option field values
+    options:
+      mode:
+        dark: "Dark"
+        light: "Light"
+      font:
+        default: "Default"
+        system: "System"
+        inter: "Inter"
+        ibm_plex_sans: "IBM Plex Sans"
+        serif: "Serif"
+        monospace: "Monospace"
+      density:
+        comfortable: "Comfortable"
+        compact: "Compact"

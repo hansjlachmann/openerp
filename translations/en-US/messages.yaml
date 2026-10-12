@@ -110,6 +110,14 @@ messages:
   MENU_USER_MENU: "User menu"
   MENU_SIGN_OUT: "Sign Out"
   MENU_SHORTCUTS: "Keyboard Shortcuts"
+  MENU_APPEARANCE: "Appearance"
+  APPEARANCE_TITLE: "Appearance"
+  APPEARANCE_HINT: "Choose a theme for light mode and one for dark mode. The sun/moon button in the menu bar switches between them."
+  APPEARANCE_LIGHT_THEMES: "Light mode"
+  APPEARANCE_DARK_THEMES: "Dark mode"
+  APPEARANCE_IN_USE: "In use"
+  APPEARANCE_CURRENT_MODE: "current"
+  APPEARANCE_CLOSE: "Close"
 
   # Keyboard Shortcuts help window
   HELP_TITLE: "Keyboard Shortcuts"
