@@ -11,7 +11,7 @@
 	import { getShortcutKey } from '$lib/utils/shortcuts';
 	import CompanySwitchDialog from './CompanySwitchDialog.svelte';
 	import AppearanceDialog from './AppearanceDialog.svelte';
-	import { SHORTCUT_HELP_URL, SHORTCUT_HELP_WINDOW } from '$lib/utils/shortcutHelp';
+	import { openShortcutHelp as openShortcutWindow } from '$lib/utils/shortcutHelp';
 	import { companyLabel, companyLabelFor, type CompanyInfo } from '$lib/utils/company';
 
 	// NAV Classic: Ctrl+O opens the Switch Company dialog. Browsers let the page take
@@ -181,22 +181,12 @@
 		}
 	}
 
-	// Keyboard Shortcuts help opens as a detached window. The window name makes a second
-	// click reuse (and raise) the same window instead of opening another one.
+	// Keyboard Shortcuts help opens as a detached window (also linked from the home page)
 	function openShortcutHelp() {
 		showUserMenu = false;
 		showLanguageMenu = false;
 		showCompanyMenu = false;
-		const width = 820;
-		const height = 760;
-		const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
-		const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
-		const win = window.open(
-			SHORTCUT_HELP_URL,
-			SHORTCUT_HELP_WINDOW,
-			`popup=yes,width=${width},height=${height},left=${left},top=${top}`
-		);
-		win?.focus();
+		openShortcutWindow();
 	}
 
 	function openCompanyDialog() {

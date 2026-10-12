@@ -5,6 +5,7 @@
 	import { fetchMenu, clearMenuCache } from '$lib/services/pages';
 	import { t, HOME, MSG } from '$lib/services/i18n.svelte';
 	import type { MenuDefinition } from '$lib/types/pages';
+	import { openShortcutHelp } from '$lib/utils/shortcutHelp';
 
 	let menu: MenuDefinition | null = $state(null);
 	let loading = $state(true);
@@ -98,6 +99,11 @@
 			<p class="text-gray-600 dark:text-gray-400">
 				{t(HOME.DESCRIPTION)}
 			</p>
+			<div class="shortcuts-tip">
+				<p class="font-semibold text-fg">⌨ {t(HOME.SHORTCUTS_TITLE)}</p>
+				<p class="text-gray-600 dark:text-gray-400">{t(HOME.SHORTCUTS_TEXT)}</p>
+				<button type="button" class="shortcuts-link" onclick={openShortcutHelp}>{t(HOME.SHORTCUTS_LINK)} ↗</button>
+			</div>
 		</div>
 
 		<!-- Menu Items -->
@@ -163,5 +169,13 @@
 
 	:global(.dark) .menu-item:focus {
 		@apply bg-blue-900;
+	}
+
+	.shortcuts-tip {
+		@apply mt-5 mx-auto max-w-2xl rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm space-y-1;
+	}
+
+	.shortcuts-link {
+		@apply text-primary-600 dark:text-primary-400 hover:underline font-medium;
 	}
 </style>
