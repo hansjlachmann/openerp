@@ -34,10 +34,17 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       "Changing the database password"); lower risk now that 5432 is localhost only.
 - [x] **Field numbers in table definitions** and **field and object numbering, `application.yaml`,
       installed apps** — done 2026-10-13 (sections below).
-- [ ] **System functions in Go** — specification below ("Feature: 
-      system functions"); needs more details before it is built.
-- [ ] **functions — remaining** (high priority) — after the first and second set; see
-      "functions — remaining" below.
+- [ ] **System functions in Go** (first and second set) — specification below ("Feature: system
+      functions in Go"); one open point: where WorkDate comes from.
+- [ ] **System functions — remaining** (high priority) — after the first and second set; see
+      "System functions — remaining" below.
+- [ ] **Production: upgrade to 0.1.97** once release PR #129 is merged — backup first; migrations 10
+      (Job Queue codeunit numbers, saved page layouts) and 11 (theme codes) run; the startup log shows
+      the base application, page 907 Installed Apps lists it.
+- [x] **Neutral wording** (2026-10-13): code, docs, generated code, CHANGELOG, release notes and the
+      commit messages since 0.1.96 describe the behaviour instead of naming other products (rule in
+      CLAUDE.md); built-in themes renamed to Classic Light/Dark (migration 11); reference screenshots
+      and other local reference material kept out of the repository.
 
 ---
 
@@ -193,7 +200,7 @@ Table-driven tests per function with the results gives (especially `CalcDate`, `
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the AL functions in business logic".
 
-## functions — remaining (HIGH priority, after the first and second set)
+## System functions — remaining (HIGH priority, after the first and second set)
 
 The rest of the common system functions, recorded for later (see "Feature: system
 functions" for the rules: `al.` package / generated record methods, easiest Go way):
@@ -720,12 +727,9 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
 - [x] Rate limiting — `backend/api/middleware/ratelimit.go`: generous global limiter
       (300/min per IP, skips `/health`) + strict login limiter (10/min per IP) against
       brute-force. In-memory store; needs Redis for multi-instance.
-- [ ] Request validation (field constraints) — **partial**. `ValidateField` does type
-      checking + calls per-field `OnValidate_<Field>()` triggers (empty stubs), and DB CHECK
-      constraints cover numeric min/max at insert. Missing: server-side enforcement of
-      **length** (SQLite ignores `TEXT(n)`), **required/not-empty**, and range at validate
-      time. Clean fix: generate these checks into the `OnValidate` stubs from YAML metadata
-      (tablegen change).
+- [x] Request validation (field constraints) — the generated `CheckFields` enforces `required`,
+      `length` and `validation` ranges from the YAML on Insert/Modify (after OnInsert/OnModify),
+      2026-10-12. Not yet on `ValidateField` of a single field (checked when the record is saved).
 - [x] **Security: `password_hash` was returned by the API.** Fixed with a YAML field flag
       `sensitive: true` (tablegen → `FieldInfo.Sensitive`): the table API strips sensitive fields from
       every record it returns (`ftables.PublicMap`), rejects them in filters, sort and search
