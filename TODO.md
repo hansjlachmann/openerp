@@ -92,17 +92,46 @@ Decisions (2026-10-13):
 | `ChangeCompany` | `[Ok :=] Record.ChangeCompany([CompanyName])` | Generated record method: the record reads/writes another company's table (company tables only; global tables ignore it); false when the company does not exist. Triggers and FlowFields run in that company. |
 | `TransferFields` | `Record.TransferFields(FromRecord [, InitPrimaryKeyFields])` | Generated record method: copies the fields with the same field (BC: same field number) and compatible type; FlowFields and FlowFilters not copied; `InitPrimaryKeyFields` false keeps the key. Matches by field number — after "Field numbers in table definitions". |
 
-### Later candidates
-`IncStr` (exists in `strutils.go`), `PadStr`, `StrLen`, `StrPos`, `ConvertStr`, `InsStr`, `DelStr`,
-`UpperCase`/`LowerCase` (all in `strutils.go`), `WorkDate`, `Today`, `Time`, `CurrentDateTime`,
-`Round`, `Abs`, `Power`, `TestField`, `FieldError`, `Error`, `Message`, `Confirm` (codeunit dialogs
-exist: `foundation/codeunits/dialog.go`), `CalcSums`, `ModifyAll`, `DeleteAll`, `IsEmpty`,
-`FindFirst`/`FindLast`, `LockTable`, `Copy`/`CopyFilters`, `Reset`, `SetCurrentKey`, `Init`.
+### Second set (same item)
+
+From the AL reference (System, Text, Record, Dialog), the functions BC code uses most:
+
+| AL | Go | Notes |
+|----|----|-------|
+| `Round(Number [, Precision] [, Direction])` | `al.Round` | Direction `'='` nearest, `'<'` down, `'>'` up; on `types.Decimal` (amounts: `Round(x, 0.01)`). |
+| `Abs`, `Power` | `al.Abs`, `al.Power` | Over `types.Decimal` / int. |
+| `Today`, `WorkDate`, `CurrentDateTime` | `al.Today()`, `rec.WorkDate()`?, `al.CurrentDateTime()` | `types.Today()` exists; WorkDate is per user (BC): from the session like CompanyName — decide where it is set. |
+| `StrLen`, `StrPos`, `PadStr`, `IncStr`, `UpperCase`, `LowerCase` | `al.…` | Move from `foundation/common/strutils.go` (unused), 1-based positions, characters not bytes. |
+| `SelectStr(Number, CommaString)` | `al.SelectStr` | n-th item of a comma-separated string. |
+| `Record.TestField(Field [, Value])` | `rec.TestField("field" [, value])` | Error "Field X must have a value / must be Y in Table Z: key" — `apperrors`, translated. |
+| `Record.FieldError(Field [, Text])` | `rec.FieldError("field" [, text])` | Error naming the field and the record key. |
+| `Record.CalcSums(Fields…)` | `rec.CalcSums("amount", …)` | Sums with the record's filters; reads SIFT totals when a key covers them. |
+| `Record.LockTable()` | `rec.LockTable()` | Following reads `SELECT … FOR UPDATE` (Postgres) inside the transaction. |
+| `Record.Init`, `Validate`, `TableCaption`, `FieldCaption` | `rec.Init()`, `rec.Validate(…)`, `rec.TableCaption()`, `rec.FieldCaption(…)` | AL names for the existing `InitRecord`, `ValidateField`, `GetCaption`, `GetFieldCaption` (captions: language from the session context). |
+| `Message`, `Error` | `al.Message(…)`, `al.Error(…)` | On the existing codeunit dialogs (`foundation/codeunits/dialog.go`); `Error` returns an `error` (StrSubstNo-formatted). |
+| `Codeunit.Run(ID [, Record])` | `al.CodeunitRun(id, rec)` | One call over the codeunit registry. |
 
 ### Verification (when built)
 Table-driven tests per function with the results BC gives (especially `CalcDate`, `Format`,
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the AL functions in business logic".
+
+## NAV/BC functions — remaining (later, after the first and second set)
+
+The rest of the AL reference that BC code uses, recorded for later (see "Feature: NAV/BC system
+functions" for the rules: `al.` package / generated record methods, easiest Go way):
+- [ ] Text: `ConvertStr`, `InsStr`, `DelStr` (in `strutils.go`), `MaxStrLen`, `StrCheckSum`. The
+      instance methods (`Contains`, `Replace`, `Split`, `Trim`, `StartsWith` …) are Go's `strings` — no copies.
+- [ ] Date/time: `Time`, `CreateDateTime`, `DT2Date`, `DT2Time`, `Date2DWY`, `DWY2Date`,
+      `ClosingDate`/`NormalDate` (needed with accounting periods), `DateFormula` field type, `Duration`.
+- [ ] System: `Random`/`Randomize`, `CreateGuid`, `IsNullGuid`, `UserId` (exists as
+      `codeunits.CurrentUserID`), `Commit` (decide: our code uses explicit transactions).
+- [ ] Dialog: `Confirm` in table/codeunit code (exists for codeunits), `StrMenu` (on the RequestInput dialog).
+- [ ] Record: `Rename(newKey…)` (a key change through `Modify` already renames), `Copy` (record + filters),
+      `GetFilter`, `GetRangeMin`/`GetRangeMax`, `SetRecFilter`, `SetLoadFields`, `Mark`/`MarkedOnly`,
+      `FilterGroup`, `RecordId`, `FieldNo` (after field numbers), `Find('=><')`, `CountApprox`.
+- [ ] Not planned (no Go equivalent needed): `GuiAllowed`, `Sleep`, `Clear`/`ClearAll`, DotNet, files,
+      code coverage, encryption-key management, object import/export.
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
 
