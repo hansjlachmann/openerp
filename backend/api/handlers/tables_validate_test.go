@@ -11,33 +11,34 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	_ "github.com/mattn/go-sqlite3"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// autoFillCustomer fills a sibling field from its OnValidate_No trigger.
+// autoFillCustomer is a customer whose business logic (autoFill) fills a sibling field
+// from its OnValidate_No trigger.
 type autoFillCustomer struct {
-	gtables.CustomerBase
+	gtables.Customer
 }
 
 func (t *autoFillCustomer) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.CustomerBase.InitWithDBType(db, company, dbType)
-	t.SetSelf(t)
+	t.Customer.InitWithDBType(db, company, dbType)
+	t.SetLogic(autoFill{})
 }
 
-func (t *autoFillCustomer) OnValidate_No() error {
-	t.Name = types.NewText("Filled from " + t.No.String())
+type autoFill struct{}
+
+func (autoFill) OnValidate_No(rec *gtables.Customer) error {
+	rec.Name = types.NewText("Filled from " + rec.No.String())
 	return nil
 }
 
 func init() {
-	tables.RegisterTableFactory("Test_AutoFill", 99001, func() ftables.Table {
+	gtables.RegisterTableFactory("Test_AutoFill", 99001, func() ftables.Table {
 		return &autoFillCustomer{}
 	})
 }
@@ -51,7 +52,7 @@ func newTablesTestApp(t *testing.T) *fiber.App {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := (&tables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
@@ -253,13 +254,13 @@ func TestInsertDuplicateCompositeKey(t *testing.T) {
 	app := newTablesTestApp(t)
 	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	defer db.Close()
-	if err := (&tables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	// The related records must exist (table relations are checked on insert)
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.User{}, &tables.UserRole{}, &tables.Company{}} {
+	}{&gtables.User{}, &gtables.UserRole{}, &gtables.Company{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
 		}
@@ -300,7 +301,7 @@ func TestInsertRejectsUnknownRelationKey(t *testing.T) {
 	app := newTablesTestApp(t)
 	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	defer db.Close()
-	if err := (&tables.PaymentTerms{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.PaymentTerms{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO "TEST$Payment Terms" (code, description, active) VALUES ('30 DAYS', 'Net 30', 1)`); err != nil {
@@ -323,7 +324,7 @@ func TestRenameToExistingKey(t *testing.T) {
 	// The rename carries the new No. over to the ledger entries
 	db, _ := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	defer db.Close()
-	if err := (&tables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
 	for _, no := range []string{"C1", "C2"} {
@@ -404,7 +405,7 @@ func TestValidateMessageInSessionLanguage(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := (&tables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
 	h := NewTablesHandler(db)

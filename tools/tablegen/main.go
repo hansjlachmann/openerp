@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -16,6 +20,7 @@ type TableDef struct {
 	Table struct {
 		ID         int     `yaml:"id"`
 		Name       string  `yaml:"name"`
+		APIName    string  `yaml:"api_name"`    // Name in the API and the pages' source_table (default: name)
 		Global     bool    `yaml:"global"`      // If true, table is global (no company prefix)
 		SetupTable bool    `yaml:"setup_table"` // If true, BC-style singleton setup table (single blank-PK record)
 		Fields     []Field `yaml:"fields"`
@@ -147,7 +152,6 @@ type Validation struct {
 type TemplateData struct {
 	TableDef
 	StructName       string
-	BaseStructName   string // For generated base struct (StructName + "Base")
 	PackageName      string
 	GeneratedPkg     string // Import alias for generated package (e.g., "gtables")
 	HasTimeField     bool
@@ -183,41 +187,30 @@ type SIFTColumn struct {
 }
 
 func main() {
-	// Get current working directory (should be business-logic/tables when run via go generate)
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Error getting current directory: %v\n", err)
-		os.Exit(1)
-	}
+	// Run by go:generate in backend/generated/tables (generate.go): the definitions, the
+	// generated code and the business logic are found relative to it
+	defsDir := flag.String("defs", "../../definitions/tables", "directory of the table definitions (*.yaml)")
+	outDir := flag.String("out", ".", "directory of the generated code (package tables)")
+	logicDir := flag.String("logic", "../../business-logic/tables", "directory of the business logic: a new table gets a starting file here")
+	flag.Parse()
 
-	// The definitions directory is in the same directory as where go generate is run
-	defsDir := filepath.Join(cwd, "definitions")
-
-	// Output directory for generated base files (backend/generated/tables/)
-	// Go up from business-logic/tables to backend, then into generated/tables
-	generatedDir := filepath.Join(cwd, "..", "..", "generated", "tables")
-
-	// Ensure directories exist
-	if err := os.MkdirAll(defsDir, 0755); err != nil {
-		fmt.Printf("Error creating definitions directory: %v\n", err)
-		os.Exit(1)
-	}
-	if err := os.MkdirAll(generatedDir, 0755); err != nil {
-		fmt.Printf("Error creating generated directory: %v\n", err)
+	if err := os.MkdirAll(*outDir, 0755); err != nil {
+		fmt.Printf("Error creating output directory: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Find all YAML definition files
-	yamlFiles, err := filepath.Glob(filepath.Join(defsDir, "*.yaml"))
+	yamlFiles, err := filepath.Glob(filepath.Join(*defsDir, "*.yaml"))
 	if err != nil {
 		fmt.Printf("Error finding YAML files: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(yamlFiles) == 0 {
-		fmt.Println("No YAML definition files found in", defsDir)
-		return
+		fmt.Println("No YAML definition files found in", *defsDir)
+		os.Exit(1)
 	}
+	sort.Strings(yamlFiles)
 
 	fmt.Printf("Found %d table definition(s)\n", len(yamlFiles))
 
@@ -229,17 +222,18 @@ func main() {
 	}
 	var defs []parsed
 	byStruct := map[string]*TableDef{}
+	failed := false
 	for _, yamlFile := range yamlFiles {
 		tableDef, err := parseYAML(yamlFile)
 		if err != nil {
 			fmt.Printf("✗ Error parsing %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
 			continue
 		}
 		splitFlowFilterFields(tableDef)
 		defs = append(defs, parsed{yamlFile, tableDef})
 		byStruct[toPascalCase(tableDef.Table.Name)] = tableDef
 	}
-	failed := false
 	for _, p := range defs {
 		if err := validateSIFTKeys(p.def); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
@@ -262,36 +256,44 @@ func main() {
 	}
 	resolveReferences(defs, func(d parsed) *TableDef { return d.def })
 
-	// Pass 2: generate
-	for _, p := range defs {
-		yamlFile, tableDef := p.file, p.def
-		fmt.Printf("\nProcessing: %s\n", filepath.Base(yamlFile))
-
-		// Prepare template data
-		data := prepareTemplateData(tableDef)
-
-		// Generate *_base.go to generated directory (always regenerate)
-		baseFile := filepath.Join(generatedDir, strings.ToLower(data.StructName)+"_base.go")
-		if err := generateBoilerplate(baseFile, data); err != nil {
-			fmt.Printf("  ✗ Error generating base: %v\n", err)
-			continue
-		}
-		fmt.Printf("  ✓ Generated: %s\n", filepath.Base(baseFile))
-
-		// Generate *.go wrapper skeleton in business-logic/tables (only if doesn't exist)
-		wrapperFile := filepath.Join(cwd, strings.ToLower(data.StructName)+".go")
-		if !fileExists(wrapperFile) {
-			if err := generateBusinessLogicSkeleton(wrapperFile, data); err != nil {
-				fmt.Printf("  ✗ Error generating wrapper: %v\n", err)
-				continue
-			}
-			fmt.Printf("  ✓ Created wrapper: %s\n", filepath.Base(wrapperFile))
-		} else {
-			fmt.Printf("  ⊙ Skipped (exists): %s\n", filepath.Base(wrapperFile))
+	// The output directory holds generated code only: remove the files of the last run,
+	// so a table removed from the definitions leaves nothing behind
+	old, _ := filepath.Glob(filepath.Join(*outDir, "*_gen.go"))
+	for _, f := range old {
+		if err := os.Remove(f); err != nil {
+			fmt.Printf("Error removing %s: %v\n", f, err)
+			os.Exit(1)
 		}
 	}
 
-	fmt.Println("\n✓ Code generation complete!")
+	// Pass 2: generate
+	var all []TemplateData
+	for _, p := range defs {
+		data := prepareTemplateData(p.def)
+		all = append(all, data)
+
+		genFile := filepath.Join(*outDir, strings.ToLower(data.StructName)+"_gen.go")
+		if err := generateFile(genFile, "gen", boilerplateTemplate, data); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(p.file), err)
+			os.Exit(1)
+		}
+
+		// A new table gets a starting business logic file (never overwritten)
+		logicFile := filepath.Join(*logicDir, strings.ToLower(data.StructName)+".go")
+		if !fileExists(logicFile) {
+			if err := generateFile(logicFile, "logic", businessTemplate, data); err != nil {
+				fmt.Printf("✗ %s: %v\n", filepath.Base(logicFile), err)
+				os.Exit(1)
+			}
+			fmt.Printf("  ✓ Created business logic: %s\n", logicFile)
+		}
+	}
+	if err := generateFile(filepath.Join(*outDir, "tables_gen.go"), "tables", tablesTemplate, all); err != nil {
+		fmt.Printf("✗ tables_gen.go: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("✓ Generated %d table(s) in %s\n", len(all), *outDir)
 }
 
 // parseYAML reads and parses a YAML definition file
@@ -320,11 +322,10 @@ func parseYAML(filename string) (*TableDef, error) {
 func prepareTemplateData(def *TableDef) TemplateData {
 	structName := toPascalCase(def.Table.Name)
 	data := TemplateData{
-		TableDef:       *def,
-		StructName:     structName,
-		BaseStructName: structName + "Base",
-		PackageName:    "tables",
-		GeneratedPkg:   "gtables",
+		TableDef:     *def,
+		StructName:   structName,
+		PackageName:  "tables",
+		GeneratedPkg: "gtables",
 	}
 
 	// Check which imports are needed and find first primary key
@@ -736,36 +737,21 @@ func fileExists(filename string) bool {
 	return !os.IsNotExist(err)
 }
 
-// generateBoilerplate generates the *_gen.go file
-func generateBoilerplate(filename string, data TemplateData) error {
-	tmpl, err := template.New("gen").Funcs(templateFuncs()).Parse(boilerplateTemplate)
+// generateFile writes a template's output to filename, formatted by go/format
+func generateFile(filename, name, text string, data any) error {
+	tmpl, err := template.New(name).Funcs(templateFuncs()).Parse(text)
 	if err != nil {
 		return err
 	}
-
-	f, err := os.Create(filename)
-	if err != nil {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return err
 	}
-	defer f.Close()
-
-	return tmpl.Execute(f, data)
-}
-
-// generateBusinessLogicSkeleton generates the *.go skeleton file
-func generateBusinessLogicSkeleton(filename string, data TemplateData) error {
-	tmpl, err := template.New("business").Funcs(templateFuncs()).Parse(businessTemplate)
+	src, err := format.Source(buf.Bytes())
 	if err != nil {
-		return err
+		return fmt.Errorf("format: %w", err)
 	}
-
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return tmpl.Execute(f, data)
+	return os.WriteFile(filename, src, 0644)
 }
 
 // getTableNameExpr returns the Go code expression for getting the table name
@@ -796,6 +782,7 @@ func templateFuncs() template.FuncMap {
 		"pkCount":            countPrimaryKeys,
 		"firstPK":            getFirstPK,
 		"toPascalCase":       toPascalCase,
+		"lower":              strings.ToLower,
 		"tableNameVar":       getTableNameVarCode,
 		"filterSetExpr":      filterSetExpr,
 		"flowFilterKind":     func(f Field) string { k, _ := flowFilterKind(f); return k },
@@ -1040,6 +1027,185 @@ func getSQLConstraints(f Field) string {
 // Templates
 
 const boilerplateTemplate = `// Code generated by tablegen. DO NOT EDIT.
+
+// Table {{ .Table.ID }} {{ .Table.Name }}, generated from definitions/tables.
+//
+// The business logic is in business-logic/tables: a type registered with
+// Register{{ .StructName }}Logic, with the triggers it needs as methods. Add a trigger when it
+// is needed (as in BC). Available triggers:
+//
+//	OnInsert(rec *gtables.{{ .StructName }}) error
+//	OnModify(rec *gtables.{{ .StructName }}) error
+//	OnDelete(rec *gtables.{{ .StructName }}) error
+//	OnRename(rec *gtables.{{ .StructName }}) error  — a primary key field changed (rec.OldValue: xRec)
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+//	OnValidate_{{ upperFirst .Name }}(rec *gtables.{{ $.StructName }}) error
+{{- end }}
+{{- end }}
+{{- define "logic" }}
+// ========================================
+// Business logic (triggers)
+// ========================================
+
+// Triggers of {{ .Table.Name }}: a business logic type implements the ones it needs
+type (
+	{{ .StructName }}OnInsert interface{ OnInsert(rec *{{ .StructName }}) error }
+	{{ .StructName }}OnModify interface{ OnModify(rec *{{ .StructName }}) error }
+	{{ .StructName }}OnDelete interface{ OnDelete(rec *{{ .StructName }}) error }
+	{{ .StructName }}OnRename interface{ OnRename(rec *{{ .StructName }}) error }
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	{{ $.StructName }}OnValidate_{{ upperFirst .Name }} interface{ OnValidate_{{ upperFirst .Name }}(rec *{{ $.StructName }}) error }
+{{- end }}
+{{- end }}
+)
+
+// {{ lowerFirst .StructName }}Logic is the registered business logic of {{ .Table.Name }}, in
+// registration order (the base application first, then extensions)
+var {{ lowerFirst .StructName }}Logic []any
+
+// Register{{ .StructName }}Logic adds business logic to {{ .Table.Name }}: a value whose methods are
+// triggers (OnInsert, OnModify, OnDelete, OnRename, OnValidate_<Field>). Every registered logic
+// runs, in registration order; the first error stops the operation. Call it from an init
+// function. It panics on a method named like a trigger that the table does not have (a
+// misspelled trigger, or a field renamed or removed in the definition), so the program
+// does not start with a trigger that would never run.
+func Register{{ .StructName }}Logic(logic any) {
+	checkLogic({{ .StructName }}TableName, "{{ .StructName }}", logic, {{ lowerFirst .StructName }}Trigger)
+	{{ lowerFirst .StructName }}Logic = append({{ lowerFirst .StructName }}Logic, logic)
+}
+
+// {{ lowerFirst .StructName }}Trigger reports whether name is a trigger of {{ .Table.Name }} and
+// whether logic implements it with the right signature.
+func {{ lowerFirst .StructName }}Trigger(name string, logic any) (known, ok bool) {
+	switch name {
+	case "OnInsert":
+		_, ok = logic.({{ .StructName }}OnInsert)
+	case "OnModify":
+		_, ok = logic.({{ .StructName }}OnModify)
+	case "OnDelete":
+		_, ok = logic.({{ .StructName }}OnDelete)
+	case "OnRename":
+		_, ok = logic.({{ .StructName }}OnRename)
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	case "OnValidate_{{ upperFirst .Name }}":
+		_, ok = logic.({{ $.StructName }}OnValidate_{{ upperFirst .Name }})
+{{- end }}
+{{- end }}
+	default:
+		return false, false
+	}
+	return true, ok
+}
+
+// SetLogic replaces the registered business logic for this record only (tests); no
+// arguments runs no triggers at all.
+func (t *{{ .StructName }}) SetLogic(logic ...any) {
+	for _, l := range logic {
+		checkLogic({{ .StructName }}TableName, "{{ .StructName }}", l, {{ lowerFirst .StructName }}Trigger)
+	}
+	if logic == nil {
+		logic = []any{}
+	}
+	t.logic = logic
+}
+
+func (t *{{ .StructName }}) registeredLogic() []any {
+	if t.logic != nil {
+		return t.logic
+	}
+	return {{ lowerFirst .StructName }}Logic
+}
+
+// runOnInsert runs the OnInsert triggers, then the field checks of the definition
+func (t *{{ .StructName }}) runOnInsert() error {
+{{- range .Table.Fields }}
+{{- if .AutoTimestamp }}
+	t.{{ upperFirst .Name }} = time.Now()
+{{- end }}
+{{- end }}
+	for _, l := range t.registeredLogic() {
+		if trg, ok := l.({{ .StructName }}OnInsert); ok {
+			if err := trg.OnInsert(t); err != nil {
+				return err
+			}
+		}
+	}
+	return t.CheckFields()
+}
+
+// runOnModify runs the OnModify triggers, then the field checks of the definition
+func (t *{{ .StructName }}) runOnModify() error {
+{{- range .Table.Fields }}
+{{- if .AutoTimestamp }}
+	t.{{ upperFirst .Name }} = time.Now()
+{{- end }}
+{{- end }}
+	for _, l := range t.registeredLogic() {
+		if trg, ok := l.({{ .StructName }}OnModify); ok {
+			if err := trg.OnModify(t); err != nil {
+				return err
+			}
+		}
+	}
+	return t.CheckFields()
+}
+
+func (t *{{ .StructName }}) runOnDelete() error {
+	for _, l := range t.registeredLogic() {
+		if trg, ok := l.({{ .StructName }}OnDelete); ok {
+			if err := trg.OnDelete(t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t *{{ .StructName }}) runOnRename() error {
+	for _, l := range t.registeredLogic() {
+		if trg, ok := l.({{ .StructName }}OnRename); ok {
+			if err := trg.OnRename(t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// CheckFields checks the field rules of the definition (required, length, validation
+// range). Insert and Modify run it after the OnInsert/OnModify triggers.
+func (t *{{ .StructName }}) CheckFields() error {
+{{- range .Table.Fields }}
+{{- if not (or .FlowField .Encrypted) }}
+{{- if .Required }}
+	{{- if or (eq .Type "types.Code") (eq .Type "types.Text") }}
+	if err := tables.CheckRequired({{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}.IsEmpty()); err != nil {
+		return err
+	}
+	{{- else if eq .Type "string" }}
+	if err := tables.CheckRequired({{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }} == ""); err != nil {
+		return err
+	}
+	{{- end }}
+{{- end }}
+{{- if and .Length (or (eq .Type "types.Code") (eq .Type "types.Text") (eq .Type "string")) }}
+	if err := tables.CheckMaxLength({{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }}), {{ .Length }}); err != nil {
+		return err
+	}
+{{- end }}
+{{- if .Validation }}
+	if err := tables.CheckRange({{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}, {{ .Validation.Min }}, {{ .Validation.Max }}); err != nil {
+		return err
+	}
+{{- end }}
+{{- end }}
+{{- end }}
+	return nil
+}
+{{- end }}
 {{- define "flowSource" }}
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName), false
@@ -1140,9 +1306,10 @@ func (o {{ $.StructName }}{{ upperFirst .Name }}) IsValid() bool {
 {{- end }}
 {{- end }}
 
-// {{ .BaseStructName }} represents Table {{ .Table.ID }}: {{ .Table.Name }}
-// This is the generated base struct - embed in your wrapper struct and override Init
-type {{ .BaseStructName }} struct {
+// {{ .StructName }} represents Table {{ .Table.ID }}: {{ .Table.Name }}
+// (generated from the table definition). Its business logic — the table and field
+// triggers — is in business-logic/tables, registered with Register{{ .StructName }}Logic.
+type {{ .StructName }} struct {
 {{- range .Table.Fields }}
 {{- if .FlowField }}
 	// FlowField: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
@@ -1168,7 +1335,7 @@ type {{ .BaseStructName }} struct {
 	oldValues map[string]interface{} // Stores original values from Get()
 
 	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
-	filters map[string]*{{ lowerFirst .BaseStructName }}FilterCondition
+	filters map[string]*{{ lowerFirst .StructName }}FilterCondition
 
 	// Iteration state for FindSet/Next (BC/NAV style)
 	currentRows *sql.Rows
@@ -1184,17 +1351,12 @@ type {{ .BaseStructName }} struct {
 	offset int
 
 	// Buffered recordset for bidirectional navigation (BC/NAV style)
-	bufferedRecords []*{{ .BaseStructName }}
+	bufferedRecords []*{{ .StructName }}
 	currentBufferPos int
 
-	// Trigger function references (set by wrapper struct via SetTriggers)
-	onInsertFn func() error
-	onModifyFn func() error
-	onDeleteFn func(database.Executor, string) error
-
-	// Wrapper struct (set via SetSelf) so ValidateField can dispatch to
-	// OnValidate_* overrides defined on the wrapper (Go has no virtual methods)
-	self interface{}
+	// Business logic of this record only (SetLogic, tests); nil = the registered logic
+	// (Register{{ .StructName }}Logic)
+	logic []any
 
 	// Error returned by the OnInsert/OnModify/OnDelete trigger of the last
 	// Insert/Modify/Delete call (nil if the trigger passed or did not run)
@@ -1228,63 +1390,53 @@ var {{ $.StructName }}_{{ upperFirst .Name }} = struct {
 {{- end }}
 
 // GetTableID returns the table ID (for Object Registry)
-func (t *{{ .BaseStructName }}) GetTableID() int {
+func (t *{{ .StructName }}) GetTableID() int {
 	return {{ .StructName }}TableID
 }
 
 // GetTableName returns the table name
-func (t *{{ .BaseStructName }}) GetTableName() string {
+func (t *{{ .StructName }}) GetTableName() string {
 	return {{ .StructName }}TableName
 }
 
 // GetTableSchema returns the CREATE TABLE schema (SQLite)
-func (t *{{ .BaseStructName }}) GetTableSchema() string {
+func (t *{{ .StructName }}) GetTableSchema() string {
 	return Get{{ .StructName }}TableSchema()
 }
 
 // GetPostgresTableSchema returns the CREATE TABLE schema (PostgreSQL)
-func (t *{{ .BaseStructName }}) GetPostgresTableSchema() string {
+func (t *{{ .StructName }}) GetPostgresTableSchema() string {
 	return Get{{ .StructName }}PostgresTableSchema()
 }
 
-// SetTriggers sets the trigger function references (called by wrapper Init)
-func (t *{{ .BaseStructName }}) SetTriggers(onInsert, onModify func() error, onDelete func(database.Executor, string) error) {
-	t.onInsertFn = onInsert
-	t.onModifyFn = onModify
-	t.onDeleteFn = onDelete
-}
 
 // TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
 // the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
 // or succeeded. Trigger errors are business-rule messages meant for the user.
-func (t *{{ .BaseStructName }}) TriggerError() error {
+func (t *{{ .StructName }}) TriggerError() error {
 	return t.triggerErr
 }
 
-// SetSelf registers the wrapper struct (called by wrapper InitWithDBType) so that
-// ValidateField dispatches to OnValidate_* overrides defined on the wrapper.
-func (t *{{ .BaseStructName }}) SetSelf(self interface{}) {
-	t.self = self
-}
+{{ template "logic" . }}
 
 // GetDB returns the database executor (for wrapper access)
-func (t *{{ .BaseStructName }}) GetDB() database.Executor {
+func (t *{{ .StructName }}) GetDB() database.Executor {
 	return t.db
 }
 
 // GetCompany returns the company name (for wrapper access)
-func (t *{{ .BaseStructName }}) GetCompany() string {
+func (t *{{ .StructName }}) GetCompany() string {
 	return t.company
 }
 
 // GetDBType returns the database type (for wrapper access)
-func (t *{{ .BaseStructName }}) GetDBType() database.DBType {
+func (t *{{ .StructName }}) GetDBType() database.DBType {
 	return t.dbType
 }
 
 // IsSetupTable reports whether this is a BC-style singleton setup table
 // (a single record identified by a blank primary key).
-func (t *{{ .BaseStructName }}) IsSetupTable() bool {
+func (t *{{ .StructName }}) IsSetupTable() bool {
 	return {{ .Table.SetupTable }}
 }
 
@@ -1317,20 +1469,20 @@ func Get{{ .StructName }}PostgresTableSchema() string {
 // ========================================
 
 // GetCaption returns the table caption in the specified language
-func (t *{{ .BaseStructName }}) GetCaption(language string) string {
+func (t *{{ .StructName }}) GetCaption(language string) string {
 	ts := i18n.GetInstance()
 	return ts.TableCaption("{{ .Table.Name }}", language)
 }
 
 // GetFieldCaption returns the field caption in the specified language
-func (t *{{ .BaseStructName }}) GetFieldCaption(fieldName, language string) string {
+func (t *{{ .StructName }}) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
 	return ts.FieldCaption("{{ .Table.Name }}", fieldName, language)
 }
 {{- if .HasOptionField }}
 
 // GetOptionCaption returns the option field value caption in the specified language
-func (t *{{ .BaseStructName }}) GetOptionCaption(fieldName, optionValue, language string) string {
+func (t *{{ .StructName }}) GetOptionCaption(fieldName, optionValue, language string) string {
 	ts := i18n.GetInstance()
 	return ts.OptionCaption("{{ .Table.Name }}", fieldName, optionValue, language)
 }
@@ -1338,13 +1490,13 @@ func (t *{{ .BaseStructName }}) GetOptionCaption(fieldName, optionValue, languag
 
 // CreateTable creates the {{ .Table.Name }} table for the specified company (SQLite)
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *{{ .BaseStructName }}) CreateTable(db database.Executor, company string) error {
+func (t *{{ .StructName }}) CreateTable(db database.Executor, company string) error {
 	return t.CreateTableWithDBType(db, company, database.DBTypeSQLite)
 }
 
 // CreateTableWithDBType creates the {{ .Table.Name }} table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
-func (t *{{ .BaseStructName }}) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
+func (t *{{ .StructName }}) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -1370,7 +1522,7 @@ func (t *{{ .BaseStructName }}) CreateTableWithDBType(db database.Executor, comp
 // SyncKeys brings an existing table's keys up to date (table sync at startup): creates
 // missing indexes and builds, rebuilds or drops the SIFT totals of keys with
 // sum_index_fields (sift.Sync; unchanged keys cost one query).
-func (t *{{ .BaseStructName }}) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
+func (t *{{ .StructName }}) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 	siftCompany := ""
@@ -1394,14 +1546,14 @@ func (t *{{ .BaseStructName }}) SyncKeys(db database.Executor, company string, d
 	_ = tableName // no keys: nothing to index
 {{- end }}
 	var keys []sift.Key
-	for _, spec := range {{ lowerFirst .BaseStructName }}SIFTSpecs() {
+	for _, spec := range {{ lowerFirst .StructName }}SIFTSpecs() {
 		keys = append(keys, sift.BuildKey(dbType, siftCompany, {{ .StructName }}TableName, tableName, spec))
 	}
 	return sift.Sync(db, dbType, siftCompany, {{ .StructName }}TableName, keys)
 }
 
-// {{ lowerFirst .BaseStructName }}SIFTSpecs are the table's keys with sum_index_fields
-func {{ lowerFirst .BaseStructName }}SIFTSpecs() []sift.KeySpec {
+// {{ lowerFirst .StructName }}SIFTSpecs are the table's keys with sum_index_fields
+func {{ lowerFirst .StructName }}SIFTSpecs() []sift.KeySpec {
 	return []sift.KeySpec{
 {{- range .SIFTKeys }}
 		{
@@ -1415,14 +1567,14 @@ func {{ lowerFirst .BaseStructName }}SIFTSpecs() []sift.KeySpec {
 
 // VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
 // repair it rebuilds the keys whose totals differ.
-func (t *{{ .BaseStructName }}) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
+func (t *{{ .StructName }}) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 {{- if .Table.Global }}
 	tableName, siftCompany := {{ .StructName }}TableName, ""
 {{- else }}
 	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName), t.company
 {{- end }}
 	var results []sift.VerifyResult
-	for _, spec := range {{ lowerFirst .BaseStructName }}SIFTSpecs() {
+	for _, spec := range {{ lowerFirst .StructName }}SIFTSpecs() {
 		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, {{ .StructName }}TableName, tableName, spec)
 		if err != nil {
 			return results, fmt.Errorf("%s: %w", spec.Name, err)
@@ -1446,7 +1598,7 @@ func (t *{{ .BaseStructName }}) VerifySIFT(repair bool) ([]sift.VerifyResult, er
 // InitWithDBType initializes a new {{ .StructName }} record with database context and type.
 // db can be *sql.DB or *sql.Tx. There is no Init without the type: the type decides the SQL
 // placeholders, and a default (SQLite) silently broke code on PostgreSQL.
-func (t *{{ .BaseStructName }}) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
+func (t *{{ .StructName }}) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
 	t.db = db
 	t.company = company
 	t.dbType = dbType
@@ -1457,12 +1609,12 @@ func (t *{{ .BaseStructName }}) InitWithDBType(db database.Executor, company str
 // InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
-func (t *{{ .BaseStructName }}) InitRecord() {
+func (t *{{ .StructName }}) InitRecord() {
 	t.applyDefaults()
 }
 
 // applyDefaults assigns the YAML default values and auto timestamps
-func (t *{{ .BaseStructName }}) applyDefaults() {
+func (t *{{ .StructName }}) applyDefaults() {
 {{- range .Table.Fields }}
 {{- if .AutoTimestamp }}
 	t.{{ upperFirst .Name }} = time.Now()
@@ -1474,7 +1626,7 @@ func (t *{{ .BaseStructName }}) applyDefaults() {
 
 // StoreOldValues stores current field values for change detection
 // Call this after loading a record from the database
-func (t *{{ .BaseStructName }}) StoreOldValues() {
+func (t *{{ .StructName }}) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -1485,18 +1637,18 @@ func (t *{{ .BaseStructName }}) StoreOldValues() {
 
 // OldValue returns a field's value as last read from or written to the database (BC/NAV
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
-func (t *{{ .BaseStructName }}) OldValue(fieldName string) interface{} {
+func (t *{{ .StructName }}) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
-func (t *{{ .BaseStructName }}) IsGlobal() bool {
+func (t *{{ .StructName }}) IsGlobal() bool {
 	return {{ .Table.Global }}
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
 // when running on PostgreSQL
-func (t *{{ .BaseStructName }}) convertPlaceholders(sql string, count int) string {
+func (t *{{ .StructName }}) convertPlaceholders(sql string, count int) string {
 	if t.dbType != database.DBTypePostgres {
 		return sql
 	}
@@ -1510,7 +1662,7 @@ func (t *{{ .BaseStructName }}) convertPlaceholders(sql string, count int) strin
 // Get retrieves a record from the database by primary key (interface{} for generic API)
 // For single primary key: pass the value directly (string, int, etc.)
 // For composite keys: pass a map[string]interface{} with field names as keys
-func (t *{{ .BaseStructName }}) Get(primaryKey interface{}) bool {
+func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
 {{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}
@@ -1614,7 +1766,7 @@ func (t *{{ .BaseStructName }}) Get(primaryKey interface{}) bool {
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
+func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -1720,11 +1872,11 @@ func (t *{{ .BaseStructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- 
 }
 
 // Insert inserts the record into the database
-func (t *{{ .BaseStructName }}) Insert(runTrigger bool) bool {
-	// Call OnInsert trigger if requested (via function reference set by wrapper)
+func (t *{{ .StructName }}) Insert(runTrigger bool) bool {
+	// OnInsert trigger of the business logic, then the field checks of the definition
 	t.triggerErr = nil
-	if runTrigger && t.onInsertFn != nil {
-		if err := t.onInsertFn(); err != nil {
+	if runTrigger {
+		if err := t.runOnInsert(); err != nil {
 			fmt.Printf("Error: OnInsert trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
@@ -1773,12 +1925,12 @@ func (t *{{ .BaseStructName }}) Insert(runTrigger bool) bool {
 // written. Records are written with the receiver's database and company. Errors are
 // *tables.BatchInsertError (Index = the record in records). Use it in a transaction: a
 // failed batch leaves the earlier batches written.
-func (t *{{ .BaseStructName }}) InsertAll(records []*{{ .BaseStructName }}, runTrigger bool) error {
+func (t *{{ .StructName }}) InsertAll(records []*{{ .StructName }}, runTrigger bool) error {
 	rows := make([][]interface{}, 0, len(records))
 	for i, r := range records {
 		r.triggerErr = nil
-		if runTrigger && r.onInsertFn != nil {
-			if err := r.onInsertFn(); err != nil {
+		if runTrigger {
+			if err := r.runOnInsert(); err != nil {
 				r.triggerErr = err
 				return &tables.BatchInsertError{Index: i, Trigger: true, Err: err}
 			}
@@ -1813,7 +1965,7 @@ func (t *{{ .BaseStructName }}) InsertAll(records []*{{ .BaseStructName }}, runT
 // encryptSecrets stores the encrypted fields encrypted (secrets.Encrypt) when they hold a
 // new value as typed. Without an encryption key (neither OPENERP_ENCRYPTION_KEY nor
 // JWT_SECRET set — development) the value stays as typed; the backend warns at startup.
-func (t *{{ .BaseStructName }}) encryptSecrets() error {
+func (t *{{ .StructName }}) encryptSecrets() error {
 {{- range .EncryptedFields }}
 	if v := t.{{ upperFirst .Name }}.String(); v != "" && !secrets.IsEncrypted(v) {
 		// Encrypted, the value must still fit the {{ .Length }}-character column
@@ -1836,7 +1988,7 @@ func (t *{{ .BaseStructName }}) encryptSecrets() error {
 // Plain{{ upperFirst .Name }} returns {{ .Name }} decrypted, for the server code that uses the
 // secret (never send it to the client). secrets.ErrDecrypt means it was encrypted with
 // another key: it has to be entered again.
-func (t *{{ $.BaseStructName }}) Plain{{ upperFirst .Name }}() (string, error) {
+func (t *{{ $.StructName }}) Plain{{ upperFirst .Name }}() (string, error) {
 	return secrets.Decrypt(t.{{ upperFirst .Name }}.String())
 }
 {{- end }}
@@ -1844,7 +1996,7 @@ func (t *{{ $.BaseStructName }}) Plain{{ upperFirst .Name }}() (string, error) {
 // EncryptStoredSecrets encrypts the values of encrypted fields that are stored as typed
 // (saved before the field was encrypted, or without a key) in the table of the receiver's
 // company. Run at startup; does nothing without a key. Returns how many it encrypted.
-func (t *{{ .BaseStructName }}) EncryptStoredSecrets() (int, error) {
+func (t *{{ .StructName }}) EncryptStoredSecrets() (int, error) {
 	if secrets.Source() == "" {
 		return 0, nil
 	}
@@ -1905,17 +2057,17 @@ func (t *{{ .BaseStructName }}) EncryptStoredSecrets() (int, error) {
 
 {{ end -}}
 // Modify updates the record in the database
-func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
-	// Call OnModify trigger if requested (via function reference set by wrapper)
+func (t *{{ .StructName }}) Modify(runTrigger bool) bool {
+	// OnModify trigger of the business logic, then the field checks of the definition
 	t.triggerErr = nil
-	if runTrigger && t.onModifyFn != nil {
-		if err := t.onModifyFn(); err != nil {
+	if runTrigger {
+		if err := t.runOnModify(); err != nil {
 			fmt.Printf("Error: OnModify trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the wrapper's OnRename trigger
+	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -1928,12 +2080,10 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 {{- end }}
 	}
 	if runTrigger && keyChanged {
-		if r, ok := t.self.(interface{ OnRename() error }); ok {
-			if err := r.OnRename(); err != nil {
-				fmt.Printf("Error: OnRename trigger failed: %v\n", err)
-				t.triggerErr = err
-				return false
-			}
+		if err := t.runOnRename(); err != nil {
+			fmt.Printf("Error: OnRename trigger failed: %v\n", err)
+			t.triggerErr = err
+			return false
 		}
 	}
 {{- if .EncryptedFields }}
@@ -2041,7 +2191,7 @@ func (t *{{ .BaseStructName }}) Modify(runTrigger bool) bool {
 }
 
 // hasFieldChanged checks if a field value has changed from oldValues
-func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
+func (t *{{ .StructName }}) hasFieldChanged(fieldName string) bool {
 	if t.oldValues == nil {
 		return true // No old values, assume changed
 	}
@@ -2099,7 +2249,7 @@ func (t *{{ .BaseStructName }}) hasFieldChanged(fieldName string) bool {
 
 // SetDB changes the database executor of the record without touching its values — e.g. to
 // run a Modify (with its rename cascade) inside a transaction.
-func (t *{{ .BaseStructName }}) SetDB(db database.Executor) {
+func (t *{{ .StructName }}) SetDB(db database.Executor) {
 	t.db = db
 }
 {{- if .References }}
@@ -2108,7 +2258,7 @@ func (t *{{ .BaseStructName }}) SetDB(db database.Executor) {
 // to it (BC/NAV Rename). References from company tables are updated in this company — in
 // every company when this table is global. Runs on the record's executor, so inside the
 // caller's transaction.
-func (t *{{ .BaseStructName }}) renameReferences(field string, oldValue, newValue interface{}) error {
+func (t *{{ .StructName }}) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
 		table  string
 		global bool
@@ -2157,11 +2307,11 @@ func (t *{{ .BaseStructName }}) renameReferences(field string, oldValue, newValu
 {{- end }}
 
 // Delete removes the record from the database
-func (t *{{ .BaseStructName }}) Delete(runTrigger bool) bool {
-	// Call OnDelete trigger if requested (via function reference set by wrapper)
+func (t *{{ .StructName }}) Delete(runTrigger bool) bool {
+	// OnDelete trigger of the business logic
 	t.triggerErr = nil
-	if runTrigger && t.onDeleteFn != nil {
-		if err := t.onDeleteFn(t.db, t.company); err != nil {
+	if runTrigger {
+		if err := t.runOnDelete(); err != nil {
 			fmt.Printf("Error: OnDelete trigger failed: %v\n", err)
 			t.triggerErr = err
 			return false
@@ -2207,7 +2357,7 @@ func (t *{{ .BaseStructName }}) Delete(runTrigger bool) bool {
 // Usage:
 //   customer.CalcFields("balance", "balance_lcy") - Calculate specific fields
 //   customer.CalcFields() - Calculate all FlowFields
-func (t *{{ .BaseStructName }}) CalcFields(fieldNames ...string) {
+func (t *{{ .StructName }}) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
 		{{- range .Table.Fields }}
@@ -2236,7 +2386,7 @@ func (t *{{ .BaseStructName }}) CalcFields(fieldNames ...string) {
 
 // calcFlowField_{{ .Name }} calculates the {{ .Name }} FlowField
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
-func (t *{{ $.BaseStructName }}) calcFlowField_{{ .Name }}() {
+func (t *{{ $.StructName }}) calcFlowField_{{ .Name }}() {
 	{{- if eq .CalcFormula "Sum" }}
 	t.{{ upperFirst .Name }} = t.calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}()
 	{{- else if eq .CalcFormula "Count" }}
@@ -2260,7 +2410,7 @@ func (t *{{ $.BaseStructName }}) calcFlowField_{{ .Name }}() {
 // one grouped query per FlowField instead of one query per record. records are
 // ToMap() results; each gets its FlowField values under the field name. With no
 // field names, all FlowFields are calculated.
-func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+func (t *{{ .StructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
 	if len(records) == 0 {
 		return
 	}
@@ -2284,7 +2434,7 @@ func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interf
 
 // calcForRecords_{{ .Name }} calculates the {{ .Name }} FlowField for a set of records
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
-func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
+func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
 {{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
 {{- template "flowSource" . }}
 
@@ -2380,7 +2530,7 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 {{- else }}
 	// No single key field to group by: calculate per record
 	for _, rec := range records {
-		r := &{{ $.BaseStructName }}{db: t.db, company: t.company, dbType: t.dbType}
+		r := &{{ $.StructName }}{db: t.db, company: t.company, dbType: t.dbType}
 		r.FromMap(rec)
 		r.calcFlowField_{{ .Name }}()
 		{{- if eq .Type "types.Decimal" }}
@@ -2398,7 +2548,7 @@ func (t *{{ $.BaseStructName }}) calcForRecords_{{ .Name }}(records []map[string
 {{- range .Table.Fields }}
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
 
-func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
+func (t *{{ $.StructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
 {{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
@@ -2439,7 +2589,7 @@ func (t *{{ $.BaseStructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFir
 {{- end }}
 {{- if and .FlowField (eq .CalcFormula "Count") }}
 
-func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
+func (t *{{ $.StructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 {{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
@@ -2487,12 +2637,12 @@ func (t *{{ $.BaseStructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 
 // CalcFields is a no-op for tables without FlowFields
 // Implemented for tables.Table interface compliance
-func (t *{{ .BaseStructName }}) CalcFields(fieldNames ...string) {
+func (t *{{ .StructName }}) CalcFields(fieldNames ...string) {
 	// This table has no FlowFields to calculate
 }
 
 // CalcFieldsForRecords is a no-op for tables without FlowFields
-func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
+func (t *{{ .StructName }}) CalcFieldsForRecords(records []map[string]interface{}, fieldNames ...string) {
 }
 
 {{- end }}
@@ -2501,8 +2651,8 @@ func (t *{{ .BaseStructName }}) CalcFieldsForRecords(records []map[string]interf
 // BC/NAV-style Filtering and Search
 // ========================================
 
-// {{ lowerFirst .BaseStructName }}FilterCondition represents a filter on a field
-type {{ lowerFirst .BaseStructName }}FilterCondition struct {
+// {{ lowerFirst .StructName }}FilterCondition represents a filter on a field
+type {{ lowerFirst .StructName }}FilterCondition struct {
 	fieldName    string
 	minValue     interface{}
 	maxValue     interface{}
@@ -2518,9 +2668,9 @@ type {{ lowerFirst .BaseStructName }}FilterCondition struct {
 // Usage:
 //   SetRange("No", "10000") - exact match (No = "10000")
 //   SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
-func (t *{{ .BaseStructName }}) SetRange(fieldName string, values ...interface{}) {
+func (t *{{ .StructName }}) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
-		t.filters = make(map[string]*{{ lowerFirst .BaseStructName }}FilterCondition)
+		t.filters = make(map[string]*{{ lowerFirst .StructName }}FilterCondition)
 	}
 
 	var minValue, maxValue interface{}
@@ -2544,11 +2694,11 @@ func (t *{{ .BaseStructName }}) SetRange(fieldName string, values ...interface{}
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
 		// the name into SQL
 		fmt.Printf("Error: SetRange on unknown field %q of {{ .Table.Name }}\n", fieldName)
-		t.filters[fieldName] = &{{ lowerFirst .BaseStructName }}FilterCondition{invalidField: true}
+		t.filters[fieldName] = &{{ lowerFirst .StructName }}FilterCondition{invalidField: true}
 		return
 	}
 
-	t.filters[column] = &{{ lowerFirst .BaseStructName }}FilterCondition{
+	t.filters[column] = &{{ lowerFirst .StructName }}FilterCondition{
 		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
@@ -2559,15 +2709,15 @@ func (t *{{ .BaseStructName }}) SetRange(fieldName string, values ...interface{}
 // Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
-func (t *{{ .BaseStructName }}) SetFilter(fieldName, filterExpr string) {
+func (t *{{ .StructName }}) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
-		t.filters = make(map[string]*{{ lowerFirst .BaseStructName }}FilterCondition)
+		t.filters = make(map[string]*{{ lowerFirst .StructName }}FilterCondition)
 	}
 {{- if .HasFilterableFlowField }}
 	if _, ok := t.FlowFieldFilterKind(fieldName); ok {
 		// A FlowField is not a column: the filter applies to its subquery (flowFieldExpr)
 		name := strings.ToLower(fieldName)
-		t.filters["flowfield:"+name] = &{{ lowerFirst .BaseStructName }}FilterCondition{
+		t.filters["flowfield:"+name] = &{{ lowerFirst .StructName }}FilterCondition{
 			flowField:    name,
 			filterExpr:   filterExpr,
 			isExpression: true,
@@ -2580,10 +2730,10 @@ func (t *{{ .BaseStructName }}) SetFilter(fieldName, filterExpr string) {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
 		// the name into SQL
 		fmt.Printf("Error: SetFilter on unknown field %q of {{ .Table.Name }}\n", fieldName)
-		t.filters[fieldName] = &{{ lowerFirst .BaseStructName }}FilterCondition{invalidField: true}
+		t.filters[fieldName] = &{{ lowerFirst .StructName }}FilterCondition{invalidField: true}
 		return
 	}
-	t.filters[column] = &{{ lowerFirst .BaseStructName }}FilterCondition{
+	t.filters[column] = &{{ lowerFirst .StructName }}FilterCondition{
 		fieldName:    column,
 		filterExpr:   filterExpr,
 		isExpression: true,
@@ -2593,7 +2743,7 @@ func (t *{{ .BaseStructName }}) SetFilter(fieldName, filterExpr string) {
 {{ if .HasFilterableFlowField -}}
 // FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
 // Count FlowFields, BC: SETFILTER on a FlowField) and the kind of its values.
-func (t *{{ .BaseStructName }}) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
+func (t *{{ .StructName }}) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	switch strings.ToLower(field) {
 {{- range .Table.Fields }}
 {{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
@@ -2612,7 +2762,7 @@ func (t *{{ .BaseStructName }}) FlowFieldFilterKind(field string) (flowfilter.Ki
 // flowFieldExpr is the SQL expression computing FlowField field for each row of a query
 // on this table: a correlated subquery reading the source like CalcFieldsForRecords (the
 // SIFT totals of a covering key, else the entries), with the FlowFilters set on t.
-func (t *{{ .BaseStructName }}) flowFieldExpr(field string) (string, []interface{}) {
+func (t *{{ .StructName }}) flowFieldExpr(field string) (string, []interface{}) {
 {{- if .Table.Global }}
 	outer := "\"" + {{ .StructName }}TableName + "\""
 {{- else }}
@@ -2659,7 +2809,7 @@ func (t *{{ .BaseStructName }}) flowFieldExpr(field string) (string, []interface
 // SetCurrentKey sets the sort order for queries (BC/NAV style)
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
-func (t *{{ .BaseStructName }}) SetCurrentKey(fields ...string) {
+func (t *{{ .StructName }}) SetCurrentKey(fields ...string) {
 	t.orderByFields = nil
 	for _, field := range fields {
 {{- if .HasFilterableFlowField }}
@@ -2680,14 +2830,14 @@ func (t *{{ .BaseStructName }}) SetCurrentKey(fields ...string) {
 
 // SetAscending sets the sort direction of the current key (BC/NAV Ascending).
 // The default is ascending.
-func (t *{{ .BaseStructName }}) SetAscending(ascending bool) {
+func (t *{{ .StructName }}) SetAscending(ascending bool) {
 	t.descending = !ascending
 }
 
 // SetSearch limits the records to those where any of the given fields contains text,
 // case-insensitive (the list page search box). Unknown fields are ignored; an empty
 // text clears the search.
-func (t *{{ .BaseStructName }}) SetSearch(fields []string, text string) {
+func (t *{{ .StructName }}) SetSearch(fields []string, text string) {
 	t.searchColumns = nil
 	t.searchText = strings.ToLower(strings.TrimSpace(text))
 	if t.searchText == "" {
@@ -2702,14 +2852,14 @@ func (t *{{ .BaseStructName }}) SetSearch(fields []string, text string) {
 
 // HasColumn reports whether fieldName (case-insensitive) is a stored column of this
 // table. Only such names may be used in filters and sort keys.
-func (t *{{ .BaseStructName }}) HasColumn(fieldName string) bool {
+func (t *{{ .StructName }}) HasColumn(fieldName string) bool {
 	_, ok := t.columnName(fieldName)
 	return ok
 }
 
 // columnName maps a field name (case-insensitive) to its database column. Field names
 // end up in SQL text (WHERE / ORDER BY / SET), so only names from this allowlist are used.
-func (t *{{ .BaseStructName }}) columnName(fieldName string) (string, bool) {
+func (t *{{ .StructName }}) columnName(fieldName string) (string, bool) {
 	switch strings.ToLower(fieldName) {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -2722,7 +2872,7 @@ func (t *{{ .BaseStructName }}) columnName(fieldName string) (string, bool) {
 }
 
 // Reset clears all filters (BC/NAV style)
-func (t *{{ .BaseStructName }}) Reset() {
+func (t *{{ .StructName }}) Reset() {
 	t.filters = nil
 	t.oldValues = nil
 	t.orderByFields = nil
@@ -2736,7 +2886,7 @@ func (t *{{ .BaseStructName }}) Reset() {
 }
 
 // buildWhereClause builds WHERE clause from current filters and search
-func (t *{{ .BaseStructName }}) buildWhereClause() (string, []interface{}) {
+func (t *{{ .StructName }}) buildWhereClause() (string, []interface{}) {
 	if len(t.filters) == 0 && t.searchText == "" {
 		return "1=1", nil
 	}
@@ -2806,7 +2956,7 @@ func (t *{{ .BaseStructName }}) buildWhereClause() (string, []interface{}) {
 
 // parseFilterExpression parses BC/NAV filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
-func (t *{{ .BaseStructName }}) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
+func (t *{{ .StructName }}) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
 
@@ -2852,7 +3002,7 @@ func (t *{{ .BaseStructName }}) parseFilterExpression(fieldName, expr string) (s
 // some; they follow the WHERE arguments). The primary key columns always follow the
 // current key, so the order is unique and paging (SetPage) never repeats or skips rows
 // when the key has duplicate values.
-func (t *{{ .BaseStructName }}) getOrderByClause() (string, []interface{}) {
+func (t *{{ .StructName }}) getOrderByClause() (string, []interface{}) {
 	pk := []string{ {{- range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}"{{ $f.DBName }}", {{ end }}{{ end -}} }
 	var columns []string
 	var args []interface{}
@@ -2883,7 +3033,7 @@ func (t *{{ .BaseStructName }}) getOrderByClause() (string, []interface{}) {
 // SetPage sets a pagination window for FindSet/FindSetBuffered: return at most
 // limit rows, skipping the first offset rows. A limit of 0 disables pagination
 // (all matching rows are returned). Negative values are treated as 0.
-func (t *{{ .BaseStructName }}) SetPage(limit, offset int) {
+func (t *{{ .StructName }}) SetPage(limit, offset int) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -2897,7 +3047,7 @@ func (t *{{ .BaseStructName }}) SetPage(limit, offset int) {
 // getLimitClause builds the LIMIT/OFFSET clause from the pagination window.
 // Returns an empty string when no limit is set. LIMIT/OFFSET take integer
 // literals (not placeholders), which both SQLite and PostgreSQL accept.
-func (t *{{ .BaseStructName }}) getLimitClause() string {
+func (t *{{ .StructName }}) getLimitClause() string {
 	if t.limit <= 0 {
 		return ""
 	}
@@ -2909,7 +3059,7 @@ func (t *{{ .BaseStructName }}) getLimitClause() string {
 
 // FindFirst finds the first record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *{{ .BaseStructName }}) FindFirst() bool {
+func (t *{{ .StructName }}) FindFirst() bool {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -3010,7 +3160,7 @@ func (t *{{ .BaseStructName }}) FindFirst() bool {
 
 // FindLast finds the last record matching current filters (BC/NAV style)
 // Returns true if found, false if not found
-func (t *{{ .BaseStructName }}) FindLast() bool {
+func (t *{{ .StructName }}) FindLast() bool {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -3110,7 +3260,7 @@ func (t *{{ .BaseStructName }}) FindLast() bool {
 }
 
 // Count returns the number of records matching current filters (BC/NAV style)
-func (t *{{ .BaseStructName }}) Count() int {
+func (t *{{ .StructName }}) Count() int {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -3136,7 +3286,7 @@ func (t *{{ .BaseStructName }}) Count() int {
 // FindSet opens a result set matching current filters (BC/NAV style)
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
-func (t *{{ .BaseStructName }}) FindSet() bool {
+func (t *{{ .StructName }}) FindSet() bool {
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -3178,7 +3328,7 @@ func (t *{{ .BaseStructName }}) FindSet() bool {
 //   - Next(-1): Move backward 1 record (only with FindSetBuffered)
 //   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
 // Returns true if a record was loaded, false if no more records or out of bounds
-func (t *{{ .BaseStructName }}) Next(steps ...int) bool {
+func (t *{{ .StructName }}) Next(steps ...int) bool {
 	// Default to 1 step forward
 	step := 1
 	if len(steps) > 0 {
@@ -3312,7 +3462,7 @@ func (t *{{ .BaseStructName }}) Next(steps ...int) bool {
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
-func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
+func (t *{{ .StructName }}) FindSetBuffered() bool {
 	// Close any existing forward-only result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
@@ -3348,7 +3498,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 	// Load all records into memory
 	for rows.Next() {
 		// Create a new record instance
-		record := &{{ .BaseStructName }}{}
+		record := &{{ .StructName }}{}
 		record.db = t.db
 		record.company = t.company
 		record.dbType = t.dbType
@@ -3456,7 +3606,7 @@ func (t *{{ .BaseStructName }}) FindSetBuffered() bool {
 }
 
 // copyFromBuffered copies field values from a buffered record to the current instance
-func (t *{{ .BaseStructName }}) copyFromBuffered(record *{{ .BaseStructName }}) {
+func (t *{{ .StructName }}) copyFromBuffered(record *{{ .StructName }}) {
 {{- range .Table.Fields }}
 	t.{{ upperFirst .Name }} = record.{{ upperFirst .Name }}
 {{- end }}
@@ -3468,13 +3618,13 @@ func (t *{{ .BaseStructName }}) copyFromBuffered(record *{{ .BaseStructName }}) 
 // ========================================
 
 // IsEmpty returns true if no records match current filters (BC/NAV style)
-func (t *{{ .BaseStructName }}) IsEmpty() bool {
+func (t *{{ .StructName }}) IsEmpty() bool {
 	return t.Count() == 0
 }
 
 // ModifyAll updates a field for all records matching current filters (BC/NAV style)
 // Returns the number of records modified
-func (t *{{ .BaseStructName }}) ModifyAll(fieldName string, newValue interface{}) int {
+func (t *{{ .StructName }}) ModifyAll(fieldName string, newValue interface{}) int {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -3508,7 +3658,7 @@ func (t *{{ .BaseStructName }}) ModifyAll(fieldName string, newValue interface{}
 
 // DeleteAll deletes all records matching current filters (BC/NAV style)
 // Returns the number of records deleted
-func (t *{{ .BaseStructName }}) DeleteAll() int {
+func (t *{{ .StructName }}) DeleteAll() int {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -3533,16 +3683,16 @@ func (t *{{ .BaseStructName }}) DeleteAll() int {
 }
 
 // CopyFilters copies filters from another record variable (BC/NAV style)
-func (t *{{ .BaseStructName }}) CopyFilters(from *{{ .BaseStructName }}) {
+func (t *{{ .StructName }}) CopyFilters(from *{{ .StructName }}) {
 	if from.filters == nil {
 		t.filters = nil
 		return
 	}
 
 	// Deep copy filters
-	t.filters = make(map[string]*{{ lowerFirst .BaseStructName }}FilterCondition)
+	t.filters = make(map[string]*{{ lowerFirst .StructName }}FilterCondition)
 	for key, filter := range from.filters {
-		t.filters[key] = &{{ lowerFirst .BaseStructName }}FilterCondition{
+		t.filters[key] = &{{ lowerFirst .StructName }}FilterCondition{
 			fieldName:    filter.fieldName,
 			minValue:     filter.minValue,
 			maxValue:     filter.maxValue,
@@ -3563,7 +3713,7 @@ func (t *{{ .BaseStructName }}) CopyFilters(from *{{ .BaseStructName }}) {
 
 // GetFilters returns a string representation of current filters (BC/NAV style)
 // Useful for debugging and logging
-func (t *{{ .BaseStructName }}) GetFilters() string {
+func (t *{{ .StructName }}) GetFilters() string {
 	if len(t.filters) == 0 {
 		return ""
 	}
@@ -3593,7 +3743,7 @@ func (t *{{ .BaseStructName }}) GetFilters() string {
 // ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
 // This is equivalent to the BC/NAV VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
-func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{}) error {
+func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
 
 	switch fieldNameLower {
@@ -3755,11 +3905,15 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
 {{- end }}
-		// Call OnValidate trigger (the wrapper's override if it defines one)
-		if w, ok := t.self.(interface{ OnValidate_{{ upperFirst .Name }}() error }); ok {
-			return w.OnValidate_{{ upperFirst .Name }}()
+		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.({{ $.StructName }}OnValidate_{{ upperFirst .Name }}); ok {
+				if err := trg.OnValidate_{{ upperFirst .Name }}(t); err != nil {
+					return err
+				}
+			}
 		}
-		return t.OnValidate_{{ upperFirst .Name }}()
+		return nil
 {{- end }}
 {{- end }}
 	}
@@ -3767,30 +3921,20 @@ func (t *{{ .BaseStructName }}) ValidateField(fieldName string, value interface{
 	return fmt.Errorf("field '%s' not found", fieldName)
 }
 
-{{- range .Table.Fields }}
-{{- if not .FlowField }}
-
-// OnValidate_{{ upperFirst .Name }} is the validation trigger for {{ .Name }} field (BC/NAV style)
-// Override this in the wrapper struct to add custom validation
-func (t *{{ $.BaseStructName }}) OnValidate_{{ upperFirst .Name }}() error {
-	return nil
-}
-{{- end }}
-{{- end }}
 
 // ========================================
 // Interface Implementation (tables.Table)
 // ========================================
 
 // ClearFilters removes all filters (BC/NAV style, alias for Reset)
-func (t *{{ .BaseStructName }}) ClearFilters() {
+func (t *{{ .StructName }}) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }
 
 // ToMap converts the current record to a map for JSON serialization
-func (t *{{ .BaseStructName }}) ToMap() map[string]interface{} {
+func (t *{{ .StructName }}) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -3822,7 +3966,7 @@ func (t *{{ .BaseStructName }}) ToMap() map[string]interface{} {
 }
 
 // FromMap populates the record fields from a map (for API POST/PUT)
-func (t *{{ .BaseStructName }}) FromMap(data map[string]interface{}) {
+func (t *{{ .StructName }}) FromMap(data map[string]interface{}) {
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
 	if v, ok := data["{{ .DBName }}"]; ok && v != nil {
@@ -3900,13 +4044,13 @@ func (t *{{ .BaseStructName }}) FromMap(data map[string]interface{}) {
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
-func (t *{{ .BaseStructName }}) UpdateFromMap(data map[string]interface{}) {
+func (t *{{ .StructName }}) UpdateFromMap(data map[string]interface{}) {
 	// Same as FromMap - only updates fields present in the map
 	t.FromMap(data)
 }
 
 // GetPrimaryKeyField returns the name of the primary key field
-func (t *{{ .BaseStructName }}) GetPrimaryKeyField() string {
+func (t *{{ .StructName }}) GetPrimaryKeyField() string {
 {{- if .FirstPrimaryKey }}
 	return "{{ .FirstPrimaryKey.DBName }}"
 {{- else }}
@@ -3915,7 +4059,7 @@ func (t *{{ .BaseStructName }}) GetPrimaryKeyField() string {
 }
 
 // GetPrimaryKeyValue returns the current primary key value as a string
-func (t *{{ .BaseStructName }}) GetPrimaryKeyValue() string {
+func (t *{{ .StructName }}) GetPrimaryKeyValue() string {
 {{- if .FirstPrimaryKey }}
 {{- if eq .FirstPrimaryKey.Type "types.Code" }}
 	return t.{{ upperFirst .FirstPrimaryKey.Name }}.String()
@@ -3936,7 +4080,7 @@ func (t *{{ .BaseStructName }}) GetPrimaryKeyValue() string {
 }
 
 // GetFields returns metadata about all fields
-func (t *{{ .BaseStructName }}) GetFields() []tables.FieldInfo {
+func (t *{{ .StructName }}) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 {{- range .Table.Fields }}
 		{
@@ -3984,7 +4128,7 @@ func (t *{{ .BaseStructName }}) GetFields() []tables.FieldInfo {
 
 // SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
-func (t *{{ .BaseStructName }}) SetFlowFilter(field, expr string) error {
+func (t *{{ .StructName }}) SetFlowFilter(field, expr string) error {
 	switch field {
 {{- range .FlowFilterFields }}
 	case "{{ .DBName }}":
@@ -3999,7 +4143,7 @@ func (t *{{ .BaseStructName }}) SetFlowFilter(field, expr string) error {
 }
 
 // GetFlowFilterFields returns the FlowFilter fields (name and flowfilter kind)
-func (t *{{ .BaseStructName }}) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
+func (t *{{ .StructName }}) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 	return []tables.FlowFilterFieldInfo{
 {{- range .FlowFilterFields }}
 		{Name: "{{ .DBName }}", Kind: string(flowfilter.{{ flowFilterKind . }})},
@@ -4008,7 +4152,7 @@ func (t *{{ .BaseStructName }}) GetFlowFilterFields() []tables.FlowFilterFieldIn
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
-func (t *{{ .BaseStructName }}) GetFlowFields() []string {
+func (t *{{ .StructName }}) GetFlowFields() []string {
 	return []string{
 {{- range .Table.Fields }}
 {{- if .FlowField }}
@@ -4019,7 +4163,7 @@ func (t *{{ .BaseStructName }}) GetFlowFields() []string {
 }
 
 // GetOptionFields returns Option field names mapped to their option values
-func (t *{{ .BaseStructName }}) GetOptionFields() map[string][]string {
+func (t *{{ .StructName }}) GetOptionFields() map[string][]string {
 	return map[string][]string{
 {{- range .Table.Fields }}
 {{- if eq .Type "Option" }}
@@ -4030,7 +4174,7 @@ func (t *{{ .BaseStructName }}) GetOptionFields() map[string][]string {
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
-func (t *{{ .BaseStructName }}) GetTableRelationFields() map[string]tables.TableRelationInfo {
+func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
 {{- range .Table.Fields }}
 {{- if .TableRelation }}
@@ -4053,121 +4197,155 @@ func (t *{{ .BaseStructName }}) GetTableRelationFields() map[string]tables.Table
 }
 `
 
-const businessTemplate = `package {{ .PackageName }}
+const businessTemplate = `package tables
 
 import (
-{{- if .HasTimeField }}
-	"time"
-
-{{- end }}
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// {{ lowerFirst .StructName }}Logic is the business logic of table {{ .Table.ID }} {{ .Table.Name }}.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/{{ lower .StructName }}_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type {{ lowerFirst .StructName }}Logic struct{}
 
-// {{ .StructName }} wraps {{ .BaseStructName }} and adds trigger methods
-type {{ .StructName }} struct {
-	gtables.{{ .BaseStructName }}
-}
+func init() { gtables.Register{{ .StructName }}Logic({{ lowerFirst .StructName }}Logic{}) }
 
-// New{{ .StructName }} creates a new {{ .StructName }} instance
-func New{{ .StructName }}() *{{ .StructName }} {
-	return &{{ .StructName }}{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *{{ .StructName }}) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.{{ .BaseStructName }}.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *{{ .StructName }}) OnInsert() error {
-{{- range .Table.Fields }}
-{{- if .AutoTimestamp }}
-	t.{{ upperFirst .Name }} = time.Now()
-{{- end }}
-{{- end }}
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *{{ .StructName }}) OnModify() error {
-{{- range .Table.Fields }}
-{{- if .AutoTimestamp }}
-	t.{{ upperFirst .Name }} = time.Now()
-{{- end }}
-{{- end }}
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *{{ .StructName }}) OnDelete(db database.Executor, company string) error {
-	// TODO: Add checks for related records (if any)
+// OnInsert runs before a new record is inserted
+func ({{ lowerFirst .StructName }}Logic) OnInsert(rec *gtables.{{ .StructName }}) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *{{ .StructName }}) OnRename() error {
-{{- range .Table.Fields }}
-{{- if .AutoTimestamp }}
-	t.{{ upperFirst .Name }} = time.Now()
-{{- end }}
-{{- end }}
-	// TODO: Update related records if needed
+// OnModify runs before a record is modified
+func ({{ lowerFirst .StructName }}Logic) OnModify(rec *gtables.{{ .StructName }}) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *{{ .StructName }}) Validate() error {
-{{- range .Table.Fields }}
-{{- if .Required }}
-	{{- if eq .Type "types.Code" }}
-	if err := ftables.CheckRequired(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}.IsEmpty()); err != nil {
-		return err
-	}
-	{{- else if eq .Type "string" }}
-	if err := ftables.CheckRequired(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }} == ""); err != nil {
-		return err
-	}
-	{{- end }}
-{{- end }}
-{{- if .Length }}
-	if err := ftables.CheckMaxLength(gtables.{{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }}), {{ .Length }}); err != nil {
-		return err
-	}
-{{- end }}
-{{- if .Validation }}
-	if err := ftables.CheckRange(gtables.{{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}, {{ .Validation.Min }}, {{ .Validation.Max }}); err != nil {
-		return err
-	}
-{{- end }}
-{{- end }}
-
+// OnDelete runs before a record is deleted
+func ({{ lowerFirst .StructName }}Logic) OnDelete(rec *gtables.{{ .StructName }}) error {
 	return nil
 }
 
-// ========================================
-// Business Logic Methods
-// ========================================
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func ({{ lowerFirst .StructName }}Logic) OnRename(rec *gtables.{{ .StructName }}) error {
+	return nil
+}
+`
 
-// TODO: Add your custom business logic methods here
-// Example:
-// func (t *{{ .StructName }}) CalculateSomething() error {
-//     // Your logic here
-//     return nil
-// }
+// tablesTemplate is tables_gen.go: what concerns all tables — the table registry (the
+// API creates records by table name) and the check of registered business logic.
+const tablesTemplate = `// Code generated by tablegen. DO NOT EDIT.
+
+package tables
+
+import (
+	"fmt"
+	"reflect"
+	"sort"
+	"strings"
+
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/tables"
+)
+
+// tableRegistry holds the factory of every table by name
+var tableRegistry = map[string]tables.TableFactory{
+{{- range . }}
+	"{{ or .Table.APIName .Table.Name }}": func() tables.Table { return &{{ .StructName }}{} },
+{{- end }}
+}
+
+// NewRecords returns a new record of every table by table ID (the object registry)
+func NewRecords() map[int]tables.Table {
+	return map[int]tables.Table{
+{{- range . }}
+		{{ .StructName }}TableID: &{{ .StructName }}{},
+{{- end }}
+	}
+}
+
+// RegisterTableFactory registers a table factory by name (tests)
+func RegisterTableFactory(name string, id int, factory tables.TableFactory) {
+	tableRegistry[name] = factory
+}
+
+// GetTableFactory returns a table factory by name
+func GetTableFactory(name string) (tables.TableFactory, bool) {
+	factory, ok := tableRegistry[name]
+	return factory, ok
+}
+
+// ListTableNames returns all registered table names
+func ListTableNames() []string {
+	names := make([]string, 0, len(tableRegistry))
+	for name := range tableRegistry {
+		names = append(names, name)
+	}
+	return names
+}
+
+// TableExists checks if a table name is registered
+func TableExists(name string) bool {
+	_, ok := tableRegistry[name]
+	return ok
+}
+
+// EncryptStoredSecrets encrypts values of encrypted fields (encrypted: true in the table
+// YAML) that are stored as typed — saved before the field was encrypted or while no key
+// was set — in every table that has such fields: global tables once, company tables in
+// each company. Run at startup; does nothing without an encryption key. Returns how many
+// values it encrypted.
+func EncryptStoredSecrets(db database.Executor, dbType database.DBType, companies []string) (int, error) {
+	type secretTable interface {
+		tables.Table
+		IsGlobal() bool
+		EncryptStoredSecrets() (int, error)
+	}
+	total := 0
+	names := ListTableNames()
+	sort.Strings(names)
+	for _, name := range names {
+		probe, ok := tableRegistry[name]().(secretTable)
+		if !ok {
+			continue // no encrypted fields
+		}
+		scopes := companies
+		if probe.IsGlobal() {
+			scopes = []string{""}
+		}
+		for _, company := range scopes {
+			t := tableRegistry[name]().(secretTable)
+			t.InitWithDBType(db, company, dbType)
+			n, err := t.EncryptStoredSecrets()
+			total += n
+			if err != nil {
+				return total, fmt.Errorf("encrypt stored secrets of %s (%s): %w", name, company, err)
+			}
+		}
+	}
+	return total, nil
+}
+
+// checkLogic panics when business logic registered for a table has a method named like a
+// trigger ("On…") that the table does not have, or with the wrong signature: such a
+// trigger would never run. The message names the method and the table.
+func checkLogic(table, record string, logic any, trigger func(name string, logic any) (known, ok bool)) {
+	if logic == nil {
+		panic(fmt.Sprintf("business logic of table %s is nil", table))
+	}
+	typ := reflect.TypeOf(logic)
+	for i := 0; i < typ.NumMethod(); i++ {
+		name := typ.Method(i).Name
+		if !strings.HasPrefix(name, "On") {
+			continue
+		}
+		known, ok := trigger(name, logic)
+		switch {
+		case !known:
+			panic(fmt.Sprintf("business logic %v: %s is not a trigger of table %s (misspelled, or the field was renamed or removed in the table definition)", typ, name, table))
+		case !ok:
+			panic(fmt.Sprintf("business logic %v: trigger %s of table %s must be func(rec *%s) error", typ, name, table, record))
+		}
+	}
+}
 `

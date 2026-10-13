@@ -47,10 +47,9 @@ npm run test:e2e                     # E2E tests (Playwright)
 
 ### Code Generation
 ```bash
-cd tools/tablegen && go build -o tablegen .
-cd backend/business-logic/tables
-../../../tools/tablegen/tablegen -input=definitions/customer.yaml -output=.
+go generate ./backend/generated/tables   # after changing a table YAML in backend/definitions/tables
 ```
+Commit the regenerated `backend/generated/tables`; CI fails when it is not up to date.
 
 ### Docker
 ```bash
@@ -67,9 +66,13 @@ Production operations (upgrade, backup/restore, reboot, ports, passwords): `docs
 cmd/api-server/          Entry point - DB init, object registry setup, server start
 backend/
   api/                   Fiber HTTP server, routes, handlers, middleware
-  business-logic/        Domain layer
-    tables/              Table definitions (Go structs + YAML definitions/)
-    pages/               Page definitions (YAML-driven UI metadata)
+  definitions/           Metadata (YAML): what extensions extend
+    tables/              Table definitions → tablegen
+    pages/               Page definitions (YAML-driven UI metadata, read at runtime)
+    menus/               Menu definitions (read at runtime)
+  generated/tables/      Generated from definitions/tables by tablegen — never edit
+  business-logic/        Maintained business logic (NAV/BC structure), no boilerplate
+    tables/              Table triggers (one logic type per table) and table helpers
     codeunits/           Business logic units (runnable via API)
     migrations/          Versioned schema migrations (see docs/migrations.md)
   foundation/            Core framework
@@ -90,7 +93,6 @@ frontend/
 tools/
   tablegen/              Generates Go code from YAML table definitions
   extmerge/              Merges extension definitions with core at build time
-generated/tables/        Auto-generated table constants (from tablegen)
 translations/            i18n JSON files
 ```
 
@@ -104,16 +106,21 @@ translations/            i18n JSON files
 ## Key Patterns
 
 - **Object Registry**: Tables, pages, and codeunits are registered at startup in `cmd/api-server/main.go`. The registry enables dynamic, type-safe access throughout the system.
-- **Table registration**: When adding a new table, register it in `cmd/api-server/main.go` via `registry.RegisterTable(ID, &TableStruct{})`.
+- **Table business logic (ABSOLUTE RULE: generated code is never edited)**: three folders, one rule each.
+  - `backend/definitions/tables/*.yaml` is the table; `go generate ./backend/generated/tables` writes `backend/generated/tables/<table>_gen.go` (record type `gtables.Customer` with fields, CRUD, trigger dispatch, `CheckFields`) and `tables_gen.go` (table registry `GetTableFactory`/`ListTableNames`, `NewRecords` for the object registry, `EncryptStoredSecrets`). A new table needs no registration anywhere. The registry name is the YAML `name`, or `api_name` where the API/pages use another (`Payment_terms`, `Customer_ledger_entry`, `User_preferences`).
+  - `backend/business-logic/tables/<table>.go` holds only the business logic: a logic type registered in `init` with `gtables.Register<Table>Logic(…)`, whose methods are the triggers it needs — `OnInsert`, `OnModify`, `OnDelete`, `OnRename` (a primary key field changed; `rec.OldValue(field)` is xRec) and `OnValidate_<Field>`, each `func (customerLogic) OnValidate_Name(rec *gtables.Customer) error`. Add a trigger when it is needed (as in BC); the available ones are listed at the top of the generated file. Tablegen creates this file once for a new table (empty OnInsert/OnModify/OnDelete/OnRename) and never overwrites it. Helpers that are not triggers are plain functions (`tables.SetPassword(user, pw)`, `tables.UserThemes(…)`).
+  - The field rules of the definition (`required`, `length`, `validation`) are generated (`CheckFields`) and run after OnInsert/OnModify (with `runTrigger`) — never repeat them in a trigger.
+  - Every registered logic of a table runs, in registration order (base application first, later extensions); the first error stops the operation. A method named `On…` that is not a trigger of the table (misspelled, or the field was renamed/removed in the YAML) or has the wrong signature panics at startup with its name. Tests replace the logic of one record with `rec.SetLogic(…)`.
+  - The logic is registered by importing `backend/business-logic/tables`: `cmd/api-server` does, and so do the packages that write records (`_` import in codeunits, demodata, scheduler, jobqueue) so their tests run the triggers too.
 - **Company-scoped tables**: All business data tables are prefixed with the company name (e.g., `"cronus$Customer"`). System tables (User, Language) are global.
 - **Database auto-detection**: If `DB_HOST` env var is set, uses PostgreSQL; otherwise SQLite with interactive prompts.
 - **Opening a table in code**: always `InitWithDBType(db, company, dbType)` with the session's/handler's database type — there is deliberately no `Init(db, company)`: the type decides the SQL placeholders, and the old SQLite default silently broke code on PostgreSQL (production).
 - **Table sync**: Additive schema changes (new tables/columns) happen automatically on startup. Destructive changes require migrations.
 - **Migrations**: Sequential versioned files in `backend/business-logic/migrations/`. Auto-registered via `init()`. Use `ctx.ForEachCompanyTable()` to apply across all companies. Supports distributed locking for Kubernetes.
-- **Extensions**: Custom tables/pages/codeunits use IDs 50,000-99,999. Core uses 1-49,999. Extensions are `.extend.yaml` files merged at build time via `extmerge`.
+- **Extensions**: Custom tables/pages/codeunits use IDs 50,000-99,999. Core uses 1-49,999. Extensions are `.extend.yaml` files merged into `backend/definitions` at build time via `extmerge`, after which the Dockerfile regenerates the table code (extension fields become fields of `gtables.<Table>`); an extension's Go code registers its own logic per table (`EXTENSIONS.md`, "Extension apps"). Keep the base app extensible: never let base code depend on a fixed field list or on being the only registered logic.
 - **YAML-driven definitions**: All table definitions, list pages, and card pages are defined in backend YAML files. Never hardcode table structures or page layouts in Go or Svelte code.
 - **Generic pages**: All frontend pages (list and card) must be fully generic — driven by page metadata from the backend, not hardcoded per table. Never create table-specific page components.
-- **Menu assignment**: The main menu is determined per user via `User.menu` → `Menu.code` (FK). The Menu table defines a `filename` pointing to a YAML menu definition file in `backend/business-logic/pages/menus/`. The `filename` must include the `.yaml` extension (e.g., `"jobqueue.yaml"`). Main menu items must always be defined in backend YAML files — never hardcode menu items in the frontend.
+- **Menu assignment**: The main menu is determined per user via `User.menu` → `Menu.code` (FK). The Menu table defines a `filename` pointing to a YAML menu definition file in `backend/definitions/menus/`. The `filename` must include the `.yaml` extension (e.g., `"jobqueue.yaml"`). Main menu items must always be defined in backend YAML files — never hardcode menu items in the frontend.
 - **Frontend proxy**: Vite dev server proxies `/api` to the Go backend at `localhost:8080`.
 - **Per-request JWT sessions**: Authentication uses JWT tokens in HTTP-only cookies (`openerp_session`). The auth middleware (`backend/api/middleware/auth.go`) parses the JWT on every request, loads/creates a session, and stores it in `c.Locals("session")`. Handlers access the session via `getSession(c)` (in `handlers/helpers.go`), never via the old `session.GetCurrent()` global. Sessions are cached in-memory (`SessionCache`) keyed by `userID:company`. Login/logout/company-switch re-issue the JWT and update the cache. The `JWT_SECRET` env var must be set in production; in dev a random key is generated (sessions won't survive restarts). `SecureCookie` is automatically enabled when `DB_HOST` is set (production). The `MenuBar` component is mounted once in the root layout and does NOT re-mount on client-side navigation — use `$effect` watching stores to reload data after login/logout.
 - **Migration ordering**: Migrations run BEFORE table sync in `EnterCompany`. If a migration needs to INSERT into a table, it must first ensure the table exists with `CREATE TABLE IF NOT EXISTS`. Use idempotent inserts (`ON CONFLICT DO NOTHING` for PostgreSQL, `INSERT OR IGNORE` for SQLite).
@@ -136,8 +143,8 @@ translations/            i18n JSON files
 - **Masked fields (ABSOLUTE RULE, BC ExtendedDatatype Masked)**: a secret the user must be able to set but never read back (e.g. `SMTP_Setup.password`) is `masked: true` in the table YAML (Text/Code only). `PublicMap` sends `ftables.MaskedValue` (`••••••••`) when it has a value, "" when empty; writes go through `DropMaskedPlaceholders`, so the placeholder sent back keeps the stored value and "" clears it; like sensitive fields it cannot be filtered, sorted or searched. Server code (e.g. the mailer) reads the real value from the table record. A masked secret the server must read back in clear (it sends it on, e.g. the SMTP password) is also `encrypted: true` in the table YAML (requires `masked`, `types.Text`): it is **stored encrypted** (`backend/foundation/secrets`, AES-256-GCM, `enc:v1:…`; key `OPENERP_ENCRYPTION_KEY`, else derived from `JWT_SECRET`). The generated Insert/Modify/InsertAll encrypt it (and refuse a value too long to fit the column encrypted — 154 bytes for length 250), the generated `Plain<Field>()` decrypts it for the server code that uses it, and startup encrypts values stored before (`tables.EncryptStoredSecrets`). Every new stored secret of this kind gets `encrypted: true` — never decrypt one into an API response. Passwords that are only checked (user logins) are hashed instead (`sensitive: true`, bcrypt), never encrypted. The page metadata marks masked fields (`field.masked`, from the table YAML or a page field's `masked: true` — e.g. the User card's virtual `password`, hashed by the API) and the frontend renders them as password inputs on cards, list cells and modal cards — decide by `field.masked`, never by the field name. Use `sensitive` for values nobody may set or see (hashes), `masked` for secrets an admin enters.
 - **Keys inside panels**: list shortcuts (`use:shortcuts` on the list page) skip keys from inside an element marked `data-own-keys` (the filter pane). Svelte 5 delegates `onkeydown` to the app root, so a `stopPropagation` in a component's handler runs after the list's native shortcut listener — it cannot stop it.
 - **Company display name**: `Company.name` is the technical key — it prefixes every company table, so it allows only `a-z 0-9 _` (lowercased on create). `Company.display_name` (BC/NAV Display Name, e.g. "Demo Company 01") is what users see. `GET /api/auth/companies` returns `{name, display_name}` objects; the session, JWT and `POST /api/auth/company` use `name`. In the frontend show companies via `companyLabel`/`companyLabelFor` (`utils/company.ts`), never the raw name.
-- **Renaming / deleting a company (BC/NAV Rename)**: changing `Company.name` (Companies page) moves the company's data. The generated `Modify` runs the wrapper's `OnRename` trigger whenever a primary key field changes (every table; `OldValue(field)` gives the xRec value). `Company.OnRename` validates the new name (`company.NormalizeName`: lower case `a-z 0-9 _ -`, 2–50), refuses an existing company, then `company.RenameObjects` drops the old SIFT objects (their trigger functions name the totals tables) and renames every `old$…` table, index and sequence, and `syncCompanyKeys` rebuilds indexes and SIFT totals for the new name; the generated cascade updates User Member. All of it runs in the API's modify transaction (`RenameObjects` refuses a plain `*sql.DB`) — a failure at any step rolls everything back. Deleting a company drops its tables and SIFT objects in the delete's transaction (`company.DropObjects`). Find a company's objects only by exact name prefix (`company.Tables`), never `LIKE 'name$%'` — `_` is a LIKE wildcard. Afterwards `AuthHandler.CompanyChanged` drops the company's cached sessions and re-issues the renaming user's cookie; any other token naming a company that no longer exists is treated as logged out by the auth middleware. At startup a missing `COMPANY_NAME` company is only created on an empty database; otherwise an existing company is entered.
-- **Trigger and validation messages (ABSOLUTE RULE)**: never `errors.New("…")` with English text in a table wrapper. Field checks use `ftables.CheckRequired` / `CheckMaxLength` (counts characters, not bytes) / `CheckRange`; other rule violations return an `apperrors` error that names the field (`FieldTooShort`, `FieldFormat`, `RelatedNotFound`, `RelatedInactive`, …): `AppError{Table, Field}` puts the field's caption in the user's language into the message (`errors.yaml`, every language). Handlers return trigger errors with `errorMessage(err, language)`, never `err.Error()`. Tablegen's wrapper template follows this.
+- **Renaming / deleting a company (BC/NAV Rename)**: changing `Company.name` (Companies page) moves the company's data. The generated `Modify` runs the `OnRename` trigger whenever a primary key field changes (every table; `OldValue(field)` gives the xRec value). `Company.OnRename` validates the new name (`company.NormalizeName`: lower case `a-z 0-9 _ -`, 2–50), refuses an existing company, then `company.RenameObjects` drops the old SIFT objects (their trigger functions name the totals tables) and renames every `old$…` table, index and sequence, and `syncCompanyKeys` rebuilds indexes and SIFT totals for the new name; the generated cascade updates User Member. All of it runs in the API's modify transaction (`RenameObjects` refuses a plain `*sql.DB`) — a failure at any step rolls everything back. Deleting a company drops its tables and SIFT objects in the delete's transaction (`company.DropObjects`). Find a company's objects only by exact name prefix (`company.Tables`), never `LIKE 'name$%'` — `_` is a LIKE wildcard. Afterwards `AuthHandler.CompanyChanged` drops the company's cached sessions and re-issues the renaming user's cookie; any other token naming a company that no longer exists is treated as logged out by the auth middleware. At startup a missing `COMPANY_NAME` company is only created on an empty database; otherwise an existing company is entered.
+- **Trigger and validation messages (ABSOLUTE RULE)**: never `errors.New("…")` with English text in a table trigger. Field checks use `ftables.CheckRequired` / `CheckMaxLength` (counts characters, not bytes) / `CheckRange`; other rule violations return an `apperrors` error that names the field (`FieldTooShort`, `FieldFormat`, `RelatedNotFound`, `RelatedInactive`, …): `AppError{Table, Field}` puts the field's caption in the user's language into the message (`errors.yaml`, every language). Handlers return trigger errors with `errorMessage(err, language)`, never `err.Error()`. The generated `CheckFields` follows this.
 - **Index names**: a company table's index is `company$Table$key`; a global table's index is `Table$key`, shared by all companies (the old company prefix created one copy per company — removed by migration 007).
 - **Job Queue notifications**: after a scheduled run the scheduler e-mails the outcome per `notify_on` to `Job_Queue.notification_email` — one or more addresses separated by `;` (checked and tidied by `OnValidate_Notification_email`, `mail.ParseAddressList`) — in the job's `notification_language` (blank = default language). Message building, recipients, language and the SMTP config live in `backend/business-logic/jobqueue`, shared with codeunit 455 "Send Test E-mail" (Job Queue list/card action). `mail.Sender.Send(to []string, …)` sends one message to all recipients; a rejected recipient comes back in a `*mail.RecipientsError` and does not stop the others. Notification failures are logged, never fail the job.
 - **Demo data**: codeunit 50100 (`codeunits/demodata_create.go` → package `business-logic/demodata`) fills the current company from `demodata/data/*.yaml`, run from the Job Queue (Run or scheduler); the job's `parameter` is `SMALL` (default) or `LARGE`. One transaction, fixed random seed, refuses a company that already has customers. Records go through `Insert(true)` — ledger entries through `InsertAll(…, true)` with their SIFT totals suspended and built once at the end — so table triggers apply (Customer `OnInsert` sets Status Open — Blocked is applied with a Modify afterwards). When a new business table gets demo data, add it to the YAML and `demodata.Create` in the same change.
@@ -145,7 +152,7 @@ translations/            i18n JSON files
 
 ## Page Definition Guide
 
-All pages are defined in backend YAML files at `backend/business-logic/pages/definitions/`. File naming convention: `{ID}-{name}.yaml`. Pages auto-load from this directory — no Go registration needed.
+All pages are defined in backend YAML files at `backend/definitions/pages/`. File naming convention: `{ID}-{name}.yaml`. Pages auto-load from this directory — no Go registration needed.
 
 ### List Page YAML Structure
 ```yaml
@@ -153,7 +160,7 @@ page:
   id: 22                      # Unique page ID (core: 1-49999, extensions: 50000-99999)
   type: List                   # Must be "List"
   name: Customer List          # Internal name
-  source_table: Customer       # Table to read from (must be registered in main.go)
+  source_table: Customer       # Table to read from (its registry name: YAML name or api_name)
   caption: Customer List       # Display title (translated via pages.yaml translation files)
   card_page_id: 21             # (optional) Associated card page for row click / Edit action
   modal_card: true             # (optional) Open card in modal instead of navigating to card page
@@ -234,7 +241,7 @@ page:
 ### Key Rules
 - **Card actions**: only `promoted: true` actions are shown as buttons on a card (there is no overflow menu); others are reachable by their shortcut only. `run_page_filter_field` / `run_page_filter_value` open `run_page` filtered to the current record (like list drilldowns).
 - **Table names**: pages use registry names (`Customer_ledger_entry`), table YAML files display names (`Customer Ledger Entry`). Table metadata (`TableMetadata`, primary key fields, field types) normalizes both (`metadataKey`); a page whose source table finds no metadata gets no `primary_key_fields`, and its rows are keyed randomly (focus lost on every render).
-- **Lookup field definitions**: `table_relation` with `lookup_columns` is defined in the **table** YAML (`backend/business-logic/tables/definitions/`), not the page YAML. The page YAML only needs `table_relation: TableName` on the card field. The backend resolves lookup column data automatically and sends it in the `captions.lookups` response.
+- **Lookup field definitions**: `table_relation` with `lookup_columns` is defined in the **table** YAML (`backend/definitions/tables/`), not the page YAML. The page YAML only needs `table_relation: TableName` on the card field. The backend resolves lookup column data automatically and sends it in the `captions.lookups` response.
 - **Field captions**: Come from `translations/{lang}/tables.yaml` by default. The page YAML `caption` field overrides the translation for a specific page only.
 - **Page captions**: Come from `translations/{lang}/pages.yaml`. The YAML `caption` is the fallback if no translation exists.
 - **Action and section captions**: come from `translations/{lang}/common.yaml`, `common.actions.<name>` / `common.sections.<name>` with the YAML `name` in snake case (`Send Test E-mail` → `send_test_e_mail`); the YAML `caption` is the fallback. `TestPageCaptionsTranslated` fails when a page uses a name without a translation in every language — add it to all `common.yaml` files. The frontend decides by `action.name`, never by the caption.
@@ -396,10 +403,10 @@ Matches Business Central (see `screenshots/GeneralJournal01-07.png`).
 - After a successful insert/modify the page header shows the "Saving…"/"✓ Saved" indicator (`saveState`), the only feedback that a row committed.
 
 ### Cross-field validation (OnValidate auto-fill)
-- For a new row, confirming a field the user changed calls `api.validateField(table, field, value, record)` with the **full in-progress record**. The backend hydrates the table from it, runs `ValidateField` (→ the wrapper's `OnValidate_<Field>()`), and returns the resulting record, which is merged into the row. A trigger can therefore fill sibling fields (e.g. Account No. → Account Name).
+- For a new row, confirming a field the user changed calls `api.validateField(table, field, value, record)` with the **full in-progress record**. The backend hydrates the table from it, runs `ValidateField` (→ the table's `OnValidate_<Field>` triggers), and returns the resulting record, which is merged into the row. A trigger can therefore fill sibling fields (e.g. Account No. → Account Name).
 - Existing rows get trigger results from the `modifyRecord` response, which is merged into the row the same way.
 - `InsertRecord`/`ModifyRecord` only VALIDATE fields whose value changed, in table field order (`validateChangedFields`), so a stale sibling in the payload never overwrites a value another field's trigger filled in.
-- Wrapper triggers reach the API because each wrapper overrides `InitWithDBType` to call `SetTriggers(...)` and `SetSelf(t)`; the generated `ValidateField` dispatches to wrapper `OnValidate_*` overrides through `self`. When adding a wrapper by hand, keep that override — without it OnInsert/OnModify/OnDelete and OnValidate overrides silently never run from the API.
+- Triggers reach the API through the registered logic of the table (`Register<Table>Logic`, see "Table business logic"): the generated `Insert`/`Modify`/`Delete`/`ValidateField` call it for every record, however it was created — there is no per-record wiring to forget.
 
 ### Cell Value Auto-Save
 - When a cell value is "confirmed" (see keyboard tables above), existing records call `modifyRecord`. New records follow the Record Entry rules above.

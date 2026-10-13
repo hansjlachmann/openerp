@@ -3,12 +3,12 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -49,7 +49,7 @@ func (h *PreferencesHandler) GetPreferences(c *fiber.Ctx) error {
 	}
 
 	// Query preferences for this user, page, and type
-	var prefs tables.UserPreferences
+	var prefs gtables.UserPreferences
 	prefs.InitWithDBType(h.db, "", h.dbType) // No company context
 
 	// Set filters
@@ -117,7 +117,7 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 	}
 
 	// Check if preference already exists
-	var pref tables.UserPreferences
+	var pref gtables.UserPreferences
 	pref.InitWithDBType(h.db, "", h.dbType)
 
 	exists := pref.GetByPK(
@@ -179,7 +179,7 @@ func (h *PreferencesHandler) DeletePreference(c *fiber.Ctx) error {
 	}
 
 	// Find and delete the preference
-	var pref tables.UserPreferences
+	var pref gtables.UserPreferences
 	pref.InitWithDBType(h.db, "", h.dbType)
 
 	if !pref.GetByPK(

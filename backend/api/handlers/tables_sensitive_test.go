@@ -3,6 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"io"
 	"net/http/httptest"
 	"net/url"
@@ -10,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -26,14 +27,14 @@ func newUserTestApp(t *testing.T) (*fiber.App, *sql.DB) {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := (&tables.User{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.User{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
-	var u tables.User
+	var u gtables.User
 	u.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	u.User_id.Set("HANS")
 	u.User_name.Set("Hans")
-	if err := u.SetPassword("secret-123"); err != nil {
+	if err := tables.SetPassword(&u, "secret-123"); err != nil {
 		t.Fatal(err)
 	}
 	if !u.Insert(false) {
@@ -166,7 +167,7 @@ func TestMaskedFieldWriteOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := (&tables.SMTPSetup{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.SMTPSetup{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
 	h := NewTablesHandler(db)

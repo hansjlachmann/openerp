@@ -5,127 +5,66 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/themes"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// themeLogic is the business logic of table 5160 Theme: a color theme installed from
+// GitHub (business-logic/themerepo). The files are stored once; each user sees the themes
+// they added (User_Theme). Built-in themes (backend/foundation/themes) are not stored and
+// every user has them.
+type themeLogic struct{}
 
-// Theme is a color theme installed from GitHub (business-logic/themerepo). The files are
-// stored once; each user sees the themes they added (User_Theme). Built-in themes
-// (backend/foundation/themes) are not stored and every user has them.
-type Theme struct {
-	gtables.ThemeBase
+func init() { gtables.RegisterThemeLogic(themeLogic{}) }
+
+func (themeLogic) OnInsert(rec *gtables.Theme) error {
+	return checkThemeTokens(rec)
 }
 
-// NewTheme creates a new Theme instance
-func NewTheme() *Theme {
-	return &Theme{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *Theme) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.ThemeBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *Theme) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *Theme) OnModify() error {
-	return t.Validate()
+func (themeLogic) OnModify(rec *gtables.Theme) error {
+	return checkThemeTokens(rec)
 }
 
 // OnDelete deletes the theme's images and removes it from every user's themes. Users who
 // chose the theme fall back to the default theme of its mode (handlers/themes.go).
-func (t *Theme) OnDelete(db database.Executor, company string) error {
-	var links UserTheme
-	links.InitWithDBType(db, "", t.GetDBType())
-	links.SetRange("theme_code", t.Code.String())
+func (themeLogic) OnDelete(rec *gtables.Theme) error {
+	var links gtables.UserTheme
+	links.InitWithDBType(rec.GetDB(), "", rec.GetDBType())
+	links.SetRange("theme_code", rec.Code.String())
 	links.DeleteAll()
 
-	var assets ThemeAsset
-	assets.InitWithDBType(db, "", t.GetDBType())
-	assets.SetRange("theme_code", t.Code.String())
+	var assets gtables.ThemeAsset
+	assets.InitWithDBType(rec.GetDB(), "", rec.GetDBType())
+	assets.SetRange("theme_code", rec.Code.String())
 	assets.DeleteAll()
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *Theme) OnRename() error {
-	// TODO: Update related records if needed
-	return nil
-}
-
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *Theme) Validate() error {
-	if err := ftables.CheckRequired(gtables.ThemeTableName, "code", t.Code.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "code", string(t.Code), 50); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "name", string(t.Name), 100); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "repo_url", string(t.Repo_url), 250); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "repo_ref", string(t.Repo_ref), 100); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "commit_sha", string(t.Commit_sha), 40); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "author", string(t.Author), 100); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.ThemeTableName, "installed_by", string(t.Installed_by), 50); err != nil {
-		return err
-	}
-
-	if _, err := themes.ParseTokens(t.Tokens.String()); err != nil {
+// checkThemeTokens: the stored tokens must be valid theme tokens
+func checkThemeTokens(rec *gtables.Theme) error {
+	if _, err := themes.ParseTokens(rec.Tokens.String()); err != nil {
 		return apperrors.FieldFormat(gtables.ThemeTableName, "tokens", "JSON")
 	}
 	return nil
 }
 
-// ========================================
-// Business Logic Methods
-// ========================================
-
-// ToTheme returns the stored theme as the API sends it.
-func (t *Theme) ToTheme() (themes.Theme, error) {
-	tokens, err := themes.ParseTokens(t.Tokens.String())
+// toTheme returns the stored theme as the API sends it.
+func toTheme(rec *gtables.Theme) (themes.Theme, error) {
+	tokens, err := themes.ParseTokens(rec.Tokens.String())
 	if err != nil {
 		return themes.Theme{}, err
 	}
 	return themes.Theme{
-		Code: t.Code.String(), Name: t.Name.String(), Mode: tokens.Mode, Source: "github",
-		Author: t.Author.String(), RepoURL: t.Repo_url.String(), Tokens: tokens,
-		Wallpapers: t.Wallpapers, Version: t.Commit_sha.String(),
+		Code: rec.Code.String(), Name: rec.Name.String(), Mode: tokens.Mode, Source: "github",
+		Author: rec.Author.String(), RepoURL: rec.Repo_url.String(), Tokens: tokens,
+		Wallpapers: rec.Wallpapers, Version: rec.Commit_sha.String(),
 	}, nil
 }
 
 // UserThemes returns the installed themes the user has added (in code order).
 func UserThemes(db database.Executor, dbType database.DBType, userID string) []themes.Theme {
-	var links UserTheme
+	var links gtables.UserTheme
 	links.InitWithDBType(db, "", dbType)
 	links.SetRange("user_id", userID)
 	var codes []string
@@ -148,7 +87,7 @@ func UserThemes(db database.Executor, dbType database.DBType, userID string) []t
 
 // UserHasTheme reports whether the user has added the installed theme.
 func UserHasTheme(db database.Executor, dbType database.DBType, userID, code string) bool {
-	var link UserTheme
+	var link gtables.UserTheme
 	link.InitWithDBType(db, "", dbType)
 	return link.GetByPK(types.NewCode(userID), types.NewCode(code))
 }
@@ -158,7 +97,7 @@ func AddUserTheme(db database.Executor, dbType database.DBType, userID, code str
 	if UserHasTheme(db, dbType, userID, code) {
 		return nil
 	}
-	var link UserTheme
+	var link gtables.UserTheme
 	link.InitWithDBType(db, "", dbType)
 	link.User_id = types.NewCode(userID)
 	link.Theme_code = types.NewCode(code)
@@ -192,18 +131,11 @@ func ThemeByCode(db database.Executor, dbType database.DBType, code string) (the
 	if db == nil || code == "" {
 		return themes.Theme{}, false
 	}
-	var rec Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(db, "", dbType)
 	if !rec.Get(code) {
 		return themes.Theme{}, false
 	}
-	th, err := rec.ToTheme()
+	th, err := toTheme(&rec)
 	return th, err == nil
 }
-
-// TODO: Add your custom business logic methods here
-// Example:
-// func (t *Theme) CalculateSomething() error {
-//     // Your logic here
-//     return nil
-// }

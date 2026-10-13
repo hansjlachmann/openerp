@@ -2,13 +2,12 @@ package codeunits
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"math/rand"
+	"time"
 )
 
 // CustLedgerEntryGenerate - Codeunit 50010: Generate Random Customer Ledger Entries
@@ -56,7 +55,7 @@ func (c *CustLedgerEntryGenerate) UsesProgress() bool {
 
 // Run executes the codeunit with the given record
 func (c *CustLedgerEntryGenerate) Run(record interface{}) (fcodeunits.Result, error) {
-	customer, ok := record.(*tables.Customer)
+	customer, ok := record.(*gtables.Customer)
 	if !ok {
 		return fcodeunits.Result{}, fmt.Errorf("expected *Customer record, got %T", record)
 	}
@@ -86,7 +85,7 @@ func (c *CustLedgerEntryGenerate) Run(record interface{}) (fcodeunits.Result, er
 // generate creates random customer ledger entries
 func (c *CustLedgerEntryGenerate) generate(customerNo string, count int) (int, error) {
 	// Get next entry number
-	var ledgerEntry tables.CustomerLedgerEntry
+	var ledgerEntry gtables.CustomerLedgerEntry
 	ledgerEntry.InitWithDBType(c.db, c.company, c.dbType)
 
 	nextEntryNo := 1
@@ -95,10 +94,10 @@ func (c *CustLedgerEntryGenerate) generate(customerNo string, count int) (int, e
 	}
 
 	// Document types: Invoice, Credit Memo, Payment
-	docTypes := []tables.CustomerLedgerEntryDocument_type{
-		tables.CustomerLedgerEntry_Document_type.Invoice,
-		tables.CustomerLedgerEntry_Document_type.CreditMemo,
-		tables.CustomerLedgerEntry_Document_type.Payment,
+	docTypes := []gtables.CustomerLedgerEntryDocument_type{
+		gtables.CustomerLedgerEntry_Document_type.Invoice,
+		gtables.CustomerLedgerEntry_Document_type.CreditMemo,
+		gtables.CustomerLedgerEntry_Document_type.Payment,
 	}
 	descriptions := []string{
 		"Sales Invoice",
@@ -111,7 +110,7 @@ func (c *CustLedgerEntryGenerate) generate(customerNo string, count int) (int, e
 
 	inserted := 0
 	for i := 0; i < count; i++ {
-		var entry tables.CustomerLedgerEntry
+		var entry gtables.CustomerLedgerEntry
 		entry.InitWithDBType(c.db, c.company, c.dbType)
 
 		entry.Entry_no = nextEntryNo + i
@@ -143,7 +142,7 @@ func (c *CustLedgerEntryGenerate) generate(customerNo string, count int) (int, e
 		entry.Original_amount_lcy = types.NewDecimal(amount)
 
 		// If invoice, set remaining amount
-		if entry.Document_type == tables.CustomerLedgerEntry_Document_type.Invoice {
+		if entry.Document_type == gtables.CustomerLedgerEntry_Document_type.Invoice {
 			entry.Remaining_amount = types.NewDecimal(amount)
 			entry.Remaining_amt_lcy = types.NewDecimal(amount)
 			entry.Open = true

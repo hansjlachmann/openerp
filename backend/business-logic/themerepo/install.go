@@ -94,7 +94,7 @@ func (in *Installer) Install(ctx context.Context, repoURL, userID string) (Resul
 		return Result{}, err
 	}
 	if existing {
-		var rec tables.Theme
+		var rec gtables.Theme
 		rec.InitWithDBType(in.DB, "", in.DBType)
 		if !rec.Get(code) {
 			return Result{}, ErrNotInstalled
@@ -116,7 +116,7 @@ func (in *Installer) Refresh(ctx context.Context, code, userID string) (Result, 
 	if _, ok := themes.Builtin(code); ok {
 		return Result{}, ErrBuiltin
 	}
-	var rec tables.Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(in.DB, "", in.DBType)
 	if !rec.Get(code) {
 		return Result{}, ErrNotInstalled
@@ -139,7 +139,7 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 	}
 	name := displayName(repo.Name)
 	if d.CommitSHA == currentCommit {
-		var rec tables.Theme
+		var rec gtables.Theme
 		rec.InitWithDBType(in.DB, "", in.DBType)
 		_ = rec.Get(code)
 		return Result{Code: code, Name: rec.Name.String(), Mode: modeName(rec.Mode), Commit: d.CommitSHA, Unchanged: true}, nil
@@ -206,7 +206,7 @@ type asset struct {
 
 func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, commit, tokensJSON, mode string, wallpapers int, assets []asset) error {
 	now := types.NewDateTimeFromTime(time.Now())
-	var rec tables.Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(tx, "", in.DBType)
 	exists := rec.Get(code)
 	if !exists {
@@ -243,12 +243,12 @@ func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, comm
 		return err
 	}
 
-	var old tables.ThemeAsset
+	var old gtables.ThemeAsset
 	old.InitWithDBType(tx, "", in.DBType)
 	old.SetRange("theme_code", code)
 	old.DeleteAll()
 	for _, a := range assets {
-		var rec tables.ThemeAsset
+		var rec gtables.ThemeAsset
 		rec.InitWithDBType(tx, "", in.DBType)
 		rec.Theme_code = types.NewCode(code)
 		rec.Name = types.NewCode(a.name)
@@ -268,13 +268,13 @@ func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, comm
 // when it is not in anybody's themes (themes installed before themes were per user). Run
 // at startup; does nothing when every theme has a user.
 func LinkInstallers(db *sql.DB, dbType database.DBType) (int, error) {
-	var rec tables.Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(db, "", dbType)
 	type orphan struct{ code, user string }
 	var orphans []orphan
 	if rec.FindSet() {
 		for {
-			var links tables.UserTheme
+			var links gtables.UserTheme
 			links.InitWithDBType(db, "", dbType)
 			links.SetRange("theme_code", rec.Code.String())
 			if links.Count() == 0 && rec.Installed_by.String() != "" {
@@ -308,7 +308,7 @@ func (in *Installer) Remove(userID, code string) (removed bool, err error) {
 			_ = tx.Rollback()
 		}
 	}()
-	var link tables.UserTheme
+	var link gtables.UserTheme
 	link.InitWithDBType(tx, "", in.DBType)
 	if !link.GetByPK(types.NewCode(userID), types.NewCode(code)) {
 		_ = tx.Rollback()
@@ -317,11 +317,11 @@ func (in *Installer) Remove(userID, code string) (removed bool, err error) {
 	if !link.Delete(true) {
 		return false, fmt.Errorf("removing theme %s failed", code)
 	}
-	var others tables.UserTheme
+	var others gtables.UserTheme
 	others.InitWithDBType(tx, "", in.DBType)
 	others.SetRange("theme_code", code)
 	if others.Count() == 0 {
-		var rec tables.Theme
+		var rec gtables.Theme
 		rec.InitWithDBType(tx, "", in.DBType)
 		if rec.Get(code) && !rec.Delete(true) {
 			return false, fmt.Errorf("deleting theme %s failed", code)
@@ -348,7 +348,7 @@ func (in *Installer) codeFor(repo themes.Repo) (string, bool, error) {
 		if _, builtin := themes.Builtin(code); builtin {
 			continue
 		}
-		var rec tables.Theme
+		var rec gtables.Theme
 		rec.InitWithDBType(in.DB, "", in.DBType)
 		if !rec.Get(code) {
 			return code, false, nil
@@ -361,7 +361,7 @@ func (in *Installer) codeFor(repo themes.Repo) (string, bool, error) {
 }
 
 func (in *Installer) count() int {
-	var rec tables.Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(in.DB, "", in.DBType)
 	return rec.Count()
 }

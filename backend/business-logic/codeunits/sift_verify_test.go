@@ -9,7 +9,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -25,7 +24,7 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.CountryRegion{}, &tables.PaymentTerms{}, &tables.Customer{}, &tables.CustomerLedgerEntry{}, &tables.JobQueue{}, &tables.JobQueueEntry{}} {
+	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}, &gtables.JobQueue{}, &gtables.JobQueueEntry{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -35,7 +34,7 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 	}
 
 	run := func(parameter string) (string, error) {
-		job := &tables.JobQueue{}
+		job := &gtables.JobQueue{}
 		job.InitWithDBType(db, company, database.DBTypeSQLite)
 		job.No = types.NewCode("SIFTCHECK")
 		job.Description = types.NewText("Verify SIFT")
@@ -48,7 +47,7 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		return msg, err
 	}
 	lastEntryStatus := func() gtables.JobQueueEntryStatus {
-		var e tables.JobQueueEntry
+		var e gtables.JobQueueEntry
 		e.InitWithDBType(db, company, database.DBTypeSQLite)
 		if !e.FindLast() {
 			t.Fatal("no Job Queue Entry logged")

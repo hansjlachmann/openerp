@@ -3,16 +3,19 @@
 package jobqueue
 
 import (
+	// The table triggers (business logic) run for the records written here
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"strconv"
+	"strings"
+	"time"
+
+	// The table triggers (business logic) run for the records written here
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 )
 
 // Run is the outcome of one run of a job, for its notification
@@ -22,7 +25,7 @@ type Run struct {
 }
 
 // ShouldNotify reports whether a run's outcome is e-mailed, per the job's Notify On
-func ShouldNotify(job *tables.JobQueue, runErr error) bool {
+func ShouldNotify(job *gtables.JobQueue, runErr error) bool {
 	if len(mail.SplitAddressList(job.Notification_email.String())) == 0 {
 		return false
 	}
@@ -36,18 +39,18 @@ func ShouldNotify(job *tables.JobQueue, runErr error) bool {
 }
 
 // Recipients returns the job's notification addresses
-func Recipients(job *tables.JobQueue) []string {
+func Recipients(job *gtables.JobQueue) []string {
 	return mail.SplitAddressList(job.Notification_email.String())
 }
 
 // Language returns the translation language of the job's notifications: the
 // Translation Key of its Notification Language, else the default language.
-func Language(db database.Executor, dbType database.DBType, company string, job *tables.JobQueue) string {
+func Language(db database.Executor, dbType database.DBType, company string, job *gtables.JobQueue) string {
 	ts := i18n.GetInstance()
 	if job.Notification_language.IsEmpty() {
 		return ts.GetDefaultLanguage()
 	}
-	var language tables.Language
+	var language gtables.Language
 	language.InitWithDBType(db, company, dbType)
 	if language.Get(job.Notification_language) && !language.Translation_key.IsEmpty() {
 		return language.Translation_key.String()
@@ -65,7 +68,7 @@ func NormalizeLanguage(code string) string {
 
 // CompanyName returns the company's display name (its technical name when it has none)
 func CompanyName(db database.Executor, dbType database.DBType, company string) string {
-	var c tables.Company
+	var c gtables.Company
 	c.InitWithDBType(db, "", dbType)
 	if c.Get(company) && !c.Display_name.IsEmpty() {
 		return c.Display_name.String()
@@ -80,7 +83,7 @@ type Message struct {
 
 // RunMessage is the notification of a run, in language lang. job is the job as saved
 // after the run (its status and next start are reported).
-func RunMessage(job *tables.JobQueue, companyName string, run Run, lang string) Message {
+func RunMessage(job *gtables.JobQueue, companyName string, run Run, lang string) Message {
 	ts := i18n.GetInstance()
 	subjectKey := "JOBQUEUE_MAIL_SUBJECT_SUCCESS"
 	result := ts.Message("JOBQUEUE_MAIL_SUCCEEDED", lang)
@@ -111,7 +114,7 @@ func RunMessage(job *tables.JobQueue, companyName string, run Run, lang string) 
 }
 
 // TestMessage is the "Send Test E-mail" message of a job, in language lang
-func TestMessage(job *tables.JobQueue, companyName string, lang string) Message {
+func TestMessage(job *gtables.JobQueue, companyName string, lang string) Message {
 	ts := i18n.GetInstance()
 	b := newBody(lang)
 	b.text.WriteString(ts.MessageWithParams("JOBQUEUE_MAIL_TEST_INTRO", lang, mail.JoinAddressList(Recipients(job))) + "\n\n")
@@ -128,7 +131,7 @@ func TestMessage(job *tables.JobQueue, companyName string, lang string) Message 
 }
 
 // jobTitle names a job in a subject: "JOB01 Daily invoices", or only its No.
-func jobTitle(job *tables.JobQueue) string {
+func jobTitle(job *gtables.JobQueue) string {
 	if desc := strings.TrimSpace(job.Description.String()); desc != "" {
 		return job.No.String() + " " + desc
 	}
@@ -158,12 +161,12 @@ func (b *body) line(caption, value string) {
 	fmt.Fprintf(&b.text, "%s: %s\n", caption, value)
 }
 
-func (b *body) field(job *tables.JobQueue, field, value string) {
+func (b *body) field(job *gtables.JobQueue, field, value string) {
 	b.line(i18n.GetInstance().FieldCaption(gtables.JobQueueTableName, field, b.lang), value)
 }
 
 // job writes the job's No., Description, codeunit and parameter
-func (b *body) job(job *tables.JobQueue) {
+func (b *body) job(job *gtables.JobQueue) {
 	b.field(job, "no", job.No.String())
 	if desc := job.Description.String(); desc != "" {
 		b.field(job, "description", desc)
@@ -180,7 +183,7 @@ func (b *body) job(job *tables.JobQueue) {
 // fails (secrets.ErrDecrypt: the encryption key changed) the config is disabled and
 // the error returned — the password has to be entered again.
 func LoadSMTPConfig(db database.Executor, dbType database.DBType) (mail.Config, error) {
-	var setup tables.SMTPSetup
+	var setup gtables.SMTPSetup
 	// SMTP_Setup is a global setup table; the company argument is ignored and the
 	// single record is keyed by a blank primary key.
 	setup.InitWithDBType(db, "", dbType)

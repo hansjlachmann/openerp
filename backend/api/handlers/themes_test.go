@@ -15,6 +15,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/themes"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 func newThemesTestApp(t *testing.T, userID string) *fiber.App {
@@ -26,7 +27,7 @@ func newThemesTestApp(t *testing.T, userID string) *fiber.App {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}, &tables.UserTheme{}} {
+	}{&gtables.UserPersonalization{}, &gtables.Theme{}, &gtables.ThemeAsset{}, &gtables.UserTheme{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
 		}
@@ -165,14 +166,14 @@ func TestInstalledThemesArePerUser(t *testing.T) {
 	defer func() { _ = db.Close() }()
 	nord, _ := themes.Builtin("NORD")
 	tok, _ := json.Marshal(nord.Tokens)
-	var th tables.Theme
+	var th gtables.Theme
 	th.InitWithDBType(db, "", database.DBTypeSQLite)
 	th.Code, th.Name, th.Tokens, th.Installed_by = types.NewCode("DUNE"), types.NewText("Dune"), types.NewText(string(tok)), types.NewCode("ADMIN")
 	th.Repo_url = types.NewText("https://github.com/o/omarchy-dune-theme")
 	if !th.Insert(true) {
 		t.Fatalf("insert theme: %v", th.TriggerError())
 	}
-	var asset tables.ThemeAsset
+	var asset gtables.ThemeAsset
 	asset.InitWithDBType(db, "", database.DBTypeSQLite)
 	asset.Theme_code, asset.Name, asset.Content_type, asset.Data = types.NewCode("DUNE"), types.NewCode("bg-1"), types.NewText("image/jpeg"), []byte{0xff, 0xd8, 0xff}
 	if !asset.Insert(true) {
@@ -223,7 +224,7 @@ func TestThemesWithoutThemePermission(t *testing.T) {
 	defer func() { _ = db.Close() }()
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.UserPersonalization{}, &tables.Theme{}, &tables.ThemeAsset{}, &tables.UserTheme{}} {
+	}{&gtables.UserPersonalization{}, &gtables.Theme{}, &gtables.ThemeAsset{}, &gtables.UserTheme{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}

@@ -9,13 +9,11 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const testCompany = "demo01"
@@ -33,7 +31,7 @@ func newTestDB(t *testing.T) *sql.DB {
 
 	creators := []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.CountryRegion{}, &tables.PaymentTerms{}, &tables.Customer{}, &tables.CustomerLedgerEntry{}}
+	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -95,7 +93,7 @@ func TestCreateSmall(t *testing.T) {
 	}
 
 	// Mixed countries, with the country's own address and phone format
-	var cust tables.Customer
+	var cust gtables.Customer
 	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !cust.Get("C00080") {
 		t.Fatal("customer C00080 not found")
@@ -106,10 +104,10 @@ func TestCreateSmall(t *testing.T) {
 	if cust.Last_order_date.IsZero() {
 		t.Error("C00080 has no last order date")
 	}
-	if cust.Status != tables.Customer_Status.Open {
+	if cust.Status != gtables.Customer_Status.Open {
 		t.Errorf("C00080 status = %v, want Open", cust.Status)
 	}
-	if !cust.Get("C00070") || cust.Status != tables.Customer_Status.Blocked {
+	if !cust.Get("C00070") || cust.Status != gtables.Customer_Status.Blocked {
 		t.Errorf("C00070 status = %v, want Blocked", cust.Status)
 	}
 
@@ -167,7 +165,7 @@ func TestCreateRefusesCompanyWithCustomers(t *testing.T) {
 
 func TestCreateKeepsExistingSetup(t *testing.T) {
 	db := newTestDB(t)
-	var pt tables.PaymentTerms
+	var pt gtables.PaymentTerms
 	pt.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	pt.Code = "30 DAYS"
 	pt.Description = "Our own 30 days"
@@ -227,7 +225,7 @@ func TestCalcFieldsForRecordsMatchesCalcFields(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	var cust tables.Customer
+	var cust gtables.Customer
 	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	var records []map[string]interface{}
 	if cust.FindSet() {
@@ -243,7 +241,7 @@ func TestCalcFieldsForRecordsMatchesCalcFields(t *testing.T) {
 	// test DB has a single connection)
 	want := map[string]map[string]interface{}{}
 	for _, rec := range records {
-		var one tables.Customer
+		var one gtables.Customer
 		one.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 		no := rec["no"].(string)
 		if !one.Get(no) {
@@ -298,7 +296,7 @@ func TestCalcFieldsForRecordsOnlyRequested(t *testing.T) {
 	if _, err := Create(db, testCompany, database.DBTypeSQLite, Options{Today: today}); err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	var cust tables.Customer
+	var cust gtables.Customer
 	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	records := []map[string]interface{}{{"no": "C00010"}}
 	cust.CalcFieldsForRecords(records, "sales_lcy")
@@ -342,7 +340,7 @@ func TestFlowFieldsFromSIFTMatchEntries(t *testing.T) {
 		_ = rows.Close()
 
 		for no, w := range want {
-			var cust tables.Customer
+			var cust gtables.Customer
 			cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 			if !cust.Get(no) {
 				t.Fatalf("customer %s not found", no)
@@ -359,7 +357,7 @@ func TestFlowFieldsFromSIFTMatchEntries(t *testing.T) {
 	check("after demo data")
 
 	// Close the first open invoice through the table API (moves it to the closed totals)
-	var entry tables.CustomerLedgerEntry
+	var entry gtables.CustomerLedgerEntry
 	entry.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	entry.SetRange("open", true)
 	if !entry.FindFirst() {
@@ -437,7 +435,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 	for _, tc := range cases {
 		// Card path
 		for _, no := range []string{"C00010", "C00080", "C00150"} {
-			var cust tables.Customer
+			var cust gtables.Customer
 			cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 			if !cust.Get(no) {
 				t.Fatalf("customer %s not found", no)
@@ -451,7 +449,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 		}
 
 		// List path (all 20 customers at once)
-		var list tables.Customer
+		var list gtables.Customer
 		list.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 		if err := list.SetFlowFilter("date_filter", tc.filter); err != nil {
 			t.Fatal(err)
@@ -477,7 +475,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 	}
 
 	// Invalid expressions and unknown FlowFilter fields are rejected
-	var cust tables.Customer
+	var cust gtables.Customer
 	cust.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	for _, bad := range []string{"31.03.26", "2026-13-01..", "yesterday"} {
 		if err := cust.SetFlowFilter("date_filter", bad); err == nil {
@@ -507,7 +505,7 @@ func TestRenameCustomerUpdatesLedgerEntries(t *testing.T) {
 	}
 	balance := func(no string) float64 {
 		t.Helper()
-		var c tables.Customer
+		var c gtables.Customer
 		c.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 		if !c.Get(no) {
 			t.Fatalf("customer %s not found", no)
@@ -522,8 +520,8 @@ func TestRenameCustomerUpdatesLedgerEntries(t *testing.T) {
 		t.Fatal("C00010 has no entries")
 	}
 
-	rename := func(from, to string) *tables.Customer {
-		var c tables.Customer
+	rename := func(from, to string) *gtables.Customer {
+		var c gtables.Customer
 		c.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 		if !c.Get(from) {
 			t.Fatalf("customer %s not found", from)
@@ -615,31 +613,31 @@ func TestGenerateHeavy(t *testing.T) {
 // batch with the record's index and nothing of it is written.
 func TestInsertAllRunsTriggers(t *testing.T) {
 	db := newTestDB(t)
-	newEntry := func(no int, description string) *gtables.CustomerLedgerEntryBase {
-		rec := &tables.CustomerLedgerEntry{}
+	newEntry := func(no int, description string) *gtables.CustomerLedgerEntry {
+		rec := &gtables.CustomerLedgerEntry{}
 		rec.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 		rec.Entry_no = no
 		rec.Customer_no = types.NewCode("C00010")
 		rec.Description = types.NewText(description)
-		return &rec.CustomerLedgerEntryBase
+		return rec
 	}
-	var target tables.CustomerLedgerEntry
+	var target gtables.CustomerLedgerEntry
 	target.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 
-	tooLong := strings.Repeat("x", 101) // OnInsert → Validate: description max. 100
-	err := target.InsertAll([]*gtables.CustomerLedgerEntryBase{newEntry(1, "a"), newEntry(2, tooLong), newEntry(3, "c")}, true)
+	tooLong := strings.Repeat("x", 101) // field check after OnInsert: description max. 100
+	err := target.InsertAll([]*gtables.CustomerLedgerEntry{newEntry(1, "a"), newEntry(2, tooLong), newEntry(3, "c")}, true)
 	var batchErr *ftables.BatchInsertError
 	if !errors.As(err, &batchErr) || batchErr.Index != 1 || !batchErr.Trigger {
 		t.Fatalf("error %v, want a trigger BatchInsertError at index 1", err)
 	}
-	if n := count(t, db, tables.CustomerLedgerEntryTableName); n != 0 {
+	if n := count(t, db, gtables.CustomerLedgerEntryTableName); n != 0 {
 		t.Fatalf("%d entries written after a failed trigger, want 0", n)
 	}
 
-	if err := target.InsertAll([]*gtables.CustomerLedgerEntryBase{newEntry(1, "a"), newEntry(2, "b")}, true); err != nil {
+	if err := target.InsertAll([]*gtables.CustomerLedgerEntry{newEntry(1, "a"), newEntry(2, "b")}, true); err != nil {
 		t.Fatal(err)
 	}
-	if n := count(t, db, tables.CustomerLedgerEntryTableName); n != 2 {
+	if n := count(t, db, gtables.CustomerLedgerEntryTableName); n != 2 {
 		t.Fatalf("%d entries, want 2", n)
 	}
 }

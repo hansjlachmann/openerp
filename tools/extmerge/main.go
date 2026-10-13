@@ -17,19 +17,19 @@ type PageDef struct {
 
 // Page represents the page configuration
 type Page struct {
-	ID               int       `yaml:"id"`
-	Type             string    `yaml:"type"`
-	Name             string    `yaml:"name"`
-	SourceTable      string    `yaml:"source_table"`
-	Caption          string    `yaml:"caption"`
-	ListPageID       int       `yaml:"list_page_id,omitempty"`
-	CardPageID       int       `yaml:"card_page_id,omitempty"`
-	EnableNavigation bool      `yaml:"enable_navigation,omitempty"`
-	Editable         bool      `yaml:"editable,omitempty"`
-	FocusField       string    `yaml:"focus_field,omitempty"`
-	Layout           Layout    `yaml:"layout,omitempty"`
-	Actions          []Action  `yaml:"actions,omitempty"`
-	Columns          []Column  `yaml:"columns,omitempty"`
+	ID               int      `yaml:"id"`
+	Type             string   `yaml:"type"`
+	Name             string   `yaml:"name"`
+	SourceTable      string   `yaml:"source_table"`
+	Caption          string   `yaml:"caption"`
+	ListPageID       int      `yaml:"list_page_id,omitempty"`
+	CardPageID       int      `yaml:"card_page_id,omitempty"`
+	EnableNavigation bool     `yaml:"enable_navigation,omitempty"`
+	Editable         bool     `yaml:"editable,omitempty"`
+	FocusField       string   `yaml:"focus_field,omitempty"`
+	Layout           Layout   `yaml:"layout,omitempty"`
+	Actions          []Action `yaml:"actions,omitempty"`
+	Columns          []Column `yaml:"columns,omitempty"`
 }
 
 // Layout represents the page layout
@@ -86,8 +86,8 @@ type PageExtension struct {
 
 // TableExtension represents a table extension definition
 type TableExtension struct {
-	ExtendsTable int           `yaml:"extends_table"`
-	Fields       []TableField  `yaml:"fields,omitempty"`
+	ExtendsTable int          `yaml:"extends_table"`
+	Fields       []TableField `yaml:"fields,omitempty"`
 }
 
 // TableField represents a field in a table extension
@@ -99,7 +99,7 @@ type TableField struct {
 }
 
 func main() {
-	corePath := flag.String("core", "", "Path to core business-logic directory")
+	corePath := flag.String("core", "", "Path to the core definitions directory (backend/definitions)")
 	extensionsPath := flag.String("extensions", "", "Path to extensions directory")
 	outputPath := flag.String("output", "", "Path to output merged directory")
 	verbose := flag.Bool("verbose", false, "Enable verbose output")
@@ -109,7 +109,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Usage: extmerge --core <path> --extensions <path> --output <path>")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
-		fmt.Fprintln(os.Stderr, "  --core        Path to core business-logic directory")
+		fmt.Fprintln(os.Stderr, "  --core        Path to the core definitions directory (backend/definitions)")
 		fmt.Fprintln(os.Stderr, "  --extensions  Path to extensions directory")
 		fmt.Fprintln(os.Stderr, "  --output      Path to output merged directory")
 		fmt.Fprintln(os.Stderr, "  --verbose     Enable verbose output")
@@ -279,7 +279,7 @@ func mergePageExtension(extPath, outputPath string, verbose bool) error {
 }
 
 func findCorePageFile(outputPath string, pageID int) (string, error) {
-	pagesPath := filepath.Join(outputPath, "pages", "definitions")
+	pagesPath := filepath.Join(outputPath, "pages")
 
 	var found string
 	err := filepath.Walk(pagesPath, func(path string, info os.FileInfo, err error) error {
@@ -433,7 +433,7 @@ func mergeTableExtension(extPath, outputPath string, verbose bool) error {
 }
 
 func findCoreTableFile(outputPath string, tableID int) (string, error) {
-	tablesPath := filepath.Join(outputPath, "tables", "definitions")
+	tablesPath := filepath.Join(outputPath, "tables")
 
 	var found string
 	err := filepath.Walk(tablesPath, func(path string, info os.FileInfo, err error) error {
@@ -481,7 +481,7 @@ func copyNewObjects(extensionsPath, outputPath string, verbose bool) error {
 	// Copy new tables
 	newTablesPath := filepath.Join(extensionsPath, "custom", "tables")
 	if _, err := os.Stat(newTablesPath); err == nil {
-		destPath := filepath.Join(outputPath, "tables", "definitions")
+		destPath := filepath.Join(outputPath, "tables")
 		if err := copyYAMLFiles(newTablesPath, destPath, verbose); err != nil {
 			return err
 		}
@@ -490,20 +490,14 @@ func copyNewObjects(extensionsPath, outputPath string, verbose bool) error {
 	// Copy new pages
 	newPagesPath := filepath.Join(extensionsPath, "custom", "pages")
 	if _, err := os.Stat(newPagesPath); err == nil {
-		destPath := filepath.Join(outputPath, "pages", "definitions")
+		destPath := filepath.Join(outputPath, "pages")
 		if err := copyYAMLFiles(newPagesPath, destPath, verbose); err != nil {
 			return err
 		}
 	}
 
-	// Copy new codeunits
-	newCodeunitsPath := filepath.Join(extensionsPath, "codeunits")
-	if _, err := os.Stat(newCodeunitsPath); err == nil {
-		destPath := filepath.Join(outputPath, "codeunits")
-		if err := copyGoFiles(newCodeunitsPath, destPath, verbose); err != nil {
-			return err
-		}
-	}
+	// Go code of an extension (table logic, codeunits) is not copied: it is a Go module of
+	// its own that registers its business logic (EXTENSIONS.md, "Extension apps")
 
 	return nil
 }
@@ -526,30 +520,6 @@ func copyYAMLFiles(src, dst string, verbose bool) error {
 		destFile := filepath.Join(dst, info.Name())
 		if verbose {
 			fmt.Printf("Copying new object: %s\n", info.Name())
-		}
-		return copyFile(path, destFile)
-	})
-}
-
-func copyGoFiles(src, dst string, verbose bool) error {
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return err
-	}
-
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(info.Name(), ".go") {
-			return nil
-		}
-
-		destFile := filepath.Join(dst, info.Name())
-		if verbose {
-			fmt.Printf("Copying new codeunit: %s\n", info.Name())
 		}
 		return copyFile(path, destFile)
 	})

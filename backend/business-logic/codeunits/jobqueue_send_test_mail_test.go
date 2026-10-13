@@ -2,17 +2,16 @@ package codeunits
 
 import (
 	"database/sql"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
 	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // testMailer records what it sends; rejects maps recipients it refuses.
@@ -58,7 +57,7 @@ func TestJobQueueSendTestMail(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.JobQueue{}, &tables.Company{}, &tables.SMTPSetup{}} {
+	}{&gtables.JobQueue{}, &gtables.Company{}, &gtables.SMTPSetup{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -72,7 +71,7 @@ func TestJobQueueSendTestMail(t *testing.T) {
 
 	setJob := func(emails string) {
 		t.Helper()
-		var job tables.JobQueue
+		var job gtables.JobQueue
 		job.InitWithDBType(db, company, database.DBTypeSQLite)
 		exists := job.Get("J1")
 		job.No = types.NewCode("J1")
@@ -84,7 +83,7 @@ func TestJobQueueSendTestMail(t *testing.T) {
 	}
 	run := func() (string, error) {
 		t.Helper()
-		selected := &tables.JobQueue{}
+		selected := &gtables.JobQueue{}
 		selected.No = types.NewCode("J1")
 		result, err := NewJobQueueSendTestMail(db, company, database.DBTypeSQLite).Run(selected)
 		return result.Message, err
@@ -129,7 +128,7 @@ func TestJobQueueSendTestMail(t *testing.T) {
 
 	// The SMTP password was encrypted with a key that is no longer set
 	restore := secrets.SetKeyForTest("old key")
-	var setup tables.SMTPSetup
+	var setup gtables.SMTPSetup
 	setup.InitWithDBType(db, "", database.DBTypeSQLite)
 	setup.Enabled = true
 	setup.Smtp_server = types.NewText("smtp.example.com")

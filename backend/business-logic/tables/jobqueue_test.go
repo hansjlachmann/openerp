@@ -1,6 +1,7 @@
 package tables
 
 import (
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"testing"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestJobQueueNotificationEmail(t *testing.T) {
-	var jq JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(nil, "TEST", database.DBTypeSQLite)
 
 	if err := jq.ValidateField("notification_email", " ops@example.com;hans@example.com ; "); err != nil {
@@ -34,7 +35,7 @@ func TestJobQueueNotificationEmail(t *testing.T) {
 
 func TestJobQueueNotificationLanguage(t *testing.T) {
 	db := newTestDB(t)
-	var language Language
+	var language gtables.Language
 	language.InitWithDBType(db, "", database.DBTypeSQLite)
 	if err := language.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
@@ -45,7 +46,7 @@ func TestJobQueueNotificationLanguage(t *testing.T) {
 		t.Fatal("insert language")
 	}
 
-	var jq JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	if err := jq.ValidateField("notification_language", "NB-NO"); err != nil {
 		t.Errorf("existing language rejected: %v", err)

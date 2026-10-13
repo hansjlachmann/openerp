@@ -11,31 +11,33 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// deleteGuardCustomer refuses to delete a customer named "Keep" (an OnDelete business rule)
+// deleteGuardCustomer is a customer whose business logic (deleteGuard) refuses to delete
+// a customer named "Keep" (an OnDelete business rule)
 type deleteGuardCustomer struct {
-	gtables.CustomerBase
+	gtables.Customer
 }
 
 func (t *deleteGuardCustomer) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.CustomerBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(nil, nil, func(database.Executor, string) error {
-		if t.Name.String() == "Keep" {
-			return errors.New("customers named Keep stay")
-		}
-		return nil
-	})
-	t.SetSelf(t)
+	t.Customer.InitWithDBType(db, company, dbType)
+	t.SetLogic(deleteGuard{})
+}
+
+type deleteGuard struct{}
+
+func (deleteGuard) OnDelete(rec *gtables.Customer) error {
+	if rec.Name.String() == "Keep" {
+		return errors.New("customers named Keep stay")
+	}
+	return nil
 }
 
 func init() {
-	tables.RegisterTableFactory("Test_DeleteGuard", 99002, func() ftables.Table {
+	gtables.RegisterTableFactory("Test_DeleteGuard", 99002, func() ftables.Table {
 		return &deleteGuardCustomer{}
 	})
 }

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"database/sql"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -68,7 +68,7 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 
 	// Get the source table name and create a typed record
 	tableName := codeunit.SourceTable()
-	tableFactory, ok := tables.GetTableFactory(tableName)
+	tableFactory, ok := gtables.GetTableFactory(tableName)
 	if !ok {
 		return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
 	}

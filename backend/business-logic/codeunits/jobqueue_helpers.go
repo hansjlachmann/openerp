@@ -2,17 +2,15 @@ package codeunits
 
 import (
 	"fmt"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // CreateJobQueueEntry creates a new Job Queue Entry record for the given job queue.
-func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *tables.JobQueue, status gtables.JobQueueEntryStatus, errorMsg string, startTime types.DateTime) error {
-	var entry tables.JobQueueEntry
+func CreateJobQueueEntry(db database.Executor, company string, dbType database.DBType, jobQueue *gtables.JobQueue, status gtables.JobQueueEntryStatus, errorMsg string, startTime types.DateTime) error {
+	var entry gtables.JobQueueEntry
 	entry.InitWithDBType(db, company, dbType)
 
 	nextEntryNo := 1
@@ -21,7 +19,7 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 	}
 
 	// Create a fresh entry to avoid stale fields from FindLast (e.g. previous error_message)
-	entry = tables.JobQueueEntry{}
+	entry = gtables.JobQueueEntry{}
 	entry.InitWithDBType(db, company, dbType)
 	entry.Entry_no = nextEntryNo
 	entry.Status = status
@@ -42,7 +40,7 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 
 // SetJobQueueStatus updates the status of a Job Queue record.
 func SetJobQueueStatus(db database.Executor, company string, dbType database.DBType, jobQueueNo types.Code, status gtables.JobQueueStatus) error {
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(db, company, dbType)
 	if !jq.Get(jobQueueNo.String()) {
 		return fmt.Errorf("job queue %s not found", jobQueueNo)

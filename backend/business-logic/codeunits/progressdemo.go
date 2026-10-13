@@ -1,13 +1,11 @@
 package codeunits
 
 import (
-	"time"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"time"
 )
 
 // ProgressDemo - Codeunit 50021: Progress Bar Demo
@@ -60,7 +58,7 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Message("Progress demo cancelled."), nil
 	}
 
-	jobQueue := record.(*tables.JobQueue)
+	jobQueue := record.(*gtables.JobQueue)
 
 	// Get the current dialog (set by job handler)
 	dialog := fcodeunits.GetCurrentDialog()

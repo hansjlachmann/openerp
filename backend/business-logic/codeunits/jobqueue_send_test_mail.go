@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -55,14 +54,14 @@ func (c *JobQueueSendTestMail) UsesProgress() bool { return true }
 
 // Run sends the test e-mail of the job (as saved: the record from the page only names it)
 func (c *JobQueueSendTestMail) Run(record interface{}) (fcodeunits.Result, error) {
-	selected, ok := record.(*tables.JobQueue)
+	selected, ok := record.(*gtables.JobQueue)
 	if !ok {
 		return fcodeunits.Result{}, fmt.Errorf("expected *JobQueue record, got %T", record)
 	}
 	ts := i18n.GetInstance()
 	lang := jobqueue.NormalizeLanguage(fcodeunits.CurrentLanguage())
 
-	var job tables.JobQueue
+	var job gtables.JobQueue
 	job.InitWithDBType(c.db, c.company, c.dbType)
 	if !job.Get(selected.No.String()) {
 		return fcodeunits.Result{}, apperrors.RecordNotFound(ts.TableCaption(gtables.JobQueueTableName, lang), selected.No.String())

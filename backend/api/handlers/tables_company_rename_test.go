@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"io"
 	"math/rand"
 	"net/http/httptest"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
@@ -66,7 +66,7 @@ func renameDatabases(t *testing.T) []renameDB {
 	for _, d := range out {
 		for _, tbl := range []interface {
 			CreateTableWithDBType(database.Executor, string, database.DBType) error
-		}{&tables.Company{}, &tables.UserMember{}} {
+		}{&gtables.Company{}, &gtables.UserMember{}} {
 			if err := tbl.CreateTableWithDBType(d.db, "", d.dbType); err != nil {
 				t.Fatalf("%s: create global table: %v", d.dbType, err)
 			}
@@ -79,21 +79,21 @@ func renameDatabases(t *testing.T) []renameDB {
 // CreateTableWithDBType) and a User Member row for it.
 func newCompany(t *testing.T, d renameDB, name string) {
 	t.Helper()
-	var c tables.Company
+	var c gtables.Company
 	c.InitWithDBType(d.db, "", d.dbType)
 	c.Name = types.NewText(name)
 	c.Display_name = types.NewText("Display " + name)
 	if !c.Insert(false) {
 		t.Fatalf("insert company %s", name)
 	}
-	if err := (&tables.Customer{}).CreateTableWithDBType(d.db, name, d.dbType); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(d.db, name, d.dbType); err != nil {
 		t.Fatal(err)
 	}
-	if err := (&tables.CustomerLedgerEntry{}).CreateTableWithDBType(d.db, name, d.dbType); err != nil {
+	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(d.db, name, d.dbType); err != nil {
 		t.Fatal(err)
 	}
 	for _, no := range []string{"C1", "C2"} {
-		var cust tables.Customer
+		var cust gtables.Customer
 		cust.InitWithDBType(d.db, name, d.dbType)
 		cust.No = types.NewCode(no)
 		cust.Name = types.NewText("Customer " + no)
@@ -108,7 +108,7 @@ func newCompany(t *testing.T, d renameDB, name string) {
 	}{{"C1", 100, true}, {"C1", 50, false}, {"C2", 70, true}} {
 		addEntry(t, d, name, i+1, e.cust, e.amount, e.open)
 	}
-	var m tables.UserMember
+	var m gtables.UserMember
 	m.InitWithDBType(d.db, "", d.dbType)
 	m.User_id = types.NewCode("HANS")
 	m.Role_id = types.NewCode("READER")
@@ -120,7 +120,7 @@ func newCompany(t *testing.T, d renameDB, name string) {
 
 func addEntry(t *testing.T, d renameDB, companyName string, no int, cust string, amount float64, open bool) {
 	t.Helper()
-	var e tables.CustomerLedgerEntry
+	var e gtables.CustomerLedgerEntry
 	e.InitWithDBType(d.db, companyName, d.dbType)
 	e.Entry_no = no
 	e.Customer_no = types.NewCode(cust)
@@ -220,7 +220,7 @@ func balances(t *testing.T, app *fiber.App, companyName string) map[string]float
 
 func verifySIFT(t *testing.T, d renameDB, companyName string) {
 	t.Helper()
-	var e tables.CustomerLedgerEntry
+	var e gtables.CustomerLedgerEntry
 	e.InitWithDBType(d.db, companyName, d.dbType)
 	results, err := e.VerifySIFT(false)
 	if err != nil {
@@ -304,7 +304,7 @@ func TestRenameCompanyRejectedOrRolledBack(t *testing.T) {
 			// A User Member row for "omega" (no such company): the rename's last step, carrying
 			// the name over to User Member, then hits its primary key — after the SIFT objects
 			// were dropped, the tables renamed and the totals rebuilt
-			var m tables.UserMember
+			var m gtables.UserMember
 			m.InitWithDBType(d.db, "", d.dbType)
 			m.User_id, m.Role_id, m.Company = types.NewCode("HANS"), types.NewCode("READER"), types.NewText("omega")
 			if !m.Insert(false) {

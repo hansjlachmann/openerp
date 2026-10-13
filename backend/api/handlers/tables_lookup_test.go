@@ -3,12 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"net/url"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -24,13 +23,13 @@ func newLookupTestApp(t *testing.T, n int) *fiber.App {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.Customer{}, &tables.PaymentTerms{}} {
+	}{&gtables.Customer{}, &gtables.PaymentTerms{}} {
 		if err := tbl.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
 	}
 	for i := range n {
-		var pt tables.PaymentTerms
+		var pt gtables.PaymentTerms
 		pt.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 		pt.Code = types.NewCode(fmt.Sprintf("PT%03d", i))
 		pt.Description = types.NewText(fmt.Sprintf("Terms number %d", i))

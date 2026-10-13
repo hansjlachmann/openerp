@@ -1,72 +1,33 @@
 package tables
 
 import (
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
-
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// userRoleLogic is the business logic of table 5130 User_Role.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/userrole_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type userRoleLogic struct{}
 
-// UserRole wraps UserRoleBase and adds trigger methods
-type UserRole struct {
-	gtables.UserRoleBase
-}
+func init() { gtables.RegisterUserRoleLogic(userRoleLogic{}) }
 
-// NewUserRole creates a new UserRole instance
-func NewUserRole() *UserRole {
-	return &UserRole{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *UserRole) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.UserRoleBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *UserRole) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *UserRole) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *UserRole) OnDelete(db database.Executor, company string) error {
+// OnInsert runs before a new record is inserted
+func (userRoleLogic) OnInsert(rec *gtables.UserRole) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *UserRole) OnRename() error {
+// OnModify runs before a record is modified
+func (userRoleLogic) OnModify(rec *gtables.UserRole) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
+// OnDelete runs before a record is deleted
+func (userRoleLogic) OnDelete(rec *gtables.UserRole) error {
+	return nil
+}
 
-// Validate validates all fields
-func (t *UserRole) Validate() error {
-	if err := ftables.CheckRequired(gtables.UserRoleTableName, "code", t.Code.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserRoleTableName, "code", string(t.Code), 20); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserRoleTableName, "description", string(t.Description), 50); err != nil {
-		return err
-	}
-
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func (userRoleLogic) OnRename(rec *gtables.UserRole) error {
 	return nil
 }

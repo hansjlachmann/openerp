@@ -13,14 +13,12 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// autoFillCustomer is a test wrapper whose OnValidate_No fills a sibling field,
+// autoFillCustomer is test business logic whose OnValidate_No fills a sibling field,
 // the way a BC trigger fills Account Name when Account No. is validated.
-type autoFillCustomer struct {
-	gtables.CustomerBase
-}
+type autoFillCustomer struct{}
 
-func (t *autoFillCustomer) OnValidate_No() error {
-	t.Name = types.NewText("Filled from " + t.No.String())
+func (autoFillCustomer) OnValidate_No(rec *gtables.Customer) error {
+	rec.Name = types.NewText("Filled from " + rec.No.String())
 	return nil
 }
 
@@ -36,7 +34,7 @@ func newTestDB(t *testing.T) *sql.DB {
 }
 
 func TestInitRecordAppliesYAMLDefaults(t *testing.T) {
-	pt := &PaymentTerms{}
+	pt := &gtables.PaymentTerms{}
 	pt.InitWithDBType(nil, "TEST", database.DBTypeSQLite)
 	pt.Active = false
 	pt.InitRecord()
@@ -44,7 +42,7 @@ func TestInitRecordAppliesYAMLDefaults(t *testing.T) {
 		t.Errorf("PaymentTerms.Active = false after InitRecord, want YAML default true")
 	}
 
-	smtp := &SMTPSetup{}
+	smtp := &gtables.SMTPSetup{}
 	smtp.InitWithDBType(nil, "TEST", database.DBTypeSQLite)
 	smtp.Smtp_server_port = 0
 	smtp.InitRecord()
@@ -56,7 +54,7 @@ func TestInitRecordAppliesYAMLDefaults(t *testing.T) {
 // The API holds tables as ftables.Table and calls InitWithDBType, so wrapper
 // OnValidate_* overrides must be reached through that path.
 func TestValidateFieldDispatchesToWrapperOverride(t *testing.T) {
-	factory, ok := GetTableFactory("Customer")
+	factory, ok := gtables.GetTableFactory("Customer")
 	if !ok {
 		t.Fatal("Customer table not registered")
 	}
@@ -73,9 +71,9 @@ func TestValidateFieldDispatchesToWrapperOverride(t *testing.T) {
 }
 
 func TestOnValidateCanFillSiblingFields(t *testing.T) {
-	c := &autoFillCustomer{}
+	c := &gtables.Customer{}
 	c.InitWithDBType(nil, "TEST", database.DBTypeSQLite)
-	c.SetSelf(c)
+	c.SetLogic(autoFillCustomer{})
 
 	if err := c.ValidateField("no", "C1"); err != nil {
 		t.Fatalf("ValidateField: %v", err)
@@ -88,11 +86,11 @@ func TestOnValidateCanFillSiblingFields(t *testing.T) {
 // Insert through the interface (as the API does) must run the wrapper's OnInsert.
 func TestInsertThroughInterfaceRunsOnInsert(t *testing.T) {
 	db := newTestDB(t)
-	if err := (&Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
-	factory, _ := GetTableFactory("Customer")
+	factory, _ := gtables.GetTableFactory("Customer")
 	table := factory()
 	table.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	table.FromMap(map[string]interface{}{"no": "C1", "status": float64(gtables.Customer_Status.Blocked)})
@@ -111,18 +109,18 @@ func TestInsertThroughInterfaceRunsOnInsert(t *testing.T) {
 // blank company as soon as user and role are filled, and the company is set afterwards.
 func TestModifyRenamesChangedPrimaryKey(t *testing.T) {
 	db := newTestDB(t)
-	if err := (&UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
-	m := &UserMember{}
+	m := &gtables.UserMember{}
 	m.InitWithDBType(db, "", database.DBTypeSQLite)
 	m.User_id, m.Role_id = types.NewCode("HANS"), types.NewCode("READER")
 	if !m.Insert(true) {
 		t.Fatal("Insert failed")
 	}
 
-	loaded := &UserMember{}
+	loaded := &gtables.UserMember{}
 	loaded.InitWithDBType(db, "", database.DBTypeSQLite)
 	if !loaded.GetByPK(types.NewCode("HANS"), types.NewCode("READER"), types.NewText("")) {
 		t.Fatal("inserted record not found")
@@ -134,7 +132,7 @@ func TestModifyRenamesChangedPrimaryKey(t *testing.T) {
 		t.Fatal("Modify failed")
 	}
 
-	probe := &UserMember{}
+	probe := &gtables.UserMember{}
 	probe.InitWithDBType(db, "", database.DBTypeSQLite)
 	if probe.GetByPK(types.NewCode("HANS"), types.NewCode("READER"), types.NewText("")) {
 		t.Error("record with blank company still exists after rename (would grant all companies)")
@@ -162,16 +160,16 @@ func TestModifyRenamesChangedPrimaryKey(t *testing.T) {
 // cleared by the next Insert/Modify/Delete.
 func TestTriggerErrorIsReported(t *testing.T) {
 	db := newTestDB(t)
-	if err := (&Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
-	c := &Customer{}
+	c := &gtables.Customer{}
 	c.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	c.No = types.NewCode("C1")
-	c.Name = types.NewText(strings.Repeat("x", 60)) // Customer.Validate: max 50
+	c.Name = types.NewText(strings.Repeat("x", 60)) // definition: max 50 (CheckFields)
 	if c.Insert(true) {
-		t.Fatal("Insert succeeded, want OnInsert to reject a 60-character name")
+		t.Fatal("Insert succeeded, want the field check to reject a 60-character name")
 	}
 	if err := c.TriggerError(); err == nil || !strings.Contains(err.Error(), "Name cannot exceed 50 characters") {
 		t.Errorf("TriggerError() = %v, want the OnInsert validation message", err)
@@ -190,21 +188,21 @@ func TestTriggerErrorIsReported(t *testing.T) {
 // (handlers/preferences.go), whatever company the deleting session is in.
 func TestUserDeleteRemovesTheirPreferences(t *testing.T) {
 	db := newTestDB(t)
-	if err := (&User{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.User{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create user table: %v", err)
 	}
-	if err := (&UserPreferences{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.UserPreferences{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create preferences table: %v", err)
 	}
 
 	for _, id := range []string{"HANS", "OTHER"} {
-		u := &User{}
+		u := &gtables.User{}
 		u.InitWithDBType(db, "", database.DBTypeSQLite)
 		u.User_id = types.NewCode(id)
 		if !u.Insert(false) {
 			t.Fatalf("insert user %s failed", id)
 		}
-		p := &UserPreferences{}
+		p := &gtables.UserPreferences{}
 		p.InitWithDBType(db, "", database.DBTypeSQLite)
 		p.User_id, p.Page_id = types.NewCode(id), 22
 		p.Preference_type, p.Preference_name = types.NewCode("COLUMNS"), types.NewCode("DEFAULT")
@@ -214,7 +212,7 @@ func TestUserDeleteRemovesTheirPreferences(t *testing.T) {
 	}
 
 	// Delete from a session in company CRONUS: preferences still live under company ""
-	u := &User{}
+	u := &gtables.User{}
 	u.InitWithDBType(db, "CRONUS", database.DBTypeSQLite)
 	if !u.Get("HANS") {
 		t.Fatal("user HANS not found")
@@ -223,7 +221,7 @@ func TestUserDeleteRemovesTheirPreferences(t *testing.T) {
 		t.Fatalf("Delete failed: %v", u.TriggerError())
 	}
 
-	prefs := &UserPreferences{}
+	prefs := &gtables.UserPreferences{}
 	prefs.InitWithDBType(db, "", database.DBTypeSQLite)
 	prefs.SetRange("user_id", "HANS")
 	if n := prefs.Count(); n != 0 {

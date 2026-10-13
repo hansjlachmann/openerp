@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
@@ -51,7 +50,7 @@ func (c *DemoDataCreate) UsesProgress() bool { return true }
 
 // Run creates the demo data
 func (c *DemoDataCreate) Run(record interface{}) (fcodeunits.Result, error) {
-	jobQueue, ok := record.(*tables.JobQueue)
+	jobQueue, ok := record.(*gtables.JobQueue)
 	if !ok {
 		return fcodeunits.Result{}, fmt.Errorf("expected *JobQueue record, got %T", record)
 	}
@@ -77,7 +76,7 @@ func (c *DemoDataCreate) Run(record interface{}) (fcodeunits.Result, error) {
 		fmt.Sprint(counts.Customers), fmt.Sprint(counts.LedgerEntries))), nil
 }
 
-func (c *DemoDataCreate) create(jobQueue *tables.JobQueue, ts *i18n.TranslationService, lang string) (demodata.Counts, error) {
+func (c *DemoDataCreate) create(jobQueue *gtables.JobQueue, ts *i18n.TranslationService, lang string) (demodata.Counts, error) {
 	size, err := demodata.ParseSize(jobQueue.Parameter.String())
 	if err != nil {
 		return demodata.Counts{}, err

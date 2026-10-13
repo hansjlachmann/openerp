@@ -9,24 +9,27 @@
 package demodata
 
 import (
+	// The table triggers (business logic) run for the records written here
 	"database/sql"
 	"embed"
 	"errors"
 	"fmt"
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"math"
 	"math/rand"
 	"sort"
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"gopkg.in/yaml.v3"
+
+	// The table triggers (business logic) run for the records written here
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 )
 
 //go:embed data/*.yaml
@@ -237,7 +240,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		}
 	}
 
-	var existing tables.Customer
+	var existing gtables.Customer
 	existing.InitWithDBType(exec, company, dbType)
 	if !existing.IsEmpty() {
 		rollback()
@@ -255,7 +258,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return Counts{}, err
 	}
 	// The entries' SIFT totals are built once after the load instead of updated per entry
-	if err := sift.Suspend(exec, dbType, company, tables.CustomerLedgerEntryTableName); err != nil {
+	if err := sift.Suspend(exec, dbType, company, gtables.CustomerLedgerEntryTableName); err != nil {
 		rollback()
 		return Counts{}, err
 	}
@@ -263,7 +266,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
-	if err := (&tables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType); err != nil {
+	if err := (&gtables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType); err != nil {
 		rollback()
 		return Counts{}, err
 	}
@@ -280,7 +283,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 func insertSetup(exec database.Executor, company string, dbType database.DBType, setup setupData, counts *Counts, p *progress) error {
 	p.phase(PhaseSetup)
 	for _, c := range setup.Countries {
-		var rec tables.CountryRegion
+		var rec gtables.CountryRegion
 		rec.InitWithDBType(exec, company, dbType)
 		if !rec.Get(c.Code) {
 			rec.Code = types.NewCode(c.Code)
@@ -293,14 +296,14 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 		p.step()
 	}
 	for _, pt := range setup.PaymentTerms {
-		var rec tables.PaymentTerms
+		var rec gtables.PaymentTerms
 		rec.InitWithDBType(exec, company, dbType)
 		if !rec.Get(pt.Code) {
 			rec.Code = types.NewCode(pt.Code)
 			rec.Description = types.NewText(pt.Description)
 			rec.Active = true
 			if !rec.Insert(true) {
-				return &InsertError{Table: tables.PaymentTermsTableName, Key: pt.Code, Err: insertErr(rec.TriggerError())}
+				return &InsertError{Table: gtables.PaymentTermsTableName, Key: pt.Code, Err: insertErr(rec.TriggerError())}
 			}
 			counts.PaymentTerms++
 		}
@@ -319,7 +322,7 @@ func insertCustomers(exec database.Executor, company string, dbType database.DBT
 	}
 	created := types.NewDateTimeFromTime(today.Add(-366 * 24 * time.Hour))
 	for _, c := range customers {
-		var rec tables.Customer
+		var rec gtables.Customer
 		rec.InitWithDBType(exec, company, dbType)
 		rec.No = types.NewCode(c.No)
 		rec.Name = types.NewText(c.Name)
@@ -335,13 +338,13 @@ func insertCustomers(exec database.Executor, company string, dbType database.DBT
 			rec.Last_order_date = types.NewDateFromTime(d)
 		}
 		if !rec.Insert(true) {
-			return &InsertError{Table: tables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
+			return &InsertError{Table: gtables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
 		}
 		// OnInsert sets every new customer to Open; block afterwards, as a user would
 		if c.Blocked {
-			rec.Status = tables.Customer_Status.Blocked
+			rec.Status = gtables.Customer_Status.Blocked
 			if !rec.Modify(true) {
-				return &InsertError{Table: tables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
+				return &InsertError{Table: gtables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
 			}
 		}
 		counts.Customers++
@@ -352,7 +355,7 @@ func insertCustomers(exec database.Executor, company string, dbType database.DBT
 
 func insertEntries(exec database.Executor, company string, dbType database.DBType, entries []*ledgerEntry, counts *Counts, p *progress) error {
 	p.phase(PhaseEntries)
-	var last tables.CustomerLedgerEntry
+	var last gtables.CustomerLedgerEntry
 	last.InitWithDBType(exec, company, dbType)
 	firstNo := 1
 	if last.FindLast() {
@@ -364,7 +367,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 	// Multi-row inserts (InsertAll) in chunks: one round trip per chunk instead of one per
 	// entry (HEAVY: 190,000 entries); every entry still runs its OnInsert trigger
 	const chunk = 1000
-	batch := make([]*gtables.CustomerLedgerEntryBase, 0, chunk)
+	batch := make([]*gtables.CustomerLedgerEntry, 0, chunk)
 	flush := func(first int) error {
 		if err := last.InsertAll(batch, true); err != nil {
 			var batchErr *ftables.BatchInsertError
@@ -372,7 +375,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 			if errors.As(err, &batchErr) {
 				key, cause = fmt.Sprint(entries[first+batchErr.Index].entryNo), batchErr.Err
 			}
-			return &InsertError{Table: tables.CustomerLedgerEntryTableName, Key: key, Err: cause}
+			return &InsertError{Table: gtables.CustomerLedgerEntryTableName, Key: key, Err: cause}
 		}
 		counts.LedgerEntries += len(batch)
 		for range batch {
@@ -382,7 +385,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		return nil
 	}
 	for i, e := range entries {
-		rec := &tables.CustomerLedgerEntry{}
+		rec := &gtables.CustomerLedgerEntry{}
 		rec.InitWithDBType(exec, company, dbType)
 		rec.Entry_no = e.entryNo
 		rec.Customer_no = types.NewCode(e.customerNo)
@@ -410,7 +413,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		if e.docType == gtables.CustomerLedgerEntry_Document_type.Payment {
 			rec.Bal_account_type = gtables.CustomerLedgerEntry_Bal_account_type.BankAccount
 		}
-		batch = append(batch, &rec.CustomerLedgerEntryBase)
+		batch = append(batch, rec)
 		if len(batch) == chunk {
 			if err := flush(i + 1 - chunk); err != nil {
 				return err

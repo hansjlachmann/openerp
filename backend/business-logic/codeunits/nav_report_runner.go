@@ -5,6 +5,11 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"io"
 	"log"
 	"net/http"
@@ -13,13 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
-	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
-	"github.com/hansjlachmann/openerp/backend/foundation/types"
-	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // NavReportRunner - Codeunit 50022: NAV Report Runner
@@ -110,7 +108,7 @@ type GetJobPdfResponse struct {
 
 // Run executes the codeunit - calls external NAV service and tracks progress
 func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
-	jobQueue := record.(*tables.JobQueue)
+	jobQueue := record.(*gtables.JobQueue)
 
 	// Get the dialog for progress updates
 	dialog := fcodeunits.GetCurrentDialog()
@@ -278,13 +276,13 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 	time.Sleep(2 * time.Second)
 
 	var startJobResultStr string // Captures the StartJob response result (contains PDF path)
-	var postDone bool           // Whether the POST goroutine has completed
-	var postFailed bool         // Whether the POST returned an error (e.g. timeout)
-	var postErrorMsg string     // The original POST error message
-	var everSeenProgress bool   // Whether we've ever seen progress > 0
-	var lastSeenProgress int    // Last non-zero progress value seen
-	zeroProgressPolls := 0      // Consecutive polls with 0% after POST failure
-	var checkJobError string    // Error message from checkjob response
+	var postDone bool            // Whether the POST goroutine has completed
+	var postFailed bool          // Whether the POST returned an error (e.g. timeout)
+	var postErrorMsg string      // The original POST error message
+	var everSeenProgress bool    // Whether we've ever seen progress > 0
+	var lastSeenProgress int     // Last non-zero progress value seen
+	zeroProgressPolls := 0       // Consecutive polls with 0% after POST failure
+	var checkJobError string     // Error message from checkjob response
 
 	for {
 		// Check if we've exceeded max wait time

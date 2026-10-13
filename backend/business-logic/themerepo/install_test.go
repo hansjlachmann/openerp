@@ -22,6 +22,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/themes"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // fakeGitHub serves repositories owner/name → files at a commit
@@ -102,7 +103,7 @@ func newTestInstaller(t *testing.T, g *fakeGitHub) *Installer {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&tables.Theme{}, &tables.ThemeAsset{}, &tables.UserPersonalization{}, &tables.UserTheme{}} {
+	}{&gtables.Theme{}, &gtables.ThemeAsset{}, &gtables.UserPersonalization{}, &gtables.UserTheme{}} {
 		if err := tbl.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -140,7 +141,7 @@ func TestInstallRefreshAndDelete(t *testing.T) {
 	if !ok || th.Source != "github" || th.Wallpapers != 2 || th.Author != "r-bart" || th.Version != commitA {
 		t.Fatalf("theme = %+v, %v", th, ok)
 	}
-	var asset tables.ThemeAsset
+	var asset gtables.ThemeAsset
 	asset.InitWithDBType(in.DB, "", in.DBType)
 	for _, name := range []string{"preview", "thumb", "bg-1", "bg-2", "tb-1", "tb-2"} {
 		if !asset.GetByPK(types.NewCode("STARSEND"), types.NewCode(name)) {
@@ -195,7 +196,7 @@ func TestInstallRefreshAndDelete(t *testing.T) {
 	}
 
 	// Delete removes the images too
-	var rec tables.Theme
+	var rec gtables.Theme
 	rec.InitWithDBType(in.DB, "", in.DBType)
 	g.set("r-bart/omarchy-starsend-theme", commitA, map[string][]byte{
 		"colors.toml": []byte("background = \"#05090a\"\nforeground = \"#c3d2d0\"\n"), "backgrounds/1.png": img,
@@ -310,7 +311,7 @@ func TestThemesArePerUser(t *testing.T) {
 	if _, ok := tables.ThemeByCode(db, dt, "DUNE"); ok {
 		t.Error("theme kept after the last user removed it")
 	}
-	var asset tables.ThemeAsset
+	var asset gtables.ThemeAsset
 	asset.InitWithDBType(db, "", dt)
 	if asset.GetByPK(types.NewCode("DUNE"), types.NewCode("bg-1")) {
 		t.Error("images kept after the last user removed the theme")
@@ -323,7 +324,7 @@ func TestThemesArePerUser(t *testing.T) {
 	if _, err := in.Install(ctx, "https://github.com/o/omarchy-dune-theme", "ADMIN"); err != nil {
 		t.Fatal(err)
 	}
-	var links tables.UserTheme
+	var links gtables.UserTheme
 	links.InitWithDBType(db, "", dt)
 	links.SetRange("theme_code", "DUNE")
 	links.DeleteAll()

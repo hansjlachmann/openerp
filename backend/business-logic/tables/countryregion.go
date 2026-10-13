@@ -1,80 +1,33 @@
 package tables
 
 import (
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
-
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// countryRegionLogic is the business logic of table 11 Country_Region.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/countryregion_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type countryRegionLogic struct{}
 
-// CountryRegion wraps CountryRegionBase and adds trigger methods
-type CountryRegion struct {
-	gtables.CountryRegionBase
-}
+func init() { gtables.RegisterCountryRegionLogic(countryRegionLogic{}) }
 
-// NewCountryRegion creates a new CountryRegion instance
-func NewCountryRegion() *CountryRegion {
-	return &CountryRegion{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *CountryRegion) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.CountryRegionBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *CountryRegion) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *CountryRegion) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *CountryRegion) OnDelete(db database.Executor, company string) error {
-	// TODO: Add checks for related records (if any)
+// OnInsert runs before a new record is inserted
+func (countryRegionLogic) OnInsert(rec *gtables.CountryRegion) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *CountryRegion) OnRename() error {
-	// TODO: Update related records if needed
+// OnModify runs before a record is modified
+func (countryRegionLogic) OnModify(rec *gtables.CountryRegion) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *CountryRegion) Validate() error {
-	if err := ftables.CheckRequired(gtables.CountryRegionTableName, "code", t.Code.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.CountryRegionTableName, "code", string(t.Code), 10); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.CountryRegionTableName, "name", string(t.Name), 50); err != nil {
-		return err
-	}
-
+// OnDelete runs before a record is deleted
+func (countryRegionLogic) OnDelete(rec *gtables.CountryRegion) error {
 	return nil
 }
 
-// ========================================
-// Business Logic Methods
-// ========================================
-
-// TODO: Add your custom business logic methods here
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func (countryRegionLogic) OnRename(rec *gtables.CountryRegion) error {
+	return nil
+}

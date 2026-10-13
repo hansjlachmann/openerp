@@ -6,13 +6,15 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 
 	"github.com/hansjlachmann/openerp/backend/api"
 	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
 	"github.com/hansjlachmann/openerp/backend/business-logic/scheduler"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	// The business logic of the tables (triggers), registered by its init functions
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/business-logic/themerepo"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -34,63 +36,17 @@ func main() {
 	// Initialize object registry
 	registry := objects.NewObjectRegistry()
 
-	// Register tables
-	if err := registry.RegisterTable(tables.PaymentTermsTableID, &tables.PaymentTerms{}); err != nil {
-		log.Printf("Warning: Failed to register PaymentTerms: %v\n", err)
+	// Register tables (every table definition, generated)
+	records := gtables.NewRecords()
+	ids := make([]int, 0, len(records))
+	for id := range records {
+		ids = append(ids, id)
 	}
-	if err := registry.RegisterTable(tables.SMTPSetupTableID, &tables.SMTPSetup{}); err != nil {
-		log.Printf("Warning: Failed to register SMTP_Setup: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.CountryRegionTableID, &tables.CountryRegion{}); err != nil {
-		log.Printf("Warning: Failed to register Country_Region: %v\n", err)
-	}
-	if err := registry.RegisterTable(tables.CustomerTableID, &tables.Customer{}); err != nil {
-		log.Printf("Warning: Failed to register Customer: %v\n", err)
-	}
-	if err := registry.RegisterTable(tables.CustomerLedgerEntryTableID, &tables.CustomerLedgerEntry{}); err != nil {
-		log.Printf("Warning: Failed to register Customer Ledger Entry: %v\n", err)
-	}
-	if err := registry.RegisterTable(tables.UserTableID, &tables.User{}); err != nil {
-		log.Printf("Warning: Failed to register User: %v\n", err)
-	}
-	if err := registry.RegisterTable(tables.UserPreferencesTableID, &tables.UserPreferences{}); err != nil {
-		log.Printf("Warning: Failed to register UserPreferences: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.UserPersonalizationTableID, &tables.UserPersonalization{}); err != nil {
-		log.Printf("Warning: Failed to register User_Personalization: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.ThemeTableID, &tables.Theme{}); err != nil {
-		log.Printf("Warning: Failed to register Theme: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.ThemeAssetTableID, &tables.ThemeAsset{}); err != nil {
-		log.Printf("Warning: Failed to register Theme_Asset: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.UserThemeTableID, &tables.UserTheme{}); err != nil {
-		log.Printf("Warning: Failed to register User_Theme: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.LanguageTableID, &tables.Language{}); err != nil {
-		log.Printf("Warning: Failed to register Language: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.MenuTableID, &tables.Menu{}); err != nil {
-		log.Printf("Warning: Failed to register Menu: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.JobQueueTableID, &tables.JobQueue{}); err != nil {
-		log.Printf("Warning: Failed to register Job_Queue: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.JobQueueEntryTableID, &tables.JobQueueEntry{}); err != nil {
-		log.Printf("Warning: Failed to register Job_Queue_Entry: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.CompanyTableID, &tables.Company{}); err != nil {
-		log.Printf("Warning: Failed to register Company: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.UserRoleTableID, &tables.UserRole{}); err != nil {
-		log.Printf("Warning: Failed to register User_Role: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.UserMemberTableID, &tables.UserMember{}); err != nil {
-		log.Printf("Warning: Failed to register User_Member: %v\n", err)
-	}
-	if err := registry.RegisterTable(gtables.PermissionTableID, &tables.Permission{}); err != nil {
-		log.Printf("Warning: Failed to register Permission: %v\n", err)
+	sort.Ints(ids)
+	for _, id := range ids {
+		if err := registry.RegisterTable(id, records[id]); err != nil {
+			log.Printf("Warning: Failed to register table %d: %v\n", id, err)
+		}
 	}
 
 	var db *database.Database
@@ -197,7 +153,7 @@ func main() {
 		if err != nil {
 			log.Printf("WARNING: encrypt stored secrets: %v", err)
 		}
-		if n, err := tables.EncryptStoredSecrets(db.GetConnection(), secretsDBType, companies); err != nil {
+		if n, err := gtables.EncryptStoredSecrets(db.GetConnection(), secretsDBType, companies); err != nil {
 			log.Printf("WARNING: %v", err)
 		} else if n > 0 {
 			fmt.Printf("✓ %d stored secret(s) encrypted\n", n)

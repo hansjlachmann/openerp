@@ -1,91 +1,33 @@
 package tables
 
 import (
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
-
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// sMTPSetupLogic is the business logic of table 409 SMTP_Setup.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/smtpsetup_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type sMTPSetupLogic struct{}
 
-// SMTPSetup wraps SMTPSetupBase and adds trigger methods
-type SMTPSetup struct {
-	gtables.SMTPSetupBase
-}
+func init() { gtables.RegisterSMTPSetupLogic(sMTPSetupLogic{}) }
 
-// NewSMTPSetup creates a new SMTPSetup instance
-func NewSMTPSetup() *SMTPSetup {
-	return &SMTPSetup{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *SMTPSetup) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.SMTPSetupBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *SMTPSetup) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *SMTPSetup) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *SMTPSetup) OnDelete(db database.Executor, company string) error {
-	// TODO: Add checks for related records (if any)
+// OnInsert runs before a new record is inserted
+func (sMTPSetupLogic) OnInsert(rec *gtables.SMTPSetup) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *SMTPSetup) OnRename() error {
-	// TODO: Update related records if needed
+// OnModify runs before a record is modified
+func (sMTPSetupLogic) OnModify(rec *gtables.SMTPSetup) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *SMTPSetup) Validate() error {
-	// primary_key is a blank singleton key (BC-style setup table) - no required check
-	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "primary_key", string(t.Primary_key), 20); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "smtp_server", string(t.Smtp_server), 250); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "user_id", string(t.User_id), 100); err != nil {
-		return err
-	}
-	// password: encrypted: true in the YAML — the generated Insert/Modify check its length
-	// (as typed, so that it fits the column encrypted) and store it encrypted
-	if err := ftables.CheckMaxLength(gtables.SMTPSetupTableName, "from_address", string(t.From_address), 100); err != nil {
-		return err
-	}
-
+// OnDelete runs before a record is deleted
+func (sMTPSetupLogic) OnDelete(rec *gtables.SMTPSetup) error {
 	return nil
 }
 
-// ========================================
-// Business Logic Methods
-// ========================================
-
-// TODO: Add your custom business logic methods here
-// Example:
-// func (t *SMTPSetup) CalculateSomething() error {
-//     // Your logic here
-//     return nil
-// }
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func (sMTPSetupLogic) OnRename(rec *gtables.SMTPSetup) error {
+	return nil
+}

@@ -1,6 +1,7 @@
 package tables
 
 import (
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"testing"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -11,27 +12,27 @@ import (
 
 const injection = "no = no) OR 1=1 --"
 
-func seedCustomers(t *testing.T) *Customer {
+func seedCustomers(t *testing.T) *gtables.Customer {
 	t.Helper()
 	db := newTestDB(t)
-	if err := (&Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	for _, no := range []string{"C1", "C2", "C3"} {
-		c := &Customer{}
+		c := &gtables.Customer{}
 		c.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 		c.No, c.Name = types.NewCode(no), types.NewText("Name "+no)
 		if !c.Insert(false) {
 			t.Fatalf("insert %s failed", no)
 		}
 	}
-	c := &Customer{}
+	c := &gtables.Customer{}
 	c.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	return c
 }
 
 func TestHasColumn(t *testing.T) {
-	c := &Customer{}
+	c := &gtables.Customer{}
 	for name, want := range map[string]bool{
 		"no":                 true,
 		"NO":                 true, // case-insensitive

@@ -3,16 +3,14 @@ package codeunits
 import (
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"sort"
+	"strings"
 )
 
 // SIFTVerify - Codeunit 50110: Verify SIFT
@@ -59,7 +57,7 @@ type siftVerifier interface {
 
 // Run checks (and with REPAIR rebuilds) the company's SIFT totals
 func (c *SIFTVerify) Run(record interface{}) (fcodeunits.Result, error) {
-	jobQueue, ok := record.(*tables.JobQueue)
+	jobQueue, ok := record.(*gtables.JobQueue)
 	if !ok {
 		return fcodeunits.Result{}, fmt.Errorf("expected *JobQueue record, got %T", record)
 	}
@@ -113,13 +111,13 @@ func (c *SIFTVerify) Run(record interface{}) (fcodeunits.Result, error) {
 
 // verify runs VerifySIFT on every registered table, reporting progress per table
 func (c *SIFTVerify) verify(repair bool, ts *i18n.TranslationService, lang string) ([]sift.VerifyResult, error) {
-	names := tables.ListTableNames()
+	names := gtables.ListTableNames()
 	sort.Strings(names)
 	dialog := fcodeunits.GetCurrentDialog() // nil in a scheduled run
 
 	var results []sift.VerifyResult
 	for i, name := range names {
-		factory, ok := tables.GetTableFactory(name)
+		factory, ok := gtables.GetTableFactory(name)
 		if !ok {
 			continue
 		}

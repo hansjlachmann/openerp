@@ -1,74 +1,33 @@
 package tables
 
 import (
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
-
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// permissionLogic is the business logic of table 5150 Permission.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/permission_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type permissionLogic struct{}
 
-// Permission wraps PermissionBase and adds trigger methods
-type Permission struct {
-	gtables.PermissionBase
-}
+func init() { gtables.RegisterPermissionLogic(permissionLogic{}) }
 
-// NewPermission creates a new Permission instance
-func NewPermission() *Permission {
-	return &Permission{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *Permission) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.PermissionBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *Permission) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *Permission) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *Permission) OnDelete(db database.Executor, company string) error {
+// OnInsert runs before a new record is inserted
+func (permissionLogic) OnInsert(rec *gtables.Permission) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *Permission) OnRename() error {
+// OnModify runs before a record is modified
+func (permissionLogic) OnModify(rec *gtables.Permission) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
+// OnDelete runs before a record is deleted
+func (permissionLogic) OnDelete(rec *gtables.Permission) error {
+	return nil
+}
 
-// Validate validates all fields
-func (t *Permission) Validate() error {
-	if err := ftables.CheckRequired(gtables.PermissionTableName, "role_id", t.Role_id.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.PermissionTableName, "role_id", string(t.Role_id), 20); err != nil {
-		return err
-	}
-	if err := ftables.CheckRequired(gtables.PermissionTableName, "table_name", t.Table_name.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.PermissionTableName, "table_name", string(t.Table_name), 100); err != nil {
-		return err
-	}
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func (permissionLogic) OnRename(rec *gtables.Permission) error {
 	return nil
 }

@@ -8,8 +8,10 @@
 package scheduler
 
 import (
+	// The table triggers (business logic) run for the records written here
 	"errors"
 	"fmt"
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"log"
 	"os"
 	"strconv"
@@ -18,12 +20,14 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+
+	// The table triggers (business logic) run for the records written here
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 )
 
 // Scheduler polls Job_Queue tables and runs due jobs.
@@ -152,7 +156,7 @@ func (s *Scheduler) tick() {
 
 // processCompany scans one company's Job_Queue for due jobs and runs them.
 func (s *Scheduler) processCompany(company string) {
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(s.db, company, s.dbType)
 
 	now := types.Now()
@@ -171,7 +175,7 @@ func (s *Scheduler) processCompany(company string) {
 	// Run after the scan completes so running a job (which may query/modify the
 	// same table) can't disturb the FindSet cursor. Re-Get each job fresh.
 	for _, no := range dueNos {
-		var job tables.JobQueue
+		var job gtables.JobQueue
 		job.InitWithDBType(s.db, company, s.dbType)
 		if job.Get(no) {
 			s.runJob(company, &job)
@@ -186,7 +190,7 @@ func isDue(nextStart, now types.DateTime) bool {
 }
 
 // runJob executes one job's codeunit and applies the outcome (reschedule + notify).
-func (s *Scheduler) runJob(company string, job *tables.JobQueue) {
+func (s *Scheduler) runJob(company string, job *gtables.JobQueue) {
 	// Codeunits read the ambient context for company/user; a scheduled run has no
 	// user, so we identify it as SCHEDULER (stamped onto Job_Queue_Entry.user_id).
 	fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
@@ -198,7 +202,7 @@ func (s *Scheduler) runJob(company string, job *tables.JobQueue) {
 
 	s.finish(company, job.No.String(), runErr)
 	// The notification reports the job as saved after the run (status, next start)
-	var after tables.JobQueue
+	var after gtables.JobQueue
 	after.InitWithDBType(s.db, company, s.dbType)
 	if !after.Get(job.No.String()) {
 		after = *job
@@ -207,7 +211,7 @@ func (s *Scheduler) runJob(company string, job *tables.JobQueue) {
 }
 
 // execute looks up and runs the codeunit referenced by object_id_to_run.
-func (s *Scheduler) execute(company string, job *tables.JobQueue) error {
+func (s *Scheduler) execute(company string, job *gtables.JobQueue) error {
 	factory, ok := codeunits.Get(job.Object_id_to_run)
 	if !ok {
 		return fmt.Errorf("codeunit %d not found", job.Object_id_to_run)
@@ -235,7 +239,7 @@ func (s *Scheduler) execute(company string, job *tables.JobQueue) error {
 // outcome and its recurrence. On error the job is set to Error (stops re-runs
 // until a user resets it). A successful Once job is set to On Hold.
 func (s *Scheduler) finish(company, jobNo string, runErr error) {
-	var job tables.JobQueue
+	var job gtables.JobQueue
 	job.InitWithDBType(s.db, company, s.dbType)
 	if !job.Get(jobNo) {
 		return
@@ -280,7 +284,7 @@ func (s *Scheduler) finish(company, jobNo string, runErr error) {
 // notify e-mails the run's outcome to the job's notification addresses according to
 // notify_on, in the job's notification language. A rejected address is logged and
 // does not stop the others.
-func (s *Scheduler) notify(company string, job *tables.JobQueue, run jobqueue.Run) {
+func (s *Scheduler) notify(company string, job *gtables.JobQueue, run jobqueue.Run) {
 	if !jobqueue.ShouldNotify(job, run.Err) {
 		return
 	}
@@ -292,7 +296,7 @@ func (s *Scheduler) notify(company string, job *tables.JobQueue, run jobqueue.Ru
 }
 
 // modify persists changes to a job, returning an error if the write fails.
-func modify(job *tables.JobQueue) error {
+func modify(job *gtables.JobQueue) error {
 	if !job.Modify(true) {
 		return errors.New("Modify returned false")
 	}

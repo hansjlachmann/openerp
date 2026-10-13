@@ -9,10 +9,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 func TestCaptionKey(t *testing.T) {
@@ -102,11 +102,11 @@ func TestGetPageTranslatesCopy(t *testing.T) {
 // sends it under the option's index
 func TestOptionCaptionsTranslated(t *testing.T) {
 	ts := i18n.GetInstance()
-	for _, name := range tables.ListTableNames() {
+	for _, name := range gtables.ListTableNames() {
 		if strings.HasPrefix(name, "Test_") {
 			continue // registered by tests
 		}
-		factory, _ := tables.GetTableFactory(name)
+		factory, _ := gtables.GetTableFactory(name)
 		table := factory()
 		for field, values := range table.GetOptionFields() {
 			for _, value := range values {
@@ -122,7 +122,7 @@ func TestOptionCaptionsTranslated(t *testing.T) {
 		}
 	}
 
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	got := optionCaptions("Job_Queue", &jq, "NB-NO")
 	if got["status"]["0"] != "Avvent" || got["status"]["1"] != "Klar" || got["notify_on"]["2"] != "Ved feil" {
 		t.Errorf("Job_Queue options in nb-NO = %v", got)

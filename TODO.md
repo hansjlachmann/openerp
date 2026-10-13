@@ -76,6 +76,42 @@ Open follow-ups:
 
 ---
 
+## Feature: Generated code separated from business logic ✅ DONE (2026-10-12)
+
+Three folders, one rule each (CLAUDE.md "Table business logic"):
+- [x] `backend/definitions/` — table, page and menu YAML (moved from `business-logic/tables/definitions`,
+      `business-logic/pages/{definitions,menus}`); `api_name` keeps the API names of three tables.
+- [x] `backend/generated/tables/` — 100 % tablegen output (`<table>_gen.go`, `tables_gen.go`: table
+      registry, `NewRecords`, `EncryptStoredSecrets`), checked by CI (`go generate` + `git diff`).
+      The record type is `gtables.Customer` (no `…Base` + wrapper); field rules (required, length, range)
+      are generated (`CheckFields`, after OnInsert/OnModify).
+- [x] `backend/business-logic/tables/` — only triggers and helpers: a logic type per table registered
+      with `gtables.Register<Table>Logic`, triggers as methods `OnInsert(rec *gtables.X) error`, added
+      on demand; misspelled or stale triggers stop the program at startup.
+
+## Extension apps (future — the base application is prepared, nothing built yet)
+
+Goal: separate repositories that depend on this base application, add fields to base tables, show
+them on base pages and add business logic, without changing the base (BC table/page extensions).
+What is in place: `extmerge` merges `*.extend.yaml` into `backend/definitions`, the Dockerfile then
+regenerates the table code (extension fields become fields of `gtables.<Table>`), and every
+registered logic of a table runs in order (base first). Verified 2026-10-12 with a throwaway
+"loyalty points" extension (field on Customer + card, OnInsert/OnValidate logic) — not committed.
+- [ ] **extmerge loses page keys**: it re-marshals pages through a partial struct, so keys it does not
+      know are dropped from every merged page — on the Customer Card `style`, `run_page_filter_field`,
+      `run_page_filter_value`; list pages lose more (`repeater`, `modal_card`, `copy_paste_allowed`,
+      `delayed_insert`, drilldowns …). Merge on `yaml.Node`/maps instead, with a test over every page.
+- [ ] Build pipeline for extension Go code: the extension is a Go module importing the base module;
+      the build needs the merged, regenerated `generated/tables` (`go.work` or `replace`) and a generated
+      file with a blank import per installed extension (its `init` registers its logic).
+- [ ] Rules for extension fields: field-name collisions between extensions or with later base fields
+      rejected by extmerge (BC uses field IDs / prefixes); captions in the extension's translation files.
+- [ ] OnBefore/OnAfter events (BC event subscribers) on top of the logic list, when an extension must
+      run before the base logic or after the record is written.
+- [ ] Codeunit events (publisher/subscriber) for extensions to hook into codeunits.
+
+---
+
 ## Business Logic (later)
 
 All business logic updates are collected here and dealt with later (decided by the user
@@ -93,31 +129,16 @@ work goes on in the other sections.
 ### Posting and ledger entries
 - [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
       exists (BC: posted ledger entries are not editable).
-- [ ] `backend/business-logic/tables/definitions/custledgerentry.yaml:144` — Posting Groups
+- [ ] `backend/definitions/tables/custledgerentry.yaml:159` — Posting Groups
       and Dimensions are simplified with no `table_relation`s; add proper relations.
 
 ### New business tables
 - [ ] New business tables (items, sales documents, ...) get demo data in the same change.
 
-### Generated table trigger stubs
+### Generated table trigger stubs ✅ DONE (2026-10-12)
 
-These come from the tablegen template (`tools/tablegen/main.go:2751,2762,2803`) and are
-stamped into every generated table file. Each carries three stubs:
-`// TODO: Add checks for related records (if any)` (in `OnDelete`),
-`// TODO: Update related records if needed`, and
-`// TODO: Add your custom business logic methods here`.
-
-Fill in only where real per-table logic is actually needed — most are intentional boilerplate.
-
-- [ ] `backend/business-logic/tables/customer.go` (46, 52, 125)
-- [ ] `backend/business-logic/tables/customerledgerentry.go` (45, 51, 115)
-- [ ] `backend/business-logic/tables/paymentterms.go` (44, 50, 77)
-- [ ] `backend/business-logic/tables/jobqueue.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/jobqueueentry.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/menu.go` (44, 50, 80)
-- [ ] `backend/business-logic/tables/language.go` (44, 50, 124)
-- [ ] `backend/business-logic/tables/user.go` (58)
-- [ ] `backend/business-logic/tables/userpreferences.go` (48, 65)
+Superseded by the split of generated code and business logic (below): the business logic files
+hold only real triggers; a new table gets a file with empty OnInsert/OnModify/OnDelete/OnRename once.
 
 ---
 

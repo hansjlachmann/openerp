@@ -156,7 +156,7 @@ func (h *ThemesHandler) GetThemeAsset(c *fiber.Ctx) error {
 	if !assetNameRe.MatchString(name) || !tables.UserHasTheme(h.db, h.dbType, sess.GetUserID(), c.Params("code")) {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	var rec tables.ThemeAsset
+	var rec gtables.ThemeAsset
 	rec.InitWithDBType(h.db, "", h.dbType)
 	if !rec.GetByPK(types.NewCode(c.Params("code")), types.NewCode(name)) {
 		return c.SendStatus(fiber.StatusNotFound)
@@ -318,8 +318,8 @@ func (h *ThemesHandler) SaveAppearance(c *fiber.Ctx) error {
 }
 
 // load reads the user's record; a user without one gets the defaults (exists = false).
-func (h *ThemesHandler) load(userID string) (*tables.UserPersonalization, bool) {
-	rec := &tables.UserPersonalization{}
+func (h *ThemesHandler) load(userID string) (*gtables.UserPersonalization, bool) {
+	rec := &gtables.UserPersonalization{}
 	rec.InitWithDBType(h.db, "", h.dbType)
 	if rec.GetByPK(types.NewCode(userID)) {
 		return rec, true
@@ -331,7 +331,7 @@ func (h *ThemesHandler) load(userID string) (*tables.UserPersonalization, bool) 
 
 // appearanceOf builds the response; a slot whose theme no longer exists falls back to the
 // default theme of its mode.
-func (h *ThemesHandler) appearanceOf(rec *tables.UserPersonalization, saved bool) appearanceResponse {
+func (h *ThemesHandler) appearanceOf(rec *gtables.UserPersonalization, saved bool) appearanceResponse {
 	slot := func(code, fallback string) themes.Theme {
 		if t, ok := tables.UserThemeByCode(h.db, h.dbType, rec.User_id.String(), code); ok {
 			return t

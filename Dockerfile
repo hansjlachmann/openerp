@@ -21,15 +21,18 @@ COPY . .
 # Build the extmerge tool
 RUN CGO_ENABLED=0 GOOS=linux go build -o extmerge ./tools/extmerge
 
-# If EXTENSIONS_PATH is provided, merge extensions into business-logic
+# If EXTENSIONS_PATH is provided, merge the extensions' definitions (*.extend.yaml, new
+# tables and pages) into backend/definitions, then generate the table code again from the
+# merged definitions: extension fields become fields of the generated records
 RUN if [ -n "$EXTENSIONS_PATH" ] && [ -d "$EXTENSIONS_PATH" ]; then \
       echo "Merging extensions from $EXTENSIONS_PATH..."; \
       mkdir -p /tmp/merged; \
-      ./extmerge --core ./backend/business-logic --extensions "$EXTENSIONS_PATH" --output /tmp/merged --verbose; \
-      rm -rf ./backend/business-logic; \
-      mv /tmp/merged ./backend/business-logic; \
+      ./extmerge --core ./backend/definitions --extensions "$EXTENSIONS_PATH" --output /tmp/merged --verbose; \
+      rm -rf ./backend/definitions; \
+      mv /tmp/merged ./backend/definitions; \
+      go generate ./backend/generated/tables; \
     else \
-      echo "No extensions path provided, using core business-logic"; \
+      echo "No extensions path provided, using the core definitions"; \
     fi
 
 # Build the application with version embedded
@@ -52,8 +55,8 @@ COPY --from=builder /app/go.mod ./go.mod
 # Copy translation files
 COPY --from=builder /app/translations ./translations
 
-# Copy business logic definitions (for table/page YAML files if needed at runtime)
-COPY --from=builder /app/backend/business-logic ./backend/business-logic
+# Copy the definitions (table, page and menu YAML, read at runtime)
+COPY --from=builder /app/backend/definitions ./backend/definitions
 
 # Expose port
 EXPOSE 8080

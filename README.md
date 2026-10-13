@@ -7,7 +7,9 @@ openerp/
 ├── cmd/api-server/      # Go API server entry point
 ├── backend/
 │   ├── api/             # HTTP handlers, middleware, server
-│   ├── business-logic/  # Tables, pages, codeunits definitions
+│   ├── definitions/     # Table, page and menu definitions (YAML)
+│   ├── generated/       # Code generated from the table definitions (never edit)
+│   ├── business-logic/  # Table triggers, codeunits, migrations
 │   └── foundation/      # Core framework (types, database, i18n, etc.)
 ├── frontend/            # SvelteKit frontend
 ├── tools/tablegen/      # Code generation tool
@@ -44,11 +46,8 @@ npm run build
 
 ### Code Generation (tablegen)
 ```bash
-cd tools/tablegen && go build -o tablegen .
-
-# Generate table code (from table definitions directory)
-cd backend/business-logic/tables
-../../../tools/tablegen/tablegen -input=definitions/customer.yaml -output=.
+# Generate the table code from backend/definitions/tables (after changing a table YAML)
+go generate ./backend/generated/tables
 ```
 
 ### General Go Commands

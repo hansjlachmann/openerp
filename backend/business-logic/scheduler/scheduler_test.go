@@ -10,7 +10,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/secrets"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -43,7 +42,7 @@ func newTestDB(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	if err := jq.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 		t.Fatalf("create Job_Queue table: %v", err)
 	}
@@ -53,7 +52,7 @@ func newTestDB(t *testing.T) *sql.DB {
 // seedJob inserts a Ready job and returns nothing; fields configure recurrence.
 func seedJob(t *testing.T, db *sql.DB, no string, rec gtables.JobQueueRecurrence, minutes int) {
 	t.Helper()
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	jq.No = types.NewCode(no)
 	jq.Description = types.NewText("test job")
@@ -66,9 +65,9 @@ func seedJob(t *testing.T, db *sql.DB, no string, rec gtables.JobQueueRecurrence
 	}
 }
 
-func getJob(t *testing.T, db *sql.DB, no string) tables.JobQueue {
+func getJob(t *testing.T, db *sql.DB, no string) gtables.JobQueue {
 	t.Helper()
-	var jq tables.JobQueue
+	var jq gtables.JobQueue
 	jq.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !jq.Get(no) {
 		t.Fatalf("job %s not found", no)
@@ -174,7 +173,7 @@ func TestNotifyGating(t *testing.T) {
 			db := newTestDB(t)
 			defer func() { _ = db.Close() }()
 			s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
-			job := &tables.JobQueue{}
+			job := &gtables.JobQueue{}
 			job.No = types.NewCode("J")
 			job.Notification_email = types.NewText(tc.email)
 			job.Notify_on = tc.notifyOn
@@ -191,7 +190,7 @@ func TestNotifyGating(t *testing.T) {
 // upsertSMTPSetup writes the single blank-primary-key SMTP_Setup record.
 func upsertSMTPSetup(t *testing.T, db *sql.DB, enabled bool, host string, port int) {
 	t.Helper()
-	var st tables.SMTPSetup
+	var st gtables.SMTPSetup
 	st.InitWithDBType(db, "", database.DBTypeSQLite)
 	exists := st.Get("")
 	st.Primary_key = types.NewCode("")
@@ -216,7 +215,7 @@ func TestLoadSMTPConfigFromDB(t *testing.T) {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	defer db.Close()
-	var setup tables.SMTPSetup
+	var setup gtables.SMTPSetup
 	if err := setup.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create SMTP_Setup: %v", err)
 	}
@@ -252,7 +251,7 @@ func TestLoadSMTPConfigFromDB(t *testing.T) {
 
 	// The stored (encrypted) password is decrypted for the mailer
 	defer secrets.SetKeyForTest("test key")()
-	var st tables.SMTPSetup
+	var st gtables.SMTPSetup
 	st.InitWithDBType(db, "", database.DBTypeSQLite)
 	if !st.Get("") {
 		t.Fatal("get SMTP setup")
@@ -284,7 +283,7 @@ func TestNotifySendsToAllRecipients(t *testing.T) {
 	defer func() { _ = db.Close() }()
 	ms := &mockSender{}
 	s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
-	job := &tables.JobQueue{}
+	job := &gtables.JobQueue{}
 	job.No = types.NewCode("J1")
 	job.Description = types.NewText("Daily invoices")
 	job.Notification_email = types.NewText("ops@example.com; Hans <hans@example.com>;")
@@ -315,7 +314,7 @@ func TestNotifyInNotificationLanguage(t *testing.T) {
 	defer func() { _ = db.Close() }()
 	ms := &mockSender{}
 	s := &Scheduler{db: db, dbType: database.DBTypeSQLite, mailer: ms}
-	job := &tables.JobQueue{}
+	job := &gtables.JobQueue{}
 	job.No = types.NewCode("J1")
 	job.Notification_email = types.NewText("ops@example.com")
 	job.Notification_language = types.NewCode("NB-NO") // no Language record: the code itself

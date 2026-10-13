@@ -3,13 +3,14 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/hansjlachmann/openerp/backend/api/middleware"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -86,7 +87,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.CompanyVerifyFailed().Message("en-US")))
 	}
 
-	var user tables.User
+	var user gtables.User
 	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(requestBody.UserID)) {
@@ -99,7 +100,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// Verify password
-	if !user.CheckPassword(requestBody.Password) {
+	if !tables.CheckPassword(&user, requestBody.Password) {
 		return c.Status(401).JSON(apitypes.NewErrorResponse(apperrors.InvalidCredentials().Message("en-US")))
 	}
 
@@ -110,7 +111,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// Update last login (ignore failure - non-critical)
-	user.UpdateLastLogin()
+	tables.UpdateLastLogin(&user)
 	_ = user.Modify(false)
 
 	// Load permissions for this user/company
@@ -145,7 +146,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	// Look up the translation_key from the Language table
 	translationKey := "en-US" // Default
-	var lang tables.Language
+	var lang gtables.Language
 	lang.InitWithDBType(h.db, company, h.dbType)
 	if lang.Get(types.NewCode(userLang)) {
 		if !lang.Translation_key.IsEmpty() {
@@ -209,7 +210,7 @@ func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 		company = "cronus"
 	}
 
-	var user tables.User
+	var user gtables.User
 	user.InitWithDBType(h.db, company, h.dbType)
 
 	if !user.Get(types.NewCode(userID)) {
@@ -245,7 +246,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	// Check if any users exist
 	// Use default company "cronus" for user storage
 	company := "cronus"
-	var user tables.User
+	var user gtables.User
 	user.InitWithDBType(h.db, company, h.dbType)
 	count := user.Count()
 
@@ -263,7 +264,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 	user.Created_at = types.NewDateTimeFromTime(now)
 	user.Last_login = types.NewDateTimeFromTime(now) // Initialize to avoid NULL
 
-	if err := user.SetPassword(requestBody.Password); err != nil {
+	if err := tables.SetPassword(&user, requestBody.Password); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
@@ -379,7 +380,7 @@ func (h *AuthHandler) SetLanguage(c *fiber.Ctx) error {
 	// Optionally persist to user record
 	if requestBody.Persist {
 		if userID != "" && company != "" {
-			var user tables.User
+			var user gtables.User
 			user.InitWithDBType(h.db, company, h.dbType)
 			if user.Get(types.NewCode(userID)) {
 				user.Language = types.NewCode(requestBody.Language)

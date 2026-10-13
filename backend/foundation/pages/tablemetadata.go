@@ -67,7 +67,7 @@ func (tm *TableMetadata) Load() error {
 		return fmt.Errorf("failed to find project root: %w", err)
 	}
 
-	tablesPath := filepath.Join(rootPath, "backend", "business-logic", "tables", "definitions")
+	tablesPath := filepath.Join(rootPath, "backend", "definitions", "tables")
 
 	if _, err := os.Stat(tablesPath); os.IsNotExist(err) {
 		return fmt.Errorf("tables directory not found: %s", tablesPath)

@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"fmt"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
@@ -53,7 +53,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// Send the PK field names so the frontend can identify records even when the
 	// primary key is not displayed on the page (e.g. BC-style setup tables).
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
-	if factory, ok := tables.GetTableFactory(pageDef.Page.SourceTable); ok {
+	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		tbl := factory()
 		pageDef.Page.FlowFields = tbl.GetFlowFields()
 		pageDef.Page.SortableFlowFields = nil

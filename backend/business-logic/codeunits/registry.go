@@ -4,6 +4,9 @@ import (
 	"sync"
 
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+
+	// The table triggers (business logic) run for the records written here
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 )
 
 var (

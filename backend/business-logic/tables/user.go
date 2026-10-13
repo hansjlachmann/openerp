@@ -1,116 +1,48 @@
 package tables
 
 import (
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"time"
 	"unicode/utf8"
 
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"golang.org/x/crypto/bcrypt"
+
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
-	"golang.org/x/crypto/bcrypt"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// userLogic is the business logic of table 5100 User
+type userLogic struct{}
 
-// User wraps UserBase and adds trigger methods
-type User struct {
-	gtables.UserBase
-}
+func init() { gtables.RegisterUserLogic(userLogic{}) }
 
-// NewUser creates a new User instance
-func NewUser() *User {
-	u := &User{}
-	u.Active = true
-	u.Language = types.NewCode("en-US")
-	return u
-}
+// OnDelete deletes the user's preferences, appearance and theme list so they don't
+// remain orphaned. They are global tables (company ""), deleted regardless of the
+// session's company. SetRange is an exact match, so a user ID containing filter
+// characters (*, |, ..) cannot widen the delete. An installed theme nobody has any more
+// stays until it is deleted on the Themes page.
+func (userLogic) OnDelete(rec *gtables.User) error {
+	db, dbType, userID := rec.GetDB(), rec.GetDBType(), rec.User_id.String()
 
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *User) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.UserBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *User) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *User) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *User) OnDelete(db database.Executor, company string) error {
-	// Cascade delete this user's preferences so they don't remain orphaned. Preferences
-	// are stored without a company (company "", see handlers/preferences.go), so they are
-	// deleted there regardless of the session's company. SetRange is an exact match, so a
-	// user ID containing filter characters (*, |, ..) cannot widen the delete.
-	var prefs UserPreferences
-	prefs.InitWithDBType(db, "", t.GetDBType())
-	prefs.SetRange("user_id", t.User_id.String())
+	var prefs gtables.UserPreferences
+	prefs.InitWithDBType(db, "", dbType)
+	prefs.SetRange("user_id", userID)
 	prefs.DeleteAll()
 
-	// The user's appearance and theme list (global tables); an installed theme nobody has
-	// any more stays until it is deleted on the Themes page
-	var pers UserPersonalization
-	pers.InitWithDBType(db, "", t.GetDBType())
-	pers.SetRange("user_id", t.User_id.String())
+	var pers gtables.UserPersonalization
+	pers.InitWithDBType(db, "", dbType)
+	pers.SetRange("user_id", userID)
 	pers.DeleteAll()
-	var links UserTheme
-	links.InitWithDBType(db, "", t.GetDBType())
-	links.SetRange("user_id", t.User_id.String())
+
+	var links gtables.UserTheme
+	links.InitWithDBType(db, "", dbType)
+	links.SetRange("user_id", userID)
 	links.DeleteAll()
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *User) OnRename() error {
-	// TODO: Update related records if needed
-	return nil
-}
-
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *User) Validate() error {
-	if err := ftables.CheckRequired(gtables.UserTableName, "user_id", t.User_id.IsEmpty()); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserTableName, "user_id", string(t.User_id), 50); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserTableName, "user_name", string(t.User_name), 100); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserTableName, "email", string(t.Email), 100); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserTableName, "language", string(t.Language), 10); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ========================================
-// Business Logic Methods
-// ========================================
-
-// SetPassword hashes and stores the password
-func (t *User) SetPassword(password string) error {
+// SetPassword hashes and stores the user's password
+func SetPassword(user *gtables.User, password string) error {
 	if password == "" {
 		return apperrors.FieldRequired(gtables.UserTableName, "password")
 	}
@@ -123,17 +55,17 @@ func (t *User) SetPassword(password string) error {
 		return err
 	}
 
-	t.Password_hash = types.NewText(string(hashedPassword))
+	user.Password_hash = types.NewText(string(hashedPassword))
 	return nil
 }
 
-// CheckPassword verifies if the provided password matches the stored hash
-func (t *User) CheckPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(t.Password_hash.String()), []byte(password))
+// CheckPassword verifies if the provided password matches the user's stored hash
+func CheckPassword(user *gtables.User, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password_hash.String()), []byte(password))
 	return err == nil
 }
 
-// UpdateLastLogin updates the last login timestamp
-func (t *User) UpdateLastLogin() {
-	t.Last_login = types.NewDateTimeFromTime(time.Now())
+// UpdateLastLogin sets the user's last login timestamp to now
+func UpdateLastLogin(user *gtables.User) {
+	user.Last_login = types.NewDateTimeFromTime(time.Now())
 }

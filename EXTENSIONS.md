@@ -128,11 +128,14 @@ Extensions are merged at build time using the `extmerge` tool:
 
 ```bash
 # Merge extensions with core
-extmerge --core ./backend/business-logic \
+extmerge --core ./backend/definitions \
          --extensions ./extensions \
          --output ./merged
 
-# Or in Docker build
+# then generate the table code from the merged definitions
+go generate ./backend/generated/tables
+
+# Or in Docker build (merges, regenerates and builds)
 docker build --build-arg EXTENSIONS_PATH=./extensions .
 ```
 
@@ -145,7 +148,8 @@ my-openerp-extension/
 │   │   └── 18-customer.extend.yaml      # Extend Customer table
 │   ├── pages/
 │   │   └── 21-customer-card.extend.yaml # Extend Customer Card
-│   └── codeunits/
+│   └── logic/                           # Go module: business logic (see below)
+│       ├── customer.go                  # Triggers for the Customer fields
 │       └── 50100-custom-report.go       # New codeunit
 ├── custom/
 │   ├── tables/
@@ -172,3 +176,46 @@ id_ranges:
   pages: 50000-50999
   codeunits: 50000-50999
 ```
+
+## Extension apps: business logic (planned)
+
+The base application is built so that an extension app can add business logic without
+changing the base code. What already works in the base:
+
+- **Generated code is derived from the merged definitions.** `backend/generated/tables` is
+  regenerated after the merge, so a field from `customer.extend.yaml` becomes a typed field
+  of `gtables.Customer` and gets its own `OnValidate_<Field>` trigger.
+- **Business logic is a list per table.** The base application registers its triggers in
+  `backend/business-logic/tables` (`gtables.RegisterCustomerLogic(customerLogic{})`). An
+  extension registers its own logic type for the same table, and every registered logic runs
+  in registration order (base first). The first error stops the operation.
+
+```go
+// my-openerp-extension/extensions/logic/customer.go
+package logic
+
+import gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+
+type customerLogic struct{}
+
+func init() { gtables.RegisterCustomerLogic(customerLogic{}) }
+
+// Runs after the base application's Customer OnInsert
+func (customerLogic) OnInsert(rec *gtables.Customer) error {
+	if rec.Loyalty_points == 0 {
+		rec.Loyalty_points = 100
+	}
+	return nil
+}
+
+func (customerLogic) OnValidate_Loyalty_points(rec *gtables.Customer) error { … }
+```
+
+Still to build (`TODO.md`, "Extension apps"):
+
+- **Linking the extension's Go module into the build:** a `go.work` file or a `replace`
+  directive pointing at the merged, regenerated base, plus a generated file with a blank
+  import per installed extension.
+- **A lossless page merge in `extmerge`:** today it drops page keys it does not know.
+- **Field-name collision rules.**
+- **OnBefore/OnAfter and codeunit events.**

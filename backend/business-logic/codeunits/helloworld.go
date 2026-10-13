@@ -1,7 +1,6 @@
 package codeunits
 
 import (
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -53,7 +52,7 @@ func (c *HelloWorld) UsesProgress() bool {
 
 // Run executes the codeunit with the given record
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
-	jobQueue := record.(*tables.JobQueue)
+	jobQueue := record.(*gtables.JobQueue)
 
 	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now()); err != nil {
 		return fcodeunits.Message(err.Error()), nil

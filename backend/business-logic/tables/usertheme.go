@@ -1,81 +1,33 @@
 package tables
 
 import (
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-//go:generate go run ../../../tools/tablegen/main.go
+// userThemeLogic is the business logic of table 5163 User_Theme.
+// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// top of generated/tables/usertheme_gen.go. The field rules of the definition
+// (required, length, range) are checked after OnInsert and OnModify.
+type userThemeLogic struct{}
 
-// UserTheme wraps UserThemeBase and adds trigger methods
-type UserTheme struct {
-	gtables.UserThemeBase
-}
+func init() { gtables.RegisterUserThemeLogic(userThemeLogic{}) }
 
-// NewUserTheme creates a new UserTheme instance
-func NewUserTheme() *UserTheme {
-	return &UserTheme{}
-}
-
-// InitWithDBType initializes the record with database context and type and sets up
-// triggers. The API creates tables via the tables.Table interface and calls this method,
-// so the wiring must live here for triggers and OnValidate_* overrides to fire.
-func (t *UserTheme) InitWithDBType(db database.Executor, company string, dbType database.DBType) {
-	t.UserThemeBase.InitWithDBType(db, company, dbType)
-	t.SetTriggers(t.OnInsert, t.OnModify, t.OnDelete)
-	t.SetSelf(t)
-}
-
-// ========================================
-// Table Triggers (Business Logic)
-// ========================================
-
-// OnInsert trigger - called before inserting a new record
-func (t *UserTheme) OnInsert() error {
-	return t.Validate()
-}
-
-// OnModify trigger - called before modifying a record
-func (t *UserTheme) OnModify() error {
-	return t.Validate()
-}
-
-// OnDelete trigger - called before deleting a record
-func (t *UserTheme) OnDelete(db database.Executor, company string) error {
-	// TODO: Add checks for related records (if any)
+// OnInsert runs before a new record is inserted
+func (userThemeLogic) OnInsert(rec *gtables.UserTheme) error {
 	return nil
 }
 
-// OnRename trigger - called before renaming (changing primary key)
-func (t *UserTheme) OnRename() error {
-	// TODO: Update related records if needed
+// OnModify runs before a record is modified
+func (userThemeLogic) OnModify(rec *gtables.UserTheme) error {
 	return nil
 }
 
-// ========================================
-// Validation
-// ========================================
-
-// Validate validates all fields
-func (t *UserTheme) Validate() error {
-	if err := ftables.CheckMaxLength(gtables.UserThemeTableName, "user_id", string(t.User_id), 50); err != nil {
-		return err
-	}
-	if err := ftables.CheckMaxLength(gtables.UserThemeTableName, "theme_code", string(t.Theme_code), 50); err != nil {
-		return err
-	}
-
+// OnDelete runs before a record is deleted
+func (userThemeLogic) OnDelete(rec *gtables.UserTheme) error {
 	return nil
 }
 
-// ========================================
-// Business Logic Methods
-// ========================================
-
-// TODO: Add your custom business logic methods here
-// Example:
-// func (t *UserTheme) CalculateSomething() error {
-//     // Your logic here
-//     return nil
-// }
+// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
+func (userThemeLogic) OnRename(rec *gtables.UserTheme) error {
+	return nil
+}

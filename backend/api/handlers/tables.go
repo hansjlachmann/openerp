@@ -20,6 +20,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 // CompanyInitializer can create company-scoped tables for a newly inserted company.
@@ -64,7 +65,7 @@ func (h *TablesHandler) getTable(tableName, company string) (ftables.Table, erro
 
 // getTableOn is getTable on another executor (a transaction)
 func (h *TablesHandler) getTableOn(exec database.Executor, tableName, company string) (ftables.Table, error) {
-	factory, ok := tables.GetTableFactory(tableName)
+	factory, ok := gtables.GetTableFactory(tableName)
 	if !ok {
 		return nil, apperrors.TableNotFound(tableName)
 	}
@@ -182,7 +183,7 @@ func (h *TablesHandler) getLookupValues(tableName string, table ftables.Table, c
 
 	for fieldName, relInfo := range table.GetTableRelationFields() {
 		// Get the related table
-		relFactory, ok := tables.GetTableFactory(relInfo.Table)
+		relFactory, ok := gtables.GetTableFactory(relInfo.Table)
 		if !ok {
 			continue // Skip if related table not found
 		}
@@ -280,7 +281,7 @@ func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
 	}
-	relFactory, ok := tables.GetTableFactory(relInfo.Table)
+	relFactory, ok := gtables.GetTableFactory(relInfo.Table)
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(relInfo.Table).Message(language)))
 	}
@@ -779,8 +780,8 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Special handling for User table password
 	if tableName == "User" {
 		if password, ok := data["password"].(string); ok && password != "" {
-			if userTable, ok := table.(*tables.User); ok {
-				if err := userTable.SetPassword(password); err != nil {
+			if userTable, ok := table.(*gtables.User); ok {
+				if err := tables.SetPassword(userTable, password); err != nil {
 					return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 				}
 			}
@@ -905,8 +906,8 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	// Special handling for User table password
 	if tableName == "User" {
 		if password, ok := data["password"].(string); ok && password != "" {
-			if userTable, ok := table.(*tables.User); ok {
-				if err := userTable.SetPassword(password); err != nil {
+			if userTable, ok := table.(*gtables.User); ok {
+				if err := tables.SetPassword(userTable, password); err != nil {
 					return nil, 400, errorMessage(err, language)
 				}
 			}

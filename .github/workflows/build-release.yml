@@ -32,6 +32,12 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
+      - name: Generated table code is up to date
+        run: |
+          go generate ./backend/generated/tables
+          git add --intent-to-add .
+          git diff --exit-code -- backend/generated backend/business-logic/tables
+
       - name: Run go vet
         run: go vet ./...
 

@@ -3,14 +3,13 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"net/url"
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 func TestFlowFieldsToCalc(t *testing.T) {
@@ -40,7 +39,7 @@ func TestListFilterOnFlowFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	var cle tables.CustomerLedgerEntry
+	var cle gtables.CustomerLedgerEntry
 	if err := cle.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +50,7 @@ func TestListFilterOnFlowFields(t *testing.T) {
 	add := func(customer, date string, remaining string, open bool) {
 		t.Helper()
 		entry++
-		var e tables.CustomerLedgerEntry
+		var e gtables.CustomerLedgerEntry
 		e.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 		e.Entry_no = entry
 		e.Customer_no = types.NewCode(customer)

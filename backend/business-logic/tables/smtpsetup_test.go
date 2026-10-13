@@ -2,6 +2,7 @@ package tables
 
 import (
 	"errors"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strings"
 	"testing"
 
@@ -16,7 +17,7 @@ const maxPassword = 154
 func TestSMTPPasswordStoredEncrypted(t *testing.T) {
 	defer secrets.SetKeyForTest("test key")()
 	db := newTestDB(t)
-	var setup SMTPSetup
+	var setup gtables.SMTPSetup
 	if err := setup.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +40,7 @@ func TestSMTPPasswordStoredEncrypted(t *testing.T) {
 	}
 
 	// Changing another field keeps the stored password as it is (not encrypted twice)
-	var again SMTPSetup
+	var again gtables.SMTPSetup
 	again.InitWithDBType(db, "", database.DBTypeSQLite)
 	if !again.Get("") {
 		t.Fatal("get")
@@ -81,7 +82,7 @@ func TestSMTPPasswordStoredEncrypted(t *testing.T) {
 
 func TestEncryptStoredSecrets(t *testing.T) {
 	db := newTestDB(t)
-	var setup SMTPSetup
+	var setup gtables.SMTPSetup
 	if err := setup.CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
@@ -92,16 +93,16 @@ func TestEncryptStoredSecrets(t *testing.T) {
 	if !setup.Insert(true) {
 		t.Fatal("insert")
 	}
-	if n, err := EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 0 || err != nil {
+	if n, err := gtables.EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 0 || err != nil {
 		t.Errorf("without a key: %d, %v; want nothing done", n, err)
 	}
 	restore()
 
 	defer secrets.SetKeyForTest("test key")()
-	if n, err := EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 1 || err != nil {
+	if n, err := gtables.EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 1 || err != nil {
 		t.Fatalf("encrypted %d, %v; want the password encrypted", n, err)
 	}
-	var check SMTPSetup
+	var check gtables.SMTPSetup
 	check.InitWithDBType(db, "", database.DBTypeSQLite)
 	if !check.Get("") || !secrets.IsEncrypted(check.Password.String()) {
 		t.Fatalf("stored %q, want encrypted", check.Password)
@@ -109,7 +110,7 @@ func TestEncryptStoredSecrets(t *testing.T) {
 	if plain, err := check.PlainPassword(); err != nil || plain != "old password" {
 		t.Errorf("PlainPassword = %q, %v", plain, err)
 	}
-	if n, _ := EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 0 {
+	if n, _ := gtables.EncryptStoredSecrets(db, database.DBTypeSQLite, nil); n != 0 {
 		t.Error("an encrypted password was encrypted again")
 	}
 }
