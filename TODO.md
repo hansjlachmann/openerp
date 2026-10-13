@@ -36,6 +36,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       definitions" below; `TransferFields` and extension fields depend on it.
 - [ ] **NAV/BC system functions in Go** (C/AL, AL) — specification below ("Feature: NAV/BC
       system functions"); needs more details before it is built.
+- [ ] **NAV/BC functions — remaining** (high priority) — after the first and second set; see
+      "NAV/BC functions — remaining" below.
 
 ---
 
@@ -116,7 +118,7 @@ Table-driven tests per function with the results BC gives (especially `CalcDate`
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the AL functions in business logic".
 
-## NAV/BC functions — remaining (later, after the first and second set)
+## NAV/BC functions — remaining (HIGH priority, after the first and second set)
 
 The rest of the AL reference that BC code uses, recorded for later (see "Feature: NAV/BC system
 functions" for the rules: `al.` package / generated record methods, easiest Go way):
