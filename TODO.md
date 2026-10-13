@@ -30,14 +30,16 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       v0.1.91, login works, a NAV report Job Queue entry runs (`NAV_PROXY_URL` from `prod.env`).
       Next upgrades: back to plain `git pull`, then `APP_VERSION=…`, `scripts/prod.sh pull && up -d`
       (`docs/operations.md`). 0.1.89 and 0.1.90 have no frontend image — never use them.
-- [ ] **Security: permission check on codeunits** — any logged-in user can run any codeunit; see
-      "⚠ Security: codeunits run without a permission check" below (decide the rule first).
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
 
 ---
 
-## ⚠ Security: codeunits run without a permission check (HIGH priority, found 2026-10-12)
+## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
+
+Priority lowered to medium on 2026-10-13: the rule has to be specified in more detail first — the
+user will come back to it.
+
 
 - [ ] `POST /api/codeunits/run` and `POST /api/jobs/start` (`backend/api/handlers/codeunits.go`,
       `jobs.go`) run **any** registered codeunit by ID for any logged-in user — no permission check
