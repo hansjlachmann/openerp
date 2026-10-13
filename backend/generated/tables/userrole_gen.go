@@ -75,6 +75,42 @@ type UserRole struct {
 const UserRoleTableID = 5130
 const UserRoleTableName = "User_Role"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// UserRole_FieldNo holds the field numbers of User_Role (BC FieldNo):
+// UserRole_FieldNo.Code is 1
+var UserRole_FieldNo = struct {
+	Code        int
+	Description int
+}{
+	Code:        1,
+	Description: 2,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *UserRole) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "code":
+		return 1
+	case "description":
+		return 2
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *UserRole) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "code"
+	case 2:
+		return "description"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *UserRole) GetTableID() int {
 	return UserRoleTableID
@@ -1583,6 +1619,7 @@ func (t *UserRole) GetPrimaryKeyValue() string {
 func (t *UserRole) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1592,6 +1629,7 @@ func (t *UserRole) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     50,

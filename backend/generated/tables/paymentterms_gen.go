@@ -77,6 +77,48 @@ type PaymentTerms struct {
 const PaymentTermsTableID = 3
 const PaymentTermsTableName = "Payment Terms"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// PaymentTerms_FieldNo holds the field numbers of Payment Terms (BC FieldNo):
+// PaymentTerms_FieldNo.Code is 1
+var PaymentTerms_FieldNo = struct {
+	Code        int
+	Description int
+	Active      int
+}{
+	Code:        1,
+	Description: 5,
+	Active:      900,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *PaymentTerms) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "code":
+		return 1
+	case "description":
+		return 5
+	case "active":
+		return 900
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *PaymentTerms) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "code"
+	case 5:
+		return "description"
+	case 900:
+		return "active"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *PaymentTerms) GetTableID() int {
 	return PaymentTermsTableID
@@ -1630,6 +1672,7 @@ func (t *PaymentTerms) GetPrimaryKeyValue() string {
 func (t *PaymentTerms) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -1639,6 +1682,7 @@ func (t *PaymentTerms) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     30,
@@ -1648,6 +1692,7 @@ func (t *PaymentTerms) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         900,
 			Name:       "active",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,

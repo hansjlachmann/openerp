@@ -87,6 +87,72 @@ type UserPreferences struct {
 const UserPreferencesTableID = 5120
 const UserPreferencesTableName = "User_Preferences"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// UserPreferences_FieldNo holds the field numbers of User_Preferences (BC FieldNo):
+// UserPreferences_FieldNo.User_id is 1
+var UserPreferences_FieldNo = struct {
+	User_id         int
+	Page_id         int
+	Preference_type int
+	Preference_name int
+	Preference_data int
+	Created_at      int
+	Updated_at      int
+}{
+	User_id:         1,
+	Page_id:         2,
+	Preference_type: 3,
+	Preference_name: 4,
+	Preference_data: 5,
+	Created_at:      6,
+	Updated_at:      7,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *UserPreferences) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "user_id":
+		return 1
+	case "page_id":
+		return 2
+	case "preference_type":
+		return 3
+	case "preference_name":
+		return 4
+	case "preference_data":
+		return 5
+	case "created_at":
+		return 6
+	case "updated_at":
+		return 7
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *UserPreferences) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "user_id"
+	case 2:
+		return "page_id"
+	case 3:
+		return "preference_type"
+	case 4:
+		return "preference_name"
+	case 5:
+		return "preference_data"
+	case 6:
+		return "created_at"
+	case 7:
+		return "updated_at"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *UserPreferences) GetTableID() int {
 	return UserPreferencesTableID
@@ -1919,6 +1985,7 @@ func (t *UserPreferences) GetPrimaryKeyValue() string {
 func (t *UserPreferences) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1928,6 +1995,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "page_id",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -1937,6 +2005,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "preference_type",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1946,6 +2015,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "preference_name",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1955,6 +2025,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "preference_data",
 			Type:       tables.FieldTypeText,
 			Length:     0,
@@ -1964,6 +2035,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "created_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -1973,6 +2045,7 @@ func (t *UserPreferences) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "updated_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

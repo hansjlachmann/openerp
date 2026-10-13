@@ -6,6 +6,7 @@ table:
   global: true  # Global table - no company prefix
   fields:
     - name: user_id
+      no: 1
       type: types.Code
       db_name: user_id
       caption: User ID
@@ -22,6 +23,7 @@ table:
             width: 200
 
     - name: role_id
+      no: 2
       type: types.Code
       db_name: role_id
       caption: Role ID
@@ -38,6 +40,7 @@ table:
             width: 200
 
     - name: company
+      no: 3
       type: types.Text
       db_name: company
       caption: Company

@@ -125,6 +125,78 @@ var JobQueueEntry_Status = struct {
 	Error:     2,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// JobQueueEntry_FieldNo holds the field numbers of Job_Queue_Entry (BC FieldNo):
+// JobQueueEntry_FieldNo.Entry_no is 1
+var JobQueueEntry_FieldNo = struct {
+	Entry_no        int
+	Job_queue_no    int
+	Status          int
+	User_id         int
+	Description     int
+	Error_message   int
+	Start_date_time int
+	End_date_time   int
+}{
+	Entry_no:        1,
+	Job_queue_no:    2,
+	Status:          3,
+	User_id:         4,
+	Description:     5,
+	Error_message:   6,
+	Start_date_time: 7,
+	End_date_time:   8,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *JobQueueEntry) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "entry_no":
+		return 1
+	case "job_queue_no":
+		return 2
+	case "status":
+		return 3
+	case "user_id":
+		return 4
+	case "description":
+		return 5
+	case "error_message":
+		return 6
+	case "start_date_time":
+		return 7
+	case "end_date_time":
+		return 8
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *JobQueueEntry) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "entry_no"
+	case 2:
+		return "job_queue_no"
+	case 3:
+		return "status"
+	case 4:
+		return "user_id"
+	case 5:
+		return "description"
+	case 6:
+		return "error_message"
+	case 7:
+		return "start_date_time"
+	case 8:
+		return "end_date_time"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *JobQueueEntry) GetTableID() int {
 	return JobQueueEntryTableID
@@ -2034,6 +2106,7 @@ func (t *JobQueueEntry) GetPrimaryKeyValue() string {
 func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "entry_no",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2043,6 +2116,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "job_queue_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -2052,6 +2126,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "status",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2061,6 +2136,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -2070,6 +2146,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2079,6 +2156,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "error_message",
 			Type:       tables.FieldTypeText,
 			Length:     250,
@@ -2088,6 +2166,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "start_date_time",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -2097,6 +2176,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "end_date_time",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

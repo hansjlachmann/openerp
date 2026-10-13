@@ -89,6 +89,78 @@ type ThemeAsset struct {
 const ThemeAssetTableID = 5161
 const ThemeAssetTableName = "Theme_Asset"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// ThemeAsset_FieldNo holds the field numbers of Theme_Asset (BC FieldNo):
+// ThemeAsset_FieldNo.Theme_code is 1
+var ThemeAsset_FieldNo = struct {
+	Theme_code   int
+	Name         int
+	Content_type int
+	Size         int
+	Width        int
+	Height       int
+	Sha256       int
+	Data         int
+}{
+	Theme_code:   1,
+	Name:         2,
+	Content_type: 3,
+	Size:         4,
+	Width:        5,
+	Height:       6,
+	Sha256:       7,
+	Data:         8,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *ThemeAsset) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "theme_code":
+		return 1
+	case "name":
+		return 2
+	case "content_type":
+		return 3
+	case "size":
+		return 4
+	case "width":
+		return 5
+	case "height":
+		return 6
+	case "sha256":
+		return 7
+	case "data":
+		return 8
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *ThemeAsset) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "theme_code"
+	case 2:
+		return "name"
+	case 3:
+		return "content_type"
+	case 4:
+		return "size"
+	case 5:
+		return "width"
+	case 6:
+		return "height"
+	case 7:
+		return "sha256"
+	case 8:
+		return "data"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *ThemeAsset) GetTableID() int {
 	return ThemeAssetTableID
@@ -1926,6 +1998,7 @@ func (t *ThemeAsset) GetPrimaryKeyValue() string {
 func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "theme_code",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1935,6 +2008,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "name",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1944,6 +2018,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "content_type",
 			Type:       tables.FieldTypeText,
 			Length:     30,
@@ -1953,6 +2028,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "size",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -1962,6 +2038,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "width",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -1971,6 +2048,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "height",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -1980,6 +2058,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "sha256",
 			Type:       tables.FieldTypeText,
 			Length:     64,
@@ -1989,6 +2068,7 @@ func (t *ThemeAsset) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "data",
 			Type:       tables.FieldTypeBlob,
 			Length:     0,

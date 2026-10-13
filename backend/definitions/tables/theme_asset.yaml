@@ -6,6 +6,7 @@ table:
   global: true
   fields:
     - name: theme_code
+      no: 1
       type: types.Code
       db_name: theme_code
       caption: Theme Code
@@ -17,6 +18,7 @@ table:
 
     # preview, thumb, bg-1 .. bg-5 (wallpapers), tb-1 .. tb-5 (their thumbnails)
     - name: name
+      no: 2
       type: types.Code
       db_name: name
       caption: Name
@@ -24,27 +26,32 @@ table:
       length: 20
 
     - name: content_type
+      no: 3
       type: types.Text
       db_name: content_type
       caption: Content Type
       length: 30
 
     - name: size
+      no: 4
       type: int
       db_name: size
       caption: Size
 
     - name: width
+      no: 5
       type: int
       db_name: width
       caption: Width
 
     - name: height
+      no: 6
       type: int
       db_name: height
       caption: Height
 
     - name: sha256
+      no: 7
       type: types.Text
       db_name: sha256
       caption: SHA-256
@@ -52,6 +59,7 @@ table:
 
     # The image bytes — never sent by the table API (served by /api/themes/:code/assets/:name)
     - name: data
+      no: 8
       type: "[]byte"
       db_name: data
       caption: Data

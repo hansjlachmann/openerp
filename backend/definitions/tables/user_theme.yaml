@@ -6,6 +6,7 @@ table:
   global: true
   fields:
     - name: user_id
+      no: 1
       type: types.Code
       db_name: user_id
       caption: User ID
@@ -16,6 +17,7 @@ table:
         field: user_id
 
     - name: theme_code
+      no: 2
       type: types.Code
       db_name: theme_code
       caption: Theme Code
@@ -26,6 +28,7 @@ table:
         field: code
 
     - name: added_at
+      no: 3
       type: types.DateTime
       db_name: added_at
       caption: Added At

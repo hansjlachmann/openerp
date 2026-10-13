@@ -267,6 +267,288 @@ var CustomerLedgerEntry_Bal_account_type = struct {
 	FixedAsset:  4,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// CustomerLedgerEntry_FieldNo holds the field numbers of Customer Ledger Entry (BC FieldNo):
+// CustomerLedgerEntry_FieldNo.Entry_no is 1
+var CustomerLedgerEntry_FieldNo = struct {
+	Entry_no               int
+	Customer_no            int
+	Sell_to_customer_no    int
+	Posting_date           int
+	Document_date          int
+	Document_type          int
+	Document_no            int
+	External_document_no   int
+	Description            int
+	Currency_code          int
+	Amount                 int
+	Remaining_amount       int
+	Closed_by_amount       int
+	Original_amount_lcy    int
+	Remaining_amt_lcy      int
+	Amount_lcy             int
+	Closed_by_amount_lcy   int
+	Sales_lcy              int
+	Profit_lcy             int
+	Inv_discount_lcy       int
+	Pmt_discount_date      int
+	Pmt_disc_possible      int
+	Pmt_disc_given_lcy     int
+	Customer_posting_group int
+	Department_code        int
+	Project_code           int
+	Salesperson_code       int
+	User_id                int
+	Source_code            int
+	Reason_code            int
+	Journal_batch_name     int
+	Transaction_no         int
+	Applies_to_doc_type    int
+	Applies_to_doc_no      int
+	Applies_to_id          int
+	Open                   int
+	Positive               int
+	On_hold                int
+	Due_date               int
+	Closed_by_entry_no     int
+	Closed_at_date         int
+	Bal_account_type       int
+	Bal_account_no         int
+}{
+	Entry_no:               1,
+	Customer_no:            3,
+	Sell_to_customer_no:    21,
+	Posting_date:           4,
+	Document_date:          62,
+	Document_type:          5,
+	Document_no:            6,
+	External_document_no:   63,
+	Description:            7,
+	Currency_code:          11,
+	Amount:                 13,
+	Remaining_amount:       14,
+	Closed_by_amount:       46,
+	Original_amount_lcy:    15,
+	Remaining_amt_lcy:      16,
+	Amount_lcy:             17,
+	Closed_by_amount_lcy:   54,
+	Sales_lcy:              18,
+	Profit_lcy:             19,
+	Inv_discount_lcy:       20,
+	Pmt_discount_date:      38,
+	Pmt_disc_possible:      39,
+	Pmt_disc_given_lcy:     40,
+	Customer_posting_group: 22,
+	Department_code:        23,
+	Project_code:           24,
+	Salesperson_code:       25,
+	User_id:                27,
+	Source_code:            28,
+	Reason_code:            50,
+	Journal_batch_name:     49,
+	Transaction_no:         53,
+	Applies_to_doc_type:    34,
+	Applies_to_doc_no:      35,
+	Applies_to_id:          47,
+	Open:                   36,
+	Positive:               43,
+	On_hold:                33,
+	Due_date:               37,
+	Closed_by_entry_no:     44,
+	Closed_at_date:         45,
+	Bal_account_type:       51,
+	Bal_account_no:         52,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *CustomerLedgerEntry) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "entry_no":
+		return 1
+	case "customer_no":
+		return 3
+	case "sell_to_customer_no":
+		return 21
+	case "posting_date":
+		return 4
+	case "document_date":
+		return 62
+	case "document_type":
+		return 5
+	case "document_no":
+		return 6
+	case "external_document_no":
+		return 63
+	case "description":
+		return 7
+	case "currency_code":
+		return 11
+	case "amount":
+		return 13
+	case "remaining_amount":
+		return 14
+	case "closed_by_amount":
+		return 46
+	case "original_amount_lcy":
+		return 15
+	case "remaining_amt_lcy":
+		return 16
+	case "amount_lcy":
+		return 17
+	case "closed_by_amount_lcy":
+		return 54
+	case "sales_lcy":
+		return 18
+	case "profit_lcy":
+		return 19
+	case "inv_discount_lcy":
+		return 20
+	case "pmt_discount_date":
+		return 38
+	case "pmt_disc_possible":
+		return 39
+	case "pmt_disc_given_lcy":
+		return 40
+	case "customer_posting_group":
+		return 22
+	case "department_code":
+		return 23
+	case "project_code":
+		return 24
+	case "salesperson_code":
+		return 25
+	case "user_id":
+		return 27
+	case "source_code":
+		return 28
+	case "reason_code":
+		return 50
+	case "journal_batch_name":
+		return 49
+	case "transaction_no":
+		return 53
+	case "applies_to_doc_type":
+		return 34
+	case "applies_to_doc_no":
+		return 35
+	case "applies_to_id":
+		return 47
+	case "open":
+		return 36
+	case "positive":
+		return 43
+	case "on_hold":
+		return 33
+	case "due_date":
+		return 37
+	case "closed_by_entry_no":
+		return 44
+	case "closed_at_date":
+		return 45
+	case "bal_account_type":
+		return 51
+	case "bal_account_no":
+		return 52
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *CustomerLedgerEntry) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "entry_no"
+	case 3:
+		return "customer_no"
+	case 21:
+		return "sell_to_customer_no"
+	case 4:
+		return "posting_date"
+	case 62:
+		return "document_date"
+	case 5:
+		return "document_type"
+	case 6:
+		return "document_no"
+	case 63:
+		return "external_document_no"
+	case 7:
+		return "description"
+	case 11:
+		return "currency_code"
+	case 13:
+		return "amount"
+	case 14:
+		return "remaining_amount"
+	case 46:
+		return "closed_by_amount"
+	case 15:
+		return "original_amount_lcy"
+	case 16:
+		return "remaining_amt_lcy"
+	case 17:
+		return "amount_lcy"
+	case 54:
+		return "closed_by_amount_lcy"
+	case 18:
+		return "sales_lcy"
+	case 19:
+		return "profit_lcy"
+	case 20:
+		return "inv_discount_lcy"
+	case 38:
+		return "pmt_discount_date"
+	case 39:
+		return "pmt_disc_possible"
+	case 40:
+		return "pmt_disc_given_lcy"
+	case 22:
+		return "customer_posting_group"
+	case 23:
+		return "department_code"
+	case 24:
+		return "project_code"
+	case 25:
+		return "salesperson_code"
+	case 27:
+		return "user_id"
+	case 28:
+		return "source_code"
+	case 50:
+		return "reason_code"
+	case 49:
+		return "journal_batch_name"
+	case 53:
+		return "transaction_no"
+	case 34:
+		return "applies_to_doc_type"
+	case 35:
+		return "applies_to_doc_no"
+	case 47:
+		return "applies_to_id"
+	case 36:
+		return "open"
+	case 43:
+		return "positive"
+	case 33:
+		return "on_hold"
+	case 37:
+		return "due_date"
+	case 44:
+		return "closed_by_entry_no"
+	case 45:
+		return "closed_at_date"
+	case 51:
+		return "bal_account_type"
+	case 52:
+		return "bal_account_no"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *CustomerLedgerEntry) GetTableID() int {
 	return CustomerLedgerEntryTableID
@@ -4680,6 +4962,7 @@ func (t *CustomerLedgerEntry) GetPrimaryKeyValue() string {
 func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "entry_no",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -4689,6 +4972,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "customer_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4698,6 +4982,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         21,
 			Name:       "sell_to_customer_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4707,6 +4992,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "posting_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -4716,6 +5002,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         62,
 			Name:       "document_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -4725,6 +5012,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "document_type",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -4734,6 +5022,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "document_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4743,6 +5032,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         63,
 			Name:       "external_document_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4752,6 +5042,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -4761,6 +5052,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         11,
 			Name:       "currency_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4770,6 +5062,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         13,
 			Name:       "amount",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4779,6 +5072,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         14,
 			Name:       "remaining_amount",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4788,6 +5082,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         46,
 			Name:       "closed_by_amount",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4797,6 +5092,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         15,
 			Name:       "original_amount_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4806,6 +5102,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         16,
 			Name:       "remaining_amt_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4815,6 +5112,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         17,
 			Name:       "amount_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4824,6 +5122,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         54,
 			Name:       "closed_by_amount_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4833,6 +5132,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         18,
 			Name:       "sales_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4842,6 +5142,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         19,
 			Name:       "profit_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4851,6 +5152,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         20,
 			Name:       "inv_discount_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4860,6 +5162,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         38,
 			Name:       "pmt_discount_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -4869,6 +5172,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         39,
 			Name:       "pmt_disc_possible",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4878,6 +5182,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         40,
 			Name:       "pmt_disc_given_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -4887,6 +5192,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         22,
 			Name:       "customer_posting_group",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4896,6 +5202,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         23,
 			Name:       "department_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4905,6 +5212,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         24,
 			Name:       "project_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4914,6 +5222,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         25,
 			Name:       "salesperson_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4923,6 +5232,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         27,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4932,6 +5242,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         28,
 			Name:       "source_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4941,6 +5252,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         50,
 			Name:       "reason_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4950,6 +5262,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         49,
 			Name:       "journal_batch_name",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -4959,6 +5272,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         53,
 			Name:       "transaction_no",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -4968,6 +5282,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         34,
 			Name:       "applies_to_doc_type",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -4977,6 +5292,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         35,
 			Name:       "applies_to_doc_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4986,6 +5302,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         47,
 			Name:       "applies_to_id",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -4995,6 +5312,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         36,
 			Name:       "open",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -5004,6 +5322,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         43,
 			Name:       "positive",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -5013,6 +5332,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         33,
 			Name:       "on_hold",
 			Type:       tables.FieldTypeCode,
 			Length:     3,
@@ -5022,6 +5342,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         37,
 			Name:       "due_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -5031,6 +5352,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         44,
 			Name:       "closed_by_entry_no",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -5040,6 +5362,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         45,
 			Name:       "closed_at_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -5049,6 +5372,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         51,
 			Name:       "bal_account_type",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -5058,6 +5382,7 @@ func (t *CustomerLedgerEntry) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         52,
 			Name:       "bal_account_no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,

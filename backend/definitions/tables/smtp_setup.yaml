@@ -5,32 +5,38 @@ table:
   setup_table: true    # BC-style singleton: a single record with a blank Primary Key
   fields:
     - name: primary_key
+      no: 1
       type: types.Code
       db_name: primary_key
       primary_key: true
       length: 20
 
     - name: enabled
+      no: 2
       type: bool
       db_name: enabled
       default: false
 
     - name: smtp_server
+      no: 3
       type: types.Text
       db_name: smtp_server
       length: 250
 
     - name: smtp_server_port
+      no: 4
       type: int
       db_name: smtp_server_port
       default: 587
 
     - name: user_id
+      no: 5
       type: types.Text
       db_name: user_id
       length: 100
 
     - name: password
+      no: 6
       type: types.Text
       db_name: password
       length: 250
@@ -38,6 +44,7 @@ table:
       encrypted: true  # stored encrypted (AES-256-GCM); the mailer reads it with PlainPassword()
 
     - name: from_address
+      no: 7
       type: types.Text
       db_name: from_address
       length: 100

@@ -77,6 +77,48 @@ type Menu struct {
 const MenuTableID = 9
 const MenuTableName = "Menu"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Menu_FieldNo holds the field numbers of Menu (BC FieldNo):
+// Menu_FieldNo.Code is 1
+var Menu_FieldNo = struct {
+	Code        int
+	Description int
+	Filename    int
+}{
+	Code:        1,
+	Description: 2,
+	Filename:    3,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Menu) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "code":
+		return 1
+	case "description":
+		return 2
+	case "filename":
+		return 3
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Menu) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "code"
+	case 2:
+		return "description"
+	case 3:
+		return "filename"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Menu) GetTableID() int {
 	return MenuTableID
@@ -1648,6 +1690,7 @@ func (t *Menu) GetPrimaryKeyValue() string {
 func (t *Menu) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1657,6 +1700,7 @@ func (t *Menu) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     50,
@@ -1666,6 +1710,7 @@ func (t *Menu) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "filename",
 			Type:       tables.FieldTypeText,
 			Length:     50,

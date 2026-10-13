@@ -105,12 +105,18 @@ layout:
 ```yaml
 extends_table: <table_id>    # Required: ID of parent table to extend
 
-fields:
+fields:                      # Written like the fields of a table definition (every key is kept)
   - name: custom_field
+    no: 50000                # Required: field number from the extension's series (above 999), unique in the table
     type: types.Text
     length: 100
     caption: Custom Field
 ```
+
+Field numbers identify fields (BC field IDs): `extmerge` refuses an extension field without a
+number above the base application's 1–999, or with a number or name the table (or another
+extension) already uses. Each extension uses its own number series (planned: `application.yaml`,
+see TODO "Field and object numbering"). A number is never changed or reused.
 
 ## Merge Rules
 

@@ -56,6 +56,7 @@ type Key struct {
 
 // Field represents a single field in a table
 type Field struct {
+	No            int            `yaml:"no"` // Field number (BC field ID): unique in the table, never changed or reused
 	Name          string         `yaml:"name"`
 	Type          string         `yaml:"type"`
 	DBName        string         `yaml:"db_name"`
@@ -227,6 +228,11 @@ func main() {
 		tableDef, err := parseYAML(yamlFile)
 		if err != nil {
 			fmt.Printf("✗ Error parsing %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
+			continue
+		}
+		if err := validateFieldNumbers(tableDef); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
 			failed = true
 			continue
 		}
@@ -481,6 +487,33 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 			}
 		}
 	}
+}
+
+// Highest field number: the base application uses 1–999, extension fields (merged in by
+// extmerge) the series of their app (TODO: from each app's application.yaml)
+const maxExtensionFieldNo = 99999
+
+// validateFieldNumbers checks that every field (also FlowFields and FlowFilters) has a field
+// number (BC field ID) in the allowed ranges, unique in the table.
+func validateFieldNumbers(def *TableDef) error {
+	var problems []string
+	byNo := map[int]string{}
+	for _, f := range def.Table.Fields {
+		switch {
+		case f.No == 0:
+			problems = append(problems, fmt.Sprintf("field %s has no field number (no:)", f.Name))
+		case f.No < 0 || f.No > maxExtensionFieldNo:
+			problems = append(problems, fmt.Sprintf("field %s: number %d outside 1–%d", f.Name, f.No, maxExtensionFieldNo))
+		case byNo[f.No] != "":
+			problems = append(problems, fmt.Sprintf("fields %s and %s have the same number %d", byNo[f.No], f.Name, f.No))
+		default:
+			byNo[f.No] = f.Name
+		}
+	}
+	if len(problems) > 0 {
+		return fmt.Errorf("field numbers: %s", strings.Join(problems, "; "))
+	}
+	return nil
 }
 
 // splitFlowFilterFields moves FlowFilter fields out of Fields (they are not stored).
@@ -1388,6 +1421,58 @@ var {{ $.StructName }}_{{ upperFirst .Name }} = struct {
 {{- end }}
 {{- end }}
 {{- end }}
+
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// {{ .StructName }}_FieldNo holds the field numbers of {{ .Table.Name }} (BC FieldNo):
+// {{ .StructName }}_FieldNo.{{ upperFirst (index .Table.Fields 0).Name }} is {{ (index .Table.Fields 0).No }}
+var {{ .StructName }}_FieldNo = struct {
+{{- range .Table.Fields }}
+	{{ upperFirst .Name }} int
+{{- end }}
+{{- range .FlowFilterFields }}
+	{{ upperFirst .Name }} int
+{{- end }}
+}{
+{{- range .Table.Fields }}
+	{{ upperFirst .Name }}: {{ .No }},
+{{- end }}
+{{- range .FlowFilterFields }}
+	{{ upperFirst .Name }}: {{ .No }},
+{{- end }}
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *{{ .StructName }}) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+{{- range .Table.Fields }}
+	case "{{ .DBName }}":
+		return {{ .No }}
+{{- end }}
+{{- range .FlowFilterFields }}
+	case "{{ .DBName }}":
+		return {{ .No }}
+{{- end }}
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *{{ .StructName }}) FieldName(fieldNo int) string {
+	switch fieldNo {
+{{- range .Table.Fields }}
+	case {{ .No }}:
+		return "{{ .DBName }}"
+{{- end }}
+{{- range .FlowFilterFields }}
+	case {{ .No }}:
+		return "{{ .DBName }}"
+{{- end }}
+	}
+	return ""
+}
 
 // GetTableID returns the table ID (for Object Registry)
 func (t *{{ .StructName }}) GetTableID() int {
@@ -4084,6 +4169,7 @@ func (t *{{ .StructName }}) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 {{- range .Table.Fields }}
 		{
+			No:         {{ .No }},
 			Name:       "{{ .DBName }}",
 {{- if eq .Type "types.Code" }}
 			Type:       tables.FieldTypeCode,

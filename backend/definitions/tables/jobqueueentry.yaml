@@ -3,6 +3,7 @@ table:
   name: "Job_Queue_Entry"
   fields:
     - name: entry_no
+      no: 1
       type: int
       db_name: entry_no
       primary_key: true
@@ -10,6 +11,7 @@ table:
       auto_increment: true
 
     - name: job_queue_no
+      no: 2
       type: types.Code
       db_name: job_queue_no
       length: 20
@@ -18,30 +20,36 @@ table:
         field: no
 
     - name: status
+      no: 3
       type: Option
       db_name: status
       options: ["Success", "In Process", "Error"]
 
     - name: user_id
+      no: 4
       type: types.Code
       db_name: user_id
       length: 20
 
     - name: description
+      no: 5
       type: types.Text
       db_name: description
       length: 100
 
     - name: error_message
+      no: 6
       type: types.Text
       db_name: error_message
       length: 250
 
     - name: start_date_time
+      no: 7
       type: types.DateTime
       db_name: start_date_time
 
     - name: end_date_time
+      no: 8
       type: types.DateTime
       db_name: end_date_time
 

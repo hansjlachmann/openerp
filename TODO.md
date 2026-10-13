@@ -32,8 +32,10 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       (`docs/operations.md`). 0.1.89 and 0.1.90 have no frontend image — never use them.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
-- [ ] **Field numbers in table definitions** (high priority) — see "Field numbers in table
-      definitions" below; `TransferFields` and extension fields depend on it.
+- [ ] **Field numbers in table definitions** (high priority) — numbers, checks and generated access
+      done 2026-10-13; open: guard against changed numbers, rename by number (see below).
+- [ ] **Field and object numbering, `application.yaml`, installed apps** (high priority) — see
+      "Field and object numbering" below.
 - [ ] **NAV/BC system functions in Go** (C/AL, AL) — specification below ("Feature: NAV/BC
       system functions"); needs more details before it is built.
 - [ ] **NAV/BC functions — remaining** (high priority) — after the first and second set; see
@@ -44,16 +46,74 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 ## Field numbers in table definitions (HIGH priority, 2026-10-13)
 
 BC identifies a field by its **number** (field ID), not its name. We need the same:
-- [ ] Every field in `backend/definitions/tables/*.yaml` gets a unique `no:` within its table
-      (core 1–49,999, extensions 50,000–99,999 — the ranges of EXTENSIONS.md); tablegen refuses a
-      table with a missing or duplicate number, and a number may never be reused for another field.
-- [ ] Generated code knows the numbers (e.g. `CustomerFieldNo_Name`, field lookup by number) —
-      needed by `TransferFields` (same number + compatible type), and for extension fields: two
-      extensions can use the same field name, never the same number (extmerge checks it).
+- [x] Every field in `backend/definitions/tables/*.yaml` has a unique `no:` within its table (also
+      FlowFields and FlowFilters); tablegen refuses a missing, duplicate or out-of-range number
+      (2026-10-13). BC numbers for tables that mirror BC (Customer, Cust. Ledger Entry, Payment Terms,
+      Country/Region, Language, Company; 900–999 for fields BC does not have), YAML order elsewhere.
+      **Please check the BC numbers** (from the NAV/BC base application; the online docs list no numbers).
+- [x] Generated code knows the numbers: `gtables.Customer_FieldNo.Name`, `rec.FieldNo("name")`,
+      `rec.FieldName(2)`, `FieldInfo.No`.
+- [x] extmerge: extension fields need a number above the base range (1–999) that neither the table
+      nor another extension uses (also no name clash); extension fields keep every key (they lost all but
+      name/type/length/caption before).
+- [ ] Guard that a number never changes: store (table, number, name, column) at startup (like
+      `_sift_definition`) and refuse to start when a known field got another number.
 - [ ] Decide what the number is used for beyond that: renaming a field in the YAML while keeping its
-      number (a migration renames the column instead of adding a new one?), permissions, captions.
-- [ ] Assign numbers to the existing 19 tables (BC numbers where the table mirrors a BC table, e.g.
-      Customer 1 = No., 2 = Name …; otherwise in YAML order).
+      number (startup renames the column instead of adding a new one, data kept), permissions, captions.
+
+## Field and object numbering, application.yaml (HIGH priority, specified 2026-10-13)
+
+Rules (decided by the user):
+- **Fields** of the base application have numbers **1–999** (done for all 19 tables 2026-10-13:
+  BC numbers where the table mirrors BC, 900–999 for fields BC does not have, YAML order elsewhere).
+- **Objects** — tables, pages, codeunits and reports — each have a unique number. The base
+  application's objects are **1–999**. Unique per object type, as in BC (table 18 and page 18 can
+  both exist) — confirm.
+- **Reports** are not implemented yet; the numbering, `application.yaml` and the checks below must
+  cover them from the start so they can be added later (the object registry already has
+  `RegisterReport`; `run_object: report:<id>` on page actions; the Job Queue needs an "object type to
+  run" next to `object_id_to_run`, as BC's Job Queue Entry has).
+- **`application.yaml`**: the base application has one, defining its allowed number series and its
+  basic data. Every future extension app has its own `application.yaml` with its own series.
+
+Draft `application.yaml` (base application, e.g. `backend/definitions/application.yaml`):
+```yaml
+application:
+  id: 7c3f…                      # unique GUID, never changed (BC app.json "id")
+  name: EasyopenERP Base Application
+  publisher: …                   # author / company
+  contact: …                     # e-mail or URL (public repository: only what may be public)
+  version: 0.1.97                # from the release (release-please), or the app's own version
+  number_series:                 # ranges this app may use
+    objects: [{from: 1, to: 999}]   # tables, pages, codeunits, reports
+    fields:  [{from: 1, to: 999}]   # fields of its own tables
+  dependencies: []               # extension apps: [{id: <base app id>, name: …, min_version: …}]
+```
+An extension app: same file with its own `id`, `number_series` (e.g. objects and fields 50000–50999)
+and the base application as a dependency; the fields it adds to base tables use its field series.
+
+To build:
+- [ ] `application.yaml` for the base application (generate the GUID once) and a loader in
+      `foundation` (shared by tablegen, extmerge and the server).
+- [ ] Checks: tablegen (table IDs and field numbers), the page loader (page IDs), the codeunit
+      registry (codeunit IDs), later reports — every number inside the owning app's series; series of
+      installed apps must not overlap (extmerge / build refuses). Fields an extension adds to a base
+      table use the extension's field series.
+- [ ] **Installed apps — yes, a new global table** (BC: "NAV App Installed App"): one row per app (id,
+      name, publisher, version, number series, installed at, data/schema version). Needed to refuse
+      overlapping series across apps, to know which app owns which tables/fields (uninstall, upgrade
+      migrations per app) and to show the installed apps on an admin page. Filled/updated at startup
+      from the `application.yaml` files built into the image. Table number in the base range.
+- [ ] **Renumber what is outside 1–999 today:**
+      - tables User 5100, User_Preferences 5120, User_Role 5130, User_Member 5140, Permission 5150,
+        Theme 5160, Theme_Asset 5161, User_Personalization 5162, User_Theme 5163 (the IDs are not
+        stored in the database — check `_sift_definition`, permissions use table names);
+      - codeunits 50010 Generate Ledger Entries, 50020 Hello World, 50021 Progress Demo, 50022 NAV
+        Report Runner, 50100 Create Demo Data, 50110 Verify SIFT — **stored in the database**
+        (`Job_Queue.object_id_to_run`, also in production) and in page YAML (`run_object:
+        codeunit:50010`): needs a migration of Job Queue rows and the YAML changed in the same release;
+      - pages are all inside 1–999 already (9 … 674).
+- [ ] Update EXTENSIONS.md (it still says core 1–49,999 / extensions 50,000–99,999) and CLAUDE.md.
 
 ## Feature: NAV/BC system functions (C/AL, AL) in Go — specification (FIRST priority, 2026-10-13)
 

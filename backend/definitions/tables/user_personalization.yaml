@@ -6,6 +6,7 @@ table:
   global: true  # Global table - the same appearance in every company
   fields:
     - name: user_id
+      no: 1
       type: types.Code
       db_name: user_id
       caption: User ID
@@ -18,18 +19,21 @@ table:
 
     # Theme used in light mode / dark mode (code of a built-in or installed theme)
     - name: light_theme
+      no: 2
       type: types.Code
       db_name: light_theme
       caption: Light Theme
       length: 50
 
     - name: dark_theme
+      no: 3
       type: types.Code
       db_name: dark_theme
       caption: Dark Theme
       length: 50
 
     - name: mode
+      no: 4
       type: Option
       db_name: mode
       caption: Mode
@@ -37,27 +41,32 @@ table:
 
     # Wallpaper: asset name of the dark/light theme (blank = none), its opacity and blur
     - name: wallpaper
+      no: 5
       type: types.Text
       db_name: wallpaper
       caption: Wallpaper
       length: 20
 
     - name: wallpaper_opacity
+      no: 6
       type: int
       db_name: wallpaper_opacity
       caption: Wallpaper Opacity %
 
     - name: wallpaper_blur
+      no: 7
       type: int
       db_name: wallpaper_blur
       caption: Wallpaper Blur
 
     - name: panel_opacity
+      no: 8
       type: int
       db_name: panel_opacity
       caption: Panel Opacity %
 
     - name: font
+      no: 9
       type: Option
       db_name: font
       caption: Font
@@ -65,17 +74,20 @@ table:
 
     # Font size in percent of the default (0 = default)
     - name: font_size
+      no: 10
       type: int
       db_name: font_size
       caption: Font Size %
 
     - name: density
+      no: 11
       type: Option
       db_name: density
       caption: Density
       options: ["Comfortable", "Compact"]
 
     - name: updated_at
+      no: 12
       type: types.DateTime
       db_name: updated_at
       caption: Updated At

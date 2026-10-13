@@ -191,6 +191,102 @@ var UserPersonalization_Density = struct {
 	Compact:     1,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// UserPersonalization_FieldNo holds the field numbers of User_Personalization (BC FieldNo):
+// UserPersonalization_FieldNo.User_id is 1
+var UserPersonalization_FieldNo = struct {
+	User_id           int
+	Light_theme       int
+	Dark_theme        int
+	Mode              int
+	Wallpaper         int
+	Wallpaper_opacity int
+	Wallpaper_blur    int
+	Panel_opacity     int
+	Font              int
+	Font_size         int
+	Density           int
+	Updated_at        int
+}{
+	User_id:           1,
+	Light_theme:       2,
+	Dark_theme:        3,
+	Mode:              4,
+	Wallpaper:         5,
+	Wallpaper_opacity: 6,
+	Wallpaper_blur:    7,
+	Panel_opacity:     8,
+	Font:              9,
+	Font_size:         10,
+	Density:           11,
+	Updated_at:        12,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *UserPersonalization) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "user_id":
+		return 1
+	case "light_theme":
+		return 2
+	case "dark_theme":
+		return 3
+	case "mode":
+		return 4
+	case "wallpaper":
+		return 5
+	case "wallpaper_opacity":
+		return 6
+	case "wallpaper_blur":
+		return 7
+	case "panel_opacity":
+		return 8
+	case "font":
+		return 9
+	case "font_size":
+		return 10
+	case "density":
+		return 11
+	case "updated_at":
+		return 12
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *UserPersonalization) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "user_id"
+	case 2:
+		return "light_theme"
+	case 3:
+		return "dark_theme"
+	case 4:
+		return "mode"
+	case 5:
+		return "wallpaper"
+	case 6:
+		return "wallpaper_opacity"
+	case 7:
+		return "wallpaper_blur"
+	case 8:
+		return "panel_opacity"
+	case 9:
+		return "font"
+	case 10:
+		return "font_size"
+	case 11:
+		return "density"
+	case 12:
+		return "updated_at"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *UserPersonalization) GetTableID() int {
 	return UserPersonalizationTableID
@@ -2435,6 +2531,7 @@ func (t *UserPersonalization) GetPrimaryKeyValue() string {
 func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2444,6 +2541,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "light_theme",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2453,6 +2551,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "dark_theme",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2462,6 +2561,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "mode",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2471,6 +2571,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "wallpaper",
 			Type:       tables.FieldTypeText,
 			Length:     20,
@@ -2480,6 +2581,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "wallpaper_opacity",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2489,6 +2591,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "wallpaper_blur",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2498,6 +2601,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "panel_opacity",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2507,6 +2611,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         9,
 			Name:       "font",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2516,6 +2621,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         10,
 			Name:       "font_size",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2525,6 +2631,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         11,
 			Name:       "density",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2534,6 +2641,7 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         12,
 			Name:       "updated_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

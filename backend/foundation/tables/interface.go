@@ -107,6 +107,7 @@ type FlowFilterFieldInfo struct {
 
 // FieldInfo contains metadata about a table field
 type FieldInfo struct {
+	No         int       // Field number (BC field ID), unique in the table
 	Name       string    // Field name (snake_case)
 	Type       FieldType // Field type
 	Length     int       // Max length for Code/Text fields

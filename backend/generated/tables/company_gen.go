@@ -75,6 +75,42 @@ type Company struct {
 const CompanyTableID = 10
 const CompanyTableName = "Company"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Company_FieldNo holds the field numbers of Company (BC FieldNo):
+// Company_FieldNo.Name is 1
+var Company_FieldNo = struct {
+	Name         int
+	Display_name int
+}{
+	Name:         1,
+	Display_name: 3,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Company) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "name":
+		return 1
+	case "display_name":
+		return 3
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Company) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "name"
+	case 3:
+		return "display_name"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Company) GetTableID() int {
 	return CompanyTableID
@@ -1583,6 +1619,7 @@ func (t *Company) GetPrimaryKeyValue() string {
 func (t *Company) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "name",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -1592,6 +1629,7 @@ func (t *Company) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "display_name",
 			Type:       tables.FieldTypeText,
 			Length:     100,

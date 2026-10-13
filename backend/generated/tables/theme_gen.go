@@ -131,6 +131,102 @@ var Theme_Mode = struct {
 	Light: 1,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Theme_FieldNo holds the field numbers of Theme (BC FieldNo):
+// Theme_FieldNo.Code is 1
+var Theme_FieldNo = struct {
+	Code         int
+	Name         int
+	Mode         int
+	Repo_url     int
+	Repo_ref     int
+	Commit_sha   int
+	Author       int
+	Tokens       int
+	Wallpapers   int
+	Installed_by int
+	Installed_at int
+	Updated_at   int
+}{
+	Code:         1,
+	Name:         2,
+	Mode:         3,
+	Repo_url:     4,
+	Repo_ref:     5,
+	Commit_sha:   6,
+	Author:       7,
+	Tokens:       8,
+	Wallpapers:   9,
+	Installed_by: 10,
+	Installed_at: 11,
+	Updated_at:   12,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Theme) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "code":
+		return 1
+	case "name":
+		return 2
+	case "mode":
+		return 3
+	case "repo_url":
+		return 4
+	case "repo_ref":
+		return 5
+	case "commit_sha":
+		return 6
+	case "author":
+		return 7
+	case "tokens":
+		return 8
+	case "wallpapers":
+		return 9
+	case "installed_by":
+		return 10
+	case "installed_at":
+		return 11
+	case "updated_at":
+		return 12
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Theme) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "code"
+	case 2:
+		return "name"
+	case 3:
+		return "mode"
+	case 4:
+		return "repo_url"
+	case 5:
+		return "repo_ref"
+	case 6:
+		return "commit_sha"
+	case 7:
+		return "author"
+	case 8:
+		return "tokens"
+	case 9:
+		return "wallpapers"
+	case 10:
+		return "installed_by"
+	case 11:
+		return "installed_at"
+	case 12:
+		return "updated_at"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Theme) GetTableID() int {
 	return ThemeTableID
@@ -2320,6 +2416,7 @@ func (t *Theme) GetPrimaryKeyValue() string {
 func (t *Theme) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2329,6 +2426,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "name",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2338,6 +2436,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "mode",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2347,6 +2446,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "repo_url",
 			Type:       tables.FieldTypeText,
 			Length:     250,
@@ -2356,6 +2456,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "repo_ref",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2365,6 +2466,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "commit_sha",
 			Type:       tables.FieldTypeText,
 			Length:     40,
@@ -2374,6 +2476,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "author",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2383,6 +2486,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "tokens",
 			Type:       tables.FieldTypeText,
 			Length:     0,
@@ -2392,6 +2496,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         9,
 			Name:       "wallpapers",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2401,6 +2506,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         10,
 			Name:       "installed_by",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2410,6 +2516,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         11,
 			Name:       "installed_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -2419,6 +2526,7 @@ func (t *Theme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         12,
 			Name:       "updated_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

@@ -6,6 +6,7 @@ table:
   global: true  # Global table - no company prefix
   fields:
     - name: user_id
+      no: 1
       type: types.Code
       db_name: user_id
       caption: User ID
@@ -15,6 +16,7 @@ table:
       required: true
 
     - name: user_name
+      no: 2
       type: types.Text
       db_name: user_name
       caption: User Name
@@ -22,6 +24,7 @@ table:
       length: 100
 
     - name: email
+      no: 3
       type: types.Text
       db_name: email
       caption: Email
@@ -29,6 +32,7 @@ table:
       length: 100
 
     - name: password_hash
+      no: 4
       type: types.Text
       db_name: password_hash
       caption: Password Hash
@@ -36,6 +40,7 @@ table:
       sensitive: true  # never sent by the API; set through the virtual "password" field
 
     - name: language
+      no: 5
       type: types.Code
       db_name: language
       caption: Language
@@ -51,6 +56,7 @@ table:
             width: 200
 
     - name: menu
+      no: 6
       type: types.Code
       db_name: menu
       caption: Menu
@@ -66,6 +72,7 @@ table:
             width: 200
 
     - name: active
+      no: 7
       type: bool
       db_name: active
       caption: Active
@@ -73,12 +80,14 @@ table:
       default: true
 
     - name: created_at
+      no: 8
       type: types.DateTime
       db_name: created_at
       caption: Created At
       description: When this user was created
 
     - name: last_login
+      no: 9
       type: types.DateTime
       db_name: last_login
       caption: Last Login

@@ -83,6 +83,66 @@ type Permission struct {
 const PermissionTableID = 5150
 const PermissionTableName = "Permission"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Permission_FieldNo holds the field numbers of Permission (BC FieldNo):
+// Permission_FieldNo.Role_id is 1
+var Permission_FieldNo = struct {
+	Role_id    int
+	Table_name int
+	Can_read   int
+	Can_insert int
+	Can_modify int
+	Can_delete int
+}{
+	Role_id:    1,
+	Table_name: 2,
+	Can_read:   3,
+	Can_insert: 4,
+	Can_modify: 5,
+	Can_delete: 6,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Permission) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "role_id":
+		return 1
+	case "table_name":
+		return 2
+	case "can_read":
+		return 3
+	case "can_insert":
+		return 4
+	case "can_modify":
+		return 5
+	case "can_delete":
+		return 6
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Permission) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "role_id"
+	case 2:
+		return "table_name"
+	case 3:
+		return "can_read"
+	case 4:
+		return "can_insert"
+	case 5:
+		return "can_modify"
+	case 6:
+		return "can_delete"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Permission) GetTableID() int {
 	return PermissionTableID
@@ -1793,6 +1853,7 @@ func (t *Permission) GetPrimaryKeyValue() string {
 func (t *Permission) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "role_id",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1802,6 +1863,7 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "table_name",
 			Type:       tables.FieldTypeCode,
 			Length:     100,
@@ -1811,6 +1873,7 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "can_read",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -1820,6 +1883,7 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "can_insert",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -1829,6 +1893,7 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "can_modify",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -1838,6 +1903,7 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "can_delete",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,

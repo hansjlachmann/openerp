@@ -77,6 +77,48 @@ type UserMember struct {
 const UserMemberTableID = 5140
 const UserMemberTableName = "User_Member"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// UserMember_FieldNo holds the field numbers of User_Member (BC FieldNo):
+// UserMember_FieldNo.User_id is 1
+var UserMember_FieldNo = struct {
+	User_id int
+	Role_id int
+	Company int
+}{
+	User_id: 1,
+	Role_id: 2,
+	Company: 3,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *UserMember) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "user_id":
+		return 1
+	case "role_id":
+		return 2
+	case "company":
+		return 3
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *UserMember) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "user_id"
+	case 2:
+		return "role_id"
+	case 3:
+		return "company"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *UserMember) GetTableID() int {
 	return UserMemberTableID
@@ -1619,6 +1661,7 @@ func (t *UserMember) GetPrimaryKeyValue() string {
 func (t *UserMember) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1628,6 +1671,7 @@ func (t *UserMember) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "role_id",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1637,6 +1681,7 @@ func (t *UserMember) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "company",
 			Type:       tables.FieldTypeText,
 			Length:     100,

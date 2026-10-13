@@ -86,16 +86,8 @@ type PageExtension struct {
 
 // TableExtension represents a table extension definition
 type TableExtension struct {
-	ExtendsTable int          `yaml:"extends_table"`
-	Fields       []TableField `yaml:"fields,omitempty"`
-}
-
-// TableField represents a field in a table extension
-type TableField struct {
-	Name    string `yaml:"name"`
-	Type    string `yaml:"type"`
-	Length  int    `yaml:"length,omitempty"`
-	Caption string `yaml:"caption,omitempty"`
+	ExtendsTable int                      `yaml:"extends_table"`
+	Fields       []map[string]interface{} `yaml:"fields,omitempty"` // as in a table definition, every key kept
 }
 
 func main() {
@@ -394,26 +386,19 @@ func mergeTableExtension(extPath, outputPath string, verbose bool) error {
 		return fmt.Errorf("failed to parse core table: %w", err)
 	}
 
-	// Merge table extension
-	if table, ok := tableDef["table"].(map[string]interface{}); ok {
-		if fields, ok := table["fields"].([]interface{}); ok {
-			// Add new fields
-			for _, newField := range ext.Fields {
-				fieldMap := map[string]interface{}{
-					"name": newField.Name,
-					"type": newField.Type,
-				}
-				if newField.Length > 0 {
-					fieldMap["length"] = newField.Length
-				}
-				if newField.Caption != "" {
-					fieldMap["caption"] = newField.Caption
-				}
-				fields = append(fields, fieldMap)
-			}
-			table["fields"] = fields
-		}
+	// Merge table extension: the new fields are added as written (every key kept)
+	table, ok := tableDef["table"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("core table %d has no table section", ext.ExtendsTable)
 	}
+	fields, _ := table["fields"].([]interface{})
+	if err := checkExtensionFields(fields, ext.Fields); err != nil {
+		return fmt.Errorf("table %d: %w", ext.ExtendsTable, err)
+	}
+	for _, f := range ext.Fields {
+		fields = append(fields, f)
+	}
+	table["fields"] = fields
 
 	// Write merged table
 	mergedData, err := yaml.Marshal(&tableDef)
@@ -523,4 +508,62 @@ func copyYAMLFiles(src, dst string, verbose bool) error {
 		}
 		return copyFile(path, destFile)
 	})
+}
+
+// Field numbers of extension fields: the base application uses 1–999 (TODO: each app's
+// number series will come from its application.yaml)
+const (
+	minExtensionFieldNo = 1000
+	maxExtensionFieldNo = 99999
+)
+
+// checkExtensionFields checks the fields an extension adds to a table: each has a field number
+// in the extension range, and neither its number nor its name (or db_name) is used by the
+// table or another extension field already. Field numbers identify fields (BC field IDs): two
+// extensions must never use the same number.
+func checkExtensionFields(existing []interface{}, added []map[string]interface{}) error {
+	numbers, names := map[int]string{}, map[string]bool{}
+	for _, f := range existing {
+		m, ok := f.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name := fieldString(m, "name")
+		if no, ok := m["no"].(int); ok {
+			numbers[no] = name
+		}
+		names[strings.ToLower(name)] = true
+		if db := fieldString(m, "db_name"); db != "" {
+			names[strings.ToLower(db)] = true
+		}
+	}
+	for _, f := range added {
+		name := fieldString(f, "name")
+		if name == "" {
+			return fmt.Errorf("an extension field has no name")
+		}
+		no, ok := f["no"].(int)
+		if !ok || no < minExtensionFieldNo || no > maxExtensionFieldNo {
+			return fmt.Errorf("extension field %s needs a field number (no:) in %d–%d", name, minExtensionFieldNo, maxExtensionFieldNo)
+		}
+		if other, used := numbers[no]; used {
+			return fmt.Errorf("extension field %s: number %d is already used by field %s", name, no, other)
+		}
+		for _, n := range []string{name, fieldString(f, "db_name")} {
+			if n != "" && names[strings.ToLower(n)] {
+				return fmt.Errorf("extension field %s: the table already has a field named %s", name, n)
+			}
+		}
+		numbers[no] = name
+		names[strings.ToLower(name)] = true
+		if db := fieldString(f, "db_name"); db != "" {
+			names[strings.ToLower(db)] = true
+		}
+	}
+	return nil
+}
+
+func fieldString(m map[string]interface{}, key string) string {
+	s, _ := m[key].(string)
+	return s
 }

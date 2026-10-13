@@ -5,6 +5,7 @@ table:
   description: Countries and regions (BC table 9 Country/Region)
   fields:
     - name: code
+      no: 1
       type: types.Code
       db_name: code
       primary_key: true
@@ -12,6 +13,7 @@ table:
       required: true
 
     - name: name
+      no: 2
       type: types.Text
       db_name: name
       length: 50

@@ -90,6 +90,84 @@ type User struct {
 const UserTableID = 5100
 const UserTableName = "User"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// User_FieldNo holds the field numbers of User (BC FieldNo):
+// User_FieldNo.User_id is 1
+var User_FieldNo = struct {
+	User_id       int
+	User_name     int
+	Email         int
+	Password_hash int
+	Language      int
+	Menu          int
+	Active        int
+	Created_at    int
+	Last_login    int
+}{
+	User_id:       1,
+	User_name:     2,
+	Email:         3,
+	Password_hash: 4,
+	Language:      5,
+	Menu:          6,
+	Active:        7,
+	Created_at:    8,
+	Last_login:    9,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *User) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "user_id":
+		return 1
+	case "user_name":
+		return 2
+	case "email":
+		return 3
+	case "password_hash":
+		return 4
+	case "language":
+		return 5
+	case "menu":
+		return 6
+	case "active":
+		return 7
+	case "created_at":
+		return 8
+	case "last_login":
+		return 9
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *User) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "user_id"
+	case 2:
+		return "user_name"
+	case 3:
+		return "email"
+	case 4:
+		return "password_hash"
+	case 5:
+		return "language"
+	case 6:
+		return "menu"
+	case 7:
+		return "active"
+	case 8:
+		return "created_at"
+	case 9:
+		return "last_login"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *User) GetTableID() int {
 	return UserTableID
@@ -2042,6 +2120,7 @@ func (t *User) GetPrimaryKeyValue() string {
 func (t *User) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -2051,6 +2130,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "user_name",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2060,6 +2140,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "email",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2069,6 +2150,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "password_hash",
 			Type:       tables.FieldTypeText,
 			Length:     0,
@@ -2079,6 +2161,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			Sensitive:  true,
 		},
 		{
+			No:         5,
 			Name:       "language",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -2088,6 +2171,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "menu",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -2097,6 +2181,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "active",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -2106,6 +2191,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "created_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -2115,6 +2201,7 @@ func (t *User) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         9,
 			Name:       "last_login",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

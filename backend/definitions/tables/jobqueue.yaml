@@ -3,6 +3,7 @@ table:
   name: "Job_Queue"
   fields:
     - name: no
+      no: 1
       type: types.Code
       db_name: no
       primary_key: true
@@ -10,59 +11,71 @@ table:
       required: true
 
     - name: description
+      no: 2
       type: types.Text
       db_name: description
       length: 100
 
     - name: description_2
+      no: 3
       type: types.Text
       db_name: description_2
       length: 100
 
     - name: status
+      no: 4
       type: Option
       db_name: status
       options: ["On Hold", "Ready", "Error"]
 
     - name: object_id_to_run
+      no: 5
       type: int
       db_name: object_id_to_run
 
     - name: parameter
+      no: 6
       type: types.Text
       db_name: parameter
       length: 2000
 
     - name: next_start
+      no: 7
       type: types.DateTime
       db_name: next_start
 
     - name: minutes_between_run
+      no: 8
       type: int
       db_name: minutes_between_run
 
     - name: recurring_job
+      no: 9
       type: bool
       db_name: recurring_job
 
     - name: recurrence
+      no: 10
       type: Option
       db_name: recurrence
       options: ["Once", "Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
 
     # One or more addresses separated by ";" (BC style), checked by OnValidate
     - name: notification_email
+      no: 11
       type: types.Text
       db_name: notification_email
       length: 250
 
     - name: notify_on
+      no: 12
       type: Option
       db_name: notify_on
       options: ["Never", "Always", "On Error"]
 
     # Language of the notification e-mails; blank = the default language
     - name: notification_language
+      no: 13
       type: types.Code
       db_name: notification_language
       length: 10
@@ -77,6 +90,7 @@ table:
 
     # FlowField - count of related Job Queue Entries
     - name: number_of_entries
+      no: 14
       type: int
       flow_field: true
       calc_formula: Count

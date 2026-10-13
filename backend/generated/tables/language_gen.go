@@ -77,6 +77,48 @@ type Language struct {
 const LanguageTableID = 8
 const LanguageTableName = "Language"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Language_FieldNo holds the field numbers of Language (BC FieldNo):
+// Language_FieldNo.Code is 1
+var Language_FieldNo = struct {
+	Code            int
+	Name            int
+	Translation_key int
+}{
+	Code:            1,
+	Name:            2,
+	Translation_key: 900,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Language) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "code":
+		return 1
+	case "name":
+		return 2
+	case "translation_key":
+		return 900
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Language) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "code"
+	case 2:
+		return "name"
+	case 900:
+		return "translation_key"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Language) GetTableID() int {
 	return LanguageTableID
@@ -1648,6 +1690,7 @@ func (t *Language) GetPrimaryKeyValue() string {
 func (t *Language) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -1657,6 +1700,7 @@ func (t *Language) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "name",
 			Type:       tables.FieldTypeText,
 			Length:     50,
@@ -1666,6 +1710,7 @@ func (t *Language) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         900,
 			Name:       "translation_key",
 			Type:       tables.FieldTypeText,
 			Length:     5,

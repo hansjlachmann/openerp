@@ -78,6 +78,48 @@ type UserTheme struct {
 const UserThemeTableID = 5163
 const UserThemeTableName = "User_Theme"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// UserTheme_FieldNo holds the field numbers of User_Theme (BC FieldNo):
+// UserTheme_FieldNo.User_id is 1
+var UserTheme_FieldNo = struct {
+	User_id    int
+	Theme_code int
+	Added_at   int
+}{
+	User_id:    1,
+	Theme_code: 2,
+	Added_at:   3,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *UserTheme) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "user_id":
+		return 1
+	case "theme_code":
+		return 2
+	case "added_at":
+		return 3
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *UserTheme) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "user_id"
+	case 2:
+		return "theme_code"
+	case 3:
+		return "added_at"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *UserTheme) GetTableID() int {
 	return UserThemeTableID
@@ -1600,6 +1642,7 @@ func (t *UserTheme) GetPrimaryKeyValue() string {
 func (t *UserTheme) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "user_id",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1609,6 +1652,7 @@ func (t *UserTheme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "theme_code",
 			Type:       tables.FieldTypeCode,
 			Length:     50,
@@ -1618,6 +1662,7 @@ func (t *UserTheme) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "added_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,

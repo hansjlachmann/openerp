@@ -3,6 +3,7 @@ table:
   name: "Customer"
   fields:
     - name: no
+      no: 1
       type: types.Code
       db_name: no
       primary_key: true
@@ -10,26 +11,31 @@ table:
       required: true
 
     - name: name
+      no: 2
       type: types.Text
       db_name: name
       length: 50
 
     - name: address
+      no: 5
       type: types.Text
       db_name: address
       length: 50
 
     - name: post_code
+      no: 91
       type: types.Code
       db_name: post_code
       length: 20
 
     - name: city
+      no: 7
       type: types.Text
       db_name: city
       length: 50
     
     - name: country_region_code
+      no: 35
       type: types.Code
       db_name: country_region_code
       length: 10
@@ -43,11 +49,13 @@ table:
             width: 200
 
     - name: phonenumber
+      no: 9
       type: types.Text
       db_name: phonenumber
       length: 30
 
     - name: payment_terms_code
+      no: 27
       type: types.Code
       db_name: payment_terms_code
       length: 10
@@ -64,37 +72,44 @@ table:
             width: 60
 
     - name: status
+      no: 900
       type: Option
       db_name: status
       options: [" ", "Open", "Released", "Posted", "Blocked"]
 
     # Test fields for new data types
     - name: credit_limit
+      no: 20
       type: types.Decimal
       db_name: credit_limit
       precision: 18
       scale: 2
 
     - name: last_order_date
+      no: 901
       type: types.Date
       db_name: last_order_date
 
     - name: created_at
+      no: 902
       type: types.DateTime
       db_name: created_at
 
     - name: profile_photo
+      no: 89
       type: "[]byte"
       db_name: profile_photo
 
     # FlowFilter (NAV FieldClass FlowFilter): not stored — the user sets it ("Filter totals
     # by" in the filter pane) and the FlowFields below apply it to the entries' Posting Date
     - name: date_filter
+      no: 55
       type: types.Date
       flow_filter: true
 
     # FlowFields - calculated from Customer Ledger Entry
     - name: balance_lcy
+      no: 59
       type: types.Decimal
       flow_field: true
       calc_formula: Sum
@@ -112,6 +127,7 @@ table:
           value: date_filter
 
     - name: sales_lcy
+      no: 62
       type: types.Decimal
       flow_field: true
       calc_formula: Sum
@@ -126,6 +142,7 @@ table:
           value: date_filter
 
     - name: no_of_ledger_entries
+      no: 903
       type: int
       flow_field: true
       calc_formula: Count

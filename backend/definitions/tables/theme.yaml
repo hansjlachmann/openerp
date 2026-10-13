@@ -6,6 +6,7 @@ table:
   global: true  # Global table - every user of every company can choose an installed theme
   fields:
     - name: code
+      no: 1
       type: types.Code
       db_name: code
       caption: Code
@@ -14,12 +15,14 @@ table:
       required: true
 
     - name: name
+      no: 2
       type: types.Text
       db_name: name
       caption: Name
       length: 100
 
     - name: mode
+      no: 3
       type: Option
       db_name: mode
       caption: Mode
@@ -27,24 +30,28 @@ table:
 
     # The repository it was installed from and the commit it is pinned to
     - name: repo_url
+      no: 4
       type: types.Text
       db_name: repo_url
       caption: Repository
       length: 250
 
     - name: repo_ref
+      no: 5
       type: types.Text
       db_name: repo_ref
       caption: Branch/Tag
       length: 100
 
     - name: commit_sha
+      no: 6
       type: types.Text
       db_name: commit_sha
       caption: Commit
       length: 40
 
     - name: author
+      no: 7
       type: types.Text
       db_name: author
       caption: Author
@@ -52,27 +59,32 @@ table:
 
     # Normalized color tokens (JSON, backend/foundation/themes) — colors only
     - name: tokens
+      no: 8
       type: types.Text
       db_name: tokens
       caption: Tokens
 
     - name: wallpapers
+      no: 9
       type: int
       db_name: wallpapers
       caption: Wallpapers
 
     - name: installed_by
+      no: 10
       type: types.Code
       db_name: installed_by
       caption: Installed By
       length: 50
 
     - name: installed_at
+      no: 11
       type: types.DateTime
       db_name: installed_at
       caption: Installed At
 
     - name: updated_at
+      no: 12
       type: types.DateTime
       db_name: updated_at
       caption: Updated At

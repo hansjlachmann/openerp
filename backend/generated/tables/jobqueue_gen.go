@@ -200,6 +200,114 @@ var JobQueue_Notify_on = struct {
 	OnError: 2,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// JobQueue_FieldNo holds the field numbers of Job_Queue (BC FieldNo):
+// JobQueue_FieldNo.No is 1
+var JobQueue_FieldNo = struct {
+	No                    int
+	Description           int
+	Description_2         int
+	Status                int
+	Object_id_to_run      int
+	Parameter             int
+	Next_start            int
+	Minutes_between_run   int
+	Recurring_job         int
+	Recurrence            int
+	Notification_email    int
+	Notify_on             int
+	Notification_language int
+	Number_of_entries     int
+}{
+	No:                    1,
+	Description:           2,
+	Description_2:         3,
+	Status:                4,
+	Object_id_to_run:      5,
+	Parameter:             6,
+	Next_start:            7,
+	Minutes_between_run:   8,
+	Recurring_job:         9,
+	Recurrence:            10,
+	Notification_email:    11,
+	Notify_on:             12,
+	Notification_language: 13,
+	Number_of_entries:     14,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *JobQueue) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "no":
+		return 1
+	case "description":
+		return 2
+	case "description_2":
+		return 3
+	case "status":
+		return 4
+	case "object_id_to_run":
+		return 5
+	case "parameter":
+		return 6
+	case "next_start":
+		return 7
+	case "minutes_between_run":
+		return 8
+	case "recurring_job":
+		return 9
+	case "recurrence":
+		return 10
+	case "notification_email":
+		return 11
+	case "notify_on":
+		return 12
+	case "notification_language":
+		return 13
+	case "number_of_entries":
+		return 14
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *JobQueue) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "no"
+	case 2:
+		return "description"
+	case 3:
+		return "description_2"
+	case 4:
+		return "status"
+	case 5:
+		return "object_id_to_run"
+	case 6:
+		return "parameter"
+	case 7:
+		return "next_start"
+	case 8:
+		return "minutes_between_run"
+	case 9:
+		return "recurring_job"
+	case 10:
+		return "recurrence"
+	case 11:
+		return "notification_email"
+	case 12:
+		return "notify_on"
+	case 13:
+		return "notification_language"
+	case 14:
+		return "number_of_entries"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *JobQueue) GetTableID() int {
 	return JobQueueTableID
@@ -2735,6 +2843,7 @@ func (t *JobQueue) GetPrimaryKeyValue() string {
 func (t *JobQueue) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -2744,6 +2853,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2753,6 +2863,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "description_2",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -2762,6 +2873,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "status",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2771,6 +2883,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "object_id_to_run",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2780,6 +2893,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "parameter",
 			Type:       tables.FieldTypeText,
 			Length:     2000,
@@ -2789,6 +2903,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "next_start",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -2798,6 +2913,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         8,
 			Name:       "minutes_between_run",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -2807,6 +2923,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         9,
 			Name:       "recurring_job",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -2816,6 +2933,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         10,
 			Name:       "recurrence",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2825,6 +2943,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         11,
 			Name:       "notification_email",
 			Type:       tables.FieldTypeText,
 			Length:     250,
@@ -2834,6 +2953,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         12,
 			Name:       "notify_on",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -2843,6 +2963,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         13,
 			Name:       "notification_language",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -2852,6 +2973,7 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         14,
 			Name:       "number_of_entries",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,

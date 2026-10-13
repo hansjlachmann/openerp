@@ -89,6 +89,72 @@ type SMTPSetup struct {
 const SMTPSetupTableID = 409
 const SMTPSetupTableName = "SMTP_Setup"
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// SMTPSetup_FieldNo holds the field numbers of SMTP_Setup (BC FieldNo):
+// SMTPSetup_FieldNo.Primary_key is 1
+var SMTPSetup_FieldNo = struct {
+	Primary_key      int
+	Enabled          int
+	Smtp_server      int
+	Smtp_server_port int
+	User_id          int
+	Password         int
+	From_address     int
+}{
+	Primary_key:      1,
+	Enabled:          2,
+	Smtp_server:      3,
+	Smtp_server_port: 4,
+	User_id:          5,
+	Password:         6,
+	From_address:     7,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *SMTPSetup) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "primary_key":
+		return 1
+	case "enabled":
+		return 2
+	case "smtp_server":
+		return 3
+	case "smtp_server_port":
+		return 4
+	case "user_id":
+		return 5
+	case "password":
+		return 6
+	case "from_address":
+		return 7
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *SMTPSetup) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "primary_key"
+	case 2:
+		return "enabled"
+	case 3:
+		return "smtp_server"
+	case 4:
+		return "smtp_server_port"
+	case 5:
+		return "user_id"
+	case 6:
+		return "password"
+	case 7:
+		return "from_address"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *SMTPSetup) GetTableID() int {
 	return SMTPSetupTableID
@@ -1940,6 +2006,7 @@ func (t *SMTPSetup) GetPrimaryKeyValue() string {
 func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "primary_key",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -1949,6 +2016,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "enabled",
 			Type:       tables.FieldTypeBoolean,
 			Length:     0,
@@ -1958,6 +2026,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
 			Name:       "smtp_server",
 			Type:       tables.FieldTypeText,
 			Length:     250,
@@ -1967,6 +2036,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         4,
 			Name:       "smtp_server_port",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
@@ -1976,6 +2046,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "user_id",
 			Type:       tables.FieldTypeText,
 			Length:     100,
@@ -1985,6 +2056,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         6,
 			Name:       "password",
 			Type:       tables.FieldTypeText,
 			Length:     250,
@@ -1995,6 +2067,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 			Masked:     true,
 		},
 		{
+			No:         7,
 			Name:       "from_address",
 			Type:       tables.FieldTypeText,
 			Length:     100,

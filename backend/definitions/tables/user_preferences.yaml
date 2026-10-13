@@ -6,6 +6,7 @@ table:
   description: Stores user-specific preferences for pages and filters
   fields:
     - name: user_id
+      no: 1
       type: types.Code
       db_name: user_id
       caption: User ID
@@ -14,6 +15,7 @@ table:
       length: 50
 
     - name: page_id
+      no: 2
       type: int
       db_name: page_id
       caption: Page ID
@@ -21,6 +23,7 @@ table:
       primary_key: true
 
     - name: preference_type
+      no: 3
       type: types.Code
       db_name: preference_type
       caption: Preference Type
@@ -29,6 +32,7 @@ table:
       length: 20
 
     - name: preference_name
+      no: 4
       type: types.Code
       db_name: preference_name
       caption: Preference Name
@@ -37,18 +41,21 @@ table:
       length: 50
 
     - name: preference_data
+      no: 5
       type: types.Text
       db_name: preference_data
       caption: Preference Data
       description: JSON data containing the preference settings
 
     - name: created_at
+      no: 6
       type: types.DateTime
       db_name: created_at
       caption: Created At
       description: When this preference was created
 
     - name: updated_at
+      no: 7
       type: types.DateTime
       db_name: updated_at
       caption: Updated At

@@ -148,6 +148,132 @@ var Customer_Status = struct {
 	Blocked:  4,
 }
 
+// ========================================
+// Field numbers (BC field IDs)
+// ========================================
+
+// Customer_FieldNo holds the field numbers of Customer (BC FieldNo):
+// Customer_FieldNo.No is 1
+var Customer_FieldNo = struct {
+	No                   int
+	Name                 int
+	Address              int
+	Post_code            int
+	City                 int
+	Country_region_code  int
+	Phonenumber          int
+	Payment_terms_code   int
+	Status               int
+	Credit_limit         int
+	Last_order_date      int
+	Created_at           int
+	Profile_photo        int
+	Balance_lcy          int
+	Sales_lcy            int
+	No_of_ledger_entries int
+	Date_filter          int
+}{
+	No:                   1,
+	Name:                 2,
+	Address:              5,
+	Post_code:            91,
+	City:                 7,
+	Country_region_code:  35,
+	Phonenumber:          9,
+	Payment_terms_code:   27,
+	Status:               900,
+	Credit_limit:         20,
+	Last_order_date:      901,
+	Created_at:           902,
+	Profile_photo:        89,
+	Balance_lcy:          59,
+	Sales_lcy:            62,
+	No_of_ledger_entries: 903,
+	Date_filter:          55,
+}
+
+// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+func (t *Customer) FieldNo(fieldName string) int {
+	switch strings.ToLower(fieldName) {
+	case "no":
+		return 1
+	case "name":
+		return 2
+	case "address":
+		return 5
+	case "post_code":
+		return 91
+	case "city":
+		return 7
+	case "country_region_code":
+		return 35
+	case "phonenumber":
+		return 9
+	case "payment_terms_code":
+		return 27
+	case "status":
+		return 900
+	case "credit_limit":
+		return 20
+	case "last_order_date":
+		return 901
+	case "created_at":
+		return 902
+	case "profile_photo":
+		return 89
+	case "balance_lcy":
+		return 59
+	case "sales_lcy":
+		return 62
+	case "no_of_ledger_entries":
+		return 903
+	case "date_filter":
+		return 55
+	}
+	return 0
+}
+
+// FieldName returns the name of the field with a number, "" for an unknown number
+func (t *Customer) FieldName(fieldNo int) string {
+	switch fieldNo {
+	case 1:
+		return "no"
+	case 2:
+		return "name"
+	case 5:
+		return "address"
+	case 91:
+		return "post_code"
+	case 7:
+		return "city"
+	case 35:
+		return "country_region_code"
+	case 9:
+		return "phonenumber"
+	case 27:
+		return "payment_terms_code"
+	case 900:
+		return "status"
+	case 20:
+		return "credit_limit"
+	case 901:
+		return "last_order_date"
+	case 902:
+		return "created_at"
+	case 89:
+		return "profile_photo"
+	case 59:
+		return "balance_lcy"
+	case 62:
+		return "sales_lcy"
+	case 903:
+		return "no_of_ledger_entries"
+	case 55:
+		return "date_filter"
+	}
+	return ""
+}
+
 // GetTableID returns the table ID (for Object Registry)
 func (t *Customer) GetTableID() int {
 	return CustomerTableID
@@ -2984,6 +3110,7 @@ func (t *Customer) GetPrimaryKeyValue() string {
 func (t *Customer) GetFields() []tables.FieldInfo {
 	return []tables.FieldInfo{
 		{
+			No:         1,
 			Name:       "no",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -2993,6 +3120,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         2,
 			Name:       "name",
 			Type:       tables.FieldTypeText,
 			Length:     50,
@@ -3002,6 +3130,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         5,
 			Name:       "address",
 			Type:       tables.FieldTypeText,
 			Length:     50,
@@ -3011,6 +3140,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         91,
 			Name:       "post_code",
 			Type:       tables.FieldTypeCode,
 			Length:     20,
@@ -3020,6 +3150,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         7,
 			Name:       "city",
 			Type:       tables.FieldTypeText,
 			Length:     50,
@@ -3029,6 +3160,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         35,
 			Name:       "country_region_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -3038,6 +3170,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         9,
 			Name:       "phonenumber",
 			Type:       tables.FieldTypeText,
 			Length:     30,
@@ -3047,6 +3180,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         27,
 			Name:       "payment_terms_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
@@ -3056,6 +3190,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         900,
 			Name:       "status",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
@@ -3065,6 +3200,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         20,
 			Name:       "credit_limit",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -3074,6 +3210,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         901,
 			Name:       "last_order_date",
 			Type:       tables.FieldTypeDate,
 			Length:     0,
@@ -3083,6 +3220,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         902,
 			Name:       "created_at",
 			Type:       tables.FieldTypeDateTime,
 			Length:     0,
@@ -3092,6 +3230,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         89,
 			Name:       "profile_photo",
 			Type:       tables.FieldTypeBlob,
 			Length:     0,
@@ -3101,6 +3240,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         59,
 			Name:       "balance_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -3110,6 +3250,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  true,
 		},
 		{
+			No:         62,
 			Name:       "sales_lcy",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
@@ -3119,6 +3260,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  true,
 		},
 		{
+			No:         903,
 			Name:       "no_of_ledger_entries",
 			Type:       tables.FieldTypeInteger,
 			Length:     0,
