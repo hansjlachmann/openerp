@@ -1,10 +1,10 @@
 page:
-  id: 30
+  id: 59
   type: List
   name: Users
   source_table: User
   caption: Users
-  card_page_id: 31
+  card_page_id: 901
   modal_card: true
   editable: true
 

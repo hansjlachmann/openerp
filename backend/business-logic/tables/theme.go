@@ -10,7 +10,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// themeLogic is the business logic of table 5160 Theme: a color theme installed from
+// themeLogic is the business logic of table 901 Theme: a color theme installed from
 // GitHub (business-logic/themerepo). The files are stored once; each user sees the themes
 // they added (User_Theme). Built-in themes (backend/foundation/themes) are not stored and
 // every user has them.

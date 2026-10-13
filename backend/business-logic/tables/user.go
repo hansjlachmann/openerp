@@ -11,7 +11,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// userLogic is the business logic of table 5100 User
+// userLogic is the business logic of table 2000000002 User
 type userLogic struct{}
 
 func init() { gtables.RegisterUserLogic(userLogic{}) }

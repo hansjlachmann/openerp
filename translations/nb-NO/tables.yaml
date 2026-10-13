@@ -13,7 +13,7 @@ tables:
       discount_date_calculation: "Beregning av kontantrabattdato"
       discount_percent: "Kontantrabatt-%"
 
-  # Country/Region (Table 11)
+  # Country/Region (Table 9)
   country_region:
     caption: "Land/region"
     fields:
@@ -135,7 +135,7 @@ tables:
         bank_account: "Bankkonto"
         fixed_asset: "Aktivum"
 
-  # User (Table 5100)
+  # User (Table 2000000002)
   user:
     caption: "Bruker"
     fields:
@@ -157,7 +157,7 @@ tables:
       name: "Navn"
       translation_key: "Oversettelsesnøkkel"
 
-  # Menu (Table 9)
+  # Menu (Table 900)
   menu:
     caption: "Meny"
     fields:
@@ -165,21 +165,21 @@ tables:
       description: "Beskrivelse"
       filename: "Filnavn"
 
-  # Company (Table 10)
+  # Company (Table 2000000006)
   company:
     caption: "Selskap"
     fields:
       name: "Navn"
       display_name: "Visningsnavn"
 
-  # User Role (Table 5130)
+  # User Role (Table 2000000004)
   user_role:
     caption: "Brukerrolle"
     fields:
       code: "Kode"
       description: "Beskrivelse"
 
-  # User Member (Table 5140)
+  # User Member (Table 2000000003)
   user_member:
     caption: "Brukermedlem"
     fields:
@@ -187,7 +187,7 @@ tables:
       role_id: "Rolle-ID"
       company: "Selskap"
 
-  # Permission (Table 5150)
+  # Permission (Table 2000000005)
   permission:
     caption: "Tillatelse"
     fields:
@@ -235,7 +235,7 @@ tables:
         always: "Alltid"
         on_error: "Ved feil"
 
-  # Job Queue Entry (Table 473)
+  # Job Queue Entry (Table 474)
   job_queue_entry:
     caption: "Jobbkøpost"
     fields:
@@ -255,7 +255,7 @@ tables:
         in_process: "Behandles"
         error: "Feil"
 
-  # User Personalization (Table 5162)
+  # User Personalization (Table 2000000073)
   user_personalization:
     caption: "Brukertilpasning"
     fields:
@@ -288,7 +288,7 @@ tables:
         comfortable: "Luftig"
         compact: "Kompakt"
 
-  # Tema (Table 5160)
+  # Tema (Table 901)
   theme:
     caption: "Tema"
     fields:
@@ -311,7 +311,7 @@ tables:
         dark: "Mørk"
         light: "Lys"
 
-  # Temaressurs (Table 5161)
+  # Temaressurs (Table 902)
   theme_asset:
     caption: "Temaressurs"
     fields:
@@ -324,10 +324,25 @@ tables:
       sha256: "SHA-256"
       data: "Data"
 
-  # Brukertema (Table 5163)
+  # Brukertema (Table 903)
   user_theme:
     caption: "Brukertema"
     fields:
       user_id: "Bruker-ID"
       theme_code: "Temakode"
       added_at: "Lagt til"
+
+  # Installed App (Table 2000000153)
+  installed_app:
+    caption: "Installert app"
+    fields:
+      app_id: "App-ID"
+      name: "Navn"
+      publisher: "Utgiver"
+      contact: "Kontakt"
+      version: "Versjon"
+      object_series: "Objektnumre"
+      field_series: "Feltnumre"
+      system_tables: "Systemobjektnumre"
+      installed_at: "Installert"
+      updated_at: "Oppdatert"

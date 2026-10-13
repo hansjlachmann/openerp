@@ -1,5 +1,5 @@
 table:
-  id: 473
+  id: 474
   name: "Job_Queue_Entry"
   fields:
     - name: entry_no

@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// CustLedgerEntryGenerate - Codeunit 50010: Generate Random Customer Ledger Entries
-const CustLedgerEntryGenerateID = 50010
+// CustLedgerEntryGenerate - Codeunit 900: Generate Random Customer Ledger Entries
+const CustLedgerEntryGenerateID = 900
 const CustLedgerEntryGenerateName = "generate-cust-ledger-entries"
 
 func init() {

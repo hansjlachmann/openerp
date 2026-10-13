@@ -1,5 +1,5 @@
 table:
-  id: 5120
+  id: 2000000075
   name: User_Preferences
   api_name: User_preferences # the name in the API and in pages (source_table)
   caption: User Preferences

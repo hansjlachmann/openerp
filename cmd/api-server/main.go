@@ -11,11 +11,13 @@ import (
 	"syscall"
 
 	"github.com/hansjlachmann/openerp/backend/api"
+	blapps "github.com/hansjlachmann/openerp/backend/business-logic/apps"
 	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
 	"github.com/hansjlachmann/openerp/backend/business-logic/scheduler"
 	// The business logic of the tables (triggers), registered by its init functions
 	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/business-logic/themerepo"
+	fapps "github.com/hansjlachmann/openerp/backend/foundation/apps"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/objects"
@@ -49,10 +51,21 @@ func main() {
 		}
 	}
 
+	// The installed apps (application.yaml): the base application, later extension apps.
+	// Every table, page and codeunit number must be in the series of one of them.
+	baseApp, err := fapps.LoadBase()
+	if err != nil {
+		log.Fatalf("Failed to read the base application: %v", err)
+	}
+	installedApps := []*fapps.App{baseApp}
+	if err := blapps.CheckObjectNumbers(installedApps); err != nil {
+		log.Fatalf("%v", err)
+	}
+	fmt.Printf("✓ %s %s\n", baseApp.Name, baseApp.Version)
+
 	var db *database.Database
 	var companyName string
 	var port string
-	var err error
 
 	// Check if we're in Docker/production mode (env vars set)
 	dbHost := os.Getenv("DB_HOST")
@@ -167,6 +180,9 @@ func main() {
 		log.Printf("WARNING: link installed themes to their users: %v", err)
 	} else if n > 0 {
 		fmt.Printf("✓ %d installed theme(s) added to the themes of the user who installed them\n", n)
+	}
+	if err := blapps.SyncInstalledApps(db.GetConnection(), secretsDBType, installedApps); err != nil {
+		log.Printf("WARNING: installed apps: %v", err)
 	}
 	fmt.Println()
 

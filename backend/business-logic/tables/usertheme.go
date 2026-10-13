@@ -4,7 +4,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// userThemeLogic is the business logic of table 5163 User_Theme.
+// userThemeLogic is the business logic of table 903 User_Theme.
 // Add a trigger when it is needed (as in BC): the available triggers are listed at the
 // top of generated/tables/usertheme_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.

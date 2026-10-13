@@ -1,33 +1,29 @@
 page:
-  id: 35
+  id: 903
   type: List
-  name: Permissions
-  source_table: Permission
-  caption: Permissions
+  name: User Members
+  source_table: User_Member
+  caption: User Members
   editable: true
   copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+  # Insert only when leaving the row (BC DelayedInsert): the key is user + role + company,
+  # and a blank company means "all companies" — never save a half-entered membership
+  delayed_insert: true
 
   layout:
     repeater:
       fields:
+        - source: user_id
+          width: 200
+          table_relation: User
+
         - source: role_id
           width: 150
           table_relation: User_Role
 
-        - source: table_name
+        - source: company
           width: 200
-
-        - source: can_read
-          width: 80
-
-        - source: can_insert
-          width: 80
-
-        - source: can_modify
-          width: 80
-
-        - source: can_delete
-          width: 80
+          table_relation: Company
 
   actions:
     - name: New

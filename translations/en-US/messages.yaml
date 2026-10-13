@@ -285,14 +285,14 @@ messages:
   CU_REPORT_DATE: "Report Date"
   CU_REPORT_CANCELLED: "Report cancelled."
 
-  # Verify SIFT (codeunit 50110)
+  # Verify SIFT (codeunit 902)
   SIFT_VERIFY_CHECKING: "Checking SIFT totals of %1..."
   SIFT_VERIFY_OK: "Checked %1 SIFT keys: all totals match the entries."
   SIFT_VERIFY_DIFFERENCES: "%1 SIFT key(s) have totals that differ from the entries: %2. Run the job with parameter REPAIR to rebuild them."
   SIFT_VERIFY_REPAIRED: "Rebuilt %1 SIFT key(s) whose totals differed from the entries: %2."
   SIFT_VERIFY_BAD_PARAMETER: "Unknown parameter \"%1\". Use VERIFY or REPAIR."
 
-  # Demo data (codeunit 50100)
+  # Demo data (codeunit 901)
   DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."
   DEMO_DATA_NOT_EMPTY: "Company \"%1\" already has customers. Demo data is only created in a company without customers."
   DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL, LARGE or HEAVY."

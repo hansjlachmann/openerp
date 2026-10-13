@@ -31,3 +31,36 @@ func TestValidateFieldNumbers(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateNumberSeries(t *testing.T) {
+	app := &application{}
+	app.Application.Name = "Base"
+	app.Application.NumberSeries.Objects = []numberRange{{1, 999}}
+	app.Application.NumberSeries.Fields = []numberRange{{1, 999}}
+	app.Application.SystemTables = []numberRange{{2000000000, 2000000199}}
+	table := func(id int, fields ...Field) *TableDef {
+		d := &TableDef{}
+		d.Table.ID, d.Table.Name, d.Table.Fields = id, "T", fields
+		return d
+	}
+	ok := []*TableDef{
+		table(18, Field{No: 1, Name: "no"}),
+		table(2000000002, Field{No: 999, Name: "x"}),
+		table(18, Field{No: 1, Name: "no"}, Field{No: 50000, Name: "loyalty", App: "11111111-1111-4111-8111-111111111111"}),
+	}
+	for _, d := range ok {
+		if err := validateNumberSeries(d, app); err != nil {
+			t.Errorf("table %d: %v", d.Table.ID, err)
+		}
+	}
+	bad := map[string]*TableDef{
+		"table above the series": table(5100, Field{No: 1, Name: "no"}),
+		"system range too high":  table(2000000200, Field{No: 1, Name: "no"}),
+		"base field 1000":        table(18, Field{No: 1000, Name: "x"}),
+	}
+	for name, d := range bad {
+		if err := validateNumberSeries(d, app); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}

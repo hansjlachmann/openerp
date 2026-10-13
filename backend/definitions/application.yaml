@@ -1,0 +1,23 @@
+# The base application (BC app.json): its identity and the number series its objects and
+# fields may use. Every extension app has its own application.yaml with its own series.
+# The id never changes. Checked by tablegen, extmerge and at startup (backend/foundation/apps).
+application:
+  id: 760e20ec-7a66-4e3f-b6e5-83c94db5a4bd
+  name: EasyopenERP Base Application
+  publisher: Hans J. Lachmann
+  contact: https://github.com/hansjlachmann/openerp
+  version: 0.1.96 # x-release-please-version
+  number_series:
+    # Tables, pages, codeunits and reports; a number is unique per object type (as in BC)
+    objects:
+      - from: 1
+        to: 999
+    # Fields of the application's tables (BC field IDs)
+    fields:
+      - from: 1
+        to: 999
+  # System tables (NAV/BC 2000000000 range: User, Company, Permission …)
+  system_tables:
+    - from: 2000000000
+      to: 2000000199
+  dependencies: []

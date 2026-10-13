@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// ProgressDemo - Codeunit 50021: Progress Bar Demo
-const ProgressDemoID = 50021
+// ProgressDemo - Codeunit 991: Progress Bar Demo
+const ProgressDemoID = 991
 const ProgressDemoName = "progress-demo"
 
 func init() {

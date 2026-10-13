@@ -21,6 +21,7 @@ type TableDef struct {
 		ID         int     `yaml:"id"`
 		Name       string  `yaml:"name"`
 		APIName    string  `yaml:"api_name"`    // Name in the API and the pages' source_table (default: name)
+		App        string  `yaml:"app"`         // Set by extmerge on a table of an extension: the extension's app id
 		Global     bool    `yaml:"global"`      // If true, table is global (no company prefix)
 		SetupTable bool    `yaml:"setup_table"` // If true, BC-style singleton setup table (single blank-PK record)
 		Fields     []Field `yaml:"fields"`
@@ -56,7 +57,8 @@ type Key struct {
 
 // Field represents a single field in a table
 type Field struct {
-	No            int            `yaml:"no"` // Field number (BC field ID): unique in the table, never changed or reused
+	No            int            `yaml:"no"`  // Field number (BC field ID): unique in the table, never changed or reused
+	App           string         `yaml:"app"` // Set by extmerge on fields an extension adds: the extension's app id
 	Name          string         `yaml:"name"`
 	Type          string         `yaml:"type"`
 	DBName        string         `yaml:"db_name"`
@@ -193,7 +195,14 @@ func main() {
 	defsDir := flag.String("defs", "../../definitions/tables", "directory of the table definitions (*.yaml)")
 	outDir := flag.String("out", ".", "directory of the generated code (package tables)")
 	logicDir := flag.String("logic", "../../business-logic/tables", "directory of the business logic: a new table gets a starting file here")
+	appFile := flag.String("app", "../../definitions/application.yaml", "the base application's application.yaml (number series)")
 	flag.Parse()
+
+	app, err := loadApplication(*appFile)
+	if err != nil {
+		fmt.Printf("Error reading the application: %v\n", err)
+		os.Exit(1)
+	}
 
 	if err := os.MkdirAll(*outDir, 0755); err != nil {
 		fmt.Printf("Error creating output directory: %v\n", err)
@@ -228,6 +237,11 @@ func main() {
 		tableDef, err := parseYAML(yamlFile)
 		if err != nil {
 			fmt.Printf("✗ Error parsing %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
+			continue
+		}
+		if err := validateNumberSeries(tableDef, app); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
 			failed = true
 			continue
 		}
@@ -489,9 +503,74 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 	}
 }
 
-// Highest field number: the base application uses 1–999, extension fields (merged in by
-// extmerge) the series of their app (TODO: from each app's application.yaml)
+// Highest field number: the base application uses its field series (application.yaml, 1–999),
+// extension fields (merged in by extmerge, marked with app) the series of their app
 const maxExtensionFieldNo = 99999
+
+// numberRange and application are the parts of application.yaml tablegen checks against
+// (the server reads the whole file: backend/foundation/apps)
+type numberRange struct {
+	From int `yaml:"from"`
+	To   int `yaml:"to"`
+}
+
+type application struct {
+	Application struct {
+		Name         string `yaml:"name"`
+		NumberSeries struct {
+			Objects []numberRange `yaml:"objects"`
+			Fields  []numberRange `yaml:"fields"`
+		} `yaml:"number_series"`
+		SystemTables []numberRange `yaml:"system_tables"`
+	} `yaml:"application"`
+}
+
+func inRanges(ranges []numberRange, n int) bool {
+	for _, r := range ranges {
+		if n >= r.From && n <= r.To {
+			return true
+		}
+	}
+	return false
+}
+
+func loadApplication(path string) (*application, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var app application
+	if err := yaml.Unmarshal(data, &app); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if len(app.Application.NumberSeries.Objects) == 0 || len(app.Application.NumberSeries.Fields) == 0 {
+		return nil, fmt.Errorf("%s: number_series needs objects and fields", path)
+	}
+	return &app, nil
+}
+
+// validateNumberSeries checks a table of the base application against its application.yaml:
+// the table number in its object series or system tables, every field (except those an
+// extension added, marked with app) in its field series
+func validateNumberSeries(def *TableDef, app *application) error {
+	a := app.Application
+	if def.Table.App != "" {
+		return nil // a table of an extension app: extmerge checked it against the app's series
+	}
+	if !inRanges(a.NumberSeries.Objects, def.Table.ID) && !inRanges(a.SystemTables, def.Table.ID) {
+		return fmt.Errorf("table number %d is outside the object series and system tables of %s", def.Table.ID, a.Name)
+	}
+	var outside []string
+	for _, f := range def.Table.Fields {
+		if f.App == "" && f.No > 0 && !inRanges(a.NumberSeries.Fields, f.No) {
+			outside = append(outside, fmt.Sprintf("%s (%d)", f.Name, f.No))
+		}
+	}
+	if len(outside) > 0 {
+		return fmt.Errorf("fields outside the field series of %s: %s", a.Name, strings.Join(outside, ", "))
+	}
+	return nil
+}
 
 // validateFieldNumbers checks that every field (also FlowFields and FlowFilters) has a field
 // number (BC field ID) in the allowed ranges, unique in the table.

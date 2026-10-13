@@ -4,7 +4,7 @@ import "github.com/hansjlachmann/openerp/backend/foundation/database"
 
 // Codeunit is the interface that all codeunits must implement
 type Codeunit interface {
-	// ID returns the unique codeunit ID (e.g., 50010)
+	// ID returns the unique codeunit ID (e.g., 900)
 	ID() int
 
 	// Name returns the codeunit name (e.g., "generate-cust-ledger-entries")

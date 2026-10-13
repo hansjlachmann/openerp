@@ -1,10 +1,10 @@
 page:
-  id: 31
+  id: 901
   type: Card
   name: User Card
   source_table: User
   caption: User Card
-  list_page_id: 30
+  list_page_id: 59
   enable_navigation: true
   editable: true
   focus_field: "user_id"
@@ -68,8 +68,7 @@ page:
       shortcut: Esc
       promoted: true
       enabled: true
-      run_page: 30
-
+      run_page: 59
     - name: New
       caption: New
       shortcut: Alt+N

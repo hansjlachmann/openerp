@@ -70,6 +70,7 @@ common:
     user_members: "User Members"
     permissions: "Permissions"
     themes: "Themes"
+    installed_apps: "Installed Apps"
 
   # Common terms
   terms:

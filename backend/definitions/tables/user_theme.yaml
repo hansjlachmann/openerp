@@ -1,5 +1,5 @@
 table:
-  id: 5163
+  id: 903
   name: User_Theme
   caption: User Theme
   description: The installed themes a user has added (each user sees only their own; the files are stored once in Theme / Theme_Asset)

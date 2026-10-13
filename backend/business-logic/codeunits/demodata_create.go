@@ -12,13 +12,13 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// DemoDataCreate - Codeunit 50100: Create Demo Data
+// DemoDataCreate - Codeunit 901: Create Demo Data
 //
 // Run from the Job Queue (Run action or the scheduler) in the company to fill. The
 // job's parameter selects the size: SMALL (default), LARGE or HEAVY. The company must not
 // have customers yet; nothing is written if any part fails. Every run is logged as a
 // Job Queue Entry.
-const DemoDataCreateID = 50100
+const DemoDataCreateID = 901
 const DemoDataCreateName = "create-demo-data"
 
 func init() {

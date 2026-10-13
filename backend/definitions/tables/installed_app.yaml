@@ -1,0 +1,81 @@
+table:
+  id: 2000000153
+  name: Installed_App
+  caption: Installed App
+  description: The apps installed in this database (BC NAV App Installed App), one row per application.yaml, written at startup
+  global: true
+  fields:
+    - name: app_id
+      no: 1
+      type: types.Text
+      db_name: app_id
+      caption: App ID
+      primary_key: true
+      length: 36
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      caption: Name
+      length: 100
+
+    - name: publisher
+      no: 3
+      type: types.Text
+      db_name: publisher
+      caption: Publisher
+      length: 100
+
+    - name: contact
+      no: 4
+      type: types.Text
+      db_name: contact
+      caption: Contact
+      length: 250
+
+    - name: version
+      no: 5
+      type: types.Text
+      db_name: version
+      caption: Version
+      length: 50
+
+    - name: object_series
+      no: 6
+      type: types.Text
+      db_name: object_series
+      caption: Object Numbers
+      length: 250
+
+    - name: field_series
+      no: 7
+      type: types.Text
+      db_name: field_series
+      caption: Field Numbers
+      length: 250
+
+    - name: system_tables
+      no: 8
+      type: types.Text
+      db_name: system_tables
+      caption: System Object Numbers
+      length: 250
+
+    - name: installed_at
+      no: 9
+      type: types.DateTime
+      db_name: installed_at
+      caption: Installed At
+
+    - name: updated_at
+      no: 10
+      type: types.DateTime
+      db_name: updated_at
+      caption: Updated At
+
+  keys:
+    - name: Primary
+      fields: [app_id]
+      clustered: true

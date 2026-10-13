@@ -13,7 +13,7 @@ tables:
       discount_date_calculation: "Discount Date Calculation"
       discount_percent: "Discount %"
 
-  # Country/Region (Table 11)
+  # Country/Region (Table 9)
   country_region:
     caption: "Country/Region"
     fields:
@@ -135,7 +135,7 @@ tables:
         bank_account: "Bank Account"
         fixed_asset: "Fixed Asset"
 
-  # User (Table 5100)
+  # User (Table 2000000002)
   user:
     caption: "User"
     fields:
@@ -157,7 +157,7 @@ tables:
       name: "Name"
       translation_key: "Translation Key"
 
-  # Menu (Table 9)
+  # Menu (Table 900)
   menu:
     caption: "Menu"
     fields:
@@ -165,21 +165,21 @@ tables:
       description: "Description"
       filename: "Filename"
 
-  # Company (Table 10)
+  # Company (Table 2000000006)
   company:
     caption: "Company"
     fields:
       name: "Name"
       display_name: "Display Name"
 
-  # User Role (Table 5130)
+  # User Role (Table 2000000004)
   user_role:
     caption: "User Role"
     fields:
       code: "Code"
       description: "Description"
 
-  # User Member (Table 5140)
+  # User Member (Table 2000000003)
   user_member:
     caption: "User Member"
     fields:
@@ -187,7 +187,7 @@ tables:
       role_id: "Role ID"
       company: "Company"
 
-  # Permission (Table 5150)
+  # Permission (Table 2000000005)
   permission:
     caption: "Permission"
     fields:
@@ -235,7 +235,7 @@ tables:
         always: "Always"
         on_error: "On Error"
 
-  # Job Queue Entry (Table 473)
+  # Job Queue Entry (Table 474)
   job_queue_entry:
     caption: "Job Queue Entry"
     fields:
@@ -255,7 +255,7 @@ tables:
         in_process: "In Process"
         error: "Error"
 
-  # User Personalization (Table 5162)
+  # User Personalization (Table 2000000073)
   user_personalization:
     caption: "User Personalization"
     fields:
@@ -288,7 +288,7 @@ tables:
         comfortable: "Comfortable"
         compact: "Compact"
 
-  # Theme (Table 5160)
+  # Theme (Table 901)
   theme:
     caption: "Theme"
     fields:
@@ -311,7 +311,7 @@ tables:
         dark: "Dark"
         light: "Light"
 
-  # Theme Asset (Table 5161)
+  # Theme Asset (Table 902)
   theme_asset:
     caption: "Theme Asset"
     fields:
@@ -324,10 +324,25 @@ tables:
       sha256: "SHA-256"
       data: "Data"
 
-  # User Theme (Table 5163)
+  # User Theme (Table 903)
   user_theme:
     caption: "User Theme"
     fields:
       user_id: "User ID"
       theme_code: "Theme Code"
       added_at: "Added At"
+
+  # Installed App (Table 2000000153)
+  installed_app:
+    caption: "Installed App"
+    fields:
+      app_id: "App ID"
+      name: "Name"
+      publisher: "Publisher"
+      contact: "Contact"
+      version: "Version"
+      object_series: "Object Numbers"
+      field_series: "Field Numbers"
+      system_tables: "System Object Numbers"
+      installed_at: "Installed At"
+      updated_at: "Updated At"

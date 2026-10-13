@@ -35,11 +35,39 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
+const baseApp = `application:
+  id: 760e20ec-7a66-4e3f-b6e5-83c94db5a4bd
+  name: Base Application
+  number_series:
+    objects: [{from: 1, to: 999}]
+    fields: [{from: 1, to: 999}]
+`
+
+const extApp = `application:
+  id: 11111111-1111-4111-8111-111111111111
+  name: Loyalty
+  number_series:
+    objects: [{from: 50000, to: 50999}]
+    fields: [{from: 50000, to: 50999}]
+`
+
 func mergeCustomer(t *testing.T, extension string) (map[string]interface{}, error) {
 	t.Helper()
+	return mergeWith(t, extApp, map[string]string{"tables/customer.extend.yaml": extension})
+}
+
+// mergeWith merges extension files (path below the extension directory → content) with an
+// extension application.yaml into the core Customer table and returns the merged Customer
+func mergeWith(t *testing.T, app string, files map[string]string) (map[string]interface{}, error) {
+	t.Helper()
 	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "core", "application.yaml"), baseApp)
 	writeFile(t, filepath.Join(dir, "core", "tables", "customer.yaml"), coreCustomer)
-	writeFile(t, filepath.Join(dir, "ext", "tables", "customer.extend.yaml"), extension)
+	writeFile(t, filepath.Join(dir, "core", "pages", "21-customer-card.yaml"), "page:\n  id: 21\n  type: Card\n")
+	writeFile(t, filepath.Join(dir, "ext", "application.yaml"), app)
+	for name, content := range files {
+		writeFile(t, filepath.Join(dir, "ext", name), content)
+	}
 	out := filepath.Join(dir, "out")
 	if err := run(filepath.Join(dir, "core"), filepath.Join(dir, "ext"), out, false); err != nil {
 		return nil, err
@@ -74,7 +102,8 @@ fields:
 		t.Fatalf("%d fields, want 3", len(fields))
 	}
 	added := fields[2].(map[string]interface{})
-	if added["no"] != 50000 || added["default"] != 100 || added["validation"] == nil || added["db_name"] != "loyalty_points" {
+	if added["no"] != 50000 || added["default"] != 100 || added["validation"] == nil || added["db_name"] != "loyalty_points" ||
+		added["app"] != "11111111-1111-4111-8111-111111111111" {
 		t.Errorf("added field %v", added)
 	}
 }
@@ -86,7 +115,7 @@ fields:
   - name: loyalty_points
     type: int
 `, "needs a field number"},
-		"base range": {`extends_table: 18
+		"outside the extension's series": {`extends_table: 18
 fields:
   - name: loyalty_points
     no: 999
@@ -112,5 +141,28 @@ fields:
 		if _, err := mergeCustomer(t, c.ext); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: err = %v, want %q", name, err, c.want)
 		}
+	}
+}
+
+func TestExtensionApplication(t *testing.T) {
+	field := "tables/customer.extend.yaml"
+	ext := "extends_table: 18\nfields:\n  - name: tier\n    no: 50001\n    type: int\n"
+	if _, err := mergeWith(t, strings.Replace(extApp, "id: 11111111-1111-4111-8111-111111111111\n", "", 1), map[string]string{field: ext}); err == nil ||
+		!strings.Contains(err.Error(), "needs an application.yaml") {
+		t.Errorf("without an id: %v", err)
+	}
+	overlapping := strings.Replace(extApp, "objects: [{from: 50000, to: 50999}]", "objects: [{from: 900, to: 1999}]", 1)
+	if _, err := mergeWith(t, overlapping, map[string]string{field: ext}); err == nil || !strings.Contains(err.Error(), "overlaps") {
+		t.Errorf("overlapping series: %v", err)
+	}
+	newTable := "table:\n  id: 50000\n  name: Loyalty Tier\n  fields:\n    - name: code\n      no: 50000\n      type: types.Code\n"
+	if _, err := mergeWith(t, extApp, map[string]string{"custom/tables/loyalty_tier.yaml": newTable}); err != nil {
+		t.Errorf("new table in the series: %v", err)
+	}
+	if _, err := mergeWith(t, extApp, map[string]string{"custom/tables/loyalty_tier.yaml": strings.Replace(newTable, "id: 50000", "id: 51000", 1)}); err == nil {
+		t.Error("new table outside the series accepted")
+	}
+	if _, err := mergeWith(t, extApp, map[string]string{"custom/pages/50000-tiers.yaml": "page:\n  id: 18\n"}); err == nil {
+		t.Error("new page outside the series accepted")
 	}
 }

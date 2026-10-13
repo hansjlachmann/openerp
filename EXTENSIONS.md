@@ -2,29 +2,39 @@
 
 This document describes how to extend OpenERP with custom tables, pages, and codeunits.
 
-## ID Range Conventions
+## Object and field numbers: application.yaml
 
-To avoid conflicts between core and extensions, the following ID ranges are reserved:
+Every app has an `application.yaml` (BC app.json) with a GUID that never changes and the
+number series it may use. The base application's is `backend/definitions/application.yaml`:
 
-| Type | Core Range | Extension Range |
-|------|------------|-----------------|
-| Tables | 1 - 49,999 | 50,000 - 99,999 |
-| Pages | 1 - 49,999 | 50,000 - 99,999 |
-| Codeunits | 1 - 49,999 | 50,000 - 99,999 |
+| Numbers | Base application |
+|---------|------------------|
+| Objects (tables, pages, codeunits, reports; unique per object type) | 1 – 999 |
+| Fields of its tables | 1 – 999 |
+| System tables (section `system_tables`) | 2,000,000,000 – 2,000,000,199 |
 
-### Core IDs (1 - 49,999)
+An extension app has its own `application.yaml` at the root of its extensions directory, with
+its own series that must not overlap the base application's or another app's, for example:
 
-Reserved for the base OpenERP application. These IDs are managed in this repository and should not be used by extensions.
+```yaml
+application:
+  id: 0b7f…-…                 # a new GUID, never changed
+  name: My Company Extension
+  publisher: My Company
+  contact: https://example.com
+  version: 1.0.0
+  number_series:
+    objects: [{from: 50000, to: 50999}]
+    fields:  [{from: 50000, to: 50999}]   # also the fields it adds to base tables
+  dependencies:
+    - id: 760e20ec-7a66-4e3f-b6e5-83c94db5a4bd   # the base application
+      name: EasyopenERP Base Application
+      min_version: 0.1.97
+```
 
-### Extension IDs (50,000 - 99,999)
-
-Available for customer-specific customizations. Each customer/extension should claim a sub-range to avoid conflicts:
-
-| Customer | Tables | Pages | Codeunits |
-|----------|--------|-------|-----------|
-| Customer A | 50,000 - 50,999 | 50,000 - 50,999 | 50,000 - 50,999 |
-| Customer B | 51,000 - 51,999 | 51,000 - 51,999 | 51,000 - 51,999 |
-| ... | ... | ... | ... |
+`extmerge` refuses an extension without an `application.yaml`, series that overlap, and
+objects or fields outside the extension's series. At startup the server checks every table,
+page and codeunit against the installed apps and lists them in Installed Apps (page 907).
 
 ## Extension Types
 
@@ -51,7 +61,7 @@ extends: 21
 actions:
   - name: Custom Report
     caption: Custom Report
-    run_object: codeunit:50100
+    run_object: codeunit:50100   # a codeunit of the extension (its series)
     promoted: true
 
 layout:
@@ -150,6 +160,7 @@ docker build --build-arg EXTENSIONS_PATH=./extensions .
 ```
 my-openerp-extension/
 ├── extensions/
+│   ├── application.yaml                 # The extension app: id, number series, dependencies
 │   ├── tables/
 │   │   └── 18-customer.extend.yaml      # Extend Customer table
 │   ├── pages/

@@ -70,6 +70,7 @@ common:
     user_members: "Brukertilganger"
     permissions: "Rettigheter"
     themes: "Temaer"
+    installed_apps: "Installerte apper"
 
   # Common terms
   terms:

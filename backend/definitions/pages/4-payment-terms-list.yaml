@@ -1,23 +1,23 @@
 page:
-  id: 10
+  id: 4
   type: List
-  name: Menus
-  source_table: Menu
-  caption: Menus
+  name: Payment Terms List
+  source_table: Payment_terms
+  caption: Payment Terms
   editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
 
   layout:
     repeater:
       fields:
         - source: code
           width: 120
-          primary_key: true
 
         - source: description
-          width: 250
+          width: 300
 
-        - source: filename
-          width: 200
+        - source: active
+          width: 100
 
   actions:
     - name: New

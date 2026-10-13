@@ -83,7 +83,6 @@ page:
       promoted: true
       enabled: true
       run_page: 22
-
     - name: New
       caption: New
       shortcut: Alt+N
@@ -114,4 +113,4 @@ page:
       caption: Generate Ledger Entries
       promoted: true
       enabled: true
-      run_object: codeunit:50010
+      run_object: codeunit:900

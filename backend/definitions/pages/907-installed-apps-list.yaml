@@ -1,0 +1,42 @@
+page:
+  id: 907
+  type: List
+  name: Installed Apps
+  source_table: Installed_App
+  caption: Installed Apps
+  # The base application and the extension apps built into this installation, with the
+  # number series each may use (application.yaml). Written at startup, read-only.
+
+  layout:
+    repeater:
+      fields:
+        - source: name
+          width: 240
+
+        - source: version
+          width: 90
+
+        - source: publisher
+          width: 160
+
+        - source: object_series
+          width: 220
+
+        - source: field_series
+          width: 140
+
+        - source: system_tables
+          width: 200
+
+        - source: app_id
+          width: 290
+          primary_key: true
+
+        - source: contact
+          width: 280
+
+        - source: installed_at
+          width: 170
+
+        - source: updated_at
+          width: 170

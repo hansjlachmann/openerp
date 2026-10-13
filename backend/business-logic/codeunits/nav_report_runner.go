@@ -20,9 +20,9 @@ import (
 	"time"
 )
 
-// NavReportRunner - Codeunit 50022: NAV Report Runner
+// NavReportRunner - Codeunit 903: NAV Report Runner
 // Executes reports via external NAV proxy service with progress tracking
-const NavReportRunnerID = 50022
+const NavReportRunnerID = 903
 const NavReportRunnerName = "nav-report-runner"
 
 func init() {

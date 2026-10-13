@@ -88,12 +88,12 @@ SELECT * FROM "cronus$Payment Terms";
 
 ## Demo Data
 
-Codeunit 50100 "Create Demo Data" fills a company with demo data: countries
+Codeunit 901 "Create Demo Data" fills a company with demo data: countries
 (NO, DK, GB), payment terms, and Norwegian, Danish and English customers with a
 year of customer ledger entries. The data is in `backend/business-logic/demodata/data/*.yaml`.
 
 1. Create a company, e.g. `demo01` with display name "Demo Company 01", and switch to it (Ctrl+O).
-2. Add a Job Queue line: Object ID to Run `50100`, Parameter `SMALL`, `LARGE` or `HEAVY`.
+2. Add a Job Queue line: Object ID to Run `901`, Parameter `SMALL`, `LARGE` or `HEAVY`.
 3. Run it (F9), or set it to Ready with a Next Start to let the scheduler run it.
 
 | Size  | Customers | Ledger entries | Use |

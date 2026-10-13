@@ -38,6 +38,9 @@ pages:
   themes:
     caption: "Themes"
 
+  installed_apps:
+    caption: "Installed Apps"
+
   # Menu pages
   menus:
     caption: "Menus"

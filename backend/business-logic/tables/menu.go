@@ -4,7 +4,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// menuLogic is the business logic of table 9 Menu.
+// menuLogic is the business logic of table 900 Menu.
 // Add a trigger when it is needed (as in BC): the available triggers are listed at the
 // top of generated/tables/menu_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.

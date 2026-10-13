@@ -1,19 +1,21 @@
 page:
-  id: 11
+  id: 902
   type: List
-  name: Companies
-  source_table: Company
-  caption: Companies
+  name: User Roles
+  source_table: User_Role
+  caption: User Roles
+  card_page_id: 904
+  modal_card: true
   editable: true
 
   layout:
     repeater:
       fields:
-        - source: name
-          width: 300
+        - source: code
+          width: 150
           primary_key: true
 
-        - source: display_name
+        - source: description
           width: 300
 
   actions:

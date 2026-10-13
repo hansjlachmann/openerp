@@ -13,14 +13,14 @@ import (
 	"strings"
 )
 
-// SIFTVerify - Codeunit 50110: Verify SIFT
+// SIFTVerify - Codeunit 902: Verify SIFT
 //
 // Run from the Job Queue (Run action or the scheduler) in a company. Compares every SIFT
 // totals table of the company with a fresh sum over its entries (NAV's "verify SIFT").
 // Parameter VERIFY (default) only reports; REPAIR rebuilds the keys whose totals differ.
 // Unrepaired differences fail the run, so a scheduled job is set to Error and can notify
 // by e-mail. Every run is logged as a Job Queue Entry.
-const SIFTVerifyID = 50110
+const SIFTVerifyID = 902
 const SIFTVerifyName = "verify-sift"
 
 func init() {

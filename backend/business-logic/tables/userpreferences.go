@@ -4,7 +4,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// userPreferencesLogic is the business logic of table 5120 User_Preferences.
+// userPreferencesLogic is the business logic of table 2000000075 User_Preferences.
 // Add a trigger when it is needed (as in BC): the available triggers are listed at the
 // top of generated/tables/userpreferences_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.

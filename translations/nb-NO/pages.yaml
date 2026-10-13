@@ -38,6 +38,9 @@ pages:
   themes:
     caption: "Temaer"
 
+  installed_apps:
+    caption: "Installerte apper"
+
   # Menu pages
   menus:
     caption: "Menyer"

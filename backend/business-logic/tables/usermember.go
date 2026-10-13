@@ -4,7 +4,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// userMemberLogic is the business logic of table 5140 User_Member.
+// userMemberLogic is the business logic of table 2000000003 User_Member.
 // Add a trigger when it is needed (as in BC): the available triggers are listed at the
 // top of generated/tables/usermember_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.

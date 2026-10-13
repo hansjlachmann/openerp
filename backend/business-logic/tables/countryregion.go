@@ -4,7 +4,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// countryRegionLogic is the business logic of table 11 Country_Region.
+// countryRegionLogic is the business logic of table 9 Country_Region.
 // Add a trigger when it is needed (as in BC): the available triggers are listed at the
 // top of generated/tables/countryregion_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.

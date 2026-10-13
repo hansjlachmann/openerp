@@ -14,7 +14,7 @@ menu:
     icon: settings
     items:
       - name: Users
-        page_id: 30
+        page_id: 59
         icon: user
 
       - name: Languages
@@ -22,11 +22,11 @@ menu:
         icon: globe
 
       - name: Payment Terms
-        page_id: 26
+        page_id: 4
         icon: calendar
 
       - name: Countries Regions
-        page_id: 12
+        page_id: 10
         icon: globe
 
       - name: SMTP Setup
@@ -34,11 +34,11 @@ menu:
         icon: mail
 
       - name: Companies
-        page_id: 11
+        page_id: 357
         icon: building
 
       - name: Menus
-        page_id: 10
+        page_id: 900
         icon: menu
 
       - name: Job Queue
@@ -50,17 +50,21 @@ menu:
         icon: list
 
       - name: User Roles
-        page_id: 32
+        page_id: 902
         icon: shield
 
       - name: User Members
-        page_id: 33
+        page_id: 903
         icon: users
 
       - name: Permissions
-        page_id: 35
+        page_id: 905
         icon: lock
 
       - name: Themes
-        page_id: 36
+        page_id: 906
         icon: palette
+
+      - name: Installed Apps
+        page_id: 907
+        icon: package

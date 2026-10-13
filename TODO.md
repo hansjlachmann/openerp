@@ -32,10 +32,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       (`docs/operations.md`). 0.1.89 and 0.1.90 have no frontend image — never use them.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
-- [ ] **Field numbers in table definitions** (high priority) — numbers, checks and generated access
-      done 2026-10-13; open: guard against changed numbers, rename by number (see below).
-- [ ] **Field and object numbering, `application.yaml`, installed apps** (high priority) — see
-      "Field and object numbering" below.
+- [x] **Field numbers in table definitions** and **field and object numbering, `application.yaml`,
+      installed apps** — done 2026-10-13 (sections below).
 - [ ] **NAV/BC system functions in Go** (C/AL, AL) — specification below ("Feature: NAV/BC
       system functions"); needs more details before it is built.
 - [ ] **NAV/BC functions — remaining** (high priority) — after the first and second set; see
@@ -43,7 +41,7 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ---
 
-## Field numbers in table definitions (HIGH priority, 2026-10-13)
+## Field numbers in table definitions ✅ DONE (2026-10-13)
 
 BC identifies a field by its **number** (field ID), not its name. We need the same:
 - [x] Every field in `backend/definitions/tables/*.yaml` has a unique `no:` within its table (also
@@ -56,12 +54,13 @@ BC identifies a field by its **number** (field ID), not its name. We need the sa
 - [x] extmerge: extension fields need a number above the base range (1–999) that neither the table
       nor another extension uses (also no name clash); extension fields keep every key (they lost all but
       name/type/length/caption before).
-- [ ] Guard that a number never changes: store (table, number, name, column) at startup (like
-      `_sift_definition`) and refuse to start when a known field got another number.
-- [ ] Decide what the number is used for beyond that: renaming a field in the YAML while keeping its
-      number (startup renames the column instead of adding a new one, data kept), permissions, captions.
+- [x] Guard that a number never changes: the table sync records each physical table's numbers and
+      columns (`_field_definition`) and stops when a known column got another number (2026-10-13).
+- [x] Renaming a field in the YAML while keeping its number renames the column (data kept) instead
+      of adding a new one (2026-10-13).
+- [ ] Later: field numbers for permissions or captions, if needed.
 
-## Field and object numbering, application.yaml (HIGH priority, specified 2026-10-13)
+## Field and object numbering, application.yaml ✅ DONE (2026-10-13)
 
 Rules (decided by the user):
 - **Fields** of the base application have numbers **1–999** (done for all 19 tables 2026-10-13:
@@ -92,28 +91,44 @@ application:
 An extension app: same file with its own `id`, `number_series` (e.g. objects and fields 50000–50999)
 and the base application as a dependency; the fields it adds to base tables use its field series.
 
-To build:
-- [ ] `application.yaml` for the base application (generate the GUID once) and a loader in
-      `foundation` (shared by tablegen, extmerge and the server).
-- [ ] Checks: tablegen (table IDs and field numbers), the page loader (page IDs), the codeunit
-      registry (codeunit IDs), later reports — every number inside the owning app's series; series of
-      installed apps must not overlap (extmerge / build refuses). Fields an extension adds to a base
-      table use the extension's field series.
-- [ ] **Installed apps — yes, a new global table** (BC: "NAV App Installed App"): one row per app (id,
-      name, publisher, version, number series, installed at, data/schema version). Needed to refuse
-      overlapping series across apps, to know which app owns which tables/fields (uninstall, upgrade
-      migrations per app) and to show the installed apps on an admin page. Filled/updated at startup
-      from the `application.yaml` files built into the image. Table number in the base range.
-- [ ] **Renumber what is outside 1–999 today:**
-      - tables User 5100, User_Preferences 5120, User_Role 5130, User_Member 5140, Permission 5150,
-        Theme 5160, Theme_Asset 5161, User_Personalization 5162, User_Theme 5163 (the IDs are not
-        stored in the database — check `_sift_definition`, permissions use table names);
-      - codeunits 50010 Generate Ledger Entries, 50020 Hello World, 50021 Progress Demo, 50022 NAV
-        Report Runner, 50100 Create Demo Data, 50110 Verify SIFT — **stored in the database**
-        (`Job_Queue.object_id_to_run`, also in production) and in page YAML (`run_object:
-        codeunit:50010`): needs a migration of Job Queue rows and the YAML changed in the same release;
-      - pages are all inside 1–999 already (9 … 674).
-- [ ] Update EXTENSIONS.md (it still says core 1–49,999 / extensions 50,000–99,999) and CLAUDE.md.
+Built 2026-10-13:
+- [x] `backend/definitions/application.yaml` (GUID, name, publisher, contact, version kept by
+      release-please, `number_series` objects/fields, a separate `system_tables` section) and the
+      loader `backend/foundation/apps`.
+- [x] Checks: tablegen (table and field numbers), extmerge (the extension's own `application.yaml`,
+      no overlapping series, its objects and fields inside its series, merged fields marked `app:`),
+      startup (`business-logic/apps.CheckObjectNumbers`: tables, pages, codeunits — refuses to start).
+- [x] Global table Installed_App (2000000153, page 907 Installed Apps, admin menu), written at startup.
+- [x] Renumbered to the NAV numbers (NAV 2.6 source, later NAV for Job Queue/SMTP/User
+      Personalization/installed apps), 900–999 for objects NAV does not have:
+      | Object | Old | New |
+      |---|---|---|
+      | Table Country_Region | 11 | 9 |
+      | Table Company | 10 | 2000000006 |
+      | Table User | 5100 | 2000000002 |
+      | Table User_Member (Member Of) | 5140 | 2000000003 |
+      | Table User_Role | 5130 | 2000000004 |
+      | Table Permission | 5150 | 2000000005 |
+      | Table Job_Queue_Entry (Job Queue Log Entry) | 473 | 474 |
+      | Table User_Personalization | 5162 | 2000000073 |
+      | Table User_Preferences (User Metadata) | 5120 | 2000000075 |
+      | Table Menu | 9 | 900 |
+      | Tables Theme, Theme_Asset, User_Theme | 5160, 5161, 5163 | 901, 902, 903 |
+      | Pages Payment Terms, Countries, Companies, Users | 26, 12, 11, 30 | 4, 10, 357, 59 |
+      | Pages Menus, User Card, User Roles, User Members, User Role Card, Permissions, Themes | 10, 31–36 | 900–906 |
+      | Codeunits Generate Ledger Entries, Create Demo Data, Verify SIFT, NAV Report Runner | 50010, 50100, 50110, 50022 | 900, 901, 902, 903 |
+      | Codeunits Hello World, Progress Demo | 50020, 50021 | 990, 991 |
+      Unchanged: tables 3, 8, 18, 21, 409, 472; pages 9, 21, 22, 25, 409, 672–674; codeunit 455.
+      Migration 010 moves `Job_Queue.object_id_to_run` and `User_Preferences.page_id`.
+- [ ] Column layouts kept in the browser (localStorage, per page number) start fresh for the
+      renumbered pages — accepted.
+- [ ] **BUG: server-side list layouts never saved on Postgres** (found 2026-10-13, older than this change) —
+      `User_Preferences` is a company table in its YAML (synced as `company$User_Preferences`), but
+      `handlers/preferences.go` opens it with company "" (`$User_Preferences`, which does not exist):
+      "Failed to save preference". Make the table `global: true` (as the handler intends) or use the
+      session's company; then migration 010's page renumbering applies to it.
+- [ ] Reports, when built: register them with their number and check them in `CheckObjectNumbers`;
+      `run_object: report:<id>`; Job Queue "object type to run".
 
 ## Feature: NAV/BC system functions (C/AL, AL) in Go — specification (FIRST priority, 2026-10-13)
 

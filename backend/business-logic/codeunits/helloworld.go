@@ -7,8 +7,8 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// HelloWorld - Codeunit 50020: Hello World Test
-const HelloWorldID = 50020
+// HelloWorld - Codeunit 990: Hello World Test
+const HelloWorldID = 990
 const HelloWorldName = "hello-world"
 
 func init() {

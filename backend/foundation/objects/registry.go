@@ -190,7 +190,8 @@ func validateObjectID(id int) error {
 	if (id >= types.RangeMicrosoftStart && id <= types.RangeMicrosoftEnd) ||
 		(id >= types.RangeCustomerStart && id <= types.RangeCustomerEnd) ||
 		(id >= types.RangeAddonStart && id <= types.RangeAddonEnd) ||
-		(id >= types.RangeAddon2Start && id <= types.RangeAddon2End) {
+		(id >= types.RangeAddon2Start && id <= types.RangeAddon2End) ||
+		(id >= types.RangeSystemStart && id <= types.RangeSystemEnd) {
 		return nil
 	}
 

@@ -1,10 +1,10 @@
 page:
-  id: 34
+  id: 904
   type: Card
   name: User Role Card
   source_table: User_Role
   caption: User Role Card
-  list_page_id: 32
+  list_page_id: 902
   enable_navigation: true
   editable: true
   focus_field: "code"
@@ -30,8 +30,7 @@ page:
       shortcut: Esc
       promoted: true
       enabled: true
-      run_page: 32
-
+      run_page: 902
     - name: New
       caption: New
       shortcut: Alt+N

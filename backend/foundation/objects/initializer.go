@@ -49,6 +49,10 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 		return fmt.Errorf("no tables registered in object registry")
 	}
 
+	if err := ensureFieldDefinitionTable(db); err != nil {
+		return fmt.Errorf("field numbers: %w", err)
+	}
+
 	successCount := 0
 	migratedCount := 0
 	failedTables := []string{}
@@ -102,6 +106,16 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 				continue
 			}
 
+			// Fields renamed in the YAML keep their number: rename their column first, so
+			// it is not added again as a new, empty column
+			numbered, hasNumbers := tableInterface.(fieldNumberer)
+			if hasNumbers {
+				if err := renameByFieldNumber(db, dbType, fullTableName, tableDef.GetTableName(), storedColumns(numbered), existingColumns); err != nil {
+					failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
+					continue
+				}
+			}
+
 			// Add missing columns
 			err = addMissingColumns(db, fullTableName, schemaColumns, existingColumns, dbType)
 			if err != nil {
@@ -126,6 +140,13 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 				}
 			}
 
+			if hasNumbers {
+				if err := recordFieldNumbers(db, dbType, fullTableName, storedColumns(numbered)); err != nil {
+					failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
+					continue
+				}
+			}
+
 			migratedCount++
 		} else {
 			// Table doesn't exist - create it
@@ -133,6 +154,16 @@ func (or *ObjectRegistry) InitializeCompanyTablesWithDBType(db *sql.DB, companyN
 			if err != nil {
 				failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
 				continue
+			}
+			if numbered, ok := tableInterface.(fieldNumberer); ok {
+				physical := fullTableName
+				if g, ok := tableInterface.(interface{ IsGlobal() bool }); ok && g.IsGlobal() {
+					physical = tableDef.GetTableName()
+				}
+				if err := recordFieldNumbers(db, dbType, physical, storedColumns(numbered)); err != nil {
+					failedTables = append(failedTables, fmt.Sprintf("Table %d (%s): %v", tableID, tableDef.GetTableName(), err))
+					continue
+				}
 			}
 
 			successCount++

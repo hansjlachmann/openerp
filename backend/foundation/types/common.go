@@ -49,4 +49,11 @@ const (
 	// Add-on range 2: 70,000,000-74,999,999
 	RangeAddon2Start = 70000000
 	RangeAddon2End   = 74999999
+
+	// System tables (NAV/BC): 2,000,000,000-2,000,000,199 — User, Company, Permission …
+	RangeSystemStart = 2000000000
+	RangeSystemEnd   = 2000000199
 )
+
+// The number series an app may use come from its application.yaml (backend/foundation/apps);
+// these ranges only bound what the object registry accepts at all.
