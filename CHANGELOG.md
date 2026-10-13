@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.97](https://github.com/hansjlachmann/openerp/compare/v0.1.96...v0.1.97) (2026-10-13)
+
+
+### Features
+
+* **apps:** application.yaml, classic object numbers, installed apps, field number guard ([8102986](https://github.com/hansjlachmann/openerp/commit/8102986cc3c0f8419a2410bff9607dfcd223fc3c))
+* **tables:** field numbers in table definitions ([6ccc6a9](https://github.com/hansjlachmann/openerp/commit/6ccc6a97390d086502e591d66cae015d5535e0fe))
+
+
+### Code Refactoring
+
+* neutral wording, built-in themes renamed to Classic Light/Dark ([63d4401](https://github.com/hansjlachmann/openerp/commit/63d4401bfdc330f65fab3730a170a050acdabfc5))
+* separate generated table code from the business logic ([1a98c98](https://github.com/hansjlachmann/openerp/commit/1a98c9838ac70fcaf8f222dff93a7e152632f4d0))
+
+
+### Documentation
+
+* TODO — codeunit permission check in the first priority list ([1ca2c6d](https://github.com/hansjlachmann/openerp/commit/1ca2c6d247297f72a23b5073a26a42ed6246da0b))
+* TODO — codeunit permission check is medium priority, to be specified ([f938c6e](https://github.com/hansjlachmann/openerp/commit/f938c6e3d0abf70e30aed54a0a5f7a2a7e6a9e3d))
+* TODO — decisions for the system functions, field numbers (high priority) ([1f8825b](https://github.com/hansjlachmann/openerp/commit/1f8825b6009d4af43eea9cfbd343148b580f4241))
+* TODO — remaining system functions are high priority ([473c4f5](https://github.com/hansjlachmann/openerp/commit/473c4f53a1b3c70834e156c4921c05ca4f2e3ff4))
+* TODO — second set of system functions, remaining ones as a later item ([e8a9431](https://github.com/hansjlachmann/openerp/commit/e8a9431e87c2fbd0a640b43e48bc3e1c49291bd0))
+* TODO — specification of system functions in Go (first priority) ([d0d61ec](https://github.com/hansjlachmann/openerp/commit/d0d61ec4d3ab93f137f84c09cd59a2dc252c2f8e))
+
 ## [0.1.96](https://github.com/hansjlachmann/openerp/compare/v0.1.95...v0.1.96) (2026-10-12)
 
 
