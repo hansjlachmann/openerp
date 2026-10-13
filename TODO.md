@@ -32,10 +32,26 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       (`docs/operations.md`). 0.1.89 and 0.1.90 have no frontend image — never use them.
 - [ ] **Production: change `POSTGRES_PASSWORD`** from the default `openerp` (`docs/operations.md`,
       "Changing the database password"); lower risk now that 5432 is localhost only.
+- [ ] **Field numbers in table definitions** (high priority) — see "Field numbers in table
+      definitions" below; `TransferFields` and extension fields depend on it.
 - [ ] **NAV/BC system functions in Go** (C/AL, AL) — specification below ("Feature: NAV/BC
       system functions"); needs more details before it is built.
 
 ---
+
+## Field numbers in table definitions (HIGH priority, 2026-10-13)
+
+BC identifies a field by its **number** (field ID), not its name. We need the same:
+- [ ] Every field in `backend/definitions/tables/*.yaml` gets a unique `no:` within its table
+      (core 1–49,999, extensions 50,000–99,999 — the ranges of EXTENSIONS.md); tablegen refuses a
+      table with a missing or duplicate number, and a number may never be reused for another field.
+- [ ] Generated code knows the numbers (e.g. `CustomerFieldNo_Name`, field lookup by number) —
+      needed by `TransferFields` (same number + compatible type), and for extension fields: two
+      extensions can use the same field name, never the same number (extmerge checks it).
+- [ ] Decide what the number is used for beyond that: renaming a field in the YAML while keeping its
+      number (a migration renames the column instead of adding a new one?), permissions, captions.
+- [ ] Assign numbers to the existing 19 tables (BC numbers where the table mirrors a BC table, e.g.
+      Customer 1 = No., 2 = Name …; otherwise in YAML order).
 
 ## Feature: NAV/BC system functions (C/AL, AL) in Go — specification (FIRST priority, 2026-10-13)
 
@@ -44,27 +60,37 @@ as close to identical as Go allows, so NAV/BC developers (and Claude Code) can w
 business logic without translating. Records already have `SetRange`, `SetFilter`, `Get`, `FindSet`,
 `Next`, `Insert`/`Modify`/`Delete`, `CalcFields`, `Validate` (`ValidateField`), `Count`.
 
-Not decided yet — needs more details first:
-- the package and how it is called (`al.CalcDate(…)` / dot import / methods on the types);
-- error behaviour (AL stops with a runtime error, Go returns errors);
-- language of `Format`/`Evaluate` (the session language, or always the standard format);
-- how `TransferFields` matches fields (BC: field numbers; our YAML fields have no numbers).
+Decisions (2026-10-13):
+- **General rule**: where a NAV/BC function does not fit Go's context or syntax, take the easiest Go way.
+- **Calls**: package `foundation/al` with the AL names — `al.CalcDate("<CM>", d)`,
+  `al.StrSubstNo("%1 of %2", a, b)`; record functions (`ChangeCompany`, `TransferFields`) are
+  generated methods on every record. The unused helpers in `foundation/common/strutils.go` move there.
+- **Errors**: `Evaluate` returns ok (as AL's `if Evaluate(…)`); `CalcDate` with a bad formula and
+  `DMY2Date` with an invalid date return an error; other functions cannot fail.
+- **Language**: none — no session or language parameter. `Format` and `Evaluate` use the Go-native,
+  language-independent formats (dates ISO `2026-10-13`, decimals `1234.5`, bool `true`/`false` —
+  like BC's `Format(x, 0, 9)`); the frontend formats for the user.
+- **CompanyName**: the company of the record or codeunit that runs the code (records and codeunits
+  of one request share the session's company): `rec.CompanyName()`. A process-wide global variable is
+  not possible — the server serves many users and companies at the same time.
+- **TransferFields**: matches fields by **field number** — needs field numbers first (high priority
+  item "Field numbers in table definitions").
 
 ### First set of functions
 
 | AL | AL signature | Notes for Go |
 |----|--------------|--------------|
-| `Evaluate` | `[Ok :=] Evaluate(var Variable, String [, Number])` | Typed target (`*types.Date`, `*types.Decimal`, `*int`, `*bool`, Option, `*types.Code`…); returns ok (AL: if not used → runtime error). Number 9 = XML/standard format. |
+| `Evaluate` | `[Ok :=] Evaluate(var Variable, String [, Number])` | Typed target (`*types.Date`, `*types.Decimal`, `*int`, `*bool`, Option, `*types.Code`…); returns ok. Go-native formats only (as Number 9). |
 | `DMY2Date` | `Date := DMY2Date(Day [, Month] [, Year])` | Month/Year default to the work date's; invalid date → error. |
 | `Date2DMY` | `Number := Date2DMY(Date, What)` | What: 1 = day, 2 = month, 3 = year. |
 | `CalcDate` | `NewDate := CalcDate(DateExpression [, Date])` | Date formula `<+1M-1D>`, `<CM>`, `<CY>`, `<CQ>`, `<CW>`, `<WD3>`, units D/W/M/Q/Y, `C` = current period end; default date = work date. Later a `DateFormula` field type (BC). Most work: parser + many tests against BC results. |
-| `Format` | `String := Format(Value [, Length] [, FormatStr/FormatNumber])` | Type-aware (Date, DateTime, Decimal with thousands separator, bool Yes/No, Option caption); depends on the language (BC: user's region). The current `common.Format` is just `fmt.Sprintf` — not AL. |
+| `Format` | `String := Format(Value [, Length] [, FormatStr/FormatNumber])` | Type-aware, Go-native and language-independent (Date ISO, Decimal `1234.5`, bool `true`/`false`, Option value name); `Length` pads/cuts. The current `common.Format` is just `fmt.Sprintf` — not AL. |
 | `DelChr` | `NewString := DelChr(String [, Where] [, Which])` | Where `=` `<` `>` `<>`; exists in `foundation/common/strutils.go` (unused). |
 | `StrSubstNo` | `NewString := StrSubstNo(String [, Value1, …])` | `%1`…`%9` (also `#1####`); values formatted with `Format`. The translations already use `%1` (e.g. `MSG_COMPANY_CREATED`, which is not substituted today). |
 | `CopyStr` | `NewString := CopyStr(String, Position [, Length])` | 1-based, characters not bytes; exists in `strutils.go` (unused). |
-| `CompanyName` | `String := CompanyName()` | The current company: the session's (API) or the record's/codeunit's context — Go has no global session (per-request JWT sessions). |
+| `CompanyName` | `String := CompanyName()` | `rec.CompanyName()`: the company of the record/codeunit, i.e. the session's company of the request. |
 | `ChangeCompany` | `[Ok :=] Record.ChangeCompany([CompanyName])` | Generated record method: the record reads/writes another company's table (company tables only; global tables ignore it); false when the company does not exist. Triggers and FlowFields run in that company. |
-| `TransferFields` | `Record.TransferFields(FromRecord [, InitPrimaryKeyFields])` | Generated record method: copies the fields with the same field (BC: same field number) and compatible type; FlowFields and FlowFilters not copied; `InitPrimaryKeyFields` false keeps the key. Matching by name until fields get numbers (also needed for extension fields). |
+| `TransferFields` | `Record.TransferFields(FromRecord [, InitPrimaryKeyFields])` | Generated record method: copies the fields with the same field (BC: same field number) and compatible type; FlowFields and FlowFilters not copied; `InitPrimaryKeyFields` false keeps the key. Matches by field number — after "Field numbers in table definitions". |
 
 ### Later candidates
 `IncStr` (exists in `strutils.go`), `PadStr`, `StrLen`, `StrPos`, `ConvertStr`, `InsStr`, `DelStr`,
@@ -75,7 +101,7 @@ exist: `foundation/codeunits/dialog.go`), `CalcSums`, `ModifyAll`, `DeleteAll`, 
 
 ### Verification (when built)
 Table-driven tests per function with the results BC gives (especially `CalcDate`, `Format`,
-`Evaluate` in en-US and nb-NO); one existing trigger or codeunit rewritten with the functions as
+`Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the AL functions in business logic".
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
