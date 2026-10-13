@@ -177,7 +177,7 @@ func (b *body) job(job *gtables.JobQueue) {
 	}
 }
 
-// LoadSMTPConfig reads the single SMTP_Setup record (a BC-style setup table with a
+// LoadSMTPConfig reads the single SMTP_Setup record (a setup table with a
 // blank primary key) and builds a mail.Config. If the record is missing or not
 // enabled, a disabled config is returned. The stored password is decrypted; when that
 // fails (secrets.ErrDecrypt: the encryption key changed) the config is disabled and

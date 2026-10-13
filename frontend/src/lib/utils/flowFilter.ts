@@ -1,4 +1,4 @@
-// FlowFilter expressions (BC "Filter totals by", e.g. Date Filter). The user types BC syntax
+// FlowFilter expressions ("Filter totals by", e.g. Date Filter). The user types syntax
 // with dates in their own format — 01.01.26..31.03.26, ..31.03.26, 01.01.26.., 15.05.26,
 // alternatives with |, <>date, t = today — and the API expects ISO dates. Other kinds
 // (Boolean, Integer, Text, Code) are sent as typed; the backend validates them.
@@ -25,7 +25,7 @@ function validIso(y: number, m: number, d: number): string | null {
 // One date of the expression in ISO form, or null if it is not a valid date.
 // - t = today; ISO (2026-04-01) always works.
 // - With dots it is day.month[.year] whatever the UI language — dots are only used for
-//   day-first dates (nb, da, de); 01.04 is this year (BC).
+//   day-first dates (nb, da, de); 01.04 is this year.
 // - With slashes/dashes the order of the user's language (en-US 04/01/26 = 1 April).
 function dateToken(token: string, locale: string, today: Date): string | null {
 	if (token.toLowerCase() === 't') return isoDate(today);

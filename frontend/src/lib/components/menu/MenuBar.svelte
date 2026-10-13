@@ -14,7 +14,7 @@
 	import { openShortcutHelp as openShortcutWindow } from '$lib/utils/shortcutHelp';
 	import { companyLabel, companyLabelFor, type CompanyInfo } from '$lib/utils/company';
 
-	// NAV Classic: Ctrl+O opens the Switch Company dialog. Browsers let the page take
+	// Ctrl+O opens the Switch Company dialog. Browsers let the page take
 	// Ctrl+O (unlike Ctrl+N/T/W), so it never reaches the browser's Open File dialog.
 	const SWITCH_COMPANY_SHORTCUT = 'Ctrl+O';
 
@@ -169,8 +169,8 @@
 			showCompanyMenu = false;
 			showUserMenu = false;
 
-			// Land on the main menu of the new company (NAV Classic closed all windows,
-			// BC goes to the start page): the open record may not exist there. Full load,
+			// Land on the main menu of the new company (Classic closed all windows,
+			// goes to the start page): the open record may not exist there. Full load,
 			// so every page and store starts fresh in the new company.
 			window.location.href = '/';
 		} catch (err) {

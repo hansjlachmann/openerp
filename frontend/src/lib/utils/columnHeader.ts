@@ -1,4 +1,4 @@
-// Column header menu of list pages (BC): sort, "Filter to This Value", clear filter, hide,
+// Column header menu of list pages: sort, "Filter to This Value", clear filter, hide,
 // drag to reorder. Pure helpers, kept out of ListPage so they are unit-tested.
 import type { TableFilter } from '$lib/types/api';
 import type { ItemCustomization } from '$lib/utils/fieldHelpers';

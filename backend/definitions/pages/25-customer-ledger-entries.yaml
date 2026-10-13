@@ -4,8 +4,8 @@ page:
   name: Customer Ledger Entries
   source_table: Customer_ledger_entry
   caption: Customer Ledger Entries
-  # Editable for now (demo data; Customer No. uses the on-demand customer lookup). In BC
-  # posted ledger entries are read-only — make this page read-only once posting exists.
+  # Editable for now (demo data; Customer No. uses the on-demand customer lookup). Posted
+  # ledger entries are read-only — make this page read-only once posting exists.
   editable: true
 
   layout:

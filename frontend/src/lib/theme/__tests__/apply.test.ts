@@ -112,7 +112,7 @@ describe('appearance translations', () => {
 
 describe('font, size and density', () => {
 	const base = {
-		light_theme: 'BC-LIGHT', dark_theme: 'BC-DARK', mode: 'dark' as const, wallpaper: '', wallpaper_opacity: 25,
+		light_theme: 'CLASSIC-LIGHT', dark_theme: 'CLASSIC-DARK', mode: 'dark' as const, wallpaper: '', wallpaper_opacity: 25,
 		wallpaper_blur: 0, panel_opacity: 92, font: 'default', font_size: 0, density: 'comfortable' as const
 	};
 	it('defaults change nothing', () => {

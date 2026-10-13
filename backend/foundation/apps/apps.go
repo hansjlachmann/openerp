@@ -1,4 +1,4 @@
-// Package apps reads application.yaml: an app's identity (BC app.json) and the number series
+// Package apps reads application.yaml: an app's identity (app.json) and the number series
 // its objects and fields may use. The base application has one
 // (backend/definitions/application.yaml); every extension app has its own.
 package apps
@@ -14,7 +14,7 @@ import (
 )
 
 // Object types that have numbers. A number is unique per type (table 18 and page 18 can both
-// exist, as in BC).
+// exist).
 const (
 	Table    = "table"
 	Page     = "page"
@@ -51,7 +51,7 @@ type App struct {
 		Objects []Range `yaml:"objects"`
 		Fields  []Range `yaml:"fields"`
 	} `yaml:"number_series"`
-	// SystemTables are the system table numbers (NAV/BC 2000000000 range), a section of its own
+	// SystemTables are the system table numbers (2000000000 range), a section of its own
 	SystemTables []Range      `yaml:"system_tables"`
 	Dependencies []Dependency `yaml:"dependencies"`
 }

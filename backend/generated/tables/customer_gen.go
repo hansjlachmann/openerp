@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterCustomerLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.Customer) error
 //	OnModify(rec *gtables.Customer) error
@@ -43,7 +43,7 @@ import (
 )
 
 // ========================================
-// Option Field Type Definitions (BC/NAV style)
+// Option Field Type Definitions
 // ========================================
 
 // CustomerStatus represents the status option field
@@ -97,10 +97,10 @@ type Customer struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*customerFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -113,7 +113,7 @@ type Customer struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*Customer
 	currentBufferPos int
 
@@ -130,7 +130,7 @@ const CustomerTableID = 18
 const CustomerTableName = "Customer"
 
 // ========================================
-// Option Field Namespaces (BC/NAV style)
+// Option Field Namespaces
 // ========================================
 
 // Customer_Status provides named constants for the status option field (FieldName.OptionValue syntax)
@@ -149,10 +149,10 @@ var Customer_Status = struct {
 }
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// Customer_FieldNo holds the field numbers of Customer (BC FieldNo):
+// Customer_FieldNo holds the field numbers of Customer (FieldNo):
 // Customer_FieldNo.No is 1
 var Customer_FieldNo = struct {
 	No                   int
@@ -192,7 +192,7 @@ var Customer_FieldNo = struct {
 	Date_filter:          55,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *Customer) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "no":
@@ -498,7 +498,7 @@ func (t *Customer) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *Customer) IsSetupTable() bool {
 	return false
@@ -549,7 +549,7 @@ func GetCustomerPostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -593,7 +593,7 @@ func (t *Customer) CreateTableWithDBType(db database.Executor, company string, d
 		return fmt.Errorf("failed to create Customer table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -639,7 +639,7 @@ func (t *Customer) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new Customer record with database context and type.
@@ -653,7 +653,7 @@ func (t *Customer) InitWithDBType(db database.Executor, company string, dbType d
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *Customer) InitRecord() {
@@ -683,7 +683,7 @@ func (t *Customer) StoreOldValues() {
 	t.oldValues["profile_photo"] = t.Profile_photo
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *Customer) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -903,7 +903,7 @@ func (t *Customer) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -925,7 +925,7 @@ func (t *Customer) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("no") {
@@ -1019,7 +1019,7 @@ func (t *Customer) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.No)
 	}
-	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	// Renamed key fields that other tables refer to (Rename): carried over below
 	type renamedKey struct {
 		field    string
 		old, new interface{}
@@ -1136,7 +1136,7 @@ func (t *Customer) SetDB(db database.Executor) {
 }
 
 // renameReferences carries a renamed key over to every field of another table that refers
-// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// to it (Rename). References from company tables are updated in this company — in
 // every company when this table is global. Runs on the record's executor, so inside the
 // caller's transaction.
 func (t *Customer) renameReferences(field string, oldValue, newValue interface{}) error {
@@ -1200,10 +1200,10 @@ func (t *Customer) Delete(runTrigger bool) bool {
 }
 
 // ========================================
-// FlowField Calculations (BC/NAV style)
+// FlowField Calculations
 // ========================================
 
-// CalcFields calculates FlowField values (BC/NAV style)
+// CalcFields calculates FlowField values
 // Usage:
 //
 //	customer.CalcFields("balance", "balance_lcy") - Calculate specific fields
@@ -1650,7 +1650,7 @@ func (t *Customer) calcCountCustomerLedgerEntry() int {
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // customerFilterCondition represents a filter on a field
@@ -1664,7 +1664,7 @@ type customerFilterCondition struct {
 	flowField    string // Filter on a FlowField (filterExpr applied to its subquery)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -1706,8 +1706,8 @@ func (t *Customer) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *Customer) SetFilter(fieldName, filterExpr string) {
@@ -1740,7 +1740,7 @@ func (t *Customer) SetFilter(fieldName, filterExpr string) {
 }
 
 // FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
-// Count FlowFields, BC: SETFILTER on a FlowField) and the kind of its values.
+// Count FlowFields: SETFILTER on a FlowField) and the kind of its values.
 func (t *Customer) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	switch strings.ToLower(field) {
 	case "balance_lcy":
@@ -1844,7 +1844,7 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 	return "NULL", nil
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *Customer) SetCurrentKey(fields ...string) {
@@ -1864,7 +1864,7 @@ func (t *Customer) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *Customer) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -1927,7 +1927,7 @@ func (t *Customer) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *Customer) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -1969,7 +1969,7 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.flowField != "" {
-			// BC filter syntax on the FlowField's value; an invalid expression matches no rows
+			// filter syntax on the FlowField's value; an invalid expression matches no rows
 			// (the API validates it first and reports it)
 			kind, _ := t.FlowFieldFilterKind(filter.flowField)
 			expr, exprArgs := t.flowFieldExpr(filter.flowField)
@@ -1981,7 +1981,7 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 				args = append(args, clauseArgs...)
 			}
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -2008,7 +2008,7 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *Customer) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -2109,7 +2109,7 @@ func (t *Customer) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *Customer) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
@@ -2177,7 +2177,7 @@ func (t *Customer) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *Customer) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
@@ -2245,7 +2245,7 @@ func (t *Customer) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *Customer) Count() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	where, args := t.buildWhereClause()
@@ -2265,7 +2265,7 @@ func (t *Customer) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *Customer) FindSet() bool {
@@ -2297,7 +2297,7 @@ func (t *Customer) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -2408,7 +2408,7 @@ func (t *Customer) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -2544,15 +2544,15 @@ func (t *Customer) copyFromBuffered(record *Customer) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *Customer) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *Customer) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
@@ -2582,7 +2582,7 @@ func (t *Customer) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *Customer) DeleteAll() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
@@ -2604,7 +2604,7 @@ func (t *Customer) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *Customer) CopyFilters(from *Customer) {
 	if from.filters == nil {
 		t.filters = nil
@@ -2633,7 +2633,7 @@ func (t *Customer) CopyFilters(from *Customer) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *Customer) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -2659,11 +2659,11 @@ func (t *Customer) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -2678,7 +2678,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field no")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_No); ok {
 				if err := trg.OnValidate_No(t); err != nil {
@@ -2696,7 +2696,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field name")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Name); ok {
 				if err := trg.OnValidate_Name(t); err != nil {
@@ -2714,7 +2714,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field address")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Address); ok {
 				if err := trg.OnValidate_Address(t); err != nil {
@@ -2732,7 +2732,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field post_code")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Post_code); ok {
 				if err := trg.OnValidate_Post_code(t); err != nil {
@@ -2750,7 +2750,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field city")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_City); ok {
 				if err := trg.OnValidate_City(t); err != nil {
@@ -2768,7 +2768,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field country_region_code")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Country_region_code); ok {
 				if err := trg.OnValidate_Country_region_code(t); err != nil {
@@ -2786,7 +2786,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field phonenumber")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Phonenumber); ok {
 				if err := trg.OnValidate_Phonenumber(t); err != nil {
@@ -2804,7 +2804,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field payment_terms_code")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Payment_terms_code); ok {
 				if err := trg.OnValidate_Payment_terms_code(t); err != nil {
@@ -2834,7 +2834,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 			// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
 			if v == "" {
-				// Empty string defaults to first option (NAV/BC behavior)
+				// Empty string defaults to first option (behavior)
 				t.Status = 0
 			} else {
 				options := []string{" ", "Open", "Released", "Posted", "Blocked"}
@@ -2853,7 +2853,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field status (expected CustomerStatus, int, or string)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Status); ok {
 				if err := trg.OnValidate_Status(t); err != nil {
@@ -2881,7 +2881,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field credit_limit (expected Decimal, string, float64, int, or int64)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Credit_limit); ok {
 				if err := trg.OnValidate_Credit_limit(t); err != nil {
@@ -2905,7 +2905,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field last_order_date (expected Date, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Last_order_date); ok {
 				if err := trg.OnValidate_Last_order_date(t); err != nil {
@@ -2929,7 +2929,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field created_at (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Created_at); ok {
 				if err := trg.OnValidate_Created_at(t); err != nil {
@@ -2959,7 +2959,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field profile_photo (expected []byte, string, or nil)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Profile_photo); ok {
 				if err := trg.OnValidate_Profile_photo(t); err != nil {
@@ -2977,7 +2977,7 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *Customer) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -3272,7 +3272,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *Customer) SetFlowFilter(field, expr string) error {
 	switch field {

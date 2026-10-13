@@ -57,7 +57,7 @@ func (s KeySpec) Fingerprint() string {
 //
 // Totals table: the key columns (NOT NULL, primary key), one column per sum field and
 // cnt (number of entries). NULL key values are stored as the type's blank value (”, 0,
-// false, blank date), as BC/NAV treat blank. Triggers only apply differences
+// false, blank date), so blank and NULL are the same. Triggers only apply differences
 // (sum = sum + x): concurrent postings serialize on the totals row and none is lost; a
 // rollback undoes the totals with the entry.
 func BuildKey(dbType database.DBType, company, table, entryTable string, spec KeySpec) Key {

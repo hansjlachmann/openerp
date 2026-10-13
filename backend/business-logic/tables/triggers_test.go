@@ -14,7 +14,7 @@ import (
 )
 
 // autoFillCustomer is test business logic whose OnValidate_No fills a sibling field,
-// the way a BC trigger fills Account Name when Account No. is validated.
+// the way a trigger fills Account Name when Account No. is validated.
 type autoFillCustomer struct{}
 
 func (autoFillCustomer) OnValidate_No(rec *gtables.Customer) error {
@@ -104,7 +104,7 @@ func TestInsertThroughInterfaceRunsOnInsert(t *testing.T) {
 	}
 }
 
-// Changing a primary key field of a loaded record must rename it (BC/NAV Rename), not
+// Changing a primary key field of a loaded record must rename it (Rename), not
 // silently do nothing. The list page relies on this: a User_Member row is inserted with a
 // blank company as soon as user and role are filled, and the company is set afterwards.
 func TestModifyRenamesChangedPrimaryKey(t *testing.T) {

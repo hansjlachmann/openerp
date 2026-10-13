@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-// IncStr increments a string (BC/NAV style)
+// IncStr increments a string
 // Examples:
 //   IncStr("001") -> "002"
 //   IncStr("099") -> "100"
@@ -75,10 +75,10 @@ func IncStr(s string) string {
 	return string(runes)
 }
 
-// CopyStr copies a substring from a string (BC/NAV style)
+// CopyStr copies a substring from a string
 // Parameters:
 //   str: source string
-//   position: starting position (1-based, BC/NAV style)
+//   position: starting position (1-based)
 //   length: number of characters to copy (optional)
 //
 // Examples:
@@ -121,7 +121,7 @@ func CopyStr(str string, position int, length ...int) string {
 	return string(runes[startIdx:endIdx])
 }
 
-// PadStr pads a string to a specified length (BC/NAV style)
+// PadStr pads a string to a specified length
 // Parameters:
 //   str: source string
 //   length: desired total length
@@ -148,13 +148,13 @@ func PadStr(str string, length int, padChar string, leftPad bool) string {
 	return str + padding
 }
 
-// StrLen returns the length of a string in characters (BC/NAV style)
+// StrLen returns the length of a string in characters
 // Properly handles Unicode characters
 func StrLen(str string) int {
 	return len([]rune(str))
 }
 
-// DelChr deletes characters from a string (BC/NAV style)
+// DelChr deletes characters from a string
 // Parameters:
 //   str: source string
 //   where: where to delete ('=' exact match, '<' leading, '>' trailing, '<>' both)
@@ -189,17 +189,17 @@ func DelChr(str string, where string, which string) string {
 	}
 }
 
-// UpperCase converts string to uppercase (BC/NAV style)
+// UpperCase converts string to uppercase
 func UpperCase(str string) string {
 	return strings.ToUpper(str)
 }
 
-// LowerCase converts string to lowercase (BC/NAV style)
+// LowerCase converts string to lowercase
 func LowerCase(str string) string {
 	return strings.ToLower(str)
 }
 
-// StrPos finds position of substring (BC/NAV style)
+// StrPos finds position of substring
 // Returns 1-based position, 0 if not found
 func StrPos(str string, substr string) int {
 	idx := strings.Index(str, substr)
@@ -209,7 +209,7 @@ func StrPos(str string, substr string) int {
 	return idx + 1 // Convert to 1-based
 }
 
-// ConvertStr replaces characters in a string (BC/NAV style)
+// ConvertStr replaces characters in a string
 // Parameters:
 //   str: source string
 //   fromChars: characters to replace
@@ -233,7 +233,7 @@ func ConvertStr(str string, fromChars string, toChars string) string {
 	return result
 }
 
-// InsStr inserts a substring into a string (BC/NAV style)
+// InsStr inserts a substring into a string
 // Parameters:
 //   str: source string
 //   substr: substring to insert
@@ -259,7 +259,7 @@ func InsStr(str string, substr string, position int) string {
 	return string(runes[:idx]) + substr + string(runes[idx:])
 }
 
-// DelStr deletes a substring from a string (BC/NAV style)
+// DelStr deletes a substring from a string
 // Parameters:
 //   str: source string
 //   position: 1-based starting position
@@ -290,7 +290,7 @@ func DelStr(str string, position int, length int) string {
 }
 
 // Format formats a string with arguments (similar to fmt.Sprintf)
-// This is a convenience wrapper for BC/NAV style string formatting
+// This is a convenience wrapper for string formatting
 func Format(format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// ParseBCFilter parses a Business Central/NAV style filter expression into SQL WHERE clause
+// ParseFilter parses a filter expression into SQL WHERE clause
 // Supports: *, |, .., <, >, <=, >=, <>
 // Examples:
 //   - "1000" -> field = '1000'
@@ -17,7 +17,7 @@ import (
 //   - "1000..2000" -> field BETWEEN '1000' AND '2000'
 //   - ">1000" -> field > '1000'
 //   - "<1000|>5000" -> (field < '1000' OR field > '5000')
-func ParseBCFilter(field, expression string) (string, []interface{}, error) {
+func ParseFilter(field, expression string) (string, []interface{}, error) {
 	if expression == "" {
 		return "", nil, nil
 	}
@@ -96,7 +96,7 @@ func parseSingleFilter(field, expression string) (string, []interface{}, error) 
 
 	// Handle wildcards (* and ?)
 	if strings.Contains(expression, "*") || strings.Contains(expression, "?") {
-		// Convert BC wildcards to SQL LIKE pattern
+		// Convert wildcards to SQL LIKE pattern
 		pattern := expression
 		pattern = strings.ReplaceAll(pattern, "*", "%")
 		pattern = strings.ReplaceAll(pattern, "?", "_")
@@ -122,7 +122,7 @@ func BuildFilterClause(filters []FilterExpression) (string, []interface{}, error
 			continue
 		}
 
-		cond, filterArgs, err := ParseBCFilter(filter.Field, filter.Expression)
+		cond, filterArgs, err := ParseFilter(filter.Field, filter.Expression)
 		if err != nil {
 			return "", nil, fmt.Errorf("error parsing filter for field %s: %w", filter.Field, err)
 		}

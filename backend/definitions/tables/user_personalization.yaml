@@ -2,7 +2,7 @@ table:
   id: 2000000073
   name: User_Personalization
   caption: User Personalization
-  description: Appearance of the user interface per user (BC User Personalization)
+  description: Appearance of the user interface per user (User Personalization)
   global: true  # Global table - the same appearance in every company
   fields:
     - name: user_id

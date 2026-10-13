@@ -79,7 +79,7 @@
 	});
 
 	// Update current record index when record changes. lastRecordId is the key the form showed
-	// before: a key changed directly from the record's own (rename, BC/NAV) keeps its place in
+	// before: a key changed directly from the record's own (rename, ) keeps its place in
 	// the navigation; a key typed into a new, blank record does not.
 	let lastRecordId = '';
 	$effect(() => {
@@ -178,7 +178,7 @@
 </script>
 
 <Modal {open} onclose={onclose} size={modalSize}>
-	<!-- Edge Navigation Buttons (Business Central style) -->
+	<!-- Edge Navigation Buttons (classic ERP style) -->
 	{#if page.page.enable_navigation && recordIdsLoaded}
 		<NavigationButtons
 			onPrevious={navigationActions.navigatePrevious}

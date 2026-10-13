@@ -17,11 +17,11 @@ type PageMetadata struct {
 	ModalCard        *bool  `yaml:"modal_card,omitempty" json:"modal_card,omitempty"`
 	Editable         *bool  `yaml:"editable,omitempty" json:"editable,omitempty"`
 	EnableNavigation *bool  `yaml:"enable_navigation,omitempty" json:"enable_navigation,omitempty"`
-	// DelayedInsert (BC/NAV DelayedInsert): on editable lists, insert a new record only when
+	// DelayedInsert (DelayedInsert): on editable lists, insert a new record only when
 	// the user leaves the row, not on the first validated field. For pages where the user
 	// types a composite key (e.g. User Members), so no half-entered key is ever saved.
 	DelayedInsert *bool    `yaml:"delayed_insert,omitempty" json:"delayed_insert,omitempty"`
-	// CopyPasteAllowed (BC CopyPasteAllowed): on list pages, Ctrl+C copies the selected
+	// CopyPasteAllowed (CopyPasteAllowed): on list pages, Ctrl+C copies the selected
 	// records and Ctrl+V inserts them (same table; new keys from the list's filters, or
 	// another company)
 	CopyPasteAllowed *bool `yaml:"copy_paste_allowed,omitempty" json:"copy_paste_allowed,omitempty"`
@@ -82,7 +82,7 @@ type Field struct {
 	DrilldownFilterValue string `yaml:"drilldown_filter_value,omitempty" json:"drilldown_filter_value,omitempty"` // Field on current record for filter value
 	PrimaryKey           bool   `yaml:"-" json:"primary_key,omitempty"`                                           // Is this the primary key field (populated at runtime)
 	Required             bool   `yaml:"-" json:"required,omitempty"`                                              // Is this field required (populated at runtime)
-	// Masked (BC ExtendedDatatype Masked): shown as a password input, never in clear text.
+	// Masked (ExtendedDatatype Masked): shown as a password input, never in clear text.
 	// Set in the page YAML (e.g. the User card's virtual password field) or taken from the
 	// table field's masked: true
 	Masked bool `yaml:"masked,omitempty" json:"masked,omitempty"`

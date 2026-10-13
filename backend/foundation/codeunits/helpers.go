@@ -167,7 +167,7 @@ func Error(text string) Result {
 
 // Confirm shows a confirmation dialog and waits for user response
 // Returns true if user clicks Yes, false if No
-// Similar to NAV/BC: Confirm('Are you sure?')
+// Like Confirm('Are you sure?')
 // Note: This only works in async codeunits (UsesProgress() = true)
 func Confirm(message string) bool {
 	dialog := GetCurrentDialog()

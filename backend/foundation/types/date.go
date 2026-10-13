@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Date represents a date without time component (BC/NAV Date type)
+// Date represents a date without time component (Date type)
 // Stored in database as "YYYY-MM-DD" format
 type Date struct {
 	time.Time

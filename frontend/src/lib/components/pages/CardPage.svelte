@@ -409,7 +409,7 @@
 
 <div class="card-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={cardPageElement}>
 
-	<!-- Edge Navigation Buttons (Business Central style) -->
+	<!-- Edge Navigation Buttons (classic ERP style) -->
 	{#if navigationEnabled}
 		<NavigationButtons
 			onPrevious={onNavigatePrevious}

@@ -488,7 +488,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 }
 
 // Renaming a customer (changing its No.) carries the new No. over to its Customer Ledger
-// Entries (BC/NAV Rename) — Customer No. and Sell-to Customer No. — and the SIFT totals move
+// Entries (Rename) — Customer No. and Sell-to Customer No. — and the SIFT totals move
 // with them. A rename rolled back with its transaction leaves everything as it was.
 func TestRenameCustomerUpdatesLedgerEntries(t *testing.T) {
 	db := newTestDB(t)

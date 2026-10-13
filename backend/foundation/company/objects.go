@@ -112,7 +112,7 @@ func DropObjects(db database.Executor, dbType database.DBType, company string) e
 	return nil
 }
 
-// RenameObjects renames the database objects of company oldName to newName (BC/NAV Rename
+// RenameObjects renames the database objects of company oldName to newName (Rename
 // of a Company): the SIFT objects are dropped (their trigger functions name the totals
 // tables, so they cannot simply be renamed), then every table, index and sequence
 // "old$…" becomes "new$…". The caller rebuilds indexes and SIFT totals for newName

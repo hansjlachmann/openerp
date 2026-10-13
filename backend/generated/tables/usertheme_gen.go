@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterUserThemeLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.UserTheme) error
 //	OnModify(rec *gtables.UserTheme) error
@@ -46,10 +46,10 @@ type UserTheme struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*userThemeFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -62,7 +62,7 @@ type UserTheme struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*UserTheme
 	currentBufferPos int
 
@@ -79,10 +79,10 @@ const UserThemeTableID = 903
 const UserThemeTableName = "User_Theme"
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// UserTheme_FieldNo holds the field numbers of User_Theme (BC FieldNo):
+// UserTheme_FieldNo holds the field numbers of User_Theme (FieldNo):
 // UserTheme_FieldNo.User_id is 1
 var UserTheme_FieldNo = struct {
 	User_id    int
@@ -94,7 +94,7 @@ var UserTheme_FieldNo = struct {
 	Added_at:   3,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *UserTheme) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "user_id":
@@ -293,7 +293,7 @@ func (t *UserTheme) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *UserTheme) IsSetupTable() bool {
 	return false
@@ -320,7 +320,7 @@ func GetUserThemePostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -358,7 +358,7 @@ func (t *UserTheme) CreateTableWithDBType(db database.Executor, company string, 
 		return fmt.Errorf("failed to create User_Theme table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -409,7 +409,7 @@ func (t *UserTheme) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new UserTheme record with database context and type.
@@ -423,7 +423,7 @@ func (t *UserTheme) InitWithDBType(db database.Executor, company string, dbType 
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *UserTheme) InitRecord() {
@@ -443,7 +443,7 @@ func (t *UserTheme) StoreOldValues() {
 	t.oldValues["added_at"] = t.Added_at
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *UserTheme) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -618,7 +618,7 @@ func (t *UserTheme) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -643,7 +643,7 @@ func (t *UserTheme) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("user_id") {
@@ -783,7 +783,7 @@ func (t *UserTheme) CalcFieldsForRecords(records []map[string]interface{}, field
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // userThemeFilterCondition represents a filter on a field
@@ -796,7 +796,7 @@ type userThemeFilterCondition struct {
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -838,8 +838,8 @@ func (t *UserTheme) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *UserTheme) SetFilter(fieldName, filterExpr string) {
@@ -861,7 +861,7 @@ func (t *UserTheme) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *UserTheme) SetCurrentKey(fields ...string) {
@@ -876,7 +876,7 @@ func (t *UserTheme) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *UserTheme) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -919,7 +919,7 @@ func (t *UserTheme) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *UserTheme) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -961,7 +961,7 @@ func (t *UserTheme) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -988,7 +988,7 @@ func (t *UserTheme) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *UserTheme) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -1083,7 +1083,7 @@ func (t *UserTheme) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *UserTheme) FindFirst() bool {
 	tableName := UserThemeTableName
@@ -1123,7 +1123,7 @@ func (t *UserTheme) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *UserTheme) FindLast() bool {
 	tableName := UserThemeTableName
@@ -1163,7 +1163,7 @@ func (t *UserTheme) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *UserTheme) Count() int {
 	tableName := UserThemeTableName
 	where, args := t.buildWhereClause()
@@ -1183,7 +1183,7 @@ func (t *UserTheme) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *UserTheme) FindSet() bool {
@@ -1215,7 +1215,7 @@ func (t *UserTheme) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -1298,7 +1298,7 @@ func (t *UserTheme) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -1393,15 +1393,15 @@ func (t *UserTheme) copyFromBuffered(record *UserTheme) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *UserTheme) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *UserTheme) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := UserThemeTableName
@@ -1431,7 +1431,7 @@ func (t *UserTheme) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *UserTheme) DeleteAll() int {
 	tableName := UserThemeTableName
@@ -1453,7 +1453,7 @@ func (t *UserTheme) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *UserTheme) CopyFilters(from *UserTheme) {
 	if from.filters == nil {
 		t.filters = nil
@@ -1482,7 +1482,7 @@ func (t *UserTheme) CopyFilters(from *UserTheme) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *UserTheme) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -1508,11 +1508,11 @@ func (t *UserTheme) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *UserTheme) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -1527,7 +1527,7 @@ func (t *UserTheme) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(UserThemeOnValidate_User_id); ok {
 				if err := trg.OnValidate_User_id(t); err != nil {
@@ -1545,7 +1545,7 @@ func (t *UserTheme) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field theme_code")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(UserThemeOnValidate_Theme_code); ok {
 				if err := trg.OnValidate_Theme_code(t); err != nil {
@@ -1569,7 +1569,7 @@ func (t *UserTheme) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field added_at (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(UserThemeOnValidate_Added_at); ok {
 				if err := trg.OnValidate_Added_at(t); err != nil {
@@ -1587,7 +1587,7 @@ func (t *UserTheme) ValidateField(fieldName string, value interface{}) error {
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *UserTheme) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -1674,7 +1674,7 @@ func (t *UserTheme) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *UserTheme) SetFlowFilter(field, expr string) error {
 	switch field {

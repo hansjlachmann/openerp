@@ -2,7 +2,7 @@ table:
   id: 9
   name: "Country_Region"
   caption: Country/Region
-  description: Countries and regions (BC table 9 Country/Region)
+  description: Countries and regions (table 9 Country/Region)
   fields:
     - name: code
       no: 1

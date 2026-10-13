@@ -27,7 +27,7 @@ type TablePermission struct {
 	Delete bool
 }
 
-// Session represents a user session (similar to BC/NAV SESSION variable)
+// Session represents a user session (similar to SESSION variable)
 // Contains database connection, current company, and other session state
 type Session struct {
 	DB          *database.Database         // Database connection
@@ -43,7 +43,7 @@ type Session struct {
 	transaction *sql.Tx                    // Active transaction (nil if not in transaction)
 }
 
-// Global current session (like BC/NAV SESSION global variable)
+// Global current session (like SESSION global variable)
 var currentSession *Session
 
 // NewSession creates a new session instance
@@ -182,7 +182,7 @@ func ClearCurrent() {
 // ========================================
 
 // BeginTransaction starts a new database transaction
-// Similar to BC/NAV's implicit transaction handling
+// Implicit transaction handling
 // Returns error if a transaction is already active
 func (s *Session) BeginTransaction() error {
 	if s.transaction != nil {
@@ -198,7 +198,7 @@ func (s *Session) BeginTransaction() error {
 	return nil
 }
 
-// Commit commits the current transaction (BC/NAV COMMIT)
+// Commit commits the current transaction (COMMIT)
 // Makes all changes permanent since BeginTransaction
 // Returns error if no transaction is active
 func (s *Session) Commit() error {

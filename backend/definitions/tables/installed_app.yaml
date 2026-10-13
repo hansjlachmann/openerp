@@ -2,7 +2,7 @@ table:
   id: 2000000153
   name: Installed_App
   caption: Installed App
-  description: The apps installed in this database (BC NAV App Installed App), one row per application.yaml, written at startup
+  description: The apps installed in this database one row per application.yaml, written at startup
   global: true
   fields:
     - name: app_id

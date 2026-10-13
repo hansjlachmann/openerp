@@ -1,4 +1,4 @@
-// Package demodata fills a company with demo data (BC/NAV Contoso-style): countries,
+// Package demodata fills a company with demo data: countries,
 // payment terms, customers and customer ledger entries. The data lives in the YAML
 // files under data/; records are written through the table API (Insert with triggers),
 // so they obey the same rules as data entered by a user.

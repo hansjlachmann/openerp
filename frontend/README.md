@@ -5,9 +5,9 @@ Modern, fast, keyboard-driven web frontend for OpenERP, built with SvelteKit.
 ## Features
 
 ✅ **SvelteKit** - Fast, modern framework with SSR support
-✅ **TailwindCSS** - Utility-first CSS with BC/NAV-inspired theme
+✅ **TailwindCSS** - Utility-first CSS with a classic ERP theme
 ✅ **TypeScript** - Type-safe development
-✅ **Keyboard Shortcuts** - BC/NAV-style keyboard navigation (Alt+N, Ctrl+E, etc.)
+✅ **Keyboard Shortcuts** - keyboard navigation (Alt+N, Ctrl+E, etc.)
 ✅ **API Client** - Type-safe API service for backend communication
 ✅ **Session Management** - Centralized session/state management
 ✅ **Component Library** - Reusable UI components (Button, Card, Input, etc.)
@@ -92,7 +92,7 @@ npm run preview
 
 ## Keyboard Shortcuts
 
-BC/NAV-style keyboard shortcuts are implemented throughout the application:
+keyboard shortcuts are implemented throughout the application:
 
 | Shortcut       | Action                 |
 | -------------- | ---------------------- |
@@ -235,7 +235,7 @@ Access session state anywhere:
 </div>
 ```
 
-### BC/NAV color scheme:
+### color scheme:
 
 - `text-nav-blue` - #002050 (dark blue, used for headings)
 - `text-nav-lightblue` - #4472c4 (light blue)

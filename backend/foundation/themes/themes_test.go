@@ -160,7 +160,7 @@ func TestBuiltins(t *testing.T) {
 			t.Errorf("%s: mode %s, tokens %s", th.Code, th.Mode, th.Tokens.Mode)
 		}
 		if th.Code == DefaultLight || th.Code == DefaultDark {
-			continue // BC values as they are (app.css), checked against app.css below
+			continue // values as they are (app.css), checked against app.css below
 		}
 		checkTokens(t, th.Code, th.Tokens)
 	}
@@ -195,9 +195,9 @@ func TestNormalizeFixturesAndHostilePalettes(t *testing.T) {
 
 func ptr(c RGB) *RGB { return &c }
 
-// The BC themes must be exactly the defaults in app.css: choosing BC Light/Dark changes
+// The themes must be exactly the defaults in app.css: choosing Light/Dark changes
 // nothing.
-func TestBCTokensMatchAppCSS(t *testing.T) {
+func TestClassicTokensMatchAppCSS(t *testing.T) {
 	css, err := os.ReadFile("../../../frontend/src/app.css")
 	if err != nil {
 		t.Skip("app.css not found:", err)
@@ -216,7 +216,7 @@ func TestBCTokensMatchAppCSS(t *testing.T) {
 		c := MustColor(h)
 		return strings.Join([]string{itoa(c.R), itoa(c.G), itoa(c.B)}, " ")
 	}
-	light := bcLightTokens()
+	light := classicLightTokens()
 	for i, step := range Steps {
 		if got, want := asTriplet(light.Gray[i]), triplet("gray-"+itoa(step)); got != want {
 			t.Errorf("gray-%d: tokens %s, app.css %s", step, got, want)
@@ -236,7 +236,7 @@ func TestBCTokensMatchAppCSS(t *testing.T) {
 			t.Errorf("--%s: tokens %s, app.css %s", name, got, want)
 		}
 	}
-	if !strings.Contains(string(css), "--row-selected: 60 64 71;") || bcDarkTokens().Vars.RowSelected != "#3c4047" {
+	if !strings.Contains(string(css), "--row-selected: 60 64 71;") || classicDarkTokens().Vars.RowSelected != "#3c4047" {
 		t.Error("dark selected row differs from app.css")
 	}
 }

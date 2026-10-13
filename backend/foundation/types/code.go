@@ -6,7 +6,7 @@ import (
 )
 
 // Code is a custom type that automatically converts to uppercase
-// This matches Business Central's Code datatype behavior
+// This matches classic ERP's Code datatype behavior
 type Code string
 
 // NewCode creates a new Code value with automatic uppercase conversion

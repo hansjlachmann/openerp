@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 /* Color tokens: RGB triplets, used as rgb(var(--x)) or rgb(var(--x) / alpha) and by the
-   Tailwind colors (tailwind.config.js). The defaults are the Business Central palette; a theme
+   Tailwind colors (tailwind.config.js). The defaults are the classic ERP palette; a theme
    (src/lib/theme) overrides them on <html>. Keep component colors on these variables. */
 :root {
-	/* BC neutrals, the same ramp in light and dark mode */
+	/* neutrals, the same ramp in light and dark mode */
 	--gray-50: 247 247 247;
 	--gray-100: 242 242 243;
 	--gray-200: 229 231 233;
@@ -19,7 +19,7 @@
 	--gray-900: 18 18 18;
 	--gray-950: 10 10 10;
 
-	/* BC teal accent */
+	/* teal accent */
 	--accent-50: 230 243 244;
 	--accent-100: 204 232 234;
 	--accent-200: 153 209 212;
@@ -36,11 +36,11 @@
 	--surface: 255 255 255; /* panels, cards, dropdowns */
 	--fg: 33 33 33; /* body text #212121 */
 	--heading: 40 40 40; /* page and section titles #282828 */
-	--appbar: 40 40 40; /* BC app bar, same in light and dark mode */
+	--appbar: 40 40 40; /* app bar, same in light and dark mode */
 	--appbar-fg: 255 255 255;
 	--row-selected: var(--accent-100);
 	--row-selected-hover: var(--accent-100);
-	--text-sel-bg: 0 120 212; /* BC selected text #0078d4 */
+	--text-sel-bg: 0 120 212; /* selected text #0078d4 */
 	--text-sel-fg: 255 255 255;
 	--scroll-track: 252 252 252;
 	--scroll-thumb: 139 139 139;
@@ -85,9 +85,9 @@
 	--color-text-muted: rgb(var(--gray-500));
 }
 
-/* BC/NAV-inspired global styles */
+/* -inspired global styles */
 @layer base {
-	/* BC: white page with near-black text; dark mode gray-900 page with off-white text */
+	/* Light: white page with near-black text; dark mode gray-900 page with off-white text */
 	body {
 		@apply font-sans;
 		background-color: rgb(var(--page-bg));
@@ -106,7 +106,7 @@
 }
 
 @layer components {
-	/* BC/NAV-style button - flat, minimal design */
+	/* button - flat, minimal design */
 	.btn {
 		@apply inline-flex items-center px-4 py-2 font-medium transition-colors;
 		@apply border border-transparent rounded;
@@ -138,7 +138,7 @@
 		@apply dark:text-red-400 dark:hover:bg-red-900/20;
 	}
 
-	/* BC/NAV-style input */
+	/* input */
 	.input {
 		@apply w-full px-3 py-2 border border-gray-300 rounded;
 		@apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
@@ -242,7 +242,7 @@ html.font-monospace {
 	--font-sans: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
 }
 
-/* List rows (ListPage .table td): comfortable = the BC rows as before, compact = no padding */
+/* List rows (ListPage .table td): comfortable = the rows as before, compact = no padding */
 html.density-compact {
 	--cell-py: 0px;
 	--cell-lh: 1.15;
@@ -284,7 +284,7 @@ html.has-wallpaper .card-page .page-header {
 	background-color: transparent !important;
 }
 
-/* Scrollbar styling - wide, BC colors (sampled from docs/BC-Screenshot-*.png) */
+/* Scrollbar styling - wide, colors (sampled from the reference screenshots) */
 ::-webkit-scrollbar {
 	width: 16px;
 	height: 16px;
@@ -297,7 +297,7 @@ html.has-wallpaper .card-page .page-header {
 
 ::-webkit-scrollbar-thumb {
 	background-color: rgb(var(--scroll-thumb));
-	border: 2px solid rgb(var(--scroll-track)); /* small gap around the thumb, like BC */
+	border: 2px solid rgb(var(--scroll-track)); /* small gap around the thumb */
 	border-radius: 8px;
 	min-height: 40px;
 	min-width: 40px;

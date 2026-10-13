@@ -40,18 +40,18 @@ type Vars struct {
 // TokensVersion is the version of the token format.
 const TokensVersion = 1
 
-// bcGray and bcTeal are the Business Central ramps — the defaults in app.css. Generated
-// ramps follow their lightness profile, so a theme spreads its grays like BC does.
+// classicGray and classicTeal are the classic ERP ramps — the defaults in app.css. Generated
+// ramps follow their lightness profile, so a theme spreads its grays the same way.
 var (
-	bcGray = [11]string{"#f7f7f7", "#f2f2f3", "#e5e7e9", "#d3d6da", "#a4b0c4", "#737d8a", "#505c6d", "#303032", "#1e1e1e", "#121212", "#0a0a0a"}
-	bcTeal = [11]string{"#e6f3f4", "#cce8ea", "#99d1d4", "#66b9bf", "#37a1a5", "#00838f", "#008489", "#006e72", "#00585c", "#003a3e", "#002a2d"}
+	classicGray = [11]string{"#f7f7f7", "#f2f2f3", "#e5e7e9", "#d3d6da", "#a4b0c4", "#737d8a", "#505c6d", "#303032", "#1e1e1e", "#121212", "#0a0a0a"}
+	classicTeal = [11]string{"#e6f3f4", "#cce8ea", "#99d1d4", "#66b9bf", "#37a1a5", "#00838f", "#008489", "#006e72", "#00585c", "#003a3e", "#002a2d"}
 )
 
-// bcLightTokens and bcDarkTokens are exactly the defaults in frontend/src/app.css (BC
+// classicLightTokens and classicDarkTokens are exactly the defaults in frontend/src/app.css (Classic
 // Light/Dark): applying them changes nothing.
-func bcLightTokens() Tokens {
+func classicLightTokens() Tokens {
 	return Tokens{
-		Version: TokensVersion, Mode: "light", Gray: bcGray, Accent: bcTeal,
+		Version: TokensVersion, Mode: "light", Gray: classicGray, Accent: classicTeal,
 		Vars: Vars{
 			PageBg: "#ffffff", Surface: "#ffffff", Fg: "#212121", Heading: "#282828",
 			Appbar: "#282828", AppbarFg: "#ffffff",
@@ -62,9 +62,9 @@ func bcLightTokens() Tokens {
 	}
 }
 
-func bcDarkTokens() Tokens {
+func classicDarkTokens() Tokens {
 	return Tokens{
-		Version: TokensVersion, Mode: "dark", Gray: bcGray, Accent: bcTeal,
+		Version: TokensVersion, Mode: "dark", Gray: classicGray, Accent: classicTeal,
 		Vars: Vars{
 			PageBg: "#121212", Surface: "#ffffff", Fg: "#f7f7f7", Heading: "#282828",
 			Appbar: "#282828", AppbarFg: "#ffffff",

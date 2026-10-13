@@ -19,7 +19,7 @@
 		page: PageDefinition;
 		captions?: Record<string, string>;
 		currentFilters?: TableFilter[];
-		// FlowFilters (e.g. Date Filter) as typed — "Filter totals by" (BC)
+		// FlowFilters (e.g. Date Filter) as typed — "Filter totals by"
 		currentFlowFilters?: TableFilter[];
 		onApply: (filters: TableFilter[], flowFilters: TableFilter[]) => void;
 		onClose: () => void;
@@ -581,7 +581,7 @@
 				</div>
 			{/if}
 
-			<!-- FlowFilters (BC "Filter totals by"): limit the FlowFields, e.g. to a Date Filter period -->
+			<!-- FlowFilters ("Filter totals by"): limit the FlowFields, e.g. to a Date Filter period -->
 			{#if flowFilterFields.length > 0}
 				<h4 class="section-title totals-title">{t(FLT.TOTALS_BY)}</h4>
 				<div class="active-filters">

@@ -158,7 +158,7 @@
 </div>
 
 <style>
-	/* Keyboard focus on a menu item: BC teal highlight */
+	/* Keyboard focus on a menu item: teal highlight */
 	.menu-item {
 		@apply rounded px-2 -mx-2;
 	}

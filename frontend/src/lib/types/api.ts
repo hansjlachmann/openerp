@@ -51,10 +51,10 @@ export interface ListResponse<T = TableRecord> {
 	offset?: number; // position of the first record in the full list (windowed loads)
 }
 
-// Filter types (BC/NAV style)
+// Filter types
 export interface TableFilter {
 	field: string;
-	expression: string; // BC-style filter expression: supports *, |, .., <, >, etc.
+	expression: string; // filter expression: supports *, |, .., <, >, etc.
 }
 
 export interface ListOptions {

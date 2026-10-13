@@ -5,7 +5,7 @@ import (
 )
 
 // Text is a custom type that preserves case sensitivity
-// This matches Business Central's Text datatype behavior
+// This matches classic ERP's Text datatype behavior
 type Text string
 
 // NewText creates a new Text value

@@ -7,8 +7,8 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
-// ObjectRegistry maintains a registry of all Business Central objects
-// Similar to BC's object numbering system
+// ObjectRegistry maintains a registry of all classic ERP objects
+// Classic object numbering
 type ObjectRegistry struct {
 	tables        map[int]interface{}
 	tablesByName  map[string]int              // Table name -> Table ID
@@ -184,10 +184,10 @@ func (or *ObjectRegistry) ListReports() []int {
 	return ids
 }
 
-// validateObjectID validates that an object ID is within valid BC ranges
+// validateObjectID validates that an object ID is within valid ranges
 func validateObjectID(id int) error {
 	// Check if within any valid range
-	if (id >= types.RangeMicrosoftStart && id <= types.RangeMicrosoftEnd) ||
+	if (id >= types.RangeBaseStart && id <= types.RangeBaseEnd) ||
 		(id >= types.RangeCustomerStart && id <= types.RangeCustomerEnd) ||
 		(id >= types.RangeAddonStart && id <= types.RangeAddonEnd) ||
 		(id >= types.RangeAddon2Start && id <= types.RangeAddon2End) ||
@@ -200,8 +200,8 @@ func validateObjectID(id int) error {
 
 // GetObjectRange returns a description of which range an object ID belongs to
 func GetObjectRange(id int) string {
-	if id >= types.RangeMicrosoftStart && id <= types.RangeCustomerStart-1 {
-		return "Microsoft Base Application"
+	if id >= types.RangeBaseStart && id <= types.RangeCustomerStart-1 {
+		return "Base Application"
 	}
 	if id >= types.RangeCustomerStart && id <= types.RangeCustomerEnd {
 		return "Customer Customization"

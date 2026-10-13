@@ -1,4 +1,4 @@
-// Multi-row selection on list pages (BC: select several lines with Ctrl/Shift, Ctrl+A).
+// Multi-row selection on list pages (select several lines with Ctrl/Shift, Ctrl+A).
 //
 // Rows are identified by their record key (getRecordId), never by their position: lists load
 // a window of rows, and search/sort reorder them. Positions are absolute (window offset +

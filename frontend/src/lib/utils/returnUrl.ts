@@ -1,4 +1,4 @@
-// Drilldowns and card actions open another page; like BC, Esc or the close button returns
+// Drilldowns and card actions open another page; Esc or the close button returns
 // to the page they came from, on the same record. The target page gets the way back as
 // ?back=<path of the origin page, with select=<record key>>.
 

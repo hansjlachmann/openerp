@@ -8,7 +8,7 @@ type FieldInfo struct {
 	FieldOrder   int
 }
 
-// ObjectType represents the type of Business Central object
+// ObjectType represents the type of classic ERP object
 type ObjectType int
 
 const (
@@ -32,11 +32,11 @@ func (ot ObjectType) String() string {
 	}[ot]
 }
 
-// Object numbering ranges (Business Central standard)
+// Object numbering ranges (classic ERP standard)
 const (
-	// Microsoft reserved: 1-99,999,999
-	RangeMicrosoftStart = 1
-	RangeMicrosoftEnd   = 99999999
+	// Any object number: 1-99,999,999
+	RangeBaseStart = 1
+	RangeBaseEnd   = 99999999
 
 	// Customer objects: 50,000-99,999 (customization range)
 	RangeCustomerStart = 50000
@@ -50,7 +50,7 @@ const (
 	RangeAddon2Start = 70000000
 	RangeAddon2End   = 74999999
 
-	// System tables (NAV/BC): 2,000,000,000-2,000,000,199 — User, Company, Permission …
+	// System tables: 2,000,000,000-2,000,000,199 — User, Company, Permission …
 	RangeSystemStart = 2000000000
 	RangeSystemEnd   = 2000000199
 )

@@ -15,7 +15,7 @@ import type { CompanyInfo } from '$lib/utils/company';
 
 const API_BASE = '/api';
 
-// Builds a record endpoint URL. An empty id (a BC-style setup table's single
+// Builds a record endpoint URL. An empty id (a setup table's single
 // record has a blank primary key) omits the id segment so it matches the no-id
 // backend routes instead of producing a trailing-slash 404.
 function recordUrl(tableName: string, action: 'card' | 'modify' | 'delete', id: string): string {
@@ -234,7 +234,7 @@ export const api = {
 		return handleApiResponseVoid(response, `delete ${tableName} ${id}`);
 	},
 
-	// Validate a field (BC/NAV VALIDATE). Pass the in-progress record so the field's
+	// Validate a field (VALIDATE). Pass the in-progress record so the field's
 	// OnValidate trigger can see and fill in sibling fields; the result carries the
 	// resulting record.
 	async validateField(
@@ -261,7 +261,7 @@ export const api = {
 		};
 	},
 
-	// Get a new, not yet inserted record with its defaults applied (BC/NAV OnNewRecord)
+	// Get a new, not yet inserted record with its defaults applied (OnNewRecord)
 	async initRecord<T = TableRecord>(tableName: string): Promise<T> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/init`, {
 			method: 'POST'

@@ -100,7 +100,7 @@ table:
       type: "[]byte"
       db_name: profile_photo
 
-    # FlowFilter (NAV FieldClass FlowFilter): not stored — the user sets it ("Filter totals
+    # FlowFilter (FieldClass FlowFilter): not stored — the user sets it ("Filter totals
     # by" in the filter pane) and the FlowFields below apply it to the entries' Posting Date
     - name: date_filter
       no: 55

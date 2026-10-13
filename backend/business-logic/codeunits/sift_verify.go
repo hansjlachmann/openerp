@@ -16,7 +16,7 @@ import (
 // SIFTVerify - Codeunit 902: Verify SIFT
 //
 // Run from the Job Queue (Run action or the scheduler) in a company. Compares every SIFT
-// totals table of the company with a fresh sum over its entries (NAV's "verify SIFT").
+// totals table of the company with a fresh sum over its entries ("verify SIFT").
 // Parameter VERIFY (default) only reports; REPAIR rebuilds the keys whose totals differ.
 // Unrepaired differences fail the run, so a scheduled job is set to Error and can notify
 // by e-mail. Every run is logged as a Job Queue Entry.

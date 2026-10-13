@@ -85,14 +85,11 @@ certs/
 # claude
 .claude/settings.local.json
 
-# Local reference material (BC screenshots referenced by TODO.md / CLAUDE.md)
+# Local reference material (screenshots referenced by TODO.md / CLAUDE.md)
 screenshots/
 
 
 instant-build-script
-
-# Local reference material: NAV Classic 2.6 source code (not part of this project)
-nav-classic-260-code-txt/
 
 # Server settings with secrets (from prod.env.example)
 prod.env

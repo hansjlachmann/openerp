@@ -1,4 +1,4 @@
-// Package sift maintains SIFT totals tables (BC/NAV SumIndexFields).
+// Package sift maintains SIFT totals tables (SumIndexFields).
 //
 // A table key can declare sum_index_fields in its YAML definition. For each such key the
 // database keeps a totals table — one row per distinct key value combination with the

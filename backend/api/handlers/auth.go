@@ -283,7 +283,7 @@ func (h *AuthHandler) CreateInitialUser(c *fiber.Ctx) error {
 
 // CompanyInfo is a company as listed for the login page and the company switcher.
 // Name is the technical key (prefixes the company's tables); DisplayName is what
-// users see (BC/NAV Display Name) and may be blank.
+// users see (Display Name) and may be blank.
 type CompanyInfo struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`

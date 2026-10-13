@@ -33,7 +33,7 @@ func panicMessage(f func()) (msg string) {
 }
 
 // A trigger the table does not have would never run: registering it stops the program,
-// naming the method (as a BC compile error would).
+// naming the method (as a compile error would).
 func TestRegisterRejectsUnknownTriggers(t *testing.T) {
 	msg := panicMessage(func() { gtables.RegisterCustomerLogic(misspelledTrigger{}) })
 	if !strings.Contains(msg, "OnValidate_Nmae is not a trigger of table Customer") {
@@ -109,7 +109,7 @@ func TestLogicRunsInOrderAndStopsAtFirstError(t *testing.T) {
 	}
 }
 
-// Without runTrigger no trigger and no field check runs (BC Insert(false))
+// Without runTrigger no trigger and no field check runs (Insert(false))
 func TestNoTriggersWithoutRunTrigger(t *testing.T) {
 	db := newTestDB(t)
 	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {

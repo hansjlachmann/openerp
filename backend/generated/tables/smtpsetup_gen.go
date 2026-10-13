@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterSMTPSetupLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.SMTPSetup) error
 //	OnModify(rec *gtables.SMTPSetup) error
@@ -57,10 +57,10 @@ type SMTPSetup struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*sMTPSetupFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -73,7 +73,7 @@ type SMTPSetup struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*SMTPSetup
 	currentBufferPos int
 
@@ -90,10 +90,10 @@ const SMTPSetupTableID = 409
 const SMTPSetupTableName = "SMTP_Setup"
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// SMTPSetup_FieldNo holds the field numbers of SMTP_Setup (BC FieldNo):
+// SMTPSetup_FieldNo holds the field numbers of SMTP_Setup (FieldNo):
 // SMTPSetup_FieldNo.Primary_key is 1
 var SMTPSetup_FieldNo = struct {
 	Primary_key      int
@@ -113,7 +113,7 @@ var SMTPSetup_FieldNo = struct {
 	From_address:     7,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *SMTPSetup) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "primary_key":
@@ -346,7 +346,7 @@ func (t *SMTPSetup) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *SMTPSetup) IsSetupTable() bool {
 	return true
@@ -379,7 +379,7 @@ func GetSMTPSetupPostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -417,7 +417,7 @@ func (t *SMTPSetup) CreateTableWithDBType(db database.Executor, company string, 
 		return fmt.Errorf("failed to create SMTP_Setup table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -463,7 +463,7 @@ func (t *SMTPSetup) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new SMTPSetup record with database context and type.
@@ -477,7 +477,7 @@ func (t *SMTPSetup) InitWithDBType(db database.Executor, company string, dbType 
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *SMTPSetup) InitRecord() {
@@ -502,7 +502,7 @@ func (t *SMTPSetup) StoreOldValues() {
 	t.oldValues["from_address"] = t.From_address
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *SMTPSetup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -787,7 +787,7 @@ func (t *SMTPSetup) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -814,7 +814,7 @@ func (t *SMTPSetup) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("primary_key") {
@@ -992,7 +992,7 @@ func (t *SMTPSetup) CalcFieldsForRecords(records []map[string]interface{}, field
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // sMTPSetupFilterCondition represents a filter on a field
@@ -1005,7 +1005,7 @@ type sMTPSetupFilterCondition struct {
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -1047,8 +1047,8 @@ func (t *SMTPSetup) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *SMTPSetup) SetFilter(fieldName, filterExpr string) {
@@ -1070,7 +1070,7 @@ func (t *SMTPSetup) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *SMTPSetup) SetCurrentKey(fields ...string) {
@@ -1085,7 +1085,7 @@ func (t *SMTPSetup) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *SMTPSetup) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -1136,7 +1136,7 @@ func (t *SMTPSetup) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *SMTPSetup) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -1178,7 +1178,7 @@ func (t *SMTPSetup) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -1205,7 +1205,7 @@ func (t *SMTPSetup) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *SMTPSetup) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -1300,7 +1300,7 @@ func (t *SMTPSetup) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *SMTPSetup) FindFirst() bool {
 	tableName := SMTPSetupTableName
@@ -1350,7 +1350,7 @@ func (t *SMTPSetup) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *SMTPSetup) FindLast() bool {
 	tableName := SMTPSetupTableName
@@ -1400,7 +1400,7 @@ func (t *SMTPSetup) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *SMTPSetup) Count() int {
 	tableName := SMTPSetupTableName
 	where, args := t.buildWhereClause()
@@ -1420,7 +1420,7 @@ func (t *SMTPSetup) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *SMTPSetup) FindSet() bool {
@@ -1452,7 +1452,7 @@ func (t *SMTPSetup) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -1545,7 +1545,7 @@ func (t *SMTPSetup) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -1654,15 +1654,15 @@ func (t *SMTPSetup) copyFromBuffered(record *SMTPSetup) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *SMTPSetup) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *SMTPSetup) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := SMTPSetupTableName
@@ -1692,7 +1692,7 @@ func (t *SMTPSetup) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *SMTPSetup) DeleteAll() int {
 	tableName := SMTPSetupTableName
@@ -1714,7 +1714,7 @@ func (t *SMTPSetup) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *SMTPSetup) CopyFilters(from *SMTPSetup) {
 	if from.filters == nil {
 		t.filters = nil
@@ -1743,7 +1743,7 @@ func (t *SMTPSetup) CopyFilters(from *SMTPSetup) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *SMTPSetup) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -1769,11 +1769,11 @@ func (t *SMTPSetup) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -1788,7 +1788,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field primary_key")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_Primary_key); ok {
 				if err := trg.OnValidate_Primary_key(t); err != nil {
@@ -1807,7 +1807,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field enabled")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_Enabled); ok {
 				if err := trg.OnValidate_Enabled(t); err != nil {
@@ -1825,7 +1825,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field smtp_server")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_Smtp_server); ok {
 				if err := trg.OnValidate_Smtp_server(t); err != nil {
@@ -1852,7 +1852,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		default:
 			return fmt.Errorf("invalid type for field smtp_server_port")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_Smtp_server_port); ok {
 				if err := trg.OnValidate_Smtp_server_port(t); err != nil {
@@ -1870,7 +1870,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_User_id); ok {
 				if err := trg.OnValidate_User_id(t); err != nil {
@@ -1888,7 +1888,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field password")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_Password); ok {
 				if err := trg.OnValidate_Password(t); err != nil {
@@ -1906,7 +1906,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field from_address")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SMTPSetupOnValidate_From_address); ok {
 				if err := trg.OnValidate_From_address(t); err != nil {
@@ -1924,7 +1924,7 @@ func (t *SMTPSetup) ValidateField(fieldName string, value interface{}) error {
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *SMTPSetup) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -2079,7 +2079,7 @@ func (t *SMTPSetup) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *SMTPSetup) SetFlowFilter(field, expr string) error {
 	switch field {

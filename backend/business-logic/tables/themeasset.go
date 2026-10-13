@@ -5,7 +5,7 @@ import (
 )
 
 // themeAssetLogic is the business logic of table 902 Theme_Asset.
-// Add a trigger when it is needed (as in BC): the available triggers are listed at the
+// Add a trigger when it is needed: the available triggers are listed at the
 // top of generated/tables/themeasset_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.
 type themeAssetLogic struct{}

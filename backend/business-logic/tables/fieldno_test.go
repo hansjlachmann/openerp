@@ -6,13 +6,13 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// Field numbers (BC field IDs) from the table definitions reach the generated code
+// Field numbers (field IDs) from the table definitions reach the generated code
 func TestFieldNumbers(t *testing.T) {
 	var c gtables.Customer
 	if gtables.Customer_FieldNo.Name != 2 || c.FieldNo("name") != 2 || c.FieldName(2) != "name" {
 		t.Errorf("Customer.Name: %d / %d / %q", gtables.Customer_FieldNo.Name, c.FieldNo("name"), c.FieldName(2))
 	}
-	// FlowFilter fields have numbers too (BC Date Filter = 55)
+	// FlowFilter fields have numbers too (Date Filter = 55)
 	if c.FieldNo("date_filter") != 55 || c.FieldName(55) != "date_filter" {
 		t.Errorf("date_filter: %d / %q", c.FieldNo("date_filter"), c.FieldName(55))
 	}

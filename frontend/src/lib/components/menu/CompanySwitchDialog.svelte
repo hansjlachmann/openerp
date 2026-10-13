@@ -3,7 +3,7 @@
 	import { t, MENU } from '$lib/services/i18n.svelte';
 	import { companyLabel, filterCompanies, type CompanyInfo } from '$lib/utils/company';
 
-	// Switch Company dialog (Ctrl+O, as in NAV Classic). Typing filters the list,
+	// Switch Company dialog (Ctrl+O). Typing filters the list,
 	// ArrowUp/Down move, Enter switches, Escape closes. Companies show their display
 	// name; `current` and `onselect` use the technical name.
 	interface Props {

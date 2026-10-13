@@ -4,7 +4,7 @@ This document describes how to extend OpenERP with custom tables, pages, and cod
 
 ## Object and field numbers: application.yaml
 
-Every app has an `application.yaml` (BC app.json) with a GUID that never changes and the
+Every app has an `application.yaml` (app.json) with a GUID that never changes and the
 number series it may use. The base application's is `backend/definitions/application.yaml`:
 
 | Numbers | Base application |
@@ -123,7 +123,7 @@ fields:                      # Written like the fields of a table definition (ev
     caption: Custom Field
 ```
 
-Field numbers identify fields (BC field IDs): `extmerge` refuses an extension field without a
+Field numbers identify fields (field IDs): `extmerge` refuses an extension field without a
 number above the base application's 1–999, or with a number or name the table (or another
 extension) already uses. Each extension uses its own number series (planned: `application.yaml`,
 see TODO "Field and object numbering"). A number is never changed or reused.

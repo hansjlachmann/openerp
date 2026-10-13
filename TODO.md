@@ -34,21 +34,21 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       "Changing the database password"); lower risk now that 5432 is localhost only.
 - [x] **Field numbers in table definitions** and **field and object numbering, `application.yaml`,
       installed apps** — done 2026-10-13 (sections below).
-- [ ] **NAV/BC system functions in Go** (C/AL, AL) — specification below ("Feature: NAV/BC
+- [ ] **System functions in Go** — specification below ("Feature: 
       system functions"); needs more details before it is built.
-- [ ] **NAV/BC functions — remaining** (high priority) — after the first and second set; see
-      "NAV/BC functions — remaining" below.
+- [ ] **functions — remaining** (high priority) — after the first and second set; see
+      "functions — remaining" below.
 
 ---
 
 ## Field numbers in table definitions ✅ DONE (2026-10-13)
 
-BC identifies a field by its **number** (field ID), not its name. We need the same:
+identifies a field by its **number** (field ID), not its name. We need the same:
 - [x] Every field in `backend/definitions/tables/*.yaml` has a unique `no:` within its table (also
       FlowFields and FlowFilters); tablegen refuses a missing, duplicate or out-of-range number
-      (2026-10-13). BC numbers for tables that mirror BC (Customer, Cust. Ledger Entry, Payment Terms,
-      Country/Region, Language, Company; 900–999 for fields BC does not have), YAML order elsewhere.
-      **Please check the BC numbers** (from the NAV/BC base application; the online docs list no numbers).
+      (2026-10-13). numbers for tables that mirror (Customer, Cust. Ledger Entry, Payment Terms,
+      Country/Region, Language, Company; 900–999 for the other fields), YAML order elsewhere.
+      **Please check the numbers** (from the base application; the online docs list no numbers).
 - [x] Generated code knows the numbers: `gtables.Customer_FieldNo.Name`, `rec.FieldNo("name")`,
       `rec.FieldName(2)`, `FieldInfo.No`.
 - [x] extmerge: extension fields need a number above the base range (1–999) that neither the table
@@ -64,21 +64,21 @@ BC identifies a field by its **number** (field ID), not its name. We need the sa
 
 Rules (decided by the user):
 - **Fields** of the base application have numbers **1–999** (done for all 19 tables 2026-10-13:
-  BC numbers where the table mirrors BC, 900–999 for fields BC does not have, YAML order elsewhere).
+  numbers of the classic layout where the table follows it, 900–999 for other fields, YAML order elsewhere).
 - **Objects** — tables, pages, codeunits and reports — each have a unique number. The base
-  application's objects are **1–999**. Unique per object type, as in BC (table 18 and page 18 can
+  application's objects are **1–999**. Unique per object type (table 18 and page 18 can
   both exist) — confirm.
 - **Reports** are not implemented yet; the numbering, `application.yaml` and the checks below must
   cover them from the start so they can be added later (the object registry already has
   `RegisterReport`; `run_object: report:<id>` on page actions; the Job Queue needs an "object type to
-  run" next to `object_id_to_run`, as BC's Job Queue Entry has).
+  run" next to `object_id_to_run`).
 - **`application.yaml`**: the base application has one, defining its allowed number series and its
   basic data. Every future extension app has its own `application.yaml` with its own series.
 
 Draft `application.yaml` (base application, e.g. `backend/definitions/application.yaml`):
 ```yaml
 application:
-  id: 7c3f…                      # unique GUID, never changed (BC app.json "id")
+  id: 7c3f…                      # unique GUID, never changed (app.json "id")
   name: EasyopenERP Base Application
   publisher: …                   # author / company
   contact: …                     # e-mail or URL (public repository: only what may be public)
@@ -99,8 +99,8 @@ Built 2026-10-13:
       no overlapping series, its objects and fields inside its series, merged fields marked `app:`),
       startup (`business-logic/apps.CheckObjectNumbers`: tables, pages, codeunits — refuses to start).
 - [x] Global table Installed_App (2000000153, page 907 Installed Apps, admin menu), written at startup.
-- [x] Renumbered to the NAV numbers (NAV 2.6 source, later NAV for Job Queue/SMTP/User
-      Personalization/installed apps), 900–999 for objects NAV does not have:
+- [x] Renumbered to the classic numbers (also for Job Queue/SMTP/User
+      Personalization/installed apps), 900–999 for objects does not have:
       | Object | Old | New |
       |---|---|---|
       | Table Country_Region | 11 | 9 |
@@ -130,15 +130,15 @@ Built 2026-10-13:
 - [ ] Reports, when built: register them with their number and check them in `CheckObjectNumbers`;
       `run_object: report:<id>`; Job Queue "object type to run".
 
-## Feature: NAV/BC system functions (C/AL, AL) in Go — specification (FIRST priority, 2026-10-13)
+## Feature: system functions in Go — specification (FIRST priority, 2026-10-13)
 
-Goal: business logic in Go (table triggers, codeunits) reads like C/AL / AL. Function calls are
-as close to identical as Go allows, so NAV/BC developers (and Claude Code) can write and review
+Goal: business logic in Go (table triggers, codeunits) reads like classic ERP code. Function calls are
+as close to identical as Go allows, so developers (and Claude Code) can write and review
 business logic without translating. Records already have `SetRange`, `SetFilter`, `Get`, `FindSet`,
 `Next`, `Insert`/`Modify`/`Delete`, `CalcFields`, `Validate` (`ValidateField`), `Count`.
 
 Decisions (2026-10-13):
-- **General rule**: where a NAV/BC function does not fit Go's context or syntax, take the easiest Go way.
+- **General rule**: where a function does not fit Go's context or syntax, take the easiest Go way.
 - **Calls**: package `foundation/al` with the AL names — `al.CalcDate("<CM>", d)`,
   `al.StrSubstNo("%1 of %2", a, b)`; record functions (`ChangeCompany`, `TransferFields`) are
   generated methods on every record. The unused helpers in `foundation/common/strutils.go` move there.
@@ -146,7 +146,7 @@ Decisions (2026-10-13):
   `DMY2Date` with an invalid date return an error; other functions cannot fail.
 - **Language**: none — no session or language parameter. `Format` and `Evaluate` use the Go-native,
   language-independent formats (dates ISO `2026-10-13`, decimals `1234.5`, bool `true`/`false` —
-  like BC's `Format(x, 0, 9)`); the frontend formats for the user.
+  like `Format(x, 0, 9)`); the frontend formats for the user.
 - **CompanyName**: the company of the record or codeunit that runs the code (records and codeunits
   of one request share the session's company): `rec.CompanyName()`. A process-wide global variable is
   not possible — the server serves many users and companies at the same time.
@@ -160,24 +160,24 @@ Decisions (2026-10-13):
 | `Evaluate` | `[Ok :=] Evaluate(var Variable, String [, Number])` | Typed target (`*types.Date`, `*types.Decimal`, `*int`, `*bool`, Option, `*types.Code`…); returns ok. Go-native formats only (as Number 9). |
 | `DMY2Date` | `Date := DMY2Date(Day [, Month] [, Year])` | Month/Year default to the work date's; invalid date → error. |
 | `Date2DMY` | `Number := Date2DMY(Date, What)` | What: 1 = day, 2 = month, 3 = year. |
-| `CalcDate` | `NewDate := CalcDate(DateExpression [, Date])` | Date formula `<+1M-1D>`, `<CM>`, `<CY>`, `<CQ>`, `<CW>`, `<WD3>`, units D/W/M/Q/Y, `C` = current period end; default date = work date. Later a `DateFormula` field type (BC). Most work: parser + many tests against BC results. |
+| `CalcDate` | `NewDate := CalcDate(DateExpression [, Date])` | Date formula `<+1M-1D>`, `<CM>`, `<CY>`, `<CQ>`, `<CW>`, `<WD3>`, units D/W/M/Q/Y, `C` = current period end; default date = work date. Later a `DateFormula` field type. Most work: parser + many tests against results. |
 | `Format` | `String := Format(Value [, Length] [, FormatStr/FormatNumber])` | Type-aware, Go-native and language-independent (Date ISO, Decimal `1234.5`, bool `true`/`false`, Option value name); `Length` pads/cuts. The current `common.Format` is just `fmt.Sprintf` — not AL. |
 | `DelChr` | `NewString := DelChr(String [, Where] [, Which])` | Where `=` `<` `>` `<>`; exists in `foundation/common/strutils.go` (unused). |
 | `StrSubstNo` | `NewString := StrSubstNo(String [, Value1, …])` | `%1`…`%9` (also `#1####`); values formatted with `Format`. The translations already use `%1` (e.g. `MSG_COMPANY_CREATED`, which is not substituted today). |
 | `CopyStr` | `NewString := CopyStr(String, Position [, Length])` | 1-based, characters not bytes; exists in `strutils.go` (unused). |
 | `CompanyName` | `String := CompanyName()` | `rec.CompanyName()`: the company of the record/codeunit, i.e. the session's company of the request. |
 | `ChangeCompany` | `[Ok :=] Record.ChangeCompany([CompanyName])` | Generated record method: the record reads/writes another company's table (company tables only; global tables ignore it); false when the company does not exist. Triggers and FlowFields run in that company. |
-| `TransferFields` | `Record.TransferFields(FromRecord [, InitPrimaryKeyFields])` | Generated record method: copies the fields with the same field (BC: same field number) and compatible type; FlowFields and FlowFilters not copied; `InitPrimaryKeyFields` false keeps the key. Matches by field number — after "Field numbers in table definitions". |
+| `TransferFields` | `Record.TransferFields(FromRecord [, InitPrimaryKeyFields])` | Generated record method: copies the fields with the same field (same field number) and compatible type; FlowFields and FlowFilters not copied; `InitPrimaryKeyFields` false keeps the key. Matches by field number — after "Field numbers in table definitions". |
 
 ### Second set (same item)
 
-From the AL reference (System, Text, Record, Dialog), the functions BC code uses most:
+The most used system functions (system, text, record, dialog):
 
 | AL | Go | Notes |
 |----|----|-------|
 | `Round(Number [, Precision] [, Direction])` | `al.Round` | Direction `'='` nearest, `'<'` down, `'>'` up; on `types.Decimal` (amounts: `Round(x, 0.01)`). |
 | `Abs`, `Power` | `al.Abs`, `al.Power` | Over `types.Decimal` / int. |
-| `Today`, `WorkDate`, `CurrentDateTime` | `al.Today()`, `rec.WorkDate()`?, `al.CurrentDateTime()` | `types.Today()` exists; WorkDate is per user (BC): from the session like CompanyName — decide where it is set. |
+| `Today`, `WorkDate`, `CurrentDateTime` | `al.Today()`, `rec.WorkDate()`?, `al.CurrentDateTime()` | `types.Today()` exists; WorkDate is per user: from the session like CompanyName — decide where it is set. |
 | `StrLen`, `StrPos`, `PadStr`, `IncStr`, `UpperCase`, `LowerCase` | `al.…` | Move from `foundation/common/strutils.go` (unused), 1-based positions, characters not bytes. |
 | `SelectStr(Number, CommaString)` | `al.SelectStr` | n-th item of a comma-separated string. |
 | `Record.TestField(Field [, Value])` | `rec.TestField("field" [, value])` | Error "Field X must have a value / must be Y in Table Z: key" — `apperrors`, translated. |
@@ -189,13 +189,13 @@ From the AL reference (System, Text, Record, Dialog), the functions BC code uses
 | `Codeunit.Run(ID [, Record])` | `al.CodeunitRun(id, rec)` | One call over the codeunit registry. |
 
 ### Verification (when built)
-Table-driven tests per function with the results BC gives (especially `CalcDate`, `Format`,
+Table-driven tests per function with the results gives (especially `CalcDate`, `Format`,
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the AL functions in business logic".
 
-## NAV/BC functions — remaining (HIGH priority, after the first and second set)
+## functions — remaining (HIGH priority, after the first and second set)
 
-The rest of the AL reference that BC code uses, recorded for later (see "Feature: NAV/BC system
+The rest of the common system functions, recorded for later (see "Feature: system
 functions" for the rules: `al.` package / generated record methods, easiest Go way):
 - [ ] Text: `ConvertStr`, `InsStr`, `DelStr` (in `strutils.go`), `MaxStrLen`, `StrCheckSum`. The
       instance methods (`Contains`, `Replace`, `Split`, `Trim`, `StartsWith` …) are Go's `strings` — no copies.
@@ -220,19 +220,19 @@ user will come back to it.
       `jobs.go`) run **any** registered codeunit by ID for any logged-in user — no permission check
       (the table permission middleware only covers `/api/tables/:table/...`). E.g. a user with read-only
       roles can start demo data (50100), SIFT Verify/Repair (50110), the NAV Report Runner or Send Test
-      E-mail. Decide the rule (BC: execute permission per object, e.g. a Permission row for the codeunit,
+      E-mail. Decide the rule (execute permission per object, e.g. a Permission row for the codeunit,
       or at least Modify/Insert on the codeunit's `SourceTable()`), check it in both handlers and in the
       Job Queue (a scheduled job runs as the user who set it up?), add tests. (Theme install/update/remove
       are endpoints, not codeunits, and open to every user for their own themes — not affected.)
 
 ## Feature: Themes and appearance ✅ DONE (2026-10-12)
 
-Per-user appearance in the user menu's "Appearance" dialog (BC User Personalization), Omarchy themes
+Per-user appearance in the user menu's "Appearance" dialog (User Personalization), Omarchy themes
 installed from GitHub. Five local commits (`ff14b49` … `c740652`), each verified separately:
-- [x] Colors are CSS variables (RGB triplets in `app.css`, Tailwind colors point at them) — BC Light/Dark
+- [x] Colors are CSS variables (RGB triplets in `app.css`, Tailwind colors point at them) — Light/Dark
       pixel-identical (screenshots of 13 views in both modes).
 - [x] Themes: a light-mode and a dark-mode theme per user (table `User_Personalization` 5162), the
-      sun/moon button switches between them; built-in BC Light/Dark, Tokyo Night, Nord, Gruvbox,
+      sun/moon button switches between them; built-in Classic Light/Dark, Tokyo Night, Nord, Gruvbox,
       Catppuccin Latte, Solarized Light; colors normalized with a contrast guard; first paint from a cache.
 - [x] Install from GitHub by repository URL (tables `Theme` 5160, `Theme_Asset` 5161, page 36 Themes):
       `colors.toml` (both Omarchy forms) or `alacritty.toml`, preview, wallpapers — tested with
@@ -243,7 +243,7 @@ installed from GitHub. Five local commits (`ff14b49` … `c740652`), each verifi
 - [x] Font (self-hosted Inter / IBM Plex Sans, system, serif, monospace), font size, list density.
 
 Open follow-ups:
-- [ ] Login page and the Keyboard Shortcuts window still use fixed BC colors (`routes/login`,
+- [ ] Login page and the Keyboard Shortcuts window still use fixed colors (`routes/login`,
       `routes/help/shortcuts` — about 60 hex values); convert to the theme variables.
 - [ ] Column captions wrap at 110–125 % font size (fixed pixel column widths); consider scaling the
       widths with `--font-scale`.
@@ -269,7 +269,7 @@ Three folders, one rule each (CLAUDE.md "Table business logic"):
 ## Extension apps (future — the base application is prepared, nothing built yet)
 
 Goal: separate repositories that depend on this base application, add fields to base tables, show
-them on base pages and add business logic, without changing the base (BC table/page extensions).
+them on base pages and add business logic, without changing the base (table/page extensions).
 What is in place: `extmerge` merges `*.extend.yaml` into `backend/definitions`, the Dockerfile then
 regenerates the table code (extension fields become fields of `gtables.<Table>`), and every
 registered logic of a table runs in order (base first). Verified 2026-10-12 with a throwaway
@@ -282,8 +282,8 @@ registered logic of a table runs in order (base first). Verified 2026-10-12 with
       the build needs the merged, regenerated `generated/tables` (`go.work` or `replace`) and a generated
       file with a blank import per installed extension (its `init` registers its logic).
 - [ ] Rules for extension fields: field-name collisions between extensions or with later base fields
-      rejected by extmerge (BC uses field IDs / prefixes); captions in the extension's translation files.
-- [ ] OnBefore/OnAfter events (BC event subscribers) on top of the logic list, when an extension must
+      rejected by extmerge (uses field IDs / prefixes); captions in the extension's translation files.
+- [ ] OnBefore/OnAfter events (event subscribers) on top of the logic list, when an extension must
       run before the base logic or after the record is written.
 - [ ] Codeunit events (publisher/subscriber) for extensions to hook into codeunits.
 
@@ -298,14 +298,14 @@ work goes on in the other sections.
 ### Delete rules (data safety)
 - [ ] OnDelete checks so a delete cannot leave orphaned or inconsistent data — more important now
       that lists delete several records at once (bulk delete rolls back all and names the record).
-      Examples: a customer with ledger entries (BC: not with open entries / a balance), a payment
+      Examples: a customer with ledger entries (not with open entries / a balance), a payment
       term or country/region still used by customers, a language still set on users or Job Queue
       jobs, a user role still assigned in User Members, a menu still assigned to users. Each a
       translated message naming the reason (`apperrors`, CLAUDE.md trigger rule).
 
 ### Posting and ledger entries
 - [ ] Page 25 is editable (to try the on-demand customer lookup); make it read-only once posting
-      exists (BC: posted ledger entries are not editable).
+      exists (posted ledger entries are not editable).
 - [ ] `backend/definitions/tables/custledgerentry.yaml:159` — Posting Groups
       and Dimensions are simplified with no `table_relation`s; add proper relations.
 
@@ -325,7 +325,7 @@ Tested by the user locally (docker compose, 2026-10-08): scheduled run of codeun
 through Gmail (app password) to two addresses. Goes into release 0.1.87.
 
 A job e-mails the outcome of a scheduled run to **one or more** addresses, in the job's language.
-- [x] **Recipients:** `Job_Queue.notification_email` holds a list separated by `;` (or `,`), as BC's
+- [x] **Recipients:** `Job_Queue.notification_email` holds a list separated by `;` (or `,`), as is usual for
       e-mail fields: `ops@x.no; Hans <hans@x.no>`. The length is 250 (migration 9 widens the Postgres
       column; existing addresses are kept). No separate recipients table: per-recipient Notify On
       or language can still be added later as a table if needed.
@@ -438,15 +438,15 @@ messages.yaml made all messages show as keys (loader only warns) — new test pa
 file; Enter in the filter pane also opened the selected record — fixed with `data-own-keys`.
 
 ### Goal
-NAV/BC FlowFilter fields (FieldClass FlowFilter): not stored, they hold a filter the user sets, and
+FlowFilter fields (FieldClass FlowFilter): not stored, they hold a filter the user sets, and
 FlowFields apply it in their CalcFormula (`Posting Date = FIELD(Date Filter)`). Types: Date, Boolean,
 Integer, Text, Code. First use: Customer "Date Filter" applied to Posting Date in Balance (LCY), Sales
 (LCY) and No. of Ledger Entries.
 
 ### Decisions (with the user)
-- The user sets FlowFilters in the list's filter pane, section "Filter totals by" (BC). A modal card
+- The user sets FlowFilters in the list's filter pane, section "Filter totals by". A modal card
   opened from the list uses the same FlowFilters.
-- BC syntax in the user's date format: `01.01.26..31.03.26`, open ranges (`..31.03.26`, `01.01.26..`),
+- syntax in the user's date format: `01.01.26..31.03.26`, open ranges (`..31.03.26`, `01.01.26..`),
   single date, `|` alternatives, `t` = today. The frontend converts dates to ISO; the backend only sees ISO.
 - Second SIFT key `customer_open_date` (customer_no, open, posting_date), same sum fields: no date
   filter → `customer_open` (1–2 rows per customer); date filter → the date key.
@@ -481,7 +481,7 @@ Integer, Text, Code. First use: Customer "Date Filter" applied to Posting Date i
 
 ### Goal
 FlowFields over large ledgers (100,000+ entries per customer or account) must not add up every entry
-on each read. As in NAV/BC (SumIndexFields; BC: indexed views), table keys can declare sum fields;
+on each read. As with sum index fields (indexed views), table keys can declare sum fields;
 the database keeps a totals table per key up to date, and FlowFields read the totals.
 
 Phases: **1 foundation (this plan)** → 2 LARGE+ demo data (~1,000 entries per customer) and
@@ -660,7 +660,7 @@ Open follow-ups:
       the 50 ms focus delay, and clicking the search box while editing not saving the cell.
 - [x] Cell modes losing arrow keys during a window load — fixed by the above (180 ArrowDowns now
       land on row 181).
-- [x] Renaming a record updates related records (BC/NAV Rename): generated `renameReferences` from the
+- [x] Renaming a record updates related records (Rename): generated `renameReferences` from the
       YAML table relations, in one transaction with the modify. Verified: C00030 → C00030X moves all 36
       entries (and SIFT totals), a rename to an existing No. rolls back completely.
 - [x] Renaming a **Company** record moves its data: `Company.OnRename` renames all `old$…` tables,
@@ -733,7 +733,7 @@ From `backend/api/README.md` (formerly "Production TODO" / "Next Steps").
       insert/modify/validate payloads (the hash could be overwritten with a known one); tablegen rejects
       relations whose dropdown shows one. The password is still set through the virtual `password` field.
 - [x] SMTP password (`SMTP_Setup.password`) was returned in plain text. Now **masked** (YAML
-      `masked: true`, BC ExtendedDatatype Masked): write-only — the API sends `••••••••` when set, the
+      `masked: true`, ExtendedDatatype Masked): write-only — the API sends `••••••••` when set, the
       placeholder sent back keeps the stored value, "" clears it, no filter/sort/search on it. Every
       masked field (table YAML, or page YAML for the User card's virtual password) renders as a
       password input on cards, list cells and modal cards (no more `field.source === 'password'`).
@@ -794,7 +794,7 @@ From `frontend/README.md` (formerly "Next Steps") and inline markers.
       for additional page types as they are introduced.
 - [ ] WebSocket support for real-time updates (pairs with the backend WebSocket item).
 - [x] Keyboard Shortcuts help window (`frontend/src/routes/help/shortcuts/+page.svelte`):
-      remove the intro text "Keys work as in Microsoft Dynamics NAV and Business Central."
+      remove the intro text about the keys (`HELP_INTRO`).
       (the `HELP_INTRO` line under the title, and the `HELP_INTRO` key in
       `translations/{en-US,nb-NO,da-DK}/messages.yaml` and the `HELP` constant). Done.
 - [x] Create Go API backend — done
@@ -885,7 +885,7 @@ runs `Job_Queue` jobs on a `recurrence` schedule and emails notifications
 `SMTP_Setup` table (table 409, Settings → SMTP Setup); no env-var SMTP config. The design notes
 below are retained as reference.
 
-`SMTP_Setup` is the first **BC-style setup table** (see the framework feature below).
+`SMTP_Setup` is the first **setup table** (see the framework feature below).
 
 Not yet done (follow-ups): localize notification email via i18n; per-job leases (currently one global
 `_scheduler_lock`); "In Process" start-entry lifecycle (codeunits still self-log their entries);
@@ -922,7 +922,7 @@ Add to `jobqueue.yaml` (then regenerate via `tools/tablegen/main.go`):
   `recurrence != Once` (leave `recurring_job` for backward compat / UI).
 - `notification_email` — Code/Text: recipient address for post-run notifications.
 - `notify_on` — Option `["Always", "On Error", "Never"]` (default `Never`): when to email after a run.
-- Future (out of v1 scope): `starting_time`, run-on-weekday / day-of-month for BC-style windows.
+- Future (out of v1 scope): `starting_time`, run-on-weekday / day-of-month for windows.
 
 `next_start` recomputation after a successful run:
 - `Once` → do not reschedule; set `status = On Hold`.
@@ -1028,16 +1028,16 @@ Remaining:
 
 ---
 
-## Framework: BC-style Setup Tables ✅ IMPLEMENTED
+## Framework: Setup Tables ✅ IMPLEMENTED
 
-Reusable support for NAV/BC-style singleton **setup tables** — a single record identified by a blank
+Reusable support for singleton **setup tables** — a single record identified by a blank
 `Primary Key` (Code[20]). To add one: create a table YAML with a `primary_key` (Code[20], not
 required) field and `setup_table: true`, and a list page showing the real fields (omit the PK column
 and New/Delete). The framework handles the rest:
 
 - **tablegen**: `setup_table: true` → generates `IsSetupTable()` (on the `Table` interface).
 - **Auto-create**: the list endpoint creates the single blank-PK record on first access, so it is
-  always present (BC "the setup record is always there").
+  always present ("the setup record is always there").
 - **Blank-PK routing**: no-id API routes (`GET /card`, `PUT /modify`, `DELETE /delete`) plus handlers
   that accept an empty id for setup tables; the frontend api client omits the id segment when blank.
 
@@ -1046,9 +1046,9 @@ encrypt masked setup fields (e.g. the SMTP password) at rest — the API already
 
 ---
 
-## Feature: Editable List — BC Record Entry Behavior ✅ IMPLEMENTED
+## Feature: Editable List — Record Entry Behavior ✅ IMPLEMENTED
 
-**Status:** implemented. The rules now live in `CLAUDE.md` → *Record Entry (BC/NAV insert lifecycle)*
+**Status:** implemented. The rules now live in `CLAUDE.md` → *Record Entry (insert lifecycle)*
 and *Cross-field validation*. Resolved open questions: a failed INSERT keeps the row uncommitted and
 editable (retried on the next confirmed cell); "touched" is a diff against the row's `_pristine` init
 values, dropped after insert; the init endpoint takes no filter context yet (see follow-ups); no
@@ -1060,7 +1060,7 @@ modify response. Work that landed alongside it:
   `SetSelf(t)`; generated `ValidateField` dispatches through it. The relation validators in
   `customer.go`/`customerledgerentry.go` now pass the DB type (they hardcoded SQLite placeholders).
 - **PK edits were silent no-ops.** Generated `Modify()` never updated primary key columns (an all-PK
-  table like `User_Member` returned success without writing). It now renames in place (BC Rename).
+  table like `User_Member` returned success without writing). It now renames in place (Rename).
 - `InsertRecord`/`ModifyRecord` validate only changed fields, in table field order.
 
 Follow-ups (not done):
@@ -1075,24 +1075,24 @@ Follow-ups (not done):
 - [x] `User.OnDelete` preferences cascade missed — **fixed.** It deletes from the same company-less
       preferences table the handler uses, by exact user ID. Preferences of users deleted before this
       fix are still orphaned in `$User_Preferences`; clean them up once if it matters.
-- [ ] Init endpoint filter context — seed a new row from the list's current filters (BC seeds a
+- [ ] Init endpoint filter context — seed a new row from the list's current filters (seeds a
       journal line from its batch). Pass filters when the first journal page needs it.
 - [x] Editing a primary key cell of a record loaded from the database: `getRecordKey` keyed such
       rows by their PK values, so each keystroke changed the row's key. Already fixed: editable rows
       carry `_key` (`toEditableRecords`) and `getRecordKey` uses it before the field values
       (`utils/recordHelpers.ts`, unit-tested); renaming in the list verified by hand on 0.1.85.
-- [ ] Known deviation from BC: picking a value in a `LookupDropdown` saves when focus leaves the cell
-      (CLAUDE.md "LookupDropdown Select vs Blur" ABSOLUTE RULE), while BC validates — and inserts —
+- [ ] Known deviation from the classic behaviour: picking a value in a `LookupDropdown` saves when focus leaves the cell
+      (CLAUDE.md "LookupDropdown Select vs Blur" ABSOLUTE RULE), while the classic behaviour validates — and inserts —
       on the pick itself (screenshot 04). Kept on purpose; revisit if it matters.
 - [x] Manual browser walkthrough (Verification → Manual below) — done by hand against the docker
       compose stack (PostgreSQL).
 
 Original spec, kept for reference — Inserting a row on an editable list page does not match Business
-Central. Reference material: seven BC screenshots in `screenshots/GeneralJournal01-07.png` (General
+Central. Reference material: seven screenshots in `screenshots/GeneralJournal01-07.png` (General
 Journals, batch CBI-RECON) capturing the real lifecycle. The decisive frame is 04 — selecting
 `Account No. 01013` makes "✓ Saved" appear **while the cursor is still on the row**, and
 simultaneously auto-fills Account Name, Description, Gen. Bus. Posting Group and Gen. Posting Type.
-So BC inserts on the **first field the user validates with a value**, not on row-leave, and one
+So the classic behaviour inserts on the **first field the user validates with a value**, not on row-leave, and one
 field's validation populates siblings. OpenERP does neither.
 
 ### Goal
@@ -1100,7 +1100,7 @@ A new row arrives pre-populated with defaults but uncommitted; it is INSERTed th
 validates the first field with a value, while the cursor is still on the row; validating one field
 can populate sibling fields; abandoning an untouched new row discards it silently.
 
-### Observed BC lifecycle (from the screenshots)
+### Observed lifecycle (from the screenshots)
 - **ArrowDown past the last row** (02) — a new row appears **already populated** (Posting Date, VAT
   Date, Document No., Account Type, Bal. Account Type, Amount 0,00), yet the footer still reads
   "Number of Lines **2**" → the record is not inserted.
@@ -1132,7 +1132,7 @@ Replaces today's row-leave rule end to end.
 Nothing like this exists today — no `OnNewRecord`, no `InitRecord`, no No. Series anywhere in the
 repo. `ListPage.svelte:537-547` and `:843-851` blank every field client-side, so even the four YAML
 `default:` values in the repo never reach a new row.
-- New `Table` interface method `InitRecord()` (BC/NAV `OnNewRecord`), defaulting to the static-default
+- New `Table` interface method `InitRecord()` (`OnNewRecord`), defaulting to the static-default
   assignment already generated into `InitWithDBType` (`tools/tablegen/main.go:830-847`), overridable
   per table in `backend/business-logic/tables/*.go` alongside the `OnValidate_*` overrides.
 - New endpoint `POST /api/tables/:table/init` returning the initialized record as a map — the same
@@ -1160,12 +1160,12 @@ with **no `Data`** (759-761). The screenshot-04 auto-fill is impossible today.
   (`tools/tablegen/main.go:2486-2490`), so mutating siblings is already possible in Go. Only the
   transport discards it today. Five overrides exist repo-wide, all pure validation.
 - **Scope expansion to watch:** validate is currently called only for `table_relation` fields lacking
-  an advanced lookup (`ListPage.svelte:709`). BC-style auto-fill means calling it on every field
+  an advanced lookup (`ListPage.svelte:709`). auto-fill means calling it on every field
   commit — decide whether to gate it on a per-field or per-table "has an OnValidate override" flag so
   tables that would do nothing with it don't pay a round trip per cell.
 
 ### Trailing blank row and row creation
-- BC always renders a blank placeholder row after the last record; ArrowDown from the last record
+- always renders a blank placeholder row after the last record; ArrowDown from the last record
   moves into it and materializes the new row. Today ArrowDown/Enter on the last row calls
   `insertNewRow(true)` (`:961`, `:1058`, `:1177`) — an explicit create rather than a persistent
   placeholder, so the affordance is invisible until the key is pressed.
@@ -1189,7 +1189,7 @@ with **no `Data`** (759-761). The screenshot-04 auto-fill is impossible today.
 - If the INSERT fails server-side validation, does the row stay uncommitted and editable (recommend
   yes, mirroring `modalSaveBlocked`), or revert?
 - Should `_touched` reset after a successful insert, or persist for the row's lifetime?
-- Does the init endpoint need the current filter context? BC seeds a journal line from its batch —
+- Does the init endpoint need the current filter context? seeds a journal line from its batch —
   likely yes eventually; decide whether to pass filters now or add later.
 - Per-field vs per-table gating for the expanded validate calls.
 
@@ -1218,12 +1218,12 @@ engine** a future journal will sit on. Each of those is its own item.
 
 ---
 
-## Feature: List Page — Business Central Parity
+## Feature: List Page — classic ERP Parity
 
 **Status:** planned, not started. Separate from the record-entry work above — this is the page-level
 surface (selection, column headers, action bar), not the insert lifecycle. The 3-state cell model
 (navigation / cell-selected / cell-editing) and every existing ABSOLUTE RULE stay intact; this work
-adds the BC surface *around* them. Data handling stays client-side for now, so sorting stays
+adds the classic surface *around* them. Data handling stays client-side for now, so sorting stays
 client-side too.
 
 ### Goal
@@ -1292,7 +1292,7 @@ Postgres. **Freeze pane left out** (decided with the user). The notes below are 
   `sort_order` — only the unused DTO `backend/api/types/api_types.go:26` and `backend/api/README.md:43`
   mention it — so descending sort is impossible server-side today. Client-side keeps it correct.
 - Clicking the header caption sorts (toggling direction), replacing the separate sort button at
-  `:2042`, which is not a BC affordance.
+  `:2042`, which is not a affordance.
 - "Filter to this value" pushes through the existing `onfilter` path so FilterPane stays the single
   source of filter truth.
 - Hide column writes `visible: false` into `columnCustomizations`; the Customize modal restores it.
@@ -1304,7 +1304,7 @@ Postgres. **Freeze pane left out** (decided with the user). The notes below are 
 ### List and card adjustments ✅ DONE (2026-10-12)
 - [x] **Click and drag selects rows** (navigation mode): from the pressed row to the row under the
       mouse; near the top/bottom edge the list scrolls on. A plain click selects one row.
-- [x] **Ctrl+F7 shows/hides the filter pane** (NAV Table Filter), also from inside the pane. The field
+- [x] **Ctrl+F7 shows/hides the filter pane** (Table Filter), also from inside the pane. The field
       picker gets the cursor with the dropdown closed: Alt+↓, arrows, Enter adds the field (arrows on
       the closed picker only move the highlight), the cursor goes to its value box, Enter applies and
       the cursor stays. Esc in the pane closes the pane, not the list. Ctrl+F7 on cards stays the
@@ -1329,7 +1329,7 @@ action name in `ListPage.svelte`; **bug:** `run_page` works on cards but does no
 Not wanted (decided by the user 2026-10-11): running actions such as Run on all selected rows —
 actions keep acting on the cursor row; only Delete acts on a multi-selection.
 - [ ] **Right-click menu on rows** — Edit, New, Delete and the page's row actions; right-clicking a
-      row outside the selection selects it first (BC); with several rows selected the menu acts on
+      row outside the selection selects it first; with several rows selected the menu acts on
       them ("Delete 5 records"); Esc / click outside closes it.
 - [ ] **Related pages from lists** — fix `run_page` on list actions (open filtered to the cursor row
       via `run_page_filter_field`/`run_page_filter_value`, with the usual back link); add Ledger
@@ -1338,7 +1338,7 @@ actions keep acting on the cursor row; only Delete acts on a multi-selection.
       keep Ctrl+F7).
 - [ ] **YAML-driven toolbar** — `icon:` per action (new, edit, delete, refresh, run, mail, entries,
       …) instead of the name switch; `visible: false`; **non-promoted actions in one "Actions ▾"
-      menu** at the end of the toolbar (decided: one menu, not BC category menus); Edit enabled on
+      menu** at the end of the toolbar (decided: one menu, not category menus); Edit enabled on
       read-only lists that have a card page.
 - [ ] Translations (3 languages), unit tests (menu items/enablement), browser check (Ledger Entries
       from a customer, right-click menu, Actions ▾), CLAUDE.md list-page rules.
@@ -1379,8 +1379,8 @@ unenforceable because omitted and `false` are indistinguishable; match `Editable
 ### Open questions (resolve at implementation)
 - Opt-in `multi_select` per page, or on for every list? (Recommend opt-in first, flip the default once
   it has proven itself.)
-- Does selection survive a filter change, or reset? (BC resets.)
-- Right-clicking a row outside the current selection — select it first? (BC does; recommend matching.)
+- Does selection survive a filter change, or reset? (resets.)
+- Right-clicking a row outside the current selection — select it first? (does; recommend matching.)
 
 ### Verification (when implemented)
 - Unit: `selection.ts` — shift-range across a sorted/filtered `displayRecords`, ctrl-toggle,
@@ -1398,7 +1398,7 @@ unenforceable because omitted and `false` are indistinguishable; match `Editable
   menu; reach a non-promoted action from both the Actions menu and the row context menu.
 
 ### Deferred to later phases
-- **Filter, search & views** — BC filter pane (Shift+F3), server-side search, full BC filter
+- **Filter, search & views** — filter pane (Shift+F3), server-side search, full filter
   expression syntax, saved Views as a tab strip carrying filters + sort + columns. Related finding:
   `backend/foundation/filters/parser.go` is a richer parser (`>`, `<`, `>=`, `<=`, `?`, plus
   `SanitizeFieldName`) that is **dead code** — zero importers — while the weaker per-table generated
@@ -1413,7 +1413,7 @@ unenforceable because omitted and `false` are indistinguishable; match `Editable
   (`1=0`, so a mistyped filter can never widen a `DeleteAll`). The list/ids handlers reject unknown
   fields with 400. `SanitizeFieldName` (regex strip) was not used — an allowlist is stricter.
 - [x] Filtering on FlowFields (e.g. Customer Balance `>10000`, No. of Entries `0`) — 2026-10-09:
-      Sum/Count FlowFields; the generated `SetFilter` applies the BC filter to a correlated subquery
+      Sum/Count FlowFields; the generated `SetFilter` applies the filter to a correlated subquery
       (`flowFieldExpr`) that reads the source like `CalcFieldsForRecords` (SIFT totals of a covering
       key, else the entries) with the FlowFilters set (Date Filter). `flowfilter` gained decimals
       (decimal comma or point) and `<`, `<=`, `>`, `>=` (also for the Date Filter); the API validates

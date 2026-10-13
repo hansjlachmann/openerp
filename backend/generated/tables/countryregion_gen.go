@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterCountryRegionLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.CountryRegion) error
 //	OnModify(rec *gtables.CountryRegion) error
@@ -43,10 +43,10 @@ type CountryRegion struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*countryRegionFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -59,7 +59,7 @@ type CountryRegion struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*CountryRegion
 	currentBufferPos int
 
@@ -76,10 +76,10 @@ const CountryRegionTableID = 9
 const CountryRegionTableName = "Country_Region"
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// CountryRegion_FieldNo holds the field numbers of Country_Region (BC FieldNo):
+// CountryRegion_FieldNo holds the field numbers of Country_Region (FieldNo):
 // CountryRegion_FieldNo.Code is 1
 var CountryRegion_FieldNo = struct {
 	Code int
@@ -89,7 +89,7 @@ var CountryRegion_FieldNo = struct {
 	Name: 2,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *CountryRegion) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "code":
@@ -296,7 +296,7 @@ func (t *CountryRegion) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *CountryRegion) IsSetupTable() bool {
 	return false
@@ -319,7 +319,7 @@ func GetCountryRegionPostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -357,7 +357,7 @@ func (t *CountryRegion) CreateTableWithDBType(db database.Executor, company stri
 		return fmt.Errorf("failed to create Country_Region table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -408,7 +408,7 @@ func (t *CountryRegion) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new CountryRegion record with database context and type.
@@ -422,7 +422,7 @@ func (t *CountryRegion) InitWithDBType(db database.Executor, company string, dbT
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *CountryRegion) InitRecord() {
@@ -441,7 +441,7 @@ func (t *CountryRegion) StoreOldValues() {
 	t.oldValues["name"] = t.Name
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *CountryRegion) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -606,7 +606,7 @@ func (t *CountryRegion) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -628,7 +628,7 @@ func (t *CountryRegion) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("code") {
@@ -656,7 +656,7 @@ func (t *CountryRegion) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.Code)
 	}
-	// Renamed key fields that other tables refer to (BC/NAV Rename): carried over below
+	// Renamed key fields that other tables refer to (Rename): carried over below
 	type renamedKey struct {
 		field    string
 		old, new interface{}
@@ -730,7 +730,7 @@ func (t *CountryRegion) SetDB(db database.Executor) {
 }
 
 // renameReferences carries a renamed key over to every field of another table that refers
-// to it (BC/NAV Rename). References from company tables are updated in this company — in
+// to it (Rename). References from company tables are updated in this company — in
 // every company when this table is global. Runs on the record's executor, so inside the
 // caller's transaction.
 func (t *CountryRegion) renameReferences(field string, oldValue, newValue interface{}) error {
@@ -804,7 +804,7 @@ func (t *CountryRegion) CalcFieldsForRecords(records []map[string]interface{}, f
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // countryRegionFilterCondition represents a filter on a field
@@ -817,7 +817,7 @@ type countryRegionFilterCondition struct {
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -859,8 +859,8 @@ func (t *CountryRegion) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *CountryRegion) SetFilter(fieldName, filterExpr string) {
@@ -882,7 +882,7 @@ func (t *CountryRegion) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *CountryRegion) SetCurrentKey(fields ...string) {
@@ -897,7 +897,7 @@ func (t *CountryRegion) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *CountryRegion) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -938,7 +938,7 @@ func (t *CountryRegion) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *CountryRegion) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -980,7 +980,7 @@ func (t *CountryRegion) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -1007,7 +1007,7 @@ func (t *CountryRegion) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *CountryRegion) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -1102,7 +1102,7 @@ func (t *CountryRegion) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *CountryRegion) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
@@ -1139,7 +1139,7 @@ func (t *CountryRegion) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *CountryRegion) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
@@ -1176,7 +1176,7 @@ func (t *CountryRegion) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *CountryRegion) Count() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
@@ -1196,7 +1196,7 @@ func (t *CountryRegion) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *CountryRegion) FindSet() bool {
@@ -1228,7 +1228,7 @@ func (t *CountryRegion) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -1308,7 +1308,7 @@ func (t *CountryRegion) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -1399,15 +1399,15 @@ func (t *CountryRegion) copyFromBuffered(record *CountryRegion) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *CountryRegion) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *CountryRegion) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
@@ -1437,7 +1437,7 @@ func (t *CountryRegion) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *CountryRegion) DeleteAll() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
@@ -1459,7 +1459,7 @@ func (t *CountryRegion) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *CountryRegion) CopyFilters(from *CountryRegion) {
 	if from.filters == nil {
 		t.filters = nil
@@ -1488,7 +1488,7 @@ func (t *CountryRegion) CopyFilters(from *CountryRegion) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *CountryRegion) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -1514,11 +1514,11 @@ func (t *CountryRegion) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *CountryRegion) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -1533,7 +1533,7 @@ func (t *CountryRegion) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field code")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CountryRegionOnValidate_Code); ok {
 				if err := trg.OnValidate_Code(t); err != nil {
@@ -1551,7 +1551,7 @@ func (t *CountryRegion) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field name")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CountryRegionOnValidate_Name); ok {
 				if err := trg.OnValidate_Name(t); err != nil {
@@ -1569,7 +1569,7 @@ func (t *CountryRegion) ValidateField(fieldName string, value interface{}) error
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *CountryRegion) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -1640,7 +1640,7 @@ func (t *CountryRegion) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *CountryRegion) SetFlowFilter(field, expr string) error {
 	switch field {

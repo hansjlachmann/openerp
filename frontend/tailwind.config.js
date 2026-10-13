@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 
 // Colors are CSS variables holding RGB triplets ("18 18 18"), set in src/app.css: the
-// default values are the Business Central palette (light and dark mode, sampled from
-// docs/BC-Screenshot-LightMode.png and docs/BC-Screenshot-DarkMode.png), and a theme
+// default values are the classic ERP palette (light and dark mode, sampled from
+// the reference screenshots), and a theme
 // (src/lib/theme) overrides them at run time. Components keep using Tailwind's
 // gray/blue/primary classes; `<alpha-value>` keeps opacity modifiers (bg-gray-900/50) working.
 //
@@ -13,7 +13,7 @@
 //   400 dark: secondary text                      500 muted text
 //   600 light: secondary text                     700 dark: separators, inputs
 //   800 dark: raised surface                      900 dark: page background
-// Accent (--accent-N, BC teal): 400 = dark-mode links, 500 = tiles, 600 = light-mode
+// Accent (--accent-N, teal): 400 = dark-mode links, 500 = tiles, 600 = light-mode
 // links/actions, 900 = dark-mode notification bar.
 const steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const scale = (name) =>
@@ -33,7 +33,7 @@ export default {
 				page: color('page-bg'), // page background
 				fg: color('fg'), // body text
 				heading: color('heading'), // page and section titles (light mode)
-				appbar: { DEFAULT: color('appbar'), fg: color('appbar-fg') } // BC app bar
+				appbar: { DEFAULT: color('appbar'), fg: color('appbar-fg') } // app bar
 			},
 			fontFamily: {
 				sans: ['var(--font-sans)']

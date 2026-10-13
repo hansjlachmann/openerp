@@ -51,7 +51,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	tableMeta := pages.GetTableMetadata()
 	primaryKeyFields := tableMeta.GetPrimaryKeyFields(pageDef.Page.SourceTable)
 	// Send the PK field names so the frontend can identify records even when the
-	// primary key is not displayed on the page (e.g. BC-style setup tables).
+	// primary key is not displayed on the page (e.g. setup tables).
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		tbl := factory()

@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * Edge navigation buttons component (Business Central style)
+	 * Edge navigation buttons component (classic ERP style)
 	 * Displays previous/next buttons on the left and right edges of a card
 	 */
 	interface Props {

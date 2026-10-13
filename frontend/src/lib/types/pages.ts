@@ -15,7 +15,7 @@ export interface PageMetadata {
 	modal_card?: boolean;
 	editable?: boolean;
 	enable_navigation?: boolean;
-	// BC/NAV DelayedInsert: insert a new list row only when the user leaves the row
+	// DelayedInsert: insert a new list row only when the user leaves the row
 	delayed_insert?: boolean;
 	copy_paste_allowed?: boolean; // list Ctrl+C copies the selected records, Ctrl+V pastes them
 	focus_field?: string; // Field to focus when page opens
@@ -59,7 +59,7 @@ export interface Field {
 	drilldown_filter_value?: string;
 	primary_key?: boolean;
 	required?: boolean;
-	masked?: boolean; // write-only secret (BC Masked): password input, value never shown
+	masked?: boolean; // write-only secret (Masked): password input, value never shown
 }
 
 export interface Action {

@@ -199,12 +199,12 @@
 
 ### Features
 
-* rename a company with its data (BC/NAV Rename) ([5a462e4](https://github.com/hansjlachmann/openerp/commit/5a462e4d330abea6cfce3fffe3bb5e9b80aa7621))
+* rename a company with its data (Rename) ([5a462e4](https://github.com/hansjlachmann/openerp/commit/5a462e4d330abea6cfce3fffe3bb5e9b80aa7621))
 
 
 ### Bug Fixes
 
-* mask write-only secrets like the SMTP password (BC Masked) ([ca7f923](https://github.com/hansjlachmann/openerp/commit/ca7f92310883e40e199b4beb2a3a51f63e1f7c98))
+* mask write-only secrets like the SMTP password (Masked) ([ca7f923](https://github.com/hansjlachmann/openerp/commit/ca7f92310883e40e199b4beb2a3a51f63e1f7c98))
 * never expose password hashes through the table API ([b0bb483](https://github.com/hansjlachmann/openerp/commit/b0bb4839114968332951826c6dd2d23bcf59833b))
 
 
@@ -224,7 +224,7 @@
 
 ### Features
 
-* FlowFilter Date Filter, BC Rename cascade, Verify SIFT codeunit, HEAVY demo data ([732b525](https://github.com/hansjlachmann/openerp/commit/732b52563aa7ad9d544428ea8c0a559f581cf010))
+* FlowFilter Date Filter, Rename cascade, Verify SIFT codeunit, HEAVY demo data ([732b525](https://github.com/hansjlachmann/openerp/commit/732b52563aa7ad9d544428ea8c0a559f581cf010))
 
 ## [0.1.78](https://github.com/hansjlachmann/openerp/compare/v0.1.77...v0.1.78) (2026-10-06)
 
@@ -232,7 +232,7 @@
 ### Features
 
 * on-demand dropdowns, Customer Ledger Entries page, drilldown return ([8aed7d4](https://github.com/hansjlachmann/openerp/commit/8aed7d4975a9299156276b845e7ec1104e2627e7))
-* SIFT totals tables for FlowFields (BC/NAV SumIndexFields) ([2d06d9e](https://github.com/hansjlachmann/openerp/commit/2d06d9ee1e753ff157f077e45475ea41b0ae3b4c))
+* SIFT totals tables for FlowFields (SumIndexFields) ([2d06d9e](https://github.com/hansjlachmann/openerp/commit/2d06d9ee1e753ff157f077e45475ea41b0ae3b4c))
 
 
 ### Bug Fixes
@@ -310,8 +310,8 @@
 ### Features
 
 * arrow-key navigation on the main menu; align Customer List shortcuts ([d2c2d41](https://github.com/hansjlachmann/openerp/commit/d2c2d41a3c22471f5d360c07a2b11181934ac79b))
-* BC-style record entry on editable list pages ([1d66335](https://github.com/hansjlachmann/openerp/commit/1d66335717e3caa467672e2c1f5f153ec4dba5f4))
-* Business Central colors, light list header, wider scrollbars, Alt+N for New ([bb121b7](https://github.com/hansjlachmann/openerp/commit/bb121b7d7a9eeed6952a474f27e65f9107d2cd7d))
+* record entry on editable list pages ([1d66335](https://github.com/hansjlachmann/openerp/commit/1d66335717e3caa467672e2c1f5f153ec4dba5f4))
+* classic ERP colors, light list header, wider scrollbars, Alt+N for New ([bb121b7](https://github.com/hansjlachmann/openerp/commit/bb121b7d7a9eeed6952a474f27e65f9107d2cd7d))
 
 
 ### Bug Fixes
@@ -329,7 +329,7 @@
 
 ### Documentation
 
-* spec BC list page parity and editable-list record entry behavior ([e56b047](https://github.com/hansjlachmann/openerp/commit/e56b047a6f3fb0f777df540b519b53279556a315))
+* spec list page parity and editable-list record entry behavior ([e56b047](https://github.com/hansjlachmann/openerp/commit/e56b047a6f3fb0f777df540b519b53279556a315))
 
 ## [0.1.67](https://github.com/hansjlachmann/openerp/compare/v0.1.66...v0.1.67) (2026-07-18)
 
@@ -649,7 +649,7 @@
 
 ### Bug Fixes
 
-* default empty string to first option for Option fields (NAV/BC behavior) ([7bc1fe2](https://github.com/hansjlachmann/openerp/commit/7bc1fe2eac4702b4fb70759fc15dafc7c06f01c9))
+* default empty string to first option for Option fields (behavior) ([7bc1fe2](https://github.com/hansjlachmann/openerp/commit/7bc1fe2eac4702b4fb70759fc15dafc7c06f01c9))
 
 ## [0.1.32](https://github.com/hansjlachmann/openerp/compare/v0.1.31...v0.1.32) (2026-02-10)
 
@@ -679,9 +679,9 @@
 * add Confirm() helper function for codeunits ([9900f57](https://github.com/hansjlachmann/openerp/commit/9900f57257b1263b3c179716579b6a9bda37f8bb))
 * add dark mode support to login page and layout ([16ff6e4](https://github.com/hansjlachmann/openerp/commit/16ff6e471395939c4ee1fcebe79092b141d2b03b))
 * add detailed logging to NavReportRunner for debugging ([53d10c9](https://github.com/hansjlachmann/openerp/commit/53d10c90f94e7d816c5b1d976dd77eb0e6ccbbe2))
-* add Escape key navigation in list pages (NAV/BC behavior) ([566d210](https://github.com/hansjlachmann/openerp/commit/566d2102bd14cea552d2e0babce69ec6f867b77a))
+* add Escape key navigation in list pages (behavior) ([566d210](https://github.com/hansjlachmann/openerp/commit/566d2102bd14cea552d2e0babce69ec6f867b77a))
 * add extension support with extmerge tool ([e9e173d](https://github.com/hansjlachmann/openerp/commit/e9e173ddf64e6267b0000bccda6a11e59b744982))
-* add F8 to copy value from cell above (NAV/BC behavior) ([571e663](https://github.com/hansjlachmann/openerp/commit/571e66362d59e07f18c7ac9b541777cdff82e02b))
+* add F8 to copy value from cell above (behavior) ([571e663](https://github.com/hansjlachmann/openerp/commit/571e66362d59e07f18c7ac9b541777cdff82e02b))
 * add focus_field property for Card pages ([8a33e1f](https://github.com/hansjlachmann/openerp/commit/8a33e1f258be2a37e726b466e6853e2232281ec2))
 * add i18n for messages and display company name in menu bar ([b55865e](https://github.com/hansjlachmann/openerp/commit/b55865e89f4328afd456b70408f1dd5262915be8))
 * add i18n for messages and display company name in menu bar ([b6df85f](https://github.com/hansjlachmann/openerp/commit/b6df85fc949ce74a7b17c44f040be4e09579da13))
@@ -693,7 +693,7 @@
 * Add logout functionality and enforce authentication ([30e8deb](https://github.com/hansjlachmann/openerp/commit/30e8deb35fd11a80be9d9e33070506daec7b0d31))
 * add multi-column lookup dropdown with type-ahead search ([17a7fec](https://github.com/hansjlachmann/openerp/commit/17a7fecc573e0543abd8b2d9f545ac5aa9b12343))
 * add multi-language support and breadcrumb navigation ([6e8732d](https://github.com/hansjlachmann/openerp/commit/6e8732d1252b9a1eca19dd96d7ff1f794b0f0d7f))
-* add NAV-style progress dialog for codeunits ([43e1c1f](https://github.com/hansjlachmann/openerp/commit/43e1c1f7163b0c7d99784a845461f06f3b0c5af2))
+* add progress dialog for codeunits ([43e1c1f](https://github.com/hansjlachmann/openerp/commit/43e1c1f7163b0c7d99784a845461f06f3b0c5af2))
 * add NavReportRunner codeunit for external report generation ([5ff677c](https://github.com/hansjlachmann/openerp/commit/5ff677c49ce787512618d2ab93e1a0f125971689))
 * add Option field support and improve modal UX ([fc34ac2](https://github.com/hansjlachmann/openerp/commit/fc34ac27bcd3aa13de97f706e708f626fee017d7))
 * add permission enforcement middleware for table API routes ([6b1a26f](https://github.com/hansjlachmann/openerp/commit/6b1a26fea71b02f34a47499208be1d2dd290b69f))
@@ -705,7 +705,7 @@
 * add translations for permission tables and seed default roles ([0eae0de](https://github.com/hansjlachmann/openerp/commit/0eae0ded24ec2a28687eda4a1ac3ec0bd7a9cb68))
 * add UI components and improve editable list functionality ([5b1c5cc](https://github.com/hansjlachmann/openerp/commit/5b1c5ccd8c0d7b7864d75f087c500ba26625643a))
 * Add user authentication and management system ([2e84c06](https://github.com/hansjlachmann/openerp/commit/2e84c06de4e4bcb6f761d64a8920cf1511f0b7a3))
-* Add user preferences system and BC-style filter support ([9deb19b](https://github.com/hansjlachmann/openerp/commit/9deb19ba0464c161d0b81b7725ead4e4adda0722))
+* Add user preferences system and filter support ([9deb19b](https://github.com/hansjlachmann/openerp/commit/9deb19ba0464c161d0b81b7725ead4e4adda0722))
 * add User Role and User Member permission tables ([d4c2e61](https://github.com/hansjlachmann/openerp/commit/d4c2e61bbeeb020ff527ca98f63ddc01405f8d2f))
 * add User Role card page and Permission list page ([15a9c0c](https://github.com/hansjlachmann/openerp/commit/15a9c0cefe363026513ac63de109cfe1604eb0a6))
 * Add user-specific customizations and fix phone number field ([d2d2b75](https://github.com/hansjlachmann/openerp/commit/d2d2b756f366018dad605ecacfba2a6976671cbf))
@@ -725,10 +725,10 @@
 * implement user-assignable menu system ([b1acd0a](https://github.com/hansjlachmann/openerp/commit/b1acd0a538b610d4176dba258ebd24a235138147))
 * improve Customer Card modal UX and Edit button functionality ([1d3c6b3](https://github.com/hansjlachmann/openerp/commit/1d3c6b3ecf90ef3bc34f7c0e7929556126f1242a))
 * improve Customer Card UX and fix button states ([513fdaa](https://github.com/hansjlachmann/openerp/commit/513fdaa057b38f3a0f45591c3fb09aeab60cfb1d))
-* improve list page edit mode keyboard navigation (NAV/BC behavior) ([86a9dee](https://github.com/hansjlachmann/openerp/commit/86a9dee37d3afdc433de08f97dc827b6202ac6e5))
+* improve list page edit mode keyboard navigation (behavior) ([86a9dee](https://github.com/hansjlachmann/openerp/commit/86a9dee37d3afdc433de08f97dc827b6202ac6e5))
 * improve report polling - check PDF endpoint every 5 seconds ([0919bbf](https://github.com/hansjlachmann/openerp/commit/0919bbfe3ef9aa6573408d9751888295c0c4acd5))
 * make menu groups data-driven from YAML ([97f76f5](https://github.com/hansjlachmann/openerp/commit/97f76f58929cb9b92c85a3aa29865c023d5a7fea))
-* Redesign FilterPane with Business Central-style Views ([1de6219](https://github.com/hansjlachmann/openerp/commit/1de621939fd504cc9db068edc9fc62748011ff89))
+* Redesign FilterPane with classic ERP-style Views ([1de6219](https://github.com/hansjlachmann/openerp/commit/1de621939fd504cc9db068edc9fc62748011ff89))
 * Reorganize page header buttons layout ([e6bcb03](https://github.com/hansjlachmann/openerp/commit/e6bcb03594931e3bd95d8b4d3aed6ffa3a0612d7))
 * show lookup dropdowns in non-edit mode on card pages ([019d4a7](https://github.com/hansjlachmann/openerp/commit/019d4a70c8753c47e5dc8dbccf2f8ddf97b1074d))
 * smart auto-save with change detection and UI improvements ([4687664](https://github.com/hansjlachmann/openerp/commit/468766481878baf1bc6ddabf6ff5b364d2fbed6d))
@@ -926,9 +926,9 @@
 
 ### Features
 
-* add Escape key navigation in list pages (NAV/BC behavior) ([566d210](https://github.com/hansjlachmann/openerp/commit/566d2102bd14cea552d2e0babce69ec6f867b77a))
-* add F8 to copy value from cell above (NAV/BC behavior) ([571e663](https://github.com/hansjlachmann/openerp/commit/571e66362d59e07f18c7ac9b541777cdff82e02b))
-* improve list page edit mode keyboard navigation (NAV/BC behavior) ([86a9dee](https://github.com/hansjlachmann/openerp/commit/86a9dee37d3afdc433de08f97dc827b6202ac6e5))
+* add Escape key navigation in list pages (behavior) ([566d210](https://github.com/hansjlachmann/openerp/commit/566d2102bd14cea552d2e0babce69ec6f867b77a))
+* add F8 to copy value from cell above (behavior) ([571e663](https://github.com/hansjlachmann/openerp/commit/571e66362d59e07f18c7ac9b541777cdff82e02b))
+* improve list page edit mode keyboard navigation (behavior) ([86a9dee](https://github.com/hansjlachmann/openerp/commit/86a9dee37d3afdc433de08f97dc827b6202ac6e5))
 
 
 ### Bug Fixes
@@ -967,7 +967,7 @@
 ### Features
 
 * add APP_VERSION support to docker-compose ([5b220a9](https://github.com/hansjlachmann/openerp/commit/5b220a9469997f8d877042b1518c93c7b88cd9ad))
-* add NAV-style progress dialog for codeunits ([43e1c1f](https://github.com/hansjlachmann/openerp/commit/43e1c1f7163b0c7d99784a845461f06f3b0c5af2))
+* add progress dialog for codeunits ([43e1c1f](https://github.com/hansjlachmann/openerp/commit/43e1c1f7163b0c7d99784a845461f06f3b0c5af2))
 * auto-update .env with version on release ([d505c9a](https://github.com/hansjlachmann/openerp/commit/d505c9aaf9ebbb4165fa63b6533b5197fd36e5ae))
 * codeunits self-declare progress support via UsesProgress() ([d696acc](https://github.com/hansjlachmann/openerp/commit/d696acc8252daa13240ac8f382eca6ff8fa4879c))
 
@@ -1127,7 +1127,7 @@
 * add translation_key field and fix list page empty row handling ([4f852a5](https://github.com/hansjlachmann/openerp/commit/4f852a5e98a4e7a6c022bdda3854f3f8b603030f))
 * add UI components and improve editable list functionality ([5b1c5cc](https://github.com/hansjlachmann/openerp/commit/5b1c5ccd8c0d7b7864d75f087c500ba26625643a))
 * Add user authentication and management system ([2e84c06](https://github.com/hansjlachmann/openerp/commit/2e84c06de4e4bcb6f761d64a8920cf1511f0b7a3))
-* Add user preferences system and BC-style filter support ([9deb19b](https://github.com/hansjlachmann/openerp/commit/9deb19ba0464c161d0b81b7725ead4e4adda0722))
+* Add user preferences system and filter support ([9deb19b](https://github.com/hansjlachmann/openerp/commit/9deb19ba0464c161d0b81b7725ead4e4adda0722))
 * Add user-specific customizations and fix phone number field ([d2d2b75](https://github.com/hansjlachmann/openerp/commit/d2d2b756f366018dad605ecacfba2a6976671cbf))
 * block editing when new record save fails (e.g., duplicate) ([9b18432](https://github.com/hansjlachmann/openerp/commit/9b18432d300176f5fbea5e9d0687f7f6d753c363))
 * Docker containerization with PostgreSQL and UI improvements ([de9f562](https://github.com/hansjlachmann/openerp/commit/de9f56258cba6ae88bfca91b32ee20382cbef3b6))
@@ -1137,7 +1137,7 @@
 * implement user-assignable menu system ([b1acd0a](https://github.com/hansjlachmann/openerp/commit/b1acd0a538b610d4176dba258ebd24a235138147))
 * improve Customer Card modal UX and Edit button functionality ([1d3c6b3](https://github.com/hansjlachmann/openerp/commit/1d3c6b3ecf90ef3bc34f7c0e7929556126f1242a))
 * improve Customer Card UX and fix button states ([513fdaa](https://github.com/hansjlachmann/openerp/commit/513fdaa057b38f3a0f45591c3fb09aeab60cfb1d))
-* Redesign FilterPane with Business Central-style Views ([1de6219](https://github.com/hansjlachmann/openerp/commit/1de621939fd504cc9db068edc9fc62748011ff89))
+* Redesign FilterPane with classic ERP-style Views ([1de6219](https://github.com/hansjlachmann/openerp/commit/1de621939fd504cc9db068edc9fc62748011ff89))
 * Reorganize page header buttons layout ([e6bcb03](https://github.com/hansjlachmann/openerp/commit/e6bcb03594931e3bd95d8b4d3aed6ffa3a0612d7))
 * show lookup dropdowns in non-edit mode on card pages ([019d4a7](https://github.com/hansjlachmann/openerp/commit/019d4a70c8753c47e5dc8dbccf2f8ddf97b1074d))
 * smart auto-save with change detection and UI improvements ([4687664](https://github.com/hansjlachmann/openerp/commit/468766481878baf1bc6ddabf6ff5b364d2fbed6d))

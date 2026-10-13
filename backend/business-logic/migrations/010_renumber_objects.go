@@ -13,8 +13,8 @@ func init() {
 }
 
 // RenumberedCodeunits and RenumberedPages map the old object numbers to the new ones: the base
-// application uses its number series (application.yaml: objects 1–999) with the NAV numbers
-// where NAV has the object. Tables were renumbered too; their numbers are not stored.
+// application uses its number series (application.yaml: objects 1–999) with the classic numbers
+// where such an object exists. Tables were renumbered too; their numbers are not stored.
 var (
 	RenumberedCodeunits = map[int]int{
 		50010: 900, // Generate Ledger Entries
@@ -25,10 +25,10 @@ var (
 		50021: 991, // Progress Demo
 	}
 	RenumberedPages = map[int]int{
-		26: 4,   // Payment Terms (NAV form 4)
-		12: 10,  // Countries (NAV form 10)
-		11: 357, // Companies (NAV form 357)
-		30: 59,  // Users (NAV form 59)
+		26: 4,   // Payment Terms (form 4)
+		12: 10,  // Countries (form 10)
+		11: 357, // Companies (form 357)
+		30: 59,  // Users (form 59)
 		10: 900, // Menus
 		31: 901, // User Card
 		32: 902, // User Roles

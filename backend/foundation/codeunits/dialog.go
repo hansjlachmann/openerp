@@ -11,7 +11,7 @@ import (
 // ProgressEvent represents a progress update or dialog event
 type ProgressEvent struct {
 	JobID      string                 `json:"job_id"`
-	Field      int                    `json:"field"`                  // Field number (1-based, like NAV)
+	Field      int                    `json:"field"`                  // Field number (1-based)
 	Value      int                    `json:"value"`                  // Current value (0-100 for progress)
 	Message    string                 `json:"message"`                // Optional message
 	Completed  bool                   `json:"completed"`              // Job completed
@@ -31,7 +31,7 @@ type InputField struct {
 	Default  string `json:"default,omitempty"`  // Default value
 }
 
-// Dialog represents a NAV-style dialog with progress bar support
+// Dialog represents a dialog with progress bar support
 // Usage:
 //   dialog := OpenDialog("Processing @1@@@@@@@@@@@")
 //   defer dialog.Close()
@@ -53,7 +53,7 @@ type Dialog struct {
 }
 
 // Update sends a progress update for a field
-// field is 1-based (like NAV @1@, @2@, etc.)
+// field is 1-based (@1@, @2@, etc.)
 // value is typically 0-100 for percentage
 func (d *Dialog) Update(field int, value int) {
 	d.mu.Lock()
@@ -224,7 +224,7 @@ func (d *Dialog) Context() context.Context {
 
 // Confirm shows a confirmation dialog and waits for user response
 // Returns true if user clicks Yes, false if No
-// Similar to NAV/BC: Confirm('Are you sure?')
+// Like Confirm('Are you sure?')
 func (d *Dialog) Confirm(message string) bool {
 	d.mu.Lock()
 	if d.closed {
@@ -402,7 +402,7 @@ func (r *JobRegistry) Remove(jobID string) {
 }
 
 // OpenDialog creates a new dialog with progress bar support
-// template follows NAV convention: @1@@@@@@@@@@@ for field 1 progress bar
+// template follows the usual convention: @1@@@@@@@@@@@ for field 1 progress bar
 // Returns the dialog and its job ID
 func OpenDialog(template string) *Dialog {
 	ctx, cancel := context.WithCancel(context.Background())

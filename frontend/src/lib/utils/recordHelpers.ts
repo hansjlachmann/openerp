@@ -9,7 +9,7 @@ export function getPrimaryKeyField(page: PageDefinition | null | undefined): str
 	if (!page) return undefined;
 
 	// Prefer the backend-provided PK fields (works even when the PK is not displayed,
-	// e.g. BC-style setup tables whose blank primary key is hidden).
+	// e.g. setup tables whose blank primary key is hidden).
 	if (page.page.primary_key_fields && page.page.primary_key_fields.length > 0) {
 		return page.page.primary_key_fields[0];
 	}
@@ -92,7 +92,7 @@ export function getRecordId(
 	}
 
 	// If primary key field is specified, use it directly.
-	// An empty string is a valid id (BC-style setup tables have a single blank primary key),
+	// An empty string is a valid id (setup tables have a single blank primary key),
 	// so only fall through when the field is entirely absent.
 	if (primaryKeyField && record[primaryKeyField] !== undefined) {
 		return String(record[primaryKeyField]);
@@ -147,13 +147,13 @@ export function getRecordKey(
 	if (record._tempId) return record._tempId;
 
 	// An editable row is keyed by its persisted key (_key), not the live field values: the
-	// user may be typing a new primary key (BC/NAV Rename). Keying by the typed value gave
+	// user may be typing a new primary key (Rename). Keying by the typed value gave
 	// the row a new key per character, so Svelte recreated it, the input lost the focus,
 	// and the blur saved the half-typed key and left editing.
 	if (record._key !== undefined) return String(record._key);
 
 	// Use the composite or single primary key value.
-	// An empty string is a valid, stable key (BC-style setup tables have a single
+	// An empty string is a valid, stable key (setup tables have a single
 	// blank primary key) — only fall through when there is no id at all. Returning a
 	// random key here would give the keyed each an unstable key on every render,
 	// destroying/recreating the row (breaks focus, edit state, and Svelte reconcile).
@@ -234,7 +234,7 @@ export function stripInternalFields(record: Record<string, any>): Record<string,
 /**
  * Check if the user has changed any field of a new record away from the values it was
  * initialized with. Init-supplied defaults are not user edits: a pre-populated row the
- * user never touched counts as untouched (BC/NAV discards it, never inserts it).
+ * user never touched counts as untouched (discards it, never inserts it).
  * @param record - The new record
  * @param pristine - The values the record was initialized with
  */
@@ -243,7 +243,7 @@ export function hasUserEdits(record: Record<string, any>, pristine: Record<strin
 }
 
 /**
- * Decide whether a new record should be INSERTed now. BC/NAV inserts on the first field
+ * Decide whether a new record should be INSERTed now. inserts on the first field
  * the user validates, while the cursor is still on the row — once the record has a user
  * edit and every required primary key field has a value. Optional primary key fields may
  * stay blank (e.g. blank company = all companies) but must be defined.

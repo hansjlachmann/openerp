@@ -6,7 +6,7 @@ import "fmt"
 // through the generic table API and cannot be used to query it: a filter, sort or search on
 // one would reveal its value piece by piece without ever returning it.
 //
-// Masked fields (YAML `masked: true`, BC ExtendedDatatype Masked, e.g. SMTP_Setup.password)
+// Masked fields (YAML `masked: true`, ExtendedDatatype Masked, e.g. SMTP_Setup.password)
 // are write-only secrets: the API sends MaskedValue instead of a value that is set ("" when
 // empty) and accepts writes — MaskedValue sent back means "unchanged". They cannot be
 // queried either.

@@ -1,4 +1,4 @@
-// Copy/paste of records on list pages (BC, page property copy_paste_allowed): Ctrl+C copies the
+// Copy/paste of records on list pages (page property copy_paste_allowed): Ctrl+C copies the
 // selected records (their stored fields, from the server), Ctrl+V inserts them into the same
 // table — in the same company with new keys from the list's filters, or in another company.
 // The copied records are kept in the browser tab (sessionStorage): they survive a company

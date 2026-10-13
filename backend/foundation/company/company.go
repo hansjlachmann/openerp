@@ -132,7 +132,7 @@ func (m *Manager) EnterCompany(name string) error {
 	}
 
 	// Auto-sync: Create any missing tables for ALL companies
-	// This ensures new tables are automatically created across all companies (BC/NAV style)
+	// This ensures new tables are automatically created across all companies
 	// This handles additive changes (new tables, new columns)
 	if m.registry != nil {
 		tableCount := m.registry.GetTableCount()

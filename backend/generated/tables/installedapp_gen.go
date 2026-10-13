@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterInstalledAppLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.InstalledApp) error
 //	OnModify(rec *gtables.InstalledApp) error
@@ -60,10 +60,10 @@ type InstalledApp struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*installedAppFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -76,7 +76,7 @@ type InstalledApp struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*InstalledApp
 	currentBufferPos int
 
@@ -93,10 +93,10 @@ const InstalledAppTableID = 2000000153
 const InstalledAppTableName = "Installed_App"
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// InstalledApp_FieldNo holds the field numbers of Installed_App (BC FieldNo):
+// InstalledApp_FieldNo holds the field numbers of Installed_App (FieldNo):
 // InstalledApp_FieldNo.App_id is 1
 var InstalledApp_FieldNo = struct {
 	App_id        int
@@ -122,7 +122,7 @@ var InstalledApp_FieldNo = struct {
 	Updated_at:    10,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *InstalledApp) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "app_id":
@@ -391,7 +391,7 @@ func (t *InstalledApp) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *InstalledApp) IsSetupTable() bool {
 	return false
@@ -430,7 +430,7 @@ func GetInstalledAppPostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -468,7 +468,7 @@ func (t *InstalledApp) CreateTableWithDBType(db database.Executor, company strin
 		return fmt.Errorf("failed to create Installed_App table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -519,7 +519,7 @@ func (t *InstalledApp) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new InstalledApp record with database context and type.
@@ -533,7 +533,7 @@ func (t *InstalledApp) InitWithDBType(db database.Executor, company string, dbTy
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *InstalledApp) InitRecord() {
@@ -560,7 +560,7 @@ func (t *InstalledApp) StoreOldValues() {
 	t.oldValues["updated_at"] = t.Updated_at
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *InstalledApp) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -765,7 +765,7 @@ func (t *InstalledApp) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -787,7 +787,7 @@ func (t *InstalledApp) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("app_id") {
@@ -993,7 +993,7 @@ func (t *InstalledApp) CalcFieldsForRecords(records []map[string]interface{}, fi
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // installedAppFilterCondition represents a filter on a field
@@ -1006,7 +1006,7 @@ type installedAppFilterCondition struct {
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -1048,8 +1048,8 @@ func (t *InstalledApp) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *InstalledApp) SetFilter(fieldName, filterExpr string) {
@@ -1071,7 +1071,7 @@ func (t *InstalledApp) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *InstalledApp) SetCurrentKey(fields ...string) {
@@ -1086,7 +1086,7 @@ func (t *InstalledApp) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *InstalledApp) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -1143,7 +1143,7 @@ func (t *InstalledApp) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *InstalledApp) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -1185,7 +1185,7 @@ func (t *InstalledApp) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -1212,7 +1212,7 @@ func (t *InstalledApp) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *InstalledApp) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -1307,7 +1307,7 @@ func (t *InstalledApp) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *InstalledApp) FindFirst() bool {
 	tableName := InstalledAppTableName
@@ -1368,7 +1368,7 @@ func (t *InstalledApp) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *InstalledApp) FindLast() bool {
 	tableName := InstalledAppTableName
@@ -1429,7 +1429,7 @@ func (t *InstalledApp) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *InstalledApp) Count() int {
 	tableName := InstalledAppTableName
 	where, args := t.buildWhereClause()
@@ -1449,7 +1449,7 @@ func (t *InstalledApp) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *InstalledApp) FindSet() bool {
@@ -1481,7 +1481,7 @@ func (t *InstalledApp) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -1585,7 +1585,7 @@ func (t *InstalledApp) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -1708,15 +1708,15 @@ func (t *InstalledApp) copyFromBuffered(record *InstalledApp) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *InstalledApp) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *InstalledApp) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := InstalledAppTableName
@@ -1746,7 +1746,7 @@ func (t *InstalledApp) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *InstalledApp) DeleteAll() int {
 	tableName := InstalledAppTableName
@@ -1768,7 +1768,7 @@ func (t *InstalledApp) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *InstalledApp) CopyFilters(from *InstalledApp) {
 	if from.filters == nil {
 		t.filters = nil
@@ -1797,7 +1797,7 @@ func (t *InstalledApp) CopyFilters(from *InstalledApp) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *InstalledApp) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -1823,11 +1823,11 @@ func (t *InstalledApp) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -1842,7 +1842,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field app_id")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_App_id); ok {
 				if err := trg.OnValidate_App_id(t); err != nil {
@@ -1860,7 +1860,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field name")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Name); ok {
 				if err := trg.OnValidate_Name(t); err != nil {
@@ -1878,7 +1878,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field publisher")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Publisher); ok {
 				if err := trg.OnValidate_Publisher(t); err != nil {
@@ -1896,7 +1896,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field contact")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Contact); ok {
 				if err := trg.OnValidate_Contact(t); err != nil {
@@ -1914,7 +1914,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field version")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Version); ok {
 				if err := trg.OnValidate_Version(t); err != nil {
@@ -1932,7 +1932,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field object_series")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Object_series); ok {
 				if err := trg.OnValidate_Object_series(t); err != nil {
@@ -1950,7 +1950,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field field_series")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Field_series); ok {
 				if err := trg.OnValidate_Field_series(t); err != nil {
@@ -1968,7 +1968,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field system_tables")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_System_tables); ok {
 				if err := trg.OnValidate_System_tables(t); err != nil {
@@ -1992,7 +1992,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field installed_at (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Installed_at); ok {
 				if err := trg.OnValidate_Installed_at(t); err != nil {
@@ -2016,7 +2016,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 		} else {
 			return fmt.Errorf("invalid type for field updated_at (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(InstalledAppOnValidate_Updated_at); ok {
 				if err := trg.OnValidate_Updated_at(t); err != nil {
@@ -2034,7 +2034,7 @@ func (t *InstalledApp) ValidateField(fieldName string, value interface{}) error 
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *InstalledApp) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -2233,7 +2233,7 @@ func (t *InstalledApp) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *InstalledApp) SetFlowFilter(field, expr string) error {
 	switch field {

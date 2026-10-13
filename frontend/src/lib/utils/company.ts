@@ -1,6 +1,6 @@
 // A company as listed by GET /api/auth/companies. `name` is the technical key (it
 // prefixes the company's tables and is what the session stores); `display_name` is
-// what users see (BC/NAV Display Name) and may be blank.
+// what users see (Display Name) and may be blank.
 export interface CompanyInfo {
 	name: string;
 	display_name: string;

@@ -65,7 +65,7 @@
 		total?: number;
 		windowOffset?: number;
 		onwindow?: (request: ListWindowRequest) => Promise<void>;
-		// Opened from a drilldown/card action (BC): Esc and the close button go back here
+		// Opened from a drilldown/card action: Esc and the close button go back here
 		returnUrl?: string;
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
@@ -195,7 +195,7 @@
 	const moreBelow = $derived(windowOffset + records.length < total);
 
 	// Window position `index` is the last row of the whole list (new rows the user is
-	// entering count too): moving down from it creates a new row (BC)
+	// entering count too): moving down from it creates a new row
 	function isLastRow(index: number): boolean {
 		return index >= displayRecords.length - 1 && !moreBelow;
 	}
@@ -237,8 +237,8 @@
 	}
 
 	// Mouse wheel / scrollbar (navigation mode): near the top or bottom of the loaded
-	// window, load the window around the rows in view and keep them in place (BC
-	// "loading more"). Keyboard moves load windows through windowIndexOf.
+	// window, load the window around the rows in view and keep them in place
+	// ("loading more"). Keyboard moves load windows through windowIndexOf.
 	let scrollTimer: ReturnType<typeof setTimeout> | undefined;
 	function handleTableScroll(event: Event) {
 		if (!onwindow || !isNavigation) return;
@@ -326,7 +326,7 @@
 				return;
 			}
 
-			// Handle Escape specially - works even in input fields (NAV/BC behavior)
+			// Handle Escape specially - works even in input fields (behavior)
 			if (event.key === 'Escape') {
 				event.preventDefault();
 				event.stopPropagation();
@@ -347,7 +347,7 @@
 
 			const shortcutKey = getShortcutKey(event);
 
-			// Ctrl+F7 (NAV Table Filter): show/hide the filter pane — also from a filter field
+			// Ctrl+F7 (Table Filter): show/hide the filter pane — also from a filter field
 			if (shortcutKey === commonShortcuts.FILTER) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -401,7 +401,7 @@
 	// Track selected row index
 	let selectedIndex = $state(-1);
 
-	// Multi-row selection (BC): Ctrl/Shift+click, Shift+arrows, Ctrl+A — in navigation mode
+	// Multi-row selection: Ctrl/Shift+click, Shift+arrows, Ctrl+A — in navigation mode
 	// only. Records by key (never by row position: windows, search and sort move rows). With
 	// one record or none selected the list behaves as before: actions use the cursor row.
 	let selection = $state<ListSelection>(emptySelection());
@@ -421,7 +421,7 @@
 	});
 
 	// Esc / close in navigation mode: back to the page this list was opened from (drilldown,
-	// card action — as BC closes the page), otherwise to the main menu
+	// card action — Esc closes the page), otherwise to the main menu
 	function closeList() {
 		if (returnUrl) {
 			goto(returnUrl);
@@ -483,7 +483,7 @@
 		}
 	}
 
-	// Edit List mode state (BC-style full list editing)
+	// Edit List mode state (full list editing)
 	let currentCellRow = $state<number>(-1);
 	let currentCellCol = $state<number>(-1);
 
@@ -714,7 +714,7 @@
 		return records.map(r => ({ ...r, _key: getRecordId(r, primaryKeyField, primaryKeyFieldsList), _saved: deepCopy(r) }));
 	}
 
-	// Ctrl+Insert (new line) or Alt+N (New) inserts a new row (BC). Not Ctrl+N: browsers
+	// Ctrl+Insert (new line) or Alt+N (New) inserts a new row. Not Ctrl+N: browsers
 	// reserve it for a new window and never pass it to the page.
 	function isNewRowShortcut(event: KeyboardEvent): boolean {
 		const shortcutKey = getShortcutKey(event);
@@ -824,7 +824,7 @@
 		}
 
 		cellState = 'cell-editing';
-		// Cursor at the end of the text, never select-all (NAV/BC): F2/F8/double-click keep the
+		// Cursor at the end of the text, never select-all: F2/F8/double-click keep the
 		// content to be amended (PAY-TERM01 -> Backspace -> PAY-TERM02); a typed character
 		// starts the new content with the cursor after it
 		focusCell(currentCellRow, currentCellCol, false);
@@ -917,20 +917,20 @@
 	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
 	let savedTimeout: ReturnType<typeof setTimeout> | undefined;
 
-	// Auto-save when a cell value is confirmed (BC/NAV record entry):
+	// Auto-save when a cell value is confirmed (record entry):
 	// - Existing record: MODIFY.
 	// - New record: a field the user changed is first validated server-side together with the
 	//   whole in-progress record, so its OnValidate trigger can fill sibling fields. The record
 	//   is then INSERTed as soon as it has a user edit and values for its required primary key
 	//   fields — while the cursor is still on the row, not when the row is left. Until then it
 	//   stays uncommitted; an untouched new row is discarded when the user leaves it.
-	// - Pages with delayed_insert (BC DelayedInsert) insert only when leavingRow is true: the
+	// - Pages with delayed_insert (DelayedInsert) insert only when leavingRow is true: the
 	//   user moved to another row, past the last row, or out of the table.
 	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, leavingRow: boolean = false) {
 		if (!page || !editableActive) return;
 
 		// An existing record the user did not change since it was last saved: nothing to
-		// validate or save (BC/NAV modifies only changed records). Moving through the cells
+		// validate or save (modifies only changed records). Moving through the cells
 		// of a list used to MODIFY every row passed — a write plus a list reload per key.
 		if (record._isNew !== true && record._saved && !hasUserEdits(record, record._saved)) return;
 
@@ -984,7 +984,7 @@
 		}
 		try {
 			// Address an existing record by its persisted key: the user may have edited a
-			// primary key field, which the backend then renames (BC/NAV Rename)
+			// primary key field, which the backend then renames (Rename)
 			const recordId = record._key ?? getRecordId(record, primaryKeyField, primaryKeyFieldsList);
 
 			if (isNew) {
@@ -1072,7 +1072,7 @@
 		}, 1500);
 	}
 
-	// Create a new, not yet inserted row (BC/NAV OnNewRecord). It starts blank and is filled
+	// Create a new, not yet inserted row (OnNewRecord). It starts blank and is filled
 	// with the table's defaults from the init endpoint when they arrive; if that fails it stays
 	// blank so data entry is never blocked. The initial values are kept in _pristine: only
 	// changes away from them count as user edits, so defaults never trigger an insert.
@@ -1229,7 +1229,7 @@
 				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else if (!isEmptyNewRecord(record)) {
-					// Past the last row: save current cell, then create a new row (BC behavior)
+					// Past the last row: save current cell, then create a new row (behavior)
 					handleCellBlur(record, rowIndex, field.source, true);
 					insertNewRow(true);
 				}
@@ -1273,7 +1273,7 @@
 					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
-						// Last column of the last row: save and open a new blank row (BC)
+						// Last column of the last row: save and open a new blank row
 						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
@@ -1323,7 +1323,7 @@
 				}
 				break;
 			case 'F8':
-				// Copy from cell above, then edit it with the cursor at the end (NAV/BC)
+				// Copy from cell above, then edit it with the cursor at the end
 				event.preventDefault();
 				if (rowIndex > 0 && field.editable !== false) {
 					const aboveRecord = displayRecords[rowIndex - 1];
@@ -1467,7 +1467,7 @@
 					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
-						// Last column of the last row: save and open a new blank row (BC)
+						// Last column of the last row: save and open a new blank row
 						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
@@ -1488,7 +1488,7 @@
 				exitEditingToCellSelected(false);
 				break;
 			case 'F8':
-				// F8 copies value from the cell above (NAV/BC behavior)
+				// F8 copies value from the cell above (behavior)
 				{
 					event.preventDefault();
 					const field = cols[colIndex];
@@ -1557,7 +1557,7 @@
 					} else if (!isLastRow(rowIndex)) {
 						confirmAndMoveTo(rowIndex + 1, 0);
 					} else {
-						// Last column of the last row: save and open a new blank row (BC)
+						// Last column of the last row: save and open a new blank row
 						confirmAndAddRow(rowIndex, colIndex);
 					}
 				}
@@ -1739,7 +1739,7 @@
 				return;
 			}
 			clearSelection();
-			// One click only selects the row (BC): editing starts with Edit / Ctrl+E / F2, in the
+			// One click only selects the row: editing starts with Edit / Ctrl+E / F2, in the
 			// column clicked last
 			editStartCol = colIndex;
 			handleRowClick(rowIndex);
@@ -1749,7 +1749,7 @@
 		}
 	}
 
-	// Handle click on the trailing blank row: start a new record at the end (BC/NAV)
+	// Handle click on the trailing blank row: start a new record at the end
 	async function handlePlaceholderRowClick() {
 		if (isNavigation) return; // shown in edit mode only
 		if (currentCellRow >= 0 && currentCellCol >= 0) {
@@ -1785,7 +1785,7 @@
 							editableRecords = [...toEditableRecords(), ...unsaved];
 						}
 					}
-					// Stay on the same position: the record after the deleted one (BC)
+					// Stay on the same position: the record after the deleted one
 					const last = displayRecords.length - 1;
 					if (last < 0) {
 						if (editableActive) exitToNavigation();
@@ -1962,7 +1962,7 @@
 		const sentRecord = deepCopy(savedRecord);
 		try {
 			// An existing record is addressed by its key as loaded: the form may hold a changed
-			// key (rename, BC/NAV), which the record does not have until this modify saves it
+			// key (rename, ), which the record does not have until this modify saves it
 			const recordId = getRecordId(modalIsNewRecord ? savedRecord : modalOriginalRecord, primaryKeyField, primaryKeyFieldsList);
 
 			if (modalIsNewRecord) {
@@ -1996,7 +1996,7 @@
 			// The form record is not replaced (that would lose the focus): applyServerValues
 			// updated only the fields the server changed, in place
 
-			// Don't close modal - keep it open like Business Central
+			// Don't close modal - keep it open like classic ERP
 			// Restore focus if it was lost during state updates
 			if (activeElementId) {
 				setTimeout(() => {
@@ -2107,7 +2107,7 @@
 
 		// Add navigation shortcuts only when in navigation mode
 		if (isNavigation) {
-			// A plain move collapses a multi-selection to the cursor row (BC)
+			// A plain move collapses a multi-selection to the cursor row
 			const plain = (move: () => void) => () => {
 				clearSelection();
 				move();
@@ -2406,7 +2406,7 @@
 		);
 	}
 
-	// ---- Copy/paste of records (page copy_paste_allowed, BC CopyPasteAllowed) ----
+	// ---- Copy/paste of records (page copy_paste_allowed, CopyPasteAllowed) ----
 
 	// Ctrl+C: copy the selected records (or the cursor row) — their stored fields, from the
 	// server — into the browser tab's clipboard
@@ -2465,7 +2465,7 @@
 		);
 	}
 
-	// A new filter, search or sort starts a new selection (BC)
+	// A new filter, search or sort starts a new selection
 	$effect(() => {
 		void currentFilters;
 		void currentFlowFilters;
@@ -2488,7 +2488,7 @@
 		return !(page.page.flow_fields ?? []).includes(fieldSource);
 	}
 
-	// ---- Column header menu (BC): sort, filter to this value, clear filter, hide ----
+	// ---- Column header menu: sort, filter to this value, clear filter, hide ----
 	let columnMenu = $state<{ anchor: HTMLElement; field: Field } | null>(null);
 
 	function setSort(fieldSource: string, direction: 'asc' | 'desc') {
@@ -2931,7 +2931,7 @@
 								}}
 							>
 								{#if isSortable(field.source)}
-									<!-- Clicking the caption sorts (again: the other direction), BC -->
+									<!-- Clicking the caption sorts (again: the other direction) -->
 									<button
 										type="button"
 										class="th-label th-sort"
@@ -3285,7 +3285,7 @@
 					</tr>
 				{/each}
 				{#if page.page.editable && !isNavigation && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
-					<!-- BC-style trailing blank row, in edit mode only: click it to start a new record -->
+					<!-- trailing blank row, in edit mode only: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}
 							<td class="row-number-cell"></td>
@@ -3467,7 +3467,7 @@
 		background: transparent;
 	}
 
-	/* BC column header: light background with bold dark text (dark mode: dark header) */
+	/* column header: light background with bold dark text (dark mode: dark header) */
 	.table th {
 		@apply px-4 py-3 text-left text-sm font-bold;
 		background-color: rgb(var(--surface));
@@ -3738,7 +3738,7 @@
 	}
 
 	:global(.dark) tbody tr:not(.selected) td.p-0 {
-		background: rgb(var(--gray-900)); /* BC dark mode: list rows on the page background */
+		background: rgb(var(--gray-900)); /* dark mode: list rows on the page background */
 	}
 
 	/* Selected rows - make td background transparent to show row highlight */
@@ -3927,12 +3927,12 @@
 		pointer-events: auto;
 	}
 
-	/* Trailing blank row (BC-style new-record affordance) */
+	/* Trailing blank row (new-record affordance) */
 	.placeholder-row {
 		cursor: pointer;
 	}
 
-	/* Value in the selected cell looks like selected text (BC): --text-sel-* (app.css; blue in
+	/* Value in the selected cell looks like selected text: --text-sel-* (app.css; blue in
 	   light mode, grey in dark mode). Typing replaces it; F2 puts the cursor at the end. */
 	.cell-selected-text {
 		background-color: rgb(var(--text-sel-bg));

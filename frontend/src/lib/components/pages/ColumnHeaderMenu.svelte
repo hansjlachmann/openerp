@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Column header menu of list pages (BC): opens under the ▾ button of a header. Items are
+	// Column header menu of list pages: opens under the ▾ button of a header. Items are
 	// buttons: arrow keys move between them, Enter/Space chooses, Esc and a click outside
 	// close the menu. Positioned fixed so the table's scroll container does not clip it.
 	import { onMount, tick } from 'svelte';

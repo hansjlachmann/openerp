@@ -10,17 +10,17 @@ type Table interface {
 	// Identity
 	GetTableID() int
 	GetTableName() string
-	// IsSetupTable reports whether this is a BC-style singleton setup table
+	// IsSetupTable reports whether this is a singleton setup table
 	// (a single record identified by a blank primary key)
 	IsSetupTable() bool
 
 	// Initialization - must be called before any operations. There is no Init without the
 	// database type: it decides the SQL placeholders (a SQLite default broke PostgreSQL)
 	InitWithDBType(db database.Executor, company string, dbType database.DBType)
-	// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord)
+	// InitRecord initializes a new, not yet inserted record (OnNewRecord)
 	InitRecord()
 
-	// CRUD operations (BC/NAV style)
+	// CRUD operations
 	// Get retrieves a record by primary key, returns true if found
 	Get(primaryKey interface{}) bool
 	// Insert creates a new record, runTrigger controls OnInsert execution
@@ -33,13 +33,13 @@ type Table interface {
 	// fail (a business-rule message for the user), or nil
 	TriggerError() error
 
-	// Query operations (BC/NAV style)
+	// Query operations
 	// FindSet prepares iteration over filtered records
 	FindSet() bool
 	// Next moves to the next record, returns false when exhausted
 	// Optional steps parameter allows skipping records (positive) or moving backward (negative)
 	Next(steps ...int) bool
-	// SetFilter applies a BC-style filter expression to a field
+	// SetFilter applies a filter expression to a field
 	SetFilter(field, expression string)
 	// ClearFilters removes all filters
 	ClearFilters()
@@ -98,7 +98,7 @@ type Table interface {
 	GetTableRelationFields() map[string]TableRelationInfo
 }
 
-// FlowFilterFieldInfo describes a FlowFilter field (NAV FieldClass FlowFilter): its name and
+// FlowFilterFieldInfo describes a FlowFilter field (FieldClass FlowFilter): its name and
 // value kind ("date", "bool", "int", "text", "code")
 type FlowFilterFieldInfo struct {
 	Name string `json:"name"`
@@ -107,7 +107,7 @@ type FlowFilterFieldInfo struct {
 
 // FieldInfo contains metadata about a table field
 type FieldInfo struct {
-	No         int       // Field number (BC field ID), unique in the table
+	No         int       // Field number (field ID), unique in the table
 	Name       string    // Field name (snake_case)
 	Type       FieldType // Field type
 	Length     int       // Max length for Code/Text fields
@@ -134,7 +134,7 @@ type TableRelationInfo struct {
 	SearchTimeout int                // Auto-clear search after N milliseconds (0 = use default 1500)
 }
 
-// FieldType represents the BC/NAV field types
+// FieldType represents the field types
 type FieldType string
 
 const (

@@ -19,7 +19,7 @@ func (e *AddressListError) Error() string {
 	return "mail: " + e.Address + " is not a valid e-mail address"
 }
 
-// SplitAddressList returns the items of an address list separated by ";" (as BC's
+// SplitAddressList returns the items of an address list separated by ";" (as usual for
 // e-mail fields) or ",", as typed: spaces around items and empty items dropped. It
 // does not check them — Send reports a bad item and still sends to the others.
 func SplitAddressList(list string) []string {

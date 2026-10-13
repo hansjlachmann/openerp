@@ -208,7 +208,7 @@ func (db *Database) GetDBType() DBType {
 }
 
 // GetFullTableName returns the company-prefixed table name
-// Format: CompanyName$TableName (Business Central style)
+// Format: CompanyName$TableName (classic ERP style)
 func (db *Database) GetFullTableName(tableName string) (string, error) {
 	if db.currentCompany == "" {
 		return "", fmt.Errorf("no company context set - use EnterCompany() first")

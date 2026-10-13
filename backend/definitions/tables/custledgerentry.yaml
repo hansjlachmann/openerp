@@ -299,10 +299,10 @@ table:
       db_name: bal_account_no
       length: 20
 
-  # Keys (Indexes) - BC/NAV style
+  # Keys (Indexes) - style
   # These indexes optimize FlowField calculations and common queries
   keys:
-    # SIFT key (BC/NAV SumIndexFields): the database keeps totals per customer + open, so
+    # SIFT key (SumIndexFields): the database keeps totals per customer + open, so
     # Customer.Balance_lcy (customer + open), Sales_lcy and No_of_ledger_entries (customer)
     # read one or two totals rows instead of adding up every entry
     - name: customer_open

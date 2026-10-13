@@ -2,7 +2,7 @@ table:
   id: 409
   name: "SMTP_Setup"
   global: true         # Global table - no company prefix (system-wide mail configuration)
-  setup_table: true    # BC-style singleton: a single record with a blank Primary Key
+  setup_table: true    # singleton: a single record with a blank Primary Key
   fields:
     - name: primary_key
       no: 1

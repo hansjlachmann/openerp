@@ -40,8 +40,8 @@ func (p Palette) ResolveMode() string {
 }
 
 // Normalize turns a palette into tokens. The gray ramp runs from the background to the
-// foreground in OKLab with BC's lightness profile, the accent ramp keeps the accent's hue
-// with BC teal's profile, and text colors are adjusted until they reach the contrast
+// foreground in OKLab with the classic lightness profile, the accent ramp keeps the accent's hue
+// with teal's profile, and text colors are adjusted until they reach the contrast
 // minimums against the page — a theme can recolor the app but never make it unreadable.
 func Normalize(p Palette) Tokens {
 	mode := p.ResolveMode()
@@ -58,9 +58,9 @@ func Normalize(p Palette) Tokens {
 	var gray [11]RGB
 	if mode == "dark" {
 		fg = EnsureContrast(fg, bg, minText)
-		// BC dark: 900 is the page, 50 the text
-		l900, l50 := MustColor(bcGray[9]).ToLab().L, MustColor(bcGray[0]).ToLab().L
-		for i, h := range bcGray {
+		// dark: 900 is the page, 50 the text
+		l900, l50 := MustColor(classicGray[9]).ToLab().L, MustColor(classicGray[0]).ToLab().L
+		for i, h := range classicGray {
 			gray[i] = Mix(bg, fg, (MustColor(h).ToLab().L-l900)/(l50-l900))
 		}
 		gray[9], gray[0] = bg, fg
@@ -74,9 +74,9 @@ func Normalize(p Palette) Tokens {
 		gray[5] = EnsureContrast(gray[5], bg, minMuted)
 	} else {
 		fg = EnsureContrast(fg, bg, minText)
-		// BC light: white page, #212121 text; 50 sits just below the page, 900 beyond the text
+		// light: white page, #212121 text; 50 sits just below the page, 900 beyond the text
 		lText := MustColor("#212121").ToLab().L
-		for i, h := range bcGray {
+		for i, h := range classicGray {
 			gray[i] = Mix(bg, fg, (1-MustColor(h).ToLab().L)/(1-lText))
 		}
 		if p.Muted != nil {
@@ -139,7 +139,7 @@ func Normalize(p Palette) Tokens {
 		v.ScrollTrack, v.ScrollThumb, v.ScrollThumbHover = Mix(bg, fg, 0.1).Hex(), Mix(bg, fg, 0.55).Hex(), Mix(bg, fg, 0.7).Hex()
 	} else {
 		v.Surface = bg.Hex()
-		// BC style: a dark app bar, unless the theme has its own deep surface
+		// A dark app bar, unless the theme has its own deep surface
 		appbar, appbarFg := Mix(fg, bg, 0.08), bg
 		if p.Darker != nil {
 			appbar, appbarFg = *p.Darker, fg
@@ -165,11 +165,11 @@ func Normalize(p Palette) Tokens {
 }
 
 // accentRamp builds the 11 accent steps around accent: hue and chroma kept, lightness
-// shifted along BC teal's profile so that step anchor is the accent itself.
+// shifted along teal's profile so that step anchor is the accent itself.
 func accentRamp(accent RGB, anchor int) [11]RGB {
 	var out [11]RGB
-	delta := accent.ToLab().L - MustColor(bcTeal[anchor]).ToLab().L
-	for i, h := range bcTeal {
+	delta := accent.ToLab().L - MustColor(classicTeal[anchor]).ToLab().L
+	for i, h := range classicTeal {
 		L := MustColor(h).ToLab().L + delta
 		if L > 0.98 {
 			L = 0.98

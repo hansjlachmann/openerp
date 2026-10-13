@@ -4,7 +4,7 @@
 //
 // The business logic is in business-logic/tables: a type registered with
 // RegisterJobQueueEntryLogic, with the triggers it needs as methods. Add a trigger when it
-// is needed (as in BC). Available triggers:
+// is needed. Available triggers:
 //
 //	OnInsert(rec *gtables.JobQueueEntry) error
 //	OnModify(rec *gtables.JobQueueEntry) error
@@ -37,7 +37,7 @@ import (
 )
 
 // ========================================
-// Option Field Type Definitions (BC/NAV style)
+// Option Field Type Definitions
 // ========================================
 
 // JobQueueEntryStatus represents the status option field
@@ -78,10 +78,10 @@ type JobQueueEntry struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast (BC/NAV style)
+	// Filter state for SetRange/FindFirst/FindLast
 	filters map[string]*jobQueueEntryFilterCondition
 
-	// Iteration state for FindSet/Next (BC/NAV style)
+	// Iteration state for FindSet/Next
 	currentRows   *sql.Rows
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
@@ -94,7 +94,7 @@ type JobQueueEntry struct {
 	limit  int
 	offset int
 
-	// Buffered recordset for bidirectional navigation (BC/NAV style)
+	// Buffered recordset for bidirectional navigation
 	bufferedRecords  []*JobQueueEntry
 	currentBufferPos int
 
@@ -111,7 +111,7 @@ const JobQueueEntryTableID = 474
 const JobQueueEntryTableName = "Job_Queue_Entry"
 
 // ========================================
-// Option Field Namespaces (BC/NAV style)
+// Option Field Namespaces
 // ========================================
 
 // JobQueueEntry_Status provides named constants for the status option field (FieldName.OptionValue syntax)
@@ -126,10 +126,10 @@ var JobQueueEntry_Status = struct {
 }
 
 // ========================================
-// Field numbers (BC field IDs)
+// Field numbers (field IDs)
 // ========================================
 
-// JobQueueEntry_FieldNo holds the field numbers of Job_Queue_Entry (BC FieldNo):
+// JobQueueEntry_FieldNo holds the field numbers of Job_Queue_Entry (FieldNo):
 // JobQueueEntry_FieldNo.Entry_no is 1
 var JobQueueEntry_FieldNo = struct {
 	Entry_no        int
@@ -151,7 +151,7 @@ var JobQueueEntry_FieldNo = struct {
 	End_date_time:   8,
 }
 
-// FieldNo returns the number of a field (BC FieldNo), 0 for an unknown field
+// FieldNo returns the number of a field (FieldNo), 0 for an unknown field
 func (t *JobQueueEntry) FieldNo(fieldName string) int {
 	switch strings.ToLower(fieldName) {
 	case "entry_no":
@@ -415,7 +415,7 @@ func (t *JobQueueEntry) GetDBType() database.DBType {
 	return t.dbType
 }
 
-// IsSetupTable reports whether this is a BC-style singleton setup table
+// IsSetupTable reports whether this is a singleton setup table
 // (a single record identified by a blank primary key).
 func (t *JobQueueEntry) IsSetupTable() bool {
 	return false
@@ -450,7 +450,7 @@ func GetJobQueueEntryPostgresTableSchema() string {
 }
 
 // ========================================
-// Translation Support (BC/NAV CaptionML)
+// Translation Support (CaptionML)
 // ========================================
 
 // GetCaption returns the table caption in the specified language
@@ -494,7 +494,7 @@ func (t *JobQueueEntry) CreateTableWithDBType(db database.Executor, company stri
 		return fmt.Errorf("failed to create Job_Queue_Entry table: %w", err)
 	}
 
-	// Indexes (BC/NAV Keys) and SIFT totals
+	// Indexes (Keys) and SIFT totals
 	return t.SyncKeys(db, company, dbType)
 }
 
@@ -551,7 +551,7 @@ func (t *JobQueueEntry) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
 }
 
 // ========================================
-// BC/NAV-style Record Methods
+// Record Methods
 // ========================================
 
 // InitWithDBType initializes a new JobQueueEntry record with database context and type.
@@ -565,7 +565,7 @@ func (t *JobQueueEntry) InitWithDBType(db database.Executor, company string, dbT
 	t.applyDefaults()
 }
 
-// InitRecord initializes a new, not yet inserted record (BC/NAV OnNewRecord).
+// InitRecord initializes a new, not yet inserted record (OnNewRecord).
 // The base implementation applies the YAML default values; wrappers can override
 // it to supply further defaults (call the base implementation first).
 func (t *JobQueueEntry) InitRecord() {
@@ -590,7 +590,7 @@ func (t *JobQueueEntry) StoreOldValues() {
 	t.oldValues["end_date_time"] = t.End_date_time
 }
 
-// OldValue returns a field's value as last read from or written to the database (BC/NAV
+// OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *JobQueueEntry) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
@@ -790,7 +790,7 @@ func (t *JobQueueEntry) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	// A changed primary key is a rename (BC/NAV): run the OnRename trigger
+	// A changed primary key is a rename: run the OnRename trigger
 	// before it is written; xRec values are available through OldValue
 	keyChanged := false
 	if t.oldValues != nil {
@@ -812,7 +812,7 @@ func (t *JobQueueEntry) Modify(runTrigger bool) bool {
 	var values []interface{}
 
 	// If we have old values (loaded from Get), only update changed fields.
-	// Changed primary key fields are renamed in place (BC/NAV Rename): they are SET to the
+	// Changed primary key fields are renamed in place (Rename): they are SET to the
 	// new value while the WHERE clause matches the old one.
 	if t.oldValues != nil {
 		if t.hasFieldChanged("entry_no") {
@@ -999,7 +999,7 @@ func (t *JobQueueEntry) CalcFieldsForRecords(records []map[string]interface{}, f
 }
 
 // ========================================
-// BC/NAV-style Filtering and Search
+// Filtering and Search
 // ========================================
 
 // jobQueueEntryFilterCondition represents a filter on a field
@@ -1012,7 +1012,7 @@ type jobQueueEntryFilterCondition struct {
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 }
 
-// SetRange sets a range filter on a field (BC/NAV style)
+// SetRange sets a range filter on a field
 // Usage:
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
@@ -1054,8 +1054,8 @@ func (t *JobQueueEntry) SetRange(fieldName string, values ...interface{}) {
 	}
 }
 
-// SetFilter sets a complex filter expression on a field (BC/NAV style)
-// Supports BC/NAV filter syntax: "100..200|500" (range OR exact value)
+// SetFilter sets a complex filter expression on a field
+// Supports filter syntax: "100..200|500" (range OR exact value)
 // Operators: .. (range), | (OR), & (AND), * (wildcard), <> (not equal)
 // Example: customer.SetFilter("No", "001..003|005")
 func (t *JobQueueEntry) SetFilter(fieldName, filterExpr string) {
@@ -1077,7 +1077,7 @@ func (t *JobQueueEntry) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
-// SetCurrentKey sets the sort order for queries (BC/NAV style)
+// SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *JobQueueEntry) SetCurrentKey(fields ...string) {
@@ -1092,7 +1092,7 @@ func (t *JobQueueEntry) SetCurrentKey(fields ...string) {
 	}
 }
 
-// SetAscending sets the sort direction of the current key (BC/NAV Ascending).
+// SetAscending sets the sort direction of the current key (Ascending).
 // The default is ascending.
 func (t *JobQueueEntry) SetAscending(ascending bool) {
 	t.descending = !ascending
@@ -1145,7 +1145,7 @@ func (t *JobQueueEntry) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters (BC/NAV style)
+// Reset clears all filters
 func (t *JobQueueEntry) Reset() {
 	t.filters = nil
 	t.oldValues = nil
@@ -1187,7 +1187,7 @@ func (t *JobQueueEntry) buildWhereClause() (string, []interface{}) {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.isExpression {
-			// Parse BC/NAV filter expression
+			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
 			conditions = append(conditions, clause)
 			args = append(args, exprArgs...)
@@ -1214,7 +1214,7 @@ func (t *JobQueueEntry) buildWhereClause() (string, []interface{}) {
 	return where, args
 }
 
-// parseFilterExpression parses BC/NAV filter expressions into SQL
+// parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *JobQueueEntry) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
@@ -1309,7 +1309,7 @@ func (t *JobQueueEntry) getLimitClause() string {
 	return fmt.Sprintf(" LIMIT %d", t.limit)
 }
 
-// FindFirst finds the first record matching current filters (BC/NAV style)
+// FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *JobQueueEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
@@ -1362,7 +1362,7 @@ func (t *JobQueueEntry) FindFirst() bool {
 	return true
 }
 
-// FindLast finds the last record matching current filters (BC/NAV style)
+// FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *JobQueueEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
@@ -1415,7 +1415,7 @@ func (t *JobQueueEntry) FindLast() bool {
 	return true
 }
 
-// Count returns the number of records matching current filters (BC/NAV style)
+// Count returns the number of records matching current filters
 func (t *JobQueueEntry) Count() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
 	where, args := t.buildWhereClause()
@@ -1435,7 +1435,7 @@ func (t *JobQueueEntry) Count() int {
 	return count
 }
 
-// FindSet opens a result set matching current filters (BC/NAV style)
+// FindSet opens a result set matching current filters
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *JobQueueEntry) FindSet() bool {
@@ -1467,7 +1467,7 @@ func (t *JobQueueEntry) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set (BC/NAV style)
+// Next advances to the next record in the result set
 // Must be called after FindSet() or FindSetBuffered()
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
@@ -1563,7 +1563,7 @@ func (t *JobQueueEntry) Next(steps ...int) bool {
 	return false
 }
 
-// FindSetBuffered loads all filtered records into memory for bidirectional navigation (BC/NAV style)
+// FindSetBuffered loads all filtered records into memory for bidirectional navigation
 // Use this when you need to move backward/forward with Next(steps)
 // Filters (SetRange/SetFilter) are applied in SQL before buffering to minimize memory usage
 // Returns true if at least one record found, false otherwise
@@ -1676,15 +1676,15 @@ func (t *JobQueueEntry) copyFromBuffered(record *JobQueueEntry) {
 }
 
 // ========================================
-// Phase 3: Advanced BC/NAV Methods
+// Phase 3: Advanced Methods
 // ========================================
 
-// IsEmpty returns true if no records match current filters (BC/NAV style)
+// IsEmpty returns true if no records match current filters
 func (t *JobQueueEntry) IsEmpty() bool {
 	return t.Count() == 0
 }
 
-// ModifyAll updates a field for all records matching current filters (BC/NAV style)
+// ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *JobQueueEntry) ModifyAll(fieldName string, newValue interface{}) int {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
@@ -1714,7 +1714,7 @@ func (t *JobQueueEntry) ModifyAll(fieldName string, newValue interface{}) int {
 	return int(rowsAffected)
 }
 
-// DeleteAll deletes all records matching current filters (BC/NAV style)
+// DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *JobQueueEntry) DeleteAll() int {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
@@ -1736,7 +1736,7 @@ func (t *JobQueueEntry) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable (BC/NAV style)
+// CopyFilters copies filters from another record variable
 func (t *JobQueueEntry) CopyFilters(from *JobQueueEntry) {
 	if from.filters == nil {
 		t.filters = nil
@@ -1765,7 +1765,7 @@ func (t *JobQueueEntry) CopyFilters(from *JobQueueEntry) {
 	}
 }
 
-// GetFilters returns a string representation of current filters (BC/NAV style)
+// GetFilters returns a string representation of current filters
 // Useful for debugging and logging
 func (t *JobQueueEntry) GetFilters() string {
 	if len(t.filters) == 0 {
@@ -1791,11 +1791,11 @@ func (t *JobQueueEntry) GetFilters() string {
 }
 
 // ========================================
-// BC/NAV-style Field Validation
+// Field Validation
 // ========================================
 
-// ValidateField validates a field and calls its OnValidate trigger (BC/NAV style)
-// This is equivalent to the BC/NAV VALIDATE function
+// ValidateField validates a field and calls its OnValidate trigger
+// This is equivalent to the VALIDATE function
 // Usage: customer.ValidateField("Payment_terms_code", types.NewCode("30DAYS"))
 func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error {
 	fieldNameLower := strings.ToLower(fieldName)
@@ -1819,7 +1819,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		default:
 			return fmt.Errorf("invalid type for field entry_no")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Entry_no); ok {
 				if err := trg.OnValidate_Entry_no(t); err != nil {
@@ -1837,7 +1837,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field job_queue_no")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Job_queue_no); ok {
 				if err := trg.OnValidate_Job_queue_no(t); err != nil {
@@ -1867,7 +1867,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 			// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
 			if v == "" {
-				// Empty string defaults to first option (NAV/BC behavior)
+				// Empty string defaults to first option (behavior)
 				t.Status = 0
 			} else {
 				options := []string{"Success", "In Process", "Error"}
@@ -1886,7 +1886,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field status (expected JobQueueEntryStatus, int, or string)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Status); ok {
 				if err := trg.OnValidate_Status(t); err != nil {
@@ -1904,7 +1904,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_User_id); ok {
 				if err := trg.OnValidate_User_id(t); err != nil {
@@ -1922,7 +1922,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field description")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Description); ok {
 				if err := trg.OnValidate_Description(t); err != nil {
@@ -1940,7 +1940,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field error_message")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Error_message); ok {
 				if err := trg.OnValidate_Error_message(t); err != nil {
@@ -1964,7 +1964,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field start_date_time (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_Start_date_time); ok {
 				if err := trg.OnValidate_Start_date_time(t); err != nil {
@@ -1988,7 +1988,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 		} else {
 			return fmt.Errorf("invalid type for field end_date_time (expected DateTime, string, or time.Time)")
 		}
-		// OnValidate trigger of the business logic (BC: OnValidate of the field)
+		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(JobQueueEntryOnValidate_End_date_time); ok {
 				if err := trg.OnValidate_End_date_time(t); err != nil {
@@ -2006,7 +2006,7 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 // Interface Implementation (tables.Table)
 // ========================================
 
-// ClearFilters removes all filters (BC/NAV style, alias for Reset)
+// ClearFilters removes all filters (alias for Reset)
 func (t *JobQueueEntry) ClearFilters() {
 	t.filters = nil
 	t.orderByFields = nil
@@ -2188,7 +2188,7 @@ func (t *JobQueueEntry) GetFields() []tables.FieldInfo {
 	}
 }
 
-// SetFlowFilter sets a FlowFilter field's filter expression (BC/NAV SETFILTER on a
+// SetFlowFilter sets a FlowFilter field's filter expression (SETFILTER on a
 // FlowFilter field); FlowFields applying it use it from then on. "" clears it.
 func (t *JobQueueEntry) SetFlowFilter(field, expr string) error {
 	switch field {

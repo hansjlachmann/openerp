@@ -60,7 +60,7 @@ table:
       db_name: recurrence
       options: ["Once", "Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
 
-    # One or more addresses separated by ";" (BC style), checked by OnValidate
+    # One or more addresses separated by ";", checked by OnValidate
     - name: notification_email
       no: 11
       type: types.Text

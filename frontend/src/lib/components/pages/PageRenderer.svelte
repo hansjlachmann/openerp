@@ -413,7 +413,7 @@
 				const modified = await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);
 				// Values a trigger changed (tidied, recalculated) show at once
 				applyServerValues(savedRecord, sentRecord, modified);
-				// Renamed (key changed, BC/NAV): address the record by its new key from now on
+				// Renamed (key changed, ): address the record by its new key from now on
 				const newRecordId = getRecordId(modified, primaryKeyField, primaryKeyFieldsList);
 				if (newRecordId && newRecordId !== currentRecordId) {
 					recordIds = recordIds.map((id) => (id === currentRecordId ? newRecordId : id));

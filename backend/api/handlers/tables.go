@@ -75,7 +75,7 @@ func (h *TablesHandler) getTableOn(exec database.Executor, tableName, company st
 }
 
 // ensureSetupRecord makes sure a setup table's single blank-primary-key record
-// exists, creating it if absent (BC-style: the setup record is always there).
+// exists, creating it if absent (the setup record is always there).
 func (h *TablesHandler) ensureSetupRecord(tableName, company string) {
 	probe, err := h.getTable(tableName, company)
 	if err != nil || !probe.IsSetupTable() {
@@ -441,7 +441,7 @@ type flowFieldFilterer interface {
 }
 
 // applyListQuery applies the list query parameters shared by /list, /ids and
-// /delete-many: sort_by and sort_order, filters (JSON [{field, expression}], BC filter
+// /delete-many: sort_by and sort_order, filters (JSON [{field, expression}], filter
 // expressions) and search with search_fields (case-insensitive "contains"). Field names end
 // up in SQL text: only real, non-sensitive columns of the table are accepted.
 func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
@@ -529,7 +529,7 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
-	// Setup tables always have their single record present (BC-style)
+	// Setup tables always have their single record present
 	if table.IsSetupTable() {
 		h.ensureSetupRecord(tableName, company)
 	}
@@ -788,7 +788,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		}
 	}
 
-	// A rename to a key that another record already has (BC/NAV: "The record already exists")
+	// A rename to a key that another record already has ("The record already exists")
 	if newLookup, newKey := fullPrimaryKey(table); newKey != oldKey {
 		if existing, err := h.getTable(tableName, company); err == nil && existing.Get(newLookup) {
 			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, newKey).Message(language)))
@@ -796,7 +796,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	}
 
 	// Modify record — in a transaction, so a renamed key and the fields of other tables that
-	// refer to it (BC/NAV Rename, done by the generated Modify) change together or not at all
+	// refer to it (Rename, done by the generated Modify) change together or not at all
 	if ok, err := h.modifyInTransaction(table); !ok {
 		if err != nil {
 			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
@@ -1080,7 +1080,7 @@ func (h *TablesHandler) InsertRecords(c *fiber.Ctx) error {
 // OnDelete trigger.
 const maxDeleteMany = 10000
 
-// DeleteRecords deletes several records at once (list multi-select, BC: delete the selected
+// DeleteRecords deletes several records at once (list multi-select: delete the selected
 // lines). Body {"keys": [...]} with record IDs as in /delete/:id, or {"all": true} for every
 // record the list shows, with the list's query parameters (filters, flow_filters, search,
 // search_fields). One transaction: each record's OnDelete trigger runs, and the first record
@@ -1198,7 +1198,7 @@ func rejectSensitiveFields(table ftables.Table, data map[string]interface{}) err
 	return nil
 }
 
-// validateChangedFields runs ValidateField (BC/NAV VALIDATE) for each field in data whose
+// validateChangedFields runs ValidateField (VALIDATE) for each field in data whose
 // value differs from the table's current value, in table field order. Unchanged fields are
 // skipped so a stale payload value cannot overwrite a sibling that another field's
 // OnValidate trigger filled in. Unknown fields are still validated so they are reported.
@@ -1247,7 +1247,7 @@ func validateChangedFields(table ftables.Table, tableName string, data map[strin
 }
 
 // InitRecord returns a new, not yet inserted record with its defaults applied
-// (BC/NAV OnNewRecord). Nothing is persisted.
+// (OnNewRecord). Nothing is persisted.
 // POST /api/tables/:table/init
 func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 	tableName := c.Params("table")
@@ -1270,7 +1270,7 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 }
 
-// ValidateField validates a single field value (BC/NAV VALIDATE).
+// ValidateField validates a single field value (VALIDATE).
 // When the in-progress record is supplied, the table is hydrated from it first so the
 // field's OnValidate trigger can see (and fill in) sibling fields; the resulting record
 // is returned in data.
@@ -1433,7 +1433,7 @@ func (h *TablesHandler) checkRelations(exec database.Executor, table ftables.Tab
 	return nil
 }
 
-// applyFlowFilters sets the FlowFilter fields (NAV FieldClass FlowFilter, e.g. Date Filter)
+// applyFlowFilters sets the FlowFilter fields (FieldClass FlowFilter, e.g. Date Filter)
 // from the flow_filters query parameter, JSON [{field, expression}]. The expression is
 // validated per the field's kind (dates in ISO); unknown fields and invalid expressions
 // are errors.

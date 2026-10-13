@@ -6,7 +6,7 @@ page:
   caption: SMTP Setup
   editable: true
 
-  # BC-style singleton setup table: the single record is created automatically,
+  # singleton setup table: the single record is created automatically,
   # the blank primary key is not shown, and there is no New/Delete.
   layout:
     repeater:

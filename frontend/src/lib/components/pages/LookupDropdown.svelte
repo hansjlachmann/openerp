@@ -292,7 +292,7 @@
 				} else {
 					// Closed: commit what was typed, then let Enter bubble — in a list cell to
 					// move to the next row / new row, on a card page to move to the next field
-					// (NAV/BC). Never swallow it, or the user is stuck in the field. Open the
+					//. Never swallow it, or the user is stuck in the field. Open the
 					// dropdown with ArrowDown/Alt+ArrowDown/F4 instead.
 					if (!commitTypedInput()) {
 						e.preventDefault();
@@ -304,7 +304,7 @@
 				// Commit what the user typed now, synchronously: the list page saves the cell
 				// as soon as Tab bubbles up, before the delayed blur validation would run.
 				if (!commitTypedInput()) {
-					// No matching record: stay in the field (BC), don't save a bad value
+					// No matching record: stay in the field, don't save a bad value
 					e.preventDefault();
 					e.stopPropagation();
 					return;
@@ -312,14 +312,14 @@
 				isOpen = false;
 				break;
 			case 'F4':
-				// F4 toggles dropdown (Business Central style)
+				// F4 toggles dropdown (classic ERP style)
 				e.preventDefault();
 				handleToggle();
 				break;
 		}
 	}
 
-	// Resolve the typed text to a record and select it (BC: leaving a relation field with a
+	// Resolve the typed text to a record and select it (leaving a relation field with a
 	// partial value picks the matching record). Exact key match first, case-insensitive, so
 	// "hans" becomes "HANS" (Code fields are uppercase); otherwise the row highlighted in the
 	// open dropdown (the first type-ahead match). Returns false if nothing matches.

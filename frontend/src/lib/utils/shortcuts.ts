@@ -1,4 +1,4 @@
-// Keyboard shortcut utility for BC/NAV-style keyboard navigation
+// Keyboard shortcut utility for keyboard navigation
 
 export type ShortcutHandler = (event: KeyboardEvent) => void | boolean;
 
@@ -88,7 +88,7 @@ export function shortcuts(node: HTMLElement, shortcutMap: ShortcutMap) {
 	};
 }
 
-// Common BC/NAV shortcuts. New is Alt+N as in the Business Central web client:
+// Common shortcuts. New is Alt+N as in the classic ERP web client:
 // browsers reserve Ctrl+N (new window) and never pass it to the page.
 export const commonShortcuts = {
 	NEW: 'Alt+N',
@@ -103,7 +103,7 @@ export const commonShortcuts = {
 	PREVIOUS: 'PageUp',
 	RENAME: 'F2',
 	CANCEL: 'Escape',
-	FILTER: 'Ctrl+F7', // NAV Table Filter: show/hide the filter pane
+	FILTER: 'Ctrl+F7', // Table Filter: show/hide the filter pane
 	CLOSE: 'Alt+F4'
 };
 

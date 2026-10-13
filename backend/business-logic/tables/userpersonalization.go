@@ -10,7 +10,7 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// userPersonalizationLogic is the business logic of table 2000000073 User_Personalization (BC User
+// userPersonalizationLogic is the business logic of table 2000000073 User_Personalization (User
 // Personalization): a user's appearance — the theme for light mode and the one for dark
 // mode, the current mode, wallpaper, font and density. One record per user, global (the
 // same in every company); a user without a record gets DefaultUserPersonalization.

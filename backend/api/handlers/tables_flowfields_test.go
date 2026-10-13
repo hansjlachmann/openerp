@@ -30,7 +30,7 @@ func TestFlowFieldsToCalc(t *testing.T) {
 	}
 }
 
-// Lists filter on Sum/Count FlowFields (BC: SETFILTER on a FlowField): the filter applies to
+// Lists filter on Sum/Count FlowFields (SETFILTER on a FlowField): the filter applies to
 // the calculated value, also with a FlowFilter (Date Filter) set.
 func TestListFilterOnFlowFields(t *testing.T) {
 	app := newTablesTestApp(t)

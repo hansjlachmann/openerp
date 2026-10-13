@@ -11,7 +11,7 @@ import (
 )
 
 // fieldDefinitionTable remembers, per physical table ("company$Customer" or a global table),
-// which column each field number (BC field ID) had at the last table sync. The number is a
+// which column each field number (field ID) had at the last table sync. The number is a
 // field's identity: a field renamed in the YAML keeps its number, so the sync renames its
 // column (the data stays); a field whose number changed stops the sync.
 const fieldDefinitionTable = "_field_definition"
@@ -70,7 +70,7 @@ func knownFieldNumbers(db *sql.DB, dbType database.DBType, physical string) (map
 
 // renameByFieldNumber compares a table's fields with the numbers recorded at the last sync,
 // before missing columns are added: a field number whose column has another name now is a
-// renamed field (BC: the field ID stays), so its column is renamed and keeps its data. A
+// renamed field (the field ID stays), so its column is renamed and keeps its data. A
 // column that now has another number stops the sync — field numbers never change.
 // existingColumns is updated with the renames.
 func renameByFieldNumber(db *sql.DB, dbType database.DBType, physical, tableName string, current map[int]string, existingColumns map[string]bool) error {

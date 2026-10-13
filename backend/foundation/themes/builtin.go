@@ -21,16 +21,16 @@ type Theme struct {
 	Tokens     Tokens `json:"tokens"`
 }
 
-// The default themes: the Business Central palette, the defaults in app.css.
+// The default themes: the classic ERP palette, the defaults in app.css.
 const (
-	DefaultLight = "BC-LIGHT"
-	DefaultDark  = "BC-DARK"
+	DefaultLight = "CLASSIC-LIGHT"
+	DefaultDark  = "CLASSIC-DARK"
 )
 
 //go:embed builtin/*.toml
 var builtinFS embed.FS
 
-// Built-in themes besides BC Light/Dark: Omarchy-style colors.toml files in builtin/,
+// Built-in themes besides Light/Dark: Omarchy-style colors.toml files in builtin/,
 // normalized like a theme installed from GitHub.
 var builtinFiles = []struct{ code, name, file string }{
 	{"TOKYO-NIGHT", "Tokyo Night", "tokyo-night.toml"},
@@ -45,12 +45,12 @@ var (
 	builtinThemes []Theme
 )
 
-// Builtins returns the built-in themes: BC Light, BC Dark, then the others.
+// Builtins returns the built-in themes: Light, Dark, then the others.
 func Builtins() []Theme {
 	builtinOnce.Do(func() {
 		builtinThemes = []Theme{
-			{Code: DefaultLight, Name: "Business Central Light", Mode: "light", Source: "builtin", Tokens: bcLightTokens()},
-			{Code: DefaultDark, Name: "Business Central Dark", Mode: "dark", Source: "builtin", Tokens: bcDarkTokens()},
+			{Code: DefaultLight, Name: "Classic Light", Mode: "light", Source: "builtin", Tokens: classicLightTokens()},
+			{Code: DefaultDark, Name: "Classic Dark", Mode: "dark", Source: "builtin", Tokens: classicDarkTokens()},
 		}
 		for _, b := range builtinFiles {
 			data, err := builtinFS.ReadFile("builtin/" + b.file)

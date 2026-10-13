@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// DateTime represents a date and time (BC/NAV DateTime type)
+// DateTime represents a date and time (DateTime type)
 // Stored in database as ISO 8601 format
 type DateTime struct {
 	time.Time

@@ -1,4 +1,4 @@
-// Enter-to-next-field on card pages (NAV/BC: Enter moves to the next field like Tab).
+// Enter-to-next-field on card pages (Enter moves to the next field like Tab).
 
 // Field controls that take part in field navigation: inputs, selects and the
 // custom dropdowns (OptionDropdown's combobox, LookupDropdown's inner input).

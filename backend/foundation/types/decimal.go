@@ -7,7 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Decimal is a custom type for exact decimal arithmetic (BC/NAV Decimal type)
+// Decimal is a custom type for exact decimal arithmetic (Decimal type)
 // Uses shopspring/decimal internally for precision financial calculations
 type Decimal struct {
 	decimal.Decimal
@@ -54,7 +54,7 @@ func (d Decimal) String() string {
 }
 
 // StringFixed returns the string representation with fixed decimal places
-// This matches BC/NAV's behavior for displaying decimals
+// The usual way of displaying decimals
 func (d Decimal) StringFixed(places int32) string {
 	return d.Decimal.StringFixed(places)
 }
@@ -133,22 +133,22 @@ func (d Decimal) Value() (driver.Value, error) {
 	return d.String(), nil
 }
 
-// Add performs addition (BC/NAV style: d + other)
+// Add performs addition (d + other)
 func (d Decimal) Add(other Decimal) Decimal {
 	return Decimal{d.Decimal.Add(other.Decimal)}
 }
 
-// Sub performs subtraction (BC/NAV style: d - other)
+// Sub performs subtraction (d - other)
 func (d Decimal) Sub(other Decimal) Decimal {
 	return Decimal{d.Decimal.Sub(other.Decimal)}
 }
 
-// Mul performs multiplication (BC/NAV style: d * other)
+// Mul performs multiplication (d * other)
 func (d Decimal) Mul(other Decimal) Decimal {
 	return Decimal{d.Decimal.Mul(other.Decimal)}
 }
 
-// Div performs division (BC/NAV style: d / other)
+// Div performs division (d / other)
 func (d Decimal) Div(other Decimal) Decimal {
 	return Decimal{d.Decimal.Div(other.Decimal)}
 }

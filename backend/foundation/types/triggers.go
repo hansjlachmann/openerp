@@ -3,7 +3,7 @@ package types
 import "database/sql"
 
 // Trigger interfaces for table lifecycle events
-// Similar to Business Central's OnInsert, OnModify, OnDelete, OnRename triggers
+// Similar to classic ERP's OnInsert, OnModify, OnDelete, OnRename triggers
 
 // BeforeInsert is called before a record is inserted
 type BeforeInsert interface {

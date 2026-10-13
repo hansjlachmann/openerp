@@ -1,11 +1,11 @@
-// Package flowfilter turns BC/NAV FlowFilter expressions into SQL conditions.
+// Package flowfilter turns FlowFilter expressions into SQL conditions.
 //
-// A FlowFilter field (NAV FieldClass FlowFilter) is not stored: it holds a filter the user
+// A FlowFilter field (FieldClass FlowFilter) is not stored: it holds a filter the user
 // sets, e.g. a Date Filter "2026-01-01..2026-03-31", and FlowFields apply it to a field of
 // their source table (Posting Date = FIELD(Date Filter)). Clause builds the SQL condition
 // for one column from such an expression.
 //
-// Syntax (BC): alternatives separated by '|'; each alternative is a value, a range "a..b",
+// Syntax: alternatives separated by '|'; each alternative is a value, a range "a..b",
 // an open range "..b" or "a..", "<>value", or a comparison "<value", "<=value", ">value",
 // ">=value". Text and Code accept '*' wildcards. Booleans accept Yes/No, true/false, 1/0.
 // Dates are ISO (YYYY-MM-DD) — the frontend converts the user's local date format before

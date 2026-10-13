@@ -132,7 +132,7 @@ Content-Type: application/json
   "data": {
     "records": [
       { "no": "CUST-001", "name": "Adventure Works" },
-      { "no": "CUST-002", "name": "Contoso" }
+      { "no": "CUST-002", "name": "Acme" }
     ],
     "total": 2,
     "page": 1,

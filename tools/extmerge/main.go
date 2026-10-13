@@ -579,7 +579,7 @@ func eachNewYAML(dir string, fn func(name string, data []byte) error) error {
 // checkExtensionFields checks the fields an extension adds to a table: each has a field number
 // in the extension's field series (its application.yaml), and neither its number nor its name
 // (or db_name) is used by the table or another extension field already. Field numbers
-// identify fields (BC field IDs): two apps must never use the same number.
+// identify fields (field IDs): two apps must never use the same number.
 func checkExtensionFields(existing []interface{}, added []map[string]interface{}, ext *apps.App) error {
 	numbers, names := map[int]string{}, map[string]bool{}
 	for _, f := range existing {
