@@ -422,7 +422,7 @@ func (t *UserPreferences) CreateTable(db database.Executor, company string) erro
 // CreateTableWithDBType creates the User_Preferences table for the specified company with the given database type
 // The db parameter can be either *sql.DB or *sql.Tx
 func (t *UserPreferences) CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error {
-	tableName := fmt.Sprintf("%s$%s", company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	var schema string
 	if dbType == database.DBTypePostgres {
 		schema = GetUserPreferencesPostgresTableSchema()
@@ -444,12 +444,12 @@ func (t *UserPreferences) CreateTableWithDBType(db database.Executor, company st
 // missing indexes and builds, rebuilds or drops the SIFT totals of keys with
 // sum_index_fields (sift.Sync; unchanged keys cost one query).
 func (t *UserPreferences) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
-	tableName := fmt.Sprintf("%s$%s", company, UserPreferencesTableName)
-	siftCompany := company
+	tableName := UserPreferencesTableName
+	siftCompany := ""
 	// Index "company$Table$key"; a global table's indexes are shared by all companies:
 	// "Table$key" (a company prefix created a copy of every index per company)
 	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (user_id, page_id, preference_type, preference_name)`,
-		fmt.Sprintf("%s$User_Preferences$Primary", company), tableName)); err != nil {
+		"User_Preferences$Primary", tableName)); err != nil {
 		return fmt.Errorf("failed to create index Primary: %w", err)
 	}
 	var keys []sift.Key
@@ -467,7 +467,7 @@ func userPreferencesSIFTSpecs() []sift.KeySpec {
 // VerifySIFT compares the table's SIFT totals with its entries (Verify SIFT codeunit); with
 // repair it rebuilds the keys whose totals differ.
 func (t *UserPreferences) VerifySIFT(repair bool) ([]sift.VerifyResult, error) {
-	tableName, siftCompany := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName), t.company
+	tableName, siftCompany := UserPreferencesTableName, ""
 	var results []sift.VerifyResult
 	for _, spec := range userPreferencesSIFTSpecs() {
 		n, err := sift.VerifyKey(t.db, t.dbType, siftCompany, UserPreferencesTableName, tableName, spec)
@@ -533,7 +533,7 @@ func (t *UserPreferences) OldValue(fieldName string) interface{} {
 
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *UserPreferences) IsGlobal() bool {
-	return false
+	return true
 }
 
 // convertPlaceholders converts SQLite-style ? placeholders to PostgreSQL-style $1, $2, etc.
@@ -602,7 +602,7 @@ func (t *UserPreferences) Get(primaryKey interface{}) bool {
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
 func (t *UserPreferences) GetByPK(user_id types.Code, page_id int, preference_type types.Code, preference_name types.Code) bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	var user_idNull sql.NullString
 	var page_idVal int
 	var preference_typeNull sql.NullString
@@ -671,7 +671,7 @@ func (t *UserPreferences) Insert(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 
 	// Collect arguments for INSERT
 	args := []interface{}{
@@ -724,7 +724,7 @@ func (t *UserPreferences) InsertAll(records []*UserPreferences, runTrigger bool)
 			r.Updated_at,
 		})
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	columns := []string{"user_id", "page_id", "preference_type", "preference_name", "preference_data", "created_at", "updated_at"}
 	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
 }
@@ -764,7 +764,7 @@ func (t *UserPreferences) Modify(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 
 	// Build dynamic SQL based on field tracking
 	var setClauses []string
@@ -925,7 +925,7 @@ func (t *UserPreferences) Delete(runTrigger bool) bool {
 			return false
 		}
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 
 	// Collect arguments for DELETE
 	args := []interface{}{
@@ -1271,7 +1271,7 @@ func (t *UserPreferences) getLimitClause() string {
 // FindFirst finds the first record matching current filters
 // Returns true if found, false if not found
 func (t *UserPreferences) FindFirst() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
@@ -1321,7 +1321,7 @@ func (t *UserPreferences) FindFirst() bool {
 // FindLast finds the last record matching current filters
 // Returns true if found, false if not found
 func (t *UserPreferences) FindLast() bool {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
@@ -1370,7 +1370,7 @@ func (t *UserPreferences) FindLast() bool {
 
 // Count returns the number of records matching current filters
 func (t *UserPreferences) Count() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM "%s" WHERE %s`, tableName, where)
@@ -1397,7 +1397,7 @@ func (t *UserPreferences) FindSet() bool {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 	orderBy, orderArgs := t.getOrderByClause()
 	args = append(args, orderArgs...)
@@ -1527,7 +1527,7 @@ func (t *UserPreferences) FindSetBuffered() bool {
 	// Clear any existing buffer
 	t.bufferedRecords = nil
 	t.currentBufferPos = -1
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 	orderBy, orderArgs := t.getOrderByClause()
 	args = append(args, orderArgs...)
@@ -1633,7 +1633,7 @@ func (t *UserPreferences) IsEmpty() bool {
 // ModifyAll updates a field for all records matching current filters
 // Returns the number of records modified
 func (t *UserPreferences) ModifyAll(fieldName string, newValue interface{}) int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		fmt.Printf("Error: ModifyAll on unknown field %q of User_Preferences\n", fieldName)
@@ -1663,7 +1663,7 @@ func (t *UserPreferences) ModifyAll(fieldName string, newValue interface{}) int 
 // DeleteAll deletes all records matching current filters
 // Returns the number of records deleted
 func (t *UserPreferences) DeleteAll() int {
-	tableName := fmt.Sprintf("%s$%s", t.company, UserPreferencesTableName)
+	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
 
 	// Build DELETE SQL

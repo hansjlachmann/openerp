@@ -137,7 +137,12 @@ func (h *PreferencesHandler) SavePreference(c *fiber.Ctx) error {
 			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.PreferenceUpdateFailed().Message(language)))
 		}
 	} else {
-		// Insert new preference
+		// Insert new preference (GetByPK found nothing, so the key fields are set here)
+		pref.InitRecord()
+		pref.User_id = types.NewCode(userID)
+		pref.Page_id = pageIDInt
+		pref.Preference_type = types.NewCode(preferenceType)
+		pref.Preference_name = types.NewCode(requestBody.PreferenceName)
 		pref.Preference_data = types.NewText(string(dataJSON))
 		pref.Created_at = now
 		pref.Updated_at = now

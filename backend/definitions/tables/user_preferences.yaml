@@ -3,6 +3,7 @@ table:
   name: User_Preferences
   api_name: User_preferences # the name in the API and in pages (source_table)
   caption: User Preferences
+  global: true
   description: Stores user-specific preferences for pages and filters
   fields:
     - name: user_id

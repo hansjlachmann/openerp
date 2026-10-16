@@ -129,11 +129,11 @@ Built 2026-10-13:
       Migration 010 moves `Job_Queue.object_id_to_run` and `User_Preferences.page_id`.
 - [ ] Column layouts kept in the browser (localStorage, per page number) start fresh for the
       renumbered pages — accepted.
-- [ ] **BUG: server-side list layouts never saved on Postgres** (found 2026-10-13, older than this change) —
-      `User_Preferences` is a company table in its YAML (synced as `company$User_Preferences`), but
-      `handlers/preferences.go` opens it with company "" (`$User_Preferences`, which does not exist):
-      "Failed to save preference". Make the table `global: true` (as the handler intends) or use the
-      session's company; then migration 010's page renumbering applies to it.
+- [x] **BUG: server-side list layouts never saved** (fixed 2026-10-16): `User_Preferences` is a
+      global table now, as the preferences API always used it (migration 12 moves the company copies
+      into it), and saving a new preference sets its key fields (the API wrote rows with empty keys).
+- [ ] The frontend keeps column layouts, widths and row numbers in localStorage only (per browser);
+      it could save them through `/api/preferences` so they follow the user to another browser.
 - [ ] Reports, when built: register them with their number and check them in `CheckObjectNumbers`;
       `run_object: report:<id>`; Job Queue "object type to run".
 
