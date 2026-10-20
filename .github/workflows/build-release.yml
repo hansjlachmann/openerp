@@ -128,6 +128,9 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
+          # A repository token (secret RELEASE_TOKEN: Contents, Pull requests and Issues read/write):
+          # the Actions token can no longer create releases here. Falls back to it when unset.
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
