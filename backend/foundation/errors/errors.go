@@ -36,6 +36,7 @@ const (
 	ErrDeleteRecordFailed ErrorCode = "ERR_DELETE_RECORD_FAILED"
 	ErrCopyTooMany        ErrorCode = "ERR_COPY_TOO_MANY"
 	ErrSelectionTooMany   ErrorCode = "ERR_SELECTION_TOO_MANY"
+	ErrInconsistent       ErrorCode = "ERR_INCONSISTENT"
 	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
@@ -245,6 +246,11 @@ func DeleteTooMany(max int) *AppError {
 // message); nothing was deleted
 func DeleteRecordFailed(tableCaption, key, reason string) *AppError {
 	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, sentence(reason)}}
+}
+
+// Inconsistent: a transaction cannot be committed while tables are inconsistent (Consistent)
+func Inconsistent(tables string) *AppError {
+	return &AppError{Code: ErrInconsistent, Params: []string{tables}}
 }
 
 // SelectionTooMany: more records are selected than a codeunit may be run on (max)

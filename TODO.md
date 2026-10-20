@@ -277,18 +277,28 @@ features. Ordered by effort — the easiest first. Uses in the classic code in b
       filters on the current record without a multi-selection. Progress Bar Demo shows the count.
 - [ ] Later: page fixed filters (source table view) in filter group 2, so users cannot remove them.
 
-### Priority 3 — larger (new runtime features)
-- [ ] Temporary records (115 variables): a record in memory only — Insert/Modify/Find/filters
-      work, nothing reaches the database (buffers, previews, posting). A generated in-memory mode.
-- [ ] `RunModal` (211) with `SetTableView` (50), `SetRecord` (45), `GetRecord` (20), `LookupMode`
-      (36): open a list or card from code, filtered, and get the record the user picked — a dialog
-      event the frontend answers by showing the page.
-- [ ] `Editable`/`Visible`/`FieldActive` at runtime (83): page fields switched by code — page
-      triggers or conditions in the page YAML.
-- [ ] `NormalDate` (59) / `ClosingDate` (25): closing dates need accounting periods and a date
-      value between two days — with the general ledger.
-- [ ] `Consistent(condition)` (5): a transaction must not commit while false (balanced G/L
-      postings) — with the general ledger.
+### Priority 3 — larger ✅ DONE (2026-10-20)
+- [x] Temporary records (115): `rec.InitTemporary(db, company, dbType)` — a private in-memory
+      SQLite table per record; triggers and FlowFields use the real database.
+- [x] Page variables: `system.NewPage(id)` with `SetTableView`, `SetRecord`, `LookupMode`,
+      `RunModal`, `GetRecord` (and `system.RunModal(id, &rec, lookupMode)` in one call): a `run_page`
+      dialog event, the list opens read-only in a modal; lookup mode has OK and Cancel (OK or
+      Enter/double-click → LookupOK, Cancel/close/Esc → LookupCancel), otherwise closing → OK.
+      Progress Bar Demo: "Pick a customer".
+- [x] Page triggers (83): `pages.OnAfterGetRecord(pageID, …)` with `SetEditable`/`SetVisible` in
+      `business-logic/pages`; cards and modal cards apply the field states. First: Job Queue Card
+      (674) — Minutes between Run only for Recurrence Minutes, the notification fields only when
+      Notify On is not Never.
+- [x] `system.ClosingDate`/`NormalDate` (84): closing dates in `types.Date` (23:59:59, `C2026-12-31`).
+- [x] `rec.Consistent(ok)` + `ftables.Commit(tx)` (5): no commit while a table is inconsistent.
+- Follow-ups:
+  - [ ] Storing closing dates: a date-field property `closing_dates: true` (timestamp column) with
+        the first G/L table (G/L Entry Posting Date).
+  - [ ] Page triggers on list rows (editable lists switch cells per row) — only cards so far.
+  - [ ] RunModal from codeunits run on a card (sync, no dialog: they get a cancel) and for card
+        pages (only lists open so far); the same field filtered in two filter groups shows one.
+  - [ ] Temporary records: `Copy(tempRec)` sharing the records, as the classic code does with
+        temporary buffers passed between functions.
 
 ### Priority 4 — with the report engine (not built yet)
 - [ ] `ShowOutput` (1603), `CreateTotals` (186), `TotalsCausedBy` (22), `NewPagePerRecord`,

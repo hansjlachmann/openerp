@@ -24,6 +24,7 @@ export interface PageMetadata {
 	// Primary key field names from the source table (sent by the backend), used to
 	// identify records even when the PK is not shown on the page (e.g. setup tables).
 	primary_key_fields?: string[];
+	has_record_triggers?: boolean; // OnAfterGetRecord: the card asks for the field states of each record
 	flow_fields?: string[]; // computed fields: not searchable on the server
 	sortable_flow_fields?: string[]; // FlowFields lists can sort on (Sum/Count, by their value)
 	// FlowFilter fields of the source table (e.g. Date Filter): "Filter totals by" in the filter pane
@@ -107,4 +108,10 @@ export interface PageResponse {
 export interface MenuResponse {
 	success: boolean;
 	data: MenuDefinition;
+}
+
+/** Fields a page trigger switched for the current record (OnAfterGetRecord) */
+export interface FieldState {
+	editable?: boolean;
+	visible?: boolean;
 }

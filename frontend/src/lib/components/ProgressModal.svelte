@@ -48,6 +48,31 @@
 
 	const displayPercent = $derived(Math.round(progress));
 
+	// The input form gets the focus when it appears (the modal was already open): the chosen
+	// option of an option list (arrow keys move it), else the first input
+	let inputFormElement = $state<HTMLDivElement | null>(null);
+	$effect(() => {
+		if (!inputMode || !inputFormElement) return;
+		const form = inputFormElement;
+		setTimeout(() => {
+			const target =
+				form.querySelector<HTMLInputElement>('input[type="radio"]:checked') ??
+				form.querySelector<HTMLInputElement>('input');
+			target?.focus();
+		}, 0);
+	});
+
+	// Enter in the input form is OK (when the values are valid), Esc is Cancel
+	function handleInputKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			if (inputValid()) handleInputOk();
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			handleInputCancel();
+		}
+	}
+
 	// Locale for date formatting
 	let locale = $state('en-US');
 	currentLanguage.subscribe((lang) => { locale = lang; });
@@ -142,7 +167,8 @@
 					<Button variant="primary" onclick={handleYes}>{t(BTN.YES)}</Button>
 				</div>
 			{:else if inputMode}
-				<div class="input-form">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="input-form" bind:this={inputFormElement} onkeydown={handleInputKeydown}>
 					{#each inputFields as field}
 						{#if field.type === 'option'}
 							<div class="input-field" role="radiogroup" aria-label={field.label || title}>

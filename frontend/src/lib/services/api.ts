@@ -1,4 +1,5 @@
 import type { NavigationQuery } from '$lib/utils/recordNavigation';
+import type { FieldState } from '$lib/types/pages';
 import type {
 	ApiResponse,
 	ListResponse,
@@ -237,6 +238,20 @@ export const api = {
 	// Validate a field (VALIDATE). Pass the in-progress record so the field's
 	// OnValidate trigger can see and fill in sibling fields; the result carries the
 	// resulting record.
+	/**
+	 * Run a page's OnAfterGetRecord triggers for the record it shows: the fields they made
+	 * editable / read-only or visible / hidden
+	 */
+	async getFieldStates(pageId: number, record: TableRecord): Promise<Record<string, FieldState>> {
+		const response = await fetch(`${API_BASE}/pages/${pageId}/field-states`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(record)
+		});
+		const data = await handleApiResponse<{ field_states: Record<string, FieldState> }>(response, `field states of page ${pageId}`);
+		return data.field_states ?? {};
+	},
+
 	async validateField(
 		tableName: string,
 		fieldName: string,

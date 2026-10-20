@@ -3,13 +3,43 @@ package types
 import (
 	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 )
 
 // Date represents a date without time component (Date type)
 // Stored in database as "YYYY-MM-DD" format
+//
+// A closing date (ClosingDate) lies between a date and the next day — the period-end date
+// that closing entries are posted on. It is kept as the date at 23:59:59, so it sorts after
+// the date and before the next day; it reads and prints as "C2026-12-31". Closing dates
+// cannot be stored in date fields yet (that comes with the general ledger).
 type Date struct {
 	time.Time
+}
+
+// closingPrefix marks a closing date in text: "C2026-12-31"
+const closingPrefix = "C"
+
+// Closing returns the closing date of d (ClosingDate); a blank date stays blank
+func (d Date) Closing() Date {
+	if d.IsZero() {
+		return d
+	}
+	return Date{time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 59, 0, time.UTC)}
+}
+
+// Normal returns the normal date of a closing date, d itself otherwise (NormalDate)
+func (d Date) Normal() Date {
+	if d.IsZero() {
+		return d
+	}
+	return NewDate(d.Year(), d.Month(), d.Day())
+}
+
+// IsClosing reports whether d is a closing date
+func (d Date) IsClosing() bool {
+	return !d.IsZero() && d.Hour() == 23 && d.Minute() == 59 && d.Second() == 59
 }
 
 // NewDate creates a new Date from year, month, day
@@ -26,6 +56,13 @@ func NewDateFromTime(t time.Time) Date {
 func NewDateFromString(value string) (Date, error) {
 	if value == "" {
 		return Date{}, nil
+	}
+	if rest, ok := strings.CutPrefix(strings.ToUpper(value), closingPrefix); ok {
+		d, err := NewDateFromString(rest)
+		if err != nil || d.IsZero() {
+			return Date{}, fmt.Errorf("invalid closing date %q, expected CYYYY-MM-DD", value)
+		}
+		return d.Closing(), nil
 	}
 
 	t, err := time.Parse("2006-01-02", value)
@@ -61,6 +98,9 @@ func (d Date) String() string {
 	if d.IsZero() {
 		return ""
 	}
+	if d.IsClosing() {
+		return closingPrefix + d.Time.Format("2006-01-02")
+	}
 	return d.Time.Format("2006-01-02")
 }
 
@@ -74,11 +114,12 @@ func (d Date) IsZero() bool {
 	return d.Time.IsZero()
 }
 
-// Equal checks if two dates are the same day
+// Equal checks if two dates are the same day (a closing date only equals itself)
 func (d Date) Equal(other Date) bool {
 	return d.Year() == other.Year() &&
 		d.Month() == other.Month() &&
-		d.Day() == other.Day()
+		d.Day() == other.Day() &&
+		d.IsClosing() == other.IsClosing()
 }
 
 // Before checks if d is before other
@@ -173,6 +214,9 @@ func (d *Date) Scan(value interface{}) error {
 func (d Date) Value() (driver.Value, error) {
 	if d.IsZero() {
 		return nil, nil
+	}
+	if d.IsClosing() {
+		return nil, fmt.Errorf("closing date %s cannot be stored in a date field", d)
 	}
 	return d.String(), nil
 }

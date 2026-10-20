@@ -32,9 +32,27 @@
 		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
 		initialSelect?: string; // record key to select (returning from a drilldown)
 		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
+		// Opened from a codeunit (RunModal) in a modal: no breadcrumb or navigation; the list is
+		// filtered (initialFilters) and read-only, and onclose reports how it was closed — in
+		// lookup mode Enter / double-click picks a record ('LookupOK'), Esc cancels
+		embedded?: boolean;
+		initialFilters?: import('$lib/types/api').TableFilter[];
+		lookupMode?: boolean;
+		onclose?: (action: 'OK' | 'LookupOK' | 'Cancel', key?: string) => void; // key: the picked record's id
 	}
 
-	let { pageid, recordid, initialFilter, returnUrl, initialSelect, navigationQuery }: Props = $props();
+	let {
+		pageid,
+		recordid,
+		initialFilter,
+		returnUrl,
+		initialSelect,
+		navigationQuery,
+		embedded = false,
+		initialFilters,
+		lookupMode = false,
+		onclose
+	}: Props = $props();
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -73,8 +91,12 @@
 	// Track the current record ID (may differ from URL recordid after insert)
 	let currentRecordId = $state<string | undefined>(undefined);
 
+	// RunModal lookup: the record the list's cursor is on (OK picks it)
+	let lookupCurrent = $state<Record<string, any> | undefined>(undefined);
+
 	// Filters for list pages - parse initialFilter if provided (format: "field=expression")
-	let currentFilters: import('$lib/types/api').TableFilter[] = $state(parseInitialFilter(initialFilter));
+	// svelte-ignore state_referenced_locally - the initial filters only set the starting state
+	let currentFilters: import('$lib/types/api').TableFilter[] = $state(initialFilters ?? parseInitialFilter(initialFilter));
 	// FlowFilters as typed in the filter pane (e.g. Date Filter "01.01.26..31.03.26"); sent as ISO
 	let currentFlowFilters: import('$lib/types/api').TableFilter[] = $state([]);
 
@@ -123,6 +145,8 @@
 			}
 
 			page = result.data;
+			// Opened from a codeunit: a read-only list (the codeunit waits for the user)
+			if (embedded && page) page = { ...page, page: { ...page.page, editable: false } };
 			captions = result.captions?.fields || {};
 			fieldTypes = result.captions?.field_types || {};
 			navigation = result.navigation || {};
@@ -142,8 +166,8 @@
 				await setBreadcrumbForCardPage();
 			} else if (page.page.type === 'List') {
 				await loadListData(await initialListOffset());
-				// Set breadcrumb for list page
-				breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
+				// Set breadcrumb for list page (not for a page opened from a codeunit)
+				if (!embedded) breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unknown error';
@@ -312,9 +336,12 @@
 	// Returning from a drilldown to an unfiltered list: start with the window around the
 	// record to select (its position in primary key order), not at the top
 	async function initialListOffset(): Promise<number> {
-		if (!page || !initialSelect || currentFilters.length > 0) return 0;
+		if (!page || !initialSelect || (currentFilters.length > 0 && !embedded)) return 0;
 		try {
-			const ids = await api.getRecordIDs(page.page.source_table);
+			const ids = await api.getRecordIDs(
+				page.page.source_table,
+				currentFilters.length > 0 ? { filters: currentFilters } : undefined
+			);
 			const position = ids.indexOf(initialSelect);
 			if (position < 0) return 0;
 			const perPage = estimateRowsPerPage(typeof window !== 'undefined' ? window.innerHeight : 800);
@@ -492,6 +519,11 @@
 
 	// Handle row click in list page
 	function handleRowClick(clickedRecord: Record<string, any>, navigation?: NavigationQuery) {
+		if (embedded) {
+			// Opened from a codeunit: Enter / double-click picks the record in lookup mode
+			if (lookupMode) onclose?.('LookupOK', getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList) ?? '');
+			return;
+		}
 		if (!page || !page.page.card_page_id) return;
 
 		const recordId = getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList);
@@ -656,28 +688,70 @@
 			onNavigateLast={navigationActions.navigateLast}
 		/>
 	{:else if page.page.type === 'List'}
-		<ListPage
-			{page}
-			{records}
-			{captions}
-			{fieldTypes}
-			{options}
-			{lookups}
-			{currentFilters}
-			{currentFlowFilters}
-			total={listTotal}
-			{windowOffset}
-			{returnUrl}
-			initialSelectKey={initialSelect}
-			onwindow={handleListWindow}
-			onaction={handleListAction}
-			onrowclick={handleRowClick}
-			onsave={handleListSave}
-			ondelete={handleListDelete}
-			onbulkdelete={handleListBulkDelete}
-			onpaste={handleListPaste}
-			onfilter={handleFilterChange}
-		/>
+		{#if embedded && lookupMode}
+			<!-- Lookup mode (RunModal): OK picks the cursor's record, Cancel closes without one -->
+			<div class="lookup-page">
+				<div class="lookup-list">
+				<ListPage
+					{page}
+					{records}
+					{captions}
+					{fieldTypes}
+					{options}
+					{lookups}
+					{currentFilters}
+					{currentFlowFilters}
+					total={listTotal}
+					{windowOffset}
+					{returnUrl}
+					initialSelectKey={initialSelect}
+					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : undefined}
+					oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
+					onwindow={handleListWindow}
+					onaction={handleListAction}
+					onrowclick={handleRowClick}
+					onsave={handleListSave}
+					ondelete={handleListDelete}
+					onbulkdelete={handleListBulkDelete}
+					onpaste={handleListPaste}
+					onfilter={handleFilterChange}
+				/>
+				</div>
+				<div class="lookup-buttons">
+					<Button variant="secondary" onclick={() => onclose?.('Cancel')}>{t(BTN.CANCEL)}</Button>
+					<Button
+						variant="primary"
+						disabled={!lookupCurrent}
+						onclick={() => onclose?.('LookupOK', getRecordId(lookupCurrent, primaryKeyField, primaryKeyFieldsList) ?? '')}
+					>{t(BTN.OK)}</Button>
+				</div>
+			</div>
+		{:else}
+			<ListPage
+				{page}
+				{records}
+				{captions}
+				{fieldTypes}
+				{options}
+				{lookups}
+				{currentFilters}
+				{currentFlowFilters}
+				total={listTotal}
+				{windowOffset}
+				{returnUrl}
+				initialSelectKey={initialSelect}
+				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : undefined}
+				oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
+				onwindow={handleListWindow}
+				onaction={handleListAction}
+				onrowclick={handleRowClick}
+				onsave={handleListSave}
+				ondelete={handleListDelete}
+				onbulkdelete={handleListBulkDelete}
+				onpaste={handleListPaste}
+				onfilter={handleFilterChange}
+			/>
+		{/if}
 	{:else}
 		<div class="flex items-center justify-center h-full">
 			<div class="text-center">
@@ -697,3 +771,18 @@
 	onconfirm={confirm.confirm}
 	oncancel={confirm.cancel}
 />
+
+<style>
+	/* RunModal in lookup mode: the list with OK and Cancel below it */
+	.lookup-page {
+		@apply flex flex-col h-full gap-3;
+	}
+
+	.lookup-list {
+		@apply flex-1 min-h-0;
+	}
+
+	.lookup-buttons {
+		@apply flex justify-end gap-2;
+	}
+</style>

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
@@ -375,5 +376,124 @@ func TestHyperlinkAndWindow(t *testing.T) {
 	case ev := <-d.Events():
 		t.Errorf("update after Close: %+v", ev)
 	default:
+	}
+}
+
+// A closing date lies between a date and the next day
+func TestClosingDate(t *testing.T) {
+	d := date("2026-12-31")
+	c := ClosingDate(d)
+	if !c.IsClosing() || d.IsClosing() || c.Equal(d) || !c.After(d) || !c.Before(date("2027-01-01")) {
+		t.Errorf("closing date %v of %v", c, d)
+	}
+	if !NormalDate(c).Equal(d) || !NormalDate(d).Equal(d) || !ClosingDate(types.Date{}).IsZero() {
+		t.Error("NormalDate")
+	}
+	if Format(c) != "C2026-12-31" || Format(d) != "2026-12-31" {
+		t.Errorf("Format %q", Format(c))
+	}
+	var e types.Date
+	if !Evaluate(&e, "c2026-12-31") || !e.Equal(c) || Evaluate(&e, "C") {
+		t.Errorf("Evaluate %v", e)
+	}
+	if Date2DMY(c, 1) != 31 || Date2DMY(c, 3) != 2026 {
+		t.Error("Date2DMY of a closing date")
+	}
+	if _, err := c.Value(); err == nil {
+		t.Error("a closing date was stored in a date field")
+	}
+}
+
+// pageRecord is a record RunModal opens a page with
+type pageRecord struct {
+	key  string
+	read string
+}
+
+func (r *pageRecord) FilterExpressions() []tables.FieldFilter {
+	return []tables.FieldFilter{{Field: "city", Expression: "Oslo"}}
+}
+func (r *pageRecord) KeyText() string { return r.key }
+func (r *pageRecord) GetFields() []tables.FieldInfo {
+	return []tables.FieldInfo{{Name: "no", PrimaryKey: true}, {Name: "name"}}
+}
+func (r *pageRecord) Get(primaryKey interface{}) bool {
+	if primaryKey == "C99" {
+		return false
+	}
+	r.read, r.key = primaryKey.(string), primaryKey.(string)
+	return true
+}
+
+// RunModal opens a page through the codeunit's dialog; in lookup mode the picked record is read
+func TestRunModal(t *testing.T) {
+	rec := &pageRecord{key: "C01"}
+	if RunModal(22, rec, true) != ActionLookupCancel || RunModal(22, rec, false) != ActionCancel {
+		t.Error("without a dialog: cancel")
+	}
+	d := codeunits.OpenDialogWithID("", "runmodal-test")
+	codeunits.SetCurrentDialog(d)
+	defer codeunits.ClearCurrentDialog()
+
+	answer := func(values map[string]string) {
+		go func() {
+			ev := <-d.Events()
+			filters, _ := ev.Data["filters"].([]tables.FieldFilter)
+			if ev.EventType != "run_page" || ev.Data["page_id"] != 22 || ev.Data["select"] != "C01" ||
+				len(filters) != 1 || filters[0].Expression != "Oslo" {
+				t.Errorf("event %+v", ev)
+			}
+			for !d.RespondToInput(ev.ConfirmID, values) {
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+	answer(map[string]string{"action": "LookupOK", "key": "C02"})
+	if RunModal(22, rec, true) != ActionLookupOK || rec.read != "C02" {
+		t.Errorf("picked C02: read %q", rec.read)
+	}
+	rec.key = "C01"
+	answer(map[string]string{"action": "LookupOK", "key": "C99"}) // deleted meanwhile
+	if RunModal(22, rec, true) != ActionLookupCancel {
+		t.Error("a record that cannot be read")
+	}
+	answer(map[string]string{}) // Esc
+	if RunModal(22, rec, true) != ActionLookupCancel {
+		t.Error("Esc")
+	}
+	answer(map[string]string{"action": "OK"})
+	if RunModal(22, rec, false) != ActionOK {
+		t.Error("closed, not in lookup mode")
+	}
+
+	// A page variable: SetTableView, SetRecord, LookupMode, RunModal, GetRecord
+	page := NewPage(22)
+	rec.key = "C05"
+	page.SetTableView(rec)
+	page.SetRecord(rec)
+	page.LookupMode(true)
+	go func() {
+		ev := <-d.Events()
+		if ev.Data["select"] != "C05" || ev.Data["lookup_mode"] != true {
+			t.Errorf("page variable event %+v", ev)
+		}
+		for !d.RespondToInput(ev.ConfirmID, map[string]string{"action": "LookupOK", "key": "C07"}) {
+			time.Sleep(time.Millisecond)
+		}
+	}()
+	if page.RunModal() != ActionLookupOK || rec.read == "C07" {
+		t.Error("RunModal must not change the record before GetRecord")
+	}
+	if !page.GetRecord(rec) || rec.read != "C07" {
+		t.Errorf("GetRecord: %q", rec.read)
+	}
+	go func() { // Cancel, the close button or Esc
+		ev := <-d.Events()
+		for !d.RespondToInput(ev.ConfirmID, map[string]string{}) {
+			time.Sleep(time.Millisecond)
+		}
+	}()
+	if page.RunModal() != ActionLookupCancel || page.GetRecord(rec) {
+		t.Error("LookupCancel: GetRecord has nothing")
 	}
 }

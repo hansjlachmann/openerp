@@ -57,6 +57,8 @@ type Language struct {
 	seekArgs []interface{}
 	// The records selected on the list a codeunit was run from (SetSelectionFilter)
 	selection map[string][]interface{}
+	// Temporary: the record's own table is in a private in-memory database (InitTemporary)
+	temp *tables.TemporaryStore
 
 	// Iteration state for FindSet/Next
 	currentRows *sql.Rows
@@ -535,7 +537,7 @@ func (t *Language) GetByPK(code types.Code) bool {
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 	sqlStr += t.forUpdate()
 
-	err := t.db.QueryRow(sqlStr, args...).Scan(
+	err := t.exec().QueryRow(sqlStr, args...).Scan(
 		&codeNull,
 		&nameNull,
 		&translation_keyNull,
@@ -588,7 +590,7 @@ func (t *Language) Insert(runTrigger bool) bool {
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.db.Exec(sqlStr, args...)
+	_, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Language: %v\n", err)
 		return false
@@ -620,7 +622,7 @@ func (t *Language) InsertAll(records []*Language, runTrigger bool) error {
 	}
 	tableName := LanguageTableName
 	columns := []string{"code", "name", "translation_key"}
-	return tables.InsertRows(t.db, t.dbType, tableName, columns, rows)
+	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
 // Modify updates the record in the database
@@ -711,12 +713,16 @@ func (t *Language) Modify(runTrigger bool) bool {
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(values))
 
-	_, err := t.db.Exec(sqlStr, values...)
+	_, err := t.exec().Exec(sqlStr, values...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Language: %v\n", err)
 		return false
 	}
+	// A temporary record's rename stays in the record: other tables are not changed
 	for _, r := range renamed {
+		if t.temp != nil {
+			break
+		}
 		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
 			fmt.Printf("Error: Failed to rename references to Language: %v\n", err)
 			t.triggerErr = err
@@ -836,7 +842,7 @@ func (t *Language) Delete(runTrigger bool) bool {
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.db.Exec(sqlStr, args...)
+	_, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete Language: %v\n", err)
 		return false
@@ -1243,7 +1249,7 @@ func (t *Language) FindFirst() bool {
 	var nameNull sql.NullString
 	var translation_keyNull sql.NullString
 
-	err := t.db.QueryRow(query, args...).Scan(
+	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
 		&nameNull,
 		&translation_keyNull,
@@ -1284,7 +1290,7 @@ func (t *Language) FindLast() bool {
 	var nameNull sql.NullString
 	var translation_keyNull sql.NullString
 
-	err := t.db.QueryRow(query, args...).Scan(
+	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
 		&nameNull,
 		&translation_keyNull,
@@ -1320,7 +1326,7 @@ func (t *Language) Count() int {
 	query = t.convertPlaceholders(query, len(args))
 
 	var count int
-	err := t.db.QueryRow(query, args...).Scan(&count)
+	err := t.exec().QueryRow(query, args...).Scan(&count)
 	if err != nil {
 		fmt.Printf("Error: Failed to count Language: %v\n", err)
 		return 0
@@ -1333,11 +1339,17 @@ func (t *Language) Count() int {
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *Language) FindSet() bool {
+	// A temporary record reads all at once: its in-memory database has one connection, which
+	// an open result set would block (Modify while looping)
+	if t.temp != nil {
+		return t.FindSetBuffered()
+	}
 	// Close any existing result set
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	tableName := LanguageTableName
 	where, args := t.buildWhereClause()
 	orderBy, orderArgs := t.getOrderByClause()
@@ -1350,7 +1362,7 @@ func (t *Language) FindSet() bool {
 	query = t.convertPlaceholders(query, len(args))
 	query += t.forUpdate()
 
-	rows, err := t.db.Query(query, args...)
+	rows, err := t.exec().Query(query, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to execute FindSet for Language: %v\n", err)
 		return false
@@ -1470,7 +1482,7 @@ func (t *Language) FindSetBuffered() bool {
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 
-	rows, err := t.db.Query(query, args...)
+	rows, err := t.exec().Query(query, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to execute FindSetBuffered for Language: %v\n", err)
 		return false
@@ -1482,6 +1494,7 @@ func (t *Language) FindSetBuffered() bool {
 		// Create a new record instance
 		record := &Language{}
 		record.db = t.db
+		record.temp = t.temp
 		record.company = t.company
 		record.dbType = t.dbType
 
@@ -1568,7 +1581,7 @@ func (t *Language) ModifyAll(fieldName string, newValue interface{}) int {
 	// Convert placeholders for PostgreSQL
 	updateSQL = t.convertPlaceholders(updateSQL, len(allArgs))
 
-	result, err := t.db.Exec(updateSQL, allArgs...)
+	result, err := t.exec().Exec(updateSQL, allArgs...)
 	if err != nil {
 		fmt.Printf("Error: Failed to modify all Language: %v\n", err)
 		return 0
@@ -1590,7 +1603,7 @@ func (t *Language) DeleteAll() int {
 	// Convert placeholders for PostgreSQL
 	deleteSQL = t.convertPlaceholders(deleteSQL, len(args))
 
-	result, err := t.db.Exec(deleteSQL, args...)
+	result, err := t.exec().Exec(deleteSQL, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to delete all Language: %v\n", err)
 		return 0
@@ -1890,6 +1903,77 @@ func (t *Language) GetFilter(fieldName string) string {
 		return fmt.Sprintf("%v..%v", filter.minValue, filter.maxValue)
 	}
 	return ""
+}
+
+// exec is the database of the record's own table: the temporary record's in-memory
+// database, else the record's database
+func (t *Language) exec() database.Executor {
+	if t.temp != nil {
+		return t.temp.DB
+	}
+	return t.db
+}
+
+// InitTemporary makes the record temporary (Temporary): its table lives in a private
+// in-memory database — Insert, Modify, Delete, Find, filters, keys and CalcSums work as usual
+// and nothing reaches the real database. Triggers (Insert(true)) and FlowFields still use the
+// real database (db) for other tables; a rename does not change other tables. The records
+// are gone when the record is no longer used.
+func (t *Language) InitTemporary(db database.Executor, company string, dbType database.DBType) error {
+	t.InitWithDBType(db, company, dbType)
+	store, err := tables.NewTemporaryStore()
+	if err != nil {
+		return err
+	}
+	if err := t.CreateTableWithDBType(store.DB, company, database.DBTypeSQLite); err != nil {
+		return err
+	}
+	t.temp = store
+	return nil
+}
+
+// IsTemporary reports whether the record is temporary (InitTemporary)
+func (t *Language) IsTemporary() bool {
+	return t.temp != nil
+}
+
+// Consistent marks the table consistent or inconsistent in the record's transaction
+// (Consistent): tables.Commit refuses to commit while a table is inconsistent — e.g. G/L
+// entries while the posting does not balance yet
+func (t *Language) Consistent(ok bool) {
+	tables.SetConsistent(t.db, LanguageTableName, ok)
+}
+
+// FilterExpressions returns the filters of all filter groups as field and expression (the
+// filter syntax: "C1", "10..20", the SetFilter expression) — for a page opened from code
+// (system.RunModal)
+func (t *Language) FilterExpressions() []tables.FieldFilter {
+	var result []tables.FieldFilter
+	for _, f := range t.allFilters() {
+		expr := ""
+		switch {
+		case f.invalidField:
+			continue
+		case f.isExpression:
+			expr = f.filterExpr
+		case f.minValue != nil && f.maxValue != nil && fmt.Sprint(f.minValue) == fmt.Sprint(f.maxValue):
+			expr = fmt.Sprint(f.minValue)
+		case f.minValue != nil && f.maxValue != nil:
+			expr = fmt.Sprintf("%v..%v", f.minValue, f.maxValue)
+		default:
+			continue
+		}
+		field := f.fieldName
+		result = append(result, tables.FieldFilter{Field: field, Expression: expr})
+	}
+	return result
+}
+
+// KeyText returns the primary key of the current record as text, the values joined by ","
+// (the record id of the API and the pages)
+func (t *Language) KeyText() string {
+	_, text := t.recordKey()
+	return text
 }
 
 // CopyFilter copies the filter on one field to a field of another record, also of another

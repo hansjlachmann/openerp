@@ -372,6 +372,59 @@ func (d *Dialog) RequestInput(title string, fields []InputField) map[string]stri
 	}
 }
 
+// RunPage asks the frontend to open a page (a list, filtered, with a record selected) and
+// waits until the user closes it; in lookup mode the answer holds the key of the record the
+// user picked: {"action": "LookupOK", "key": "C01"}. nil on cancel/timeout.
+func (d *Dialog) RunPage(pageID int, filters interface{}, selectKey string, lookupMode bool) map[string]string {
+	d.mu.Lock()
+	if d.closed {
+		d.mu.Unlock()
+		return nil
+	}
+	d.mu.Unlock()
+
+	confirmID := uuid.New().String()
+	responseChan := make(chan map[string]string, 1)
+	d.inputMu.Lock()
+	if d.pendingInput == nil {
+		d.pendingInput = make(map[string]chan map[string]string)
+	}
+	d.pendingInput[confirmID] = responseChan
+	d.inputMu.Unlock()
+	defer func() {
+		d.inputMu.Lock()
+		delete(d.pendingInput, confirmID)
+		d.inputMu.Unlock()
+	}()
+
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		EventType: "run_page",
+		ConfirmID: confirmID,
+		Timestamp: time.Now().UnixMilli(),
+		Data: map[string]interface{}{
+			"page_id":     pageID,
+			"filters":     filters,
+			"select":      selectKey,
+			"lookup_mode": lookupMode,
+		},
+	}:
+	case <-d.ctx.Done():
+		return nil
+	}
+
+	// The user works in the page: wait longer than for a question
+	select {
+	case values := <-responseChan:
+		return values
+	case <-d.ctx.Done():
+		return nil
+	case <-time.After(30 * time.Minute):
+		return nil
+	}
+}
+
 // RespondToInput handles an input dialog response from the frontend
 func (d *Dialog) RespondToInput(confirmID string, values map[string]string) bool {
 	d.inputMu.Lock()

@@ -15,6 +15,7 @@ import (
 	blmigrations "github.com/hansjlachmann/openerp/backend/business-logic/migrations"
 	"github.com/hansjlachmann/openerp/backend/business-logic/scheduler"
 	// The business logic of the tables (triggers), registered by its init functions
+	_ "github.com/hansjlachmann/openerp/backend/business-logic/pages"
 	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/business-logic/themerepo"
 	fapps "github.com/hansjlachmann/openerp/backend/foundation/apps"

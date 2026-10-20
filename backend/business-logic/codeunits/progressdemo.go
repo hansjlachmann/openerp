@@ -55,7 +55,7 @@ func (c *ProgressDemo) UsesProgress() bool {
 // Run executes the codeunit with progress updates
 func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 	// Let the user choose the speed (StrMenu), open the project page (Hyperlink), or cancel
-	speed := system.StrMenu("Fast,Normal,Slow,Open the project page", 2, "Start progress demo: choose the speed")
+	speed := system.StrMenu("Fast,Normal,Slow,Open the project page,Pick a customer", 2, "Start progress demo: choose the speed")
 	switch speed {
 	case 0:
 		return fcodeunits.Message("Progress demo cancelled."), nil
@@ -64,6 +64,24 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 			return fcodeunits.Result{}, err
 		}
 		return fcodeunits.Message("Project page opened."), nil
+	}
+
+	// "Pick a customer": a page variable — the Customer List in lookup mode (OK / Cancel), the
+	// picked customer read into cust; then the demo runs at normal speed for that customer
+	customer := "(none)"
+	if speed == 5 {
+		var cust gtables.Customer
+		cust.InitWithDBType(c.db, c.company, c.dbType)
+		custList := system.NewPage(22)
+		custList.SetTableView(&cust)
+		custList.SetRecord(&cust)
+		custList.LookupMode(true)
+		if custList.RunModal() != system.ActionLookupOK {
+			return fcodeunits.Message("Lookup cancelled: no customer picked."), nil
+		}
+		custList.GetRecord(&cust)
+		customer = system.StrSubstNo("%1 %2", cust.No, cust.Name)
+		speed = 2
 	}
 	stepTime := []time.Duration{100, 500, 1500}[speed-1] * time.Millisecond
 
@@ -76,7 +94,7 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 
 	// Simulate a long-running process in a progress window: text fields #n###, a bar @n@@@
 	totalSteps := 10
-	window := system.OpenWindow("Job queues selected: #5##\nStep #1## of #2##\n#3####################\n@4@@@@@@@@@@@@@@@@", 0, totalSteps, "", 0, selected)
+	window := system.OpenWindow("Customer: #6##########\nJob queues selected: #5##\nStep #1## of #2##\n#3####################\n@4@@@@@@@@@@@@@@@@", 0, totalSteps, "", 0, selected, customer)
 	defer window.Close()
 	for i := 1; i <= totalSteps; i++ {
 		window.Update(1, i)
@@ -91,6 +109,9 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Message(err.Error()), nil
 	}
 
+	if customer != "(none)" {
+		return system.Message("Processing completed successfully for customer %1.", customer), nil
+	}
 	return fcodeunits.Message("Processing completed successfully!"), nil
 }
 

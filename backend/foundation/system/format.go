@@ -33,10 +33,7 @@ func format(value any) string {
 	case types.Text:
 		return string(v)
 	case types.Date:
-		if v.IsZero() {
-			return ""
-		}
-		return v.Format("2006-01-02")
+		return v.String() // ISO, a closing date with C ("C2026-12-31")
 	case types.DateTime:
 		if v.IsZero() {
 			return ""

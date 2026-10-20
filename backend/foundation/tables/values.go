@@ -22,6 +22,12 @@ type FilterTarget interface {
 	SetFilter(fieldName, filterExpr string)
 }
 
+// FieldFilter is a filter on a field in the filter syntax (generated FilterExpressions)
+type FieldFilter struct {
+	Field      string `json:"field"`
+	Expression string `json:"expression"`
+}
+
 // OptionIndex returns the index of an option value — an int-based option type of any table,
 // or an int — so option fields can be copied between tables (TransferFields)
 func OptionIndex(v any) (int, bool) {

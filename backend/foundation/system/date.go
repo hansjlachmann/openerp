@@ -132,3 +132,10 @@ func DWY2Date(weekday int, weekYear ...int) (types.Date, error) {
 	}
 	return types.NewDateFromTime(d), nil
 }
+
+// ClosingDate returns the closing date of a date: the period-end date between it and the next
+// day that closing entries are posted on ("C2026-12-31"); a blank date stays blank
+func ClosingDate(d types.Date) types.Date { return d.Closing() }
+
+// NormalDate returns the normal date of a closing date (the date itself otherwise)
+func NormalDate(d types.Date) types.Date { return d.Normal() }

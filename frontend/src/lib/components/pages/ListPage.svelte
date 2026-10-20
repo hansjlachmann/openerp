@@ -9,6 +9,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
+	import PageRenderer from './PageRenderer.svelte';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
@@ -69,6 +70,10 @@
 		returnUrl?: string;
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
+		// Opened from a codeunit (RunModal): Esc and the close button call this instead
+		onclose?: () => void;
+		// The record the cursor is on (RunModal lookup: OK picks it)
+		oncurrent?: (record: Record<string, any> | undefined) => void;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
 		// Open the card page of a record; navigation = the list's query for the card's record navigation
 		onrowclick?: (record: Record<string, any>, navigation?: NavigationQuery) => void;
@@ -95,6 +100,8 @@
 		onwindow,
 		returnUrl,
 		initialSelectKey,
+		onclose,
+		oncurrent,
 		onaction,
 		onrowclick,
 		onsave,
@@ -174,6 +181,14 @@
 
 	// Progress modal state (for codeunits with progress)
 	let progressModalOpen = $state(false);
+	// A page the running codeunit opened (RunModal): shown in a modal until the user closes it
+	let runPage = $state<{
+		pageId: number;
+		filters: import('$lib/types/api').TableFilter[];
+		select?: string;
+		lookupMode: boolean;
+		respond: (values: Record<string, string> | null) => void;
+	} | null>(null);
 	let progressTitle = $state(t(MSG.PROCESSING));
 	let progressValue = $state(0);
 	let progressMessage = $state('');
@@ -304,7 +319,9 @@
 				// Only when nothing else has the focus: never take it from a cell, the search
 				// box or another control the user moved to
 				const active = document.activeElement;
-				const unfocused = !active || active === document.body;
+				// Opened from a codeunit (RunModal): the modal around it has the focus first
+				const unfocused =
+					!active || active === document.body || (!!onclose && !listPageElement?.contains(active));
 				if (isNavigation && !modalOpen && unfocused) listPageElement?.focus();
 			}, 100);
 		}
@@ -315,7 +332,7 @@
 		function handleGlobalKeydown(event: KeyboardEvent) {
 			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open, or the column
 			// header menu (it handles its own keys, Esc closes it)
-			if (modalOpen || get(companySwitchOpen) || columnMenu) return;
+			if (modalOpen || get(companySwitchOpen) || columnMenu || progressModalOpen) return;
 
 			// Esc in the filter pane closes the pane (not the list) and returns to the list
 			if (event.key === 'Escape' && event.target instanceof Element && event.target.closest('.filter-pane')) {
@@ -423,7 +440,9 @@
 	// Esc / close in navigation mode: back to the page this list was opened from (drilldown,
 	// card action — Esc closes the page), otherwise to the main menu
 	function closeList() {
-		if (returnUrl) {
+		if (onclose) {
+			onclose();
+		} else if (returnUrl) {
 			goto(returnUrl);
 		} else {
 			goto('/');
@@ -516,6 +535,11 @@
 		findSelectedRecord(displayRecords, selectedIndex, records, editableActive, primaryKeyField, primaryKeyFieldsList)
 	);
 
+	// Report the cursor's record (RunModal lookup: OK picks it)
+	$effect(() => {
+		oncurrent?.(selectedRecord ?? undefined);
+	});
+
 	// Handle running a codeunit
 	// The backend decides whether to use progress based on codeunit.UsesProgress()
 	async function handleRunObject(runObject: string) {
@@ -601,6 +625,16 @@
 						progressConfirmMode = false;
 						progressConfirmMessage = '';
 						respond(response);
+					};
+				},
+				onRunPage: (event, respond) => {
+					const data = event.data ?? {};
+					runPage = {
+						pageId: Number(data.page_id),
+						filters: (data.filters as import('$lib/types/api').TableFilter[]) ?? [],
+						select: (data.select as string) || undefined,
+						lookupMode: data.lookup_mode === true,
+						respond
 					};
 				},
 				onInputRequest: (event, respond) => {
@@ -2088,6 +2122,11 @@
 		selectedIndex = index;
 		// index is a displayed row (search/sort applied), not an index into records
 		const record = displayRecords[index];
+		// Opened from a codeunit (RunModal): the record is picked, no card opens
+		if (record && onclose) {
+			onrowclick?.(record, cardNavigationQuery);
+			return;
+		}
 		if (record && page.page.card_page_id) {
 			if (page.page.modal_card) {
 				// Open as modal
@@ -2142,7 +2181,7 @@
 				if (total > 0) selection = selectAll(selection);
 			}) as () => void;
 			map['Enter'] = () => {
-				if (page.page.card_page_id) {
+				if (page.page.card_page_id || onclose) {
 					openCard();
 				} else if (page.page.editable && selectedIndex >= 0) {
 					enterCellSelected(selectedIndex, editColumn());
@@ -2225,6 +2264,11 @@
 	}
 
 	async function openCard() {
+		// Opened from a codeunit (RunModal): Enter picks the record, no card opens
+		if (selectedRecord && onclose) {
+			onrowclick?.(selectedRecord, cardNavigationQuery);
+			return;
+		}
 		if (selectedRecord && page.page.card_page_id) {
 			if (page.page.modal_card) {
 				// Open as modal
@@ -2703,8 +2747,8 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="list-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
-	<PageHeader title={page.page.caption} onclose={returnUrl ? closeList : undefined}>
+<div class="list-page" class:embedded={!!onclose} use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
+	<PageHeader title={page.page.caption} onclose={returnUrl || onclose ? closeList : undefined}>
 		{#snippet leftActions()}
 			{#if page.page.editable}
 				<!-- Save state indicator - fixed width container to prevent layout shift -->
@@ -2997,6 +3041,7 @@
 					<tr
 						data-row-index={index}
 						onmousedown={(e) => handleRowMouseDown(index, e)}
+						ondblclick={onclose ? () => onrowclick?.(record, cardNavigationQuery) : undefined}
 						onmouseenter={() => handleRowDragOver(index)}
 						class={cn(
 							isNavigation ? 'cursor-pointer' : '',
@@ -3391,6 +3436,26 @@
 	onInputResponse={inputResponseCallback}
 />
 
+<!-- A page the running codeunit opened (RunModal): Enter / double-click picks in lookup mode -->
+{#if runPage}
+	{@const request = runPage}
+	<Modal open={true} size="expanded">
+		<div class="run-page">
+			<PageRenderer
+				pageid={request.pageId}
+				embedded={true}
+				initialFilters={request.filters}
+				initialSelect={request.select}
+				lookupMode={request.lookupMode}
+				onclose={(action, key) => {
+					runPage = null;
+					request.respond(action === 'Cancel' ? null : { action, key: key ?? '' });
+				}}
+			/>
+		</div>
+	</Modal>
+{/if}
+
 <!-- Codeunit Dialog Modal -->
 {#if dialogOpen && dialogData}
 	<Modal open={dialogOpen} onclose={() => { dialogOpen = false; dialogData = null; }}>
@@ -3442,6 +3507,11 @@
 	.list-page {
 		@apply flex flex-col gap-4;
 		height: calc(100vh - 180px); /* Account for menu, breadcrumb, padding */
+	}
+
+	/* Opened from a codeunit (RunModal): fills the modal */
+	.list-page.embedded {
+		height: 100%;
 	}
 
 	.list-content {
@@ -3949,5 +4019,12 @@
 	.edit-cell-input::selection {
 		background-color: rgb(var(--text-sel-bg));
 		color: rgb(var(--text-sel-fg));
+	}
+
+	/* A page opened from a codeunit (RunModal) */
+	.run-page {
+		height: 75vh;
+		display: flex;
+		flex-direction: column;
 	}
 </style>

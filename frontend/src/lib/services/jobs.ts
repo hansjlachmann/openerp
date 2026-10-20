@@ -48,6 +48,8 @@ export interface JobCallbacks {
 	onSyncResult?: (result: SyncJobResult) => void;
 	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
 	onInputRequest?: (event: ProgressEvent, respond: (values: Record<string, string> | null) => void) => void;
+	// The codeunit opens a page (RunModal): respond with {action, key} when the user closes it
+	onRunPage?: (event: ProgressEvent, respond: (values: Record<string, string> | null) => void) => void;
 	onData?: (data: Record<string, unknown>) => void; // Called when job returns data (e.g., PDF)
 	onJobStarted?: (jobId: string) => void; // Called when async job starts with job ID for cancellation
 }
@@ -201,6 +203,21 @@ export async function startJob(
 							}
 						};
 						callbacks.onInputRequest?.(event, respond);
+					} else if (event.event_type === 'run_page') {
+						// The codeunit opens a page (RunModal) and waits: {action, key} when it closes
+						const respond = async (values: Record<string, string> | null) => {
+							try {
+								await fetch(`/api/jobs/${jobId}/confirm`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({ confirm_id: event.confirm_id, values: values ?? {} })
+								});
+							} catch (err) {
+								console.error('Failed to send page response:', err);
+							}
+						};
+						if (callbacks.onRunPage) callbacks.onRunPage(event, respond);
+						else respond(null); // nothing can show the page: cancel
 					} else if (event.event_type === 'hyperlink') {
 						// Hyperlink from the codeunit: open http(s)/mailto URLs in a new tab
 						if (/^(https?:\/\/|mailto:)/i.test(event.message)) {

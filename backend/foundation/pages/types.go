@@ -28,6 +28,9 @@ type PageMetadata struct {
 	FocusField    string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout        Layout   `yaml:"layout" json:"layout"`
 	Actions       []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	// HasRecordTriggers (populated at request time): the page has OnAfterGetRecord triggers
+	// (business-logic/pages) — the card asks for the field states of each record it shows
+	HasRecordTriggers bool `yaml:"-" json:"has_record_triggers,omitempty"`
 	// PrimaryKeyFields is populated at request time from table metadata so the
 	// frontend knows the record key even when the PK is not shown (e.g. setup tables).
 	PrimaryKeyFields []string `yaml:"-" json:"primary_key_fields,omitempty"`

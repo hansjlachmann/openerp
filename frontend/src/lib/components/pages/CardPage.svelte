@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PageDefinition, Field } from '$lib/types/pages';
+	import type { PageDefinition, Field, FieldState } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import FieldRenderer from './FieldRenderer.svelte';
 	import Button from '$lib/components/Button.svelte';
@@ -16,7 +16,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
-	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields } from '$lib/utils/recordHelpers';
+	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
@@ -75,6 +75,25 @@
 
 	// Get primary key field name from page definition
 	const primaryKeyField = $derived(getPrimaryKeyField(page));
+
+	// Page triggers (OnAfterGetRecord): fields switched for the current record, asked from
+	// the server when the record or a field value changes
+	let fieldStates = $state<Record<string, FieldState>>({});
+	let fieldStatesRequest = 0;
+	$effect(() => {
+		if (!page.page.has_record_triggers) return;
+		const current = stripInternalFields($state.snapshot(record) ?? {});
+		const request = ++fieldStatesRequest;
+		const timer = setTimeout(async () => {
+			try {
+				const states = await api.getFieldStates(page.page.id, current);
+				if (request === fieldStatesRequest) fieldStates = states;
+			} catch {
+				// keep the last states: the page definition still applies
+			}
+		}, 150);
+		return () => clearTimeout(timer);
+	});
 
 	// Customization state
 	let customizeModalOpen = $state(false);
@@ -373,8 +392,8 @@
 				const order = fieldCustomizations[field.source]?.order ?? globalIndex;
 				globalIndex++;
 
-				// Add field to target section if visible with order info
-				if (isItemVisible(field, fieldCustomizations)) {
+				// Add field to target section if visible with order info (a page trigger may hide it)
+				if (isItemVisible(field, fieldCustomizations) && fieldStates[field.source]?.visible !== false) {
 					const fields = sectionMap.get(targetSection) || [];
 					fields.push({ field, order } as any);
 					sectionMap.set(targetSection, fields as any);
@@ -534,7 +553,7 @@
 
 					<div class="section-fields">
 						{#each section.fields as field (field.source)}
-							{@const fieldEditable = field.editable !== false && editMode && !saveBlocked}
+							{@const fieldEditable = field.editable !== false && fieldStates[field.source]?.editable !== false && editMode && !saveBlocked}
 							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
 							<FieldRenderer
 								{field}

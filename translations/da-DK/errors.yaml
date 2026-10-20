@@ -25,6 +25,7 @@ errors:
   ERR_DELETE_RECORD_FAILED: "%1 %2 kan ikke slettes: %3 Intet blev slettet."
   ERR_COPY_TOO_MANY: "Mere end %1 poster: kopiér og indsæt dem i mindre dele (filtrer listen først)."
   ERR_SELECTION_TOO_MANY: "Mere end %1 poster er markeret: markér færre (filtrer listen først)."
+  ERR_INCONSISTENT: "Transaktionen kan ikke gennemføres, fordi den ville efterlade uoverensstemmelser i: %1. Intet blev gemt."
   ERR_PASTE_RECORD_FAILED: "Post %1 af %2 kan ikke indsættes: %3 Intet blev indsat."
   ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
   ERR_INSERT_FAILED: "Kunne ikke indsætte %1"

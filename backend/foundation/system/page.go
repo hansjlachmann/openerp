@@ -1,0 +1,133 @@
+package system
+
+import (
+	"strings"
+
+	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	"github.com/hansjlachmann/openerp/backend/foundation/tables"
+)
+
+// Action is how the user closed a page opened with RunModal
+type Action int
+
+const (
+	ActionCancel       Action = iota // closed without OK (Esc), not in lookup mode
+	ActionOK                         // closed with OK, not in lookup mode
+	ActionLookupCancel               // lookup: closed without picking a record
+	ActionLookupOK                   // lookup: OK or picked a record — read it with GetRecord
+)
+
+// PageRecord is a record a page is opened with (a generated record)
+type PageRecord interface {
+	FilterExpressions() []tables.FieldFilter
+	KeyText() string
+	GetFields() []tables.FieldInfo
+	Get(primaryKey interface{}) bool
+}
+
+// Page is a page variable (Page): set it up, run it modally, and read the record the user
+// picked — the classic pattern:
+//
+//	custList := system.NewPage(22) // Customer List
+//	custList.SetTableView(&cust)   // the page shows cust's filters
+//	custList.SetRecord(&cust)      // … positioned on cust
+//	custList.LookupMode(true)      // OK and Cancel buttons
+//	if custList.RunModal() == system.ActionLookupOK {
+//		custList.GetRecord(&cust)
+//	}
+//
+// The variable keeps its state after RunModal (it is not cleared); NewPage gives a fresh one.
+type Page struct {
+	id         int
+	filters    []tables.FieldFilter
+	selectKey  string
+	lookupMode bool
+	pickedKey  string
+	picked     bool
+}
+
+// NewPage returns a page variable for a page (by its number)
+func NewPage(pageID int) *Page {
+	return &Page{id: pageID}
+}
+
+// SetTableView applies a record's filters (all filter groups) to the page (SetTableView)
+func (p *Page) SetTableView(rec PageRecord) {
+	p.filters = rec.FilterExpressions()
+}
+
+// SetRecord makes the page open on a record (SetRecord)
+func (p *Page) SetRecord(rec PageRecord) {
+	p.selectKey = rec.KeyText()
+}
+
+// LookupMode switches lookup mode on or off (LookupMode): in lookup mode the page has OK and
+// Cancel buttons and RunModal returns ActionLookupOK or ActionLookupCancel
+func (p *Page) LookupMode(on bool) {
+	p.lookupMode = on
+}
+
+// RunModal opens the page over the running codeunit and waits until the user closes it
+// (RunModal). In lookup mode: OK, or picking a record with Enter or a double-click, returns
+// ActionLookupOK; Cancel, the close button or Esc returns ActionLookupCancel. Otherwise the
+// page has no Cancel button: closing it returns ActionOK. Without a dialog (a scheduled run,
+// a codeunit run from a card) it returns ActionLookupCancel / ActionCancel.
+func (p *Page) RunModal() Action {
+	p.picked, p.pickedKey = false, ""
+	answer := codeunits.RunPage(p.id, p.filters, p.selectKey, p.lookupMode)
+	switch {
+	case p.lookupMode && answer["action"] == "LookupOK":
+		p.picked, p.pickedKey = true, answer["key"]
+		return ActionLookupOK
+	case p.lookupMode:
+		return ActionLookupCancel
+	case answer["action"] == "OK":
+		return ActionOK
+	}
+	return ActionCancel
+}
+
+// GetRecord reads the record the user picked (the page's current record when it was closed)
+// into rec (GetRecord); false when no record was picked or it no longer exists
+func (p *Page) GetRecord(rec PageRecord) bool {
+	return p.picked && getByKeyText(rec, p.pickedKey)
+}
+
+// RunModal opens a page with a record in one call (Page.RunModal(number, rec)): the record's
+// filters and current record, and in lookup mode the picked record is read into rec when the
+// result is ActionLookupOK. The same as a Page variable with SetTableView, SetRecord,
+// LookupMode, RunModal and GetRecord.
+func RunModal(pageID int, rec PageRecord, lookupMode bool) Action {
+	page := NewPage(pageID)
+	page.SetTableView(rec)
+	page.SetRecord(rec)
+	page.LookupMode(lookupMode)
+	action := page.RunModal()
+	if action == ActionLookupOK && !page.GetRecord(rec) {
+		return ActionLookupCancel
+	}
+	return action
+}
+
+// getByKeyText reads the record with a key in KeyText form ("C01", or "A,B" for a composite
+// primary key)
+func getByKeyText(rec PageRecord, key string) bool {
+	var pk []string
+	for _, f := range rec.GetFields() {
+		if f.PrimaryKey {
+			pk = append(pk, f.Name)
+		}
+	}
+	if len(pk) <= 1 {
+		return rec.Get(key)
+	}
+	parts := strings.Split(key, ",")
+	if len(parts) != len(pk) {
+		return false
+	}
+	values := make(map[string]interface{}, len(pk))
+	for i, name := range pk {
+		values[name] = parts[i]
+	}
+	return rec.Get(values)
+}

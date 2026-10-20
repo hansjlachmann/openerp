@@ -197,3 +197,14 @@ func Hyperlink(url string) {
 		dialog.Hyperlink(url)
 	}
 }
+
+// RunPage opens a page from a codeunit and waits until the user closes it (see
+// Dialog.RunPage); nil without a dialog (a scheduled run).
+// Note: This only works in async codeunits (UsesProgress() = true)
+func RunPage(pageID int, filters interface{}, selectKey string, lookupMode bool) map[string]string {
+	dialog := GetCurrentDialog()
+	if dialog == nil {
+		return nil
+	}
+	return dialog.RunPage(pageID, filters, selectKey, lookupMode)
+}
