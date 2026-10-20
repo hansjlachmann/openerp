@@ -22,6 +22,7 @@
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 	import { handleFieldEnterKey } from '$lib/utils/fieldNavigation';
+	import { getJson, setJson } from '$lib/utils/storage';
 
 	interface Props {
 		page: PageDefinition;
@@ -363,8 +364,32 @@
 			map['Escape'] = () => onclose();
 		}
 
+		// PgUp/PgDn scroll the sections a screen up/down — also from a field, unless an open
+		// dropdown (lookup, option list) used the key
+		const scrollPage = (direction: number) => ((event?: KeyboardEvent) => {
+			if (event?.defaultPrevented) return false;
+			if (!sectionsElement) return false;
+			sectionsElement.scrollBy({ top: direction * sectionsElement.clientHeight * 0.85, behavior: 'smooth' });
+		}) as () => void;
+		map['PageDown'] = scrollPage(1);
+		map['PageUp'] = scrollPage(-1);
+
 		return map;
 	});
+
+	// The scrolling sections (PgUp/PgDn)
+	let sectionsElement = $state<HTMLDivElement | null>(null);
+
+	// Folded sections (FastTabs), remembered per page in the browser
+	const collapsedKey = $derived(`card-collapsed-sections-${page.page.id}`);
+	let collapsedSections = $state<Record<string, boolean>>({});
+	$effect(() => {
+		collapsedSections = getJson<Record<string, boolean>>(collapsedKey, {});
+	});
+	function setCollapsed(section: string, collapsed: boolean) {
+		collapsedSections = { ...collapsedSections, [section]: collapsed };
+		setJson(collapsedKey, collapsedSections);
+	}
 
 	// Get customized sections (fields reorganized by user preferences)
 	const customizedSections = $derived(() => {
@@ -523,7 +548,7 @@
 	{/if}
 
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="sections-container" onkeydown={(e) => handleFieldEnterKey(e, e.currentTarget as HTMLElement)}>
+	<div class="sections-container" bind:this={sectionsElement} onkeydown={(e) => handleFieldEnterKey(e, e.currentTarget as HTMLElement)}>
 		{#if isEmptyRecord() && !editMode}
 			<!-- Empty state -->
 			<div class="empty-state">
@@ -544,9 +569,15 @@
 		{:else}
 			{@const allFields = customizedSections().flatMap(s => s.fields)}
 			{#each customizedSections() as section}
-				<Card>
+				<Card
+					collapsible
+					bind:collapsed={
+						() => collapsedSections[section.name] ?? false,
+						(v) => setCollapsed(section.name, v)
+					}
+				>
 					{#snippet header()}
-						<h3 class="text-lg font-semibold text-heading dark:text-blue-400">
+						<h3 class="section-title text-heading dark:text-blue-400">
 							{section.caption}
 						</h3>
 					{/snippet}
@@ -592,6 +623,8 @@
 		@apply flex flex-col flex-1 min-h-0;
 		@apply relative;
 		@apply bg-surface;
+		/* The sections scroll inside the window (as the list page) */
+		max-height: calc(100vh - 180px);
 	}
 
 	:global(.dark) .card-page {
@@ -601,12 +634,46 @@
 
 
 	.sections-container {
-		@apply flex flex-col gap-4 overflow-y-auto flex-1 min-h-0;
+		@apply flex flex-col gap-2 overflow-y-auto flex-1 min-h-0;
 		@apply px-1; /* Small padding for scrollbar spacing */
 	}
 
 	.section-fields {
-		@apply grid grid-cols-1 md:grid-cols-2 gap-4;
+		@apply grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5;
+	}
+
+	/* Compact card: section headers, inputs and values take less vertical space */
+	.section-title {
+		@apply text-base font-semibold;
+	}
+
+	.card-page :global(.card-header) {
+		@apply py-1.5;
+	}
+
+	.card-page :global(.card-body) {
+		@apply px-4 py-2;
+	}
+
+	.card-page :global(.field-group) {
+		gap: 0.125rem;
+	}
+
+	.card-page :global(.field-group .field-label) {
+		@apply text-xs;
+	}
+
+	.card-page :global(.field-group input.input),
+	.card-page :global(.field-group select.select),
+	.card-page :global(.field-group .field-value),
+	.card-page :global(.option-dropdown .option-trigger) {
+		@apply py-1 px-2.5 text-sm;
+		min-height: 2rem;
+	}
+
+	.card-page :global(.field-group .checkbox-wrapper) {
+		@apply py-1;
+		min-height: 2rem;
 	}
 
 	/* Save state container - fixed width to prevent layout shift */
