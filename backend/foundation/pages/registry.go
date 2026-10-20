@@ -91,6 +91,13 @@ func (r *Registry) loadPageFile(filePath string) error {
 		return fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
+	// A subpage section has no fields: send an empty list, not null
+	for i := range pageDef.Page.Layout.Sections {
+		if pageDef.Page.Layout.Sections[i].Fields == nil {
+			pageDef.Page.Layout.Sections[i].Fields = []Field{}
+		}
+	}
+
 	// Store by page ID
 	r.pages[pageDef.Page.ID] = &pageDef
 

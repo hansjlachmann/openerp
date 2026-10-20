@@ -36,6 +36,7 @@ common:
     communication: "Communication"
     general: "General"
     invoicing: "Invoicing"
+    log_entries: "Log Entries"
     notification: "Notification"
     recurrence: "Recurrence"
     statistics: "Statistics"

@@ -36,6 +36,7 @@ common:
     communication: "Kommunikation"
     general: "Generelt"
     invoicing: "Fakturering"
+    log_entries: "Logposter"
     notification: "Notifikation"
     recurrence: "Gentagelse"
     statistics: "Statistik"

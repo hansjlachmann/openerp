@@ -18,6 +18,7 @@ export interface PageMetadata {
 	// DelayedInsert: insert a new list row only when the user leaves the row
 	delayed_insert?: boolean;
 	copy_paste_allowed?: boolean; // list Ctrl+C copies the selected records, Ctrl+V pastes them
+	auto_split_key?: boolean; // a new line between two lines gets the line number between them
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];
@@ -40,6 +41,13 @@ export interface Section {
 	name: string;
 	caption: string;
 	fields: Field[];
+	subpage?: Subpage; // instead of fields: a list page linked to the card's record
+}
+
+/** A list page shown in a card section, tied to the card's record */
+export interface Subpage {
+	page_id: number;
+	link: Record<string, string>; // subpage field → card field (e.g. document_no: "no")
 }
 
 export interface Repeater {

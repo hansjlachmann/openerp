@@ -10,6 +10,48 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ## ⭐ First priority (next session, from 2026-10-07)
 
+- [x] **FIRST PRIORITY — Card page with a subpage** (added 2026-10-20) — built 2026-10-20: a card
+      section with `subpage: {page_id, link}` (Job Queue Card 674 → Log Entries 673); the list API's
+      `fixed_filters` (filter group 2); subpage mode of the list (scoped shortcuts, link values on new
+      and pasted lines, Esc → card); part keys F6/Shift+F6 and Ctrl+↓/↑, Ctrl+Shift+↓/↑ records;
+      `auto_split_key`; card totals refresh after line changes. Still to check in Chrome/Edge/Firefox:
+      F6 (the browser may take it). The original specification: A card page shows a list
+      page inside it, tied to the card's record by a link — the same idea as the nested data items
+      of reports (`Link`). Example: Sales Order — the card shows the Sales Header, the subpage its
+      Sales Lines. In the classic application 78 forms have a subform (48 with a link), e.g. Sales
+      Order (header table 36, filtered on Document Type = Order) with its lines subform (table 37):
+      link `Document No. = FIELD(No.)`, the lines page has `AutoSplitKey` and `DelayedInsert`.
+  - Page YAML: a `subpage` part in the card layout — the list page to show (`page_id`), a `link`
+    (subpage field → card field, e.g. `document_no: no`), optional caption and position among the
+    sections; more than one subpage per card possible.
+  - The subpage is a list page embedded in the card: it shows only the lines of the card's record
+    (link filters in a filter group the user cannot change), refreshes when the card moves to
+    another record, and new lines get the link fields set (`document_no` = the card's `no`).
+  - Filters on the subpage as on a normal list page: the filter pane (Ctrl+F7) with every field
+    of the lines table, the same filter syntax, views and search — on top of the link filter,
+    which the user cannot see or remove (the user's filters narrow the card's lines only).
+  - Keyboard — moving the cursor between the card and its subpages (decided 2026-10-20):
+    - Cards **with** a subpage: **Ctrl+↓ / Ctrl+↑** (classic) and **F6 / Shift+F6** move to the
+      next/previous part (card → subpage 1 → subpage 2 → card); in the subpage Ctrl+↑ goes back
+      to the card, plain ↑/↓ move between the lines. Previous/next record there:
+      **Ctrl+Shift+↑ / Ctrl+Shift+↓**; Ctrl+Home / Ctrl+End first/last record as now.
+    - Cards **without** a subpage: unchanged (Ctrl+↑/↓ previous/next record); Ctrl+Shift+↑/↓
+      added as the same (one key for records on every card). Also on modal cards.
+    - The cursor lands on the subpage's current line in navigation mode (arrows, Enter, Ctrl+F7
+      work at once); back on the card in the field it was in; a folded section opens on its header.
+      A click in the subpage moves the focus there; Esc in the subpage (navigation mode) goes back
+      to the card, not out of the page.
+    - Check F6 in Chrome, Edge and Firefox (browsers may move to the address bar); Ctrl+↑/↓ work
+      from inside a field too.
+  - Editing lines in the subpage as on an editable list (DelayedInsert, keyboard, delete); the
+    card's FlowFields/totals refresh after a line changes; a new card record must be saved
+    before lines can be added.
+  - `AutoSplitKey`: a new line between two lines gets a line number between them (line no. steps
+    of 10000) — needed by document lines.
+  - Needs document tables to try it on (Sales Header / Sales Line) — or first on an existing pair
+    (e.g. Job Queue card with its log entries as subpage).
+  - [ ] LOW priority, later: a subpage shown as a card page (one related record on the card, e.g.
+        a setup or statistics part).
 - [ ] **HEADLINE — Migrate the classic application into this repository, in many steps** (added
       2026-10-20; to be planned later). Tables, codeunits, pages (forms) and reports of the classic
       application move over step by step, in this repository's own layout: table YAML with the same

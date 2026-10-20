@@ -23,6 +23,9 @@
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 	import { handleFieldEnterKey } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
+	import PageRenderer from './PageRenderer.svelte';
+	import type { Subpage } from '$lib/types/pages';
+	import type { FixedFilter } from '$lib/types/api';
 
 	interface Props {
 		page: PageDefinition;
@@ -47,6 +50,8 @@
 		onNavigatePrevious?: () => void;
 		onNavigateNext?: () => void;
 		onNavigateLast?: () => void;
+		// A subpage's lines changed: the card refreshes its FlowFields (totals)
+		onrefresh?: () => void;
 	}
 
 	let {
@@ -71,7 +76,8 @@
 		onNavigateFirst,
 		onNavigatePrevious,
 		onNavigateNext,
-		onNavigateLast
+		onNavigateLast,
+		onrefresh
 	}: Props = $props();
 
 	// Get primary key field name from page definition
@@ -354,8 +360,10 @@
 		// Add navigation shortcuts if enabled
 		if (navigationEnabled) {
 			if (canNavigateFirst) map['Ctrl+Home'] = () => onNavigateFirst?.();
-			if (canNavigatePrevious) map['Ctrl+ArrowUp'] = () => onNavigatePrevious?.();
-			if (canNavigateNext) map['Ctrl+ArrowDown'] = () => onNavigateNext?.();
+			// On a card with subpages Ctrl+↑/↓ move between the parts (handlePartKeys);
+			// Ctrl+Shift+↑/↓ go to the previous/next record on every card
+			if (canNavigatePrevious && !hasSubpages) map['Ctrl+ArrowUp'] = () => onNavigatePrevious?.();
+			if (canNavigateNext && !hasSubpages) map['Ctrl+ArrowDown'] = () => onNavigateNext?.();
 			if (canNavigateLast) map['Ctrl+End'] = () => onNavigateLast?.();
 		}
 
@@ -379,6 +387,87 @@
 
 	// The scrolling sections (PgUp/PgDn)
 	let sectionsElement = $state<HTMLDivElement | null>(null);
+
+	// ---- Subpages: list pages in the card, tied to its record (section.subpage.link) ----
+	const hasSubpages = $derived((page.page.layout.sections ?? []).some((s) => !!s.subpage));
+
+	// The link of a subpage for the current record: subpage field → the card field's value
+	function linkValues(sub: Subpage): Record<string, any> {
+		return Object.fromEntries(Object.entries(sub.link).map(([field, cardField]) => [field, record?.[cardField]]));
+	}
+	function linkFilters(sub: Subpage): FixedFilter[] {
+		return Object.entries(linkValues(sub)).map(([field, value]) => ({ field, value }));
+	}
+	// Lines need a saved card record with its key
+	function canShowLines(sub: Subpage): boolean {
+		return !checkIsNewRecord() && Object.values(linkValues(sub)).every((v) => v !== undefined && v !== null && v !== '');
+	}
+
+	// Parts of the card: its fields, then each subpage. F6 / Shift+F6 and (cards with subpages)
+	// Ctrl+↓ / Ctrl+↑ move the cursor to the next/previous part; Ctrl+Shift+↓/↑ go to the
+	// next/previous record. Handled before the parts' own keys (capture).
+	let lastCardField: HTMLElement | null = null;
+	function handleFocusIn(e: FocusEvent) {
+		const target = e.target as HTMLElement;
+		if (!target.closest('.subpage-part') && target.matches('input, select, textarea, button')) lastCardField = target;
+	}
+	function currentPart(): number {
+		const parts = subpageParts();
+		const active = document.activeElement;
+		return parts.findIndex((p) => p.contains(active)) + 1; // 0 = the card's fields
+	}
+	function subpageParts(): HTMLElement[] {
+		return Array.from(cardPageElement?.querySelectorAll<HTMLElement>('[data-subpage-part]') ?? []);
+	}
+	function focusPart(index: number) {
+		const parts = subpageParts();
+		const count = parts.length + 1;
+		const i = ((index % count) + count) % count;
+		if (i === 0) {
+			const field =
+				lastCardField && cardPageElement?.contains(lastCardField)
+					? lastCardField
+					: sectionsElement?.querySelector<HTMLElement>('.section-fields input, .section-fields select, .section-fields button');
+			(field ?? cardPageElement)?.focus();
+			return;
+		}
+		const part = parts[i - 1];
+		// The subpage's list (navigation mode), or the folded section's header
+		const target =
+			part.querySelector<HTMLElement>('.list-page') ??
+			part.closest('.card')?.querySelector<HTMLElement>('.card-header') ??
+			part;
+		target.focus();
+		target.scrollIntoView({ block: 'nearest' });
+	}
+	function handlePartKeys(e: KeyboardEvent) {
+		const arrow = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+		if (e.ctrlKey && e.shiftKey && !e.altKey && arrow !== 0 && navigationEnabled) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (arrow > 0 && canNavigateNext) onNavigateNext?.();
+			if (arrow < 0 && canNavigatePrevious) onNavigatePrevious?.();
+			return;
+		}
+		if (!hasSubpages) return;
+		const f6 = e.key === 'F6' && !e.ctrlKey && !e.altKey;
+		const ctrlArrow = e.ctrlKey && !e.shiftKey && !e.altKey && arrow !== 0;
+		if (!f6 && !ctrlArrow) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const step = f6 ? (e.shiftKey ? -1 : 1) : arrow;
+		focusPart(currentPart() + step);
+	}
+	$effect(() => {
+		const element = cardPageElement;
+		if (!element) return;
+		element.addEventListener('keydown', handlePartKeys, true);
+		element.addEventListener('focusin', handleFocusIn);
+		return () => {
+			element.removeEventListener('keydown', handlePartKeys, true);
+			element.removeEventListener('focusin', handleFocusIn);
+		};
+	});
 
 	// Folded sections (FastTabs), remembered per page in the browser
 	const collapsedKey = $derived(`card-collapsed-sections-${page.page.id}`);
@@ -406,7 +495,7 @@
 		// Distribute fields to sections based on customizations
 		let globalIndex = 0;
 		page.page.layout.sections.forEach(section => {
-			section.fields.forEach(field => {
+			(section.fields ?? []).forEach(field => {
 				// Get the target section (customized or original)
 				const targetSection =
 					(field.source in fieldCustomizations && fieldCustomizations[field.source].section)
@@ -435,7 +524,7 @@
 					.sort((a: any, b: any) => a.order - b.order)
 					.map((item: any) => item.field)
 			}))
-			.filter(section => section.fields.length > 0);
+			.filter(section => section.fields.length > 0 || !!section.subpage);
 	});
 
 	// Open customize modal
@@ -548,7 +637,15 @@
 	{/if}
 
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="sections-container" bind:this={sectionsElement} onkeydown={(e) => handleFieldEnterKey(e, e.currentTarget as HTMLElement)}>
+	<div
+		class="sections-container"
+		bind:this={sectionsElement}
+		onkeydown={(e) => {
+			// Enter moves between the card's fields — not in a subpage (its list handles Enter)
+			if ((e.target as HTMLElement).closest('.subpage-part')) return;
+			handleFieldEnterKey(e, e.currentTarget as HTMLElement);
+		}}
+	>
 		{#if isEmptyRecord() && !editMode}
 			<!-- Empty state -->
 			<div class="empty-state">
@@ -582,6 +679,26 @@
 						</h3>
 					{/snippet}
 
+					{#if section.subpage}
+						{@const sub = section.subpage}
+						<!-- A subpage: the list page with the lines of this record (its own keys) -->
+						<div class="subpage-part" data-subpage-part data-own-keys>
+							{#if canShowLines(sub)}
+								{#key JSON.stringify(linkValues(sub))}
+									<PageRenderer
+										pageid={sub.page_id}
+										subpage={true}
+										fixedFilters={linkFilters(sub)}
+										newRecordDefaults={linkValues(sub)}
+										onexit={() => focusPart(0)}
+										onlineschange={onrefresh}
+									/>
+								{/key}
+							{:else}
+								<p class="subpage-empty">{t(CARD.SAVE_FIRST)}</p>
+							{/if}
+						</div>
+					{:else}
 					<div class="section-fields">
 						{#each section.fields as field (field.source)}
 							{@const fieldEditable = field.editable !== false && fieldStates[field.source]?.editable !== false && editMode && !saveBlocked}
@@ -600,6 +717,7 @@
 							/>
 						{/each}
 					</div>
+					{/if}
 				</Card>
 			{/each}
 		{/if}
@@ -636,6 +754,15 @@
 	.sections-container {
 		@apply flex flex-col gap-2 overflow-y-auto flex-1 min-h-0;
 		@apply px-1; /* Small padding for scrollbar spacing */
+	}
+
+	/* A subpage inside its section */
+	.subpage-part {
+		@apply -mx-2;
+	}
+
+	.subpage-empty {
+		@apply text-sm text-gray-500 dark:text-gray-400 py-2;
 	}
 
 	.section-fields {

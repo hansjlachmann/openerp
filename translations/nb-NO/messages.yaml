@@ -52,6 +52,7 @@ messages:
   ERR_FAILED_SAVE_RECORD: "Kunne ikke lagre post"
   ERR_FAILED_LOAD_CARD_PAGE: "Kunne ikke laste kortside"
   ERR_FAILED_START_JOB: "Kunne ikke starte jobb"
+  ERR_NO_ROOM_FOR_LINE: "Det er ikke plass til å sette inn en linje her: linjenumrene ligger for tett. Legg til linjen til slutt i stedet."
   ERR_CODEUNIT_FAILED: "Operasjon feilet"
   ERR_FAILED_LOAD_MENU: "Kunne ikke laste meny"
   ERR_SAVE_BLOCKED: "Lagring feilet. Vennligst rett feilen før du fortsetter."
@@ -223,6 +224,7 @@ messages:
   CARD_SELECT_OR_CREATE: "Velg en post fra listen eller opprett en ny."
   CARD_CREATE_NEW: "Opprett ny"
   CARD_CLEAR_FORM: "Tøm skjema"
+  CARD_SAVE_FIRST: "Lagre posten først for å legge til linjer her."
 
   # List Page
   LIST_SEARCH_PLACEHOLDER: "Søk... (Ctrl+F)"

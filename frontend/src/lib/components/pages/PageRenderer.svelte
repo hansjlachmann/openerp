@@ -39,6 +39,14 @@
 		initialFilters?: import('$lib/types/api').TableFilter[];
 		lookupMode?: boolean;
 		onclose?: (action: 'OK' | 'LookupOK' | 'Cancel', key?: string) => void; // key: the picked record's id
+		// A subpage in a card: a list page tied to the card's record — fixed filters (the link),
+		// new records get the link values; Esc in navigation mode goes back to the card (onexit);
+		// onlineschange after a line was saved or deleted (the card's totals)
+		subpage?: boolean;
+		fixedFilters?: import('$lib/types/api').FixedFilter[];
+		newRecordDefaults?: Record<string, any>;
+		onexit?: () => void;
+		onlineschange?: () => void;
 	}
 
 	let {
@@ -51,7 +59,12 @@
 		embedded = false,
 		initialFilters,
 		lookupMode = false,
-		onclose
+		onclose,
+		subpage = false,
+		fixedFilters = [],
+		newRecordDefaults = {},
+		onexit,
+		onlineschange
 	}: Props = $props();
 
 	// State
@@ -167,7 +180,7 @@
 			} else if (page.page.type === 'List') {
 				await loadListData(await initialListOffset());
 				// Set breadcrumb for list page (not for a page opened from a codeunit)
-				if (!embedded) breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
+				if (!embedded && !subpage) breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unknown error';
@@ -273,6 +286,9 @@
 		if (!page) return query;
 		if (currentFilters.length > 0) {
 			query.filters = currentFilters;
+		}
+		if (fixedFilters.length > 0) {
+			query.fixed_filters = fixedFilters; // a subpage's link to its card
 		}
 		const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
 		if (flowFilters.length > 0) {
@@ -429,6 +445,20 @@
 		}
 	}
 
+	// A subpage's lines changed: read the card's FlowFields (totals) again — only those, so
+	// nothing the user is typing on the card is touched
+	async function refreshCardTotals() {
+		if (!page || !currentRecordId || !record) return;
+		try {
+			const fresh = await api.getRecordWithCaptions(page.page.source_table, currentRecordId);
+			for (const field of page.page.flow_fields ?? []) {
+				if (fresh.data && field in fresh.data) record[field] = fresh.data[field];
+			}
+		} catch (err) {
+			console.error('Failed to refresh the card totals:', err);
+		}
+	}
+
 	// Handle save from card page
 	async function handleCardSave(savedRecord: Record<string, any>): Promise<boolean> {
 		if (!page) return false;
@@ -539,6 +569,7 @@
 		// ListPage awaits onsave inside its save, and the next cell's save must not wait for
 		// a list reload
 		void loadListData();
+		onlineschange?.();
 	}
 
 	// Handle delete from list page
@@ -554,6 +585,7 @@
 			}
 			await api.deleteRecord(page.page.source_table, recordId);
 			await loadListData();
+			onlineschange?.();
 			toast.success(t(MSG.RECORD_DELETED));
 		} catch (err) {
 			toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
@@ -569,6 +601,7 @@
 		try {
 			const deleted = await api.deleteRecords(page.page.source_table, request, request.all ? listQuery() : undefined);
 			await loadListData();
+			onlineschange?.();
 			toast.success(t(MSG.RECORDS_DELETED, deleted.toLocaleString(get(currentLanguage))));
 		} catch (err) {
 			toast.error(err instanceof Error && err.message ? err.message : t(ERR.FAILED_DELETE));
@@ -581,8 +614,11 @@
 	async function handleListPaste(records: Record<string, unknown>[]): Promise<string[]> {
 		if (!page) return [];
 		try {
-			const keys = await api.insertRecords(page.page.source_table, records);
+			// In a subpage the pasted lines belong to the card's record: its link values
+			const rows = subpage ? records.map((r) => ({ ...r, ...newRecordDefaults })) : records;
+			const keys = await api.insertRecords(page.page.source_table, rows);
 			await loadListData();
+			onlineschange?.();
 			toast.success(t(MSG.RECORDS_PASTED, keys.length.toLocaleString(get(currentLanguage))));
 			return keys;
 		} catch (err) {
@@ -686,6 +722,7 @@
 			onNavigatePrevious={navigationActions.navigatePrevious}
 			onNavigateNext={navigationActions.navigateNext}
 			onNavigateLast={navigationActions.navigateLast}
+			onrefresh={refreshCardTotals}
 		/>
 	{:else if page.page.type === 'List'}
 		{#if embedded && lookupMode}
@@ -705,7 +742,11 @@
 					{windowOffset}
 					{returnUrl}
 					initialSelectKey={initialSelect}
-					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : undefined}
+					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
+					pickOnEnter={embedded}
+					{subpage}
+					{fixedFilters}
+					{newRecordDefaults}
 					oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 					onwindow={handleListWindow}
 					onaction={handleListAction}
@@ -740,7 +781,11 @@
 				{windowOffset}
 				{returnUrl}
 				initialSelectKey={initialSelect}
-				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : undefined}
+				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
+				pickOnEnter={embedded}
+				{subpage}
+				{fixedFilters}
+				{newRecordDefaults}
 				oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 				onwindow={handleListWindow}
 				onaction={handleListAction}

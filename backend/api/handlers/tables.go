@@ -464,6 +464,49 @@ func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 		return errors.New(apperrors.InvalidSortField().Message(language))
 	}
 
+	// fixed_filters: [{"field","value"}] — a subpage's link to its card's record: exact values
+	// in filter group 2, so the user's filters (group 0) narrow them and cannot replace them
+	if fixedParam := c.Query("fixed_filters", ""); fixedParam != "" {
+		var fixed []struct {
+			Field string      `json:"field"`
+			Value interface{} `json:"value"`
+		}
+		if err := json.Unmarshal([]byte(fixedParam), &fixed); err != nil {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		grouped, ok := table.(interface{ FilterGroup(group ...int) int })
+		if !ok {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		ranger, ok := table.(interface {
+			SetRange(fieldName string, values ...interface{})
+		})
+		if !ok {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		grouped.FilterGroup(2)
+		for _, f := range fixed {
+			if !ftables.IsQueryableColumn(table, f.Field) {
+				grouped.FilterGroup(0)
+				return errors.New(apperrors.InvalidFilters().Message(language))
+			}
+			value := ""
+			switch v := f.Value.(type) {
+			case string:
+				value = v
+			case float64:
+				value = strconv.FormatFloat(v, 'f', -1, 64)
+			case bool:
+				value = strconv.FormatBool(v)
+			case nil:
+			default:
+				value = fmt.Sprint(v)
+			}
+			ranger.SetRange(f.Field, value)
+		}
+		grouped.FilterGroup(0)
+	}
+
 	if filtersParam := c.Query("filters", ""); filtersParam != "" {
 		var apiFilters []struct {
 			Field      string `json:"field"`

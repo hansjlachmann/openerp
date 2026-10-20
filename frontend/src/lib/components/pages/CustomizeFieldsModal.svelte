@@ -69,7 +69,8 @@
 	// Get all sections (card mode only)
 	const allSections = $derived(() => {
 		if (mode !== 'card') return [];
-		return page.page.layout.sections?.map((s) => s.name) || [];
+		// Fields can move between field sections, not into a subpage
+		return page.page.layout.sections?.filter((s) => !s.subpage).map((s) => s.name) || [];
 	});
 
 	// Toggle item visibility

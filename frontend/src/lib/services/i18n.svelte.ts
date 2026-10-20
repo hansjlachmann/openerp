@@ -105,6 +105,7 @@ export const MSG = {
 } as const;
 
 export const ERR = {
+	NO_ROOM_FOR_LINE: 'ERR_NO_ROOM_FOR_LINE', // AutoSplitKey: no line number left between two lines
 	FAILED_DELETE: 'ERR_FAILED_DELETE',
 	FAILED_OPEN_CARD: 'ERR_FAILED_OPEN_CARD',
 	FIELD_NOT_EXIST: 'ERR_FIELD_NOT_EXIST',
@@ -247,6 +248,7 @@ export const HELP = {
 } as const;
 
 export const CARD = {
+	SAVE_FIRST: 'CARD_SAVE_FIRST', // a subpage of a record that is not saved yet
 	NO_RECORD: 'CARD_NO_RECORD',
 	SELECT_OR_CREATE: 'CARD_SELECT_OR_CREATE',
 	CREATE_NEW: 'CARD_CREATE_NEW',

@@ -3,12 +3,13 @@
 // modal card, as ?nav=<JSON> to a card page — and /ids applies them.
 import type { ListOptions, TableFilter } from '$lib/types/api';
 
-export type NavigationQuery = Pick<ListOptions, 'filters' | 'search' | 'search_fields' | 'sort_by' | 'sort_order'>;
+export type NavigationQuery = Pick<ListOptions, 'filters' | 'fixed_filters' | 'search' | 'search_fields' | 'sort_by' | 'sort_order'>;
 
 // The query with only the parts in effect (undefined when there are none)
 export function navigationQuery(q: NavigationQuery): NavigationQuery | undefined {
 	const out: NavigationQuery = {};
 	if (q.filters && q.filters.length > 0) out.filters = q.filters;
+	if (q.fixed_filters && q.fixed_filters.length > 0) out.fixed_filters = q.fixed_filters;
 	const search = q.search?.trim();
 	if (search && q.search_fields && q.search_fields.length > 0) {
 		out.search = search;

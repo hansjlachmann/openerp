@@ -57,8 +57,15 @@ export interface TableFilter {
 	expression: string; // filter expression: supports *, |, .., <, >, etc.
 }
 
+/** A fixed filter: an exact value the user cannot change (a subpage's link to its card) */
+export interface FixedFilter {
+	field: string;
+	value: unknown;
+}
+
 export interface ListOptions {
 	filters?: TableFilter[];
+	fixed_filters?: FixedFilter[]; // a subpage's link: filter group 2, under the user's filters
 	sort_by?: string;
 	sort_order?: 'asc' | 'desc';
 	page?: number;

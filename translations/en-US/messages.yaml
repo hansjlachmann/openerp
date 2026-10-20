@@ -52,6 +52,7 @@ messages:
   ERR_FAILED_SAVE_RECORD: "Failed to save record"
   ERR_FAILED_LOAD_CARD_PAGE: "Failed to load card page"
   ERR_FAILED_START_JOB: "Failed to start job"
+  ERR_NO_ROOM_FOR_LINE: "There is no room to insert a line here: the line numbers are too close. Add the line at the end instead."
   ERR_CODEUNIT_FAILED: "Operation failed"
   ERR_FAILED_LOAD_MENU: "Failed to load menu"
   ERR_SAVE_BLOCKED: "Save failed. Please correct the error before continuing."
@@ -223,6 +224,7 @@ messages:
   CARD_SELECT_OR_CREATE: "Select a record from the list or create a new one."
   CARD_CREATE_NEW: "Create New"
   CARD_CLEAR_FORM: "Clear Form"
+  CARD_SAVE_FIRST: "Save the record first to add lines here."
 
   # List Page
   LIST_SEARCH_PLACEHOLDER: "Search... (Ctrl+F)"

@@ -25,6 +25,10 @@ type PageMetadata struct {
 	// records and Ctrl+V inserts them (same table; new keys from the list's filters, or
 	// another company)
 	CopyPasteAllowed *bool `yaml:"copy_paste_allowed,omitempty" json:"copy_paste_allowed,omitempty"`
+	// AutoSplitKey (AutoSplitKey): on list pages whose last primary key field is a line number
+	// (int), a new line inserted between two lines gets the number halfway between them (lines
+	// are numbered in steps of 10000) — document lines
+	AutoSplitKey *bool `yaml:"auto_split_key,omitempty" json:"auto_split_key,omitempty"`
 	FocusField    string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout        Layout   `yaml:"layout" json:"layout"`
 	Actions       []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
@@ -63,6 +67,18 @@ type Section struct {
 	Name    string  `yaml:"name" json:"name"`
 	Caption string  `yaml:"caption" json:"caption"`
 	Fields  []Field `yaml:"fields" json:"fields"`
+	// Subpage: instead of fields, the section shows a list page with the records linked to
+	// the card's record (e.g. a document's lines)
+	Subpage *Subpage `yaml:"subpage,omitempty" json:"subpage,omitempty"`
+}
+
+// Subpage is a list page shown in a card, tied to the card's record by Link (SubPageLink)
+type Subpage struct {
+	PageID int `yaml:"page_id" json:"page_id"` // the list page
+	// Link: field of the subpage's table → field of the card's table (e.g. document_no: no);
+	// the subpage shows only the records with these values (filter group 2, the user cannot
+	// change it), and new records get them
+	Link map[string]string `yaml:"link" json:"link"`
 }
 
 // Repeater represents a repeater (table) on a List page
@@ -138,7 +154,7 @@ func (p *PageDefinition) Clone() *PageDefinition {
 	m := &c.Page
 	m.Layout.Sections = make([]Section, len(p.Page.Layout.Sections))
 	for i, s := range p.Page.Layout.Sections {
-		s.Fields = append([]Field(nil), s.Fields...)
+		s.Fields = append([]Field{}, s.Fields...) // never null (a subpage section has none)
 		m.Layout.Sections[i] = s
 	}
 	if p.Page.Layout.Repeater != nil {

@@ -51,6 +51,9 @@ export function buildQueryString(options?: ListOptions): string {
 	if (options.filters && options.filters.length > 0) {
 		params.append('filters', JSON.stringify(options.filters));
 	}
+	if (options.fixed_filters && options.fixed_filters.length > 0) {
+		params.append('fixed_filters', JSON.stringify(options.fixed_filters));
+	}
 
 	// Add fields as JSON
 	if (options.fields && options.fields.length > 0) {

@@ -10,6 +10,8 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
 	import PageRenderer from './PageRenderer.svelte';
+	import { splitLineNo, lineNo } from '$lib/utils/autoSplitKey';
+	import type { FixedFilter } from '$lib/types/api';
 	import type { RequestDataItem } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
@@ -71,8 +73,19 @@
 		returnUrl?: string;
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
-		// Opened from a codeunit (RunModal): Esc and the close button call this instead
+		// Esc and the close button call this instead of leaving the page (RunModal: cancel;
+		// subpage: back to the card)
 		onclose?: () => void;
+		// Opened from a codeunit (RunModal): Enter, a double-click or a click on the key picks the
+		// record (onrowclick) instead of opening its card
+		pickOnEnter?: boolean;
+		// Shown inside a card (subpage): its shortcuts work only while the cursor is in it, it
+		// never takes the focus by itself
+		subpage?: boolean;
+		// Fixed filters (a subpage's link to its card): every query has them, the user cannot
+		// change them; new records get their values (newRecordDefaults)
+		fixedFilters?: FixedFilter[];
+		newRecordDefaults?: Record<string, any>;
 		// The record the cursor is on (RunModal lookup: OK picks it)
 		oncurrent?: (record: Record<string, any> | undefined) => void;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
@@ -102,6 +115,10 @@
 		returnUrl,
 		initialSelectKey,
 		onclose,
+		pickOnEnter = false,
+		subpage = false,
+		fixedFilters = [],
+		newRecordDefaults = {},
 		oncurrent,
 		onaction,
 		onrowclick,
@@ -324,8 +341,9 @@
 				const active = document.activeElement;
 				// Opened from a codeunit (RunModal): the modal around it has the focus first
 				const unfocused =
-					!active || active === document.body || (!!onclose && !listPageElement?.contains(active));
-				if (isNavigation && !modalOpen && unfocused) listPageElement?.focus();
+					!active || active === document.body || (pickOnEnter && !listPageElement?.contains(active));
+				// A subpage never takes the focus from its card
+				if (isNavigation && !modalOpen && unfocused && !subpage) listPageElement?.focus();
 			}, 100);
 		}
 	});
@@ -336,6 +354,8 @@
 			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open, or the column
 			// header menu (it handles its own keys, Esc closes it)
 			if (modalOpen || get(companySwitchOpen) || columnMenu || progressModalOpen) return;
+			// A subpage's shortcuts only while the cursor is in it (the card has its own)
+			if (subpage && !listPageElement?.contains(document.activeElement)) return;
 
 			// Esc in the filter pane closes the pane (not the list) and returns to the list
 			if (event.key === 'Escape' && event.target instanceof Element && event.target.closest('.filter-pane')) {
@@ -730,7 +750,7 @@
 			if (page.page.card_page_id) {
 				if (page.page.modal_card) {
 					// Open as modal card
-					await openModalCard({});
+					await openModalCard({ ...newRecordDefaults }); // a subpage: the link values
 				} else {
 					// Navigate to card page
 					onaction?.(actionName, undefined);
@@ -1123,6 +1143,30 @@
 	// with the table's defaults from the init endpoint when they arrive; if that fails it stays
 	// blank so data entry is never blocked. The initial values are kept in _pristine: only
 	// changes away from them count as user edits, so defaults never trigger an insert.
+	// AutoSplitKey: the line number (the last primary key field) for a new row below the
+	// cursor row — halfway to the next line, 10000 more at the end
+	function autoSplitKeyValue(): Record<string, any> {
+		if (!page.page.auto_split_key || primaryKeyFieldsList.length === 0) return {};
+		const field = primaryKeyFieldsList[primaryKeyFieldsList.length - 1];
+		const saved = displayRecords.filter((r) => !r._isNew);
+		const anchor = selectedIndex >= 0 ? displayRecords[selectedIndex] : undefined;
+		let after: number | undefined;
+		let before: number | undefined;
+		if (anchor && !anchor._isNew) {
+			after = lineNo(anchor[field]);
+			const next = displayRecords.slice(selectedIndex + 1).find((r) => !r._isNew);
+			before = next ? lineNo(next[field]) : undefined;
+		} else if (saved.length > 0) {
+			after = Math.max(...saved.map((r) => lineNo(r[field]) ?? 0));
+		}
+		const value = splitLineNo(after, before);
+		if (value === null) {
+			toast.error(t(ERR.NO_ROOM_FOR_LINE));
+			return {};
+		}
+		return { [field]: value };
+	}
+
 	function createNewRecord(): Record<string, any> {
 		const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 		// All repeater fields start as empty strings so composite PK fields are always defined
@@ -1130,6 +1174,9 @@
 		for (const f of page.page.layout.repeater?.fields ?? []) {
 			blank[f.source] = '';
 		}
+		// A subpage's link values (the card's key), and the line number (AutoSplitKey): part
+		// of the new row from the start, not user edits
+		Object.assign(blank, newRecordDefaults, autoSplitKeyValue());
 		void applyNewRecordDefaults(tempId, blank);
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
@@ -1144,8 +1191,11 @@
 		}
 		const row = editableRecords.find(r => r._tempId === tempId);
 		if (!row || row._isNew !== true || !defaults) return;
+		const fixedKeys = new Set([...Object.keys(newRecordDefaults), ...Object.keys(autoSplitKeyValue())]);
 		for (const [key, value] of Object.entries(defaults)) {
-			// Never overwrite what the user already typed while the defaults were loading
+			// Never overwrite what the user already typed while the defaults were loading, nor
+			// the link values and the line number
+			if (fixedKeys.has(key)) continue;
 			if (sameFieldValue(row[key], blank[key])) {
 				row[key] = value;
 			}
@@ -2130,7 +2180,7 @@
 		// index is a displayed row (search/sort applied), not an index into records
 		const record = displayRecords[index];
 		// Opened from a codeunit (RunModal): the record is picked, no card opens
-		if (record && onclose) {
+		if (record && pickOnEnter) {
 			onrowclick?.(record, cardNavigationQuery);
 			return;
 		}
@@ -2188,7 +2238,7 @@
 				if (total > 0) selection = selectAll(selection);
 			}) as () => void;
 			map['Enter'] = () => {
-				if (page.page.card_page_id || onclose) {
+				if (page.page.card_page_id || pickOnEnter) {
 					openCard();
 				} else if (page.page.editable && selectedIndex >= 0) {
 					enterCellSelected(selectedIndex, editColumn());
@@ -2272,7 +2322,7 @@
 
 	async function openCard() {
 		// Opened from a codeunit (RunModal): Enter picks the record, no card opens
-		if (selectedRecord && onclose) {
+		if (selectedRecord && pickOnEnter) {
 			onrowclick?.(selectedRecord, cardNavigationQuery);
 			return;
 		}
@@ -2309,6 +2359,7 @@
 	const cardNavigationQuery = $derived(
 		navigationQuery({
 			filters: currentFilters,
+			fixed_filters: fixedFilters,
 			search: searchQuery,
 			search_fields: visibleColumns()
 				.map((f) => f.source)
@@ -2754,8 +2805,8 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="list-page" class:embedded={!!onclose} use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
-	<PageHeader title={page.page.caption} onclose={returnUrl || onclose ? closeList : undefined}>
+<div class="list-page" class:embedded={pickOnEnter} class:subpage use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
+	<PageHeader title={page.page.caption} onclose={returnUrl || (onclose && !subpage) ? closeList : undefined}>
 		{#snippet leftActions()}
 			{#if page.page.editable}
 				<!-- Save state indicator - fixed width container to prevent layout shift -->
@@ -3048,7 +3099,7 @@
 					<tr
 						data-row-index={index}
 						onmousedown={(e) => handleRowMouseDown(index, e)}
-						ondblclick={onclose ? () => onrowclick?.(record, cardNavigationQuery) : undefined}
+						ondblclick={pickOnEnter ? () => onrowclick?.(record, cardNavigationQuery) : undefined}
 						onmouseenter={() => handleRowDragOver(index)}
 						class={cn(
 							isNavigation ? 'cursor-pointer' : '',
@@ -3521,6 +3572,12 @@
 	/* Opened from a codeunit (RunModal): fills the modal */
 	.list-page.embedded {
 		height: 100%;
+	}
+
+	/* A subpage inside a card: a part of the card, room for about ten lines */
+	.list-page.subpage {
+		height: 26rem;
+		@apply gap-2;
 	}
 
 	.list-content {

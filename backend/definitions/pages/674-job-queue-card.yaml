@@ -59,6 +59,14 @@ page:
             editable: true
             table_relation: Language
 
+      # Subpage: the job queue's log entries (page 673), linked to this job queue
+      - name: Log Entries
+        caption: Log Entries
+        subpage:
+          page_id: 673
+          link:
+            job_queue_no: "no"   # Job Queue Entry.job_queue_no = this card's no
+
   actions:
     - name: Back to List
       caption: Back to List

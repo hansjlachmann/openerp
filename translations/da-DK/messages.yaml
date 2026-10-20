@@ -52,6 +52,7 @@ messages:
   ERR_FAILED_SAVE_RECORD: "Kunne ikke gemme post"
   ERR_FAILED_LOAD_CARD_PAGE: "Kunne ikke indlæse kortside"
   ERR_FAILED_START_JOB: "Kunne ikke starte job"
+  ERR_NO_ROOM_FOR_LINE: "Der er ikke plads til at indsætte en linje her: linjenumrene ligger for tæt. Tilføj linjen til sidst i stedet."
   ERR_CODEUNIT_FAILED: "Handling fejlede"
   ERR_FAILED_LOAD_MENU: "Kunne ikke indlæse menu"
   ERR_SAVE_BLOCKED: "Gemning fejlede. Ret venligst fejlen før du fortsætter."
@@ -223,6 +224,7 @@ messages:
   CARD_SELECT_OR_CREATE: "Vælg en post fra listen eller opret en ny."
   CARD_CREATE_NEW: "Opret ny"
   CARD_CLEAR_FORM: "Ryd formular"
+  CARD_SAVE_FIRST: "Gem posten først for at tilføje linjer her."
 
   # List Page
   LIST_SEARCH_PLACEHOLDER: "Søg... (Ctrl+F)"
