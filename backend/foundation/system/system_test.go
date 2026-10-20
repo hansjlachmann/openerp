@@ -211,3 +211,80 @@ func TestDialog(t *testing.T) {
 		t.Errorf("Message: %+v", r)
 	}
 }
+
+func TestMoreTextFunctions(t *testing.T) {
+	if ConvertStr("a-b-c", "-", "_") != "a_b_c" || ConvertStr("abc", "ab", "x") != "abc" || ConvertStr("ÆØ", "ÆØ", "AO") != "AO" {
+		t.Error("ConvertStr")
+	}
+	if InsStr("ac", "b", 2) != "abc" || InsStr("ab", "c", 9) != "abc" || InsStr("bc", "a", 0) != "abc" {
+		t.Error("InsStr")
+	}
+	if DelStr("abcdef", 2, 3) != "aef" || DelStr("abcdef", 4) != "abc" || DelStr("abc", 9, 1) != "abc" {
+		t.Error("DelStr")
+	}
+	// EAN-13 check digit: weights 1313…, check digit of 400638133393 is 1
+	if n, err := StrCheckSum("400638133393", "131313131313"); err != nil || n != 1 {
+		t.Errorf("StrCheckSum EAN = %d, %v", n, err)
+	}
+	if n, err := StrCheckSum("1234", ""); err != nil || n != 0 { // 10 % 10 = 0
+		t.Errorf("StrCheckSum = %d, %v", n, err)
+	}
+	if _, err := StrCheckSum("12a", ""); err == nil {
+		t.Error("StrCheckSum accepted a letter")
+	}
+}
+
+func TestMoreDateFunctions(t *testing.T) {
+	d := date("2026-10-20") // Tuesday, ISO week 43
+	if Date2DWY(d, 1) != 2 || Date2DWY(d, 2) != 43 || Date2DWY(d, 3) != 2026 || Date2DWY(d, 4) != 0 {
+		t.Error("Date2DWY")
+	}
+	if Date2DWY(date("2027-01-01"), 2) != 53 || Date2DWY(date("2027-01-01"), 3) != 2026 {
+		t.Error("Date2DWY at the year end: 1 January 2027 is in week 53 of 2026")
+	}
+	if got, err := DWY2Date(2, 43, 2026); err != nil || got.String() != "2026-10-20" {
+		t.Errorf("DWY2Date = %v, %v", got, err)
+	}
+	if got, err := DWY2Date(1, 1, 2026); err != nil || got.String() != "2025-12-29" {
+		t.Errorf("DWY2Date week 1 = %v, %v", got, err)
+	}
+	if _, err := DWY2Date(1, 53, 2025); err == nil {
+		t.Error("2025 has no week 53")
+	}
+	if _, err := DWY2Date(8, 1, 2026); err == nil {
+		t.Error("weekday 8 accepted")
+	}
+	at := time.Date(0, 1, 1, 14, 30, 0, 0, time.Local)
+	dt := CreateDateTime(d, at)
+	if DT2Date(dt).String() != "2026-10-20" || DT2Time(dt).Hour() != 14 || DT2Time(dt).Minute() != 30 {
+		t.Errorf("CreateDateTime/DT2Date/DT2Time: %v", dt)
+	}
+	if !CreateDateTime(types.Date{}, at).IsZero() || !DT2Date(types.DateTime{}).IsZero() {
+		t.Error("blank date-time")
+	}
+	if Time().Year() != 0 {
+		t.Error("Time is a time of day")
+	}
+}
+
+func TestMoreSystemFunctions(t *testing.T) {
+	for range 100 {
+		if n := Random(6); n < 1 || n > 6 {
+			t.Fatalf("Random(6) = %d", n)
+		}
+	}
+	if Random(0) != 1 {
+		t.Error("Random(0)")
+	}
+	g := CreateGuid()
+	if !guidPattern.MatchString(g) || g[14] != '4' || g == CreateGuid() || IsNullGuid(g) {
+		t.Errorf("CreateGuid %q", g)
+	}
+	if !IsNullGuid("") || !IsNullGuid("00000000-0000-0000-0000-000000000000") || !IsNullGuid("{00000000-0000-0000-0000-000000000000}") || !IsNullGuid("x") {
+		t.Error("IsNullGuid")
+	}
+	if Confirm("Delete %1?", "C1") {
+		t.Error("Confirm without a dialog must be false")
+	}
+	_ = UserId() // no session context: ""
+}

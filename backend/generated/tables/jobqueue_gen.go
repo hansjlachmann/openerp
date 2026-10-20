@@ -134,6 +134,10 @@ type JobQueue struct {
 
 	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
 	lockForUpdate bool
+
+	// Mark / MarkedOnly: the marked records (primary key values by key text)
+	marks         map[string][]interface{}
+	markedOnly    bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -1612,7 +1616,7 @@ func (t *JobQueue) Reset() {
 
 // buildWhereClause builds WHERE clause from current filters and search
 func (t *JobQueue) buildWhereClause() (string, []interface{}) {
-	if len(t.filters) == 0 && t.searchText == "" {
+	if len(t.filters) == 0 && t.searchText == "" && !t.markedOnly {
 		return "1=1", nil
 	}
 
@@ -1666,6 +1670,20 @@ func (t *JobQueue) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("%s <= ?", filter.fieldName))
 				args = append(args, filter.maxValue)
 			}
+		}
+	}
+
+	// MarkedOnly: only the marked records
+	if t.markedOnly {
+		if len(t.marks) == 0 {
+			conditions = append(conditions, "1=0")
+		} else {
+			var keys []string
+			for _, key := range t.marks {
+				keys = append(keys, "(no = ?)")
+				args = append(args, key...)
+			}
+			conditions = append(conditions, "("+strings.Join(keys, " OR ")+")")
 		}
 	}
 
@@ -2734,14 +2752,26 @@ func (t *JobQueue) SetFieldValue(no int, value any) bool {
 			t.No = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.No = types.NewCode(v)
+			return true
+		}
 	case 2:
 		if v, ok := value.(types.Text); ok {
 			t.Description = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Description = types.NewText(v)
+			return true
+		}
 	case 3:
 		if v, ok := value.(types.Text); ok {
 			t.Description_2 = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Description_2 = types.NewText(v)
 			return true
 		}
 	case 4:
@@ -2757,6 +2787,10 @@ func (t *JobQueue) SetFieldValue(no int, value any) bool {
 	case 6:
 		if v, ok := value.(types.Text); ok {
 			t.Parameter = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Parameter = types.NewText(v)
 			return true
 		}
 	case 7:
@@ -2784,6 +2818,10 @@ func (t *JobQueue) SetFieldValue(no int, value any) bool {
 			t.Notification_email = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Notification_email = types.NewText(v)
+			return true
+		}
 	case 12:
 		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 3 {
 			t.Notify_on = JobQueueNotify_on(i)
@@ -2792,6 +2830,10 @@ func (t *JobQueue) SetFieldValue(no int, value any) bool {
 	case 13:
 		if v, ok := value.(types.Code); ok {
 			t.Notification_language = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Notification_language = types.NewCode(v)
 			return true
 		}
 	}
@@ -2905,6 +2947,158 @@ func (t *JobQueue) forUpdate() string {
 		return " FOR UPDATE"
 	}
 	return ""
+}
+
+// MaxStrLen returns the maximum length of a Code or Text field (0 for other fields)
+func (t *JobQueue) MaxStrLen(fieldName string) int {
+	for _, f := range t.GetFields() {
+		if strings.EqualFold(f.Name, fieldName) {
+			return f.Length
+		}
+	}
+	return 0
+}
+
+// GetFilter returns the filter on a field as text ("C1", "10..20", or the expression), ""
+// without one
+func (t *JobQueue) GetFilter(fieldName string) string {
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		return ""
+	}
+	filter, ok := t.filters[column]
+	switch {
+	case !ok || filter.invalidField:
+		return ""
+	case filter.isExpression:
+		return filter.filterExpr
+	case filter.minValue != nil && filter.maxValue != nil && fmt.Sprint(filter.minValue) == fmt.Sprint(filter.maxValue):
+		return fmt.Sprint(filter.minValue)
+	case filter.minValue != nil && filter.maxValue != nil:
+		return fmt.Sprintf("%v..%v", filter.minValue, filter.maxValue)
+	}
+	return ""
+}
+
+// GetRangeMin returns the lower end of the SetRange filter on a field (nil without one)
+func (t *JobQueue) GetRangeMin(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.minValue
+		}
+	}
+	return nil
+}
+
+// GetRangeMax returns the upper end of the SetRange filter on a field (nil without one)
+func (t *JobQueue) GetRangeMax(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.maxValue
+		}
+	}
+	return nil
+}
+
+// SetRecFilter filters on the primary key of the current record (SetRecFilter)
+func (t *JobQueue) SetRecFilter() {
+	t.SetRange("no", t.No)
+}
+
+// recordKey returns the primary key values of the current record and their text
+func (t *JobQueue) recordKey() ([]interface{}, string) {
+	values := []interface{}{t.No}
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = fmt.Sprint(v)
+	}
+	return values, strings.Join(parts, ",")
+}
+
+// Mark marks (or with false unmarks) the current record and reports whether it is marked;
+// without an argument it only reports it (Mark)
+func (t *JobQueue) Mark(mark ...bool) bool {
+	values, key := t.recordKey()
+	if len(mark) > 0 {
+		if mark[0] {
+			if t.marks == nil {
+				t.marks = map[string][]interface{}{}
+			}
+			t.marks[key] = values
+		} else {
+			delete(t.marks, key)
+		}
+	}
+	_, marked := t.marks[key]
+	return marked
+}
+
+// MarkedOnly limits the following reads to the marked records (MarkedOnly)
+func (t *JobQueue) MarkedOnly(only bool) {
+	t.markedOnly = only
+}
+
+// ClearMarks removes all marks (ClearMarks)
+func (t *JobQueue) ClearMarks() {
+	t.marks = nil
+}
+
+// RecordId returns the table and the primary key of the current record: "Customer: C1"
+func (t *JobQueue) RecordId() string {
+	_, key := t.recordKey()
+	return JobQueueTableName + ": " + key
+}
+
+// CountApprox returns the number of records matching the filters (the same as Count)
+func (t *JobQueue) CountApprox() int {
+	return t.Count()
+}
+
+// Rename gives the current (read) record a new primary key — the values in key order — and
+// modifies it with the OnRename trigger; fields of other tables that refer to it follow
+// (Rename). It reports false when a value has the wrong type or the modify fails.
+func (t *JobQueue) Rename(newKey ...interface{}) bool {
+	numbers := []int{1}
+	if len(newKey) != len(numbers) {
+		return false
+	}
+	for i, no := range numbers {
+		if !t.SetFieldValue(no, newKey[i]) {
+			return false
+		}
+	}
+	return t.Modify(true)
+}
+
+// Copy copies another record's values and filters (Copy)
+func (t *JobQueue) Copy(from *JobQueue) {
+	t.TransferFields(from)
+	t.CopyFilters(from)
+}
+
+// Find finds a record (Find): "-" the first, "+" the last, "=" the record with the current
+// primary key — within the filters
+func (t *JobQueue) Find(which ...string) bool {
+	how := "="
+	if len(which) > 0 && which[0] != "" {
+		how = which[0]
+	}
+	switch how {
+	case "-":
+		return t.FindFirst()
+	case "+":
+		return t.FindLast()
+	case "=":
+		saved := make(map[string]*jobQueueFilterCondition, len(t.filters))
+		for k, v := range t.filters {
+			saved[k] = v
+		}
+		t.SetRecFilter()
+		found := t.FindFirst()
+		t.filters = saved
+		return found
+	}
+	return false
 }
 
 // Init clears the fields that are not part of the primary key and sets their initial values

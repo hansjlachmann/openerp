@@ -179,3 +179,95 @@ func TestLockTableReadsForUpdate(t *testing.T) {
 		t.Errorf("SQLite queries %q", lite.queries)
 	}
 }
+
+func TestMoreRecordFunctions(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	// Rename carries the new number over to the ledger entries
+	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	for _, no := range []string{"C1", "C2", "C3"} {
+		c := &gtables.Customer{}
+		c.InitWithDBType(db, "c1", database.DBTypeSQLite)
+		c.No, c.Name = types.NewCode(no), types.NewText("Name "+no)
+		if !c.Insert(false) {
+			t.Fatalf("insert %s", no)
+		}
+	}
+	var c gtables.Customer
+	c.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	if c.MaxStrLen("name") != 50 || c.MaxStrLen("credit_limit") != 0 {
+		t.Errorf("MaxStrLen %d", c.MaxStrLen("name"))
+	}
+
+	// Filters
+	c.SetRange("no", "C1", "C2")
+	if c.GetFilter("no") != "C1..C2" || c.GetRangeMin("no") != "C1" || c.GetRangeMax("no") != "C2" || c.GetFilter("name") != "" {
+		t.Errorf("GetFilter %q", c.GetFilter("no"))
+	}
+	c.SetFilter("city", "Oslo|Bergen")
+	if c.GetFilter("city") != "Oslo|Bergen" {
+		t.Errorf("GetFilter expression %q", c.GetFilter("city"))
+	}
+	c.Reset()
+
+	// Find, SetRecFilter, RecordId
+	if !c.Find("+") || c.No != "C3" || !c.Find("-") || c.No != "C1" || c.RecordId() != "Customer: C1" {
+		t.Errorf("Find -/+: %s", c.No)
+	}
+	c.No = types.NewCode("C2")
+	if !c.Find("=") || c.Name != "Name C2" || c.GetFilter("no") != "" {
+		t.Errorf("Find =: %s, filter %q", c.Name, c.GetFilter("no"))
+	}
+	c.SetRecFilter()
+	if c.Count() != 1 || c.CountApprox() != 1 {
+		t.Errorf("SetRecFilter: %d", c.Count())
+	}
+	c.Reset()
+
+	// Mark / MarkedOnly
+	c.Get(types.NewCode("C1"))
+	c.Mark(true)
+	c.Get(types.NewCode("C3"))
+	if !c.Mark(true) {
+		t.Error("Mark(true) must report marked")
+	}
+	c.MarkedOnly(true)
+	if c.Count() != 2 {
+		t.Errorf("MarkedOnly: %d records", c.Count())
+	}
+	c.Get(types.NewCode("C3"))
+	c.Mark(false)
+	if c.Count() != 1 {
+		t.Errorf("after unmarking: %d", c.Count())
+	}
+	c.ClearMarks()
+	if c.Count() != 0 {
+		t.Errorf("MarkedOnly without marks: %d", c.Count())
+	}
+	c.MarkedOnly(false)
+
+	// Copy and Rename
+	var other gtables.Customer
+	other.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	c.SetRange("name", "Name C2")
+	c.Get(types.NewCode("C2"))
+	other.Copy(&c)
+	if other.Name != "Name C2" || other.GetFilter("name") != "Name C2" {
+		t.Errorf("Copy: %s, %q", other.Name, other.GetFilter("name"))
+	}
+	if !c.Rename("C9") {
+		t.Fatalf("Rename: %v", c.TriggerError())
+	}
+	var check gtables.Customer
+	check.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	if check.Get(types.NewCode("C2")) || !check.Get(types.NewCode("C9")) || check.Name != "Name C2" {
+		t.Error("Rename did not move C2 to C9")
+	}
+	if c.Rename(42) || c.Rename("A", "B") {
+		t.Error("Rename with a wrong type or count accepted")
+	}
+}

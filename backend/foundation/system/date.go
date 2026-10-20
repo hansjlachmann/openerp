@@ -181,3 +181,69 @@ func currentPeriod(t time.Time, unit byte, sign int) (time.Time, bool) {
 	}
 	return t, false
 }
+
+// Time returns the current time of day
+func Time() time.Time {
+	now := time.Now()
+	return time.Date(0, 1, 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.Local)
+}
+
+// CreateDateTime combines a date and a time of day; a blank date gives a blank date-time
+func CreateDateTime(d types.Date, t time.Time) types.DateTime {
+	if d.IsZero() {
+		return types.DateTime{}
+	}
+	return types.NewDateTimeFromTime(time.Date(d.Year(), d.Month(), d.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.Local))
+}
+
+// DT2Date returns the date of a date-time (in local time)
+func DT2Date(dt types.DateTime) types.Date {
+	if dt.IsZero() {
+		return types.Date{}
+	}
+	return types.NewDateFromTime(dt.Local())
+}
+
+// DT2Time returns the time of day of a date-time (in local time)
+func DT2Time(dt types.DateTime) time.Time {
+	l := dt.Local()
+	return time.Date(0, 1, 1, l.Hour(), l.Minute(), l.Second(), l.Nanosecond(), time.Local)
+}
+
+// Date2DWY returns a part of a date's ISO week: what 1 = weekday (1 Monday … 7 Sunday),
+// 2 = week number, 3 = the year the week belongs to (0 otherwise)
+func Date2DWY(d types.Date, what int) int {
+	year, week := d.ISOWeek()
+	switch what {
+	case 1:
+		return isoWeekday(d.Time)
+	case 2:
+		return week
+	case 3:
+		return year
+	}
+	return 0
+}
+
+// DWY2Date returns the date of a weekday (1 Monday … 7 Sunday) in an ISO week and year; week
+// and year default to the work date's. A week the year does not have is an error.
+func DWY2Date(weekday int, weekYear ...int) (types.Date, error) {
+	year, week := WorkDate().ISOWeek()
+	if len(weekYear) > 0 {
+		week = weekYear[0]
+	}
+	if len(weekYear) > 1 {
+		year = weekYear[1]
+	}
+	if weekday < 1 || weekday > 7 || week < 1 || week > 53 {
+		return types.Date{}, fmt.Errorf("weekday %d of week %d %d is not a date", weekday, week, year)
+	}
+	// The Monday of week 1 is the Monday of the week with 4 January
+	jan4 := time.Date(year, 1, 4, 0, 0, 0, 0, time.UTC)
+	monday := jan4.AddDate(0, 0, 1-isoWeekday(jan4))
+	d := monday.AddDate(0, 0, (week-1)*7+weekday-1)
+	if y, w := d.ISOWeek(); y != year || w != week {
+		return types.Date{}, fmt.Errorf("%d has no week %d", year, week)
+	}
+	return types.NewDateFromTime(d), nil
+}

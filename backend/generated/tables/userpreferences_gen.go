@@ -64,6 +64,10 @@ type UserPreferences struct {
 
 	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
 	lockForUpdate bool
+
+	// Mark / MarkedOnly: the marked records (primary key values by key text)
+	marks         map[string][]interface{}
+	markedOnly    bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -1125,7 +1129,7 @@ func (t *UserPreferences) Reset() {
 
 // buildWhereClause builds WHERE clause from current filters and search
 func (t *UserPreferences) buildWhereClause() (string, []interface{}) {
-	if len(t.filters) == 0 && t.searchText == "" {
+	if len(t.filters) == 0 && t.searchText == "" && !t.markedOnly {
 		return "1=1", nil
 	}
 
@@ -1167,6 +1171,20 @@ func (t *UserPreferences) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("%s <= ?", filter.fieldName))
 				args = append(args, filter.maxValue)
 			}
+		}
+	}
+
+	// MarkedOnly: only the marked records
+	if t.markedOnly {
+		if len(t.marks) == 0 {
+			conditions = append(conditions, "1=0")
+		} else {
+			var keys []string
+			for _, key := range t.marks {
+				keys = append(keys, "(user_id = ? AND page_id = ? AND preference_type = ? AND preference_name = ?)")
+				args = append(args, key...)
+			}
+			conditions = append(conditions, "("+strings.Join(keys, " OR ")+")")
 		}
 	}
 
@@ -1941,6 +1959,10 @@ func (t *UserPreferences) SetFieldValue(no int, value any) bool {
 			t.User_id = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.User_id = types.NewCode(v)
+			return true
+		}
 	case 2:
 		if v, ok := value.(int); ok {
 			t.Page_id = v
@@ -1951,14 +1973,26 @@ func (t *UserPreferences) SetFieldValue(no int, value any) bool {
 			t.Preference_type = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Preference_type = types.NewCode(v)
+			return true
+		}
 	case 4:
 		if v, ok := value.(types.Code); ok {
 			t.Preference_name = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Preference_name = types.NewCode(v)
+			return true
+		}
 	case 5:
 		if v, ok := value.(types.Text); ok {
 			t.Preference_data = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Preference_data = types.NewText(v)
 			return true
 		}
 	case 6:
@@ -2074,6 +2108,161 @@ func (t *UserPreferences) forUpdate() string {
 		return " FOR UPDATE"
 	}
 	return ""
+}
+
+// MaxStrLen returns the maximum length of a Code or Text field (0 for other fields)
+func (t *UserPreferences) MaxStrLen(fieldName string) int {
+	for _, f := range t.GetFields() {
+		if strings.EqualFold(f.Name, fieldName) {
+			return f.Length
+		}
+	}
+	return 0
+}
+
+// GetFilter returns the filter on a field as text ("C1", "10..20", or the expression), ""
+// without one
+func (t *UserPreferences) GetFilter(fieldName string) string {
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		return ""
+	}
+	filter, ok := t.filters[column]
+	switch {
+	case !ok || filter.invalidField:
+		return ""
+	case filter.isExpression:
+		return filter.filterExpr
+	case filter.minValue != nil && filter.maxValue != nil && fmt.Sprint(filter.minValue) == fmt.Sprint(filter.maxValue):
+		return fmt.Sprint(filter.minValue)
+	case filter.minValue != nil && filter.maxValue != nil:
+		return fmt.Sprintf("%v..%v", filter.minValue, filter.maxValue)
+	}
+	return ""
+}
+
+// GetRangeMin returns the lower end of the SetRange filter on a field (nil without one)
+func (t *UserPreferences) GetRangeMin(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.minValue
+		}
+	}
+	return nil
+}
+
+// GetRangeMax returns the upper end of the SetRange filter on a field (nil without one)
+func (t *UserPreferences) GetRangeMax(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.maxValue
+		}
+	}
+	return nil
+}
+
+// SetRecFilter filters on the primary key of the current record (SetRecFilter)
+func (t *UserPreferences) SetRecFilter() {
+	t.SetRange("user_id", t.User_id)
+	t.SetRange("page_id", t.Page_id)
+	t.SetRange("preference_type", t.Preference_type)
+	t.SetRange("preference_name", t.Preference_name)
+}
+
+// recordKey returns the primary key values of the current record and their text
+func (t *UserPreferences) recordKey() ([]interface{}, string) {
+	values := []interface{}{t.User_id, t.Page_id, t.Preference_type, t.Preference_name}
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = fmt.Sprint(v)
+	}
+	return values, strings.Join(parts, ",")
+}
+
+// Mark marks (or with false unmarks) the current record and reports whether it is marked;
+// without an argument it only reports it (Mark)
+func (t *UserPreferences) Mark(mark ...bool) bool {
+	values, key := t.recordKey()
+	if len(mark) > 0 {
+		if mark[0] {
+			if t.marks == nil {
+				t.marks = map[string][]interface{}{}
+			}
+			t.marks[key] = values
+		} else {
+			delete(t.marks, key)
+		}
+	}
+	_, marked := t.marks[key]
+	return marked
+}
+
+// MarkedOnly limits the following reads to the marked records (MarkedOnly)
+func (t *UserPreferences) MarkedOnly(only bool) {
+	t.markedOnly = only
+}
+
+// ClearMarks removes all marks (ClearMarks)
+func (t *UserPreferences) ClearMarks() {
+	t.marks = nil
+}
+
+// RecordId returns the table and the primary key of the current record: "Customer: C1"
+func (t *UserPreferences) RecordId() string {
+	_, key := t.recordKey()
+	return UserPreferencesTableName + ": " + key
+}
+
+// CountApprox returns the number of records matching the filters (the same as Count)
+func (t *UserPreferences) CountApprox() int {
+	return t.Count()
+}
+
+// Rename gives the current (read) record a new primary key — the values in key order — and
+// modifies it with the OnRename trigger; fields of other tables that refer to it follow
+// (Rename). It reports false when a value has the wrong type or the modify fails.
+func (t *UserPreferences) Rename(newKey ...interface{}) bool {
+	numbers := []int{1, 2, 3, 4}
+	if len(newKey) != len(numbers) {
+		return false
+	}
+	for i, no := range numbers {
+		if !t.SetFieldValue(no, newKey[i]) {
+			return false
+		}
+	}
+	return t.Modify(true)
+}
+
+// Copy copies another record's values and filters (Copy)
+func (t *UserPreferences) Copy(from *UserPreferences) {
+	t.TransferFields(from)
+	t.CopyFilters(from)
+}
+
+// Find finds a record (Find): "-" the first, "+" the last, "=" the record with the current
+// primary key — within the filters
+func (t *UserPreferences) Find(which ...string) bool {
+	how := "="
+	if len(which) > 0 && which[0] != "" {
+		how = which[0]
+	}
+	switch how {
+	case "-":
+		return t.FindFirst()
+	case "+":
+		return t.FindLast()
+	case "=":
+		saved := make(map[string]*userPreferencesFilterCondition, len(t.filters))
+		for k, v := range t.filters {
+			saved[k] = v
+		}
+		t.SetRecFilter()
+		found := t.FindFirst()
+		t.filters = saved
+		return found
+	}
+	return false
 }
 
 // Init clears the fields that are not part of the primary key and sets their initial values

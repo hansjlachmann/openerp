@@ -9,6 +9,7 @@
 package system
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -172,4 +173,66 @@ func StrSubstNo(s string, values ...any) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// ConvertStr replaces every character of s found in from with the character at the same
+// position in to ("a-b", "-", "_" → "a_b"); s is returned unchanged when from and to do not
+// have the same length
+func ConvertStr(s, from, to string) string {
+	f, t := []rune(from), []rune(to)
+	if len(f) != len(t) || len(f) == 0 {
+		return s
+	}
+	return strings.Map(func(r rune) rune {
+		for i, c := range f {
+			if c == r {
+				return t[i]
+			}
+		}
+		return r
+	}, s)
+}
+
+// InsStr inserts sub into s before position (1-based); past the end it is appended
+func InsStr(s, sub string, position int) string {
+	runes := []rune(s)
+	i := min(max(position-1, 0), len(runes))
+	return string(runes[:i]) + sub + string(runes[i:])
+}
+
+// DelStr deletes length characters (default: the rest) of s from position (1-based)
+func DelStr(s string, position int, length ...int) string {
+	runes := []rune(s)
+	start := max(position-1, 0)
+	if start >= len(runes) {
+		return s
+	}
+	end := len(runes)
+	if len(length) > 0 {
+		end = min(start+max(length[0], 0), len(runes))
+	}
+	return string(runes[:start]) + string(runes[end:])
+}
+
+// StrCheckSum returns the check digit of a number string: the weighted sum of its digits
+// (weights default 1 each; a shorter weight string is padded with 1) taken modulo modulus
+// (default 10), subtracted from modulus — (modulus - sum % modulus) % modulus. Digits only.
+func StrCheckSum(s string, weights string, modulus ...int) (int, error) {
+	mod := 10
+	if len(modulus) > 0 && modulus[0] > 0 {
+		mod = modulus[0]
+	}
+	if len(weights) > len(s) {
+		return 0, fmt.Errorf("StrCheckSum: the weight string is longer than %q", s)
+	}
+	weights += strings.Repeat("1", len(s)-len(weights))
+	sum := 0
+	for i := range len(s) {
+		d, w := s[i], weights[i]
+		if d < '0' || d > '9' || w < '0' || w > '9' {
+			return 0, fmt.Errorf("StrCheckSum: %q and %q must be digits", s, weights)
+		}
+		sum += int(d-'0') * int(w-'0')
+	}
+	return (mod - sum%mod) % mod, nil
 }

@@ -36,8 +36,7 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       installed apps** — done 2026-10-13 (sections below).
 - [x] **System functions in Go** (first and second set) — done 2026-10-20: package
       `backend/foundation/system`, generated record methods, `codeunits.Run` (see the section below).
-- [ ] **System functions — remaining** (high priority) — after the first and second set; see
-      "System functions — remaining" below.
+- [x] **System functions — remaining** — done 2026-10-20 (a few left out on purpose, see below).
 - [x] **Production: upgraded 0.1.91 → 0.1.97** (2026-10-20). Backup first, `git pull` (compose file),
       migrations 10 (codeunit/page numbers) and 11 (theme codes) applied, base application 0.1.97
       in the log. 0.1.98 (preferences fix) is not released yet — the release step fails, see below.
@@ -217,22 +216,22 @@ Table-driven tests per function with the results gives (especially `CalcDate`, `
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
 an example; CLAUDE.md rule "use the system functions in business logic".
 
-## System functions — remaining (HIGH priority, after the first and second set)
+## System functions — remaining ✅ DONE (2026-10-20)
 
-The rest of the common system functions, recorded for later (see "Feature: system
-functions" for the rules: `system.` package / generated record methods, easiest Go way):
-- [ ] Text: `ConvertStr`, `InsStr`, `DelStr` (in `strutils.go`), `MaxStrLen`, `StrCheckSum`. The
-      instance methods (`Contains`, `Replace`, `Split`, `Trim`, `StartsWith` …) are Go's `strings` — no copies.
-- [ ] Date/time: `Time`, `CreateDateTime`, `DT2Date`, `DT2Time`, `Date2DWY`, `DWY2Date`,
-      `ClosingDate`/`NormalDate` (needed with accounting periods), `DateFormula` field type, `Duration`.
-- [ ] System: `Random`/`Randomize`, `CreateGuid`, `IsNullGuid`, `UserId` (exists as
-      `codeunits.CurrentUserID`), `Commit` (decide: our code uses explicit transactions).
-- [ ] Dialog: `Confirm` in table/codeunit code (exists for codeunits), `StrMenu` (on the RequestInput dialog).
-- [ ] Record: `Rename(newKey…)` (a key change through `Modify` already renames), `Copy` (record + filters),
-      `GetFilter`, `GetRangeMin`/`GetRangeMax`, `SetRecFilter`, `SetLoadFields`, `Mark`/`MarkedOnly`,
-      `FilterGroup`, `RecordId`, `FieldNo` (after field numbers), `Find('=><')`, `CountApprox`.
-- [ ] Not planned (no Go equivalent needed): `GuiAllowed`, `Sleep`, `Clear`/`ClearAll`, DotNet, files,
-      code coverage, encryption-key management, object import/export.
+Built: text `ConvertStr`, `InsStr`, `DelStr`, `StrCheckSum`; dates `Time`, `CreateDateTime`,
+`DT2Date`, `DT2Time`, `Date2DWY`, `DWY2Date` (ISO weeks); `Random`, `CreateGuid`, `IsNullGuid`,
+`UserId`, `Confirm`; record methods `MaxStrLen`, `GetFilter`, `GetRangeMin`/`GetRangeMax`,
+`SetRecFilter`, `Mark`/`MarkedOnly`/`ClearMarks`, `RecordId`, `CountApprox`, `Rename(newKey…)`,
+`Copy`, `Find("-" | "+" | "=")`. Left out on purpose — build when a feature needs them:
+- [ ] `ClosingDate`/`NormalDate`: closing dates need accounting periods and a date value between
+      two days — with the general ledger.
+- [ ] A `DateFormula` field type (stores a formula, validated by `CalcDate`): needs a new field type
+      in tablegen, the API and the frontend — with the first table that needs one (e.g. Payment Terms
+      Due Date Calculation).
+- [ ] `StrMenu`: needs an option-list input in the codeunit dialog (frontend `ProgressModal`).
+- [ ] `Find(">")`/`Find("<")` (next/previous by the current key), `FilterGroup`, `SetLoadFields`.
+- Not planned (Go has its own way): `Duration` (`time.Duration`), `Commit` (explicit transactions),
+  `Randomize`, `Clear`/`ClearAll`, `GuiAllowed`, `Sleep`, files, DotNet, code coverage.
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
 

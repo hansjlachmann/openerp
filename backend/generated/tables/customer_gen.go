@@ -106,6 +106,10 @@ type Customer struct {
 
 	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
 	lockForUpdate bool
+
+	// Mark / MarkedOnly: the marked records (primary key values by key text)
+	marks         map[string][]interface{}
+	markedOnly    bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -1948,7 +1952,7 @@ func (t *Customer) Reset() {
 
 // buildWhereClause builds WHERE clause from current filters and search
 func (t *Customer) buildWhereClause() (string, []interface{}) {
-	if len(t.filters) == 0 && t.searchText == "" {
+	if len(t.filters) == 0 && t.searchText == "" && !t.markedOnly {
 		return "1=1", nil
 	}
 
@@ -2002,6 +2006,20 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("%s <= ?", filter.fieldName))
 				args = append(args, filter.maxValue)
 			}
+		}
+	}
+
+	// MarkedOnly: only the marked records
+	if t.markedOnly {
+		if len(t.marks) == 0 {
+			conditions = append(conditions, "1=0")
+		} else {
+			var keys []string
+			for _, key := range t.marks {
+				keys = append(keys, "(no = ?)")
+				args = append(args, key...)
+			}
+			conditions = append(conditions, "("+strings.Join(keys, " OR ")+")")
 		}
 	}
 
@@ -3027,9 +3045,17 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.No = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.No = types.NewCode(v)
+			return true
+		}
 	case 2:
 		if v, ok := value.(types.Text); ok {
 			t.Name = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Name = types.NewText(v)
 			return true
 		}
 	case 5:
@@ -3037,9 +3063,17 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.Address = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Address = types.NewText(v)
+			return true
+		}
 	case 91:
 		if v, ok := value.(types.Code); ok {
 			t.Post_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Post_code = types.NewCode(v)
 			return true
 		}
 	case 7:
@@ -3047,9 +3081,17 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.City = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.City = types.NewText(v)
+			return true
+		}
 	case 35:
 		if v, ok := value.(types.Code); ok {
 			t.Country_region_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Country_region_code = types.NewCode(v)
 			return true
 		}
 	case 9:
@@ -3057,9 +3099,17 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.Phonenumber = v
 			return true
 		}
+		if v, ok := value.(string); ok {
+			t.Phonenumber = types.NewText(v)
+			return true
+		}
 	case 27:
 		if v, ok := value.(types.Code); ok {
 			t.Payment_terms_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Payment_terms_code = types.NewCode(v)
 			return true
 		}
 	case 900:
@@ -3190,6 +3240,158 @@ func (t *Customer) forUpdate() string {
 		return " FOR UPDATE"
 	}
 	return ""
+}
+
+// MaxStrLen returns the maximum length of a Code or Text field (0 for other fields)
+func (t *Customer) MaxStrLen(fieldName string) int {
+	for _, f := range t.GetFields() {
+		if strings.EqualFold(f.Name, fieldName) {
+			return f.Length
+		}
+	}
+	return 0
+}
+
+// GetFilter returns the filter on a field as text ("C1", "10..20", or the expression), ""
+// without one
+func (t *Customer) GetFilter(fieldName string) string {
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		return ""
+	}
+	filter, ok := t.filters[column]
+	switch {
+	case !ok || filter.invalidField:
+		return ""
+	case filter.isExpression:
+		return filter.filterExpr
+	case filter.minValue != nil && filter.maxValue != nil && fmt.Sprint(filter.minValue) == fmt.Sprint(filter.maxValue):
+		return fmt.Sprint(filter.minValue)
+	case filter.minValue != nil && filter.maxValue != nil:
+		return fmt.Sprintf("%v..%v", filter.minValue, filter.maxValue)
+	}
+	return ""
+}
+
+// GetRangeMin returns the lower end of the SetRange filter on a field (nil without one)
+func (t *Customer) GetRangeMin(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.minValue
+		}
+	}
+	return nil
+}
+
+// GetRangeMax returns the upper end of the SetRange filter on a field (nil without one)
+func (t *Customer) GetRangeMax(fieldName string) interface{} {
+	if column, ok := t.columnName(fieldName); ok {
+		if filter, ok := t.filters[column]; ok && !filter.isExpression {
+			return filter.maxValue
+		}
+	}
+	return nil
+}
+
+// SetRecFilter filters on the primary key of the current record (SetRecFilter)
+func (t *Customer) SetRecFilter() {
+	t.SetRange("no", t.No)
+}
+
+// recordKey returns the primary key values of the current record and their text
+func (t *Customer) recordKey() ([]interface{}, string) {
+	values := []interface{}{t.No}
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = fmt.Sprint(v)
+	}
+	return values, strings.Join(parts, ",")
+}
+
+// Mark marks (or with false unmarks) the current record and reports whether it is marked;
+// without an argument it only reports it (Mark)
+func (t *Customer) Mark(mark ...bool) bool {
+	values, key := t.recordKey()
+	if len(mark) > 0 {
+		if mark[0] {
+			if t.marks == nil {
+				t.marks = map[string][]interface{}{}
+			}
+			t.marks[key] = values
+		} else {
+			delete(t.marks, key)
+		}
+	}
+	_, marked := t.marks[key]
+	return marked
+}
+
+// MarkedOnly limits the following reads to the marked records (MarkedOnly)
+func (t *Customer) MarkedOnly(only bool) {
+	t.markedOnly = only
+}
+
+// ClearMarks removes all marks (ClearMarks)
+func (t *Customer) ClearMarks() {
+	t.marks = nil
+}
+
+// RecordId returns the table and the primary key of the current record: "Customer: C1"
+func (t *Customer) RecordId() string {
+	_, key := t.recordKey()
+	return CustomerTableName + ": " + key
+}
+
+// CountApprox returns the number of records matching the filters (the same as Count)
+func (t *Customer) CountApprox() int {
+	return t.Count()
+}
+
+// Rename gives the current (read) record a new primary key — the values in key order — and
+// modifies it with the OnRename trigger; fields of other tables that refer to it follow
+// (Rename). It reports false when a value has the wrong type or the modify fails.
+func (t *Customer) Rename(newKey ...interface{}) bool {
+	numbers := []int{1}
+	if len(newKey) != len(numbers) {
+		return false
+	}
+	for i, no := range numbers {
+		if !t.SetFieldValue(no, newKey[i]) {
+			return false
+		}
+	}
+	return t.Modify(true)
+}
+
+// Copy copies another record's values and filters (Copy)
+func (t *Customer) Copy(from *Customer) {
+	t.TransferFields(from)
+	t.CopyFilters(from)
+}
+
+// Find finds a record (Find): "-" the first, "+" the last, "=" the record with the current
+// primary key — within the filters
+func (t *Customer) Find(which ...string) bool {
+	how := "="
+	if len(which) > 0 && which[0] != "" {
+		how = which[0]
+	}
+	switch how {
+	case "-":
+		return t.FindFirst()
+	case "+":
+		return t.FindLast()
+	case "=":
+		saved := make(map[string]*customerFilterCondition, len(t.filters))
+		for k, v := range t.filters {
+			saved[k] = v
+		}
+		t.SetRecFilter()
+		found := t.FindFirst()
+		t.filters = saved
+		return found
+	}
+	return false
 }
 
 // Init clears the fields that are not part of the primary key and sets their initial values
