@@ -35,6 +35,7 @@ const (
 	ErrDeleteTooMany      ErrorCode = "ERR_DELETE_TOO_MANY"
 	ErrDeleteRecordFailed ErrorCode = "ERR_DELETE_RECORD_FAILED"
 	ErrCopyTooMany        ErrorCode = "ERR_COPY_TOO_MANY"
+	ErrSelectionTooMany   ErrorCode = "ERR_SELECTION_TOO_MANY"
 	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
@@ -244,6 +245,11 @@ func DeleteTooMany(max int) *AppError {
 // message); nothing was deleted
 func DeleteRecordFailed(tableCaption, key, reason string) *AppError {
 	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, sentence(reason)}}
+}
+
+// SelectionTooMany: more records are selected than a codeunit may be run on (max)
+func SelectionTooMany(max int) *AppError {
+	return &AppError{Code: ErrSelectionTooMany, Params: []string{strconv.Itoa(max)}}
 }
 
 // CopyTooMany: a copy or paste holds more records than one copy/paste may (max)

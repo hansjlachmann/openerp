@@ -5,6 +5,15 @@
 
 import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 import { toast } from '$lib/stores/toast';
+import { buildQueryString } from '$lib/services/api';
+import type { ListOptions } from '$lib/types/api';
+
+/** The records selected on a list a codeunit is run on: their keys, or all of the list's query */
+export interface JobSelection {
+	keys?: string[];
+	all?: boolean;
+	query?: ListOptions;
+}
 
 export interface ProgressEvent {
 	job_id: string;
@@ -93,15 +102,19 @@ export async function cancelJob(jobId: string): Promise<boolean> {
 export async function startJob(
 	codeunitId: number,
 	record: Record<string, unknown>,
-	callbacks: JobCallbacks = {}
+	callbacks: JobCallbacks = {},
+	selection?: JobSelection
 ): Promise<ProgressEvent | SyncJobResult | null> {
-	// Start the job
-	const response = await fetch('/api/jobs/start', {
+	// Start the job; a list's selection (all: with the list's query) goes along for
+	// rec.SetSelectionFilter in the codeunit
+	const params = selection?.all ? buildQueryString(selection.query) : '';
+	const response = await fetch(`/api/jobs/start${params ? '?' + params : ''}`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
 			codeunit_id: codeunitId,
-			record
+			record,
+			...(selection ? { selection: { keys: selection.keys, all: selection.all } } : {})
 		})
 	});
 

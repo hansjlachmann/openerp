@@ -69,9 +69,14 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 
 	jobQueue := record.(*gtables.JobQueue)
 
+	// The job queues selected on the list (SetSelectionFilter; the current one when only
+	// one is selected)
+	jobQueue.SetSelectionFilter()
+	selected := jobQueue.Count()
+
 	// Simulate a long-running process in a progress window: text fields #n###, a bar @n@@@
 	totalSteps := 10
-	window := system.OpenWindow("Step #1## of #2##\n#3####################\n@4@@@@@@@@@@@@@@@@", 0, totalSteps)
+	window := system.OpenWindow("Job queues selected: #5##\nStep #1## of #2##\n#3####################\n@4@@@@@@@@@@@@@@@@", 0, totalSteps, "", 0, selected)
 	defer window.Close()
 	for i := 1; i <= totalSteps; i++ {
 		window.Update(1, i)

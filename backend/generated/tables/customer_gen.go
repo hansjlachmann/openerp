@@ -98,8 +98,17 @@ type Customer struct {
 	// Field tracking for optimal Modify() operations
 	oldValues map[string]interface{} // Stores original values from Get()
 
-	// Filter state for SetRange/FindFirst/FindLast
+	// Filter state for SetRange/FindFirst/FindLast: the current filter group's filters
 	filters map[string]*customerFilterCondition
+	// FilterGroup: the current filter group and the filters of the other groups; the
+	// filters of all groups apply together
+	filterGroup  int
+	otherFilters map[int]map[string]*customerFilterCondition
+	// Find(">") / Find("<"): the condition for the record after/before the current one
+	seek     string
+	seekArgs []interface{}
+	// The records selected on the list a codeunit was run from (SetSelectionFilter)
+	selection map[string][]interface{}
 
 	// Iteration state for FindSet/Next
 	currentRows *sql.Rows
@@ -1943,9 +1952,12 @@ func (t *Customer) columnName(fieldName string) (string, bool) {
 	return "", false
 }
 
-// Reset clears all filters
+// Reset clears all filters (of all filter groups; back to group 0)
 func (t *Customer) Reset() {
 	t.filters = nil
+	t.otherFilters = nil
+	t.filterGroup = 0
+	t.seek, t.seekArgs = "", nil
 	t.oldValues = nil
 	t.orderByFields = nil
 	t.descending = false
@@ -1959,7 +1971,8 @@ func (t *Customer) Reset() {
 
 // buildWhereClause builds WHERE clause from current filters and search
 func (t *Customer) buildWhereClause() (string, []interface{}) {
-	if len(t.filters) == 0 && t.searchText == "" && !t.markedOnly {
+	filters := t.allFilters()
+	if len(filters) == 0 && t.searchText == "" && !t.markedOnly && t.seek == "" {
 		return "1=1", nil
 	}
 
@@ -1981,7 +1994,7 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 		}
 	}
 
-	for _, filter := range t.filters {
+	for _, filter := range filters {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
 		} else if filter.flowField != "" {
@@ -2030,12 +2043,59 @@ func (t *Customer) buildWhereClause() (string, []interface{}) {
 		}
 	}
 
+	// Find(">") / Find("<"): after/before the current record in the current key
+	if t.seek != "" {
+		conditions = append(conditions, t.seek)
+		args = append(args, t.seekArgs...)
+	}
+
 	where := strings.Join(conditions, " AND ")
 	if where == "" {
 		where = "1=1"
 	}
 
 	return where, args
+}
+
+// allFilters returns the filters of all filter groups, the current group's first
+func (t *Customer) allFilters() []*customerFilterCondition {
+	filters := make([]*customerFilterCondition, 0, len(t.filters))
+	for _, f := range t.filters {
+		filters = append(filters, f)
+	}
+	groups := make([]int, 0, len(t.otherFilters))
+	for g := range t.otherFilters {
+		groups = append(groups, g)
+	}
+	slices.Sort(groups)
+	for _, g := range groups {
+		for _, f := range t.otherFilters[g] {
+			filters = append(filters, f)
+		}
+	}
+	return filters
+}
+
+// FilterGroup switches to filter group group and returns the current one; without an
+// argument it only returns it (FilterGroup). Each group has its own filters — SetRange,
+// SetFilter, GetFilter and CopyFilter work on the current group — and the filters of all
+// groups apply together. Code sets filters the user must keep in group 2 and goes back to 0.
+func (t *Customer) FilterGroup(group ...int) int {
+	if len(group) == 0 || group[0] == t.filterGroup {
+		return t.filterGroup
+	}
+	if t.otherFilters == nil {
+		t.otherFilters = map[int]map[string]*customerFilterCondition{}
+	}
+	if len(t.filters) > 0 {
+		t.otherFilters[t.filterGroup] = t.filters
+	} else {
+		delete(t.otherFilters, t.filterGroup)
+	}
+	t.filterGroup = group[0]
+	t.filters = t.otherFilters[t.filterGroup]
+	delete(t.otherFilters, t.filterGroup)
+	return t.filterGroup
 }
 
 // parseFilterExpression parses filter expressions into SQL
@@ -2637,24 +2697,16 @@ func (t *Customer) DeleteAll() int {
 	return int(rowsAffected)
 }
 
-// CopyFilters copies filters from another record variable
+// CopyFilters copies filters from another record variable (all filter groups)
 func (t *Customer) CopyFilters(from *Customer) {
-	if from.filters == nil {
-		t.filters = nil
-		return
-	}
-
-	// Deep copy filters
-	t.filters = make(map[string]*customerFilterCondition)
-	for key, filter := range from.filters {
-		t.filters[key] = &customerFilterCondition{
-			fieldName:    filter.fieldName,
-			minValue:     filter.minValue,
-			maxValue:     filter.maxValue,
-			filterExpr:   filter.filterExpr,
-			isExpression: filter.isExpression,
-			invalidField: filter.invalidField,
+	t.filters = copyCustomerFilters(from.filters)
+	t.filterGroup = from.filterGroup
+	t.otherFilters = nil
+	for g, filters := range from.otherFilters {
+		if t.otherFilters == nil {
+			t.otherFilters = map[int]map[string]*customerFilterCondition{}
 		}
+		t.otherFilters[g] = copyCustomerFilters(filters)
 	}
 
 	// Also copy order by fields
@@ -2664,6 +2716,19 @@ func (t *Customer) CopyFilters(from *Customer) {
 	} else {
 		t.orderByFields = nil
 	}
+}
+
+// copyCustomerFilters returns a deep copy of a filter group's filters (nil for none)
+func copyCustomerFilters(from map[string]*customerFilterCondition) map[string]*customerFilterCondition {
+	if from == nil {
+		return nil
+	}
+	filters := make(map[string]*customerFilterCondition, len(from))
+	for key, filter := range from {
+		c := *filter
+		filters[key] = &c
+	}
+	return filters
 }
 
 // GetFilters returns a string representation of current filters
@@ -3396,8 +3461,10 @@ func (t *Customer) Copy(from *Customer) {
 	t.CopyFilters(from)
 }
 
-// Find finds a record (Find): "-" the first, "+" the last, "=" the record with the current
-// primary key — within the filters
+// Find finds a record (Find) within the filters, in the current key and direction
+// (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
+// current primary key, ">" the next record after the current one, "<" the one before it.
+// "=><" combine: "=>" the current record or else the next one.
 func (t *Customer) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -3405,10 +3472,11 @@ func (t *Customer) Find(which ...string) bool {
 	}
 	switch how {
 	case "-":
-		return t.FindFirst()
+		return t.findInKey("", false)
 	case "+":
-		return t.FindLast()
-	case "=":
+		return t.findInKey("", true)
+	}
+	if strings.Contains(how, "=") {
 		saved := make(map[string]*customerFilterCondition, len(t.filters))
 		for k, v := range t.filters {
 			saved[k] = v
@@ -3416,9 +3484,148 @@ func (t *Customer) Find(which ...string) bool {
 		t.SetRecFilter()
 		found := t.FindFirst()
 		t.filters = saved
-		return found
+		if found {
+			return true
+		}
+	}
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
+		return true
+	}
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
+		return true
 	}
 	return false
+}
+
+// findInKey reads the first record in the current key and direction — reversed for the
+// last — and with seek ">"/"<" only after/before the current record (a row-value
+// comparison on the key and primary key columns). A key with a FlowField cannot seek.
+func (t *Customer) findInKey(seek string, reverse bool) bool {
+	if seek != "" {
+		var columns []string
+		var values []interface{}
+		for _, column := range t.keyColumns() {
+			v, ok := t.columnValue(column)
+			if !ok {
+				fmt.Printf("Error: Find(%q) on Customer needs a key of stored fields\n", seek)
+				return false
+			}
+			columns = append(columns, column)
+			values = append(values, v)
+		}
+		after := (seek == ">") != t.descending
+		op := "<"
+		if after {
+			op = ">"
+		}
+		t.seek = "(" + strings.Join(columns, ", ") + ") " + op + " (" + strings.TrimSuffix(strings.Repeat("?, ", len(columns)), ", ") + ")"
+		t.seekArgs = values
+	}
+	savedLimit, savedOffset, savedDescending := t.limit, t.offset, t.descending
+	t.limit, t.offset = 1, 0
+	if reverse {
+		t.descending = !t.descending
+	}
+	found := t.FindSet()
+	if t.currentRows != nil {
+		t.currentRows.Close()
+		t.currentRows = nil
+	}
+	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
+	t.seek, t.seekArgs = "", nil
+	return found
+}
+
+// keyColumns returns the columns of the current key followed by the primary key's (the
+// sort order of FindSet)
+func (t *Customer) keyColumns() []string {
+	columns := slices.Clone(t.orderByFields)
+	for _, column := range []string{"no"} {
+		if !slices.Contains(columns, column) {
+			columns = append(columns, column)
+		}
+	}
+	return columns
+}
+
+// columnValue returns the value of a stored field by its column, as an SQL argument
+func (t *Customer) columnValue(column string) (interface{}, bool) {
+	switch column {
+	case "no":
+		return t.No, true
+	case "name":
+		return t.Name, true
+	case "address":
+		return t.Address, true
+	case "post_code":
+		return t.Post_code, true
+	case "city":
+		return t.City, true
+	case "country_region_code":
+		return t.Country_region_code, true
+	case "phonenumber":
+		return t.Phonenumber, true
+	case "payment_terms_code":
+		return t.Payment_terms_code, true
+	case "status":
+		return int(t.Status), true
+	case "credit_limit":
+		return t.Credit_limit, true
+	case "last_order_date":
+		return t.Last_order_date, true
+	case "created_at":
+		return t.Created_at, true
+	case "profile_photo":
+		return t.Profile_photo, true
+	}
+	return nil, false
+}
+
+// SetSelection keeps the records selected on the list a codeunit is run from (the API sets
+// it from the list's selection; keys are field name → value); SetSelectionFilter applies it
+func (t *Customer) SetSelection(keys []map[string]interface{}) {
+	t.selection = nil
+	for _, key := range keys {
+		var r Customer
+		r.FromMap(key)
+		values, text := r.recordKey()
+		if t.selection == nil {
+			t.selection = map[string][]interface{}{}
+		}
+		t.selection[text] = values
+	}
+}
+
+// SetSelectionFilter limits the record to the records selected on the list the codeunit was
+// run from (SetSelectionFilter): several selected records are marked (MarkedOnly), else the
+// filter is on the current record (SetRecFilter)
+func (t *Customer) SetSelectionFilter() {
+	if len(t.selection) <= 1 {
+		for _, values := range t.selection {
+			var r Customer
+			r.setKeyValues(values)
+			r.SetRecFilter()
+			t.CopyFilters(&r)
+			return
+		}
+		t.SetRecFilter()
+		return
+	}
+	t.marks = make(map[string][]interface{}, len(t.selection))
+	for key, values := range t.selection {
+		t.marks[key] = values
+	}
+	t.markedOnly = true
+}
+
+// setKeyValues sets the primary key fields from their values (recordKey order)
+func (t *Customer) setKeyValues(values []interface{}) {
+	i := 0
+	if v, ok := values[i].(types.Code); ok {
+		t.No = v
+	}
+	i++
+	_ = i
 }
 
 // Init clears the fields that are not part of the primary key and sets their initial values
@@ -3461,6 +3668,8 @@ func (t *Customer) FieldCaption(fieldName string, language ...string) string {
 // ClearFilters removes all filters (alias for Reset)
 func (t *Customer) ClearFilters() {
 	t.filters = nil
+	t.otherFilters = nil
+	t.filterGroup = 0
 	t.orderByFields = nil
 	// Note: Don't clear oldValues or iteration state here
 }

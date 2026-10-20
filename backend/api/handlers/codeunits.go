@@ -10,6 +10,7 @@ import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
 // CodeunitsHandler handles codeunit-related API requests
@@ -48,6 +49,8 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 	var req struct {
 		CodeunitID int                    `json:"codeunit_id"`
 		Record     map[string]interface{} `json:"record"`
+		// The records selected on the list (rec.SetSelectionFilter in the codeunit)
+		Selection *listSelection `json:"selection"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
@@ -79,6 +82,14 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 
 	// Populate table fields from the record map
 	table.FromMap(req.Record)
+	newTable := func() ftables.Table {
+		t := tableFactory()
+		t.InitWithDBType(h.db, company, h.dbType)
+		return t
+	}
+	if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+	}
 
 	// Run the codeunit with the typed record
 	result, err := codeunit.Run(table)

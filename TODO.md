@@ -262,15 +262,20 @@ features. Ordered by effort — the easiest first. Uses in the classic code in b
 - Tried out in codeunit 991 Progress Bar Demo: the progress window, and "Open the project page"
   in its StrMenu.
 
-### Priority 2 — medium (query and filter work)
-- [ ] `Find(">")`/`Find("<")` (20): the next/previous record after the current one in the current
-      sort, within the filters — one query with a row-value comparison `(a, b) > (?, ?)` (Postgres
-      and SQLite).
-- [ ] `FilterGroup(n)` (124): filters in layers — each group has its own filters, all groups apply
-      together; group 2 is the one set by code that the user cannot see or remove.
-- [ ] `UpperLimit(Date Filter)` in FlowField filters (the balance up to a date): a FlowFilter
-      option in the table YAML, also for the SIFT totals.
-- [ ] `SetSelectionFilter` (40): the records selected in a list, passed to a codeunit run on them.
+### Priority 2 — medium ✅ DONE (2026-10-20)
+- [x] `Find(">")`/`Find("<")` (20): the next/previous record in the current key and direction,
+      within the filters — a row-value comparison `(key…, pk…) > (?, …)`, LIMIT 1 (Postgres and
+      SQLite); also `"=>"`, `"=<"`. `Find("-")`/`Find("+")` now follow the current key too
+      (`FindFirst`/`FindLast` still read in primary key order). Not for keys with a FlowField.
+- [x] `FilterGroup(n)` (124): filters in layers; SetRange/SetFilter/GetFilter/CopyFilter work on
+      the current group, all groups apply; `CopyFilters` copies all, `Reset`/`ClearFilters` clear all.
+- [x] `upper_limit: true` on a FlowField's `type: filter` flow filter (UpperLimit): only the upper
+      end of the FlowFilter applies (`flowfilter.UpperLimit`). No table uses it yet — first with the
+      G/L account's Balance at Date.
+- [x] `SetSelectionFilter` (40): a list sends its selection (keys, or "all" with the list's query;
+      at most 1000) when it runs a codeunit; `rec.SetSelectionFilter()` marks them (MarkedOnly), or
+      filters on the current record without a multi-selection. Progress Bar Demo shows the count.
+- [ ] Later: page fixed filters (source table view) in filter group 2, so users cannot remove them.
 
 ### Priority 3 — larger (new runtime features)
 - [ ] Temporary records (115 variables): a record in memory only — Insert/Modify/Find/filters

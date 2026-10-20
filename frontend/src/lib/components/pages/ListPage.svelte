@@ -563,6 +563,12 @@
 		inputResponseCallback = undefined;
 
 		try {
+			// Several records selected: the codeunit gets them (rec.SetSelectionFilter)
+			const jobSelection = selection.all
+				? { all: true, query: selectionQuery() }
+				: multiSelected
+					? { keys: [...selection.keys] }
+					: undefined;
 			const result = await startJob(codeunitId, selectedRecord || {}, {
 				onProgress: (event) => {
 					// When receiving progress, exit confirm/input mode
@@ -622,7 +628,7 @@
 						toast.error(syncResult.message || t(ERR.CODEUNIT_FAILED));
 					}
 				}
-			});
+			}, jobSelection);
 
 			// For async jobs, keep modal open briefly to show 100%
 			if (result && 'job_id' in result) {

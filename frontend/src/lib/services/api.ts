@@ -25,7 +25,7 @@ function recordUrl(tableName: string, action: 'card' | 'modify' | 'delete', id: 
 }
 
 // Helper to build query string from filters
-function buildQueryString(options?: ListOptions): string {
+export function buildQueryString(options?: ListOptions): string {
 	if (!options) return '';
 
 	const params = new URLSearchParams();

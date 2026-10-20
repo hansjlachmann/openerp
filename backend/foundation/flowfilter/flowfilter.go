@@ -16,6 +16,7 @@
 package flowfilter
 
 import (
+	"cmp"
 	"fmt"
 	"strconv"
 	"strings"
@@ -68,6 +69,67 @@ func ClauseFor(column string, columnArgs []interface{}, kind Kind, expr string) 
 		return ors[0], args, nil
 	}
 	return "(" + strings.Join(ors, " OR ") + ")", args, nil
+}
+
+// UpperLimit returns the filter up to the upper end of expr, from the start (UpperLimit:
+// "Balance at Date" sums the entries up to the Date Filter's last date): "2026-01-01..2026-03-31"
+// gives "..2026-03-31", "2026-03-31" too. An expression without an upper end ("2026-01-01..",
+// "<>x", wildcards) or an invalid one gives "" — no filter. Of several alternatives the highest
+// upper end counts.
+func UpperLimit(kind Kind, expr string) string {
+	if strings.TrimSpace(expr) == "" || Validate(kind, expr) != nil {
+		return ""
+	}
+	best, bestValue, strict := "", interface{}(nil), false
+	for _, part := range strings.Split(expr, "|") {
+		part = strings.TrimSpace(part)
+		end, isStrict := "", false
+		switch {
+		case strings.HasPrefix(part, "<>") || strings.HasPrefix(part, ">") || strings.Contains(part, "*"):
+			return ""
+		case strings.HasPrefix(part, "<="):
+			end = strings.TrimSpace(part[2:])
+		case strings.HasPrefix(part, "<"):
+			end, isStrict = strings.TrimSpace(part[1:]), true
+		case strings.Contains(part, ".."):
+			_, end, _ = strings.Cut(part, "..")
+			end = strings.TrimSpace(end)
+			if end == "" {
+				return ""
+			}
+		default:
+			end = part
+		}
+		v, err := value(kind, end)
+		if err != nil {
+			return ""
+		}
+		if c := compare(v, bestValue); bestValue == nil || c > 0 || (c == 0 && !isStrict) {
+			best, bestValue, strict = end, v, isStrict
+		}
+	}
+	if strict {
+		return "<" + best
+	}
+	return ".." + best
+}
+
+// compare orders two filter values of the same kind (-1, 0, 1); nil is lowest
+func compare(a, b interface{}) int {
+	if b == nil {
+		return 1
+	}
+	switch x := a.(type) {
+	case int64:
+		return cmp.Compare(x, b.(int64))
+	case float64:
+		return cmp.Compare(x, b.(float64))
+	case string:
+		return cmp.Compare(x, b.(string)) // dates are ISO: their text sorts by date
+	case bool:
+		return 0
+	}
+	return 0
 }
 
 // Validate reports whether expr is a valid filter for kind.

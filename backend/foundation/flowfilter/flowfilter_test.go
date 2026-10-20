@@ -98,3 +98,32 @@ func TestClauseForRepeatsColumnArgs(t *testing.T) {
 		t.Errorf("got %q %v", clause, args)
 	}
 }
+
+func TestUpperLimit(t *testing.T) {
+	cases := []struct {
+		kind Kind
+		expr string
+		want string
+	}{
+		{KindDate, "2026-01-01..2026-03-31", "..2026-03-31"},
+		{KindDate, "2026-03-31", "..2026-03-31"},
+		{KindDate, "..2026-03-31", "..2026-03-31"},
+		{KindDate, "<=2026-03-31", "..2026-03-31"},
+		{KindDate, "<2026-03-31", "<2026-03-31"},
+		{KindDate, "2026-01-01..2026-01-31|2026-03-01..2026-03-31", "..2026-03-31"},
+		{KindDate, "2026-03-31|<2026-03-31", "..2026-03-31"},
+		{KindDate, "2026-01-01..", ""},
+		{KindDate, ">2026-01-01", ""},
+		{KindDate, "<>2026-01-01", ""},
+		{KindDate, "", ""},
+		{KindDate, "not a date", ""},
+		{KindInt, "5..10|200", "..200"},
+		{KindDecimal, "1,5..2,5", "..2,5"},
+		{KindCode, "A*", ""},
+	}
+	for _, c := range cases {
+		if got := UpperLimit(c.kind, c.expr); got != c.want {
+			t.Errorf("UpperLimit(%s, %q) = %q, want %q", c.kind, c.expr, got, c.want)
+		}
+	}
+}
