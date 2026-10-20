@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.98](https://github.com/hansjlachmann/openerp/compare/v0.1.97...v0.1.98) (2026-10-16)
+
+
+### Bug Fixes
+
+* **preferences:** save and read user preferences ([bbcee13](https://github.com/hansjlachmann/openerp/commit/bbcee13d3dec01e2b0c22cbbce79b5fb3c055b1a))
+
+
+### Documentation
+
+* CLAUDE.md wording fixes ([f434315](https://github.com/hansjlachmann/openerp/commit/f43431526cddf428029778a40f50b87075e9238f))
+* TODO — production upgrade to 0.1.97, neutral wording done, request validation ([b60deee](https://github.com/hansjlachmann/openerp/commit/b60deeef4acc811f10f73a5101b6bb9795ae7c58))
+
 ## [0.1.97](https://github.com/hansjlachmann/openerp/compare/v0.1.96...v0.1.97) (2026-10-13)
 
 
