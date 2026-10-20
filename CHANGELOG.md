@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.101](https://github.com/hansjlachmann/openerp/compare/v0.1.100...v0.1.101) (2026-10-20)
+
+
+### Features
+
+* **cards:** scrolling with PgUp/PgDn, compact layout, collapsible sections ([dfc96df](https://github.com/hansjlachmann/openerp/commit/dfc96df8b13952f88f49aedc73f7b6fcf9cd88aa))
+* **records:** Find next/previous, filter groups, selection filter, upper-limit flow filters ([2eead1b](https://github.com/hansjlachmann/openerp/commit/2eead1ba783b450cccec7c5f136aa0d6d0e963d6))
+* **reports:** processing-only reports with request pages ([394fa8d](https://github.com/hansjlachmann/openerp/commit/394fa8d20ac1b5470655f3d6d9c0365680e55b25))
+* **system:** CopyFilter, CompressArray, Hyperlink and the progress window ([5d29b13](https://github.com/hansjlachmann/openerp/commit/5d29b13d59ac20a263cb59864855fd4e0048ef57))
+* **system:** temporary records, page variables with lookup mode, page triggers, closing dates, Consistent ([b9f4021](https://github.com/hansjlachmann/openerp/commit/b9f40213e0fbf39f752dc4d2ea34b3d20ed22feb))
+
 ## [0.1.100](https://github.com/hansjlachmann/openerp/compare/v0.1.99...v0.1.100) (2026-10-20)
 
 
