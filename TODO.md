@@ -38,9 +38,14 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       functions in Go"); one open point: where WorkDate comes from.
 - [ ] **System functions — remaining** (high priority) — after the first and second set; see
       "System functions — remaining" below.
-- [ ] **Production: upgrade to 0.1.97** once release PR #129 is merged — backup first; migrations 10
-      (Job Queue codeunit numbers, saved page layouts) and 11 (theme codes) run; the startup log shows
-      the base application, page 907 Installed Apps lists it.
+- [x] **Production: upgraded 0.1.91 → 0.1.97** (2026-10-20). Backup first, `git pull` (compose file),
+      migrations 10 (codeunit/page numbers) and 11 (theme codes) applied, base application 0.1.97
+      in the log. 0.1.98 (preferences fix) is not released yet — the release step fails, see below.
+- [ ] **CI: release-please cannot create the 0.1.98 release** (since 2026-10-20): "Resource not
+      accessible by integration — create a release", although the token has `contents: write` (also
+      tried `issues: write`; no rulesets, no immutable releases). Release PR #130 is merged; once the
+      release exists the Docker images build. Next: a fine-grained token with Contents write as a
+      secret for release-please (`token:` input), or check the repository's Actions settings.
 - [x] **Neutral wording** (2026-10-13): code, docs, generated code, CHANGELOG, release notes and the
       commit messages since 0.1.96 describe the behaviour instead of naming other products (rule in
       CLAUDE.md); built-in themes renamed to Classic Light/Dark (migration 11); reference screenshots
