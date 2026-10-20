@@ -37,6 +37,10 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 - [x] **System functions in Go** (first and second set) — done 2026-10-20: package
       `backend/foundation/system`, generated record methods, `codeunits.Run` (see the section below).
 - [x] **System functions — remaining** — done 2026-10-20 (a few left out on purpose, see below).
+- [ ] **`StrMenu` (high priority)**: a codeunit asks the user to pick one of several options
+      (`system.StrMenu("Ship,Invoice,Ship and Invoice", 1, instruction)` → the chosen number, 0 =
+      cancelled). Needs an option-list input in the codeunit dialog (`codeunits.RequestInput`, a new
+      field type, rendered with `OptionDropdown` in `ProgressModal`); answers "0" without a dialog.
 - [x] **Production: upgraded 0.1.91 → 0.1.97** (2026-10-20). Backup first, `git pull` (compose file),
       migrations 10 (codeunit/page numbers) and 11 (theme codes) applied, base application 0.1.97
       in the log. 0.1.98 (preferences fix) is not released yet — the release step fails, see below.
@@ -225,13 +229,20 @@ Built: text `ConvertStr`, `InsStr`, `DelStr`, `StrCheckSum`; dates `Time`, `Crea
 `Copy`, `Find("-" | "+" | "=")`. Left out on purpose — build when a feature needs them:
 - [ ] `ClosingDate`/`NormalDate`: closing dates need accounting periods and a date value between
       two days — with the general ledger.
-- [ ] A `DateFormula` field type (stores a formula, validated by `CalcDate`): needs a new field type
-      in tablegen, the API and the frontend — with the first table that needs one (e.g. Payment Terms
-      Due Date Calculation).
-- [ ] `StrMenu`: needs an option-list input in the codeunit dialog (frontend `ProgressModal`).
-- [ ] `Find(">")`/`Find("<")` (next/previous by the current key), `FilterGroup`, `SetLoadFields`.
-- Not planned (Go has its own way): `Duration` (`time.Duration`), `Commit` (explicit transactions),
-  `Randomize`, `Clear`/`ClearAll`, `GuiAllowed`, `Sleep`, files, DotNet, code coverage.
+- [x] No `DateFormula` field type (decided 2026-10-20): the classic layout stores date formulas in a
+      Code field with a "date formula" property. Later: a YAML field property `date_formula: true` on a
+      Code field (length 20), checked with the `CalcDate` parser — with the first such field (Payment
+      Terms Due Date / Discount Date Calculation).
+- [ ] `Find(">")`/`Find("<")`: the next/previous record after the current one in the current sort,
+      within the filters — one query with a row-value comparison `(a, b) > (?, ?)` (Postgres and SQLite).
+- [ ] `FilterGroup(n)`: filters in layers — each group has its own filters, all groups apply
+      together; group 2 is the one set by code that the user cannot see or remove (the most used
+      in the classic code).
+- [ ] `SetLoadFields`: not needed for correctness (records always load every field); only if a
+      list of many fields gets slow.
+- Not planned — use Go's own (decided 2026-10-20): `Duration` (`time.Duration`), `Commit` (explicit
+  transactions), `Clear`/`ClearAll` (zero values), `Sleep` (`time.Sleep`), `Randomize`, `GuiAllowed`,
+  files, DotNet, code coverage.
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
 
