@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.100](https://github.com/hansjlachmann/openerp/compare/v0.1.99...v0.1.100) (2026-10-20)
+
+
+### Features
+
+* **system:** date formula fields and StrMenu ([7c1b8b6](https://github.com/hansjlachmann/openerp/commit/7c1b8b6ade4836632685c741db3ba008f1d024ab))
+
+
+### Documentation
+
+* TODO — StrMenu high priority, date formulas in Code fields, Find/FilterGroup plan ([734b291](https://github.com/hansjlachmann/openerp/commit/734b2919fb6786a8e98d419fa46d24081d520662))
+
 ## [0.1.99](https://github.com/hansjlachmann/openerp/compare/v0.1.98...v0.1.99) (2026-10-20)
 
 
