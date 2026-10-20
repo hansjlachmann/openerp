@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.102](https://github.com/hansjlachmann/openerp/compare/v0.1.101...v0.1.102) (2026-10-20)
+
+
+### Features
+
+* **cards:** subpages — a list page inside a card, linked to its record ([37a58fe](https://github.com/hansjlachmann/openerp/commit/37a58feb9cd02d031684b06b505b4874a8a1817e))
+
 ## [0.1.101](https://github.com/hansjlachmann/openerp/compare/v0.1.100...v0.1.101) (2026-10-20)
 
 
