@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.99](https://github.com/hansjlachmann/openerp/compare/v0.1.98...v0.1.99) (2026-10-20)
+
+
+### Features
+
+* **system:** classic system functions and record methods for business logic ([4f6c088](https://github.com/hansjlachmann/openerp/commit/4f6c08823bbfcee70b3ade7a05e734dfe1dc3078))
+* **system:** remaining classic system functions and record methods ([cd77be3](https://github.com/hansjlachmann/openerp/commit/cd77be3c3ba20f269c7be2149eeae7d89c8c5ec8))
+
+
+### Documentation
+
+* TODO — production on 0.1.97, release step failing ([08bc51b](https://github.com/hansjlachmann/openerp/commit/08bc51b19e6c5df097a87281544041ffb59c3c16))
+* TODO — release token, renew before it expires ([4aca61b](https://github.com/hansjlachmann/openerp/commit/4aca61bc1fa5f67944d61db1871116e8df8e04fe))
+
+
+### CI/CD
+
+* give release-please the issues permission it needs to label releases ([6ca667d](https://github.com/hansjlachmann/openerp/commit/6ca667dff30ec555587b256cd02861e069d7f58c))
+* release-please uses a repository token to create releases ([1ec321e](https://github.com/hansjlachmann/openerp/commit/1ec321e84db2d758b9b8cf28ce07decb21205ab5))
+* run on Ubuntu 24.04 (Playwright has no browsers for 26.04 yet) ([7f6d2f5](https://github.com/hansjlachmann/openerp/commit/7f6d2f5201422810db995479f64fff291178bae2))
+
 ## [0.1.98](https://github.com/hansjlachmann/openerp/compare/v0.1.97...v0.1.98) (2026-10-16)
 
 
