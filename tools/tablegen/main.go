@@ -157,6 +157,7 @@ type TemplateData struct {
 	StructName       string
 	PackageName      string
 	GeneratedPkg     string // Import alias for generated package (e.g., "gtables")
+	HasSumFields     bool   // a stored decimal or integer field (CalcSums)
 	HasTimeField     bool
 	HasCodeField     bool
 	HasTextField     bool
@@ -380,6 +381,9 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		}
 		if field.Type == "int" && !field.FlowField {
 			data.HasIntField = true
+		}
+		if !field.FlowField && (field.Type == "int" || field.Type == "types.Decimal") {
+			data.HasSumFields = true
 		}
 		if field.Encrypted {
 			data.EncryptedFields = append(data.EncryptedFields, *field)
@@ -1371,9 +1375,7 @@ import (
 {{- end }}
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-{{- if .EncryptedFields }}
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
-{{- end }}
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 {{- if .UsesFlowFilter }}
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
@@ -1451,6 +1453,9 @@ type {{ .StructName }} struct {
 
 	// Iteration state for FindSet/Next
 	currentRows *sql.Rows
+
+	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
+	lockForUpdate bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -1971,6 +1976,7 @@ func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+	sqlStr += t.forUpdate()
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 {{- range $i, $f := .Table.Fields }}
@@ -3236,6 +3242,7 @@ func (t *{{ .StructName }}) FindFirst() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -3337,6 +3344,7 @@ func (t *{{ .StructName }}) FindLast() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 {{- range .Table.Fields }}
 {{- if not .FlowField }}
@@ -3471,6 +3479,7 @@ func (t *{{ .StructName }}) FindSet() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -4087,6 +4096,211 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 
 
 // ========================================
+// Classic record functions
+// ========================================
+
+// FieldValue returns the value of a stored field by its number (FlowFields are not stored)
+func (t *{{ .StructName }}) FieldValue(no int) (any, bool) {
+	switch no {
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	case {{ .No }}:
+		return t.{{ upperFirst .Name }}, true
+{{- end }}
+{{- end }}
+	}
+	return nil, false
+}
+
+// SetFieldValue sets a stored field by its number when the value has the field's type
+// (options: any option value or int); it reports whether the field was set
+func (t *{{ .StructName }}) SetFieldValue(no int, value any) bool {
+	switch no {
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	case {{ .No }}:
+{{- if eq .Type "Option" }}
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < {{ len .Options }} {
+			t.{{ upperFirst .Name }} = {{ $.StructName }}{{ upperFirst .Name }}(i)
+			return true
+		}
+{{- else if eq .Type "BLOB" }}
+		if v, ok := value.([]byte); ok {
+			t.{{ upperFirst .Name }} = v
+			return true
+		}
+{{- else }}
+		if v, ok := value.({{ .Type }}); ok {
+			t.{{ upperFirst .Name }} = v
+			return true
+		}
+{{- end }}
+{{- end }}
+{{- end }}
+	}
+	return false
+}
+
+// TransferFields copies the fields of another record that have the same field number and
+// type (TransferFields): FlowFields are not copied, and with initPrimaryKey false the
+// primary key fields keep their values (default true: they are copied too). No trigger runs.
+func (t *{{ .StructName }}) TransferFields(from tables.FieldValuer, initPrimaryKey ...bool) {
+	copyKey := len(initPrimaryKey) == 0 || initPrimaryKey[0]
+	for _, f := range t.GetFields() {
+		if f.FlowField || f.PrimaryKey && !copyKey {
+			continue
+		}
+		if v, ok := from.FieldValue(f.No); ok {
+			t.SetFieldValue(f.No, v)
+		}
+	}
+}
+
+// CompanyName returns the company the record reads and writes (the session's company)
+func (t *{{ .StructName }}) CompanyName() string {
+	return t.company
+}
+
+// ChangeCompany makes the record read and write another company's table (filters are kept);
+// it reports false when the company does not exist.
+{{- if .Table.Global }} {{ .Table.Name }} is a global table, the same in every company.{{ end }}
+func (t *{{ .StructName }}) ChangeCompany(company string) bool {
+	if !tables.CompanyExists(t.db, t.dbType, company) {
+		return false
+	}
+	t.company = company
+	return true
+}
+
+// TestField returns an error unless the field has a value — or, with a value, that value
+// (TestField): the user's messages "X is required" / "X must be …"
+func (t *{{ .StructName }}) TestField(fieldName string, value ...any) error {
+	no := t.FieldNo(fieldName)
+	current, ok := t.FieldValue(no)
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a stored field of {{ .Table.Name }}", fieldName)
+	}
+	field := t.FieldName(no)
+	if len(value) == 0 {
+		if tables.IsEmptyValue(current) {
+			return apperrors.FieldRequired({{ .StructName }}TableName, field)
+		}
+		return nil
+	}
+	if !tables.SameValue(current, value[0]) {
+		return apperrors.FieldMustBe({{ .StructName }}TableName, field, fmt.Sprint(value[0]))
+	}
+	return nil
+}
+
+// FieldError returns an error about a field (FieldError): "<caption> <text>"; pass a
+// translated text
+func (t *{{ .StructName }}) FieldError(fieldName string, text string) error {
+	return apperrors.FieldErrorText({{ .StructName }}TableName, strings.ToLower(fieldName), text)
+}
+
+// CalcSums sets each of the decimal or integer fields to its total over the records matching
+// the current filters (CalcSums)
+func (t *{{ .StructName }}) CalcSums(fieldNames ...string) error {
+{{- if not .HasSumFields }}
+	if len(fieldNames) > 0 {
+		return fmt.Errorf("CalcSums: %s is not a decimal or integer field of {{ .Table.Name }}", fieldNames[0])
+	}
+	return nil
+}
+{{- else }}
+{{- if .Table.Global }}
+	tableName := {{ .StructName }}TableName
+{{- else }}
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
+{{- end }}
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+{{- range .Table.Fields }}
+{{- if and (not .FlowField) (or (eq .Type "types.Decimal") (eq .Type "int")) }}
+		case "{{ .DBName }}":
+			column = "{{ .DBName }}"
+{{- end }}
+{{- end }}
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of {{ .Table.Name }}", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(` + "`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM \"%s\" WHERE %s`" + `, column, tableName, where), len(args))
+		var total string
+		if err := t.db.QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums {{ .Table.Name }}.%s: %w", column, err)
+		}
+		switch column {
+{{- range .Table.Fields }}
+{{- if and (not .FlowField) (eq .Type "types.Decimal") }}
+		case "{{ .DBName }}":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums {{ $.Table.Name }}.%s: %w", column, err)
+			}
+			t.{{ upperFirst .Name }} = d
+{{- else if and (not .FlowField) (eq .Type "int") }}
+		case "{{ .DBName }}":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums {{ $.Table.Name }}.%s: %w", column, err)
+			}
+			t.{{ upperFirst .Name }} = int(f)
+{{- end }}
+{{- end }}
+		}
+	}
+	return nil
+}
+{{- end }}
+
+// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
+// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
+// database on write anyway). Use it inside a transaction.
+func (t *{{ .StructName }}) LockTable() {
+	t.lockForUpdate = true
+}
+
+func (t *{{ .StructName }}) forUpdate() string {
+	if t.lockForUpdate && t.dbType == database.DBTypePostgres {
+		return " FOR UPDATE"
+	}
+	return ""
+}
+
+// Init clears the fields that are not part of the primary key and sets their initial values
+// from the definition (Init); the primary key keeps its values
+func (t *{{ .StructName }}) Init() {
+{{- range .Table.Fields }}
+{{- if and (not .PrimaryKey) (not .FlowField) }}
+{{- if eq .Type "Option" }}
+	t.{{ upperFirst .Name }} = 0
+{{- else }}
+	t.{{ upperFirst .Name }} = *new({{ .Type }})
+{{- end }}
+{{- end }}
+{{- end }}
+	t.applyDefaults()
+}
+
+// Validate sets a field and runs its OnValidate triggers (the same as ValidateField)
+func (t *{{ .StructName }}) Validate(fieldName string, value interface{}) error {
+	return t.ValidateField(fieldName, value)
+}
+
+// TableCaption returns the table's caption in a language (default en-US)
+func (t *{{ .StructName }}) TableCaption(language ...string) string {
+	return t.GetCaption(captionLanguage(language))
+}
+
+// FieldCaption returns a field's caption in a language (default en-US)
+func (t *{{ .StructName }}) FieldCaption(fieldName string, language ...string) string {
+	return t.GetFieldCaption(fieldName, captionLanguage(language))
+}
+
+// ========================================
 // Interface Implementation (tables.Table)
 // ========================================
 
@@ -4489,6 +4703,14 @@ func EncryptStoredSecrets(db database.Executor, dbType database.DBType, companie
 		}
 	}
 	return total, nil
+}
+
+// captionLanguage is the language of TableCaption/FieldCaption: the one given, else en-US
+func captionLanguage(language []string) string {
+	if len(language) > 0 && language[0] != "" {
+		return language[0]
+	}
+	return "en-US"
 }
 
 // checkLogic panics when business logic registered for a table has a method named like a

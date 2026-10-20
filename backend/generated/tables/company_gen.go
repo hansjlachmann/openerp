@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -47,7 +48,10 @@ type Company struct {
 	filters map[string]*companyFilterCondition
 
 	// Iteration state for FindSet/Next
-	currentRows   *sql.Rows
+	currentRows *sql.Rows
+
+	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
+	lockForUpdate bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -498,6 +502,7 @@ func (t *Company) GetByPK(name types.Text) bool {
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+	sqlStr += t.forUpdate()
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&nameNull,
@@ -1114,6 +1119,7 @@ func (t *Company) FindFirst() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var nameNull sql.NullString
 	var display_nameNull sql.NullString
 
@@ -1151,6 +1157,7 @@ func (t *Company) FindLast() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var nameNull sql.NullString
 	var display_nameNull sql.NullString
 
@@ -1216,6 +1223,7 @@ func (t *Company) FindSet() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -1564,6 +1572,141 @@ func (t *Company) ValidateField(fieldName string, value interface{}) error {
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
+}
+
+// ========================================
+// Classic record functions
+// ========================================
+
+// FieldValue returns the value of a stored field by its number (FlowFields are not stored)
+func (t *Company) FieldValue(no int) (any, bool) {
+	switch no {
+	case 1:
+		return t.Name, true
+	case 3:
+		return t.Display_name, true
+	}
+	return nil, false
+}
+
+// SetFieldValue sets a stored field by its number when the value has the field's type
+// (options: any option value or int); it reports whether the field was set
+func (t *Company) SetFieldValue(no int, value any) bool {
+	switch no {
+	case 1:
+		if v, ok := value.(types.Text); ok {
+			t.Name = v
+			return true
+		}
+	case 3:
+		if v, ok := value.(types.Text); ok {
+			t.Display_name = v
+			return true
+		}
+	}
+	return false
+}
+
+// TransferFields copies the fields of another record that have the same field number and
+// type (TransferFields): FlowFields are not copied, and with initPrimaryKey false the
+// primary key fields keep their values (default true: they are copied too). No trigger runs.
+func (t *Company) TransferFields(from tables.FieldValuer, initPrimaryKey ...bool) {
+	copyKey := len(initPrimaryKey) == 0 || initPrimaryKey[0]
+	for _, f := range t.GetFields() {
+		if f.FlowField || f.PrimaryKey && !copyKey {
+			continue
+		}
+		if v, ok := from.FieldValue(f.No); ok {
+			t.SetFieldValue(f.No, v)
+		}
+	}
+}
+
+// CompanyName returns the company the record reads and writes (the session's company)
+func (t *Company) CompanyName() string {
+	return t.company
+}
+
+// ChangeCompany makes the record read and write another company's table (filters are kept);
+// it reports false when the company does not exist. Company is a global table, the same in every company.
+func (t *Company) ChangeCompany(company string) bool {
+	if !tables.CompanyExists(t.db, t.dbType, company) {
+		return false
+	}
+	t.company = company
+	return true
+}
+
+// TestField returns an error unless the field has a value — or, with a value, that value
+// (TestField): the user's messages "X is required" / "X must be …"
+func (t *Company) TestField(fieldName string, value ...any) error {
+	no := t.FieldNo(fieldName)
+	current, ok := t.FieldValue(no)
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a stored field of Company", fieldName)
+	}
+	field := t.FieldName(no)
+	if len(value) == 0 {
+		if tables.IsEmptyValue(current) {
+			return apperrors.FieldRequired(CompanyTableName, field)
+		}
+		return nil
+	}
+	if !tables.SameValue(current, value[0]) {
+		return apperrors.FieldMustBe(CompanyTableName, field, fmt.Sprint(value[0]))
+	}
+	return nil
+}
+
+// FieldError returns an error about a field (FieldError): "<caption> <text>"; pass a
+// translated text
+func (t *Company) FieldError(fieldName string, text string) error {
+	return apperrors.FieldErrorText(CompanyTableName, strings.ToLower(fieldName), text)
+}
+
+// CalcSums sets each of the decimal or integer fields to its total over the records matching
+// the current filters (CalcSums)
+func (t *Company) CalcSums(fieldNames ...string) error {
+	if len(fieldNames) > 0 {
+		return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Company", fieldNames[0])
+	}
+	return nil
+}
+
+// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
+// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
+// database on write anyway). Use it inside a transaction.
+func (t *Company) LockTable() {
+	t.lockForUpdate = true
+}
+
+func (t *Company) forUpdate() string {
+	if t.lockForUpdate && t.dbType == database.DBTypePostgres {
+		return " FOR UPDATE"
+	}
+	return ""
+}
+
+// Init clears the fields that are not part of the primary key and sets their initial values
+// from the definition (Init); the primary key keeps its values
+func (t *Company) Init() {
+	t.Display_name = *new(types.Text)
+	t.applyDefaults()
+}
+
+// Validate sets a field and runs its OnValidate triggers (the same as ValidateField)
+func (t *Company) Validate(fieldName string, value interface{}) error {
+	return t.ValidateField(fieldName, value)
+}
+
+// TableCaption returns the table's caption in a language (default en-US)
+func (t *Company) TableCaption(language ...string) string {
+	return t.GetCaption(captionLanguage(language))
+}
+
+// FieldCaption returns a field's caption in a language (default en-US)
+func (t *Company) FieldCaption(fieldName string, language ...string) string {
+	return t.GetFieldCaption(fieldName, captionLanguage(language))
 }
 
 // ========================================

@@ -29,8 +29,8 @@ const (
 	FontSizeMax         = 150
 )
 
-// DefaultUserPersonalization returns the appearance of a user without a record: Business
-// Central Light/Dark, dark mode (as before themes existed), no wallpaper.
+// DefaultUserPersonalization returns the appearance of a user without a record: Classic
+// Light/Dark, dark mode (as before themes existed), no wallpaper.
 func DefaultUserPersonalization(userID string) *gtables.UserPersonalization {
 	p := &gtables.UserPersonalization{}
 	p.User_id = types.NewCode(userID)

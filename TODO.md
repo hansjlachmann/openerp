@@ -34,8 +34,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       "Changing the database password"); lower risk now that 5432 is localhost only.
 - [x] **Field numbers in table definitions** and **field and object numbering, `application.yaml`,
       installed apps** — done 2026-10-13 (sections below).
-- [ ] **System functions in Go** (first and second set) — specification below ("Feature: system
-      functions in Go"); one open point: where WorkDate comes from.
+- [x] **System functions in Go** (first and second set) — done 2026-10-20: package
+      `backend/foundation/system`, generated record methods, `codeunits.Run` (see the section below).
 - [ ] **System functions — remaining** (high priority) — after the first and second set; see
       "System functions — remaining" below.
 - [x] **Production: upgraded 0.1.91 → 0.1.97** (2026-10-20). Backup first, `git pull` (compose file),
@@ -143,7 +143,18 @@ Built 2026-10-13:
 - [ ] Reports, when built: register them with their number and check them in `CheckObjectNumbers`;
       `run_object: report:<id>`; Job Queue "object type to run".
 
-## Feature: system functions in Go — specification (FIRST priority, 2026-10-13)
+## Feature: system functions in Go ✅ DONE (first and second set, 2026-10-20)
+
+Built: package `backend/foundation/system` (the package is called `system`, not after the classic
+language — neutral wording), the record methods in the generator (TestField, FieldError, CalcSums,
+LockTable, Init, Validate, TableCaption, FieldCaption, CompanyName, ChangeCompany, TransferFields,
+FieldValue/SetFieldValue) and `codeunits.Run`; WorkDate is today (a setting per user may come later).
+Tests: `foundation/system/system_test.go` (date formulas, rounding, formats, text functions),
+`business-logic/tables/classic_test.go`, `business-logic/codeunits/run_test.go`. The unused
+`foundation/common` string helpers were removed. Notes: `CalcSums` adds up the entries (it does
+not read SIFT totals yet); `WD<n>` returns the date itself when it already is that weekday.
+
+### Original specification
 
 Goal: business logic in Go (table triggers, codeunits) reads like classic ERP code. Function calls are
 as close to identical as Go allows, so developers (and Claude Code) can write and review
@@ -152,10 +163,10 @@ business logic without translating. Records already have `SetRange`, `SetFilter`
 
 Decisions (2026-10-13):
 - **General rule**: where a function does not fit Go's context or syntax, take the easiest Go way.
-- **Calls**: package `foundation/al` with the AL names — `al.CalcDate("<CM>", d)`,
-  `al.StrSubstNo("%1 of %2", a, b)`; record functions (`ChangeCompany`, `TransferFields`) are
+- **Calls**: package `foundation/system` with the classic names — `system.CalcDate("<CM>", d)`,
+  `system.StrSubstNo("%1 of %2", a, b)`; record functions (`ChangeCompany`, `TransferFields`) are
   generated methods on every record. The unused helpers in `foundation/common/strutils.go` move there.
-- **Errors**: `Evaluate` returns ok (as AL's `if Evaluate(…)`); `CalcDate` with a bad formula and
+- **Errors**: `Evaluate` returns ok (as the classic `if Evaluate(…)`); `CalcDate` with a bad formula and
   `DMY2Date` with an invalid date return an error; other functions cannot fail.
 - **Language**: none — no session or language parameter. `Format` and `Evaluate` use the Go-native,
   language-independent formats (dates ISO `2026-10-13`, decimals `1234.5`, bool `true`/`false` —
@@ -168,13 +179,13 @@ Decisions (2026-10-13):
 
 ### First set of functions
 
-| AL | AL signature | Notes for Go |
+| Classic | Classic signature | Notes for Go |
 |----|--------------|--------------|
 | `Evaluate` | `[Ok :=] Evaluate(var Variable, String [, Number])` | Typed target (`*types.Date`, `*types.Decimal`, `*int`, `*bool`, Option, `*types.Code`…); returns ok. Go-native formats only (as Number 9). |
 | `DMY2Date` | `Date := DMY2Date(Day [, Month] [, Year])` | Month/Year default to the work date's; invalid date → error. |
 | `Date2DMY` | `Number := Date2DMY(Date, What)` | What: 1 = day, 2 = month, 3 = year. |
 | `CalcDate` | `NewDate := CalcDate(DateExpression [, Date])` | Date formula `<+1M-1D>`, `<CM>`, `<CY>`, `<CQ>`, `<CW>`, `<WD3>`, units D/W/M/Q/Y, `C` = current period end; default date = work date. Later a `DateFormula` field type. Most work: parser + many tests against results. |
-| `Format` | `String := Format(Value [, Length] [, FormatStr/FormatNumber])` | Type-aware, Go-native and language-independent (Date ISO, Decimal `1234.5`, bool `true`/`false`, Option value name); `Length` pads/cuts. The current `common.Format` is just `fmt.Sprintf` — not AL. |
+| `Format` | `String := Format(Value [, Length] [, FormatStr/FormatNumber])` | Type-aware, Go-native and language-independent (Date ISO, Decimal `1234.5`, bool `true`/`false`, Option value name); `Length` pads/cuts. The current `common.Format` is just `fmt.Sprintf` — not the classic Format. |
 | `DelChr` | `NewString := DelChr(String [, Where] [, Which])` | Where `=` `<` `>` `<>`; exists in `foundation/common/strutils.go` (unused). |
 | `StrSubstNo` | `NewString := StrSubstNo(String [, Value1, …])` | `%1`…`%9` (also `#1####`); values formatted with `Format`. The translations already use `%1` (e.g. `MSG_COMPANY_CREATED`, which is not substituted today). |
 | `CopyStr` | `NewString := CopyStr(String, Position [, Length])` | 1-based, characters not bytes; exists in `strutils.go` (unused). |
@@ -186,30 +197,30 @@ Decisions (2026-10-13):
 
 The most used system functions (system, text, record, dialog):
 
-| AL | Go | Notes |
+| Classic | Go | Notes |
 |----|----|-------|
-| `Round(Number [, Precision] [, Direction])` | `al.Round` | Direction `'='` nearest, `'<'` down, `'>'` up; on `types.Decimal` (amounts: `Round(x, 0.01)`). |
-| `Abs`, `Power` | `al.Abs`, `al.Power` | Over `types.Decimal` / int. |
-| `Today`, `WorkDate`, `CurrentDateTime` | `al.Today()`, `rec.WorkDate()`?, `al.CurrentDateTime()` | `types.Today()` exists; WorkDate is per user: from the session like CompanyName — decide where it is set. |
-| `StrLen`, `StrPos`, `PadStr`, `IncStr`, `UpperCase`, `LowerCase` | `al.…` | Move from `foundation/common/strutils.go` (unused), 1-based positions, characters not bytes. |
-| `SelectStr(Number, CommaString)` | `al.SelectStr` | n-th item of a comma-separated string. |
+| `Round(Number [, Precision] [, Direction])` | `system.Round` | Direction `'='` nearest, `'<'` down, `'>'` up; on `types.Decimal` (amounts: `Round(x, 0.01)`). |
+| `Abs`, `Power` | `system.Abs`, `system.Power` | Over `types.Decimal` / int. |
+| `Today`, `WorkDate`, `CurrentDateTime` | `system.Today()`, `rec.WorkDate()`?, `system.CurrentDateTime()` | `types.Today()` exists; WorkDate is per user: from the session like CompanyName — decide where it is set. |
+| `StrLen`, `StrPos`, `PadStr`, `IncStr`, `UpperCase`, `LowerCase` | `system.…` | Move from `foundation/common/strutils.go` (unused), 1-based positions, characters not bytes. |
+| `SelectStr(Number, CommaString)` | `system.SelectStr` | n-th item of a comma-separated string. |
 | `Record.TestField(Field [, Value])` | `rec.TestField("field" [, value])` | Error "Field X must have a value / must be Y in Table Z: key" — `apperrors`, translated. |
 | `Record.FieldError(Field [, Text])` | `rec.FieldError("field" [, text])` | Error naming the field and the record key. |
 | `Record.CalcSums(Fields…)` | `rec.CalcSums("amount", …)` | Sums with the record's filters; reads SIFT totals when a key covers them. |
 | `Record.LockTable()` | `rec.LockTable()` | Following reads `SELECT … FOR UPDATE` (Postgres) inside the transaction. |
-| `Record.Init`, `Validate`, `TableCaption`, `FieldCaption` | `rec.Init()`, `rec.Validate(…)`, `rec.TableCaption()`, `rec.FieldCaption(…)` | AL names for the existing `InitRecord`, `ValidateField`, `GetCaption`, `GetFieldCaption` (captions: language from the session context). |
-| `Message`, `Error` | `al.Message(…)`, `al.Error(…)` | On the existing codeunit dialogs (`foundation/codeunits/dialog.go`); `Error` returns an `error` (StrSubstNo-formatted). |
-| `Codeunit.Run(ID [, Record])` | `al.CodeunitRun(id, rec)` | One call over the codeunit registry. |
+| `Record.Init`, `Validate`, `TableCaption`, `FieldCaption` | `rec.Init()`, `rec.Validate(…)`, `rec.TableCaption()`, `rec.FieldCaption(…)` | Classic names for the existing `InitRecord`, `ValidateField`, `GetCaption`, `GetFieldCaption` (captions: language from the session context). |
+| `Message`, `Error` | `system.Message(…)`, `system.Error(…)` | On the existing codeunit dialogs (`foundation/codeunits/dialog.go`); `Error` returns an `error` (StrSubstNo-formatted). |
+| `Codeunit.Run(ID [, Record])` | `system.CodeunitRun(id, rec)` | One call over the codeunit registry. |
 
 ### Verification (when built)
 Table-driven tests per function with the results gives (especially `CalcDate`, `Format`,
 `Evaluate`); one existing trigger or codeunit rewritten with the functions as
-an example; CLAUDE.md rule "use the AL functions in business logic".
+an example; CLAUDE.md rule "use the system functions in business logic".
 
 ## System functions — remaining (HIGH priority, after the first and second set)
 
 The rest of the common system functions, recorded for later (see "Feature: system
-functions" for the rules: `al.` package / generated record methods, easiest Go way):
+functions" for the rules: `system.` package / generated record methods, easiest Go way):
 - [ ] Text: `ConvertStr`, `InsStr`, `DelStr` (in `strutils.go`), `MaxStrLen`, `StrCheckSum`. The
       instance methods (`Contains`, `Replace`, `Split`, `Trim`, `StartsWith` …) are Go's `strings` — no copies.
 - [ ] Date/time: `Time`, `CreateDateTime`, `DT2Date`, `DT2Time`, `Date2DWY`, `DWY2Date`,
@@ -1097,8 +1108,8 @@ Follow-ups (not done):
 - [x] Manual browser walkthrough (Verification → Manual below) — done by hand against the docker
       compose stack (PostgreSQL).
 
-Original spec, kept for reference — Inserting a row on an editable list page does not match Business
-Central. Reference material: seven screenshots in `screenshots/GeneralJournal01-07.png` (General
+Original spec, kept for reference — Inserting a row on an editable list page does not match the classic
+behaviour. Reference material: seven screenshots in `screenshots/GeneralJournal01-07.png` (General
 Journals, batch CBI-RECON) capturing the real lifecycle. The decisive frame is 04 — selecting
 `Account No. 01013` makes "✓ Saved" appear **while the cursor is still on the row**, and
 simultaneously auto-fills Account Name, Description, Gen. Bus. Posting Group and Gen. Posting Type.

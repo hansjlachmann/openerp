@@ -124,6 +124,14 @@ func EncryptStoredSecrets(db database.Executor, dbType database.DBType, companie
 	return total, nil
 }
 
+// captionLanguage is the language of TableCaption/FieldCaption: the one given, else en-US
+func captionLanguage(language []string) string {
+	if len(language) > 0 && language[0] != "" {
+		return language[0]
+	}
+	return "en-US"
+}
+
 // checkLogic panics when business logic registered for a table has a method named like a
 // trigger ("On…") that the table does not have, or with the wrong signature: such a
 // trigger would never run. The message names the method and the table.

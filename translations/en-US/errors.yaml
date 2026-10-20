@@ -14,6 +14,8 @@ errors:
   ERR_FIELD_FORMAT: "%1 must have the format %2"
   ERR_RELATED_NOT_FOUND: "%1 '%2' does not exist"
   ERR_RELATED_INACTIVE: "%1 '%2' is inactive and cannot be used"
+  ERR_FIELD_MUST_BE: "%1 must be %2"
+  ERR_FIELD_ERROR: "%1 %2"
   ERR_EMAIL_INVALID: "%1: '%2' is not a valid e-mail address"
   ERR_THEME_WRONG_MODE: "%1: the theme '%2' is made for the other mode"
   ERR_EMAIL_DUPLICATE: "%1: '%2' is listed more than once"

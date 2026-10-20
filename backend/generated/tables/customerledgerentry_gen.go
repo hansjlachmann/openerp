@@ -65,6 +65,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -186,7 +187,10 @@ type CustomerLedgerEntry struct {
 	filters map[string]*customerLedgerEntryFilterCondition
 
 	// Iteration state for FindSet/Next
-	currentRows   *sql.Rows
+	currentRows *sql.Rows
+
+	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
+	lockForUpdate bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -1397,6 +1401,7 @@ func (t *CustomerLedgerEntry) GetByPK(entry_no int) bool {
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+	sqlStr += t.forUpdate()
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&entry_noVal,
@@ -2611,6 +2616,7 @@ func (t *CustomerLedgerEntry) FindFirst() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var customer_noNull sql.NullString
 	var sell_to_customer_noNull sql.NullString
 	var posting_dateNull sql.NullString
@@ -2765,6 +2771,7 @@ func (t *CustomerLedgerEntry) FindLast() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var customer_noNull sql.NullString
 	var sell_to_customer_noNull sql.NullString
 	var posting_dateNull sql.NullString
@@ -2947,6 +2954,7 @@ func (t *CustomerLedgerEntry) FindSet() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -4580,6 +4588,602 @@ func (t *CustomerLedgerEntry) ValidateField(fieldName string, value interface{})
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
+}
+
+// ========================================
+// Classic record functions
+// ========================================
+
+// FieldValue returns the value of a stored field by its number (FlowFields are not stored)
+func (t *CustomerLedgerEntry) FieldValue(no int) (any, bool) {
+	switch no {
+	case 1:
+		return t.Entry_no, true
+	case 3:
+		return t.Customer_no, true
+	case 21:
+		return t.Sell_to_customer_no, true
+	case 4:
+		return t.Posting_date, true
+	case 62:
+		return t.Document_date, true
+	case 5:
+		return t.Document_type, true
+	case 6:
+		return t.Document_no, true
+	case 63:
+		return t.External_document_no, true
+	case 7:
+		return t.Description, true
+	case 11:
+		return t.Currency_code, true
+	case 13:
+		return t.Amount, true
+	case 14:
+		return t.Remaining_amount, true
+	case 46:
+		return t.Closed_by_amount, true
+	case 15:
+		return t.Original_amount_lcy, true
+	case 16:
+		return t.Remaining_amt_lcy, true
+	case 17:
+		return t.Amount_lcy, true
+	case 54:
+		return t.Closed_by_amount_lcy, true
+	case 18:
+		return t.Sales_lcy, true
+	case 19:
+		return t.Profit_lcy, true
+	case 20:
+		return t.Inv_discount_lcy, true
+	case 38:
+		return t.Pmt_discount_date, true
+	case 39:
+		return t.Pmt_disc_possible, true
+	case 40:
+		return t.Pmt_disc_given_lcy, true
+	case 22:
+		return t.Customer_posting_group, true
+	case 23:
+		return t.Department_code, true
+	case 24:
+		return t.Project_code, true
+	case 25:
+		return t.Salesperson_code, true
+	case 27:
+		return t.User_id, true
+	case 28:
+		return t.Source_code, true
+	case 50:
+		return t.Reason_code, true
+	case 49:
+		return t.Journal_batch_name, true
+	case 53:
+		return t.Transaction_no, true
+	case 34:
+		return t.Applies_to_doc_type, true
+	case 35:
+		return t.Applies_to_doc_no, true
+	case 47:
+		return t.Applies_to_id, true
+	case 36:
+		return t.Open, true
+	case 43:
+		return t.Positive, true
+	case 33:
+		return t.On_hold, true
+	case 37:
+		return t.Due_date, true
+	case 44:
+		return t.Closed_by_entry_no, true
+	case 45:
+		return t.Closed_at_date, true
+	case 51:
+		return t.Bal_account_type, true
+	case 52:
+		return t.Bal_account_no, true
+	}
+	return nil, false
+}
+
+// SetFieldValue sets a stored field by its number when the value has the field's type
+// (options: any option value or int); it reports whether the field was set
+func (t *CustomerLedgerEntry) SetFieldValue(no int, value any) bool {
+	switch no {
+	case 1:
+		if v, ok := value.(int); ok {
+			t.Entry_no = v
+			return true
+		}
+	case 3:
+		if v, ok := value.(types.Code); ok {
+			t.Customer_no = v
+			return true
+		}
+	case 21:
+		if v, ok := value.(types.Code); ok {
+			t.Sell_to_customer_no = v
+			return true
+		}
+	case 4:
+		if v, ok := value.(types.Date); ok {
+			t.Posting_date = v
+			return true
+		}
+	case 62:
+		if v, ok := value.(types.Date); ok {
+			t.Document_date = v
+			return true
+		}
+	case 5:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 6 {
+			t.Document_type = CustomerLedgerEntryDocument_type(i)
+			return true
+		}
+	case 6:
+		if v, ok := value.(types.Code); ok {
+			t.Document_no = v
+			return true
+		}
+	case 63:
+		if v, ok := value.(types.Code); ok {
+			t.External_document_no = v
+			return true
+		}
+	case 7:
+		if v, ok := value.(types.Text); ok {
+			t.Description = v
+			return true
+		}
+	case 11:
+		if v, ok := value.(types.Code); ok {
+			t.Currency_code = v
+			return true
+		}
+	case 13:
+		if v, ok := value.(types.Decimal); ok {
+			t.Amount = v
+			return true
+		}
+	case 14:
+		if v, ok := value.(types.Decimal); ok {
+			t.Remaining_amount = v
+			return true
+		}
+	case 46:
+		if v, ok := value.(types.Decimal); ok {
+			t.Closed_by_amount = v
+			return true
+		}
+	case 15:
+		if v, ok := value.(types.Decimal); ok {
+			t.Original_amount_lcy = v
+			return true
+		}
+	case 16:
+		if v, ok := value.(types.Decimal); ok {
+			t.Remaining_amt_lcy = v
+			return true
+		}
+	case 17:
+		if v, ok := value.(types.Decimal); ok {
+			t.Amount_lcy = v
+			return true
+		}
+	case 54:
+		if v, ok := value.(types.Decimal); ok {
+			t.Closed_by_amount_lcy = v
+			return true
+		}
+	case 18:
+		if v, ok := value.(types.Decimal); ok {
+			t.Sales_lcy = v
+			return true
+		}
+	case 19:
+		if v, ok := value.(types.Decimal); ok {
+			t.Profit_lcy = v
+			return true
+		}
+	case 20:
+		if v, ok := value.(types.Decimal); ok {
+			t.Inv_discount_lcy = v
+			return true
+		}
+	case 38:
+		if v, ok := value.(types.Date); ok {
+			t.Pmt_discount_date = v
+			return true
+		}
+	case 39:
+		if v, ok := value.(types.Decimal); ok {
+			t.Pmt_disc_possible = v
+			return true
+		}
+	case 40:
+		if v, ok := value.(types.Decimal); ok {
+			t.Pmt_disc_given_lcy = v
+			return true
+		}
+	case 22:
+		if v, ok := value.(types.Code); ok {
+			t.Customer_posting_group = v
+			return true
+		}
+	case 23:
+		if v, ok := value.(types.Code); ok {
+			t.Department_code = v
+			return true
+		}
+	case 24:
+		if v, ok := value.(types.Code); ok {
+			t.Project_code = v
+			return true
+		}
+	case 25:
+		if v, ok := value.(types.Code); ok {
+			t.Salesperson_code = v
+			return true
+		}
+	case 27:
+		if v, ok := value.(types.Code); ok {
+			t.User_id = v
+			return true
+		}
+	case 28:
+		if v, ok := value.(types.Code); ok {
+			t.Source_code = v
+			return true
+		}
+	case 50:
+		if v, ok := value.(types.Code); ok {
+			t.Reason_code = v
+			return true
+		}
+	case 49:
+		if v, ok := value.(types.Code); ok {
+			t.Journal_batch_name = v
+			return true
+		}
+	case 53:
+		if v, ok := value.(int); ok {
+			t.Transaction_no = v
+			return true
+		}
+	case 34:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 6 {
+			t.Applies_to_doc_type = CustomerLedgerEntryApplies_to_doc_type(i)
+			return true
+		}
+	case 35:
+		if v, ok := value.(types.Code); ok {
+			t.Applies_to_doc_no = v
+			return true
+		}
+	case 47:
+		if v, ok := value.(types.Code); ok {
+			t.Applies_to_id = v
+			return true
+		}
+	case 36:
+		if v, ok := value.(bool); ok {
+			t.Open = v
+			return true
+		}
+	case 43:
+		if v, ok := value.(bool); ok {
+			t.Positive = v
+			return true
+		}
+	case 33:
+		if v, ok := value.(types.Code); ok {
+			t.On_hold = v
+			return true
+		}
+	case 37:
+		if v, ok := value.(types.Date); ok {
+			t.Due_date = v
+			return true
+		}
+	case 44:
+		if v, ok := value.(int); ok {
+			t.Closed_by_entry_no = v
+			return true
+		}
+	case 45:
+		if v, ok := value.(types.Date); ok {
+			t.Closed_at_date = v
+			return true
+		}
+	case 51:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 5 {
+			t.Bal_account_type = CustomerLedgerEntryBal_account_type(i)
+			return true
+		}
+	case 52:
+		if v, ok := value.(types.Code); ok {
+			t.Bal_account_no = v
+			return true
+		}
+	}
+	return false
+}
+
+// TransferFields copies the fields of another record that have the same field number and
+// type (TransferFields): FlowFields are not copied, and with initPrimaryKey false the
+// primary key fields keep their values (default true: they are copied too). No trigger runs.
+func (t *CustomerLedgerEntry) TransferFields(from tables.FieldValuer, initPrimaryKey ...bool) {
+	copyKey := len(initPrimaryKey) == 0 || initPrimaryKey[0]
+	for _, f := range t.GetFields() {
+		if f.FlowField || f.PrimaryKey && !copyKey {
+			continue
+		}
+		if v, ok := from.FieldValue(f.No); ok {
+			t.SetFieldValue(f.No, v)
+		}
+	}
+}
+
+// CompanyName returns the company the record reads and writes (the session's company)
+func (t *CustomerLedgerEntry) CompanyName() string {
+	return t.company
+}
+
+// ChangeCompany makes the record read and write another company's table (filters are kept);
+// it reports false when the company does not exist.
+func (t *CustomerLedgerEntry) ChangeCompany(company string) bool {
+	if !tables.CompanyExists(t.db, t.dbType, company) {
+		return false
+	}
+	t.company = company
+	return true
+}
+
+// TestField returns an error unless the field has a value — or, with a value, that value
+// (TestField): the user's messages "X is required" / "X must be …"
+func (t *CustomerLedgerEntry) TestField(fieldName string, value ...any) error {
+	no := t.FieldNo(fieldName)
+	current, ok := t.FieldValue(no)
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a stored field of Customer Ledger Entry", fieldName)
+	}
+	field := t.FieldName(no)
+	if len(value) == 0 {
+		if tables.IsEmptyValue(current) {
+			return apperrors.FieldRequired(CustomerLedgerEntryTableName, field)
+		}
+		return nil
+	}
+	if !tables.SameValue(current, value[0]) {
+		return apperrors.FieldMustBe(CustomerLedgerEntryTableName, field, fmt.Sprint(value[0]))
+	}
+	return nil
+}
+
+// FieldError returns an error about a field (FieldError): "<caption> <text>"; pass a
+// translated text
+func (t *CustomerLedgerEntry) FieldError(fieldName string, text string) error {
+	return apperrors.FieldErrorText(CustomerLedgerEntryTableName, strings.ToLower(fieldName), text)
+}
+
+// CalcSums sets each of the decimal or integer fields to its total over the records matching
+// the current filters (CalcSums)
+func (t *CustomerLedgerEntry) CalcSums(fieldNames ...string) error {
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+		case "entry_no":
+			column = "entry_no"
+		case "amount":
+			column = "amount"
+		case "remaining_amount":
+			column = "remaining_amount"
+		case "closed_by_amount":
+			column = "closed_by_amount"
+		case "original_amount_lcy":
+			column = "original_amount_lcy"
+		case "remaining_amt_lcy":
+			column = "remaining_amt_lcy"
+		case "amount_lcy":
+			column = "amount_lcy"
+		case "closed_by_amount_lcy":
+			column = "closed_by_amount_lcy"
+		case "sales_lcy":
+			column = "sales_lcy"
+		case "profit_lcy":
+			column = "profit_lcy"
+		case "inv_discount_lcy":
+			column = "inv_discount_lcy"
+		case "pmt_disc_possible":
+			column = "pmt_disc_possible"
+		case "pmt_disc_given_lcy":
+			column = "pmt_disc_given_lcy"
+		case "transaction_no":
+			column = "transaction_no"
+		case "closed_by_entry_no":
+			column = "closed_by_entry_no"
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Customer Ledger Entry", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM "%s" WHERE %s`, column, tableName, where), len(args))
+		var total string
+		if err := t.db.QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+		}
+		switch column {
+		case "entry_no":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Entry_no = int(f)
+		case "amount":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Amount = d
+		case "remaining_amount":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Remaining_amount = d
+		case "closed_by_amount":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Closed_by_amount = d
+		case "original_amount_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Original_amount_lcy = d
+		case "remaining_amt_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Remaining_amt_lcy = d
+		case "amount_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Amount_lcy = d
+		case "closed_by_amount_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Closed_by_amount_lcy = d
+		case "sales_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Sales_lcy = d
+		case "profit_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Profit_lcy = d
+		case "inv_discount_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Inv_discount_lcy = d
+		case "pmt_disc_possible":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Pmt_disc_possible = d
+		case "pmt_disc_given_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Pmt_disc_given_lcy = d
+		case "transaction_no":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Transaction_no = int(f)
+		case "closed_by_entry_no":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer Ledger Entry.%s: %w", column, err)
+			}
+			t.Closed_by_entry_no = int(f)
+		}
+	}
+	return nil
+}
+
+// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
+// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
+// database on write anyway). Use it inside a transaction.
+func (t *CustomerLedgerEntry) LockTable() {
+	t.lockForUpdate = true
+}
+
+func (t *CustomerLedgerEntry) forUpdate() string {
+	if t.lockForUpdate && t.dbType == database.DBTypePostgres {
+		return " FOR UPDATE"
+	}
+	return ""
+}
+
+// Init clears the fields that are not part of the primary key and sets their initial values
+// from the definition (Init); the primary key keeps its values
+func (t *CustomerLedgerEntry) Init() {
+	t.Customer_no = *new(types.Code)
+	t.Sell_to_customer_no = *new(types.Code)
+	t.Posting_date = *new(types.Date)
+	t.Document_date = *new(types.Date)
+	t.Document_type = 0
+	t.Document_no = *new(types.Code)
+	t.External_document_no = *new(types.Code)
+	t.Description = *new(types.Text)
+	t.Currency_code = *new(types.Code)
+	t.Amount = *new(types.Decimal)
+	t.Remaining_amount = *new(types.Decimal)
+	t.Closed_by_amount = *new(types.Decimal)
+	t.Original_amount_lcy = *new(types.Decimal)
+	t.Remaining_amt_lcy = *new(types.Decimal)
+	t.Amount_lcy = *new(types.Decimal)
+	t.Closed_by_amount_lcy = *new(types.Decimal)
+	t.Sales_lcy = *new(types.Decimal)
+	t.Profit_lcy = *new(types.Decimal)
+	t.Inv_discount_lcy = *new(types.Decimal)
+	t.Pmt_discount_date = *new(types.Date)
+	t.Pmt_disc_possible = *new(types.Decimal)
+	t.Pmt_disc_given_lcy = *new(types.Decimal)
+	t.Customer_posting_group = *new(types.Code)
+	t.Department_code = *new(types.Code)
+	t.Project_code = *new(types.Code)
+	t.Salesperson_code = *new(types.Code)
+	t.User_id = *new(types.Code)
+	t.Source_code = *new(types.Code)
+	t.Reason_code = *new(types.Code)
+	t.Journal_batch_name = *new(types.Code)
+	t.Transaction_no = *new(int)
+	t.Applies_to_doc_type = 0
+	t.Applies_to_doc_no = *new(types.Code)
+	t.Applies_to_id = *new(types.Code)
+	t.Open = *new(bool)
+	t.Positive = *new(bool)
+	t.On_hold = *new(types.Code)
+	t.Due_date = *new(types.Date)
+	t.Closed_by_entry_no = *new(int)
+	t.Closed_at_date = *new(types.Date)
+	t.Bal_account_type = 0
+	t.Bal_account_no = *new(types.Code)
+	t.applyDefaults()
+}
+
+// Validate sets a field and runs its OnValidate triggers (the same as ValidateField)
+func (t *CustomerLedgerEntry) Validate(fieldName string, value interface{}) error {
+	return t.ValidateField(fieldName, value)
+}
+
+// TableCaption returns the table's caption in a language (default en-US)
+func (t *CustomerLedgerEntry) TableCaption(language ...string) string {
+	return t.GetCaption(captionLanguage(language))
+}
+
+// FieldCaption returns a field's caption in a language (default en-US)
+func (t *CustomerLedgerEntry) FieldCaption(fieldName string, language ...string) string {
+	return t.GetFieldCaption(fieldName, captionLanguage(language))
 }
 
 // ========================================

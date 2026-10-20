@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
 	"github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -82,7 +83,10 @@ type JobQueueEntry struct {
 	filters map[string]*jobQueueEntryFilterCondition
 
 	// Iteration state for FindSet/Next
-	currentRows   *sql.Rows
+	currentRows *sql.Rows
+
+	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
+	lockForUpdate bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -670,6 +674,7 @@ func (t *JobQueueEntry) GetByPK(entry_no int) bool {
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+	sqlStr += t.forUpdate()
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&entry_noVal,
@@ -1320,6 +1325,7 @@ func (t *JobQueueEntry) FindFirst() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var job_queue_noNull sql.NullString
 	var statusInt int
 	var user_idNull sql.NullString
@@ -1373,6 +1379,7 @@ func (t *JobQueueEntry) FindLast() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var job_queue_noNull sql.NullString
 	var statusInt int
 	var user_idNull sql.NullString
@@ -1454,6 +1461,7 @@ func (t *JobQueueEntry) FindSet() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -2000,6 +2008,210 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
+}
+
+// ========================================
+// Classic record functions
+// ========================================
+
+// FieldValue returns the value of a stored field by its number (FlowFields are not stored)
+func (t *JobQueueEntry) FieldValue(no int) (any, bool) {
+	switch no {
+	case 1:
+		return t.Entry_no, true
+	case 2:
+		return t.Job_queue_no, true
+	case 3:
+		return t.Status, true
+	case 4:
+		return t.User_id, true
+	case 5:
+		return t.Description, true
+	case 6:
+		return t.Error_message, true
+	case 7:
+		return t.Start_date_time, true
+	case 8:
+		return t.End_date_time, true
+	}
+	return nil, false
+}
+
+// SetFieldValue sets a stored field by its number when the value has the field's type
+// (options: any option value or int); it reports whether the field was set
+func (t *JobQueueEntry) SetFieldValue(no int, value any) bool {
+	switch no {
+	case 1:
+		if v, ok := value.(int); ok {
+			t.Entry_no = v
+			return true
+		}
+	case 2:
+		if v, ok := value.(types.Code); ok {
+			t.Job_queue_no = v
+			return true
+		}
+	case 3:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 3 {
+			t.Status = JobQueueEntryStatus(i)
+			return true
+		}
+	case 4:
+		if v, ok := value.(types.Code); ok {
+			t.User_id = v
+			return true
+		}
+	case 5:
+		if v, ok := value.(types.Text); ok {
+			t.Description = v
+			return true
+		}
+	case 6:
+		if v, ok := value.(types.Text); ok {
+			t.Error_message = v
+			return true
+		}
+	case 7:
+		if v, ok := value.(types.DateTime); ok {
+			t.Start_date_time = v
+			return true
+		}
+	case 8:
+		if v, ok := value.(types.DateTime); ok {
+			t.End_date_time = v
+			return true
+		}
+	}
+	return false
+}
+
+// TransferFields copies the fields of another record that have the same field number and
+// type (TransferFields): FlowFields are not copied, and with initPrimaryKey false the
+// primary key fields keep their values (default true: they are copied too). No trigger runs.
+func (t *JobQueueEntry) TransferFields(from tables.FieldValuer, initPrimaryKey ...bool) {
+	copyKey := len(initPrimaryKey) == 0 || initPrimaryKey[0]
+	for _, f := range t.GetFields() {
+		if f.FlowField || f.PrimaryKey && !copyKey {
+			continue
+		}
+		if v, ok := from.FieldValue(f.No); ok {
+			t.SetFieldValue(f.No, v)
+		}
+	}
+}
+
+// CompanyName returns the company the record reads and writes (the session's company)
+func (t *JobQueueEntry) CompanyName() string {
+	return t.company
+}
+
+// ChangeCompany makes the record read and write another company's table (filters are kept);
+// it reports false when the company does not exist.
+func (t *JobQueueEntry) ChangeCompany(company string) bool {
+	if !tables.CompanyExists(t.db, t.dbType, company) {
+		return false
+	}
+	t.company = company
+	return true
+}
+
+// TestField returns an error unless the field has a value — or, with a value, that value
+// (TestField): the user's messages "X is required" / "X must be …"
+func (t *JobQueueEntry) TestField(fieldName string, value ...any) error {
+	no := t.FieldNo(fieldName)
+	current, ok := t.FieldValue(no)
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a stored field of Job_Queue_Entry", fieldName)
+	}
+	field := t.FieldName(no)
+	if len(value) == 0 {
+		if tables.IsEmptyValue(current) {
+			return apperrors.FieldRequired(JobQueueEntryTableName, field)
+		}
+		return nil
+	}
+	if !tables.SameValue(current, value[0]) {
+		return apperrors.FieldMustBe(JobQueueEntryTableName, field, fmt.Sprint(value[0]))
+	}
+	return nil
+}
+
+// FieldError returns an error about a field (FieldError): "<caption> <text>"; pass a
+// translated text
+func (t *JobQueueEntry) FieldError(fieldName string, text string) error {
+	return apperrors.FieldErrorText(JobQueueEntryTableName, strings.ToLower(fieldName), text)
+}
+
+// CalcSums sets each of the decimal or integer fields to its total over the records matching
+// the current filters (CalcSums)
+func (t *JobQueueEntry) CalcSums(fieldNames ...string) error {
+	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName)
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+		case "entry_no":
+			column = "entry_no"
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Job_Queue_Entry", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM "%s" WHERE %s`, column, tableName, where), len(args))
+		var total string
+		if err := t.db.QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums Job_Queue_Entry.%s: %w", column, err)
+		}
+		switch column {
+		case "entry_no":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Job_Queue_Entry.%s: %w", column, err)
+			}
+			t.Entry_no = int(f)
+		}
+	}
+	return nil
+}
+
+// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
+// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
+// database on write anyway). Use it inside a transaction.
+func (t *JobQueueEntry) LockTable() {
+	t.lockForUpdate = true
+}
+
+func (t *JobQueueEntry) forUpdate() string {
+	if t.lockForUpdate && t.dbType == database.DBTypePostgres {
+		return " FOR UPDATE"
+	}
+	return ""
+}
+
+// Init clears the fields that are not part of the primary key and sets their initial values
+// from the definition (Init); the primary key keeps its values
+func (t *JobQueueEntry) Init() {
+	t.Job_queue_no = *new(types.Code)
+	t.Status = 0
+	t.User_id = *new(types.Code)
+	t.Description = *new(types.Text)
+	t.Error_message = *new(types.Text)
+	t.Start_date_time = *new(types.DateTime)
+	t.End_date_time = *new(types.DateTime)
+	t.applyDefaults()
+}
+
+// Validate sets a field and runs its OnValidate triggers (the same as ValidateField)
+func (t *JobQueueEntry) Validate(fieldName string, value interface{}) error {
+	return t.ValidateField(fieldName, value)
+}
+
+// TableCaption returns the table's caption in a language (default en-US)
+func (t *JobQueueEntry) TableCaption(language ...string) string {
+	return t.GetCaption(captionLanguage(language))
+}
+
+// FieldCaption returns a field's caption in a language (default en-US)
+func (t *JobQueueEntry) FieldCaption(fieldName string, language ...string) string {
+	return t.GetFieldCaption(fieldName, captionLanguage(language))
 }
 
 // ========================================

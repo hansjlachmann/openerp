@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
@@ -101,7 +102,10 @@ type Customer struct {
 	filters map[string]*customerFilterCondition
 
 	// Iteration state for FindSet/Next
-	currentRows   *sql.Rows
+	currentRows *sql.Rows
+
+	// LockTable: the following reads lock the rows they read (SELECT … FOR UPDATE, Postgres)
+	lockForUpdate bool
 	orderByFields []string
 	descending    bool // sort order of the current key (SetAscending)
 
@@ -763,6 +767,7 @@ func (t *Customer) GetByPK(no types.Code) bool {
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
+	sqlStr += t.forUpdate()
 
 	err := t.db.QueryRow(sqlStr, args...).Scan(
 		&noNull,
@@ -2120,6 +2125,7 @@ func (t *Customer) FindFirst() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var noNull sql.NullString
 	var nameNull sql.NullString
 	var addressNull sql.NullString
@@ -2188,6 +2194,7 @@ func (t *Customer) FindLast() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 	var noNull sql.NullString
 	var nameNull sql.NullString
 	var addressNull sql.NullString
@@ -2284,6 +2291,7 @@ func (t *Customer) FindSet() bool {
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
+	query += t.forUpdate()
 
 	rows, err := t.db.Query(query, args...)
 	if err != nil {
@@ -2971,6 +2979,250 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
+}
+
+// ========================================
+// Classic record functions
+// ========================================
+
+// FieldValue returns the value of a stored field by its number (FlowFields are not stored)
+func (t *Customer) FieldValue(no int) (any, bool) {
+	switch no {
+	case 1:
+		return t.No, true
+	case 2:
+		return t.Name, true
+	case 5:
+		return t.Address, true
+	case 91:
+		return t.Post_code, true
+	case 7:
+		return t.City, true
+	case 35:
+		return t.Country_region_code, true
+	case 9:
+		return t.Phonenumber, true
+	case 27:
+		return t.Payment_terms_code, true
+	case 900:
+		return t.Status, true
+	case 20:
+		return t.Credit_limit, true
+	case 901:
+		return t.Last_order_date, true
+	case 902:
+		return t.Created_at, true
+	case 89:
+		return t.Profile_photo, true
+	}
+	return nil, false
+}
+
+// SetFieldValue sets a stored field by its number when the value has the field's type
+// (options: any option value or int); it reports whether the field was set
+func (t *Customer) SetFieldValue(no int, value any) bool {
+	switch no {
+	case 1:
+		if v, ok := value.(types.Code); ok {
+			t.No = v
+			return true
+		}
+	case 2:
+		if v, ok := value.(types.Text); ok {
+			t.Name = v
+			return true
+		}
+	case 5:
+		if v, ok := value.(types.Text); ok {
+			t.Address = v
+			return true
+		}
+	case 91:
+		if v, ok := value.(types.Code); ok {
+			t.Post_code = v
+			return true
+		}
+	case 7:
+		if v, ok := value.(types.Text); ok {
+			t.City = v
+			return true
+		}
+	case 35:
+		if v, ok := value.(types.Code); ok {
+			t.Country_region_code = v
+			return true
+		}
+	case 9:
+		if v, ok := value.(types.Text); ok {
+			t.Phonenumber = v
+			return true
+		}
+	case 27:
+		if v, ok := value.(types.Code); ok {
+			t.Payment_terms_code = v
+			return true
+		}
+	case 900:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 5 {
+			t.Status = CustomerStatus(i)
+			return true
+		}
+	case 20:
+		if v, ok := value.(types.Decimal); ok {
+			t.Credit_limit = v
+			return true
+		}
+	case 901:
+		if v, ok := value.(types.Date); ok {
+			t.Last_order_date = v
+			return true
+		}
+	case 902:
+		if v, ok := value.(types.DateTime); ok {
+			t.Created_at = v
+			return true
+		}
+	case 89:
+		if v, ok := value.([]byte); ok {
+			t.Profile_photo = v
+			return true
+		}
+	}
+	return false
+}
+
+// TransferFields copies the fields of another record that have the same field number and
+// type (TransferFields): FlowFields are not copied, and with initPrimaryKey false the
+// primary key fields keep their values (default true: they are copied too). No trigger runs.
+func (t *Customer) TransferFields(from tables.FieldValuer, initPrimaryKey ...bool) {
+	copyKey := len(initPrimaryKey) == 0 || initPrimaryKey[0]
+	for _, f := range t.GetFields() {
+		if f.FlowField || f.PrimaryKey && !copyKey {
+			continue
+		}
+		if v, ok := from.FieldValue(f.No); ok {
+			t.SetFieldValue(f.No, v)
+		}
+	}
+}
+
+// CompanyName returns the company the record reads and writes (the session's company)
+func (t *Customer) CompanyName() string {
+	return t.company
+}
+
+// ChangeCompany makes the record read and write another company's table (filters are kept);
+// it reports false when the company does not exist.
+func (t *Customer) ChangeCompany(company string) bool {
+	if !tables.CompanyExists(t.db, t.dbType, company) {
+		return false
+	}
+	t.company = company
+	return true
+}
+
+// TestField returns an error unless the field has a value — or, with a value, that value
+// (TestField): the user's messages "X is required" / "X must be …"
+func (t *Customer) TestField(fieldName string, value ...any) error {
+	no := t.FieldNo(fieldName)
+	current, ok := t.FieldValue(no)
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a stored field of Customer", fieldName)
+	}
+	field := t.FieldName(no)
+	if len(value) == 0 {
+		if tables.IsEmptyValue(current) {
+			return apperrors.FieldRequired(CustomerTableName, field)
+		}
+		return nil
+	}
+	if !tables.SameValue(current, value[0]) {
+		return apperrors.FieldMustBe(CustomerTableName, field, fmt.Sprint(value[0]))
+	}
+	return nil
+}
+
+// FieldError returns an error about a field (FieldError): "<caption> <text>"; pass a
+// translated text
+func (t *Customer) FieldError(fieldName string, text string) error {
+	return apperrors.FieldErrorText(CustomerTableName, strings.ToLower(fieldName), text)
+}
+
+// CalcSums sets each of the decimal or integer fields to its total over the records matching
+// the current filters (CalcSums)
+func (t *Customer) CalcSums(fieldNames ...string) error {
+	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+		case "credit_limit":
+			column = "credit_limit"
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Customer", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM "%s" WHERE %s`, column, tableName, where), len(args))
+		var total string
+		if err := t.db.QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+		}
+		switch column {
+		case "credit_limit":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Credit_limit = d
+		}
+	}
+	return nil
+}
+
+// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
+// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
+// database on write anyway). Use it inside a transaction.
+func (t *Customer) LockTable() {
+	t.lockForUpdate = true
+}
+
+func (t *Customer) forUpdate() string {
+	if t.lockForUpdate && t.dbType == database.DBTypePostgres {
+		return " FOR UPDATE"
+	}
+	return ""
+}
+
+// Init clears the fields that are not part of the primary key and sets their initial values
+// from the definition (Init); the primary key keeps its values
+func (t *Customer) Init() {
+	t.Name = *new(types.Text)
+	t.Address = *new(types.Text)
+	t.Post_code = *new(types.Code)
+	t.City = *new(types.Text)
+	t.Country_region_code = *new(types.Code)
+	t.Phonenumber = *new(types.Text)
+	t.Payment_terms_code = *new(types.Code)
+	t.Status = 0
+	t.Credit_limit = *new(types.Decimal)
+	t.Last_order_date = *new(types.Date)
+	t.Created_at = *new(types.DateTime)
+	t.Profile_photo = *new([]byte)
+	t.applyDefaults()
+}
+
+// Validate sets a field and runs its OnValidate triggers (the same as ValidateField)
+func (t *Customer) Validate(fieldName string, value interface{}) error {
+	return t.ValidateField(fieldName, value)
+}
+
+// TableCaption returns the table's caption in a language (default en-US)
+func (t *Customer) TableCaption(language ...string) string {
+	return t.GetCaption(captionLanguage(language))
+}
+
+// FieldCaption returns a field's caption in a language (default en-US)
+func (t *Customer) FieldCaption(fieldName string, language ...string) string {
+	return t.GetFieldCaption(fieldName, captionLanguage(language))
 }
 
 // ========================================

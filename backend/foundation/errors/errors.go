@@ -25,6 +25,8 @@ const (
 	ErrFieldFormat        ErrorCode = "ERR_FIELD_FORMAT"
 	ErrRelatedNotFound    ErrorCode = "ERR_RELATED_NOT_FOUND"
 	ErrRelatedInactive    ErrorCode = "ERR_RELATED_INACTIVE"
+	ErrFieldMustBe        ErrorCode = "ERR_FIELD_MUST_BE"
+	ErrFieldError         ErrorCode = "ERR_FIELD_ERROR"
 	ErrEmailInvalid       ErrorCode = "ERR_EMAIL_INVALID"
 	ErrEmailDuplicate     ErrorCode = "ERR_EMAIL_DUPLICATE"
 	ErrThemeWrongMode     ErrorCode = "ERR_THEME_WRONG_MODE"
@@ -189,6 +191,16 @@ func FieldFormat(table, field, format string) *AppError {
 // RelatedNotFound: a table field refers to a record (value) that does not exist
 func RelatedNotFound(table, field, value string) *AppError {
 	return &AppError{Code: ErrRelatedNotFound, Table: table, Field: field, Params: []string{value}}
+}
+
+// FieldMustBe: a table field must have a certain value (TestField with a value)
+func FieldMustBe(table, field, value string) *AppError {
+	return &AppError{Code: ErrFieldMustBe, Table: table, Field: field, Params: []string{value}}
+}
+
+// FieldErrorText: an error about a table field with a translated text (FieldError)
+func FieldErrorText(table, field, text string) *AppError {
+	return &AppError{Code: ErrFieldError, Table: table, Field: field, Params: []string{text}}
 }
 
 // RelatedInactive: a table field refers to a record (value) that may not be used

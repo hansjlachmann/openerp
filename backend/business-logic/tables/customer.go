@@ -1,9 +1,8 @@
 package tables
 
 import (
-	"unicode/utf8"
-
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -36,7 +35,7 @@ func (customerLogic) OnValidate_Payment_terms_code(rec *gtables.Customer) error 
 
 // OnValidate_Name: a name has at least 3 characters
 func (customerLogic) OnValidate_Name(rec *gtables.Customer) error {
-	if n := utf8.RuneCountInString(string(rec.Name)); n > 0 && n < 3 {
+	if n := system.StrLen(string(rec.Name)); n > 0 && n < 3 {
 		return apperrors.FieldTooShort(gtables.CustomerTableName, "name", 3)
 	}
 	return nil

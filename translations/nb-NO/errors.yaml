@@ -14,6 +14,8 @@ errors:
   ERR_FIELD_FORMAT: "%1 må ha formatet %2"
   ERR_RELATED_NOT_FOUND: "%1 '%2' finnes ikke"
   ERR_RELATED_INACTIVE: "%1 '%2' er inaktiv og kan ikke brukes"
+  ERR_FIELD_MUST_BE: "%1 må være %2"
+  ERR_FIELD_ERROR: "%1 %2"
   ERR_EMAIL_INVALID: "%1: '%2' er ikke en gyldig e-postadresse"
   ERR_THEME_WRONG_MODE: "%1: temaet '%2' er laget for den andre modusen"
   ERR_EMAIL_DUPLICATE: "%1: '%2' står flere ganger"
