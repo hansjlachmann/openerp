@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
+	"github.com/hansjlachmann/openerp/backend/business-logic/reports"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -51,6 +53,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	// Parse request body
 	var req struct {
 		CodeunitID int                    `json:"codeunit_id"`
+		ReportID   int                    `json:"report_id"` // a processing-only report instead of a codeunit
 		Record     map[string]interface{} `json:"record"`
 		// The records selected on the list (rec.SetSelectionFilter in the codeunit)
 		Selection *listSelection `json:"selection"`
@@ -59,12 +62,15 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	if req.CodeunitID == 0 {
+	if req.CodeunitID == 0 && req.ReportID == 0 {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Codeunit ID is required"))
 	}
 
-	// Get codeunit factory from registry
+	// Get codeunit factory from registry (a report runs like a codeunit with a dialog)
 	factory, ok := codeunits.Get(req.CodeunitID)
+	if req.ReportID != 0 {
+		factory, ok = reports.CodeunitFactory(req.ReportID)
+	}
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
 	}
@@ -265,9 +271,10 @@ func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		ConfirmID string            `json:"confirm_id"`
-		Response  bool              `json:"response"`
-		Values    map[string]string `json:"values,omitempty"`
+		ConfirmID string `json:"confirm_id"`
+		Response  bool   `json:"response"`
+		// Input values: text; numbers and booleans are taken as their text
+		Values map[string]interface{} `json:"values,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Invalid request body"))
@@ -285,7 +292,20 @@ func (h *JobsHandler) RespondToConfirm(c *fiber.Ctx) error {
 
 	// Route to input response or confirm response
 	if req.Values != nil {
-		if !dialog.RespondToInput(req.ConfirmID, req.Values) {
+		values := make(map[string]string, len(req.Values))
+		for name, v := range req.Values {
+			switch x := v.(type) {
+			case nil:
+				values[name] = ""
+			case string:
+				values[name] = x
+			case float64:
+				values[name] = strconv.FormatFloat(x, 'f', -1, 64)
+			default:
+				values[name] = fmt.Sprint(x)
+			}
+		}
+		if !dialog.RespondToInput(req.ConfirmID, values) {
 			return c.Status(400).JSON(apitypes.NewErrorResponse("No pending input request with that ID"))
 		}
 	} else {

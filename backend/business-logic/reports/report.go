@@ -1,0 +1,170 @@
+// Package reports runs processing-only reports: batch jobs that loop over data items (the
+// records of tables, nested and linked), with a request page for options and filters, and
+// triggers for each data item — the classic report structure without a printout.
+//
+// A report is a Go type registered with its number, like a codeunit:
+//
+//	func init() { Register(675, "delete-job-queue-log-entries", func() Report { return &deleteLog{} }) }
+//
+//	func (r *deleteLog) Definition() *Definition {
+//		return &Definition{
+//			Options:   []Option{{Name: "older_than_days", Type: "number", Default: "30"}},
+//			DataItems: []*DataItem{{
+//				Name: "JobQueue", Table: "Job_Queue", RequestFilterFields: []string{"no"},
+//				DataItems: []*DataItem{{
+//					Name: "LogEntry", Table: "Job_Queue_Entry",
+//					Link: map[string]string{"job_queue_no": "no"}, // DataItemLink
+//					OnAfterGetRecord: Trigger(r.deleteEntry),
+//				}},
+//			}},
+//		}
+//	}
+//
+// The factory makes a new instance for every run, so a report keeps its counters and windows
+// in its own fields. Triggers return Skip(), Break() or Quit() to leave the record, the data
+// item or the report. Captions and labels come from translations/<lang>/reports.yaml
+// (reports.<id>.caption, reports.<id>.options.<name>). Printed reports (sections, layout) are
+// not built yet.
+package reports
+
+import (
+	"errors"
+	"sort"
+	"sync"
+
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
+)
+
+// Report is a processing-only report
+type Report interface {
+	// Definition returns the report's data items, options and report triggers; it is
+	// called once per run on a new instance (the triggers may use the instance's fields)
+	Definition() *Definition
+}
+
+// Factory makes a new instance of a report for a run
+type Factory func() Report
+
+// Definition is the structure of a report
+type Definition struct {
+	// Options of the request page (the report's own fields, read with Run.Option), shown
+	// below the data items' filters
+	Options []Option
+	// OptionsCaption: the heading of the options on the request page — a text of the report
+	// (reports.<id>.texts.<key>); empty: the standard "Options"
+	OptionsCaption string
+	// Top-level data items, run one after another
+	DataItems []*DataItem
+	// OnPreReport runs after the request page, before the data items (Quit stops the report)
+	OnPreReport func(run *Run) error
+	// OnPostReport runs after the data items (not after Quit)
+	OnPostReport func(run *Run) error
+}
+
+// Option is a field of the request page
+type Option struct {
+	Name     string   // key (read with Run.Option); the label is reports.<id>.options.<name>
+	Type     string   // "text", "number", "date" or "option"
+	Default  string   // initial value ("option": the number, 1-based)
+	Options  []string // the choices of an "option" field (translated texts)
+	Required bool
+}
+
+// TriggerFunc is a data item trigger; rec is the data item's record
+type TriggerFunc func(rec ftables.Table, run *Run) error
+
+// DataItem is a loop over the records of a table
+type DataItem struct {
+	Name  string // name in the report (filter keys, messages)
+	Table string // the table (its API name, e.g. "Job_Queue_Entry")
+	// Key and Descending: the sort order (DataItemTableView SORTING)
+	Key        []string
+	Descending bool
+	// TableView: fixed filters (DataItemTableView WHERE), in filter group 2 — the user's
+	// request filters cannot remove them
+	TableView []ftables.FieldFilter
+	// RequestFilterFields: fields the request page offers filters for (ReqFilterFields)
+	RequestFilterFields []string
+	// Link: field of this data item → field of the parent data item (DataItemLink): the
+	// records of the current parent record only (filter group 4)
+	Link map[string]string
+	// Triggers
+	OnPreDataItem    TriggerFunc // before the loop (filters can still be set); Break skips the data item
+	OnAfterGetRecord TriggerFunc // for each record; Skip: the next record, Break: end of the loop
+	OnPostDataItem   TriggerFunc // after the loop
+	// Nested data items: run for each record of this one (DataItemIndent)
+	DataItems []*DataItem
+}
+
+// Trigger makes a data item trigger of a function on the typed record:
+//
+//	OnAfterGetRecord: Trigger(func(e *gtables.JobQueueEntry, run *Run) error { … })
+func Trigger[T any](fn func(rec T, run *Run) error) TriggerFunc {
+	return func(rec ftables.Table, run *Run) error {
+		r, ok := rec.(T)
+		if !ok {
+			return errors.New("report trigger: wrong record type")
+		}
+		return fn(r, run)
+	}
+}
+
+var (
+	errSkip  = errors.New("report: skip")
+	errBreak = errors.New("report: break")
+	errQuit  = errors.New("report: quit")
+)
+
+// Skip leaves the current record (CurrReport.Skip): the next record follows, nested data
+// items do not run for this one
+func Skip() error { return errSkip }
+
+// Break ends the current data item (CurrReport.Break): in OnPreDataItem it is skipped, in
+// OnAfterGetRecord the loop ends (OnPostDataItem still runs)
+func Break() error { return errBreak }
+
+// Quit ends the report (CurrReport.Quit): nothing more runs, OnPostReport neither
+func Quit() error { return errQuit }
+
+var (
+	registryMu sync.RWMutex
+	registry   = map[int]Factory{}
+	names      = map[int]string{}
+)
+
+// Register adds a report with its number and a name
+func Register(id int, name string, factory Factory) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	registry[id] = factory
+	names[id] = name
+}
+
+// Get returns a report's factory
+func Get(id int) (Factory, bool) {
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+	f, ok := registry[id]
+	return f, ok
+}
+
+// List returns the registered reports: number → name
+func List() map[int]string {
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+	result := make(map[int]string, len(names))
+	for id, name := range names {
+		result[id] = name
+	}
+	return result
+}
+
+// IDs returns the registered report numbers, sorted
+func IDs() []int {
+	var ids []int
+	for id := range List() {
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+	return ids
+}

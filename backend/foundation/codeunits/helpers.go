@@ -208,3 +208,13 @@ func RunPage(pageID int, filters interface{}, selectKey string, lookupMode bool)
 	}
 	return dialog.RunPage(pageID, filters, selectKey, lookupMode)
 }
+
+// RequestPage shows a report's request page (options and the data items' filters) and waits
+// for the answer (see Dialog.RequestPage); nil without a dialog or on cancel
+func RequestPage(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string) map[string]string {
+	dialog := GetCurrentDialog()
+	if dialog == nil {
+		return nil
+	}
+	return dialog.RequestPage(title, fields, dataItems, optionsCaption)
+}

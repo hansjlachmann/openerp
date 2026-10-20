@@ -279,6 +279,7 @@ messages:
   DLG_DELETE_RECORD_TITLE: "Slett post"
   DLG_CONFIRM_TITLE: "Bekreft"
   DLG_MESSAGE_TITLE: "Melding"
+  DLG_OPTIONS: "Alternativer"
   DLG_ERROR_TITLE: "Feil"
   DLG_FILTER_TITLE: "Filter"
 

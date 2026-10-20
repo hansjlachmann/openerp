@@ -279,6 +279,7 @@ messages:
   DLG_DELETE_RECORD_TITLE: "Slet post"
   DLG_CONFIRM_TITLE: "Bekræft"
   DLG_MESSAGE_TITLE: "Meddelelse"
+  DLG_OPTIONS: "Indstillinger"
   DLG_ERROR_TITLE: "Fejl"
   DLG_FILTER_TITLE: "Filter"
 

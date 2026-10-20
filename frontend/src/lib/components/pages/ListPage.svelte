@@ -10,6 +10,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
 	import PageRenderer from './PageRenderer.svelte';
+	import type { RequestDataItem } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
@@ -199,6 +200,8 @@
 
 	// Input dialog state (for codeunits requesting user input)
 	let progressInputMode = $state(false);
+	let progressInputDataItems = $state<RequestDataItem[]>([]); // a report's request page
+	let progressOptionsCaption = $state(''); // … and the heading of its options
 	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string; options?: string[] }>>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
@@ -544,6 +547,7 @@
 	// The backend decides whether to use progress based on codeunit.UsesProgress()
 	async function handleRunObject(runObject: string) {
 		let codeunitId: number;
+		let isReport = false; // "report:ID": a processing-only report (request page, then the report)
 
 		// Check if it's a field reference (format: "field:fieldname")
 		if (runObject.startsWith('field:')) {
@@ -561,7 +565,8 @@
 		} else {
 			// Parse the run_object string (format: "codeunit:ID")
 			const [objectType, objectId] = runObject.split(':');
-			if (objectType !== 'codeunit') {
+			isReport = objectType === 'report';
+			if (objectType !== 'codeunit' && !isReport) {
 				toast.error(t(ERR.UNKNOWN_OBJECT_TYPE, objectType));
 				return;
 			}
@@ -641,6 +646,8 @@
 					// Show input dialog
 					progressInputMode = true;
 					progressInputFields = (event.data?.fields as typeof progressInputFields) || [];
+					progressInputDataItems = (event.data?.data_items as RequestDataItem[]) || [];
+					progressOptionsCaption = (event.data?.options_caption as string) || '';
 					if (event.message) progressTitle = event.message;
 					inputResponseCallback = (values: Record<string, string> | null) => {
 						progressInputMode = false;
@@ -662,7 +669,7 @@
 						toast.error(syncResult.message || t(ERR.CODEUNIT_FAILED));
 					}
 				}
-			}, jobSelection);
+			}, jobSelection, isReport ? 'report' : 'codeunit');
 
 			// For async jobs, keep modal open briefly to show 100%
 			if (result && 'job_id' in result) {
@@ -3433,6 +3440,8 @@
 	onConfirmResponse={confirmResponseCallback}
 	inputMode={progressInputMode}
 	inputFields={progressInputFields}
+	inputDataItems={progressInputDataItems}
+	optionsCaption={progressOptionsCaption}
 	onInputResponse={inputResponseCallback}
 />
 

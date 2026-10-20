@@ -8,6 +8,17 @@ import { toast } from '$lib/stores/toast';
 import { buildQueryString } from '$lib/services/api';
 import type { ListOptions } from '$lib/types/api';
 
+/** An answer to a codeunit's question was refused by the server: show why */
+async function answerRefused(res: Response): Promise<void> {
+	let message = res.statusText;
+	try {
+		message = (await res.json()).error || message;
+	} catch {
+		// not JSON: the status text
+	}
+	toast.error(message);
+}
+
 /** The records selected on a list a codeunit is run on: their keys, or all of the list's query */
 export interface JobSelection {
 	keys?: string[];
@@ -105,7 +116,8 @@ export async function startJob(
 	codeunitId: number,
 	record: Record<string, unknown>,
 	callbacks: JobCallbacks = {},
-	selection?: JobSelection
+	selection?: JobSelection,
+	objectType: 'codeunit' | 'report' = 'codeunit' // a report: its number is in codeunitId
 ): Promise<ProgressEvent | SyncJobResult | null> {
 	// Start the job; a list's selection (all: with the list's query) goes along for
 	// rec.SetSelectionFilter in the codeunit
@@ -114,7 +126,7 @@ export async function startJob(
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
-			codeunit_id: codeunitId,
+			...(objectType === 'report' ? { report_id: codeunitId } : { codeunit_id: codeunitId }),
 			record,
 			...(selection ? { selection: { keys: selection.keys, all: selection.all } } : {})
 		})
@@ -190,7 +202,7 @@ export async function startJob(
 						// Handle input request dialog
 						const respond = async (values: Record<string, string> | null) => {
 							try {
-								await fetch(`/api/jobs/${jobId}/confirm`, {
+								const res = await fetch(`/api/jobs/${jobId}/confirm`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
 									body: JSON.stringify({
@@ -198,6 +210,8 @@ export async function startJob(
 										values: values ?? {}
 									})
 								});
+								// The codeunit waits for this answer: say so when it was refused
+								if (!res.ok) await answerRefused(res);
 							} catch (err) {
 								console.error('Failed to send input response:', err);
 							}
@@ -207,11 +221,12 @@ export async function startJob(
 						// The codeunit opens a page (RunModal) and waits: {action, key} when it closes
 						const respond = async (values: Record<string, string> | null) => {
 							try {
-								await fetch(`/api/jobs/${jobId}/confirm`, {
+								const res = await fetch(`/api/jobs/${jobId}/confirm`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
 									body: JSON.stringify({ confirm_id: event.confirm_id, values: values ?? {} })
 								});
+								if (!res.ok) await answerRefused(res);
 							} catch (err) {
 								console.error('Failed to send page response:', err);
 							}

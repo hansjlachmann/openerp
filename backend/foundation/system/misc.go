@@ -92,9 +92,20 @@ func StrMenu(options string, defaultNumber int, instruction ...string) int {
 // codeunit; without a dialog (a scheduled run) nothing happens. Another kind of URL is an error.
 func Hyperlink(link string) error {
 	u, err := url.Parse(strings.TrimSpace(link))
-	if err != nil || !(((u.Scheme == "http" || u.Scheme == "https") && u.Host != "") || (u.Scheme == "mailto" && u.Opaque != "")) {
+	if err != nil {
+		return fmt.Errorf("Hyperlink: %q is not an http, https or mailto URL", link)
+	}
+	web := (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
+	mail := u.Scheme == "mailto" && u.Opaque != ""
+	if !web && !mail {
 		return fmt.Errorf("Hyperlink: %q is not an http, https or mailto URL", link)
 	}
 	codeunits.Hyperlink(u.String())
 	return nil
+}
+
+// GuiAllowed reports whether the code runs with a user to ask (a codeunit's dialog), not in a
+// scheduled run: ask with Confirm, StrMenu or RunModal only then
+func GuiAllowed() bool {
+	return codeunits.GetCurrentDialog() != nil
 }

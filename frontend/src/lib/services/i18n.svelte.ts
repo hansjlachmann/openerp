@@ -136,6 +136,7 @@ export const ERR = {
 } as const;
 
 export const DLG = {
+	OPTIONS: 'DLG_OPTIONS', // the options heading of a report's request page
 	DELETE_RECORD_TITLE: 'DLG_DELETE_RECORD_TITLE',
 	DELETE_RECORD_CONFIRM: 'DLG_DELETE_RECORD_CONFIRM',
 	DELETE_CONFIRM: 'DLG_DELETE_CONFIRM',

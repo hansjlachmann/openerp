@@ -34,6 +34,29 @@ type InputField struct {
 	Options []string `json:"options,omitempty"`
 }
 
+// RequestDataItem is a data item of a report's request page: the user filters its records on
+// any of its fields, as on a list page (the filter pane)
+type RequestDataItem struct {
+	Name    string          `json:"name"`    // the data item's name (the answer's key: "filters:<name>")
+	Caption string          `json:"caption"` // the table's caption
+	Indent  int             `json:"indent"`  // 0 top level, 1 under its parent, …
+	Fields  []RequestField  `json:"fields"`  // the fields that can be filtered
+	Filters []RequestFilter `json:"filters"` // the filters to start with (request filter fields)
+}
+
+// RequestField is a field a request page can filter on
+type RequestField struct {
+	Name    string `json:"name"`
+	Caption string `json:"caption"`
+	Type    string `json:"type,omitempty"`
+}
+
+// RequestFilter is a filter of a request page: a field and an expression in the filter syntax
+type RequestFilter struct {
+	Field      string `json:"field"`
+	Expression string `json:"expression"`
+}
+
 // Dialog represents a dialog with progress bar support
 // Usage:
 //   dialog := OpenDialog("Processing @1@@@@@@@@@@@")
@@ -319,6 +342,18 @@ func (d *Dialog) RespondToConfirm(confirmID string, response bool) bool {
 // RequestInput shows an input dialog with arbitrary fields and waits for user response
 // Returns a map of field name → value, or nil on cancel/timeout
 func (d *Dialog) RequestInput(title string, fields []InputField) map[string]string {
+	return d.requestInput(title, fields, nil, "")
+}
+
+// RequestPage is RequestInput with the data items of a report: the answer has the options
+// ("option" fields as in RequestInput) and, per data item, "filters:<name>" — a JSON list of
+// {field, expression}. The options come below the filters, under optionsCaption ("": the
+// standard "Options"). nil on cancel/timeout.
+func (d *Dialog) RequestPage(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string) map[string]string {
+	return d.requestInput(title, fields, dataItems, optionsCaption)
+}
+
+func (d *Dialog) requestInput(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string) map[string]string {
 	d.mu.Lock()
 	if d.closed {
 		d.mu.Unlock()
@@ -354,7 +389,9 @@ func (d *Dialog) RequestInput(title string, fields []InputField) map[string]stri
 		Message:   title,
 		Timestamp: time.Now().UnixMilli(),
 		Data: map[string]interface{}{
-			"fields": fields,
+			"fields":          fields,
+			"data_items":      dataItems,
+			"options_caption": optionsCaption,
 		},
 	}:
 	case <-d.ctx.Done():

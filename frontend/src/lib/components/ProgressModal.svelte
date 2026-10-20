@@ -4,6 +4,8 @@
 	import { t, MSG, DLG, BTN } from '$lib/services/i18n.svelte';
 	import { getDateFormatPattern, parseLocaleDate, formatDate } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
+	import RequestFilters from './RequestFilters.svelte';
+	import type { RequestDataItem, RequestFilter } from '$lib/types/pages';
 
 	interface InputField {
 		name: string;
@@ -25,6 +27,9 @@
 		onConfirmResponse?: (response: boolean) => void;
 		inputMode?: boolean;
 		inputFields?: InputField[];
+		// A report's request page: the data items whose records can be filtered (any field)
+		inputDataItems?: RequestDataItem[];
+		optionsCaption?: string; // the heading of a request page's options (default "Options")
 		onInputResponse?: (values: Record<string, string> | null) => void;
 		showCancel?: boolean;
 		onCancel?: () => void;
@@ -41,6 +46,8 @@
 		onConfirmResponse,
 		inputMode = false,
 		inputFields = [],
+		inputDataItems = [],
+		optionsCaption = '',
 		onInputResponse,
 		showCancel = false,
 		onCancel
@@ -80,9 +87,17 @@
 	// Input form values
 	let inputValues = $state<Record<string, string>>({});
 
+	// The filters per data item of a request page (starting with the request filter fields)
+	let requestFilters = $state<Record<string, RequestFilter[]>>({});
+	$effect(() => {
+		if (inputMode) {
+			requestFilters = Object.fromEntries(inputDataItems.map((item) => [item.name, item.filters.map((f) => ({ ...f }))]));
+		}
+	});
+
 	// Initialize input values when inputMode activates with new fields
 	$effect(() => {
-		if (inputMode && inputFields.length > 0) {
+		if (inputMode && (inputFields.length > 0 || inputDataItems.length > 0)) {
 			const initial: Record<string, string> = {};
 			for (const field of inputFields) {
 				if (field.type === 'date' && field.default) {
@@ -100,7 +115,7 @@
 	const inputValid = $derived(() => {
 		if (!inputMode) return false;
 		return inputFields.every(f => {
-			const val = (inputValues[f.name] ?? '').trim();
+			const val = String(inputValues[f.name] ?? '').trim(); // number inputs bind numbers
 			if (f.required && val === '') return false;
 			if (f.type === 'date' && val !== '') {
 				return parseLocaleDate(val, locale) !== null;
@@ -122,8 +137,14 @@
 	}
 
 	function handleInputOk() {
-		// Convert locale-formatted date values back to ISO before sending
-		const result: Record<string, string> = { ...inputValues };
+		// Values go as text (number inputs bind numbers); locale-formatted dates back to ISO
+		const result: Record<string, string> = {};
+		for (const [name, value] of Object.entries(inputValues)) result[name] = String(value ?? '');
+		// Request page filters: per data item the filters that have an expression
+		for (const item of inputDataItems) {
+			const filters = (requestFilters[item.name] ?? []).filter((f) => f.expression.trim() !== '');
+			result[`filters:${item.name}`] = JSON.stringify(filters.map((f) => ({ field: f.field, expression: f.expression.trim() })));
+		}
 		for (const field of inputFields) {
 			if (field.type === 'date' && result[field.name]) {
 				const iso = parseLocaleDate(result[field.name], locale);
@@ -146,8 +167,44 @@
 	}
 </script>
 
+{#snippet inputFieldList()}
+{#each inputFields as field}
+	{#if field.type === 'option'}
+		<div class="input-field" role="radiogroup" aria-label={field.label || title}>
+			{#if field.label}<span class="input-label">{field.label}</span>{/if}
+			{#each field.options ?? [] as option, i}
+				<label class="option-choice">
+					<input
+						type="radio"
+						name="input-{field.name}"
+						value={String(i + 1)}
+						bind:group={inputValues[field.name]}
+						ondblclick={() => { inputValues[field.name] = String(i + 1); handleInputOk(); }}
+					/>
+					<span>{option}</span>
+				</label>
+			{/each}
+		</div>
+	{:else}
+	<div class="input-field">
+		<label class="input-label" for="input-{field.name}">
+			{field.label}
+			{#if field.required}<span class="required-mark">*</span>{/if}
+		</label>
+		<input
+			id="input-{field.name}"
+			type={getInputType(field.type)}
+			class="input-control"
+			placeholder={field.type === 'date' ? getDateFormatPattern(locale) : undefined}
+			bind:value={inputValues[field.name]}
+		/>
+	</div>
+	{/if}
+{/each}
+{/snippet}
+
 <Modal {open}>
-	<div class="progress-modal">
+	<div class="progress-modal" class:request-page={inputMode && inputDataItems.length > 0}>
 		<div class="progress-header">
 			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : (title ?? t(MSG.PROCESSING))}</h3>
 		</div>
@@ -169,39 +226,20 @@
 			{:else if inputMode}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div class="input-form" bind:this={inputFormElement} onkeydown={handleInputKeydown}>
-					{#each inputFields as field}
-						{#if field.type === 'option'}
-							<div class="input-field" role="radiogroup" aria-label={field.label || title}>
-								{#if field.label}<span class="input-label">{field.label}</span>{/if}
-								{#each field.options ?? [] as option, i}
-									<label class="option-choice">
-										<input
-											type="radio"
-											name="input-{field.name}"
-											value={String(i + 1)}
-											bind:group={inputValues[field.name]}
-											ondblclick={() => { inputValues[field.name] = String(i + 1); handleInputOk(); }}
-										/>
-										<span>{option}</span>
-									</label>
-								{/each}
-							</div>
-						{:else}
-						<div class="input-field">
-							<label class="input-label" for="input-{field.name}">
-								{field.label}
-								{#if field.required}<span class="required-mark">*</span>{/if}
-							</label>
-							<input
-								id="input-{field.name}"
-								type={getInputType(field.type)}
-								class="input-control"
-								placeholder={field.type === 'date' ? getDateFormatPattern(locale) : undefined}
-								bind:value={inputValues[field.name]}
-							/>
-						</div>
+					{#if inputDataItems.length > 0}
+						<!-- A report's request page: the data items' filters, then the options -->
+						{#each inputDataItems as item (item.name)}
+							{#if requestFilters[item.name]}
+								<RequestFilters {item} bind:filters={requestFilters[item.name]} />
+							{/if}
+						{/each}
+						{#if inputFields.length > 0}
+							<h4 class="options-title">{optionsCaption || t(DLG.OPTIONS)}</h4>
+							{@render inputFieldList()}
 						{/if}
-					{/each}
+					{:else}
+						{@render inputFieldList()}
+					{/if}
 				</div>
 				<div class="confirm-buttons">
 					<Button variant="secondary" onclick={handleInputCancel}>{t(BTN.CANCEL)}</Button>
@@ -391,5 +429,21 @@
 
 	:global(.dark) .input-control:focus {
 		border-color: rgb(var(--accent-500));
+	}
+
+	/* A report's request page: wider, scrolls when there are many filters */
+	.progress-modal.request-page {
+		@apply min-w-[480px];
+	}
+
+	.progress-modal.request-page .input-form {
+		max-height: 60vh;
+		overflow-y: auto;
+		@apply pr-1;
+	}
+
+	/* A request page's options: below the filters, under a heading */
+	.options-title {
+		@apply text-sm font-semibold text-gray-800 dark:text-gray-200 pt-3 mt-2 border-t border-gray-200 dark:border-gray-700;
 	}
 </style>

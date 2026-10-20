@@ -115,3 +115,23 @@ export interface FieldState {
 	editable?: boolean;
 	visible?: boolean;
 }
+
+/** A data item of a report's request page: its fields can be filtered as on a list page */
+export interface RequestDataItem {
+	name: string;
+	caption: string;
+	indent: number; // 0 top level, 1 under its parent, …
+	fields: RequestField[];
+	filters: RequestFilter[]; // to start with (the request filter fields)
+}
+
+export interface RequestField {
+	name: string;
+	caption: string;
+	type?: string;
+}
+
+export interface RequestFilter {
+	field: string;
+	expression: string;
+}

@@ -473,20 +473,13 @@ func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 			return errors.New(apperrors.InvalidFilters().Message(language))
 		}
 		for _, f := range apiFilters {
-			// A Sum/Count FlowField (e.g. Customer Balance) filters on its calculated value
-			if ff, ok := table.(flowFieldFilterer); ok {
-				if kind, ok := ff.FlowFieldFilterKind(f.Field); ok {
-					if err := flowfilter.Validate(kind, f.Expression); err != nil {
-						return errors.New(apperrors.FilterInvalid(c.Params("table"), f.Field, f.Expression).Message(language))
-					}
-					table.SetFilter(f.Field, f.Expression)
-					continue
-				}
-			}
-			if !ftables.IsQueryableColumn(table, f.Field) {
+			// Stored fields, and Sum/Count FlowFields on their calculated value (e.g. Balance)
+			switch err := ftables.ApplyFilter(table, ftables.FieldFilter{Field: f.Field, Expression: f.Expression}); {
+			case errors.Is(err, ftables.ErrFilterExpression):
+				return errors.New(apperrors.FilterInvalid(c.Params("table"), f.Field, f.Expression).Message(language))
+			case err != nil:
 				return errors.New(apperrors.InvalidFilters().Message(language))
 			}
-			table.SetFilter(f.Field, f.Expression)
 		}
 	}
 

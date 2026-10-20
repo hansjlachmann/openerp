@@ -279,6 +279,7 @@ messages:
   DLG_DELETE_RECORD_TITLE: "Delete Record"
   DLG_CONFIRM_TITLE: "Confirm"
   DLG_MESSAGE_TITLE: "Message"
+  DLG_OPTIONS: "Options"
   DLG_ERROR_TITLE: "Error"
   DLG_FILTER_TITLE: "Filter"
 

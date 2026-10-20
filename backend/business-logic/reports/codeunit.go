@@ -1,0 +1,57 @@
+package reports
+
+import (
+	"errors"
+
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+)
+
+// CodeunitFactory runs a report like a codeunit, so pages (run_object: report:<id>) start it
+// through the job API with a dialog: the request page, then the report; its message is shown
+// at the end
+func CodeunitFactory(id int) (fcodeunits.Factory, bool) {
+	if _, ok := Get(id); !ok {
+		return nil, false
+	}
+	return func(db database.Executor, company string, dbType database.DBType) fcodeunits.Codeunit {
+		return &reportCodeunit{id: id, db: db, company: company, dbType: dbType}
+	}, true
+}
+
+type reportCodeunit struct {
+	id      int
+	db      database.Executor
+	company string
+	dbType  database.DBType
+}
+
+func (c *reportCodeunit) ID() int            { return c.id }
+func (c *reportCodeunit) Name() string       { return List()[c.id] }
+func (c *reportCodeunit) UsesProgress() bool { return true }
+
+// SourceTable: the table of the first data item (the API makes a record of it)
+func (c *reportCodeunit) SourceTable() string {
+	factory, _ := Get(c.id)
+	if def := factory().Definition(); len(def.DataItems) > 0 {
+		return def.DataItems[0].Table
+	}
+	return ""
+}
+
+func (c *reportCodeunit) Run(record interface{}) (fcodeunits.Result, error) {
+	result, err := Execute(c.id, c.db, c.company, c.dbType, RunOptions{RequestPage: true})
+	var appErr *apperrors.AppError
+	if errors.As(err, &appErr) {
+		// e.g. a request filter that cannot be applied: in the user's language
+		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
+	}
+	if err != nil {
+		return fcodeunits.Result{}, err
+	}
+	if result.Message != "" {
+		return fcodeunits.Message(result.Message), nil
+	}
+	return fcodeunits.Result{Success: true}, nil
+}

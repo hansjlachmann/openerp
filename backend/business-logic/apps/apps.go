@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
+	"github.com/hansjlachmann/openerp/backend/business-logic/reports"
 	fapps "github.com/hansjlachmann/openerp/backend/foundation/apps"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
@@ -45,6 +46,11 @@ func CheckObjectNumbers(installed []*fapps.App) error {
 	for id, name := range codeunits.List() {
 		if !allowed(fapps.Codeunit, id) {
 			outside = append(outside, fmt.Sprintf("codeunit %d %s", id, name))
+		}
+	}
+	for id, name := range reports.List() {
+		if !allowed(fapps.Report, id) {
+			outside = append(outside, fmt.Sprintf("report %d %s", id, name))
 		}
 	}
 	if len(outside) > 0 {

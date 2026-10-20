@@ -28,6 +28,7 @@ common:
     ledger_entries: "Ledger Entries"
     run: "Run"
     send_test_e_mail: "Send Test E-mail"
+    delete_log_entries: "Delete Log Entries"
 
   # Card page sections (page YAML section name in snake case)
   sections:

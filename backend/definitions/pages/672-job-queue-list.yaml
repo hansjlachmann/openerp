@@ -70,6 +70,12 @@ page:
       enabled: true
       run_object: codeunit:455
 
+    - name: Delete Log Entries
+      caption: Delete Log Entries
+      promoted: true
+      enabled: true
+      run_object: report:675   # processing-only report: request page, then deletes old log entries
+
     - name: New
       caption: New
       shortcut: Alt+N

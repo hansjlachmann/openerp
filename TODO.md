@@ -150,8 +150,9 @@ Built 2026-10-13:
       into it), and saving a new preference sets its key fields (the API wrote rows with empty keys).
 - [ ] The frontend keeps column layouts, widths and row numbers in localStorage only (per browser);
       it could save them through `/api/preferences` so they follow the user to another browser.
-- [ ] Reports, when built: register them with their number and check them in `CheckObjectNumbers`;
-      `run_object: report:<id>`; Job Queue "object type to run".
+- [x] Reports (processing-only, 2026-10-20) are registered with their number and checked in
+      `CheckObjectNumbers`; pages run them with `run_object: report:<id>`.
+- [ ] Job Queue "object type to run" (Codeunit / Report), so a scheduled job can run a report.
 
 ## Feature: system functions in Go ✅ DONE (first and second set, 2026-10-20)
 
@@ -300,15 +301,42 @@ features. Ordered by effort — the easiest first. Uses in the classic code in b
   - [ ] Temporary records: `Copy(tempRec)` sharing the records, as the classic code does with
         temporary buffers passed between functions.
 
-### Priority 4 — with the report engine (not built yet)
-- [ ] `ShowOutput` (1603), `CreateTotals` (186), `TotalsCausedBy` (22), `NewPagePerRecord`,
-      `SaveAsHtml`: report sections and totals — part of the report design.
+### Priority 4 — reports
+- [x] **Processing-only reports** ✅ DONE (2026-10-20): `business-logic/reports` — a report is a Go
+      type registered with its number (`Register(id, name, factory)`), a `Definition` with request
+      page options and data items (table, key, table view in filter group 2, request filter fields,
+      `Link` to the parent in filter group 4, nested data items) and triggers (`OnPreReport`,
+      `OnPreDataItem`, `OnAfterGetRecord`, `OnPostDataItem`, `OnPostReport`); `Skip()`, `Break()`,
+      `Quit()`; `reports.Execute(id, …, RunOptions{RequestPage, Record, Options})` = Report.Run
+      (a record's filters become the request filters). The request page uses the codeunit input
+      dialog: options, and per data item (nested ones indented) filters on any field — the list's
+      filter pane behaviour (`RequestFilters.svelte`), applied with `ftables.ApplyFilter`, shared with
+      the list API; texts in `translations/<lang>/reports.yaml`. `system.GuiAllowed()`. First report: 675
+      Delete Job Queue Log Entries (Job Queue List action "Delete Log Entries").
+- [ ] Follow-ups: the request page remembers the last values per user; a Yes/No option type;
+      reports from card actions (cards run codeunits without a dialog); the Job Queue runs reports
+      (see above).
+- [ ] Printed reports: see "Printed reports (report engine)" — MEDIUM priority.
 
 ### Not needed (decided earlier or no use here)
 - Files (`Open/Create/Read/Write/Seek/Erase/Exists`, `TextMode`, `QueryReplace`) and dataports
   (`Import`/`Export`): Go's `os` and the API's import/export; `Shell`, `Environ` (1 each): no.
 - `Clear` (936), `Commit` (192), `Exit`: Go's zero values, transactions, `return`.
 - `SetLoadFields`: records always load every field; only if a list of many fields gets slow.
+
+## Printed reports (report engine) (MEDIUM priority, added 2026-10-20)
+
+The classic application has about 315 printed reports. They need a report engine on top of the
+processing-only reports (data items, request page, triggers — built):
+- [ ] Layout: sections per data item — Header, Body, Footer, GroupHeader/GroupFooter,
+      TransHeader/TransFooter (carried-over totals per page) — in a layout format (YAML), with fields,
+      captions and texts; `ShowOutput` (1797 uses: show or skip a section).
+- [ ] Totals: `CreateTotals` (186), `TotalsCausedBy` (104, which field's group change triggers a group
+      footer); group totals on the data item key.
+- [ ] Pages: `PageNo` (858), `NewPage` (76), `NewPagePerRecord` (31), page headers/footers.
+- [ ] Output: PDF (decide: HTML templates rendered to PDF, or a Go PDF library), preview and print
+      in the browser (`Preview`, 37), `SaveAsHtml`/export; `Report.RunModal` (42) from code.
+- [ ] Decide the order with the migration plan (which reports first: documents, lists, statements).
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
 

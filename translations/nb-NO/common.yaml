@@ -28,6 +28,7 @@ common:
     ledger_entries: "Poster"
     run: "Kjør"
     send_test_e_mail: "Send test-e-post"
+    delete_log_entries: "Slett loggposter"
 
   # Card page sections (page YAML section name in snake case)
   sections:
