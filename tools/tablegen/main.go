@@ -92,6 +92,10 @@ type Field struct {
 	// — Insert/Modify/InsertAll encrypt it, Plain<Field>() decrypts it. Requires masked and
 	// types.Text. Not for values that are only compared (user passwords: hash them, sensitive).
 	Encrypted bool `yaml:"encrypted"`
+	// DateFormula: a types.Code field that holds a date formula ("30D", "1M+CM"); the field
+	// checks and ValidateField reject a value that is not one (foundation/dateformula), and
+	// business logic calculates with it: system.CalcDate(string(rec.Due_date_calculation), d)
+	DateFormula bool `yaml:"date_formula"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -247,6 +251,11 @@ func main() {
 			continue
 		}
 		if err := validateFieldNumbers(tableDef); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
+			continue
+		}
+		if err := validateDateFormulaFields(tableDef); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
 			failed = true
 			continue
@@ -595,6 +604,17 @@ func validateFieldNumbers(def *TableDef) error {
 	}
 	if len(problems) > 0 {
 		return fmt.Errorf("field numbers: %s", strings.Join(problems, "; "))
+	}
+	return nil
+}
+
+// validateDateFormulaFields checks that date formula fields (date_formula: true) are stored
+// types.Code fields
+func validateDateFormulaFields(def *TableDef) error {
+	for _, f := range def.Table.Fields {
+		if f.DateFormula && (f.Type != "types.Code" || f.FlowField || f.FlowFilter) {
+			return fmt.Errorf("field %s: date_formula needs a stored types.Code field", f.Name)
+		}
 	}
 	return nil
 }
@@ -1309,6 +1329,11 @@ func (t *{{ .StructName }}) CheckFields() error {
 {{- end }}
 {{- if and .Length (or (eq .Type "types.Code") (eq .Type "types.Text") (eq .Type "string")) }}
 	if err := tables.CheckMaxLength({{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }}), {{ .Length }}); err != nil {
+		return err
+	}
+{{- end }}
+{{- if .DateFormula }}
+	if err := tables.CheckDateFormula({{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }})); err != nil {
 		return err
 	}
 {{- end }}
@@ -3950,6 +3975,11 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 		} else {
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
+{{- if .DateFormula }}
+		if err := tables.CheckDateFormula({{ $.StructName }}TableName, "{{ .Name }}", string(t.{{ upperFirst .Name }})); err != nil {
+			return err
+		}
+{{- end }}
 {{- else if eq .Type "types.Text" }}
 		if v, ok := value.(types.Text); ok {
 			t.{{ upperFirst .Name }} = v

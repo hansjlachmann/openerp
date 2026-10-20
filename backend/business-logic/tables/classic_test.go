@@ -271,3 +271,26 @@ func TestMoreRecordFunctions(t *testing.T) {
 		t.Error("Rename with a wrong type or count accepted")
 	}
 }
+
+// A date formula field (date_formula: true) only takes date formulas: in ValidateField and in
+// the field checks of Insert/Modify
+func TestDateFormulaField(t *testing.T) {
+	var pt gtables.PaymentTerms
+	pt.Code = types.NewCode("14D")
+	if err := pt.ValidateField("due_date_calculation", "14d"); err != nil || pt.Due_date_calculation != "14D" {
+		t.Errorf("14D: %v (%q)", err, pt.Due_date_calculation)
+	}
+	err := pt.ValidateField("due_date_calculation", "14 days")
+	var appErr *apperrors.AppError
+	if !asAppError(err, &appErr) || appErr.Code != apperrors.ErrDateFormulaInvalid || appErr.Field != "due_date_calculation" {
+		t.Errorf("14 days: %v", err)
+	}
+	pt.Due_date_calculation, pt.Discount_date_calculation = types.NewCode("1M+CM"), types.NewCode("8X")
+	if err := pt.CheckFields(); !asAppError(err, &appErr) || appErr.Field != "discount_date_calculation" {
+		t.Errorf("CheckFields with 8X: %v", err)
+	}
+	pt.Discount_date_calculation = ""
+	if err := pt.CheckFields(); err != nil {
+		t.Errorf("CheckFields with a blank formula: %v", err)
+	}
+}

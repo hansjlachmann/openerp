@@ -28,6 +28,7 @@ const (
 	ErrFieldMustBe        ErrorCode = "ERR_FIELD_MUST_BE"
 	ErrFieldError         ErrorCode = "ERR_FIELD_ERROR"
 	ErrEmailInvalid       ErrorCode = "ERR_EMAIL_INVALID"
+	ErrDateFormulaInvalid ErrorCode = "ERR_DATE_FORMULA_INVALID"
 	ErrEmailDuplicate     ErrorCode = "ERR_EMAIL_DUPLICATE"
 	ErrThemeWrongMode     ErrorCode = "ERR_THEME_WRONG_MODE"
 	ErrFilterInvalid      ErrorCode = "ERR_FILTER_INVALID"
@@ -206,6 +207,11 @@ func FieldErrorText(table, field, text string) *AppError {
 // RelatedInactive: a table field refers to a record (value) that may not be used
 func RelatedInactive(table, field, value string) *AppError {
 	return &AppError{Code: ErrRelatedInactive, Table: table, Field: field, Params: []string{value}}
+}
+
+// DateFormulaInvalid: a date formula field holds a value (formula) that is not a date formula
+func DateFormulaInvalid(table, field, formula string) *AppError {
+	return &AppError{Code: ErrDateFormulaInvalid, Table: table, Field: field, Params: []string{formula}}
 }
 
 // EmailInvalid: a table field's e-mail address list holds an item (address) that is not

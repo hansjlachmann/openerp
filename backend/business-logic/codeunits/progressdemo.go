@@ -3,6 +3,7 @@ package codeunits
 import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"time"
@@ -53,10 +54,12 @@ func (c *ProgressDemo) UsesProgress() bool {
 
 // Run executes the codeunit with progress updates
 func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
-	// Ask user to confirm before starting
-	if !fcodeunits.Confirm("Start progress demo?") {
+	// Let the user choose the speed (StrMenu), or cancel
+	speed := system.StrMenu("Fast,Normal,Slow", 2, "Start progress demo: choose the speed")
+	if speed == 0 {
 		return fcodeunits.Message("Progress demo cancelled."), nil
 	}
+	stepTime := []time.Duration{100, 500, 1500}[speed-1] * time.Millisecond
 
 	jobQueue := record.(*gtables.JobQueue)
 
@@ -75,7 +78,7 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		}
 
 		// Simulate work
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(stepTime)
 	}
 
 	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now()); err != nil {

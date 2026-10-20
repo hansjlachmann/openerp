@@ -17,6 +17,7 @@ errors:
   ERR_FIELD_MUST_BE: "%1 must be %2"
   ERR_FIELD_ERROR: "%1 %2"
   ERR_EMAIL_INVALID: "%1: '%2' is not a valid e-mail address"
+  ERR_DATE_FORMULA_INVALID: "%1: '%2' is not a valid date formula (e.g. 30D, 1M, CM, 1M+CM)"
   ERR_THEME_WRONG_MODE: "%1: the theme '%2' is made for the other mode"
   ERR_EMAIL_DUPLICATE: "%1: '%2' is listed more than once"
   ERR_FILTER_INVALID: "%1: '%2' is not a valid filter (e.g. 1000, >1000, 0..500, <>0, 100|200)"

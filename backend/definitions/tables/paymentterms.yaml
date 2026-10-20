@@ -11,6 +11,22 @@ table:
       length: 10
       required: true
 
+    - name: due_date_calculation
+      no: 2
+      type: types.Code
+      db_name: due_date_calculation
+      caption: Due Date Calculation
+      length: 20
+      date_formula: true # e.g. 30D, 14D, CM, 1M+CM
+
+    - name: discount_date_calculation
+      no: 3
+      type: types.Code
+      db_name: discount_date_calculation
+      caption: Discount Date Calculation
+      length: 20
+      date_formula: true
+
     - name: description
       no: 5
       type: types.Text

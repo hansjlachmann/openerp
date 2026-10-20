@@ -13,6 +13,12 @@ page:
         - source: code
           width: 120
 
+        - source: due_date_calculation
+          width: 160
+
+        - source: discount_date_calculation
+          width: 160
+
         - source: description
           width: 300
 

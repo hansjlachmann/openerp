@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
@@ -53,4 +54,35 @@ func UserId() string {
 // false
 func Confirm(text string, values ...any) bool {
 	return codeunits.Confirm(StrSubstNo(text, values...))
+}
+
+// StrMenu shows a menu of options (a comma-separated string, like SelectStr's: "Ship,Invoice,
+// Ship and Invoice") for the user to pick one in a codeunit and returns its number (1-based);
+// 0 when the user cancels, or without a dialog (a scheduled run). defaultNumber is the option
+// selected first (0 or out of range: the first one); instruction (optional, translated) is the
+// text above the options.
+func StrMenu(options string, defaultNumber int, instruction ...string) int {
+	items := strings.Split(options, ",")
+	if strings.TrimSpace(options) == "" {
+		return 0
+	}
+	if defaultNumber < 1 || defaultNumber > len(items) {
+		defaultNumber = 1
+	}
+	title := ""
+	if len(instruction) > 0 {
+		title = instruction[0]
+	}
+	values := codeunits.RequestInput(title, []codeunits.InputField{{
+		Name:     "option",
+		Type:     "option",
+		Required: true,
+		Default:  strconv.Itoa(defaultNumber),
+		Options:  items,
+	}})
+	n, err := strconv.Atoi(values["option"])
+	if err != nil || n < 1 || n > len(items) {
+		return 0
+	}
+	return n
 }

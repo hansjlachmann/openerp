@@ -11,6 +11,7 @@
 		type: string;
 		required?: boolean;
 		default?: string;
+		options?: string[]; // type "option": the choices; the value is the chosen number (1-based)
 	}
 
 	interface Props {
@@ -143,6 +144,23 @@
 			{:else if inputMode}
 				<div class="input-form">
 					{#each inputFields as field}
+						{#if field.type === 'option'}
+							<div class="input-field" role="radiogroup" aria-label={field.label || title}>
+								{#if field.label}<span class="input-label">{field.label}</span>{/if}
+								{#each field.options ?? [] as option, i}
+									<label class="option-choice">
+										<input
+											type="radio"
+											name="input-{field.name}"
+											value={String(i + 1)}
+											bind:group={inputValues[field.name]}
+											ondblclick={() => { inputValues[field.name] = String(i + 1); handleInputOk(); }}
+										/>
+										<span>{option}</span>
+									</label>
+								{/each}
+							</div>
+						{:else}
 						<div class="input-field">
 							<label class="input-label" for="input-{field.name}">
 								{field.label}
@@ -156,6 +174,7 @@
 								bind:value={inputValues[field.name]}
 							/>
 						</div>
+						{/if}
 					{/each}
 				</div>
 				<div class="confirm-buttons">
@@ -309,6 +328,22 @@
 
 	:global(.dark) .input-label {
 		color: rgb(var(--gray-300));
+	}
+
+	.option-choice {
+		@apply flex items-center gap-2 px-2 py-1 text-sm rounded cursor-pointer text-gray-900;
+	}
+
+	.option-choice:hover {
+		@apply bg-gray-100;
+	}
+
+	:global(.dark) .option-choice {
+		color: rgb(var(--gray-100));
+	}
+
+	:global(.dark) .option-choice:hover {
+		background-color: rgb(var(--gray-700));
 	}
 
 	.required-mark {

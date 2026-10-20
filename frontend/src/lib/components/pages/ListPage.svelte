@@ -184,7 +184,7 @@
 
 	// Input dialog state (for codeunits requesting user input)
 	let progressInputMode = $state(false);
-	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string }>>([]);
+	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string; options?: string[] }>>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
 	// Rows shown: the loaded window of the list. Search and sort run on the server

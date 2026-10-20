@@ -26,9 +26,12 @@ type ProgressEvent struct {
 type InputField struct {
 	Name     string `json:"name"`               // Field key (e.g. "date")
 	Label    string `json:"label"`              // Display label
-	Type     string `json:"type"`               // "date", "text", "number"
+	Type     string `json:"type"`               // "date", "text", "number", "option"
 	Required bool   `json:"required,omitempty"` // Whether the field is required
-	Default  string `json:"default,omitempty"`  // Default value
+	Default  string `json:"default,omitempty"`  // Default value ("option": the number, 1-based)
+	// Options: the choices of an "option" field, shown as a list to pick one from; the value
+	// is the number (1-based) of the chosen option
+	Options []string `json:"options,omitempty"`
 }
 
 // Dialog represents a dialog with progress bar support

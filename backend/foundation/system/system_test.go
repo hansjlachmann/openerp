@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
@@ -287,4 +288,36 @@ func TestMoreSystemFunctions(t *testing.T) {
 		t.Error("Confirm without a dialog must be false")
 	}
 	_ = UserId() // no session context: ""
+}
+
+// StrMenu asks through the codeunit's dialog and returns the chosen option's number
+func TestStrMenu(t *testing.T) {
+	if StrMenu("Ship,Invoice", 1) != 0 {
+		t.Error("StrMenu without a dialog must be 0")
+	}
+	d := codeunits.OpenDialogWithID("", "strmenu-test")
+	codeunits.SetCurrentDialog(d)
+	defer codeunits.ClearCurrentDialog()
+
+	answer := func(value string) {
+		go func() {
+			ev := <-d.Events()
+			fields, _ := ev.Data["fields"].([]codeunits.InputField)
+			if ev.EventType != "request_input" || ev.Message != "Post?" || len(fields) != 1 ||
+				fields[0].Type != "option" || len(fields[0].Options) != 3 || fields[0].Default != "3" {
+				t.Errorf("event %+v", ev)
+			}
+			for !d.RespondToInput(ev.ConfirmID, map[string]string{"option": value}) {
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+	answer("2")
+	if n := StrMenu("Ship,Invoice,Ship and Invoice", 3, "Post?"); n != 2 {
+		t.Errorf("chosen 2: %d", n)
+	}
+	answer("") // cancelled: the dialog sends no values
+	if n := StrMenu("Ship,Invoice,Ship and Invoice", 3, "Post?"); n != 0 {
+		t.Errorf("cancelled: %d", n)
+	}
 }

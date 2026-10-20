@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
+	"github.com/hansjlachmann/openerp/backend/foundation/dateformula"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 )
 
@@ -31,6 +32,15 @@ func CheckMaxLength(table, field, value string, max int) error {
 func CheckRange[T ~int | ~int64 | ~float64](table, field string, value, min, max T) error {
 	if value < min || value > max {
 		return apperrors.FieldOutOfRange(table, field, fmt.Sprint(min), fmt.Sprint(max))
+	}
+	return nil
+}
+
+// CheckDateFormula fails when a date formula field (date_formula: true) holds a value that is
+// not a date formula; a blank field is fine.
+func CheckDateFormula(table, field, value string) error {
+	if !dateformula.Valid(value) {
+		return apperrors.DateFormulaInvalid(table, field, value)
 	}
 	return nil
 }

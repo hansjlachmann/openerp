@@ -301,6 +301,7 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 		if !rec.Get(pt.Code) {
 			rec.Code = types.NewCode(pt.Code)
 			rec.Description = types.NewText(pt.Description)
+			rec.Due_date_calculation = types.NewCode(fmt.Sprintf("%dD", pt.DueDays))
 			rec.Active = true
 			if !rec.Insert(true) {
 				return &InsertError{Table: gtables.PaymentTermsTableName, Key: pt.Code, Err: insertErr(rec.TriggerError())}
