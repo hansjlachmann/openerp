@@ -41,11 +41,12 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 - [x] **Production: upgraded 0.1.91 → 0.1.97** (2026-10-20). Backup first, `git pull` (compose file),
       migrations 10 (codeunit/page numbers) and 11 (theme codes) applied, base application 0.1.97
       in the log. 0.1.98 (preferences fix) is not released yet — the release step fails, see below.
-- [ ] **CI: release-please cannot create the 0.1.98 release** (since 2026-10-20): "Resource not
-      accessible by integration — create a release", although the token has `contents: write` (also
-      tried `issues: write`; no rulesets, no immutable releases). Release PR #130 is merged; once the
-      release exists the Docker images build. Next: a fine-grained token with Contents write as a
-      secret for release-please (`token:` input), or check the repository's Actions settings.
+- [x] **CI: release-please cannot create releases** (fixed 2026-10-20): the Actions token was refused
+      ("Resource not accessible by integration"); release-please now uses the repository secret
+      `RELEASE_TOKEN` (fine-grained token: Contents, Pull requests, Issues, Workflows read/write).
+      0.1.98 released and its images built. CI runs on Ubuntu 24.04 (Playwright has no browsers for
+      26.04 yet).
+- [ ] **Renew `RELEASE_TOKEN` before 2027-10-20** (it expires then; releases stop until it is renewed).
 - [x] **Neutral wording** (2026-10-13): code, docs, generated code, CHANGELOG, release notes and the
       commit messages since 0.1.96 describe the behaviour instead of naming other products (rule in
       CLAUDE.md); built-in themes renamed to Classic Light/Dark (migration 11); reference screenshots
