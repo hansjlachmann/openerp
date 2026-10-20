@@ -294,3 +294,31 @@ func TestDateFormulaField(t *testing.T) {
 		t.Errorf("CheckFields with a blank formula: %v", err)
 	}
 }
+
+// CopyFilter copies one field's filter to a field of another table; no filter removes it.
+// SetRange without values removes a filter. Every table has its number as a constant.
+func TestCopyFilter(t *testing.T) {
+	var cust gtables.Customer
+	var entry gtables.CustomerLedgerEntry
+	cust.SetFilter("no", "C1..C5|C9")
+	cust.CopyFilter("no", &entry, "customer_no")
+	if got := entry.GetFilter("customer_no"); got != "C1..C5|C9" {
+		t.Errorf("expression: %q", got)
+	}
+	cust.SetRange("no", "C2", "C3")
+	cust.CopyFilter("no", &entry, "customer_no")
+	if entry.GetRangeMin("customer_no") != "C2" || entry.GetFilter("customer_no") != "C2..C3" {
+		t.Errorf("range: %q", entry.GetFilter("customer_no"))
+	}
+	cust.SetRange("no")
+	if cust.GetFilter("no") != "" {
+		t.Errorf("SetRange without values: %q", cust.GetFilter("no"))
+	}
+	cust.CopyFilter("no", &entry, "customer_no")
+	if entry.GetFilter("customer_no") != "" {
+		t.Errorf("no filter copied: %q", entry.GetFilter("customer_no"))
+	}
+	if gtables.PaymentTermsTableID != 3 || gtables.CustomerTableID != 18 || cust.GetTableID() != gtables.CustomerTableID {
+		t.Error("table number constants")
+	}
+}

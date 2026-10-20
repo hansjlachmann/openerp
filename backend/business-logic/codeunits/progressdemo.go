@@ -54,28 +54,29 @@ func (c *ProgressDemo) UsesProgress() bool {
 
 // Run executes the codeunit with progress updates
 func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
-	// Let the user choose the speed (StrMenu), or cancel
-	speed := system.StrMenu("Fast,Normal,Slow", 2, "Start progress demo: choose the speed")
-	if speed == 0 {
+	// Let the user choose the speed (StrMenu), open the project page (Hyperlink), or cancel
+	speed := system.StrMenu("Fast,Normal,Slow,Open the project page", 2, "Start progress demo: choose the speed")
+	switch speed {
+	case 0:
 		return fcodeunits.Message("Progress demo cancelled."), nil
+	case 4:
+		if err := system.Hyperlink("https://github.com/hansjlachmann/openerp"); err != nil {
+			return fcodeunits.Result{}, err
+		}
+		return fcodeunits.Message("Project page opened."), nil
 	}
 	stepTime := []time.Duration{100, 500, 1500}[speed-1] * time.Millisecond
 
 	jobQueue := record.(*gtables.JobQueue)
 
-	// Get the current dialog (set by job handler)
-	dialog := fcodeunits.GetCurrentDialog()
-
-	// Simulate a long-running process with progress updates
+	// Simulate a long-running process in a progress window: text fields #n###, a bar @n@@@
 	totalSteps := 10
+	window := system.OpenWindow("Step #1## of #2##\n#3####################\n@4@@@@@@@@@@@@@@@@", 0, totalSteps)
+	defer window.Close()
 	for i := 1; i <= totalSteps; i++ {
-		// Calculate progress percentage
-		progress := (i * 100) / totalSteps
-
-		// Update progress if dialog is available
-		if dialog != nil {
-			dialog.UpdateWithMessage(1, progress, getProgressMessage(i))
-		}
+		window.Update(1, i)
+		window.Update(3, getProgressMessage(i))
+		window.Update(4, i*10000/totalSteps)
 
 		// Simulate work
 		time.Sleep(stepTime)

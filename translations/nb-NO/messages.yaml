@@ -30,6 +30,7 @@ messages:
   # General Messages
   MSG_LOADING: "Laster..."
   MSG_PROCESSING: "Behandler..."
+  MSG_POPUP_BLOCKED: "Nettleseren blokkerte den nye fanen — tillat popup-vinduer for dette nettstedet for å åpne: %1"
   MSG_SAVING: "Lagrer..."
   MSG_SAVED: "Lagret"
   MSG_NO_MATCHES: "Ingen treff funnet"

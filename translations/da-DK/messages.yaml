@@ -30,6 +30,7 @@ messages:
   # General Messages
   MSG_LOADING: "Indlæser..."
   MSG_PROCESSING: "Behandler..."
+  MSG_POPUP_BLOCKED: "Browseren blokerede den nye fane — tillad pop op-vinduer for dette websted for at åbne: %1"
   MSG_SAVING: "Gemmer..."
   MSG_SAVED: "Gemt"
   MSG_NO_MATCHES: "Ingen match fundet"

@@ -1018,6 +1018,7 @@ type sMTPSetupFilterCondition struct {
 //
 //	SetRange("No", "10000") - exact match (No = "10000")
 //	SetRange("No", "10000", "20000") - range (No between "10000" and "20000")
+//	SetRange("No") - removes the filter on the field
 func (t *SMTPSetup) SetRange(fieldName string, values ...interface{}) {
 	if t.filters == nil {
 		t.filters = make(map[string]*sMTPSetupFilterCondition)
@@ -1026,6 +1027,12 @@ func (t *SMTPSetup) SetRange(fieldName string, values ...interface{}) {
 	var minValue, maxValue interface{}
 
 	switch len(values) {
+	case 0:
+		if column, ok := t.columnName(fieldName); ok {
+			delete(t.filters, column)
+		}
+		delete(t.filters, fieldName)
+		return
 	case 1:
 		// Exact match: SetRange("No", "10000")
 		minValue = values[0]
@@ -2163,6 +2170,26 @@ func (t *SMTPSetup) GetFilter(fieldName string) string {
 		return fmt.Sprintf("%v..%v", filter.minValue, filter.maxValue)
 	}
 	return ""
+}
+
+// CopyFilter copies the filter on one field to a field of another record, also of another
+// table: cust.CopyFilter("no", &entry, "customer_no"). No filter on the field removes the
+// filter on the other record's field.
+func (t *SMTPSetup) CopyFilter(fieldName string, to tables.FilterTarget, toFieldName string) {
+	column, ok := t.columnName(fieldName)
+	if !ok {
+		fmt.Printf("Error: CopyFilter from unknown field %q of SMTP_Setup\n", fieldName)
+		return
+	}
+	filter, ok := t.filters[column]
+	switch {
+	case !ok:
+		to.SetRange(toFieldName)
+	case filter.isExpression:
+		to.SetFilter(toFieldName, filter.filterExpr)
+	default:
+		to.SetRange(toFieldName, filter.minValue, filter.maxValue)
+	}
 }
 
 // GetRangeMin returns the lower end of the SetRange filter on a field (nil without one)

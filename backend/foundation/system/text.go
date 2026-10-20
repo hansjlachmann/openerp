@@ -236,3 +236,20 @@ func StrCheckSum(s string, weights string, modulus ...int) (int, error) {
 	}
 	return (mod - sum%mod) % mod, nil
 }
+
+// CompressArray moves the non-empty texts of an array to the front, keeping their order, and
+// blanks the rest (address lines without gaps); it returns the number of non-empty texts. A
+// text of only spaces counts as empty. For the length of an array use Go's len.
+func CompressArray[T ~string](texts []T) int {
+	n := 0
+	for _, s := range texts {
+		if strings.TrimSpace(string(s)) != "" {
+			texts[n] = s
+			n++
+		}
+	}
+	for i := n; i < len(texts); i++ {
+		texts[i] = ""
+	}
+	return n
+}

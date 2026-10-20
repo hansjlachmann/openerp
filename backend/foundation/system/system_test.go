@@ -321,3 +321,59 @@ func TestStrMenu(t *testing.T) {
 		t.Errorf("cancelled: %d", n)
 	}
 }
+
+func TestCompressArray(t *testing.T) {
+	lines := []types.Text{"", "Main Street 1", "  ", "", "0150 Oslo"}
+	if n := CompressArray(lines); n != 2 || lines[0] != "Main Street 1" || lines[1] != "0150 Oslo" ||
+		lines[2] != "" || lines[3] != "" || lines[4] != "" {
+		t.Errorf("CompressArray = %d, %q", n, lines)
+	}
+	if CompressArray([]string{}) != 0 {
+		t.Error("empty array")
+	}
+}
+
+// Hyperlink and the progress window go to the codeunit's dialog
+func TestHyperlinkAndWindow(t *testing.T) {
+	for _, bad := range []string{"", "javascript:alert(1)", "file:///etc/passwd", "www.example.com", "https://", "mailto:"} {
+		if Hyperlink(bad) == nil {
+			t.Errorf("Hyperlink(%q) must be an error", bad)
+		}
+	}
+	if err := Hyperlink("https://example.com/a?b=1"); err != nil { // no dialog: nothing happens
+		t.Errorf("without a dialog: %v", err)
+	}
+
+	d := codeunits.OpenDialogWithID("", "window-test")
+	codeunits.SetCurrentDialog(d)
+	defer codeunits.ClearCurrentDialog()
+
+	if err := Hyperlink(" mailto:info@example.com "); err != nil {
+		t.Fatal(err)
+	}
+	if ev := <-d.Events(); ev.EventType != "hyperlink" || ev.Message != "mailto:info@example.com" {
+		t.Errorf("hyperlink event %+v", ev)
+	}
+
+	w := OpenWindow("Posting customers\nCustomer #1########## of #3###\n@2@@@@@@@@@@@@", nil, nil, 20)
+	if ev := <-d.Events(); ev.Message != "Posting customers\nCustomer  of 20" || ev.Value != 0 {
+		t.Errorf("open: %+v", ev)
+	}
+	w.Update(1, types.NewCode("C10"))
+	<-d.Events()
+	w.Update(2, 2500)
+	if ev := <-d.Events(); ev.Message != "Posting customers\nCustomer C10 of 20" || ev.Value != 25 {
+		t.Errorf("update: %+v", ev)
+	}
+	w.Update(2, 20000) // capped at 10000
+	if ev := <-d.Events(); ev.Value != 100 {
+		t.Errorf("capped: %+v", ev)
+	}
+	w.Close()
+	w.Update(1, "C11")
+	select {
+	case ev := <-d.Events():
+		t.Errorf("update after Close: %+v", ev)
+	default:
+	}
+}

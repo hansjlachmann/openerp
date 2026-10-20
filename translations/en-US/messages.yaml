@@ -30,6 +30,7 @@ messages:
   # General Messages
   MSG_LOADING: "Loading..."
   MSG_PROCESSING: "Processing..."
+  MSG_POPUP_BLOCKED: "The browser blocked the new tab — allow pop-ups for this site to open: %1"
   MSG_SAVING: "Saving..."
   MSG_SAVED: "Saved"
   MSG_NO_MATCHES: "No matches found"

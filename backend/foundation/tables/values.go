@@ -15,6 +15,13 @@ type FieldValuer interface {
 	FieldValue(no int) (any, bool)
 }
 
+// FilterTarget is a record whose filters can be set (generated SetRange/SetFilter): the
+// target of CopyFilter, also of another table
+type FilterTarget interface {
+	SetRange(fieldName string, values ...interface{})
+	SetFilter(fieldName, filterExpr string)
+}
+
 // OptionIndex returns the index of an option value — an int-based option type of any table,
 // or an int — so option fields can be copied between tables (TransferFields)
 func OptionIndex(v any) (int, bool) {

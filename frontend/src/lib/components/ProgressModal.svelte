@@ -235,6 +235,7 @@
 
 	.status-message {
 		@apply text-sm text-gray-600;
+		white-space: pre-line; /* a progress window's template has several lines */
 	}
 
 	:global(.dark) .status-message {

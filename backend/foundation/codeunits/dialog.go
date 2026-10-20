@@ -279,6 +279,27 @@ func (d *Dialog) Confirm(message string) bool {
 	}
 }
 
+// Hyperlink asks the frontend to open a URL in the user's browser (a new tab); it does not
+// wait for an answer
+func (d *Dialog) Hyperlink(url string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.closed {
+		return
+	}
+
+	select {
+	case d.events <- ProgressEvent{
+		JobID:     d.jobID,
+		EventType: "hyperlink",
+		Message:   url,
+		Timestamp: time.Now().UnixMilli(),
+	}:
+	case <-d.ctx.Done():
+	}
+}
+
 // RespondToConfirm handles a confirm response from the frontend
 func (d *Dialog) RespondToConfirm(confirmID string, response bool) bool {
 	d.confirmMu.Lock()

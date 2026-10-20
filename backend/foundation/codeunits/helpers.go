@@ -189,3 +189,11 @@ func RequestInput(title string, fields []InputField) map[string]string {
 	}
 	return dialog.RequestInput(title, fields)
 }
+
+// Hyperlink opens a URL in the user's browser; without a dialog (a scheduled run) nothing
+// happens. Note: This only works in async codeunits (UsesProgress() = true)
+func Hyperlink(url string) {
+	if dialog := GetCurrentDialog(); dialog != nil {
+		dialog.Hyperlink(url)
+	}
+}

@@ -4,6 +4,7 @@
  */
 
 import { t, ERR, MSG } from '$lib/services/i18n.svelte';
+import { toast } from '$lib/stores/toast';
 
 export interface ProgressEvent {
 	job_id: string;
@@ -187,6 +188,16 @@ export async function startJob(
 							}
 						};
 						callbacks.onInputRequest?.(event, respond);
+					} else if (event.event_type === 'hyperlink') {
+						// Hyperlink from the codeunit: open http(s)/mailto URLs in a new tab
+						if (/^(https?:\/\/|mailto:)/i.test(event.message)) {
+							const tab = window.open(event.message, '_blank');
+							if (tab) {
+								tab.opener = null;
+							} else {
+								toast.warning(t(MSG.POPUP_BLOCKED, event.message), 10000);
+							}
+						}
 					} else {
 						callbacks.onProgress?.(event);
 					}

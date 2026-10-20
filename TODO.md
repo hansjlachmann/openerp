@@ -10,6 +10,13 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
 
 ## ⭐ First priority (next session, from 2026-10-07)
 
+- [ ] **HEADLINE — Migrate the classic application into this repository, in many steps** (added
+      2026-10-20; to be planned later). Tables, codeunits, pages (forms) and reports of the classic
+      application move over step by step, in this repository's own layout: table YAML with the same
+      object and field numbers, triggers and codeunits in `business-logic`, system functions from
+      `foundation/system`. Plan first: the order (setup and master data → documents → posting →
+      reports), what each step brings, and which platform features each step needs (see "System
+      functions — still missing" below).
 - [x] **Demo (k3s, repo `pi-cluster`): `jwt-secret` added to `openerp-secret` with sops** (2026-10-08,
       pi-cluster `3026f62`). Backend pod has `JWT_SECRET` (64 chars), no "No JWT_SECRET" warning; logged in,
       deleted the backend pod, reload → still logged in. Notes for next time: the age key is not on the
@@ -226,24 +233,67 @@ Built: text `ConvertStr`, `InsStr`, `DelStr`, `StrCheckSum`; dates `Time`, `Crea
 `DT2Date`, `DT2Time`, `Date2DWY`, `DWY2Date` (ISO weeks); `Random`, `CreateGuid`, `IsNullGuid`,
 `UserId`, `Confirm`; record methods `MaxStrLen`, `GetFilter`, `GetRangeMin`/`GetRangeMax`,
 `SetRecFilter`, `Mark`/`MarkedOnly`/`ClearMarks`, `RecordId`, `CountApprox`, `Rename(newKey…)`,
-`Copy`, `Find("-" | "+" | "=")`. Left out on purpose — build when a feature needs them:
-- [ ] `ClosingDate`/`NormalDate`: closing dates need accounting periods and a date value between
-      two days — with the general ledger.
+`Copy`, `Find("-" | "+" | "=")`. What is still missing is ordered in "System functions — still
+missing" below.
 - [x] No `DateFormula` field type (decided 2026-10-20): date formulas are stored in a Code field
       (length 20) with the YAML property `date_formula: true` — done 2026-10-20: the generated field
       checks and `ValidateField` reject a value that is not a date formula (`ERR_DATE_FORMULA_INVALID`),
       parser in `foundation/dateformula` (shared with `system.CalcDate`). First fields: Payment Terms
       2 Due Date Calculation and 3 Discount Date Calculation (demo data fills the due date formula).
-- [ ] `Find(">")`/`Find("<")`: the next/previous record after the current one in the current sort,
-      within the filters — one query with a row-value comparison `(a, b) > (?, ?)` (Postgres and SQLite).
-- [ ] `FilterGroup(n)`: filters in layers — each group has its own filters, all groups apply
-      together; group 2 is the one set by code that the user cannot see or remove (the most used
-      in the classic code).
-- [ ] `SetLoadFields`: not needed for correctness (records always load every field); only if a
-      list of many fields gets slow.
 - Not planned — use Go's own (decided 2026-10-20): `Duration` (`time.Duration`), `Commit` (explicit
   transactions), `Clear`/`ClearAll` (zero values), `Sleep` (`time.Sleep`), `Randomize`, `GuiAllowed`,
   files, DotNet, code coverage.
+
+## System functions — still missing (classic code checked 2026-10-20)
+
+Every call in the classic code (tables, forms, reports, codeunits) compared with what is built.
+Plain system functions are almost complete; most of what is missing are record, page and report
+features. Ordered by effort — the easiest first. Uses in the classic code in brackets.
+
+### Priority 1 — easy ✅ DONE (2026-10-20)
+- [x] `CopyFilter(field, &toRecord, toField)` (204): a generated record method; no filter on the
+      field removes the other field's filter. `SetRange(field)` without values removes a filter.
+- [x] Table-number constants (279 uses): already generated — `gtables.<Table>TableID`.
+- [x] `ArrayLen` (215): Go's `len()`; `system.CompressArray` (11) moves non-empty texts to the front.
+- [x] `system.Hyperlink(url)` (10): http/https/mailto only; a dialog event, the frontend opens a new
+      tab (a toast with the URL when the browser blocks it). Nothing without a dialog.
+- [x] `system.OpenWindow` (`Update`/`Close`, 188/598): the classic template (`#1####` text fields,
+      `@1@@@@` bars 0–10000) on top of the codeunit dialog; the text shows on several lines.
+- Tried out in codeunit 991 Progress Bar Demo: the progress window, and "Open the project page"
+  in its StrMenu.
+
+### Priority 2 — medium (query and filter work)
+- [ ] `Find(">")`/`Find("<")` (20): the next/previous record after the current one in the current
+      sort, within the filters — one query with a row-value comparison `(a, b) > (?, ?)` (Postgres
+      and SQLite).
+- [ ] `FilterGroup(n)` (124): filters in layers — each group has its own filters, all groups apply
+      together; group 2 is the one set by code that the user cannot see or remove.
+- [ ] `UpperLimit(Date Filter)` in FlowField filters (the balance up to a date): a FlowFilter
+      option in the table YAML, also for the SIFT totals.
+- [ ] `SetSelectionFilter` (40): the records selected in a list, passed to a codeunit run on them.
+
+### Priority 3 — larger (new runtime features)
+- [ ] Temporary records (115 variables): a record in memory only — Insert/Modify/Find/filters
+      work, nothing reaches the database (buffers, previews, posting). A generated in-memory mode.
+- [ ] `RunModal` (211) with `SetTableView` (50), `SetRecord` (45), `GetRecord` (20), `LookupMode`
+      (36): open a list or card from code, filtered, and get the record the user picked — a dialog
+      event the frontend answers by showing the page.
+- [ ] `Editable`/`Visible`/`FieldActive` at runtime (83): page fields switched by code — page
+      triggers or conditions in the page YAML.
+- [ ] `NormalDate` (59) / `ClosingDate` (25): closing dates need accounting periods and a date
+      value between two days — with the general ledger.
+- [ ] `Consistent(condition)` (5): a transaction must not commit while false (balanced G/L
+      postings) — with the general ledger.
+
+### Priority 4 — with the report engine (not built yet)
+- [ ] `ShowOutput` (1603), `CreateTotals` (186), `TotalsCausedBy` (22), `NewPagePerRecord`,
+      `SaveAsHtml`: report sections and totals — part of the report design.
+
+### Not needed (decided earlier or no use here)
+- Files (`Open/Create/Read/Write/Seek/Erase/Exists`, `TextMode`, `QueryReplace`) and dataports
+  (`Import`/`Export`): Go's `os` and the API's import/export; `Shell`, `Environ` (1 each): no.
+- `Clear` (936), `Commit` (192), `Exit`: Go's zero values, transactions, `return`.
+- `SetLoadFields`: records always load every field; only if a list of many fields gets slow.
 
 ## Security: codeunits run without a permission check (MEDIUM priority, found 2026-10-12)
 

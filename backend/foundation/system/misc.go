@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -85,4 +86,15 @@ func StrMenu(options string, defaultNumber int, instruction ...string) int {
 		return 0
 	}
 	return n
+}
+
+// Hyperlink opens a URL (http, https or mailto) in the user's browser, in a new tab, from a
+// codeunit; without a dialog (a scheduled run) nothing happens. Another kind of URL is an error.
+func Hyperlink(link string) error {
+	u, err := url.Parse(strings.TrimSpace(link))
+	if err != nil || !(((u.Scheme == "http" || u.Scheme == "https") && u.Host != "") || (u.Scheme == "mailto" && u.Opaque != "")) {
+		return fmt.Errorf("Hyperlink: %q is not an http, https or mailto URL", link)
+	}
+	codeunits.Hyperlink(u.String())
+	return nil
 }
