@@ -14,7 +14,7 @@ permissions:
 jobs:
   backend:
     name: Backend (Go)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -61,7 +61,7 @@ jobs:
 
   frontend:
     name: Frontend (SvelteKit)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     defaults:
       run:
@@ -113,7 +113,7 @@ jobs:
 
   release:
     name: Release Please
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
@@ -132,7 +132,7 @@ jobs:
 
   docker:
     name: Docker Build & Push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The multi-arch build (arm64 under QEMU) has hung for hours (0.1.68, 0.1.82); a normal run
     # takes ~7 minutes (0.1.85). Fail fast so the job can simply be re-run. The frontend image
     # no longer runs npm under QEMU (frontend/Dockerfile), which was what hung.
