@@ -76,3 +76,27 @@ pages:
     caption: "Job Queue Card"
   job_queue_entries_list:
     caption: "Job Queue Entries"
+
+  # Master data lists (migration step 1)
+  currencies:
+    caption: "Currencies"
+  currency_card:
+    caption: "Currency Card"
+  finance_charge_terms:
+    caption: "Finance Charge Terms"
+  finance_charge_terms_card:
+    caption: "Finance Charge Terms Card"
+  price_groups:
+    caption: "Price Groups"
+  standard_text_codes:
+    caption: "Standard Text Codes"
+  shipment_methods:
+    caption: "Shipment Methods"
+  departments:
+    caption: "Departments"
+  projects:
+    caption: "Projects"
+  salespeople_purchasers:
+    caption: "Salespeople/Purchasers"
+  locations:
+    caption: "Locations"

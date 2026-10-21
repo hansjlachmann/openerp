@@ -1,0 +1,41 @@
+table:
+  id: 6
+  name: "Price_Group"
+  caption: Price Group
+  description: Price groups (table 6)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: price_includes_tax
+      no: 2
+      type: bool
+      db_name: price_includes_tax
+
+    - name: allow_quantity_disc
+      no: 3
+      type: bool
+      db_name: allow_quantity_disc
+      default: true
+
+    - name: allow_cust_item_disc
+      no: 4
+      type: bool
+      db_name: allow_cust_item_disc
+      default: true
+
+    - name: allow_invoice_disc
+      no: 5
+      type: bool
+      db_name: allow_invoice_disc
+      default: true
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

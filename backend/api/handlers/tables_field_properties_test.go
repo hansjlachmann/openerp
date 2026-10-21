@@ -1,0 +1,136 @@
+package handlers
+
+import (
+	"database/sql"
+	"encoding/json"
+	"io"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/pages"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+)
+
+// Read-only fields (table YAML editable: false) are not written from a page: insert and modify
+// keep their stored value, validate refuses them; validation min/max is checked on writes.
+func TestReadOnlyAndRangeFields(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := (&gtables.Currency{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	app.Put("/api/tables/:table/modify/:id", h.ModifyRecord)
+	app.Post("/api/tables/:table/validate", h.ValidateField)
+
+	stored := func(column string) string {
+		var v sql.NullString
+		if err := db.QueryRow(`SELECT ` + column + ` FROM "TEST$Currency" WHERE code = 'EUR'`).Scan(&v); err != nil {
+			t.Fatal(err)
+		}
+		return v.String
+	}
+
+	if status, out := sendJSON(t, app, "POST", "/api/tables/Currency/insert", `{"code":"EUR","description":"Euro","currency_factor":"7.5","last_date_modified":"2026-01-01"}`); status != 200 {
+		t.Fatalf("insert: %d %v", status, out["error"])
+	}
+	if f := stored("currency_factor"); f != "" && f != "0" {
+		t.Errorf("insert set the read-only currency_factor to %q", f)
+	}
+	if d := stored("last_date_modified"); d != "" && !strings.HasPrefix(d, "0001") {
+		t.Errorf("insert set the read-only last_date_modified to %q", d)
+	}
+
+	if _, err := db.Exec(`UPDATE "TEST$Currency" SET currency_factor = 7.45 WHERE code = 'EUR'`); err != nil {
+		t.Fatal(err)
+	}
+	if status, out := sendJSON(t, app, "PUT", "/api/tables/Currency/modify/EUR", `{"code":"EUR","description":"Euro (EMU)","currency_factor":"1"}`); status != 200 {
+		t.Fatalf("modify: %d %v", status, out["error"])
+	}
+	if f := stored("currency_factor"); f != "7.45" {
+		t.Errorf("modify changed the read-only currency_factor to %q", f)
+	}
+	if d := stored("description"); d != "Euro (EMU)" {
+		t.Errorf("modify did not save description: %q", d)
+	}
+
+	status, out := sendJSON(t, app, "POST", "/api/tables/Currency/validate", `{"field":"currency_factor","value":"2","record":{"code":"EUR"}}`)
+	if status != 400 || out["error"] != "Currency Factor cannot be changed." {
+		t.Errorf("validate read-only field: %d %v", status, out["error"])
+	}
+
+	status, out = sendJSON(t, app, "PUT", "/api/tables/Currency/modify/EUR", `{"code":"EUR","amount_rounding_precision":"-0.01"}`)
+	if status == 200 || !strings.Contains(out["error"].(string), "must not be less than 0") {
+		t.Errorf("negative precision: %d %v", status, out["error"])
+	}
+}
+
+// The page metadata carries the table's field properties: read-only fields are not editable,
+// decimals have their places, cards get the data caption fields.
+func TestPageFieldProperties(t *testing.T) {
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Get("/api/pages/:id", NewPagesHandler().GetPage)
+
+	get := func(id string) pages.PageDefinition {
+		resp, err := app.Test(httptest.NewRequest("GET", "/api/pages/"+id, nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := io.ReadAll(resp.Body)
+		var out struct {
+			Data pages.PageDefinition `json:"data"`
+		}
+		if err := json.Unmarshal(raw, &out); err != nil {
+			t.Fatalf("decode: %v (%s)", err, raw)
+		}
+		return out.Data
+	}
+
+	fields := map[string]pages.Field{}
+	for _, f := range get("5").Page.Layout.Repeater.Fields {
+		fields[f.Source] = f
+	}
+	for _, name := range []string{"currency_factor", "last_date_modified"} {
+		if e := fields[name].Editable; e == nil || *e {
+			t.Errorf("%s editable = %v, want false", name, e)
+		}
+	}
+	if e := fields["description"].Editable; e != nil && !*e {
+		t.Error("description not editable")
+	}
+	if p := fields["amount_rounding_precision"].DecimalPlaces; p != "2:5" {
+		t.Errorf("amount_rounding_precision decimal_places = %q", p)
+	}
+	for id, want := range map[string]string{"494": "code,description", "495": "code", "21": "no,name"} {
+		if c := get(id).Page.DataCaptionFields; strings.Join(c, ",") != want {
+			t.Errorf("page %s data_caption_fields = %v, want %s (none: the card shows its key)", id, c, want)
+		}
+	}
+	if c := get("5").Page.DataCaptionFields; len(c) != 0 {
+		t.Errorf("list page 5 data_caption_fields = %v", c)
+	}
+	for _, s := range get("495").Page.Layout.Sections {
+		for _, f := range s.Fields {
+			if e := f.Editable; (f.Source == "last_date_modified" || f.Source == "last_date_adjusted") != (e != nil && !*e) {
+				t.Errorf("card 495 %s editable = %v", f.Source, e)
+			}
+		}
+	}
+}

@@ -313,3 +313,48 @@ export function isItemVisible(
 	// Otherwise use the field's visible property (default true)
 	return field.visible !== false;
 }
+
+/**
+ * Format a decimal with the field's decimal places (YAML `decimal_places: "min:max"`): at least
+ * min and at most max digits after the point, rounded half away from zero (on the digits, no
+ * float rounding). Without places or for a value that is not a plain decimal: as formatValue.
+ */
+export function formatDecimal(val: any, places: string | undefined): string {
+	const spec = /^(\d+):(\d+)$/.exec(places ?? '');
+	const text = formatValue(val).trim();
+	const num = /^(-?)(\d*)(?:\.(\d*))?$/.exec(text);
+	if (!spec || !num || text === '' || text === '-') return formatValue(val);
+	const min = Number(spec[1]);
+	const max = Number(spec[2]);
+	let int = num[2] || '0';
+	let frac = num[3] ?? '';
+	if (frac.length > max) {
+		const roundUp = frac[max] >= '5';
+		frac = frac.slice(0, max);
+		if (roundUp) {
+			const digits = (BigInt(int + frac) + 1n).toString().padStart(int.length + max, '0');
+			int = digits.slice(0, digits.length - max) || '0';
+			frac = digits.slice(digits.length - max);
+		}
+	}
+	frac = frac.replace(/0+$/, '').padEnd(min, '0');
+	int = int.replace(/^0+(?=\d)/, '');
+	const sign = num[1] && /[1-9]/.test(int + frac) ? '-' : '';
+	return sign + int + (frac ? '.' + frac : '');
+}
+
+/**
+ * The title of a card: the page caption followed by the values of the table's
+ * data_caption_fields of the record (option values as their captions), "Caption – 10000 · Name"
+ */
+export function cardTitle(
+	caption: string,
+	captionFields: string[] | undefined,
+	record: Record<string, any> | undefined,
+	options?: Record<string, Record<string, string>>
+): string {
+	const values = (captionFields ?? [])
+		.map((f) => (options?.[f] ? formatOptionValue(record?.[f], options[f]) : formatValue(record?.[f])))
+		.filter((v) => v.trim() !== '');
+	return values.length ? `${caption} – ${values.join(' · ')}` : caption;
+}

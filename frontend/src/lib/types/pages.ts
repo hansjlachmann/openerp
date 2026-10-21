@@ -28,6 +28,7 @@ export interface PageMetadata {
 	has_record_triggers?: boolean; // OnAfterGetRecord: the card asks for the field states of each record
 	flow_fields?: string[]; // computed fields: not searchable on the server
 	sortable_flow_fields?: string[]; // FlowFields lists can sort on (Sum/Count, by their value)
+	data_caption_fields?: string[]; // cards: the fields whose values follow the caption in the title
 	// FlowFilter fields of the source table (e.g. Date Filter): "Filter totals by" in the filter pane
 	flow_filter_fields?: Array<{ name: string; kind: string; caption: string }>;
 }
@@ -69,6 +70,7 @@ export interface Field {
 	primary_key?: boolean;
 	required?: boolean;
 	masked?: boolean; // write-only secret (Masked): password input, value never shown
+	decimal_places?: string; // decimals: "min:max" digits after the point (table YAML decimal_places)
 }
 
 export interface Action {

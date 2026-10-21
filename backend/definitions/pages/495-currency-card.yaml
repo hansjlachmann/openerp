@@ -1,0 +1,64 @@
+page:
+  id: 495
+  type: Card
+  name: Currency Card
+  source_table: Currency
+  caption: Currency Card
+  list_page_id: 5
+  enable_navigation: true
+  editable: true
+  focus_field: "code"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+            importance: Promoted
+          - source: description
+            importance: Promoted
+          - source: emu_currency
+          - source: last_date_modified
+          - source: last_date_adjusted
+
+      - name: Rounding
+        caption: Rounding
+        fields:
+          - source: invoice_rounding_precision
+          - source: invoice_rounding_type
+          - source: amount_rounding_precision
+          - source: amount_decimal_places
+          - source: unit_amount_rounding_precision
+          - source: unit_amount_decimal_places
+          - source: appln_rounding_precision
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 5
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -5,6 +5,7 @@ countries:
     name: Norway
   - code: DK
     name: Denmark
+    eu_country_code: DK
   - code: GB
     name: United Kingdom
 
@@ -22,3 +23,48 @@ payment_terms:
   - code: COD
     description: Cash on delivery
     due_days: 0
+
+# Master data (migration step 1): records by table, inserted with the tables' defaults for the
+# fields not given
+master_data:
+  - table: Currency
+    records:
+      - {code: EUR, description: Euro, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
+      - {code: USD, description: US dollar, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
+      - {code: SEK, description: Swedish krona, amount_rounding_precision: 0.01, invoice_rounding_precision: 1}
+      - {code: GBP, description: Pound sterling, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
+  - table: Finance_Charge_Terms
+    records:
+      - {code: STD, description: Standard finance charge, interest_rate: 1.5, interest_period_days: 30, minimum_amount_lcy: 50, additional_fee_lcy: 70, grace_period: 5D, due_date_calculation: 14D, line_description: "Interest on overdue invoices"}
+  - table: Price_Group
+    records:
+      - {code: RETAIL, allow_invoice_disc: false}
+      - {code: WHOLESALE}
+  - table: Standard_Text
+    records:
+      - {code: THANKS, description: Thank you for your order}
+      - {code: DELIVERY, description: Delivery within five working days}
+      - {code: TERMS, description: Our general terms of sale apply}
+  - table: Shipment_Method
+    records:
+      - {code: PICKUP, description: Pickup at the warehouse}
+      - {code: POST, description: Sent by post}
+      - {code: TRUCK, description: Delivered by truck}
+  - table: Department
+    records:
+      - {code: ADM, name: Administration}
+      - {code: SALES, name: Sales}
+      - {code: PROD, name: Production}
+  - table: Project
+    records:
+      - {code: WEBSHOP, name: Webshop}
+      - {code: EXPANSION, name: Nordic expansion}
+  - table: Salesperson_Purchaser
+    records:
+      - {code: AH, name: Anna Hansen, commission_percent: 2.5}
+      - {code: JB, name: Jonas Berg, commission_percent: 3}
+      - {code: PL, name: Petra Lund}
+  - table: Location
+    records:
+      - {code: MAIN, name: Main warehouse}
+      - {code: OSLO, name: Oslo store}

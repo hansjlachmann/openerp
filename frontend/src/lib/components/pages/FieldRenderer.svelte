@@ -2,7 +2,7 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
@@ -291,7 +291,7 @@
 				{:else if isDateTimeField}
 					{formatDateTime(String(value ?? ''), locale)}
 				{:else}
-					{formatValue(value)}
+					{formatDecimal(value, field.decimal_places)}
 				{/if}
 			</div>
 		{/if}

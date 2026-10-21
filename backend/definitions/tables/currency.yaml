@@ -1,0 +1,107 @@
+table:
+  id: 4
+  name: "Currency"
+  caption: Currency
+  description: Currencies (table 4 Currency)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: last_date_modified
+      no: 2
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: last_date_adjusted
+      no: 3
+      type: types.Date
+      db_name: last_date_adjusted
+      editable: false
+
+    - name: invoice_rounding_precision
+      no: 10
+      type: types.Decimal
+      db_name: invoice_rounding_precision
+      precision: 18
+      scale: 5
+      default: 1
+
+    - name: invoice_rounding_type
+      no: 12
+      type: Option
+      db_name: invoice_rounding_type
+      options: ["Nearest", "Up", "Down"]
+
+    - name: amount_rounding_precision
+      no: 13
+      type: types.Decimal
+      db_name: amount_rounding_precision
+      precision: 18
+      scale: 5
+      default: 0.01
+      decimal_places: "2:5"
+      validation: {min: 0}
+
+    - name: unit_amount_rounding_precision
+      no: 14
+      type: types.Decimal
+      db_name: unit_amount_rounding_precision
+      precision: 18
+      scale: 5
+      default: 0.00001
+      decimal_places: "2:5"
+      validation: {min: 0}
+
+    - name: description
+      no: 15
+      type: types.Text
+      db_name: description
+      length: 30
+
+    - name: amount_decimal_places
+      no: 17
+      type: types.Text
+      db_name: amount_decimal_places
+      length: 5
+      required: true
+      default: "2:2"
+
+    - name: unit_amount_decimal_places
+      no: 18
+      type: types.Text
+      db_name: unit_amount_decimal_places
+      length: 5
+      required: true
+      default: "2:5"
+
+    - name: appln_rounding_precision
+      no: 44
+      type: types.Decimal
+      db_name: appln_rounding_precision
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: emu_currency
+      no: 45
+      type: bool
+      db_name: emu_currency
+
+    - name: currency_factor
+      no: 46
+      type: types.Decimal
+      db_name: currency_factor
+      precision: 18
+      scale: 5
+      editable: false
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

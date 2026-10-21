@@ -20,7 +20,7 @@ type PageMetadata struct {
 	// DelayedInsert (DelayedInsert): on editable lists, insert a new record only when
 	// the user leaves the row, not on the first validated field. For pages where the user
 	// types a composite key (e.g. User Members), so no half-entered key is ever saved.
-	DelayedInsert *bool    `yaml:"delayed_insert,omitempty" json:"delayed_insert,omitempty"`
+	DelayedInsert *bool `yaml:"delayed_insert,omitempty" json:"delayed_insert,omitempty"`
 	// CopyPasteAllowed (CopyPasteAllowed): on list pages, Ctrl+C copies the selected
 	// records and Ctrl+V inserts them (same table; new keys from the list's filters, or
 	// another company)
@@ -28,10 +28,13 @@ type PageMetadata struct {
 	// AutoSplitKey (AutoSplitKey): on list pages whose last primary key field is a line number
 	// (int), a new line inserted between two lines gets the number halfway between them (lines
 	// are numbered in steps of 10000) — document lines
-	AutoSplitKey *bool `yaml:"auto_split_key,omitempty" json:"auto_split_key,omitempty"`
-	FocusField    string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
-	Layout        Layout   `yaml:"layout" json:"layout"`
-	Actions       []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	AutoSplitKey *bool    `yaml:"auto_split_key,omitempty" json:"auto_split_key,omitempty"`
+	FocusField   string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
+	Layout       Layout   `yaml:"layout" json:"layout"`
+	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	// DataCaptionFields (populated at request time from the table's data_caption_fields): the
+	// fields whose values a card shows in its title
+	DataCaptionFields []string `yaml:"-" json:"data_caption_fields,omitempty"`
 	// HasRecordTriggers (populated at request time): the page has OnAfterGetRecord triggers
 	// (business-logic/pages) — the card asks for the field states of each record it shows
 	HasRecordTriggers bool `yaml:"-" json:"has_record_triggers,omitempty"`
@@ -90,7 +93,7 @@ type Repeater struct {
 type Field struct {
 	Source               string `yaml:"source" json:"source"`                                                     // Field name from table
 	Caption              string `yaml:"caption,omitempty" json:"caption,omitempty"`                               // Override caption
-	Editable             bool   `yaml:"editable,omitempty" json:"editable,omitempty"`                             // Can be edited
+	Editable             *bool  `yaml:"editable,omitempty" json:"editable,omitempty"`                             // false: read-only (also from the table field's editable: false)
 	Visible              *bool  `yaml:"visible,omitempty" json:"visible,omitempty"`                               // Field is visible (default true)
 	Importance           string `yaml:"importance,omitempty" json:"importance,omitempty"`                         // Promoted, Standard, Additional
 	Style                string `yaml:"style,omitempty" json:"style,omitempty"`                                   // Strong, Attention, Favorable, Unfavorable
@@ -105,6 +108,9 @@ type Field struct {
 	// Set in the page YAML (e.g. the User card's virtual password field) or taken from the
 	// table field's masked: true
 	Masked bool `yaml:"masked,omitempty" json:"masked,omitempty"`
+	// DecimalPlaces (populated at request time from the table field's decimal_places): the
+	// "min:max" digits after the point the page shows
+	DecimalPlaces string `yaml:"-" json:"decimal_places,omitempty"`
 }
 
 // Action represents a page action/button

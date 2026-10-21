@@ -1,0 +1,73 @@
+page:
+  id: 5
+  type: List
+  name: Currencies
+  source_table: Currency
+  caption: Currencies
+  card_page_id: 495          # Edit / New / Enter open the card; F2 edits in the list
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 100
+
+        - source: description
+          width: 220
+
+        - source: amount_rounding_precision
+          width: 170
+
+        - source: invoice_rounding_precision
+          width: 170
+
+        - source: invoice_rounding_type
+          width: 170
+
+        - source: unit_amount_rounding_precision
+          width: 190
+
+        - source: amount_decimal_places
+          width: 160
+
+        - source: unit_amount_decimal_places
+          width: 170
+
+        - source: appln_rounding_precision
+          width: 170
+
+        - source: emu_currency
+          width: 130
+
+        - source: currency_factor
+          width: 140
+
+        - source: last_date_modified
+          width: 130
+
+        - source: last_date_adjusted
+          width: 130
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

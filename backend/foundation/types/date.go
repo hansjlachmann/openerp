@@ -66,6 +66,11 @@ func NewDateFromString(value string) (Date, error) {
 	}
 
 	t, err := time.Parse("2006-01-02", value)
+	if err != nil && len(value) > 10 && value[10] == 'T' {
+		// A DATE column read into a string on PostgreSQL arrives as a timestamp
+		// ("2026-10-21T00:00:00Z"): the date is its first part
+		t, err = time.Parse("2006-01-02", value[:10])
+	}
 	if err != nil {
 		return Date{}, fmt.Errorf("invalid date format, expected YYYY-MM-DD: %w", err)
 	}

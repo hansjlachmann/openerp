@@ -7,6 +7,7 @@
 	import { api } from '$lib/services/api';
 	import { onMount, untrack } from 'svelte';
 	import { getRecordId, getPrimaryKeyField } from '$lib/utils/recordHelpers';
+	import { cardTitle } from '$lib/utils/fieldHelpers';
 	import { createNavigationActions, canNavigatePrevious, canNavigateNext } from '$lib/utils/navigationHelpers';
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import { t, MODAL } from '$lib/services/i18n.svelte';
@@ -189,7 +190,7 @@
 	{/if}
 
 	<div class="modal-header">
-		<h2 class="modal-title">{page.page.caption}</h2>
+		<h2 class="modal-title">{cardTitle(page.page.caption, page.page.data_caption_fields, record, options)}</h2>
 
 		<div class="modal-controls">
 			<!-- Fullscreen toggle -->

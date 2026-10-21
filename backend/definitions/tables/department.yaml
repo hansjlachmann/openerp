@@ -1,0 +1,30 @@
+table:
+  id: 11
+  name: "Department"
+  caption: Department
+  description: Departments (table 11)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: consolidation_code
+      no: 6
+      type: types.Code
+      db_name: consolidation_code
+      length: 10
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

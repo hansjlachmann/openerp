@@ -1,6 +1,9 @@
 package tables
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Sensitive fields (YAML `sensitive: true`, e.g. User.password_hash) never leave the server
 // through the generic table API and cannot be used to query it: a filter, sort or search on
@@ -67,4 +70,26 @@ func PublicMap(table Table) map[string]interface{} {
 		}
 	}
 	return m
+}
+
+// IsReadOnly reports whether a field is read-only for the pages (YAML editable: false,
+// classic Editable=No)
+func IsReadOnly(table Table, field string) bool {
+	for _, f := range table.GetFields() {
+		if strings.EqualFold(f.Name, field) {
+			return f.ReadOnly
+		}
+	}
+	return false
+}
+
+// DropReadOnlyFields removes the read-only fields (editable: false) from data (a write from a
+// page): an insert gets their initial value, a modify keeps the stored one — only business
+// logic sets them (e.g. Last Date Modified)
+func DropReadOnlyFields(table Table, data map[string]interface{}) {
+	for _, f := range table.GetFields() {
+		if f.ReadOnly {
+			delete(data, f.Name)
+		}
+	}
 }

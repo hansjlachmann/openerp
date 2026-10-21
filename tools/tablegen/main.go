@@ -9,8 +9,10 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
@@ -26,6 +28,9 @@ type TableDef struct {
 		SetupTable bool    `yaml:"setup_table"` // If true, singleton setup table (single blank-PK record)
 		Fields     []Field `yaml:"fields"`
 		Keys       []Key   `yaml:"keys"`
+		// DataCaptionFields (classic DataCaptionFields): fields whose values the pages show in
+		// the title of a card ("Finance Charge Terms – STD Standard finance charge")
+		DataCaptionFields []string `yaml:"data_caption_fields"`
 	} `yaml:"table"`
 
 	// FlowFilterFields (derived): fields with flow_filter: true, taken out of Fields after
@@ -96,6 +101,12 @@ type Field struct {
 	// checks and ValidateField reject a value that is not one (foundation/dateformula), and
 	// business logic calculates with it: system.CalcDate(string(rec.Due_date_calculation), d)
 	DateFormula bool `yaml:"date_formula"`
+	// Editable: false (classic Editable=No) — the pages show the field read-only and the API
+	// keeps its stored value; business logic (Go) can still set it
+	Editable *bool `yaml:"editable"`
+	// DecimalPlaces (classic DecimalPlaces "min:max"): the pages show a decimal with at least
+	// min and at most max digits after the point ("2:5" → 0.01, 0.00001); storage keeps scale
+	DecimalPlaces string `yaml:"decimal_places"`
 
 	// Derived (not in YAML): for a FlowField with exactly one "field" flow filter, the
 	// source column to group by and the record map key holding its value. Set by
@@ -153,6 +164,8 @@ func (tr *TableRelation) ShouldValidate() bool {
 }
 
 // Validation represents field validation rules
+// Validation is a field's range (classic MinValue / MaxValue): min, max or both; on whole
+// numbers and decimals
 type Validation struct {
 	Min interface{} `yaml:"min"`
 	Max interface{} `yaml:"max"`
@@ -254,6 +267,11 @@ func main() {
 			continue
 		}
 		if err := validateFieldNumbers(tableDef); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
+			continue
+		}
+		if err := validateFieldProperties(tableDef); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
 			failed = true
 			continue
@@ -873,6 +891,118 @@ func pickSIFTKey(source *TableDef, f *Field, filterFields []string) (best string
 	return best, hasSIFT
 }
 
+// rangeCheck is the Go call checking a field's range (validation: min/max): decimals compare
+// as decimals; one bound may be missing
+func rangeCheck(structName string, f Field) string {
+	bound := func(v interface{}) string {
+		if v == nil {
+			return ""
+		}
+		return defaultText(v)
+	}
+	min, max := bound(f.Validation.Min), bound(f.Validation.Max)
+	target := fmt.Sprintf("%sTableName, %q, t.%s", structName, f.Name, upperFirst(f.Name))
+	switch {
+	case f.Type == "types.Decimal":
+		return fmt.Sprintf("tables.CheckDecimalRange(%s, %q, %q)", target, min, max)
+	case min != "" && max != "":
+		return fmt.Sprintf("tables.CheckRange(%s, %s, %s)", target, min, max)
+	case min != "":
+		return fmt.Sprintf("tables.CheckMin(%s, %s)", target, min)
+	default:
+		return fmt.Sprintf("tables.CheckMax(%s, %s)", target, max)
+	}
+}
+
+// sqlRangeCheck is the SQL CHECK of a whole-number field with both bounds (decimals are
+// checked in Go only: SQLite stores them as text, where "5" <= "100" is false)
+func sqlRangeCheck(f Field) string {
+	if f.Validation == nil || f.Validation.Min == nil || f.Validation.Max == nil || f.Type == "types.Decimal" {
+		return ""
+	}
+	return fmt.Sprintf(" CHECK (%s >= %s AND %s <= %s)", f.DBName, defaultText(f.Validation.Min), f.DBName, defaultText(f.Validation.Max))
+}
+
+// validateFieldProperties checks the field properties of the classic table: validation
+// (ranges) on numbers only, decimal_places "min:max" on decimals, editable: false not on the
+// primary key, data_caption_fields naming stored fields
+func validateFieldProperties(def *TableDef) error {
+	byName := map[string]Field{}
+	for _, f := range def.Table.Fields {
+		byName[f.Name] = f
+		if v := f.Validation; v != nil {
+			if v.Min == nil && v.Max == nil {
+				return fmt.Errorf("field %s: validation needs min, max or both", f.Name)
+			}
+			switch f.Type {
+			case "int", "int64", "float64", "types.Decimal":
+			default:
+				return fmt.Errorf("field %s: validation (min/max) is for numbers, not %s", f.Name, f.Type)
+			}
+			if v.Min != nil && v.Max != nil {
+				lo, err1 := strconv.ParseFloat(defaultText(v.Min), 64)
+				hi, err2 := strconv.ParseFloat(defaultText(v.Max), 64)
+				if err1 != nil || err2 != nil || lo > hi {
+					return fmt.Errorf("field %s: validation min %v / max %v", f.Name, v.Min, v.Max)
+				}
+			}
+		}
+		if f.DecimalPlaces != "" {
+			lo, hi, ok := strings.Cut(f.DecimalPlaces, ":")
+			a, err1 := strconv.Atoi(lo)
+			b, err2 := strconv.Atoi(hi)
+			if f.Type != "types.Decimal" || !ok || err1 != nil || err2 != nil || a < 0 || a > b {
+				return fmt.Errorf("field %s: decimal_places %q needs a decimal field and \"min:max\" (e.g. \"2:5\")", f.Name, f.DecimalPlaces)
+			}
+		}
+		if f.Editable != nil && !*f.Editable && f.PrimaryKey {
+			return fmt.Errorf("field %s: a primary key field cannot be editable: false", f.Name)
+		}
+	}
+	for _, name := range def.Table.DataCaptionFields {
+		if f, ok := byName[name]; !ok || f.FlowField {
+			return fmt.Errorf("data_caption_fields: %q is not a stored field", name)
+		}
+	}
+	return nil
+}
+
+// defaultText is a YAML default as text: decimals without exponent (0.00001, not 1e-05)
+func defaultText(v interface{}) string {
+	switch x := v.(type) {
+	case float64:
+		return strconv.FormatFloat(x, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(x), 'f', -1, 32)
+	}
+	return fmt.Sprint(v)
+}
+
+// goDefault is the Go expression of a field's YAML default (the classic InitValue):
+// decimals, text and code values need their types' constructors
+func goDefault(f Field) string {
+	switch f.Type {
+	case "types.Decimal":
+		return fmt.Sprintf("types.MustDecimal(%q)", defaultText(f.Default))
+	case "types.Text":
+		return fmt.Sprintf("types.NewText(%q)", defaultText(f.Default))
+	case "types.Code":
+		return fmt.Sprintf("types.NewCode(%q)", defaultText(f.Default))
+	case "string":
+		return fmt.Sprintf("%q", defaultText(f.Default))
+	}
+	return defaultText(f.Default)
+}
+
+// sqlDefault is the SQL DEFAULT value of a field's YAML default: text and codes quoted
+func sqlDefault(f Field) string {
+	switch f.Type {
+	case "types.Text", "types.Code", "string":
+		return "'" + strings.ReplaceAll(defaultText(f.Default), "'", "''") + "'"
+	}
+	return defaultText(f.Default)
+}
+
 // fileExists checks if a file exists
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
@@ -912,6 +1042,11 @@ func templateFuncs() template.FuncMap {
 		"upperFirst":         upperFirst,
 		"lowerFirst":         lowerFirst,
 		"sqlType":            getSQLType,
+		"goDefault":          goDefault,
+		"rangeCheck":         rangeCheck,
+		"sqlRangeCheck":      sqlRangeCheck,
+		"readOnly":           func(f Field) bool { return f.Editable != nil && !*f.Editable },
+		"sqlDefault":         sqlDefault,
 		"postgresSqlType":    getPostgresSQLType,
 		"tableName":          getTableNameExpr,
 		"isLast":             isLast,
@@ -988,14 +1123,10 @@ func toPascalCase(s string) string {
 }
 
 func sanitizeIdentifier(s string) string {
-	// Convert option values like "Credit Memo", "G/L Account", etc. into valid Go identifiers
-	// Remove or replace special characters
-	s = strings.ReplaceAll(s, "/", "")  // "G/L Account" -> "GL Account"
-	s = strings.ReplaceAll(s, "-", " ") // Hyphens to spaces
-	s = strings.ReplaceAll(s, "_", " ") // Underscores to spaces
-
-	// Split by spaces and capitalize each word
-	words := strings.Fields(s)
+	// Convert option values like "Credit Memo", "G/L Account", "ZIP Code+City" into valid Go
+	// identifiers: every character that is not a letter or digit separates words
+	// ("G/L Account" -> "GLAccount", "ZIP Code+City" -> "ZIPCodeCity")
+	words := strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
 	for i, word := range words {
 		words[i] = upperFirst(word)
 	}
@@ -1005,6 +1136,10 @@ func sanitizeIdentifier(s string) string {
 	// Handle blank option (empty string or single space)
 	if result == "" || s == " " {
 		return "Blank"
+	}
+	// An identifier cannot start with a digit ("30 Days" -> "N30Days")
+	if unicode.IsDigit(rune(result[0])) {
+		result = "N" + result
 	}
 
 	return result
@@ -1153,7 +1288,7 @@ func getSQLConstraints(f Field) string {
 	}
 
 	if f.Default != nil {
-		constraints = append(constraints, fmt.Sprintf("DEFAULT %v", f.Default))
+		constraints = append(constraints, "DEFAULT "+sqlDefault(f))
 	}
 
 	if f.AutoTimestamp {
@@ -1344,7 +1479,7 @@ func (t *{{ .StructName }}) CheckFields() error {
 	}
 {{- end }}
 {{- if .Validation }}
-	if err := tables.CheckRange({{ $.StructName }}TableName, "{{ .Name }}", t.{{ upperFirst .Name }}, {{ .Validation.Min }}, {{ .Validation.Max }}); err != nil {
+	if err := {{ rangeCheck $.StructName . }}; err != nil {
 		return err
 	}
 {{- end }}
@@ -1664,7 +1799,7 @@ func (t *{{ .StructName }}) IsSetupTable() bool {
 func Get{{ .StructName }}TableSchema() string {
 	return ` + "`" + `
 {{- range $i, $f := .Table.Fields }}
-		{{ $f.DBName }} {{ sqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ if $f.Validation }} CHECK ({{ $f.DBName }} >= {{ $f.Validation.Min }} AND {{ $f.DBName }} <= {{ $f.Validation.Max }}){{ end }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ $f.Default }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
+		{{ $f.DBName }} {{ sqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ sqlRangeCheck $f }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ sqlDefault $f }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
 {{- end }}
 {{- if gt (pkCount .Table.Fields) 1 }}
 		PRIMARY KEY ({{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})
@@ -1676,7 +1811,7 @@ func Get{{ .StructName }}TableSchema() string {
 func Get{{ .StructName }}PostgresTableSchema() string {
 	return ` + "`" + `
 {{- range $i, $f := .Table.Fields }}
-		{{ $f.DBName }} {{ postgresSqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ if $f.Validation }} CHECK ({{ $f.DBName }} >= {{ $f.Validation.Min }} AND {{ $f.DBName }} <= {{ $f.Validation.Max }}){{ end }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ $f.Default }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
+		{{ $f.DBName }} {{ postgresSqlType $f }}{{ if and $f.PrimaryKey (eq (pkCount $.Table.Fields) 1) }} PRIMARY KEY{{ end }}{{ if $f.Required }}{{ if not $f.PrimaryKey }} NOT NULL{{ end }}{{ end }}{{ sqlRangeCheck $f }}{{ if eq $f.Type "Option" }} CHECK ({{ $f.DBName }} >= 0 AND {{ $f.DBName }} <= {{ sub (len $f.Options) 1 }}){{ end }}{{ if $f.Default }} DEFAULT {{ sqlDefault $f }}{{ end }}{{ if $f.AutoTimestamp }} DEFAULT CURRENT_TIMESTAMP{{ end }}{{ if or (not (isLast $i $.Table.Fields)) (gt (pkCount $.Table.Fields) 1) }},{{ end }}
 {{- end }}
 {{- if gt (pkCount .Table.Fields) 1 }}
 		PRIMARY KEY ({{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})
@@ -1839,7 +1974,7 @@ func (t *{{ .StructName }}) applyDefaults() {
 {{- if .AutoTimestamp }}
 	t.{{ upperFirst .Name }} = time.Now()
 {{- else if .Default }}
-	t.{{ upperFirst .Name }} = {{ .Default }}
+	t.{{ upperFirst .Name }} = {{ goDefault . }}
 {{- end }}
 {{- end }}
 }
@@ -5038,6 +5173,12 @@ func (t *{{ .StructName }}) GetFields() []tables.FieldInfo {
 			Editable:   {{ not .PrimaryKey }},
 			PrimaryKey: {{ .PrimaryKey }},
 			FlowField:  {{ .FlowField }},
+{{- if readOnly . }}
+			ReadOnly:   true,
+{{- end }}
+{{- if .DecimalPlaces }}
+			DecimalPlaces: "{{ .DecimalPlaces }}",
+{{- end }}
 {{- if .Sensitive }}
 			Sensitive:  true,
 {{- end }}

@@ -1,0 +1,73 @@
+page:
+  id: 6
+  type: List
+  name: Finance Charge Terms
+  source_table: Finance_Charge_Terms
+  caption: Finance Charge Terms
+  card_page_id: 494          # Edit / New / Enter open the card; F2 edits in the list
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 100
+
+        - source: description
+          width: 220
+
+        - source: interest_rate
+          width: 110
+
+        - source: minimum_amount_lcy
+          width: 130
+
+        - source: additional_fee_lcy
+          width: 130
+
+        - source: interest_calculation_method
+          width: 190
+
+        - source: interest_period_days
+          width: 130
+
+        - source: grace_period
+          width: 120
+
+        - source: due_date_calculation
+          width: 150
+
+        - source: interest_calculation
+          width: 150
+
+        - source: post_interest
+          width: 110
+
+        - source: post_additional_fee
+          width: 140
+
+        - source: line_description
+          width: 260
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

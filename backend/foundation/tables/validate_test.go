@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
 func message(t *testing.T, err error, language string) string {
@@ -45,5 +46,42 @@ func TestCheckMaxLengthCountsCharacters(t *testing.T) {
 	}
 	if err := CheckRequired("Customer", "no", false); err != nil {
 		t.Errorf("a field with a value: %v", err)
+	}
+}
+
+// A range with one bound says which bound the value broke; both bounds give the range.
+func TestRangeChecks(t *testing.T) {
+	d := func(s string) types.Decimal { return types.MustDecimal(s) }
+	for _, c := range []struct {
+		value    string
+		min, max string
+		want     string // "" = accepted
+	}{
+		{"0", "0", "", ""},
+		{"0.01", "0", "", ""},
+		{"-0.01", "0", "", "Amount Rounding Precision must not be less than 0"},
+		{"101", "", "100", "Amount Rounding Precision must not be greater than 100"},
+		{"100", "0", "100", ""},
+		{"100.5", "0", "100", "Amount Rounding Precision must be between 0 and 100"},
+		{"-1", "0", "100", "Amount Rounding Precision must be between 0 and 100"},
+	} {
+		err := CheckDecimalRange("Currency", "amount_rounding_precision", d(c.value), c.min, c.max)
+		switch {
+		case c.want == "" && err != nil:
+			t.Errorf("%s in %s..%s: %v", c.value, c.min, c.max, err)
+		case c.want != "" && err == nil:
+			t.Errorf("%s in %s..%s accepted", c.value, c.min, c.max)
+		case c.want != "" && message(t, err, "en-US") != c.want:
+			t.Errorf("%s in %s..%s: %q, want %q", c.value, c.min, c.max, message(t, err, "en-US"), c.want)
+		}
+	}
+	if err := CheckMin("Job_Queue", "minutes_between_run", 0, 1); err == nil || !strings.Contains(message(t, err, "en-US"), "less than 1") {
+		t.Errorf("CheckMin: %v", err)
+	}
+	if err := CheckMax("Job_Queue", "minutes_between_run", 1441, 1440); err == nil || !strings.Contains(message(t, err, "en-US"), "greater than 1440") {
+		t.Errorf("CheckMax: %v", err)
+	}
+	if CheckMin("Job_Queue", "minutes_between_run", 1, 1) != nil || CheckMax("Job_Queue", "minutes_between_run", 1440, 1440) != nil {
+		t.Error("a value on the bound refused")
 	}
 }

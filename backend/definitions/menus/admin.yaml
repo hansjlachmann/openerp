@@ -29,6 +29,42 @@ menu:
         page_id: 10
         icon: globe
 
+      - name: Currencies
+        page_id: 5
+        icon: dollar-sign
+
+      - name: Finance Charge Terms
+        page_id: 6
+        icon: percent
+
+      - name: Price Groups
+        page_id: 7
+        icon: tag
+
+      - name: Standard Text Codes
+        page_id: 8
+        icon: file-text
+
+      - name: Shipment Methods
+        page_id: 11
+        icon: truck
+
+      - name: Departments
+        page_id: 12
+        icon: building
+
+      - name: Projects
+        page_id: 13
+        icon: briefcase
+
+      - name: Salespeople Purchasers
+        page_id: 14
+        icon: user
+
+      - name: Locations
+        page_id: 15
+        icon: map-pin
+
       - name: SMTP Setup
         page_id: 409
         icon: mail

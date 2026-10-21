@@ -11,7 +11,7 @@
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
-	import { getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { cardTitle, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
 	import { withReturn } from '$lib/utils/returnUrl';
@@ -551,7 +551,7 @@
 		/>
 	{/if}
 
-	<PageHeader title={page.page.caption} {onclose}>
+	<PageHeader title={cardTitle(page.page.caption, page.page.data_caption_fields, record, options)} {onclose}>
 		{#snippet leftActions()}
 			<!-- Save state indicator - fixed width container to prevent layout shift -->
 			<div class="save-state-container">

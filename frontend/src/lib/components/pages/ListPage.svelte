@@ -28,7 +28,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
@@ -173,12 +173,17 @@
 	let locale = $state('en-US');
 	currentLanguage.subscribe((lang) => { locale = lang; });
 
+	// Decimal places of the repeater's decimal fields (table YAML decimal_places)
+	const decimalPlaces = $derived(
+		Object.fromEntries((page.page.layout.repeater?.fields ?? []).map((f) => [f.source, f.decimal_places]))
+	);
+
 	/** Format a cell value with date/datetime awareness */
 	function formatCellValue(value: any, fieldSource: string): string {
 		const ft = fieldTypes[fieldSource];
 		if (isDateType(ft)) return formatDate(String(value ?? ''), locale);
 		if (isDateTimeType(ft)) return formatDateTime(String(value ?? ''), locale);
-		return formatValue(value);
+		return formatDecimal(value, decimalPlaces[fieldSource]);
 	}
 
 	/** Get the HTML input type for a cell-editing field */

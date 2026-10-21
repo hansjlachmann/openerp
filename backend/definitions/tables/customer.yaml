@@ -1,6 +1,7 @@
 table:
   id: 18
   name: "Customer"
+  data_caption_fields: [no, name]
   fields:
     - name: no
       no: 1

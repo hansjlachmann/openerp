@@ -22,6 +22,8 @@ const (
 	ErrFieldTooLong       ErrorCode = "ERR_FIELD_TOO_LONG"
 	ErrFieldTooShort      ErrorCode = "ERR_FIELD_TOO_SHORT"
 	ErrFieldOutOfRange    ErrorCode = "ERR_FIELD_OUT_OF_RANGE"
+	ErrFieldBelowMin      ErrorCode = "ERR_FIELD_BELOW_MIN"
+	ErrFieldAboveMax      ErrorCode = "ERR_FIELD_ABOVE_MAX"
 	ErrFieldFormat        ErrorCode = "ERR_FIELD_FORMAT"
 	ErrRelatedNotFound    ErrorCode = "ERR_RELATED_NOT_FOUND"
 	ErrRelatedInactive    ErrorCode = "ERR_RELATED_INACTIVE"
@@ -37,6 +39,9 @@ const (
 	ErrCopyTooMany        ErrorCode = "ERR_COPY_TOO_MANY"
 	ErrSelectionTooMany   ErrorCode = "ERR_SELECTION_TOO_MANY"
 	ErrInconsistent       ErrorCode = "ERR_INCONSISTENT"
+	ErrFieldNotEditable   ErrorCode = "ERR_FIELD_NOT_EDITABLE"
+	ErrMustBeRoundedTo    ErrorCode = "ERR_MUST_BE_ROUNDED_TO"
+	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
 	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
@@ -181,6 +186,16 @@ func FieldTooShort(table, field string, min int) *AppError {
 	return &AppError{Code: ErrFieldTooShort, Table: table, Field: field, Params: []string{strconv.Itoa(min)}}
 }
 
+// FieldBelowMin: a table field's value is below its minimum (a range with only a lower bound)
+func FieldBelowMin(table, field, min string) *AppError {
+	return &AppError{Code: ErrFieldBelowMin, Table: table, Field: field, Params: []string{min}}
+}
+
+// FieldAboveMax: a table field's value is above its maximum (a range with only an upper bound)
+func FieldAboveMax(table, field, max string) *AppError {
+	return &AppError{Code: ErrFieldAboveMax, Table: table, Field: field, Params: []string{max}}
+}
+
 // FieldOutOfRange: a table field's value is outside min..max
 func FieldOutOfRange(table, field, min, max string) *AppError {
 	return &AppError{Code: ErrFieldOutOfRange, Table: table, Field: field, Params: []string{min, max}}
@@ -246,6 +261,21 @@ func DeleteTooMany(max int) *AppError {
 // message); nothing was deleted
 func DeleteRecordFailed(tableCaption, key, reason string) *AppError {
 	return &AppError{Code: ErrDeleteRecordFailed, Params: []string{tableCaption, key, sentence(reason)}}
+}
+
+// MustBeRoundedTo: a precision field is not a multiple of another precision
+func MustBeRoundedTo(table, field, precision string) *AppError {
+	return &AppError{Code: ErrMustBeRoundedTo, Table: table, Field: field, Params: []string{precision}}
+}
+
+// DecimalPlacesFormat: a decimal places setting is not "n" or "min:max" (0–9)
+func DecimalPlacesFormat(table, field string) *AppError {
+	return &AppError{Code: ErrDecimalPlaces, Table: table, Field: field}
+}
+
+// FieldNotEditable: a page tried to change a read-only field (editable: false)
+func FieldNotEditable(table, field string) *AppError {
+	return &AppError{Code: ErrFieldNotEditable, Table: table, Field: field}
 }
 
 // Inconsistent: a transaction cannot be committed while tables are inconsistent (Consistent)

@@ -16,6 +16,18 @@ page:
         - source: name
           width: 300
 
+        - source: eu_country_code
+          width: 140
+
+        - source: intrastat_code
+          width: 130
+
+        - source: address_format
+          width: 200
+
+        - source: contact_address_format
+          width: 200
+
   actions:
     - name: New
       caption: New

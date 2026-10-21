@@ -24,7 +24,11 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}, &gtables.JobQueue{}, &gtables.JobQueueEntry{}} {
+	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}, &gtables.JobQueue{}, &gtables.JobQueueEntry{},
+		// the demo data's master data tables
+		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
+		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
+		&gtables.Location{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}

@@ -18,7 +18,37 @@ table:
       db_name: name
       length: 50
 
+    - name: eu_country_code
+      no: 6
+      type: types.Code
+      db_name: eu_country_code
+      length: 10
+
+    - name: intrastat_code
+      no: 7
+      type: types.Code
+      db_name: intrastat_code
+      length: 10
+
+    - name: address_format
+      no: 8
+      type: Option
+      db_name: address_format
+      options: ["ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"]
+      default: 1 # City+ZIP Code
+
+    - name: contact_address_format
+      no: 9
+      type: Option
+      db_name: contact_address_format
+      options: ["First", "After Company Name", "Last"]
+      default: 1 # After Company Name
+
   keys:
     - name: Primary
       fields: [code]
       clustered: true
+    - name: eu_country_code
+      fields: [eu_country_code]
+    - name: intrastat_code
+      fields: [intrastat_code]

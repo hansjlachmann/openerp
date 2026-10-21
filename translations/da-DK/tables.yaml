@@ -19,6 +19,22 @@ tables:
     fields:
       code: "Kode"
       name: "Navn"
+      eu_country_code: "EU-landekode"
+      intrastat_code: "Intrastat-kode"
+      address_format: "Adresseformat"
+      contact_address_format: "Kontaktadresseformat"
+
+    # Option field values
+    options:
+      address_format:
+        zip_code_city: "Postnr.+By"
+        city_zip_code: "By+Postnr."
+        city_state_zip_code: "By+Amt+Postnr."
+        blank_line_zip_code_city: "Tom linje+Postnr.+By"
+      contact_address_format:
+        first: "Først"
+        after_company_name: "Efter firmanavn"
+        last: "Sidst"
 
   # SMTP Setup (Table 409)
   smtp_setup:
@@ -346,3 +362,111 @@ tables:
       system_tables: "Systemobjektnumre"
       installed_at: "Installeret"
       updated_at: "Opdateret"
+
+  # Currency (Table 4)
+  currency:
+    caption: "Valuta"
+    fields:
+      code: "Kode"
+      last_date_modified: "Rettet den"
+      last_date_adjusted: "Senest reguleret"
+      invoice_rounding_precision: "Fakturaafrundingspræcision"
+      invoice_rounding_type: "Fakturaafrundingstype"
+      amount_rounding_precision: "Beløbsafrundingspræcision"
+      unit_amount_rounding_precision: "Enhedsbeløbsafrundingspræcision"
+      description: "Beskrivelse"
+      amount_decimal_places: "Beløbsdecimaler"
+      unit_amount_decimal_places: "Enhedsbeløbsdecimaler"
+      appln_rounding_precision: "Udligningsafrundingspræcision"
+      emu_currency: "ØMU-valuta"
+      currency_factor: "Valutafaktor"
+
+    # Option field values
+    options:
+      invoice_rounding_type:
+        nearest: "Nærmeste"
+        up: "Op"
+        down: "Ned"
+
+  # Finance Charge Terms (Table 5)
+  finance_charge_terms:
+    caption: "Rentebetingelser"
+    fields:
+      code: "Kode"
+      interest_rate: "Rentesats"
+      minimum_amount_lcy: "Minimumsbeløb (RV)"
+      additional_fee_lcy: "Opkrævningsgebyr (RV)"
+      description: "Beskrivelse"
+      interest_calculation_method: "Renteberegningsmetode"
+      interest_period_days: "Renteperiode (dage)"
+      grace_period: "Respitperiode"
+      due_date_calculation: "Forfaldsdatoberegning"
+      interest_calculation: "Renteberegning"
+      post_interest: "Bogfør rente"
+      post_additional_fee: "Bogfør gebyr"
+      line_description: "Linjebeskrivelse"
+
+    # Option field values
+    options:
+      interest_calculation_method:
+        average_daily_balance: "Gennemsnitlig daglig saldo"
+        balance_due: "Forfalden saldo"
+      interest_calculation:
+        open_entries: "Åbne poster"
+        closed_entries: "Lukkede poster"
+        all_entries: "Alle poster"
+
+  # Price Group (Table 6)
+  price_group:
+    caption: "Prisgruppe"
+    fields:
+      code: "Kode"
+      price_includes_tax: "Pris inkl. moms"
+      allow_quantity_disc: "Tillad mængderabat"
+      allow_cust_item_disc: "Tillad debitor-/varerabat"
+      allow_invoice_disc: "Tillad fakturarabat"
+
+  # Standard Text (Table 7)
+  standard_text:
+    caption: "Standardtekst"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # Shipment Method (Table 10)
+  shipment_method:
+    caption: "Leveringsform"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # Department (Table 11)
+  department:
+    caption: "Afdeling"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      consolidation_code: "Konsolideringskode"
+
+  # Project (Table 12)
+  project:
+    caption: "Projekt"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      consolidation_code: "Konsolideringskode"
+
+  # Salesperson/Purchaser (Table 13)
+  salesperson_purchaser:
+    caption: "Sælger/indkøber"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      commission_percent: "Provisionspct."
+
+  # Location (Table 14)
+  location:
+    caption: "Lokation"
+    fields:
+      code: "Kode"
+      name: "Navn"

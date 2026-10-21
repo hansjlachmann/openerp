@@ -76,3 +76,27 @@ pages:
     caption: "Opgavekøkort"
   job_queue_entries_list:
     caption: "Opgavekøposter"
+
+  # Master data lists (migration step 1)
+  currencies:
+    caption: "Valutaer"
+  currency_card:
+    caption: "Valutakort"
+  finance_charge_terms:
+    caption: "Rentebetingelser"
+  finance_charge_terms_card:
+    caption: "Rentebetingelseskort"
+  price_groups:
+    caption: "Prisgrupper"
+  standard_text_codes:
+    caption: "Standardtekster"
+  shipment_methods:
+    caption: "Leveringsformer"
+  departments:
+    caption: "Afdelinger"
+  projects:
+    caption: "Projekter"
+  salespeople_purchasers:
+    caption: "Sælgere/indkøbere"
+  locations:
+    caption: "Lokationer"

@@ -12,6 +12,7 @@ import (
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
 // PagesHandler handles page-related API endpoints
@@ -78,6 +79,30 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 			})
 		}
 	}
+	// The table's field properties the pages follow: read-only (editable: false) and the
+	// decimal places shown; the card title's fields
+	tableFields := map[string]ftables.FieldInfo{}
+	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
+		for _, f := range factory().GetFields() {
+			tableFields[f.Name] = f
+		}
+	}
+	applyTableField := func(field *pages.Field) {
+		info, ok := tableFields[field.Source]
+		if !ok {
+			return
+		}
+		if info.ReadOnly {
+			readOnly := false
+			field.Editable = &readOnly // a page cannot make a read-only table field editable
+		}
+		field.DecimalPlaces = info.DecimalPlaces
+	}
+	pageDef.Page.DataCaptionFields = tableMeta.GetDataCaptionFields(pageDef.Page.SourceTable)
+	if len(pageDef.Page.DataCaptionFields) == 0 && pageDef.Page.Type == "Card" {
+		pageDef.Page.DataCaptionFields = primaryKeyFields // a card without them shows its key
+	}
+
 	// Build a set for quick lookup
 	pkSet := make(map[string]bool, len(primaryKeyFields))
 	for _, pk := range primaryKeyFields {
@@ -115,6 +140,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				if tableMeta.IsFieldMasked(pageDef.Page.SourceTable, field.Source) {
 					field.Masked = true
 				}
+				applyTableField(field)
 			}
 		}
 
@@ -135,6 +161,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				if tableMeta.IsFieldMasked(pageDef.Page.SourceTable, field.Source) {
 					field.Masked = true
 				}
+				applyTableField(field)
 			}
 		}
 

@@ -1,0 +1,48 @@
+page:
+  id: 7
+  type: List
+  name: Price Groups
+  source_table: Price_Group
+  caption: Price Groups
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 100
+
+        - source: price_includes_tax
+          width: 140
+
+        - source: allow_quantity_disc
+          width: 150
+
+        - source: allow_cust_item_disc
+          width: 160
+
+        - source: allow_invoice_disc
+          width: 150
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -19,6 +19,9 @@ page:
         - source: discount_date_calculation
           width: 160
 
+        - source: discount_percent
+          width: 110
+
         - source: description
           width: 300
 

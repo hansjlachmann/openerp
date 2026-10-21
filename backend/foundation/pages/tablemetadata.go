@@ -16,14 +16,16 @@ type TableMetadata struct {
 	requiredFields map[string]map[string]bool   // table name -> field name -> required
 	maskedFields   map[string]map[string]bool   // table name -> field name -> masked (write-only secret)
 	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
+	captionFields  map[string][]string          // table name -> data_caption_fields (the card title)
 	mu             sync.RWMutex
 }
 
 // tableDefYAML represents the structure of table YAML files
 type tableDefYAML struct {
 	Table struct {
-		Name   string          `yaml:"name"`
-		Fields []tableFieldDef `yaml:"fields"`
+		Name              string          `yaml:"name"`
+		Fields            []tableFieldDef `yaml:"fields"`
+		DataCaptionFields []string        `yaml:"data_caption_fields"`
 	} `yaml:"table"`
 }
 
@@ -49,6 +51,7 @@ func GetTableMetadata() *TableMetadata {
 			requiredFields: make(map[string]map[string]bool),
 			maskedFields:   make(map[string]map[string]bool),
 			fieldTypes:     make(map[string]map[string]string),
+			captionFields:  make(map[string][]string),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -127,6 +130,12 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 	if len(fTypes) > 0 {
 		tm.fieldTypes[metadataKey(tableDef.Table.Name)] = fTypes
 	}
+	if len(tableDef.Table.DataCaptionFields) > 0 {
+		if tm.captionFields == nil {
+			tm.captionFields = make(map[string][]string)
+		}
+		tm.captionFields[metadataKey(tableDef.Table.Name)] = tableDef.Table.DataCaptionFields
+	}
 	if len(maskFields) > 0 {
 		if tm.maskedFields == nil {
 			tm.maskedFields = make(map[string]map[string]bool)
@@ -169,6 +178,14 @@ func (tm *TableMetadata) IsFieldMasked(tableName, fieldName string) bool {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.maskedFields[metadataKey(tableName)][fieldName]
+}
+
+// GetDataCaptionFields returns a table's data_caption_fields (the fields shown in a card's
+// title), nil without
+func (tm *TableMetadata) GetDataCaptionFields(tableName string) []string {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.captionFields[metadataKey(tableName)]
 }
 
 // IsFieldRequired returns whether a field is required for a table

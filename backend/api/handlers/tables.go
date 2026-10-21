@@ -799,6 +799,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
 	// sent back as its placeholder keeps its stored value
 	ftables.DropMaskedPlaceholders(table, data)
+	ftables.DropReadOnlyFields(table, data) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -925,6 +926,7 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
 	// sent back as its placeholder keeps its stored value
 	ftables.DropMaskedPlaceholders(table, data)
+	ftables.DropReadOnlyFields(table, data) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return nil, 400, err.Error()
 	}
@@ -1347,6 +1349,11 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	if req.Record != nil {
 		ftables.DropMaskedPlaceholders(table, req.Record)
 		table.FromMap(req.Record)
+	}
+
+	// A read-only field (editable: false) is not changed from a page
+	if ftables.IsReadOnly(table, req.Field) {
+		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.FieldNotEditable(tableName, req.Field).Message(language)))
 	}
 
 	// A masked field sent back as its placeholder is unchanged: nothing to validate

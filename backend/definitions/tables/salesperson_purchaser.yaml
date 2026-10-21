@@ -1,0 +1,32 @@
+table:
+  id: 13
+  name: "Salesperson_Purchaser"
+  caption: Salesperson/Purchaser
+  description: Salespeople and purchasers (table 13)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: commission_percent
+      no: 3
+      type: types.Decimal
+      db_name: commission_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

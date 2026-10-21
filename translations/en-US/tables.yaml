@@ -19,6 +19,22 @@ tables:
     fields:
       code: "Code"
       name: "Name"
+      eu_country_code: "EU Country Code"
+      intrastat_code: "Intrastat Code"
+      address_format: "Address Format"
+      contact_address_format: "Contact Address Format"
+
+    # Option field values
+    options:
+      address_format:
+        zip_code_city: "ZIP Code+City"
+        city_zip_code: "City+ZIP Code"
+        city_state_zip_code: "City+State+ZIP Code"
+        blank_line_zip_code_city: "Blank Line+ZIP Code+City"
+      contact_address_format:
+        first: "First"
+        after_company_name: "After Company Name"
+        last: "Last"
 
   # SMTP Setup (Table 409)
   smtp_setup:
@@ -346,3 +362,111 @@ tables:
       system_tables: "System Object Numbers"
       installed_at: "Installed At"
       updated_at: "Updated At"
+
+  # Currency (Table 4)
+  currency:
+    caption: "Currency"
+    fields:
+      code: "Code"
+      last_date_modified: "Last Date Modified"
+      last_date_adjusted: "Last Date Adjusted"
+      invoice_rounding_precision: "Invoice Rounding Precision"
+      invoice_rounding_type: "Invoice Rounding Type"
+      amount_rounding_precision: "Amount Rounding Precision"
+      unit_amount_rounding_precision: "Unit-Amount Rounding Precision"
+      description: "Description"
+      amount_decimal_places: "Amount Decimal Places"
+      unit_amount_decimal_places: "Unit-Amount Decimal Places"
+      appln_rounding_precision: "Appln. Rounding Precision"
+      emu_currency: "EMU Currency"
+      currency_factor: "Currency Factor"
+
+    # Option field values
+    options:
+      invoice_rounding_type:
+        nearest: "Nearest"
+        up: "Up"
+        down: "Down"
+
+  # Finance Charge Terms (Table 5)
+  finance_charge_terms:
+    caption: "Finance Charge Terms"
+    fields:
+      code: "Code"
+      interest_rate: "Interest Rate"
+      minimum_amount_lcy: "Minimum Amount (LCY)"
+      additional_fee_lcy: "Additional Fee (LCY)"
+      description: "Description"
+      interest_calculation_method: "Interest Calculation Method"
+      interest_period_days: "Interest Period (Days)"
+      grace_period: "Grace Period"
+      due_date_calculation: "Due Date Calculation"
+      interest_calculation: "Interest Calculation"
+      post_interest: "Post Interest"
+      post_additional_fee: "Post Additional Fee"
+      line_description: "Line Description"
+
+    # Option field values
+    options:
+      interest_calculation_method:
+        average_daily_balance: "Average Daily Balance"
+        balance_due: "Balance Due"
+      interest_calculation:
+        open_entries: "Open Entries"
+        closed_entries: "Closed Entries"
+        all_entries: "All Entries"
+
+  # Price Group (Table 6)
+  price_group:
+    caption: "Price Group"
+    fields:
+      code: "Code"
+      price_includes_tax: "Price Includes Tax"
+      allow_quantity_disc: "Allow Quantity Disc."
+      allow_cust_item_disc: "Allow Cust./Item Disc."
+      allow_invoice_disc: "Allow Invoice Disc."
+
+  # Standard Text (Table 7)
+  standard_text:
+    caption: "Standard Text"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # Shipment Method (Table 10)
+  shipment_method:
+    caption: "Shipment Method"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # Department (Table 11)
+  department:
+    caption: "Department"
+    fields:
+      code: "Code"
+      name: "Name"
+      consolidation_code: "Consolidation Code"
+
+  # Project (Table 12)
+  project:
+    caption: "Project"
+    fields:
+      code: "Code"
+      name: "Name"
+      consolidation_code: "Consolidation Code"
+
+  # Salesperson/Purchaser (Table 13)
+  salesperson_purchaser:
+    caption: "Salesperson/Purchaser"
+    fields:
+      code: "Code"
+      name: "Name"
+      commission_percent: "Commission %"
+
+  # Location (Table 14)
+  location:
+    caption: "Location"
+    fields:
+      code: "Code"
+      name: "Name"

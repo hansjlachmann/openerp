@@ -1,0 +1,61 @@
+page:
+  id: 494
+  type: Card
+  name: Finance Charge Terms Card
+  source_table: Finance_Charge_Terms
+  caption: Finance Charge Terms Card
+  list_page_id: 6
+  enable_navigation: true
+  editable: true
+  focus_field: "code"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+            importance: Promoted
+          - source: description
+            importance: Promoted
+          - source: line_description
+          - source: minimum_amount_lcy
+          - source: additional_fee_lcy
+          - source: interest_rate
+          - source: interest_calculation
+          - source: interest_calculation_method
+          - source: interest_period_days
+          - source: due_date_calculation
+          - source: grace_period
+          - source: post_interest
+          - source: post_additional_fee
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 6
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -31,7 +31,10 @@ func newTestDB(t *testing.T) *sql.DB {
 
 	creators := []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}}
+	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{},
+		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
+		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
+		&gtables.Location{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -76,8 +79,24 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 23 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 23 master data records", counts)
+	}
+	// Master data: given fields and the tables' defaults for the others
+	var eur gtables.Currency
+	eur.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !eur.Get("EUR") || eur.Description != "Euro" || eur.Unit_amount_rounding_precision.String() != "0.00001" || eur.Amount_decimal_places != "2:2" {
+		t.Errorf("EUR = %+v", eur.ToMap())
+	}
+	var retail gtables.PriceGroup
+	retail.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !retail.Get("RETAIL") || retail.Allow_invoice_disc || !retail.Allow_quantity_disc {
+		t.Errorf("RETAIL = %+v", retail.ToMap())
+	}
+	var dk gtables.CountryRegion
+	dk.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !dk.Get("DK") || dk.Eu_country_code != "DK" || dk.Address_format != gtables.CountryRegion_Address_format.CityZIPCode {
+		t.Errorf("DK = %+v", dk.ToMap())
 	}
 	if counts.LedgerEntries < 20*6 {
 		t.Errorf("only %d ledger entries", counts.LedgerEntries)

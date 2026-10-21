@@ -13,6 +13,7 @@
 //	OnValidate_Code(rec *gtables.PaymentTerms) error
 //	OnValidate_Due_date_calculation(rec *gtables.PaymentTerms) error
 //	OnValidate_Discount_date_calculation(rec *gtables.PaymentTerms) error
+//	OnValidate_Discount_percent(rec *gtables.PaymentTerms) error
 //	OnValidate_Description(rec *gtables.PaymentTerms) error
 //	OnValidate_Active(rec *gtables.PaymentTerms) error
 
@@ -36,11 +37,12 @@ import (
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterPaymentTermsLogic.
 type PaymentTerms struct {
-	Code                      types.Code `db:"code,pk"`
-	Due_date_calculation      types.Code `db:"due_date_calculation"`
-	Discount_date_calculation types.Code `db:"discount_date_calculation"`
-	Description               types.Text `db:"description"`
-	Active                    bool       `db:"active"`
+	Code                      types.Code    `db:"code,pk"`
+	Due_date_calculation      types.Code    `db:"due_date_calculation"`
+	Discount_date_calculation types.Code    `db:"discount_date_calculation"`
+	Discount_percent          types.Decimal `db:"discount_percent"`
+	Description               types.Text    `db:"description"`
+	Active                    bool          `db:"active"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -110,12 +112,14 @@ var PaymentTerms_FieldNo = struct {
 	Code                      int
 	Due_date_calculation      int
 	Discount_date_calculation int
+	Discount_percent          int
 	Description               int
 	Active                    int
 }{
 	Code:                      1,
 	Due_date_calculation:      2,
 	Discount_date_calculation: 3,
+	Discount_percent:          4,
 	Description:               5,
 	Active:                    900,
 }
@@ -129,6 +133,8 @@ func (t *PaymentTerms) FieldNo(fieldName string) int {
 		return 2
 	case "discount_date_calculation":
 		return 3
+	case "discount_percent":
+		return 4
 	case "description":
 		return 5
 	case "active":
@@ -146,6 +152,8 @@ func (t *PaymentTerms) FieldName(fieldNo int) string {
 		return "due_date_calculation"
 	case 3:
 		return "discount_date_calculation"
+	case 4:
+		return "discount_percent"
 	case 5:
 		return "description"
 	case 900:
@@ -194,6 +202,7 @@ type (
 	PaymentTermsOnValidate_Code                      interface{ OnValidate_Code(rec *PaymentTerms) error }
 	PaymentTermsOnValidate_Due_date_calculation      interface{ OnValidate_Due_date_calculation(rec *PaymentTerms) error }
 	PaymentTermsOnValidate_Discount_date_calculation interface{ OnValidate_Discount_date_calculation(rec *PaymentTerms) error }
+	PaymentTermsOnValidate_Discount_percent          interface{ OnValidate_Discount_percent(rec *PaymentTerms) error }
 	PaymentTermsOnValidate_Description               interface{ OnValidate_Description(rec *PaymentTerms) error }
 	PaymentTermsOnValidate_Active                    interface{ OnValidate_Active(rec *PaymentTerms) error }
 )
@@ -231,6 +240,8 @@ func paymentTermsTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(PaymentTermsOnValidate_Due_date_calculation)
 	case "OnValidate_Discount_date_calculation":
 		_, ok = logic.(PaymentTermsOnValidate_Discount_date_calculation)
+	case "OnValidate_Discount_percent":
+		_, ok = logic.(PaymentTermsOnValidate_Discount_percent)
 	case "OnValidate_Description":
 		_, ok = logic.(PaymentTermsOnValidate_Description)
 	case "OnValidate_Active":
@@ -327,7 +338,10 @@ func (t *PaymentTerms) CheckFields() error {
 	if err := tables.CheckDateFormula(PaymentTermsTableName, "discount_date_calculation", string(t.Discount_date_calculation)); err != nil {
 		return err
 	}
-	if err := tables.CheckMaxLength(PaymentTermsTableName, "description", string(t.Description), 30); err != nil {
+	if err := tables.CheckDecimalRange(PaymentTermsTableName, "discount_percent", t.Discount_percent, "0", "100"); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(PaymentTermsTableName, "description", string(t.Description), 50); err != nil {
 		return err
 	}
 	return nil
@@ -360,7 +374,8 @@ func GetPaymentTermsTableSchema() string {
 		code TEXT(10) PRIMARY KEY,
 		due_date_calculation TEXT(20),
 		discount_date_calculation TEXT(20),
-		description TEXT(30),
+		discount_percent TEXT,
+		description TEXT(50),
 		active INTEGER DEFAULT true
 	`
 }
@@ -371,7 +386,8 @@ func GetPaymentTermsPostgresTableSchema() string {
 		code VARCHAR(10) PRIMARY KEY,
 		due_date_calculation VARCHAR(20),
 		discount_date_calculation VARCHAR(20),
-		description VARCHAR(30),
+		discount_percent NUMERIC,
+		description VARCHAR(50),
 		active BOOLEAN DEFAULT true
 	`
 }
@@ -494,6 +510,7 @@ func (t *PaymentTerms) StoreOldValues() {
 	t.oldValues["code"] = t.Code
 	t.oldValues["due_date_calculation"] = t.Due_date_calculation
 	t.oldValues["discount_date_calculation"] = t.Discount_date_calculation
+	t.oldValues["discount_percent"] = t.Discount_percent
 	t.oldValues["description"] = t.Description
 	t.oldValues["active"] = t.Active
 }
@@ -557,6 +574,7 @@ func (t *PaymentTerms) GetByPK(code types.Code) bool {
 	var codeNull sql.NullString
 	var due_date_calculationNull sql.NullString
 	var discount_date_calculationNull sql.NullString
+	var discount_percentNull sql.NullString
 	var descriptionNull sql.NullString
 	var activeBool sql.NullBool
 
@@ -566,7 +584,7 @@ func (t *PaymentTerms) GetByPK(code types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, description, active FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -576,6 +594,7 @@ func (t *PaymentTerms) GetByPK(code types.Code) bool {
 		&codeNull,
 		&due_date_calculationNull,
 		&discount_date_calculationNull,
+		&discount_percentNull,
 		&descriptionNull,
 		&activeBool,
 	)
@@ -594,6 +613,7 @@ func (t *PaymentTerms) GetByPK(code types.Code) bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Due_date_calculation = types.NewCode(due_date_calculationNull.String)
 	t.Discount_date_calculation = types.NewCode(discount_date_calculationNull.String)
+	t.Discount_percent, _ = types.NewDecimalFromString(discount_percentNull.String)
 	t.Description = types.NewText(descriptionNull.String)
 	t.Active = activeBool.Bool
 
@@ -621,12 +641,13 @@ func (t *PaymentTerms) Insert(runTrigger bool) bool {
 		t.Code,
 		t.Due_date_calculation,
 		t.Discount_date_calculation,
+		t.Discount_percent,
 		t.Description,
 		t.Active,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, due_date_calculation, discount_date_calculation, description, active) VALUES (?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, due_date_calculation, discount_date_calculation, discount_percent, description, active) VALUES (?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -659,12 +680,13 @@ func (t *PaymentTerms) InsertAll(records []*PaymentTerms, runTrigger bool) error
 			r.Code,
 			r.Due_date_calculation,
 			r.Discount_date_calculation,
+			r.Discount_percent,
 			r.Description,
 			r.Active,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
-	columns := []string{"code", "due_date_calculation", "discount_date_calculation", "description", "active"}
+	columns := []string{"code", "due_date_calculation", "discount_date_calculation", "discount_percent", "description", "active"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -716,6 +738,10 @@ func (t *PaymentTerms) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "discount_date_calculation = ?")
 			values = append(values, t.Discount_date_calculation)
 		}
+		if t.hasFieldChanged("discount_percent") {
+			setClauses = append(setClauses, "discount_percent = ?")
+			values = append(values, t.Discount_percent)
+		}
 		if t.hasFieldChanged("description") {
 			setClauses = append(setClauses, "description = ?")
 			values = append(values, t.Description)
@@ -735,6 +761,8 @@ func (t *PaymentTerms) Modify(runTrigger bool) bool {
 		values = append(values, t.Due_date_calculation)
 		setClauses = append(setClauses, "discount_date_calculation = ?")
 		values = append(values, t.Discount_date_calculation)
+		setClauses = append(setClauses, "discount_percent = ?")
+		values = append(values, t.Discount_percent)
 		setClauses = append(setClauses, "description = ?")
 		values = append(values, t.Description)
 		setClauses = append(setClauses, "active = ?")
@@ -816,6 +844,10 @@ func (t *PaymentTerms) hasFieldChanged(fieldName string) bool {
 	case "discount_date_calculation":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Discount_date_calculation.Equal(old)
+		}
+	case "discount_percent":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Discount_percent.Equal(old)
 		}
 	case "description":
 		if old, ok := oldValue.(types.Text); ok {
@@ -1051,6 +1083,8 @@ func (t *PaymentTerms) columnName(fieldName string) (string, bool) {
 		return "due_date_calculation", true
 	case strings.ToLower("discount_date_calculation"):
 		return "discount_date_calculation", true
+	case strings.ToLower("discount_percent"):
+		return "discount_percent", true
 	case strings.ToLower("description"):
 		return "description", true
 	case strings.ToLower("active"):
@@ -1295,7 +1329,7 @@ func (t *PaymentTerms) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, description, active FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1303,6 +1337,7 @@ func (t *PaymentTerms) FindFirst() bool {
 	var codeNull sql.NullString
 	var due_date_calculationNull sql.NullString
 	var discount_date_calculationNull sql.NullString
+	var discount_percentNull sql.NullString
 	var descriptionNull sql.NullString
 	var activeBool sql.NullBool
 
@@ -1310,6 +1345,7 @@ func (t *PaymentTerms) FindFirst() bool {
 		&codeNull,
 		&due_date_calculationNull,
 		&discount_date_calculationNull,
+		&discount_percentNull,
 		&descriptionNull,
 		&activeBool,
 	)
@@ -1326,6 +1362,7 @@ func (t *PaymentTerms) FindFirst() bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Due_date_calculation = types.NewCode(due_date_calculationNull.String)
 	t.Discount_date_calculation = types.NewCode(discount_date_calculationNull.String)
+	t.Discount_percent, _ = types.NewDecimalFromString(discount_percentNull.String)
 	t.Description = types.NewText(descriptionNull.String)
 	t.Active = activeBool.Bool
 
@@ -1342,7 +1379,7 @@ func (t *PaymentTerms) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, description, active FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1350,6 +1387,7 @@ func (t *PaymentTerms) FindLast() bool {
 	var codeNull sql.NullString
 	var due_date_calculationNull sql.NullString
 	var discount_date_calculationNull sql.NullString
+	var discount_percentNull sql.NullString
 	var descriptionNull sql.NullString
 	var activeBool sql.NullBool
 
@@ -1357,6 +1395,7 @@ func (t *PaymentTerms) FindLast() bool {
 		&codeNull,
 		&due_date_calculationNull,
 		&discount_date_calculationNull,
+		&discount_percentNull,
 		&descriptionNull,
 		&activeBool,
 	)
@@ -1373,6 +1412,7 @@ func (t *PaymentTerms) FindLast() bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Due_date_calculation = types.NewCode(due_date_calculationNull.String)
 	t.Discount_date_calculation = types.NewCode(discount_date_calculationNull.String)
+	t.Discount_percent, _ = types.NewDecimalFromString(discount_percentNull.String)
 	t.Description = types.NewText(descriptionNull.String)
 	t.Active = activeBool.Bool
 
@@ -1423,7 +1463,7 @@ func (t *PaymentTerms) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, description, active FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1495,6 +1535,7 @@ func (t *PaymentTerms) Next(steps ...int) bool {
 		var codeNull sql.NullString
 		var due_date_calculationNull sql.NullString
 		var discount_date_calculationNull sql.NullString
+		var discount_percentNull sql.NullString
 		var descriptionNull sql.NullString
 		var activeBool sql.NullBool
 
@@ -1502,6 +1543,7 @@ func (t *PaymentTerms) Next(steps ...int) bool {
 			&codeNull,
 			&due_date_calculationNull,
 			&discount_date_calculationNull,
+			&discount_percentNull,
 			&descriptionNull,
 			&activeBool,
 		)
@@ -1517,6 +1559,7 @@ func (t *PaymentTerms) Next(steps ...int) bool {
 		t.Code = types.NewCode(codeNull.String)
 		t.Due_date_calculation = types.NewCode(due_date_calculationNull.String)
 		t.Discount_date_calculation = types.NewCode(discount_date_calculationNull.String)
+		t.Discount_percent, _ = types.NewDecimalFromString(discount_percentNull.String)
 		t.Description = types.NewText(descriptionNull.String)
 		t.Active = activeBool.Bool
 
@@ -1550,7 +1593,7 @@ func (t *PaymentTerms) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, description, active FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1575,6 +1618,7 @@ func (t *PaymentTerms) FindSetBuffered() bool {
 		var codeNull sql.NullString
 		var due_date_calculationNull sql.NullString
 		var discount_date_calculationNull sql.NullString
+		var discount_percentNull sql.NullString
 		var descriptionNull sql.NullString
 		var activeBool sql.NullBool
 
@@ -1582,6 +1626,7 @@ func (t *PaymentTerms) FindSetBuffered() bool {
 			&codeNull,
 			&due_date_calculationNull,
 			&discount_date_calculationNull,
+			&discount_percentNull,
 			&descriptionNull,
 			&activeBool,
 		)
@@ -1595,6 +1640,7 @@ func (t *PaymentTerms) FindSetBuffered() bool {
 		record.Code = types.NewCode(codeNull.String)
 		record.Due_date_calculation = types.NewCode(due_date_calculationNull.String)
 		record.Discount_date_calculation = types.NewCode(discount_date_calculationNull.String)
+		record.Discount_percent, _ = types.NewDecimalFromString(discount_percentNull.String)
 		record.Description = types.NewText(descriptionNull.String)
 		record.Active = activeBool.Bool
 
@@ -1628,6 +1674,7 @@ func (t *PaymentTerms) copyFromBuffered(record *PaymentTerms) {
 	t.Code = record.Code
 	t.Due_date_calculation = record.Due_date_calculation
 	t.Discount_date_calculation = record.Discount_date_calculation
+	t.Discount_percent = record.Discount_percent
 	t.Description = record.Description
 	t.Active = record.Active
 	t.StoreOldValues()
@@ -1824,6 +1871,34 @@ func (t *PaymentTerms) ValidateField(fieldName string, value interface{}) error 
 			}
 		}
 		return nil
+	case "discount_percent":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Discount_percent = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Discount_percent, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field discount_percent: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Discount_percent = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Discount_percent = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Discount_percent = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field discount_percent (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(PaymentTermsOnValidate_Discount_percent); ok {
+				if err := trg.OnValidate_Discount_percent(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "description":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
@@ -1879,6 +1954,8 @@ func (t *PaymentTerms) FieldValue(no int) (any, bool) {
 		return t.Due_date_calculation, true
 	case 3:
 		return t.Discount_date_calculation, true
+	case 4:
+		return t.Discount_percent, true
 	case 5:
 		return t.Description, true
 	case 900:
@@ -1916,6 +1993,11 @@ func (t *PaymentTerms) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Discount_date_calculation = types.NewCode(v)
+			return true
+		}
+	case 4:
+		if v, ok := value.(types.Decimal); ok {
+			t.Discount_percent = v
 			return true
 		}
 	case 5:
@@ -1996,8 +2078,29 @@ func (t *PaymentTerms) FieldError(fieldName string, text string) error {
 // CalcSums sets each of the decimal or integer fields to its total over the records matching
 // the current filters (CalcSums)
 func (t *PaymentTerms) CalcSums(fieldNames ...string) error {
-	if len(fieldNames) > 0 {
-		return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Payment Terms", fieldNames[0])
+	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+		case "discount_percent":
+			column = "discount_percent"
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Payment Terms", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM "%s" WHERE %s`, column, tableName, where), len(args))
+		var total string
+		if err := t.exec().QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums Payment Terms.%s: %w", column, err)
+		}
+		switch column {
+		case "discount_percent":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Payment Terms.%s: %w", column, err)
+			}
+			t.Discount_percent = d
+		}
 	}
 	return nil
 }
@@ -2330,6 +2433,8 @@ func (t *PaymentTerms) columnValue(column string) (interface{}, bool) {
 		return t.Due_date_calculation, true
 	case "discount_date_calculation":
 		return t.Discount_date_calculation, true
+	case "discount_percent":
+		return t.Discount_percent, true
 	case "description":
 		return t.Description, true
 	case "active":
@@ -2390,6 +2495,7 @@ func (t *PaymentTerms) setKeyValues(values []interface{}) {
 func (t *PaymentTerms) Init() {
 	t.Due_date_calculation = *new(types.Code)
 	t.Discount_date_calculation = *new(types.Code)
+	t.Discount_percent = *new(types.Decimal)
 	t.Description = *new(types.Text)
 	t.Active = *new(bool)
 	t.applyDefaults()
@@ -2429,6 +2535,7 @@ func (t *PaymentTerms) ToMap() map[string]interface{} {
 		"code":                      t.Code.String(),
 		"due_date_calculation":      t.Due_date_calculation.String(),
 		"discount_date_calculation": t.Discount_date_calculation.String(),
+		"discount_percent":          t.Discount_percent.String(),
 		"description":               t.Description.String(),
 		"active":                    t.Active,
 	}
@@ -2449,6 +2556,14 @@ func (t *PaymentTerms) FromMap(data map[string]interface{}) {
 	if v, ok := data["discount_date_calculation"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Discount_date_calculation = types.NewCode(s)
+		}
+	}
+	if v, ok := data["discount_percent"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Discount_percent, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Discount_percent = types.NewDecimal(val)
 		}
 	}
 	if v, ok := data["description"]; ok && v != nil {
@@ -2513,10 +2628,21 @@ func (t *PaymentTerms) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:            4,
+			Name:          "discount_percent",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "0:5",
+		},
+		{
 			No:         5,
 			Name:       "description",
 			Type:       tables.FieldTypeText,
-			Length:     30,
+			Length:     50,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,

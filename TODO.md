@@ -65,6 +65,58 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
         through the job API with the same dialogs as lists: `ObjectRunner.svelte`).
   - [ ] LOW priority, later: a subpage shown as a card page (one related record on the card, e.g.
         a setup or statistics part).
+- [ ] **FIRST PRIORITY — Migration step 1 follow-ups: what tables 3–14 still miss** (added
+      2026-10-21). Step 1 brought the tables and list pages only; compared with the classic
+      tables three things are missing. **Now** = can be done before other tables are migrated;
+      **later** = waits for the table named.
+  - **1. Field properties (no code):** ✅ built 2026-10-21 — table YAML `validation: {min, max}`
+    (either bound alone too, decimals included), `decimal_places: "min:max"`, `editable: false`,
+    `data_caption_fields: [...]`; applied to the tables below.
+    - [x] **Now:** `MinValue`/`MaxValue` on decimals — Payment Terms 4 Discount % and Finance Charge
+          Terms 2 Interest Rate 0–100; MinValue=0 on Finance Charge Terms 3 Minimum Amount, 5
+          Additional Fee and the Currency rounding precisions (13, 14, 44). Checked against the
+          classic definitions afterwards: Currency 10 has neither, 44 only MinValue, Commission %
+          only DecimalPlaces; only Finance Charge Terms has DataCaptionFields. The generator's range
+          check (`validation: min/max`) handles whole numbers only — extend it to decimals.
+    - [x] **Now:** `DecimalPlaces` for display — 0:5 (Discount %, Interest Rate), 2:2 (Commission %),
+          2:5 (rounding precisions): a YAML property (e.g. `decimal_places: "2:5"`) the pages use to
+          format the values (today they show unformatted).
+    - [x] **Now:** `Editable=No` — Currency 2 Last Date Modified, 3 Last Date Adjusted, 46 Currency
+          Factor are editable on the list today: a table field property (`editable: false`) the
+          pages respect (lists and cards).
+    - [x] **Now:** `DataCaptionFields` — Finance Charge Terms (Code, Description) in the page title
+          (cards of tables without them show the primary key, "Currency Card – EUR"; Customer
+          got No., Name).
+    - [ ] **Later:** number formatting in the user's language (decimal separator, thousands
+          separators) — values are shown with the dot today; needs list copy/paste and cell
+          editing to read the localized form back.
+  - **2. Code in the tables (left out in step 1):** ✅ "Now" part built 2026-10-21
+    - [x] **Now:** Currency OnModify / OnRename set 2 Last Date Modified to today.
+    - [x] **Now:** Currency OnValidate of the rounding precisions (10 Invoice Rounding Precision must
+          be rounded to 13 Amount Rounding Precision; changing 13 rounds 10).
+    - [x] **Now / later:** Currency OnValidate of 17/18 decimal places checks the format ("2:5") — the
+          format check now (`tables.CheckDecimalPlacesFormat`, tidies "02:05" → "2:5"; moves to the
+          General Ledger Setup when it is migrated).
+    - [ ] **Later:** Currency InitRoundingPrecision (precisions from the General Ledger Setup 98).
+    - [ ] **Later:** Currency OnValidate of the G/L-account fields (with the fields, → G/L Account 15);
+          Currency OnDelete deletes its exchange rates (→ Currency Exchange Rate 330).
+    - [ ] **Later:** Standard Text OnDelete deletes its extended texts (→ Extended Text Header/Line
+          279/280); Location OnDelete deletes its bins (→ Bin).
+  - **3. Links from other tables (the tables are not used anywhere yet):** ⏸ ON HOLD (decided
+    2026-10-21) — done when the customers (table 18, forms 21/22) are migrated.
+    - [ ] **Now:** Customer fields 16 Department Code, 17 Project Code, 22 Currency Code, 23 Price
+          Group Code, 24 Language Code, 28 Fin. Charge Terms Code, 29 Salesperson Code, 30 Shipment
+          Method Code, 83 Location Code — with table relations, on the Customer card (our Customer
+          has only 35 Country and 27 Payment Terms of these).
+    - [ ] **Now:** table relations on the existing Customer Ledger Entry fields `currency_code`,
+          `department_code`, `project_code`, `salesperson_code` (plain codes today).
+    - [ ] **Later:** the other tables pointing to 3–14 (vendors, items, documents, G/L entries …)
+          get their relations when they are migrated.
+  - **Cards:** [x] 494 Finance Charge Terms Card and 495 Currency Card (2026-10-21) — the lists
+    open them (Edit / New / Enter; F2 still edits in the list). Left out until their objects come:
+    the Currency Card's Reporting tab (G/L accounts only) and its "Exch. Rates" button (form 483,
+    table 330), the Finance Charge Terms list's Beginning/Ending Text and Currencies (forms 445/477).
+
 - [x] **FIRST PRIORITY — Preparation for the migration: page actions on documents** (added
       2026-10-21) — built 2026-10-21, tried on the Job Queue Card / Log Entries (sub-menu Line →
       Show Line → Entry No. / Description / Status with `ShowLine(0|1|2)`; card menu Job Queue →
@@ -117,6 +169,37 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       header code: move that code into a subpage action instead.
     - Captions drop the classic `&` accelerator; every action and section caption gets translations
       in all languages (en-US, da-DK, nb-NO); every action gets an `image:` from the icon set.
+    - Fields that relate to a table not migrated yet are left out (and listed below) until that
+      table comes; FlowFields over tables not migrated yet likewise. Table names keep the classic
+      name with `_` for spaces and `/` (`Salesperson_Purchaser`), the caption keeps the classic text.
+    - Classic InitValue → `default:` (decimals and texts too), NotBlank → `required: true`,
+      DateFormula → `date_formula: true`, option strings → `options:` (any characters).
+    - AutoFormatType=1 (an amount in local currency) → `decimal_places: "2:2"` for now; with an
+      AutoFormatExpr (the record's currency) → plain until amounts can format per currency.
+    - Table procedures that belong to a table not migrated yet (e.g. the General Ledger Setup's
+      CheckDecimalPlacesFormat) become plain helper functions in `business-logic/tables` and move
+      to that table's logic when it comes. Code that needs tables not migrated yet waits (TODO).
+    - Card forms: each tab becomes a section (fields in the classic order, left column then right);
+      a tab with only fields left out is left out; buttons to forms not migrated wait (TODO).
+    - Field properties: MinValue/MaxValue → `validation: {min: …, max: …}` (one bound alone is
+      fine), DecimalPlaces → `decimal_places: "min:max"` (decimals only), Editable=No on a table
+      field → `editable: false` (pages never write it; only business logic sets it — not on
+      primary key fields), the table's DataCaptionFields → `data_caption_fields: [...]` (stored
+      fields; the card title).
+  - **Steps:**
+    - [x] **Step 1 — basic master data, tables 3–14** (2026-10-21), tables only (no code): new
+          4 Currency, 5 Finance Charge Terms, 6 Price Group, 7 Standard Text, 10 Shipment Method,
+          11 Department, 12 Project, 13 Salesperson/Purchaser, 14 Location; completed 3 Payment
+          Terms (4 Discount %, Description 50 — migration 13) and 9 Country/Region (6–9 and their
+          keys); 8 Language stays global. List pages with the classic form numbers (5, 6, 7, 8,
+          11, 12, 13, 14, 15) under Settings; READER reads the new tables (migration 13); demo data
+          (setup.yaml `master_data`).
+    - [ ] **Currency FlowFields 24–35 and FlowFilters 19–23** (customer/vendor balances, outstanding
+          orders, … per currency) — left out in step 1; add them with the ledgers and documents
+          they read, or not at all if no page needs them.
+    - [ ] **Fields left out until their tables exist:** Currency 6–9, 40, 41, 47, 48, 50, 51
+          (G/L accounts → G/L Account); Price Group 6 Tax Bus. Posting Gr. (Price) (→ Tax Business
+          Posting Group).
 - [x] **Demo (k3s, repo `pi-cluster`): `jwt-secret` added to `openerp-secret` with sops** (2026-10-08,
       pi-cluster `3026f62`). Backend pod has `JWT_SECRET` (64 chars), no "No JWT_SECRET" warning; logged in,
       deleted the backend pod, reload → still logged in. Notes for next time: the age key is not on the

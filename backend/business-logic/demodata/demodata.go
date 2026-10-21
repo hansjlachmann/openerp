@@ -92,6 +92,7 @@ type Options struct {
 type Counts struct {
 	Countries     int
 	PaymentTerms  int
+	MasterData    int // records of the master data tables (setup.yaml master_data)
 	Customers     int
 	LedgerEntries int
 }
@@ -123,14 +124,30 @@ func (e *InsertError) Unwrap() error { return e.Err }
 
 type setupData struct {
 	Countries []struct {
-		Code string `yaml:"code"`
-		Name string `yaml:"name"`
+		Code          string `yaml:"code"`
+		Name          string `yaml:"name"`
+		EUCountryCode string `yaml:"eu_country_code"`
 	} `yaml:"countries"`
 	PaymentTerms []struct {
 		Code        string `yaml:"code"`
 		Description string `yaml:"description"`
 		DueDays     int    `yaml:"due_days"`
 	} `yaml:"payment_terms"`
+	// MasterData: records of master data tables (API name), field name → value; the
+	// tables' defaults fill the fields not given
+	MasterData []struct {
+		Table   string                   `yaml:"table"`
+		Records []map[string]interface{} `yaml:"records"`
+	} `yaml:"master_data"`
+}
+
+// masterDataCount is the number of master data records in the setup data
+func (s setupData) masterDataCount() int {
+	n := 0
+	for _, t := range s.MasterData {
+		n += len(t.Records)
+	}
+	return n
 }
 
 type customerData struct {
@@ -247,7 +264,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return counts, ErrCompanyNotEmpty
 	}
 
-	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms), len(customers), len(entries))
+	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+setup.masterDataCount(), len(customers), len(entries))
 
 	if err := insertSetup(exec, company, dbType, setup, &counts, p); err != nil {
 		rollback()
@@ -288,6 +305,7 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 		if !rec.Get(c.Code) {
 			rec.Code = types.NewCode(c.Code)
 			rec.Name = types.NewText(c.Name)
+			rec.Eu_country_code = types.NewCode(c.EUCountryCode)
 			if !rec.Insert(true) {
 				return &InsertError{Table: gtables.CountryRegionTableName, Key: c.Code, Err: insertErr(rec.TriggerError())}
 			}
@@ -309,6 +327,27 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			counts.PaymentTerms++
 		}
 		p.step()
+	}
+	for _, t := range setup.MasterData {
+		factory, ok := gtables.GetTableFactory(t.Table)
+		if !ok {
+			return fmt.Errorf("demo data: table %q does not exist", t.Table)
+		}
+		for _, record := range t.Records {
+			rec := factory()
+			rec.InitWithDBType(exec, company, dbType)
+			rec.FromMap(record)
+			key := rec.GetPrimaryKeyValue()
+			if !rec.Get(key) {
+				rec.InitWithDBType(exec, company, dbType)
+				rec.FromMap(record)
+				if !rec.Insert(true) {
+					return &InsertError{Table: t.Table, Key: fmt.Sprint(key), Err: insertErr(rec.TriggerError())}
+				}
+				counts.MasterData++
+			}
+			p.step()
+		}
 	}
 	return nil
 }

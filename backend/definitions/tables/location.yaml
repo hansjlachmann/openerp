@@ -1,0 +1,24 @@
+table:
+  id: 14
+  name: "Location"
+  caption: Location
+  description: Locations (table 14)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

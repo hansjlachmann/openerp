@@ -117,6 +117,11 @@ type FieldInfo struct {
 	FlowField  bool      // Whether this is a computed FlowField
 	Sensitive  bool      // Never sent by the API, not filterable/sortable/searchable (YAML sensitive: true)
 	Masked     bool      // Write-only secret: sent as MaskedValue, settable (YAML masked: true)
+	// ReadOnly (YAML editable: false, classic Editable=No): pages show it read-only and the API
+	// keeps the stored value; business logic can still set it
+	ReadOnly bool
+	// DecimalPlaces (YAML decimal_places, classic DecimalPlaces): "min:max" digits shown
+	DecimalPlaces string
 }
 
 // LookupColumnInfo defines a column to display in the lookup dropdown
