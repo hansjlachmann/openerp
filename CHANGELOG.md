@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.103](https://github.com/hansjlachmann/openerp/compare/v0.1.102...v0.1.103) (2026-10-21)
+
+
+### Features
+
+* **pages:** menu buttons and page functions; Esc closes every message box ([14918ea](https://github.com/hansjlachmann/openerp/commit/14918ea3364d3de521c086e21dfda42d50aa4635))
+* **pages:** one action button everywhere, icons from the page YAML ([31deadf](https://github.com/hansjlachmann/openerp/commit/31deadfbce32de5c048e532346d4a531febc4e1d))
+
 ## [0.1.102](https://github.com/hansjlachmann/openerp/compare/v0.1.101...v0.1.102) (2026-10-20)
 
 
