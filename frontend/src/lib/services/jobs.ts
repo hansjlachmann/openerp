@@ -117,7 +117,8 @@ export async function startJob(
 	record: Record<string, unknown>,
 	callbacks: JobCallbacks = {},
 	selection?: JobSelection,
-	objectType: 'codeunit' | 'report' = 'codeunit' // a report: its number is in codeunitId
+	objectType: 'codeunit' | 'report' | 'function' = 'codeunit', // a report: its number is in codeunitId
+	functionName?: string // objectType 'function': "table:Job_Queue_Entry.ShowLineNo"
 ): Promise<ProgressEvent | SyncJobResult | null> {
 	// Start the job; a list's selection (all: with the list's query) goes along for
 	// rec.SetSelectionFilter in the codeunit
@@ -126,7 +127,11 @@ export async function startJob(
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
-			...(objectType === 'report' ? { report_id: codeunitId } : { codeunit_id: codeunitId }),
+			...(objectType === 'function'
+				? { function: functionName }
+				: objectType === 'report'
+					? { report_id: codeunitId }
+					: { codeunit_id: codeunitId }),
 			record,
 			...(selection ? { selection: { keys: selection.keys, all: selection.all } } : {})
 		})

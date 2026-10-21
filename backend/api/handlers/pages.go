@@ -155,10 +155,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 
 	// Action and section captions: common.actions.<name> / common.sections.<name>, the YAML
 	// caption when there is no translation
-	for i := range pageDef.Page.Actions {
-		a := &pageDef.Page.Actions[i]
-		a.Caption = commonCaption(ts, "actions", a.Name, a.Caption, lang)
-	}
+	translateActions(ts, pageDef.Page.Actions, lang)
 	for i := range pageDef.Page.Layout.Sections {
 		sec := &pageDef.Page.Layout.Sections[i]
 		sec.Caption = commonCaption(ts, "sections", sec.Name, sec.Caption, lang)
@@ -175,6 +172,15 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		Captions:   captions,
 		Navigation: navigation,
 	})
+}
+
+// translateActions translates the captions of actions and their menu items
+func translateActions(ts *i18n.TranslationService, actions []pages.Action, lang string) {
+	for i := range actions {
+		a := &actions[i]
+		a.Caption = commonCaption(ts, "actions", a.Name, a.Caption, lang)
+		translateActions(ts, a.Items, lang)
+	}
 }
 
 // commonCaption translates an action or section name ("Send Test E-mail") with the key

@@ -50,6 +50,19 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
     of 10000) — needed by document lines.
   - Needs document tables to try it on (Sales Header / Sales Line) — or first on an existing pair
     (e.g. Job Queue card with its log entries as subpage).
+  - [ ] Check in Chrome, Edge and Firefox that F6 / Shift+F6 reach the page (not the address bar);
+        else Ctrl+Alt+PgDn / Ctrl+Alt+PgUp as the extra keys.
+  - [ ] Try editing lines (DelayedInsert, keyboard, delete) and `auto_split_key` on a real lines
+        page — with the first document tables (Sales Header / Sales Line); page 673 is read-only.
+  - [ ] Opening a line's card page from a subpage leaves the card (it navigates); a modal card
+        would keep the card open.
+  - [x] Menu buttons and page functions (2026-10-21): an action with `items:` is a dropdown menu;
+        `run_object: <type>:<object>.<function>` calls a registered function
+        (`foundation/functions`) with the current record. Example: Job Queue Entries (673) —
+        menu "Line" with "Test Line 1" (`table:Job_Queue_Entry.ShowLineNo`, a message with the
+        line's number) and "Test Line 2" (no function).
+  - [ ] Menu buttons and page functions on card pages too (only list pages and subpages so far;
+        card actions run codeunits without a dialog).
   - [ ] LOW priority, later: a subpage shown as a card page (one related record on the card, e.g.
         a setup or statistics part).
 - [ ] **HEADLINE — Migrate the classic application into this repository, in many steps** (added
@@ -99,6 +112,9 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       0.1.98 released and its images built. CI runs on Ubuntu 24.04 (Playwright has no browsers for
       26.04 yet).
 - [ ] **Renew `RELEASE_TOKEN` before 2027-10-20** (it expires then; releases stop until it is renewed).
+- [ ] **Renew `RENOVATE_TOKEN` (repo `pi-cluster`) before ≈2027-10-20** — the demo's Renovate
+      (in-cluster CronJob) stops opening update PRs when it expires (it did after 2026-10-14;
+      renewed 2026-10-21, classic token: repo, workflow, read:packages).
 - [x] **Neutral wording** (2026-10-13): code, docs, generated code, CHANGELOG, release notes and the
       commit messages since 0.1.96 describe the behaviour instead of naming other products (rule in
       CLAUDE.md); built-in themes renamed to Classic Light/Dark (migration 11); reference screenshots

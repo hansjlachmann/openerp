@@ -164,7 +164,11 @@
 		aria-controls={isOpen ? 'option-listbox' : undefined}
 		onkeydown={handleKeydown}
 		onblur={handleBlur}
-		onfocus={() => { if (!selectHandled) openDropdown(); }}
+		onfocus={() => {
+			// List cells (compact) open on focus; on cards the list opens with a click, F4,
+			// Space or ↓ — moving through the fields does not open it
+			if (compact && !selectHandled) openDropdown();
+		}}
 		onclick={handleToggle}
 	>
 		<span class="option-value">{displayText()}</span>

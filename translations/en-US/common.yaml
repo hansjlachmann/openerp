@@ -26,8 +26,11 @@ common:
     entries: "Entries"
     generate_ledger_entries: "Generate Ledger Entries"
     ledger_entries: "Ledger Entries"
+    line: "Line"
     run: "Run"
     send_test_e_mail: "Send Test E-mail"
+    test_line_1: "Test Line 1"
+    test_line_2: "Test Line 2"
     delete_log_entries: "Delete Log Entries"
 
   # Card page sections (page YAML section name in snake case)

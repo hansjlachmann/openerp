@@ -79,8 +79,9 @@ export interface Action {
 	run_page?: number;
 	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
 	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
-	run_object?: string;
+	run_object?: string; // "codeunit:455", "report:675", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
+	items?: Action[]; // a menu button: its menu items (each an action of its own)
 }
 
 export interface MenuDefinition {

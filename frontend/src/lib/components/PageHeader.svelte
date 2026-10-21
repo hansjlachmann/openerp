@@ -32,12 +32,14 @@
 <div class="page-header">
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
-			<div>
-				<h1 class="header-title">{title}</h1>
-				{#if subtitle}
-					<p class="header-subtitle">{subtitle}</p>
-				{/if}
-			</div>
+			{#if title || subtitle}
+				<div>
+					{#if title}<h1 class="header-title">{title}</h1>{/if}
+					{#if subtitle}
+						<p class="header-subtitle">{subtitle}</p>
+					{/if}
+				</div>
+			{/if}
 
 			{#if leftActions}
 				<div class="flex gap-3">

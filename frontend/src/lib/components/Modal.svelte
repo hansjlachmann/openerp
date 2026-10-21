@@ -1,5 +1,17 @@
+<script lang="ts" module>
+	// The open modals, the last one on top: Esc closes the top one only, and the pages under
+	// a modal ignore the keyboard (isModalOpen) — unless they are inside one (RunModal)
+	const openModals: symbol[] = [];
+
+	/** A modal (message box, confirmation, input dialog, modal card …) is open */
+	export function isModalOpen(): boolean {
+		return openModals.length > 0;
+	}
+</script>
+
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { portal } from '$lib/actions/portal';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -15,12 +27,26 @@
 	// Reference to modal content for focus management
 	let modalContentRef = $state<HTMLDivElement | null>(null);
 
-	// Handle escape key to close modal
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && open) {
+	// Esc closes the top modal — after the controls in it had the key (an open dropdown, a
+	// cell being edited, a filter field take Esc first and prevent its default). A modal
+	// without onclose (a running job) keeps Esc from the page under it.
+	const id = Symbol('modal');
+	$effect(() => {
+		if (!open) return;
+		openModals.push(id);
+		function handleEscape(event: KeyboardEvent) {
+			if (event.key !== 'Escape' || openModals[openModals.length - 1] !== id) return;
+			if (event.defaultPrevented) return;
+			event.preventDefault();
 			onclose?.();
 		}
-	}
+		document.addEventListener('keydown', handleEscape);
+		return () => {
+			document.removeEventListener('keydown', handleEscape);
+			const i = openModals.indexOf(id);
+			if (i >= 0) openModals.splice(i, 1);
+		};
+	});
 
 	// Prevent background scroll when modal is open and manage focus
 	$effect(() => {
@@ -58,20 +84,14 @@
 	};
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if open}
+	<!-- Drawn at the app root, above the whole page (portal) -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="modal-backdrop"
-		onclick={onclose}
-		onkeydown={(e) => e.key === 'Escape' && onclose?.()}
-		role="presentation"
-	>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-backdrop" use:portal onclick={onclose} role="presentation">
 		<div
 			class="modal-content {sizeClasses[size]}"
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={title ? 'modal-title' : undefined}

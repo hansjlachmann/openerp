@@ -122,6 +122,10 @@ type Action struct {
 	// Enabled: actions are enabled unless the YAML says enabled: false (a missing value is
 	// omitted from the JSON; a plain bool sent false and disabled such actions and their shortcuts)
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	// Items: the action is a menu button (a dropdown) with these menu items; each item is an
+	// action of its own (run_object, run_page, shortcut). run_object can call a registered
+	// function with the current record: "table:Job_Queue_Entry.ShowLineNo" (foundation/functions)
+	Items []Action `yaml:"items,omitempty" json:"items,omitempty"`
 }
 
 // MenuDefinition represents the menu structure
@@ -147,6 +151,19 @@ type MenuItem struct {
 	Enabled     bool   `yaml:"enabled,omitempty" json:"enabled"`
 }
 
+// cloneActions copies actions and their menu items (captions are translated per request)
+func cloneActions(actions []Action) []Action {
+	if actions == nil {
+		return nil
+	}
+	out := make([]Action, len(actions))
+	for i, a := range actions {
+		a.Items = cloneActions(a.Items)
+		out[i] = a
+	}
+	return out
+}
+
 // Clone returns a copy of the page definition that can be changed per request (translated
 // captions, primary key and required flags) without touching the registry's shared one.
 func (p *PageDefinition) Clone() *PageDefinition {
@@ -162,7 +179,7 @@ func (p *PageDefinition) Clone() *PageDefinition {
 		r.Fields = append([]Field(nil), r.Fields...)
 		m.Layout.Repeater = &r
 	}
-	m.Actions = append([]Action(nil), p.Page.Actions...)
+	m.Actions = cloneActions(p.Page.Actions)
 	m.PrimaryKeyFields = append([]string(nil), p.Page.PrimaryKeyFields...)
 	m.FlowFields = append([]string(nil), p.Page.FlowFields...)
 	m.SortableFlowFields = append([]string(nil), p.Page.SortableFlowFields...)

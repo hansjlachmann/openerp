@@ -35,3 +35,20 @@ page:
           width: 150
 
   actions:
+    # A menu button with menu items; an item can call a function with the current line
+    - name: Line
+      caption: Line
+      promoted: true
+      items:
+        - name: Test Line 1
+          caption: Test Line 1
+          run_object: table:Job_Queue_Entry.ShowLineNo   # business-logic/tables/jobqueueentry.go
+
+        - name: Test Line 2
+          caption: Test Line 2
+
+    # A plain button next to the menu button
+    - name: TEST
+      caption: TEST
+      promoted: true
+      run_object: table:Job_Queue_Entry.Test

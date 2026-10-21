@@ -10,15 +10,16 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
 	import PageRenderer from './PageRenderer.svelte';
+	import ActionMenu from '../ActionMenu.svelte';
 	import { splitLineNo, lineNo } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
-	import type { RequestDataItem } from '$lib/types/pages';
+	import type { RequestDataItem, Action } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import FilterPane from './FilterPane.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
-	import Modal from '../Modal.svelte';
+	import Modal, { isModalOpen } from '../Modal.svelte';
 	import ProgressModal from '../ProgressModal.svelte';
 	import { startJob, type SyncJobResult } from '$lib/services/jobs';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
@@ -143,7 +144,7 @@
 
 	// Quick search state
 	let searchQuery = $state('');
-	let searchInputElement: HTMLInputElement | null = null;
+	let searchInputElement = $state<HTMLInputElement | null>(null); // none in a subpage
 
 	// Sort state
 	let sortField = $state<string | null>(null);
@@ -353,7 +354,14 @@
 		function handleGlobalKeydown(event: KeyboardEvent) {
 			// Skip if a modal or the Switch Company dialog (Ctrl+O) is open, or the column
 			// header menu (it handles its own keys, Esc closes it)
-			if (modalOpen || get(companySwitchOpen) || columnMenu || progressModalOpen) return;
+			// … or a codeunit's message box / a page it opened (they handle Esc themselves), or any
+			// other modal — unless this list is inside the modal (a page opened with RunModal)
+			if (modalOpen || get(companySwitchOpen) || columnMenu || progressModalOpen || dialogOpen || runPage) return;
+			if (isModalOpen() && !listPageElement?.closest('.modal-content')) return;
+			// The keys of an action menu (and other parts marking their keys as their own) are
+			// theirs — the filter pane's Esc is handled just below
+			const ownKeys = (event.target as Element | null)?.closest?.('[data-own-keys]');
+			if (ownKeys && !ownKeys.closest('.filter-pane')) return;
 			// A subpage's shortcuts only while the cursor is in it (the card has its own)
 			if (subpage && !listPageElement?.contains(document.activeElement)) return;
 
@@ -412,7 +420,7 @@
 			}
 
 			// Check if this matches any action shortcut (normalize the action shortcut for comparison)
-			const action = page.page.actions?.find(a => a.shortcut && normalizeShortcut(a.shortcut) === shortcutKey);
+			const action = allActions().find(a => a.shortcut && normalizeShortcut(a.shortcut) === shortcutKey);
 			if (action) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -568,6 +576,12 @@
 	async function handleRunObject(runObject: string) {
 		let codeunitId: number;
 		let isReport = false; // "report:ID": a processing-only report (request page, then the report)
+		// "<type>:<object>.<function>": a registered function called with the current record
+		const isFunction = /^[a-z]+:[^.]+\.[A-Za-z_]\w*$/.test(runObject) && !runObject.startsWith('field:');
+		if (isFunction && !selectedRecord) {
+			toast.error(t(ERR.NO_RECORD_SELECTED));
+			return;
+		}
 
 		// Check if it's a field reference (format: "field:fieldname")
 		if (runObject.startsWith('field:')) {
@@ -582,6 +596,8 @@
 				return;
 			}
 			codeunitId = typeof fieldValue === 'number' ? fieldValue : parseInt(String(fieldValue), 10);
+		} else if (isFunction) {
+			codeunitId = 1; // not used: the function is named
 		} else {
 			// Parse the run_object string (format: "codeunit:ID")
 			const [objectType, objectId] = runObject.split(':');
@@ -689,7 +705,7 @@
 						toast.error(syncResult.message || t(ERR.CODEUNIT_FAILED));
 					}
 				}
-			}, jobSelection, isReport ? 'report' : 'codeunit');
+			}, jobSelection, isFunction ? 'function' : isReport ? 'report' : 'codeunit', isFunction ? runObject : undefined);
 
 			// For async jobs, keep modal open briefly to show 100%
 			if (result && 'job_id' in result) {
@@ -708,6 +724,18 @@
 		}
 	}
 
+	// The page's actions with the items of its menu buttons (one list for names and shortcuts)
+	function allActions(): Action[] {
+		const flat = (actions: Action[] | undefined): Action[] =>
+			(actions ?? []).flatMap((a) => [a, ...flat(a.items)]);
+		return flat(page.page.actions);
+	}
+
+	// A menu item: run what it runs (an item without run_object / run_page does nothing)
+	async function handleMenuItem(item: Action) {
+		if (item.run_object || item.run_page) await handleAction(item.name);
+	}
+
 	// Handle action clicks
 	async function handleAction(actionName: string) {
 		// Several rows selected: Delete deletes them all (other actions use the cursor row)
@@ -717,7 +745,7 @@
 		}
 
 		// Check if the action has a run_object
-		const action = page.page.actions?.find(a => a.name === actionName);
+		const action = allActions().find(a => a.name === actionName);
 		if (action?.run_object) {
 			await handleRunObject(action.run_object);
 			return;
@@ -2199,7 +2227,7 @@
 	const shortcutMap = $derived(() => {
 		const map: Record<string, () => void> = {};
 
-		page.page.actions?.forEach((action) => {
+		allActions().forEach((action) => {
 			if (action.shortcut && action.enabled !== false) {
 				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
 				const normalizedShortcut = normalizeShortcut(action.shortcut);
@@ -2806,7 +2834,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="list-page" class:embedded={pickOnEnter} class:subpage use:shortcuts={shortcutMap()} tabindex="0" bind:this={listPageElement} onkeydown={handleSearchShortcut} role="application" aria-label={page.page.caption}>
-	<PageHeader title={page.page.caption} onclose={returnUrl || (onclose && !subpage) ? closeList : undefined}>
+	<!-- A subpage has no title (its card section has the caption) and no search box -->
+	<PageHeader title={subpage ? '' : page.page.caption} onclose={returnUrl || (onclose && !subpage) ? closeList : undefined}>
 		{#snippet leftActions()}
 			{#if page.page.editable}
 				<!-- Save state indicator - fixed width container to prevent layout shift -->
@@ -2828,6 +2857,14 @@
 			{/if}
 
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
+					{#if action.items}
+						<!-- A menu button: its items need a record when they run something -->
+						<ActionMenu
+							{action}
+							itemDisabled={(item) => !!(item.run_object || item.run_page) && !selectedRecord}
+							onselect={handleMenuItem}
+						/>
+					{:else}
 					{@const isDisabled = (() => {
 						// New and Refresh are always enabled
 						if (action.name === 'New' || action.name === 'Refresh') return false;
@@ -2864,9 +2901,11 @@
 							<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
 						{/if}
 					</Button>
+					{/if}
 				{/each}
 
 				<!-- Quick Search -->
+				{#if !subpage}
 				<div class="search-container">
 					<svg
 						class="search-icon"
@@ -2914,6 +2953,7 @@
 						</button>
 					{/if}
 				</div>
+				{/if}
 		{/snippet}
 
 		{#snippet rightActions()}
@@ -3574,10 +3614,21 @@
 		height: 100%;
 	}
 
+	/* The list itself is not framed when it has the focus: the cursor row shows where it is */
+	.list-page:focus,
+	.list-page:focus-visible {
+		outline: none;
+	}
+
 	/* A subpage inside a card: a part of the card, room for about ten lines */
 	.list-page.subpage {
 		height: 26rem;
 		@apply gap-2;
+	}
+
+	/* … with a low action bar (no title) */
+	.list-page.subpage :global(.page-header) {
+		@apply px-3 py-1.5;
 	}
 
 	.list-content {

@@ -26,8 +26,11 @@ common:
     entries: "Poster"
     generate_ledger_entries: "Generer poster"
     ledger_entries: "Poster"
+    line: "Linje"
     run: "Kjør"
     send_test_e_mail: "Send test-e-post"
+    test_line_1: "Test linje 1"
+    test_line_2: "Test linje 2"
     delete_log_entries: "Slett loggposter"
 
   # Card page sections (page YAML section name in snake case)

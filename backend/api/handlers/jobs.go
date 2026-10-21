@@ -16,6 +16,7 @@ import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/functions"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
@@ -52,9 +53,12 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 
 	// Parse request body
 	var req struct {
-		CodeunitID int                    `json:"codeunit_id"`
-		ReportID   int                    `json:"report_id"` // a processing-only report instead of a codeunit
-		Record     map[string]interface{} `json:"record"`
+		CodeunitID int `json:"codeunit_id"`
+		ReportID   int `json:"report_id"` // a processing-only report instead of a codeunit
+		// Function: a registered page function (run_object "table:Job_Queue_Entry.ShowLineNo")
+		// called with the page's current record, read again from the database by its key
+		Function string                 `json:"function"`
+		Record   map[string]interface{} `json:"record"`
 		// The records selected on the list (rec.SetSelectionFilter in the codeunit)
 		Selection *listSelection `json:"selection"`
 	}
@@ -62,7 +66,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	if req.CodeunitID == 0 && req.ReportID == 0 {
+	if req.CodeunitID == 0 && req.ReportID == 0 && req.Function == "" {
 		return c.Status(400).JSON(apitypes.NewErrorResponse("Codeunit ID is required"))
 	}
 
@@ -70,6 +74,12 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	factory, ok := codeunits.Get(req.CodeunitID)
 	if req.ReportID != 0 {
 		factory, ok = reports.CodeunitFactory(req.ReportID)
+	}
+	if req.Function != "" {
+		var fn *functions.Function
+		if fn, ok = functions.Lookup(req.Function); ok {
+			factory = func(database.Executor, string, database.DBType) fcodeunits.Codeunit { return fn.Codeunit() }
+		}
 	}
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
@@ -89,6 +99,13 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	table := tableFactory()
 	table.InitWithDBType(h.db, company, h.dbType)
 	table.FromMap(req.Record)
+	// A function works on the stored record (not on what the browser sent)
+	if req.Function != "" {
+		key, id := fullPrimaryKey(table)
+		if !table.Get(key) {
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableName, id).Message(language)))
+		}
+	}
 	newTable := func() ftables.Table {
 		t := tableFactory()
 		t.InitWithDBType(h.db, company, h.dbType)

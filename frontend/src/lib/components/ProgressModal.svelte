@@ -132,6 +132,11 @@
 		onConfirmResponse?.(false);
 	}
 
+	function handleEscape() {
+		if (confirmMode) handleNo();
+		else if (inputMode) handleInputCancel();
+	}
+
 	function handleCancel() {
 		onCancel?.();
 	}
@@ -203,7 +208,8 @@
 {/each}
 {/snippet}
 
-<Modal {open}>
+<!-- Esc: No in a question, Cancel in an input dialog / StrMenu (a running job keeps on) -->
+<Modal {open} onclose={handleEscape}>
 	<div class="progress-modal" class:request-page={inputMode && inputDataItems.length > 0}>
 		<div class="progress-header">
 			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : (title ?? t(MSG.PROCESSING))}</h3>
