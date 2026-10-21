@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.106](https://github.com/hansjlachmann/openerp/compare/v0.1.105...v0.1.106) (2026-10-21)
+
+
+### Features
+
+* General Ledger Setup and Currency Exchange Rates (migration step 2) ([51e0e07](https://github.com/hansjlachmann/openerp/commit/51e0e072613ca07bf86473b12f39ee3d5eb3ec8b))
+
+
+### Bug Fixes
+
+* **pages:** setup card opens in view mode and Esc closes it ([a9fcc05](https://github.com/hansjlachmann/openerp/commit/a9fcc05f0887d97aa61439b42bf8d7a5c5e599a9))
+
 ## [0.1.105](https://github.com/hansjlachmann/openerp/compare/v0.1.104...v0.1.105) (2026-10-21)
 
 
