@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { saveClipboard, loadClipboard, keyValuesFromFilters, recordsToPaste, CLIPBOARD_KEY } from '../recordClipboard';
+import { saveClipboard, loadClipboard, keyValuesFromFilters, recordsToPaste, singleValueFilters, CLIPBOARD_KEY } from '../recordClipboard';
 
 describe('record clipboard', () => {
 	beforeEach(() => sessionStorage.clear());
@@ -39,5 +39,24 @@ describe('record clipboard', () => {
 			{ user_id: 'ANNA', role_id: 'CLERK', company: '' }
 		]);
 		expect(copied[0].role_id).toBe('READER'); // the clipboard itself is unchanged
+	});
+});
+
+describe('singleValueFilters', () => {
+	it('takes the filters on one exact value', () => {
+		expect(
+			singleValueFilters([
+				{ field: 'currency_code', expression: 'EUR' },
+				{ field: 'starting_date', expression: '01.01.26..' },
+				{ field: 'code', expression: 'A|B' },
+				{ field: 'name', expression: 'Ac*' },
+				{ field: 'amount', expression: '>10' },
+				{ field: 'blank', expression: ' ' }
+			])
+		).toEqual({ currency_code: 'EUR' });
+	});
+
+	it('only for the fields it accepts', () => {
+		expect(singleValueFilters([{ field: 'a', expression: '1' }, { field: 'b', expression: '2' }], (f) => f === 'b')).toEqual({ b: '2' });
 	});
 });

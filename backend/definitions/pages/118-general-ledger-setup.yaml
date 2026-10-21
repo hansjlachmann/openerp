@@ -1,0 +1,47 @@
+page:
+  id: 118
+  type: Card
+  name: General Ledger Setup
+  source_table: General_Ledger_Setup   # setup table: opens on its single record
+  caption: General Ledger Setup
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: allow_posting_from
+          - source: allow_posting_to
+          - source: local_address_format
+          - source: inv_rounding_precision_lcy
+          - source: inv_rounding_type_lcy
+          - source: local_cont_addr_format
+          - source: unrealized_tax
+          - source: adjust_for_payment_disc
+          - source: pmt_disc_excl_tax
+          - source: emu_currency
+          - source: lcy_code
+          - source: appln_rounding_precision
+          - source: register_time
+
+      - name: Reporting
+        caption: Reporting
+        fields:
+          - source: additional_reporting_currency
+            table_relation: Currency
+          - source: tax_exchange_rate_adjustment
+
+      - name: Sales Tax
+        caption: Sales Tax
+        fields:
+          - source: recalculate_sales_tax
+          - source: summarize_gl_entries
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true

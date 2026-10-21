@@ -470,3 +470,76 @@ tables:
     fields:
       code: "Kode"
       name: "Navn"
+
+  # General Ledger Setup (Table 98)
+  general_ledger_setup:
+    caption: "Økonomioppsett"
+    fields:
+      primary_key: "Primærnøkkel"
+      allow_posting_from: "Tillat postering fra"
+      allow_posting_to: "Tillat postering til"
+      register_time: "Registrer tid"
+      pmt_disc_excl_tax: "Kont.rabatt ekskl. mva."
+      date_filter: "Datofilter"
+      department_filter: "Avdelingsfilter"
+      project_filter: "Prosjektfilter"
+      cust_balances_due: "Kundesaldoer forfalt"
+      unrealized_tax: "Urealisert mva."
+      adjust_for_payment_disc: "Juster for kont.rabatt"
+      mark_cr_memos_as_corrections: "Merk kreditnotaer som korreksjoner"
+      local_address_format: "Lokalt adresseformat"
+      inv_rounding_precision_lcy: "Fakturaavrundingspresisjon (NOK)"
+      inv_rounding_type_lcy: "Fakturaavrundingstype (NOK)"
+      local_cont_addr_format: "Lokalt kontaktadresseformat"
+      recalculate_sales_tax: "Beregn salgsmva. på nytt"
+      summarize_gl_entries: "Summer finansposter"
+      amount_decimal_places: "Beløpsdesimaler"
+      unit_amount_decimal_places: "Enhetsbeløpsdesimaler"
+      additional_reporting_currency: "Tilleggsrapporteringsvaluta"
+      vat_tolerance_percent: "Mva.-toleranse %"
+      emu_currency: "ØMU-valuta"
+      lcy_code: "Kode for lokal valuta"
+      tax_exchange_rate_adjustment: "Mva.-valutakursjustering"
+      amount_rounding_precision: "Beløpsavrundingspresisjon"
+      unit_amount_rounding_precision: "Enhetsbeløpsavrundingspresisjon"
+      appln_rounding_precision: "Utligningsavrundingspresisjon"
+
+    # Option field values
+    options:
+      local_address_format:
+        zip_code_city: "Postnr.+Sted"
+        city_zip_code: "Sted+Postnr."
+        city_state_zip_code: "Sted+Fylke+Postnr."
+        blank_line_zip_code_city: "Tom linje+Postnr.+Sted"
+      inv_rounding_type_lcy:
+        nearest: "Nærmeste"
+        up: "Opp"
+        down: "Ned"
+      local_cont_addr_format:
+        first: "Først"
+        after_company_name: "Etter firmanavn"
+        last: "Sist"
+      tax_exchange_rate_adjustment:
+        no_adjustment: "Ingen justering"
+        adjust_amount: "Juster beløp"
+        adjust_additional_currency_amount: "Juster tilleggsvalutabeløp"
+
+  # Currency Exchange Rate (Table 330)
+  currency_exchange_rate:
+    caption: "Valutakurs"
+    fields:
+      currency_code: "Valutakode"
+      starting_date: "Startdato"
+      exchange_rate_amount: "Valutakursbeløp"
+      adjustment_exch_rate_amount: "Justeringsvalutakursbeløp"
+      relational_currency_code: "Relasjonsvalutakode"
+      relational_exch_rate_amount: "Relasjonsvalutakursbeløp"
+      fix_exchange_rate_amount: "Fast valutakursbeløp"
+      relational_adjmt_exch_rate_amt: "Relasjonsjusteringskursbeløp"
+
+    # Option field values
+    options:
+      fix_exchange_rate_amount:
+        currency: "Valuta"
+        relational_currency: "Relasjonsvaluta"
+        both: "Begge"

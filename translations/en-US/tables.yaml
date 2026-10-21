@@ -470,3 +470,76 @@ tables:
     fields:
       code: "Code"
       name: "Name"
+
+  # General Ledger Setup (Table 98)
+  general_ledger_setup:
+    caption: "General Ledger Setup"
+    fields:
+      primary_key: "Primary Key"
+      allow_posting_from: "Allow Posting From"
+      allow_posting_to: "Allow Posting To"
+      register_time: "Register Time"
+      pmt_disc_excl_tax: "Pmt. Disc. Excl. Tax"
+      date_filter: "Date Filter"
+      department_filter: "Department Filter"
+      project_filter: "Project Filter"
+      cust_balances_due: "Cust. Balances Due"
+      unrealized_tax: "Unrealized Tax"
+      adjust_for_payment_disc: "Adjust for Payment Disc."
+      mark_cr_memos_as_corrections: "Mark Cr. Memos as Corrections"
+      local_address_format: "Local Address Format"
+      inv_rounding_precision_lcy: "Inv. Rounding Precision (LCY)"
+      inv_rounding_type_lcy: "Inv. Rounding Type (LCY)"
+      local_cont_addr_format: "Local Cont. Addr. Format"
+      recalculate_sales_tax: "Recalculate Sales Tax"
+      summarize_gl_entries: "Summarize G/L Entries"
+      amount_decimal_places: "Amount Decimal Places"
+      unit_amount_decimal_places: "Unit-Amount Decimal Places"
+      additional_reporting_currency: "Additional Reporting Currency"
+      vat_tolerance_percent: "VAT Tolerance %"
+      emu_currency: "EMU Currency"
+      lcy_code: "LCY Code"
+      tax_exchange_rate_adjustment: "Tax Exchange Rate Adjustment"
+      amount_rounding_precision: "Amount Rounding Precision"
+      unit_amount_rounding_precision: "Unit-Amount Rounding Precision"
+      appln_rounding_precision: "Appln. Rounding Precision"
+
+    # Option field values
+    options:
+      local_address_format:
+        zip_code_city: "ZIP Code+City"
+        city_zip_code: "City+ZIP Code"
+        city_state_zip_code: "City+State+ZIP Code"
+        blank_line_zip_code_city: "Blank Line+ZIP Code+City"
+      inv_rounding_type_lcy:
+        nearest: "Nearest"
+        up: "Up"
+        down: "Down"
+      local_cont_addr_format:
+        first: "First"
+        after_company_name: "After Company Name"
+        last: "Last"
+      tax_exchange_rate_adjustment:
+        no_adjustment: "No Adjustment"
+        adjust_amount: "Adjust Amount"
+        adjust_additional_currency_amount: "Adjust Additional-Currency Amount"
+
+  # Currency Exchange Rate (Table 330)
+  currency_exchange_rate:
+    caption: "Currency Exchange Rate"
+    fields:
+      currency_code: "Currency Code"
+      starting_date: "Starting Date"
+      exchange_rate_amount: "Exchange Rate Amount"
+      adjustment_exch_rate_amount: "Adjustment Exch. Rate Amount"
+      relational_currency_code: "Relational Currency Code"
+      relational_exch_rate_amount: "Relational Exch. Rate Amount"
+      fix_exchange_rate_amount: "Fix Exchange Rate Amount"
+      relational_adjmt_exch_rate_amt: "Relational Adjmt Exch Rate Amt"
+
+    # Option field values
+    options:
+      fix_exchange_rate_amount:
+        currency: "Currency"
+        relational_currency: "Relational Currency"
+        both: "Both"

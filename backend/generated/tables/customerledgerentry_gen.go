@@ -2281,6 +2281,11 @@ func (t *CustomerLedgerEntry) SetRange(fieldName string, values ...interface{}) 
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -5942,6 +5947,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Amount, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Amount = types.NewDecimal(val)
+		case int:
+			t.Amount = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Amount = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["remaining_amount"]; ok && v != nil {
@@ -5950,6 +5959,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Remaining_amount, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Remaining_amount = types.NewDecimal(val)
+		case int:
+			t.Remaining_amount = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Remaining_amount = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["closed_by_amount"]; ok && v != nil {
@@ -5958,6 +5971,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Closed_by_amount, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Closed_by_amount = types.NewDecimal(val)
+		case int:
+			t.Closed_by_amount = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Closed_by_amount = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["original_amount_lcy"]; ok && v != nil {
@@ -5966,6 +5983,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Original_amount_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Original_amount_lcy = types.NewDecimal(val)
+		case int:
+			t.Original_amount_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Original_amount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["remaining_amt_lcy"]; ok && v != nil {
@@ -5974,6 +5995,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Remaining_amt_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Remaining_amt_lcy = types.NewDecimal(val)
+		case int:
+			t.Remaining_amt_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Remaining_amt_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["amount_lcy"]; ok && v != nil {
@@ -5982,6 +6007,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Amount_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Amount_lcy = types.NewDecimal(val)
+		case int:
+			t.Amount_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Amount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["closed_by_amount_lcy"]; ok && v != nil {
@@ -5990,6 +6019,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Closed_by_amount_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Closed_by_amount_lcy = types.NewDecimal(val)
+		case int:
+			t.Closed_by_amount_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Closed_by_amount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["sales_lcy"]; ok && v != nil {
@@ -5998,6 +6031,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Sales_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Sales_lcy = types.NewDecimal(val)
+		case int:
+			t.Sales_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Sales_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["profit_lcy"]; ok && v != nil {
@@ -6006,6 +6043,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Profit_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Profit_lcy = types.NewDecimal(val)
+		case int:
+			t.Profit_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Profit_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["inv_discount_lcy"]; ok && v != nil {
@@ -6014,6 +6055,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Inv_discount_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Inv_discount_lcy = types.NewDecimal(val)
+		case int:
+			t.Inv_discount_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Inv_discount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["pmt_discount_date"]; ok && v != nil {
@@ -6027,6 +6072,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Pmt_disc_possible, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Pmt_disc_possible = types.NewDecimal(val)
+		case int:
+			t.Pmt_disc_possible = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Pmt_disc_possible = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["pmt_disc_given_lcy"]; ok && v != nil {
@@ -6035,6 +6084,10 @@ func (t *CustomerLedgerEntry) FromMap(data map[string]interface{}) {
 			t.Pmt_disc_given_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Pmt_disc_given_lcy = types.NewDecimal(val)
+		case int:
+			t.Pmt_disc_given_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Pmt_disc_given_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["customer_posting_group"]; ok && v != nil {

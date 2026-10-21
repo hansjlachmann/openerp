@@ -38,6 +38,9 @@ type PageMetadata struct {
 	// HasRecordTriggers (populated at request time): the page has OnAfterGetRecord triggers
 	// (business-logic/pages) — the card asks for the field states of each record it shows
 	HasRecordTriggers bool `yaml:"-" json:"has_record_triggers,omitempty"`
+	// SetupTable (populated at request time): the source table holds a single record with a
+	// blank key (setup); its card page opens on that record
+	SetupTable bool `yaml:"-" json:"setup_table,omitempty"`
 	// PrimaryKeyFields is populated at request time from table metadata so the
 	// frontend knows the record key even when the PK is not shown (e.g. setup tables).
 	PrimaryKeyFields []string `yaml:"-" json:"primary_key_fields,omitempty"`

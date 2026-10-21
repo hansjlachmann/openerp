@@ -1,0 +1,58 @@
+page:
+  id: 483
+  type: List
+  name: Currency Exchange Rates
+  source_table: Currency_Exchange_Rate   # opened from a currency (filter currency_code)
+  caption: Currency Exchange Rates
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: starting_date
+          width: 130
+
+        - source: currency_code
+          width: 120
+
+        - source: relational_currency_code
+          width: 170
+          table_relation: Currency
+
+        - source: exchange_rate_amount
+          width: 170
+
+        - source: relational_exch_rate_amount
+          width: 200
+
+        - source: adjustment_exch_rate_amount
+          width: 210
+
+        - source: relational_adjmt_exch_rate_amt
+          width: 220
+
+        - source: fix_exchange_rate_amount
+          width: 190
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

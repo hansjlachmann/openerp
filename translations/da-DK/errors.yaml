@@ -31,6 +31,8 @@ errors:
   ERR_FIELD_NOT_EDITABLE: "%1 kan ikke ændres."
   ERR_MUST_BE_ROUNDED_TO: "%1 skal afrundes til nærmeste %2."
   ERR_DECIMAL_PLACES_FORMAT: "%1: angiv ét tal eller to tal adskilt af kolon, fra 0 til 9 (f.eks. 2:5)."
+  ERR_SAME_CURRENCY: "%1 kan ikke være den samme som valutakoden."
+  ERR_NO_EXCHANGE_RATE: "Der er ingen valutakurs for valuta %1 på eller før %2."
   ERR_PASTE_RECORD_FAILED: "Post %1 af %2 kan ikke indsættes: %3 Intet blev indsat."
   ERR_DELETE_FAILED: "Kunne ikke slette %1 %2"
   ERR_INSERT_FAILED: "Kunne ikke indsætte %1"

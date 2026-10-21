@@ -470,3 +470,76 @@ tables:
     fields:
       code: "Kode"
       name: "Navn"
+
+  # General Ledger Setup (Table 98)
+  general_ledger_setup:
+    caption: "Finansopsætning"
+    fields:
+      primary_key: "Primærnøgle"
+      allow_posting_from: "Tillad bogføring fra"
+      allow_posting_to: "Tillad bogføring til"
+      register_time: "Registrer tid"
+      pmt_disc_excl_tax: "Kont.rabat ekskl. moms"
+      date_filter: "Datofilter"
+      department_filter: "Afdelingsfilter"
+      project_filter: "Projektfilter"
+      cust_balances_due: "Debitorsaldi forfaldne"
+      unrealized_tax: "Urealiseret moms"
+      adjust_for_payment_disc: "Juster for kont.rabat"
+      mark_cr_memos_as_corrections: "Marker kreditnotaer som rettelser"
+      local_address_format: "Lokalt adresseformat"
+      inv_rounding_precision_lcy: "Fakturaafrundingspræcision (RV)"
+      inv_rounding_type_lcy: "Fakturaafrundingstype (RV)"
+      local_cont_addr_format: "Lokalt kont.adresseformat"
+      recalculate_sales_tax: "Genberegn salgsmoms"
+      summarize_gl_entries: "Saml finansposter"
+      amount_decimal_places: "Beløbsdecimaler"
+      unit_amount_decimal_places: "Enhedsbeløbsdecimaler"
+      additional_reporting_currency: "Ekstra rapporteringsvaluta"
+      vat_tolerance_percent: "Momstolerance %"
+      emu_currency: "ØMU-valuta"
+      lcy_code: "RV-kode"
+      tax_exchange_rate_adjustment: "Momsvalutakursregulering"
+      amount_rounding_precision: "Beløbsafrundingspræcision"
+      unit_amount_rounding_precision: "Enhedsbeløbsafrundingspræcision"
+      appln_rounding_precision: "Udligningsafrundingspræcision"
+
+    # Option field values
+    options:
+      local_address_format:
+        zip_code_city: "Postnr.+By"
+        city_zip_code: "By+Postnr."
+        city_state_zip_code: "By+Amt+Postnr."
+        blank_line_zip_code_city: "Tom linje+Postnr.+By"
+      inv_rounding_type_lcy:
+        nearest: "Nærmeste"
+        up: "Op"
+        down: "Ned"
+      local_cont_addr_format:
+        first: "Først"
+        after_company_name: "Efter firmanavn"
+        last: "Sidst"
+      tax_exchange_rate_adjustment:
+        no_adjustment: "Ingen regulering"
+        adjust_amount: "Reguler beløb"
+        adjust_additional_currency_amount: "Reguler ekstra valutabeløb"
+
+  # Currency Exchange Rate (Table 330)
+  currency_exchange_rate:
+    caption: "Valutakurs"
+    fields:
+      currency_code: "Valutakode"
+      starting_date: "Startdato"
+      exchange_rate_amount: "Valutakursbeløb"
+      adjustment_exch_rate_amount: "Reguleringsvalutakursbeløb"
+      relational_currency_code: "Relationsvalutakode"
+      relational_exch_rate_amount: "Relationsvalutakursbeløb"
+      fix_exchange_rate_amount: "Fast valutakursbeløb"
+      relational_adjmt_exch_rate_amt: "Relationsreguleringskursbeløb"
+
+    # Option field values
+    options:
+      fix_exchange_rate_amount:
+        currency: "Valuta"
+        relational_currency: "Relationsvaluta"
+        both: "Begge"

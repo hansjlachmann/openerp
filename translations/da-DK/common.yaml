@@ -8,6 +8,7 @@ common:
 
   # Common actions
   actions:
+    exch_rates: "Valutakurser"
     new: "Ny"
     edit: "Rediger"
     delete: "Slet"
@@ -50,6 +51,8 @@ common:
     log_entries: "Logposter"
     notification: "Notifikation"
     recurrence: "Gentagelse"
+    reporting: "Rapportering"
+    sales_tax: "Salgsmoms"
     rounding: "Afrunding"
     statistics: "Statistik"
     timestamps: "Tidsstempler"
@@ -74,6 +77,7 @@ common:
     users: "Brugere"
     languages: "Sprog"
     payment_terms: "Betalingsbetingelser"
+    general_ledger_setup: "Finansopsætning"
     countries_regions: "Lande/områder"
     currencies: "Valutaer"
     finance_charge_terms: "Rentebetingelser"

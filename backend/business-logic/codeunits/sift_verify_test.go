@@ -28,7 +28,7 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		// the demo data's master data tables
 		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
 		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
-		&gtables.Location{}} {
+		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}

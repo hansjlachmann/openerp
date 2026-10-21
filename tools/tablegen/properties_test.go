@@ -38,10 +38,11 @@ func TestValidateFieldProperties(t *testing.T) {
 		}
 	}
 
+	// A read-only key field gets its value from a filter or link (Exchange Rates: the currency)
 	key := def()
 	key.Table.Fields[0].Editable = &no
-	if err := validateFieldProperties(key); err == nil {
-		t.Error("a primary key with editable: false accepted")
+	if err := validateFieldProperties(key); err != nil {
+		t.Errorf("a primary key with editable: false refused: %v", err)
 	}
 	for _, fields := range [][]string{{"missing"}, {"balance"}} {
 		d := def(Field{Name: "balance", Type: "types.Decimal", FlowField: true})

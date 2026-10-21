@@ -846,6 +846,11 @@ func (t *SalespersonPurchaser) SetRange(fieldName string, values ...interface{})
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -2273,6 +2278,10 @@ func (t *SalespersonPurchaser) FromMap(data map[string]interface{}) {
 			t.Commission_percent, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Commission_percent = types.NewDecimal(val)
+		case int:
+			t.Commission_percent = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Commission_percent = types.NewDecimalFromInt(val)
 		}
 	}
 }

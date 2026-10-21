@@ -134,3 +134,55 @@ func TestPageFieldProperties(t *testing.T) {
 		}
 	}
 }
+
+// A setup table's card reads its single record, created when missing; a read-only key field
+// (Exchange Rates' currency, from the list's filter) is kept on insert and never renamed.
+func TestSetupCardAndReadOnlyKey(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.GeneralLedgerSetup{}, &gtables.Currency{}, &gtables.CurrencyExchangeRate{}} {
+		if err := tbl.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Get("/api/tables/:table/card", h.GetRecord)
+	app.Put("/api/tables/:table/modify", h.ModifyRecord)
+	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	app.Put("/api/tables/:table/modify/:id", h.ModifyRecord)
+
+	status, out := getJSON(t, app, "/api/tables/General_Ledger_Setup/card")
+	if status != 200 || out["data"].(map[string]interface{})["amount_decimal_places"] != "2:2" {
+		t.Fatalf("setup card: %d %v", status, out)
+	}
+	if status, out := sendJSON(t, app, "PUT", "/api/tables/General_Ledger_Setup/modify", `{"lcy_code":"NOK"}`); status != 200 {
+		t.Fatalf("modify setup: %d %v", status, out["error"])
+	}
+	if _, out := getJSON(t, app, "/api/tables/General_Ledger_Setup/card"); out["data"].(map[string]interface{})["lcy_code"] != "NOK" {
+		t.Errorf("setup after modify: %v", out["data"])
+	}
+
+	if status, out := sendJSON(t, app, "POST", "/api/tables/Currency/insert", `{"code":"EUR"}`); status != 200 {
+		t.Fatalf("insert currency: %d %v", status, out["error"])
+	}
+	if status, out := sendJSON(t, app, "POST", "/api/tables/Currency_Exchange_Rate/insert", `{"currency_code":"EUR","starting_date":"2026-01-01","exchange_rate_amount":"100","relational_exch_rate_amount":"1150"}`); status != 200 {
+		t.Fatalf("insert rate with the read-only key from the filter: %d %v", status, out["error"])
+	}
+	if status, out := sendJSON(t, app, "PUT", "/api/tables/Currency_Exchange_Rate/modify/EUR,2026-01-01", `{"currency_code":"USD","exchange_rate_amount":"200"}`); status != 200 {
+		t.Fatalf("modify rate: %d %v", status, out["error"])
+	}
+	var code, amount string
+	if err := db.QueryRow(`SELECT currency_code, exchange_rate_amount FROM "TEST$Currency_Exchange_Rate"`).Scan(&code, &amount); err != nil || code != "EUR" || amount != "200" {
+		t.Errorf("after modify: %s %s %v — want the key kept (EUR) and the amount changed", code, amount, err)
+	}
+}

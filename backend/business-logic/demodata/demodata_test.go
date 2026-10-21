@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -34,7 +35,7 @@ func newTestDB(t *testing.T) *sql.DB {
 	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{},
 		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
 		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
-		&gtables.Location{}}
+		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -69,6 +70,12 @@ func TestParseSize(t *testing.T) {
 
 func TestCreateSmall(t *testing.T) {
 	db := newTestDB(t)
+	// The setup record exists already (its page was opened): the demo data fills it in
+	var blank gtables.GeneralLedgerSetup
+	blank.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !blank.Insert(false) {
+		t.Fatal("insert the blank setup record")
+	}
 	var lastPct int
 	counts, err := Create(db, testCompany, database.DBTypeSQLite, Options{
 		Size:     Small,
@@ -79,8 +86,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 23 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 23 master data records", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 28 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 28 master data records", counts)
 	}
 	// Master data: given fields and the tables' defaults for the others
 	var eur gtables.Currency
@@ -97,6 +104,16 @@ func TestCreateSmall(t *testing.T) {
 	dk.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !dk.Get("DK") || dk.Eu_country_code != "DK" || dk.Address_format != gtables.CountryRegion_Address_format.CityZIPCode {
 		t.Errorf("DK = %+v", dk.ToMap())
+	}
+	// The setup record (already created by opening its page) and the exchange rates
+	var setup gtables.GeneralLedgerSetup
+	setup.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !setup.Get("") || setup.Lcy_code != "NOK" || setup.Amount_decimal_places != "2:2" {
+		t.Errorf("General Ledger Setup = %+v", setup.ToMap())
+	}
+	factor, err := tables.ExchangeRates(&eur).ExchangeRate(types.Today(), "EUR")
+	if err != nil || factor.Decimal.Round(6).String() != "0.086957" {
+		t.Errorf("EUR exchange rate today = %v %v", factor, err)
 	}
 	if counts.LedgerEntries < 20*6 {
 		t.Errorf("only %d ledger entries", counts.LedgerEntries)

@@ -35,7 +35,7 @@
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import ColumnHeaderMenu, { type ColumnMenuItem } from './ColumnHeaderMenu.svelte';
-	import { keyValuesFromFilters, loadClipboard, recordsToPaste, saveClipboard } from '$lib/utils/recordClipboard';
+	import { keyValuesFromFilters, loadClipboard, recordsToPaste, saveClipboard, singleValueFilters } from '$lib/utils/recordClipboard';
 	import { filterValueFor, hideColumn, moveColumn, withFilter, withoutFilter } from '$lib/utils/columnHeader';
 	import {
 		emptySelection,
@@ -753,6 +753,19 @@
 			await handleRunObject(action.run_object);
 			return;
 		}
+		// run_page: open the page, filtered to the selected row when the action names a filter
+		// (run_page_filter_field = row[run_page_filter_value]); Esc there comes back to this row
+		if (action?.run_page) {
+			const row = selectedRecord;
+			let url = `/pages/${action.run_page}`;
+			const value = action.run_page_filter_value ? row?.[action.run_page_filter_value] : undefined;
+			if (action.run_page_filter_field) {
+				if (value === undefined || value === null || value === '') return; // no row to filter on
+				url += `?filter=${encodeURIComponent(`${action.run_page_filter_field}=${value}`)}`;
+			}
+			goto(withReturn(url, row ? getRecordId(row, primaryKeyField, primaryKeyFieldsList) : undefined));
+			return;
+		}
 
 		// Handle Edit action - open card page in edit mode
 		if (actionName === 'Edit') {
@@ -781,7 +794,7 @@
 			if (page.page.card_page_id) {
 				if (page.page.modal_card) {
 					// Open as modal card
-					await openModalCard({ ...newRecordDefaults }); // a subpage: the link values
+					await openModalCard({ ...newRowValues }); // the filters' and a subpage's link values
 				} else {
 					// Navigate to card page
 					onaction?.(actionName, undefined);
@@ -1198,6 +1211,19 @@
 		return { [field]: value };
 	}
 
+	// Values a new record gets: the list's filters on one exact value (classic: a field filtered
+	// to one value is set to it — Exchange Rates opened for a currency), then a subpage's link
+	// values. Only Code, Text and number fields (dates, options and booleans are filtered in
+	// the user's format).
+	const newRowValues = $derived.by(() => {
+		const accept = (field: string) => /^(types\.)?(code|text|int|int64|decimal)$/i.test(fieldTypes[field] ?? '');
+		const values: Record<string, any> = singleValueFilters(currentFilters, accept);
+		for (const field of Object.keys(values)) {
+			if (isCodeType(fieldTypes[field])) values[field] = String(values[field]).toUpperCase();
+		}
+		return { ...values, ...newRecordDefaults };
+	});
+
 	function createNewRecord(): Record<string, any> {
 		const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 		// All repeater fields start as empty strings so composite PK fields are always defined
@@ -1207,7 +1233,7 @@
 		}
 		// A subpage's link values (the card's key), and the line number (AutoSplitKey): part
 		// of the new row from the start, not user edits
-		Object.assign(blank, newRecordDefaults, autoSplitKeyValue());
+		Object.assign(blank, newRowValues, autoSplitKeyValue());
 		void applyNewRecordDefaults(tempId, blank);
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
@@ -1222,7 +1248,7 @@
 		}
 		const row = editableRecords.find(r => r._tempId === tempId);
 		if (!row || row._isNew !== true || !defaults) return;
-		const fixedKeys = new Set([...Object.keys(newRecordDefaults), ...Object.keys(autoSplitKeyValue())]);
+		const fixedKeys = new Set([...Object.keys(newRowValues), ...Object.keys(autoSplitKeyValue())]);
 		for (const [key, value] of Object.entries(defaults)) {
 			// Never overwrite what the user already typed while the defaults were loading, nor
 			// the link values and the line number

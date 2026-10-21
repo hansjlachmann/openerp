@@ -1254,6 +1254,11 @@ func (t *FinanceChargeTerms) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -3243,6 +3248,10 @@ func (t *FinanceChargeTerms) FromMap(data map[string]interface{}) {
 			t.Interest_rate, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Interest_rate = types.NewDecimal(val)
+		case int:
+			t.Interest_rate = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Interest_rate = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["minimum_amount_lcy"]; ok && v != nil {
@@ -3251,6 +3260,10 @@ func (t *FinanceChargeTerms) FromMap(data map[string]interface{}) {
 			t.Minimum_amount_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Minimum_amount_lcy = types.NewDecimal(val)
+		case int:
+			t.Minimum_amount_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Minimum_amount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["additional_fee_lcy"]; ok && v != nil {
@@ -3259,6 +3272,10 @@ func (t *FinanceChargeTerms) FromMap(data map[string]interface{}) {
 			t.Additional_fee_lcy, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Additional_fee_lcy = types.NewDecimal(val)
+		case int:
+			t.Additional_fee_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Additional_fee_lcy = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["description"]; ok && v != nil {

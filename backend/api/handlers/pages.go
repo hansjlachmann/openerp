@@ -83,6 +83,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// decimal places shown; the card title's fields
 	tableFields := map[string]ftables.FieldInfo{}
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
+		pageDef.Page.SetupTable = factory().IsSetupTable()
 		for _, f := range factory().GetFields() {
 			tableFields[f.Name] = f
 		}

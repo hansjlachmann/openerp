@@ -85,10 +85,12 @@ func IsReadOnly(table Table, field string) bool {
 
 // DropReadOnlyFields removes the read-only fields (editable: false) from data (a write from a
 // page): an insert gets their initial value, a modify keeps the stored one — only business
-// logic sets them (e.g. Last Date Modified)
-func DropReadOnlyFields(table Table, data map[string]interface{}) {
+// logic sets them (e.g. Last Date Modified). A read-only key field is kept on insert (keepKeys):
+// its value comes from the list's filter or the subpage link (the currency of its exchange
+// rates); on modify it is dropped, so it is never renamed.
+func DropReadOnlyFields(table Table, data map[string]interface{}, keepKeys bool) {
 	for _, f := range table.GetFields() {
-		if f.ReadOnly {
+		if f.ReadOnly && !(keepKeys && f.PrimaryKey) {
 			delete(data, f.Name)
 		}
 	}

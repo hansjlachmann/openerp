@@ -1716,6 +1716,11 @@ func (t *Customer) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -3851,6 +3856,10 @@ func (t *Customer) FromMap(data map[string]interface{}) {
 			t.Credit_limit, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Credit_limit = types.NewDecimal(val)
+		case int:
+			t.Credit_limit = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Credit_limit = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["last_order_date"]; ok && v != nil {

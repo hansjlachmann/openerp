@@ -97,9 +97,9 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
     - [x] **Now / later:** Currency OnValidate of 17/18 decimal places checks the format ("2:5") — the
           format check now (`tables.CheckDecimalPlacesFormat`, tidies "02:05" → "2:5"; moves to the
           General Ledger Setup when it is migrated).
-    - [ ] **Later:** Currency InitRoundingPrecision (precisions from the General Ledger Setup 98).
-    - [ ] **Later:** Currency OnValidate of the G/L-account fields (with the fields, → G/L Account 15);
-          Currency OnDelete deletes its exchange rates (→ Currency Exchange Rate 330).
+    - [x] **Later → step 2:** Currency InitRoundingPrecision (precisions from the General Ledger
+          Setup 98) and Currency OnDelete deletes its exchange rates (330).
+    - [ ] **Later:** Currency OnValidate of the G/L-account fields (with the fields, → G/L Account 15).
     - [ ] **Later:** Standard Text OnDelete deletes its extended texts (→ Extended Text Header/Line
           279/280); Location OnDelete deletes its bins (→ Bin).
   - **3. Links from other tables (the tables are not used anywhere yet):** ⏸ ON HOLD (decided
@@ -114,8 +114,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
           get their relations when they are migrated.
   - **Cards:** [x] 494 Finance Charge Terms Card and 495 Currency Card (2026-10-21) — the lists
     open them (Edit / New / Enter; F2 still edits in the list). Left out until their objects come:
-    the Currency Card's Reporting tab (G/L accounts only) and its "Exch. Rates" button (form 483,
-    table 330), the Finance Charge Terms list's Beginning/Ending Text and Currencies (forms 445/477).
+    the Currency Card's Reporting tab (G/L accounts only), the Finance Charge Terms list's
+    Beginning/Ending Text and Currencies (forms 445/477). "Exch. Rates" came with step 2.
 
 - [x] **FIRST PRIORITY — Preparation for the migration: page actions on documents** (added
       2026-10-21) — built 2026-10-21, tried on the Job Queue Card / Log Entries (sub-menu Line →
@@ -195,6 +195,26 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
           keys); 8 Language stays global. List pages with the classic form numbers (5, 6, 7, 8,
           11, 12, 13, 14, 15) under Settings; READER reads the new tables (migration 13); demo data
           (setup.yaml `master_data`).
+    - [x] **Step 2 — 98 General Ledger Setup and 330 Currency Exchange Rate** (2026-10-21) with
+          the classic pages: card 118 (setup: opens on the single record, no New/Delete; Settings
+          menu) and list 483 (opened with "Exch. Rates" from the Currencies list and the Currency
+          Card, filtered on the currency). Code: the setup's field rules (Pmt. Disc. Excl. Tax /
+          Adjust for Payment Disc. / VAT Tolerance %, invoice rounding to the amount rounding,
+          decimal places format), the exchange rates' triggers (currency ≠ relational currency, a new
+          starting date takes the previous rate, amounts not 0) and the exchange calculations
+          (`tables.ExchangeRates(rec)`: ExchangeRate, LCY↔FCY, FCY→FCY, adjustment rates); Currency
+          InitRoundingPrecision and OnDelete. READER reads both (migration 14); demo data (setup,
+          rates for EUR/USD/SEK/GBP). Platform: setup tables on card pages (`setup_table`), read-only
+          key fields (set from the list's filter, never renamed), new records take the list's
+          single-value filters, list actions with `run_page` (+ filter on the selected row), blank
+          date as SetRange lower bound, dates in composite keys, integers for decimals in FromMap.
+    - [ ] **Left out in step 2 until their tables exist:** General Ledger Setup 45 Vendor Balances
+          Due (vendors), 63 Bank Account Nos. (No. Series); the code of 48 Unrealized Tax and 49
+          Adjust for Payment Disc. on the tax setup tables, 68 Additional Reporting Currency
+          (confirmation and the recalculation report), 73/74 RoundingErrorCheck (posted G/L, item …
+          entries); the "restart the program" messages of 73/74 are dropped.
+    - [ ] **Local fields 10000+** (e.g. General Ledger Setup 10001 VAT in Use): the base field series
+          is 1–999 — decide a local series before migrating localisation fields.
     - [ ] **Currency FlowFields 24–35 and FlowFilters 19–23** (customer/vendor balances, outstanding
           orders, … per currency) — left out in step 1; add them with the ledgers and documents
           they read, or not at all if no page needs them.

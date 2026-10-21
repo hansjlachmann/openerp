@@ -82,6 +82,10 @@ pages:
     caption: "Valutaer"
   currency_card:
     caption: "Valutakort"
+  currency_exchange_rates:
+    caption: "Valutakurser"
+  general_ledger_setup:
+    caption: "Finansopsætning"
   finance_charge_terms:
     caption: "Rentebetingelser"
   finance_charge_terms_card:

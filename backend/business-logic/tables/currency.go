@@ -3,6 +3,7 @@ package tables
 import (
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -11,9 +12,7 @@ import (
 // top of generated/tables/currency_gen.go. The field rules of the definition
 // (required, length, range) are checked after OnInsert and OnModify.
 //
-// Not migrated yet (their tables come later): OnDelete deletes the currency's exchange rates
-// (Currency Exchange Rate), InitRoundingPrecision takes the precisions from the General
-// Ledger Setup, the G/L account fields and their checks.
+// Not migrated yet (their tables come later): the G/L account fields and their checks.
 type currencyLogic struct{}
 
 func init() { gtables.RegisterCurrencyLogic(currencyLogic{}) }
@@ -29,8 +28,12 @@ func (currencyLogic) OnModify(rec *gtables.Currency) error {
 	return nil
 }
 
-// OnDelete runs before a record is deleted
+// OnDelete deletes the currency's exchange rates
 func (currencyLogic) OnDelete(rec *gtables.Currency) error {
+	var rate gtables.CurrencyExchangeRate
+	rate.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
+	rate.SetRange("currency_code", rec.Code)
+	rate.DeleteAll()
 	return nil
 }
 
@@ -68,4 +71,21 @@ func (currencyLogic) OnValidate_Amount_decimal_places(rec *gtables.Currency) err
 // OnValidate_Unit_amount_decimal_places checks and tidies the format ("2:5")
 func (currencyLogic) OnValidate_Unit_amount_decimal_places(rec *gtables.Currency) error {
 	return CheckDecimalPlacesFormat(gtables.CurrencyTableName, "unit_amount_decimal_places", &rec.Unit_amount_decimal_places)
+}
+
+// InitRoundingPrecision sets a currency's amount and unit-amount rounding precisions to the
+// General Ledger Setup's, or 0.01 / 0.00001 when the setup has none (a currency record used
+// for the local currency)
+func InitRoundingPrecision(currency *gtables.Currency) {
+	setup := GetGeneralLedgerSetup(currency)
+	if !setup.Amount_rounding_precision.IsZero() {
+		currency.Amount_rounding_precision = setup.Amount_rounding_precision
+	} else {
+		currency.Amount_rounding_precision = types.MustDecimal("0.01")
+	}
+	if !setup.Unit_amount_rounding_precision.IsZero() {
+		currency.Unit_amount_rounding_precision = setup.Unit_amount_rounding_precision
+	} else {
+		currency.Unit_amount_rounding_precision = types.MustDecimal("0.00001")
+	}
 }

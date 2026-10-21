@@ -1,0 +1,91 @@
+table:
+  id: 330
+  name: "Currency_Exchange_Rate"
+  caption: Currency Exchange Rate
+  description: Exchange rates of the currencies by starting date (table 330)
+  data_caption_fields: [currency_code]
+  fields:
+    - name: currency_code
+      no: 1
+      type: types.Code
+      db_name: currency_code
+      primary_key: true
+      length: 10
+      required: true
+      editable: false  # set from the list's filter (opened from a currency)
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: description
+            width: 200
+
+    - name: starting_date
+      no: 2
+      type: types.Date
+      db_name: starting_date
+      primary_key: true
+      required: true
+
+    - name: exchange_rate_amount
+      no: 3
+      type: types.Decimal
+      db_name: exchange_rate_amount
+      precision: 18
+      scale: 6
+      decimal_places: "1:6"
+      validation: {min: 0}
+
+    - name: adjustment_exch_rate_amount
+      no: 4
+      type: types.Decimal
+      db_name: adjustment_exch_rate_amount
+      precision: 18
+      scale: 6
+      decimal_places: "1:6"
+      validation: {min: 0}
+
+    - name: relational_currency_code
+      no: 5
+      type: types.Code
+      db_name: relational_currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: description
+            width: 200
+
+    - name: relational_exch_rate_amount
+      no: 6
+      type: types.Decimal
+      db_name: relational_exch_rate_amount
+      precision: 18
+      scale: 6
+      decimal_places: "1:6"
+      validation: {min: 0}
+
+    - name: fix_exchange_rate_amount
+      no: 7
+      type: Option
+      db_name: fix_exchange_rate_amount
+      options: ["Currency", "Relational Currency", "Both"]
+
+    - name: relational_adjmt_exch_rate_amt
+      no: 8
+      type: types.Decimal
+      db_name: relational_adjmt_exch_rate_amt
+      precision: 18
+      scale: 6
+      decimal_places: "1:6"
+      validation: {min: 0}
+
+  keys:
+    - name: Primary
+      fields: [currency_code, starting_date]
+      clustered: true

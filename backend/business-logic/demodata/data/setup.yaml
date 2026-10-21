@@ -24,15 +24,24 @@ payment_terms:
     description: Cash on delivery
     due_days: 0
 
-# Master data (migration step 1): records by table, inserted with the tables' defaults for the
+# Master data (migration steps 1 and 2): records by table, inserted with the tables' defaults for the
 # fields not given
 master_data:
+  - table: General_Ledger_Setup   # the single setup record (blank key)
+    records:
+      - {lcy_code: NOK, amount_rounding_precision: 0.01, unit_amount_rounding_precision: 0.00001, inv_rounding_precision_lcy: 1, appln_rounding_precision: 0.01, local_address_format: 0}
   - table: Currency
     records:
       - {code: EUR, description: Euro, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
       - {code: USD, description: US dollar, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
       - {code: SEK, description: Swedish krona, amount_rounding_precision: 0.01, invoice_rounding_precision: 1}
       - {code: GBP, description: Pound sterling, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
+  - table: Currency_Exchange_Rate
+    records:
+      - {currency_code: EUR, starting_date: "2020-01-01", exchange_rate_amount: 100, adjustment_exch_rate_amount: 100, relational_exch_rate_amount: 1150, relational_adjmt_exch_rate_amt: 1150}
+      - {currency_code: USD, starting_date: "2020-01-01", exchange_rate_amount: 100, adjustment_exch_rate_amount: 100, relational_exch_rate_amount: 1050, relational_adjmt_exch_rate_amt: 1050}
+      - {currency_code: SEK, starting_date: "2020-01-01", exchange_rate_amount: 100, adjustment_exch_rate_amount: 100, relational_exch_rate_amount: 98, relational_adjmt_exch_rate_amt: 98}
+      - {currency_code: GBP, starting_date: "2020-01-01", exchange_rate_amount: 100, adjustment_exch_rate_amount: 100, relational_exch_rate_amount: 1350, relational_adjmt_exch_rate_amt: 1350}
   - table: Finance_Charge_Terms
     records:
       - {code: STD, description: Standard finance charge, interest_rate: 1.5, interest_period_days: 30, minimum_amount_lcy: 50, additional_fee_lcy: 70, grace_period: 5D, due_date_calculation: 14D, line_description: "Interest on overdue invoices"}

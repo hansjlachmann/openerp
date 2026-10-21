@@ -1008,6 +1008,17 @@ func (t *Currency) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.Code)
 	}
+	// Renamed key fields that other tables refer to (Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			renamed = append(renamed, renamedKey{"code", t.oldValues["code"], t.Code})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
@@ -1022,6 +1033,17 @@ func (t *Currency) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Currency: %v\n", err)
 		return false
+	}
+	// A temporary record's rename stays in the record: other tables are not changed
+	for _, r := range renamed {
+		if t.temp != nil {
+			break
+		}
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to Currency: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -1108,6 +1130,38 @@ func (t *Currency) SetDB(db database.Executor) {
 	t.db = db
 }
 
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *Currency) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+		"code": {{"Currency_Exchange_Rate", false, "currency_code"}, {"Currency_Exchange_Rate", false, "relational_currency_code"}, {"General_Ledger_Setup", false, "additional_reporting_currency"}},
+	}
+	companies := []string{t.company}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
+}
+
 // Delete removes the record from the database
 func (t *Currency) Delete(runTrigger bool) bool {
 	// OnDelete trigger of the business logic
@@ -1192,6 +1246,11 @@ func (t *Currency) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -3188,6 +3247,10 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Invoice_rounding_precision, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Invoice_rounding_precision = types.NewDecimal(val)
+		case int:
+			t.Invoice_rounding_precision = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Invoice_rounding_precision = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["invoice_rounding_type"]; ok && v != nil {
@@ -3213,6 +3276,10 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Amount_rounding_precision, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Amount_rounding_precision = types.NewDecimal(val)
+		case int:
+			t.Amount_rounding_precision = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Amount_rounding_precision = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["unit_amount_rounding_precision"]; ok && v != nil {
@@ -3221,6 +3288,10 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Unit_amount_rounding_precision = types.NewDecimal(val)
+		case int:
+			t.Unit_amount_rounding_precision = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Unit_amount_rounding_precision = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["description"]; ok && v != nil {
@@ -3244,6 +3315,10 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Appln_rounding_precision, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Appln_rounding_precision = types.NewDecimal(val)
+		case int:
+			t.Appln_rounding_precision = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Appln_rounding_precision = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["emu_currency"]; ok && v != nil {
@@ -3257,6 +3332,10 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Currency_factor, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.Currency_factor = types.NewDecimal(val)
+		case int:
+			t.Currency_factor = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Currency_factor = types.NewDecimalFromInt(val)
 		}
 	}
 }

@@ -21,6 +21,10 @@ menu:
         page_id: 9
         icon: globe
 
+      - name: General Ledger Setup
+        page_id: 118
+        icon: settings
+
       - name: Payment Terms
         page_id: 4
         icon: calendar

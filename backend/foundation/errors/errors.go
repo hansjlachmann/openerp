@@ -42,6 +42,8 @@ const (
 	ErrFieldNotEditable   ErrorCode = "ERR_FIELD_NOT_EDITABLE"
 	ErrMustBeRoundedTo    ErrorCode = "ERR_MUST_BE_ROUNDED_TO"
 	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
+	ErrSameCurrency       ErrorCode = "ERR_SAME_CURRENCY"
+	ErrNoExchangeRate     ErrorCode = "ERR_NO_EXCHANGE_RATE"
 	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
@@ -271,6 +273,16 @@ func MustBeRoundedTo(table, field, precision string) *AppError {
 // DecimalPlacesFormat: a decimal places setting is not "n" or "min:max" (0–9)
 func DecimalPlacesFormat(table, field string) *AppError {
 	return &AppError{Code: ErrDecimalPlaces, Table: table, Field: field}
+}
+
+// SameCurrency: an exchange rate's currency and relational currency are the same
+func SameCurrency(table, field string) *AppError {
+	return &AppError{Code: ErrSameCurrency, Table: table, Field: field}
+}
+
+// NoExchangeRate: a currency has no exchange rate on or before a date
+func NoExchangeRate(currency, date string) *AppError {
+	return &AppError{Code: ErrNoExchangeRate, Params: []string{currency, date}}
 }
 
 // FieldNotEditable: a page tried to change a read-only field (editable: false)

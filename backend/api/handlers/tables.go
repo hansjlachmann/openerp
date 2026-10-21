@@ -684,6 +684,11 @@ func (h *TablesHandler) GetRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
+	// A setup table's single record is always there (its card opens on it)
+	if id == "" && table.IsSetupTable() {
+		h.ensureSetupRecord(tableName, company)
+	}
+
 	// Get record by primary key (supports composite keys via comma-separated values)
 	if !table.Get(parseRecordKey(id, table)) {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
@@ -799,7 +804,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
 	// sent back as its placeholder keeps its stored value
 	ftables.DropMaskedPlaceholders(table, data)
-	ftables.DropReadOnlyFields(table, data) // editable: false — only business logic sets them
+	ftables.DropReadOnlyFields(table, data, false) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -926,7 +931,7 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
 	// sent back as its placeholder keeps its stored value
 	ftables.DropMaskedPlaceholders(table, data)
-	ftables.DropReadOnlyFields(table, data) // editable: false — only business logic sets them
+	ftables.DropReadOnlyFields(table, data, true) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return nil, 400, err.Error()
 	}

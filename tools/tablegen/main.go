@@ -955,9 +955,6 @@ func validateFieldProperties(def *TableDef) error {
 				return fmt.Errorf("field %s: decimal_places %q needs a decimal field and \"min:max\" (e.g. \"2:5\")", f.Name, f.DecimalPlaces)
 			}
 		}
-		if f.Editable != nil && !*f.Editable && f.PrimaryKey {
-			return fmt.Errorf("field %s: a primary key field cannot be editable: false", f.Name)
-		}
 	}
 	for _, name := range def.Table.DataCaptionFields {
 		if f, ok := byName[name]; !ok || f.FlowField {
@@ -2057,6 +2054,15 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 			if val, ok := v.(string); ok {
 				{{ lowerFirst $f.Name }}Val = val
 			}
+{{- else if eq $f.Type "types.Date" }}
+			switch val := v.(type) {
+			case types.Date:
+				{{ lowerFirst $f.Name }}Val = val
+			case time.Time:
+				{{ lowerFirst $f.Name }}Val = types.NewDate(val.Year(), val.Month(), val.Day())
+			case string:
+				{{ lowerFirst $f.Name }}Val, _ = types.NewDateFromString(val)
+			}
 {{- end }}
 		}
 {{- end }}{{- end }}
@@ -3051,6 +3057,11 @@ func (t *{{ .StructName }}) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
+		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
+		// stored as NULL, which no BETWEEN matches
+		if d, ok := minValue.(types.Date); ok && d.IsZero() {
+			minValue = nil
+		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -5036,6 +5047,10 @@ func (t *{{ .StructName }}) FromMap(data map[string]interface{}) {
 			t.{{ upperFirst .Name }}, _ = types.NewDecimalFromString(val)
 		case float64:
 			t.{{ upperFirst .Name }} = types.NewDecimal(val)
+		case int:
+			t.{{ upperFirst .Name }} = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.{{ upperFirst .Name }} = types.NewDecimalFromInt(val)
 		}
 {{- else if eq .Type "types.Date" }}
 		if s, ok := v.(string); ok {

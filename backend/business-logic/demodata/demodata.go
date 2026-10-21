@@ -337,12 +337,20 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			rec := factory()
 			rec.InitWithDBType(exec, company, dbType)
 			rec.FromMap(record)
-			key := rec.GetPrimaryKeyValue()
-			if !rec.Get(key) {
+			key := primaryKey(rec)
+			switch {
+			case !rec.Get(key):
 				rec.InitWithDBType(exec, company, dbType)
 				rec.FromMap(record)
 				if !rec.Insert(true) {
-					return &InsertError{Table: t.Table, Key: fmt.Sprint(key), Err: insertErr(rec.TriggerError())}
+					return &InsertError{Table: t.Table, Key: rec.GetPrimaryKeyValue(), Err: insertErr(rec.TriggerError())}
+				}
+				counts.MasterData++
+			case rec.IsSetupTable():
+				// The setup record exists as soon as its page was opened: it gets the values
+				rec.FromMap(record)
+				if !rec.Modify(true) {
+					return &InsertError{Table: t.Table, Key: "", Err: insertErr(rec.TriggerError())}
 				}
 				counts.MasterData++
 			}
@@ -682,4 +690,20 @@ func (p *progress) emit(pct int) {
 	}
 	p.last = pct
 	p.report(pct, p.current)
+}
+
+// primaryKey is a record's key for Get: the value of its key field, or field → value for a
+// composite key (e.g. currency and starting date of an exchange rate)
+func primaryKey(rec ftables.Table) interface{} {
+	values := rec.ToMap()
+	key := map[string]interface{}{}
+	for _, f := range rec.GetFields() {
+		if f.PrimaryKey {
+			key[f.Name] = values[f.Name]
+		}
+	}
+	if len(key) == 1 {
+		return rec.GetPrimaryKeyValue()
+	}
+	return key
 }

@@ -243,9 +243,11 @@
 		if (!page) return;
 
 		try {
-			if (recordid) {
+			// A setup card opens on the table's single record (blank key)
+			const cardRecordId = recordid || (page.page.setup_table ? '' : undefined);
+			if (cardRecordId !== undefined) {
 				// Load specific record with captions (includes option values and lookups)
-				const result = await api.getRecordWithCaptions(page.page.source_table, recordid);
+				const result = await api.getRecordWithCaptions(page.page.source_table, cardRecordId);
 				record = result.data;
 				// Merge options from the record response (contains enum values)
 				if (result.captions?.options) {
@@ -256,7 +258,7 @@
 					lookups = result.captions.lookups;
 				}
 				isExistingRecord = true; // Successfully loaded an existing record
-				currentRecordId = recordid;
+				currentRecordId = cardRecordId;
 			} else {
 				// New record - fetch options/lookups before rendering
 				record = {};
@@ -460,7 +462,7 @@
 	// A subpage's lines changed: read the card's FlowFields (totals) again — only those, so
 	// nothing the user is typing on the card is touched
 	async function refreshCardTotals() {
-		if (!page || !currentRecordId || !record) return;
+		if (!page || currentRecordId === undefined || !record) return;
 		try {
 			const fresh = await api.getRecordWithCaptions(page.page.source_table, currentRecordId);
 			for (const field of page.page.flow_fields ?? []) {
@@ -476,7 +478,7 @@
 		if (!page) return false;
 
 		try {
-			if (isExistingRecord && currentRecordId) {
+			if (isExistingRecord && currentRecordId !== undefined) {
 				// Update existing record (only if we successfully loaded an existing record)
 				const sentRecord = deepCopy(savedRecord);
 				const modified = await api.modifyRecord(page.page.source_table, currentRecordId, savedRecord);

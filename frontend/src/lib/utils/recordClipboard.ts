@@ -36,11 +36,20 @@ export function loadClipboard(): RecordClipboard | null {
  * these values, so records copied from role READER are pasted for role CLERK.
  */
 export function keyValuesFromFilters(filters: TableFilter[], primaryKeyFields: string[]): Record<string, string> {
+	return singleValueFilters(filters, (field) => primaryKeyFields.includes(field));
+}
+
+/**
+ * The values of the filters that select one exact value (no range, alternatives or wildcards)
+ * for the fields `accept` takes. A new record gets them (classic: a field filtered to one value
+ * is set to it on insert) — e.g. Exchange Rates opened for currency EUR.
+ */
+export function singleValueFilters(filters: TableFilter[], accept: (field: string) => boolean = () => true): Record<string, string> {
 	const out: Record<string, string> = {};
 	for (const f of filters) {
 		const value = f.expression.trim();
-		if (!primaryKeyFields.includes(f.field) || value === '') continue;
-		if (/[|*<>]|\.\./.test(value)) continue;
+		if (!accept(f.field) || value === '') continue;
+		if (/[|*<>&=@()']|\.\./.test(value)) continue;
 		out[f.field] = value;
 	}
 	return out;

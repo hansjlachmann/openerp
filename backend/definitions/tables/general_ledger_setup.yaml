@@ -1,0 +1,208 @@
+table:
+  id: 98
+  name: "General_Ledger_Setup"
+  caption: General Ledger Setup
+  description: General ledger setup (table 98), a single record per company
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      primary_key: true
+      length: 10
+
+    - name: allow_posting_from
+      no: 2
+      type: types.Date
+      db_name: allow_posting_from
+
+    - name: allow_posting_to
+      no: 3
+      type: types.Date
+      db_name: allow_posting_to
+
+    - name: register_time
+      no: 4
+      type: bool
+      db_name: register_time
+
+    - name: pmt_disc_excl_tax
+      no: 28
+      type: bool
+      db_name: pmt_disc_excl_tax
+
+    # FlowFilters (not stored) for the FlowFields below
+    - name: date_filter
+      no: 41
+      type: types.Date
+      flow_filter: true
+
+    - name: department_filter
+      no: 42
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: project_filter
+      no: 43
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: cust_balances_due
+      no: 44
+      type: types.Decimal
+      flow_field: true
+      calc_formula: Sum
+      source_table: CustomerLedgerEntry
+      source_field: remaining_amt_lcy
+      flow_filters:
+        - field: open
+          type: const
+          value: "true"
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: due_date
+          type: filter
+          value: date_filter
+
+    - name: unrealized_tax
+      no: 48
+      type: bool
+      db_name: unrealized_tax
+
+    - name: adjust_for_payment_disc
+      no: 49
+      type: bool
+      db_name: adjust_for_payment_disc
+
+    - name: mark_cr_memos_as_corrections
+      no: 56
+      type: bool
+      db_name: mark_cr_memos_as_corrections
+
+    - name: local_address_format
+      no: 57
+      type: Option
+      db_name: local_address_format
+      options: ["ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"]
+
+    - name: inv_rounding_precision_lcy
+      no: 58
+      type: types.Decimal
+      db_name: inv_rounding_precision_lcy
+      precision: 18
+      scale: 5
+      decimal_places: "2:2" # amount in local currency
+
+    - name: inv_rounding_type_lcy
+      no: 59
+      type: Option
+      db_name: inv_rounding_type_lcy
+      options: ["Nearest", "Up", "Down"]
+
+    - name: local_cont_addr_format
+      no: 60
+      type: Option
+      db_name: local_cont_addr_format
+      options: ["First", "After Company Name", "Last"]
+      default: 1 # After Company Name
+
+    - name: recalculate_sales_tax
+      no: 64
+      type: bool
+      db_name: recalculate_sales_tax
+
+    - name: summarize_gl_entries
+      no: 65
+      type: bool
+      db_name: summarize_gl_entries
+
+    - name: amount_decimal_places
+      no: 66
+      type: types.Text
+      db_name: amount_decimal_places
+      length: 5
+      default: "2:2"
+
+    - name: unit_amount_decimal_places
+      no: 67
+      type: types.Text
+      db_name: unit_amount_decimal_places
+      length: 5
+      default: "2:5"
+
+    - name: additional_reporting_currency
+      no: 68
+      type: types.Code
+      db_name: additional_reporting_currency
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: description
+            width: 200
+
+    - name: vat_tolerance_percent
+      no: 69
+      type: types.Decimal
+      db_name: vat_tolerance_percent
+      precision: 18
+      scale: 5
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+
+    - name: emu_currency
+      no: 70
+      type: bool
+      db_name: emu_currency
+
+    - name: lcy_code
+      no: 71
+      type: types.Code
+      db_name: lcy_code
+      length: 10
+
+    - name: tax_exchange_rate_adjustment
+      no: 72
+      type: Option
+      db_name: tax_exchange_rate_adjustment
+      options: ["No Adjustment", "Adjust Amount", "Adjust Additional-Currency Amount"]
+
+    - name: amount_rounding_precision
+      no: 73
+      type: types.Decimal
+      db_name: amount_rounding_precision
+      precision: 18
+      scale: 5
+      decimal_places: "0:5"
+
+    - name: unit_amount_rounding_precision
+      no: 74
+      type: types.Decimal
+      db_name: unit_amount_rounding_precision
+      precision: 18
+      scale: 5
+      decimal_places: "0:5"
+
+    - name: appln_rounding_precision
+      no: 75
+      type: types.Decimal
+      db_name: appln_rounding_precision
+      precision: 18
+      scale: 5
+      decimal_places: "2:2" # amount in local currency
+      validation: {min: 0}
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

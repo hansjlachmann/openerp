@@ -31,6 +31,8 @@ errors:
   ERR_FIELD_NOT_EDITABLE: "%1 cannot be changed."
   ERR_MUST_BE_ROUNDED_TO: "%1 must be rounded to the nearest %2."
   ERR_DECIMAL_PLACES_FORMAT: "%1: enter one number or two numbers separated by a colon, from 0 to 9 (e.g. 2:5)."
+  ERR_SAME_CURRENCY: "%1 cannot be the same as the currency code."
+  ERR_NO_EXCHANGE_RATE: "There is no exchange rate for currency %1 on or before %2."
   ERR_PASTE_RECORD_FAILED: "Record %1 of %2 cannot be pasted: %3 Nothing was pasted."
   ERR_DELETE_FAILED: "Failed to delete %1 %2"
   ERR_INSERT_FAILED: "Failed to insert %1"

@@ -82,6 +82,10 @@ pages:
     caption: "Currencies"
   currency_card:
     caption: "Currency Card"
+  currency_exchange_rates:
+    caption: "Currency Exchange Rates"
+  general_ledger_setup:
+    caption: "General Ledger Setup"
   finance_charge_terms:
     caption: "Finance Charge Terms"
   finance_charge_terms_card:
