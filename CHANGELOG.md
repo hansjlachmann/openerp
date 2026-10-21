@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.105](https://github.com/hansjlachmann/openerp/compare/v0.1.104...v0.1.105) (2026-10-21)
+
+
+### Features
+
+* master data tables 3–14, field properties, Currency code and cards ([b7cebab](https://github.com/hansjlachmann/openerp/commit/b7cebab28508c058be58c5e3532cc12eaa2a6c62))
+
+
+### Bug Fixes
+
+* dates read back blank on PostgreSQL — a DATE column scanned into a string arrives ([b7cebab](https://github.com/hansjlachmann/openerp/commit/b7cebab28508c058be58c5e3532cc12eaa2a6c62))
+* **pages:** modal cards for currencies and finance charge terms, one Esc, full screen key ([17aa0dc](https://github.com/hansjlachmann/openerp/commit/17aa0dc38499e88de7ae9cf1a2e134d32252c307))
+
 ## [0.1.104](https://github.com/hansjlachmann/openerp/compare/v0.1.103...v0.1.104) (2026-10-21)
 
 
