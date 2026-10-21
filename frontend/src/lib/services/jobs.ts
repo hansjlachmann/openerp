@@ -50,6 +50,7 @@ export interface SyncJobResult {
 	message: string;
 	data?: Record<string, unknown>;
 	dialog?: DialogResult;
+	refresh?: boolean; // the page reloads its data (a card: its record and its subpages' lines)
 }
 
 export interface JobCallbacks {
@@ -278,7 +279,8 @@ export async function startJob(
 			success: result.data.success,
 			message: result.data.message,
 			data: result.data.data,
-			dialog: result.data.dialog
+			dialog: result.data.dialog,
+			refresh: result.data.refresh === true
 		};
 		callbacks.onSyncResult?.(syncResult);
 		return syncResult;

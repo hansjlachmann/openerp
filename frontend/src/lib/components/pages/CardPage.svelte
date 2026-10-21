@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PageDefinition, Field, FieldState } from '$lib/types/pages';
+	import type { PageDefinition, Field, FieldState, Action } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import FieldRenderer from './FieldRenderer.svelte';
 	import Button from '$lib/components/Button.svelte';
@@ -22,6 +22,8 @@
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionButton from '../ActionButton.svelte';
+	import ActionMenu from '../ActionMenu.svelte';
+	import ObjectRunner from '../ObjectRunner.svelte';
 	import type { Subpage } from '$lib/types/pages';
 	import type { FixedFilter } from '$lib/types/api';
 
@@ -226,6 +228,9 @@
 				if (didSave) {
 					// Update lastSavedRecord after successful save
 					lastSavedRecord = deepCopy(record);
+					// The header changed: the subpages reload their lines (the server may have
+					// changed them, e.g. a new discount)
+					linesRefresh++;
 					saveState = 'saved';
 					// Show "Saved" for 1.5 seconds then hide
 					savedTimeout = setTimeout(() => {
@@ -289,38 +294,38 @@
 		return withReturn(url, getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)));
 	}
 
+	// Run a page object with the card's record: a codeunit, a report or a function
+	// ("table:Job_Queue.ShowStatus", with arguments "…(0)") — its dialogs and message box
+	// come from the ObjectRunner; afterwards the card and its subpages refresh when needed
 	async function handleRunObject(runObject: string) {
-		// Parse the run_object string (format: "codeunit:ID")
-		const [objectType, objectId] = runObject.split(':');
-
-		if (objectType !== 'codeunit') {
-			toast.error(t(ERR.UNKNOWN_OBJECT_TYPE, objectType));
-			return;
-		}
-
-		const codeunitId = parseInt(objectId, 10);
-		if (isNaN(codeunitId)) {
-			toast.error(t(ERR.INVALID_CODEUNIT_ID));
-			return;
-		}
-
-		// Check if we have a record
-		if (!record || Object.keys(record).length === 0) {
+		if (!record || Object.keys(record).length === 0 || checkIsNewRecord()) {
 			toast.error(t(ERR.NO_RECORD_SELECTED));
 			return;
 		}
+		await runner?.run(runObject, stripInternalFields($state.snapshot(record)));
+	}
 
-		try {
-			// Send the full record to the generic codeunit endpoint
-			const result = await api.runCodeunit(codeunitId, record);
-			toast.success(result.message || t(MSG.CODEUNIT_SUCCESS));
+	function handleRunDone(refresh: boolean) {
+		if (!refresh) return;
+		onaction?.('Refresh');
+		linesRefresh++;
+	}
 
-			// Trigger refresh to show updated data
-			onaction?.('Refresh');
-		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : t(ERR.CODEUNIT_FAILED);
-			toast.error(errorMessage);
+	// A card action or menu item: open a page, run an object, or a standard action
+	function runCardAction(action: Action) {
+		if (action.run_page) {
+			goto(runPageUrl(action));
+		} else if (action.run_object) {
+			handleRunObject(action.run_object);
+		} else if (!action.items) {
+			handleAction(action.name);
 		}
+	}
+
+	// The card's actions with the items of its menu buttons (names and shortcuts)
+	function allActions(): Action[] {
+		const flat = (actions: Action[] | undefined): Action[] => (actions ?? []).flatMap((a) => [a, ...flat(a.items)]);
+		return flat(page.page.actions);
 	}
 
 	function handleNew() {
@@ -338,20 +343,11 @@
 		// Guard against page being undefined during cleanup
 		if (!page?.page) return map;
 
-		page.page.actions?.forEach((action) => {
+		allActions().forEach((action) => {
 			if (action.shortcut && action.enabled !== false) {
 				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
 				const normalizedShortcut = normalizeShortcut(action.shortcut);
-				map[normalizedShortcut] = () => {
-					// Handle run_page, run_object, or regular action (same as button click)
-					if (action.run_page) {
-						goto(runPageUrl(action));
-					} else if (action.run_object) {
-						handleRunObject(action.run_object);
-					} else {
-						handleAction(action.name);
-					}
-				};
+				map[normalizedShortcut] = () => runCardAction(action);
 			}
 		});
 
@@ -382,6 +378,11 @@
 
 		return map;
 	});
+
+	// Runs the card's page objects (codeunits, reports, functions) with their dialogs
+	let runner = $state<ObjectRunner | undefined>(undefined);
+	// Bumped after a save or a function asking for it: the subpages reload their lines
+	let linesRefresh = $state(0);
 
 	// The scrolling sections (PgUp/PgDn)
 	let sectionsElement = $state<HTMLDivElement | null>(null);
@@ -570,22 +571,18 @@
 			</div>
 
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
-				<ActionButton
-					caption={action.caption}
-					image={action.image}
-					shortcut={action.shortcut}
-					tabindex={-1}
-					onclick={() => {
-						if (action.run_page) {
-							goto(runPageUrl(action));
-						} else if (action.run_object) {
-							handleRunObject(action.run_object);
-						} else {
-							handleAction(action.name);
-						}
-					}}
-					disabled={action.enabled === false}
-				/>
+				{#if action.items}
+					<ActionMenu {action} itemDisabled={(item) => !!item.run_object && checkIsNewRecord()} onselect={runCardAction} />
+				{:else}
+					<ActionButton
+						caption={action.caption}
+						image={action.image}
+						shortcut={action.shortcut}
+						tabindex={-1}
+						onclick={() => runCardAction(action)}
+						disabled={action.enabled === false}
+					/>
+				{/if}
 			{/each}
 		{/snippet}
 
@@ -669,6 +666,7 @@
 										newRecordDefaults={linkValues(sub)}
 										onexit={() => focusPart(0)}
 										onlineschange={onrefresh}
+										refreshToken={linesRefresh}
 									/>
 								{/key}
 							{:else}
@@ -700,6 +698,9 @@
 		{/if}
 	</div>
 </div>
+
+<!-- The card's page objects: progress, questions, input, message boxes -->
+<ObjectRunner bind:this={runner} ondone={handleRunDone} />
 
 <!-- Customize Page Modal -->
 {#if customizeModalOpen}

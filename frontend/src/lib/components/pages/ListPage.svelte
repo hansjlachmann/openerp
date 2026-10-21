@@ -573,7 +573,7 @@
 		let codeunitId: number;
 		let isReport = false; // "report:ID": a processing-only report (request page, then the report)
 		// "<type>:<object>.<function>": a registered function called with the current record
-		const isFunction = /^[a-z]+:[^.]+\.[A-Za-z_]\w*$/.test(runObject) && !runObject.startsWith('field:');
+		const isFunction = /^[a-z]+:[^.(]+\.[A-Za-z_]\w*(\(.*\))?$/.test(runObject) && !runObject.startsWith('field:');
 		if (isFunction && !selectedRecord) {
 			toast.error(t(ERR.NO_RECORD_SELECTED));
 			return;
@@ -690,6 +690,8 @@
 				onSyncResult: (syncResult) => {
 					// Sync result - close progress modal immediately and show dialog/toast
 					progressModalOpen = false;
+					// The function asked the page to reload (e.g. it changed the lines)
+					if (syncResult.refresh) onaction?.('Refresh');
 					if (syncResult.success) {
 						if (syncResult.dialog) {
 							dialogData = syncResult.dialog;

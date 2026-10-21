@@ -19,6 +19,25 @@ func init() {
 	// Functions pages call with the current line (run_object: table:Job_Queue_Entry.<name>)
 	functions.Register("table", gtables.JobQueueEntryTableName, "ShowLineNo", functions.For(jobQueueEntryLogic{}.ShowLineNo))
 	functions.Register("table", gtables.JobQueueEntryTableName, "Test", functions.For(jobQueueEntryLogic{}.Test))
+	functions.Register("table", gtables.JobQueueEntryTableName, "ShowLine", functions.ForArgs(jobQueueEntryLogic{}.ShowLine, "int"))
+}
+
+// ShowLine shows one field of the current line — the argument is an option
+// "Entry No.,Description,Status" (sub-menu Line → Show Line: an example of arguments)
+func (jobQueueEntryLogic) ShowLine(rec *gtables.JobQueueEntry, args functions.Args) (fcodeunits.Result, error) {
+	language := fcodeunits.CurrentLanguage()
+	var field string
+	var value any
+	switch args.Int(0) {
+	case 0:
+		field, value = "entry_no", rec.Entry_no
+	case 1:
+		field, value = "description", rec.Description
+	default:
+		field, value = "status", rec.Status.String()
+	}
+	text := i18n.GetInstance().Message("JOBQUEUEENTRY_SHOW_FIELD", language)
+	return system.Message(text, rec.GetFieldCaption(field, language), value), nil
 }
 
 // Test shows a simple message (button "TEST" on the Job Queue Entries page: a plain action

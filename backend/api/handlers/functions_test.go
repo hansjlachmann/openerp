@@ -33,9 +33,10 @@ func TestPageFunctionsAreRegistered(t *testing.T) {
 				continue
 			}
 			found++
-			f, ok := functions.Lookup(obj)
-			if !ok {
-				t.Errorf("page %d action %s: function %s is not registered", id, a.Name, obj)
+			// Registered, and the call's arguments fit the function
+			f, _, err := functions.Resolve(obj)
+			if err != nil {
+				t.Errorf("page %d action %s: %v", id, a.Name, err)
 				continue
 			}
 			if factory, ok := gtables.GetTableFactory(f.Table); !ok || factory().GetTableName() != tableName(table) {

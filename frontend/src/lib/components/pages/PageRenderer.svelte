@@ -47,6 +47,9 @@
 		newRecordDefaults?: Record<string, any>;
 		onexit?: () => void;
 		onlineschange?: () => void;
+		// A subpage: when its card bumps this (the header was saved, a function asked for it),
+		// the lines reload — with the user's filters, search and position
+		refreshToken?: number;
 	}
 
 	let {
@@ -64,8 +67,17 @@
 		fixedFilters = [],
 		newRecordDefaults = {},
 		onexit,
-		onlineschange
+		onlineschange,
+		refreshToken = 0
 	}: Props = $props();
+
+	// A subpage reloads its lines when its card asks (refreshToken changes after the first load)
+	let lastRefreshToken: number | undefined = undefined;
+	$effect(() => {
+		const token = refreshToken;
+		if (lastRefreshToken !== undefined && token !== lastRefreshToken && page) void loadListData();
+		lastRefreshToken = token;
+	});
 
 	// State
 	let page: PageDefinition | null = $state(null);
@@ -543,6 +555,7 @@
 				break;
 			case 'Refresh':
 				await loadListData();
+				onlineschange?.(); // a subpage: the card's totals too
 				break;
 		}
 	}

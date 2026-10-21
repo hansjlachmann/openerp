@@ -32,6 +32,13 @@ common:
     test: "TEST"
     test_line_1: "Test Line 1"
     test_line_2: "Test Line 2"
+    job_queue: "Job Queue"
+    show_status: "Show Status"
+    add_test_entry: "Add Test Entry"
+    show_line: "Show Line"
+    entry_no: "Entry No."
+    description: "Description"
+    status: "Status"
     delete_log_entries: "Delete Log Entries"
 
   # Card page sections (page YAML section name in snake case)

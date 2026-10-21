@@ -76,10 +76,12 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		factory, ok = reports.CodeunitFactory(req.ReportID)
 	}
 	if req.Function != "" {
-		var fn *functions.Function
-		if fn, ok = functions.Lookup(req.Function); ok {
-			factory = func(database.Executor, string, database.DBType) fcodeunits.Codeunit { return fn.Codeunit() }
+		fn, args, err := functions.Resolve(req.Function)
+		if err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 		}
+		ok = true
+		factory = func(database.Executor, string, database.DBType) fcodeunits.Codeunit { return fn.Codeunit(args) }
 	}
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
@@ -138,6 +140,9 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		if result.Dialog != nil {
 			response["dialog"] = result.Dialog
 		}
+		if result.Refresh {
+			response["refresh"] = true
+		}
 		return c.JSON(apitypes.NewSuccessResponse(response))
 	}
 
@@ -165,6 +170,14 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		if err != nil {
 			dialog.CloseWithError(err)
 			return
+		}
+
+		// The page reloads its data afterwards: sent with the result data
+		if result.Refresh {
+			if result.Data == nil {
+				result.Data = map[string]interface{}{}
+			}
+			result.Data["refresh"] = true
 		}
 
 		// Send final result through dialog

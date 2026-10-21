@@ -29,6 +29,9 @@ type Result struct {
 	Message string                 `json:"message"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 	Dialog  *DialogResult          `json:"dialog,omitempty"` // Optional dialog to show
+	// Refresh: the page reloads its data afterwards — a card its record and its subpages'
+	// lines (e.g. a function on the header that changed the lines)
+	Refresh bool `json:"refresh,omitempty"`
 }
 
 // DialogResult represents a dialog/message box to display

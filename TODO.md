@@ -61,10 +61,31 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
         (`foundation/functions`) with the current record. Example: Job Queue Entries (673) —
         menu "Line" with "Test Line 1" (`table:Job_Queue_Entry.ShowLineNo`, a message with the
         line's number) and "Test Line 2" (no function).
-  - [ ] Menu buttons and page functions on card pages too (only list pages and subpages so far;
-        card actions run codeunits without a dialog).
+  - [x] Menu buttons and page functions on card pages too — done 2026-10-21 (card actions run
+        through the job API with the same dialogs as lists: `ObjectRunner.svelte`).
   - [ ] LOW priority, later: a subpage shown as a card page (one related record on the card, e.g.
         a setup or statistics part).
+- [x] **FIRST PRIORITY — Preparation for the migration: page actions on documents** (added
+      2026-10-21) — built 2026-10-21, tried on the Job Queue Card / Log Entries (sub-menu Line →
+      Show Line → Entry No. / Description / Status with `ShowLine(0|1|2)`; card menu Job Queue →
+      Show Status / Add Test Entry, which refreshes the subpage). Platform pieces the migrated document pages (header card + lines subpage) need;
+      build them now and try them on the Job Queue Card (674) with its Log Entries subpage (673).
+  - [x] **Arguments in `run_object`**: `table:Sales_Line.ItemAvailability(0)`,
+        `table:Sales_Line.InsertExtendedText(true)` — simple literals (whole numbers, decimals,
+        `true`/`false`, quoted text); `functions.ForArgs(fn)` gives them to the function next to
+        the record (an option argument is its number: 0 = Date, 1 = Variant, …). A test checks that
+        the YAML's arguments fit the registered function. (97 of the classic subform calls pass one.)
+  - [x] **Sub-menus**: a menu item with `items:` of its own (classic menu level 1, 305 uses) — shown
+        in the dropdown as a heading with its items indented under it (keyboard: ↑/↓ skip the
+        heading, Enter runs an item). Example: Line → Item Availability by → Period / Variant.
+  - [x] **Refresh the lines after a header change**: when the card record is saved (a field validated
+        and modified), its subpages reload their lines and the card its totals (FlowFields) — today
+        a subpage only reloads when the card moves to another record. Also a function result can ask
+        for it (a header function that changes the lines, e.g. recalculating a discount).
+  - [x] **Menu buttons and page functions on card pages** (only list pages and subpages so far): the
+        header's own actions — Release, Post, Statistics — as buttons and menus on the card, calling
+        functions with the card's record (sync, or with a dialog).
+
 - [ ] **HEADLINE — Migrate the classic application into this repository, in many steps** (added
       2026-10-20; to be planned later). Tables, codeunits, pages (forms) and reports of the classic
       application move over step by step, in this repository's own layout: table YAML with the same
@@ -72,6 +93,30 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
       `foundation/system`. Plan first: the order (setup and master data → documents → posting →
       reports), what each step brings, and which platform features each step needs (see "System
       functions — still missing" below).
+  - **Migration rules** (decided 2026-10-21; add to them as steps are migrated):
+    - Objects keep their numbers (tables, pages, codeunits, reports) and fields their field numbers;
+      tables and pages become YAML, triggers and procedures Go in `business-logic`. Wording stays
+      neutral (no product names in code, YAML, captions, commits).
+    - A form becomes a page; its subform becomes a card section with `subpage:` — the subform's link
+      becomes `link:` (subpage field → card field); the forms' fixed table views become fixed
+      filters (filter group 2).
+    - **Line actions go into the subpage.** Buttons and menu buttons of a main form that call a
+      procedure of its subform (e.g. the document's "Line" menu: Item Availability, Reservation
+      Entries, Explode BOM, Insert Extended Texts) are not rebuilt on the card: they become actions
+      of the subpage itself, with the same captions and menu structure (menu button → action with
+      `items:`, menu level 1 → sub-menu), working on the subpage's current line. The card does not
+      call into its subpages.
+    - The subform's procedure becomes a function on the lines table (`business-logic/tables/…`,
+      `functions.Register("table", …)`) — or, when it only runs a codeunit on the line, the action
+      runs that codeunit directly (`run_object: codeunit:<id>`, the line as its record). Arguments
+      stay (`ItemAvailability(0)`); option arguments are their numbers.
+    - The header's own actions (Release, Post, Print, Statistics, Copy Document) stay on the card as
+      buttons / menus calling functions with the card's record.
+    - The subform's refresh calls (update the lines after the header changed) need nothing: the card
+      refreshes its subpages after a save. Reading the subform's current record into a variable in
+      header code: move that code into a subpage action instead.
+    - Captions drop the classic `&` accelerator; every action and section caption gets translations
+      in all languages (en-US, da-DK, nb-NO); every action gets an `image:` from the icon set.
 - [x] **Demo (k3s, repo `pi-cluster`): `jwt-secret` added to `openerp-secret` with sops** (2026-10-08,
       pi-cluster `3026f62`). Backend pod has `JWT_SECRET` (64 chars), no "No JWT_SECRET" warning; logged in,
       deleted the backend pod, reload → still logged in. Notes for next time: the age key is not on the

@@ -48,6 +48,21 @@ page:
         - name: Test Line 2
           caption: Test Line 2
 
+        # A sub-menu: its items call one function with an argument (0, 1, 2)
+        - name: Show Line
+          caption: Show Line
+          image: Info
+          items:
+            - name: Entry No.
+              caption: Entry No.
+              run_object: table:Job_Queue_Entry.ShowLine(0)
+            - name: Description
+              caption: Description
+              run_object: table:Job_Queue_Entry.ShowLine(1)
+            - name: Status
+              caption: Status
+              run_object: table:Job_Queue_Entry.ShowLine(2)
+
     # A plain button next to the menu button
     - name: TEST
       caption: TEST

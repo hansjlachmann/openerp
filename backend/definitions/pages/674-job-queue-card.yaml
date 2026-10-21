@@ -96,6 +96,21 @@ page:
       enabled: true
       run_object: codeunit:455
 
+    # A menu button on the card: functions with the card's record
+    - name: Job Queue
+      caption: Job Queue
+      image: Card
+      promoted: true
+      items:
+        - name: Show Status
+          caption: Show Status
+          image: Info
+          run_object: table:Job_Queue.ShowStatus
+        - name: Add Test Entry
+          caption: Add Test Entry
+          image: New
+          run_object: table:Job_Queue.AddTestEntry   # adds a log entry: the subpage refreshes
+
     - name: Entries
       caption: Entries
       image: Entries

@@ -1,6 +1,8 @@
 <script lang="ts">
 	// A menu button of a page's action bar: a dropdown with the action's menu items (actions of
-	// their own). Keyboard: Enter, Space or ↓ open it, ↑/↓ move, Enter picks, Esc / Tab close.
+	// their own). An item with items of its own is a sub-menu: a heading with its items indented
+	// under it. Keyboard: Enter, Space or ↓ open it, ↑/↓ move (over the items, not the headings),
+	// Enter picks, Esc / Tab close.
 	import { tick } from 'svelte';
 	import ActionButton from './ActionButton.svelte';
 	import ActionIcon from './icons/ActionIcon.svelte';
@@ -17,11 +19,25 @@
 
 	let { action, disabled = false, itemDisabled = () => false, onselect }: Props = $props();
 
-
 	let open = $state(false);
-	let active = $state(0);
+	let active = $state(0); // index among the items that can be picked (not the headings)
 	let menuElement = $state<HTMLDivElement | null>(null);
-	const items = $derived(action.items ?? []);
+
+	// The menu's rows: items and sub-menu headings, with their level (indent)
+	interface Row {
+		item: Action;
+		level: number;
+		heading: boolean;
+	}
+	function rows(actions: Action[] | undefined, level = 0): Row[] {
+		return (actions ?? []).flatMap((item) =>
+			item.items
+				? [{ item, level, heading: true }, ...rows(item.items, level + 1)]
+				: [{ item, level, heading: false }]
+		);
+	}
+	const menuRows = $derived(rows(action.items));
+	const items = $derived(menuRows.filter((r) => !r.heading).map((r) => r.item));
 
 	function enabled(item: Action): boolean {
 		return item.enabled !== false && !itemDisabled(item);
@@ -133,18 +149,26 @@
 	{#if open}
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div class="menu" role="menu" data-own-keys use:portal style={menuStyle} bind:this={menuElement} onkeydown={handleMenuKeydown}>
-			{#each items as item, i (item.name)}
-				<button
-					type="button"
-					class="menu-item"
-					role="menuitem"
-					tabindex={i === active ? 0 : -1}
-					disabled={!enabled(item)}
-					onclick={() => pick(item)}
-				>
-					<span class="menu-label"><ActionIcon name={item.image} /><span class="truncate">{item.caption}</span></span>
-					{#if item.shortcut}<span class="menu-shortcut">{item.shortcut}</span>{/if}
-				</button>
+			{#each menuRows as row (row.item.name + row.level)}
+				{#if row.heading}
+					<div class="menu-heading" role="presentation" style="padding-left: {0.75 + row.level * 1.25}rem">
+						<ActionIcon name={row.item.image} /><span class="truncate">{row.item.caption}</span>
+					</div>
+				{:else}
+					{@const i = items.indexOf(row.item)}
+					<button
+						type="button"
+						class="menu-item"
+						role="menuitem"
+						style="padding-left: {0.75 + row.level * 1.25}rem"
+						tabindex={i === active ? 0 : -1}
+						disabled={!enabled(row.item)}
+						onclick={() => pick(row.item)}
+					>
+						<span class="menu-label"><ActionIcon name={row.item.image} /><span class="truncate">{row.item.caption}</span></span>
+						{#if row.item.shortcut}<span class="menu-shortcut">{row.item.shortcut}</span>{/if}
+					</button>
+				{/if}
 			{/each}
 		</div>
 	{/if}
@@ -191,6 +215,15 @@
 
 	.menu-item:disabled {
 		@apply opacity-50 cursor-not-allowed;
+	}
+
+	/* A sub-menu's heading: not clickable, its items are indented under it */
+	.menu-heading {
+		@apply flex items-center gap-2 pr-3 py-1.5 text-sm font-medium text-gray-500 cursor-default select-none;
+	}
+
+	:global(.dark) .menu-heading {
+		color: rgb(var(--gray-400));
 	}
 
 	.menu-label {

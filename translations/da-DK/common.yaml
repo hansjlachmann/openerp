@@ -32,6 +32,13 @@ common:
     test: "TEST"
     test_line_1: "Test linje 1"
     test_line_2: "Test linje 2"
+    job_queue: "Opgavekø"
+    show_status: "Vis status"
+    add_test_entry: "Tilføj testpost"
+    show_line: "Vis linje"
+    entry_no: "Løbenr."
+    description: "Beskrivelse"
+    status: "Status"
     delete_log_entries: "Slet logposter"
 
   # Card page sections (page YAML section name in snake case)
