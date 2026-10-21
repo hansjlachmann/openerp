@@ -178,7 +178,7 @@
 	);
 </script>
 
-<Modal {open} onclose={onclose} size={modalSize}>
+<Modal {open} onclose={onclose} size={modalSize} ontogglefullscreen={toggleFullscreen}>
 	<!-- Edge Navigation Buttons (classic ERP style) -->
 	{#if page.page.enable_navigation && recordIdsLoaded}
 		<NavigationButtons
@@ -198,7 +198,7 @@
 				onclick={toggleFullscreen}
 				class="control-btn"
 				tabindex="-1"
-				title={modalSize === 'fullscreen' ? t(MODAL.EXIT_FULLSCREEN) : t(MODAL.FULLSCREEN)}
+				title={`${modalSize === 'fullscreen' ? t(MODAL.EXIT_FULLSCREEN) : t(MODAL.FULLSCREEN)} (Ctrl+Shift+F12)`}
 				aria-label={modalSize === 'fullscreen' ? t(MODAL.EXIT_FULLSCREEN) : t(MODAL.FULLSCREEN)}
 			>
 				{#if modalSize === 'fullscreen'}
@@ -295,6 +295,7 @@
 			{onaction}
 			{onsave}
 			{onclearerror}
+			onbacktolist={onclose}
 			navigationEnabled={false}
 		/>
 	</div>

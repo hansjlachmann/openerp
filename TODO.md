@@ -179,7 +179,8 @@ Legend: `- [ ]` open · `- [x]` done. Group headings map to areas of the codebas
     - Table procedures that belong to a table not migrated yet (e.g. the General Ledger Setup's
       CheckDecimalPlacesFormat) become plain helper functions in `business-logic/tables` and move
       to that table's logic when it comes. Code that needs tables not migrated yet waits (TODO).
-    - Card forms: each tab becomes a section (fields in the classic order, left column then right);
+    - Card forms: the list opens its card as a pop-up over the list (`card_page_id` + `modal_card:
+      true`, full screen with its button), as Customer and Job Queue; each tab becomes a section (fields in the classic order, left column then right);
       a tab with only fields left out is left out; buttons to forms not migrated wait (TODO).
     - Field properties: MinValue/MaxValue → `validation: {min: …, max: …}` (one bound alone is
       fine), DecimalPlaces → `decimal_places: "min:max"` (decimals only), Editable=No on a table

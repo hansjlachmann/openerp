@@ -212,6 +212,7 @@ messages:
   HELP_CARD_PREV: "Gem og gå til forrige felt"
   HELP_CARD_PREV_NEXT_RECORD: "Forrige / næste post"
   HELP_CARD_FIRST_LAST_RECORD: "Første / sidste post"
+  HELP_CARD_FULLSCREEN: "Fuldskærm til / fra (kort åbnet over en liste)"
   HELP_CARD_ESCAPE: "Luk kortet"
   HELP_SEC_LOOKUP: "Opslags- og indstillingsfelter"
   HELP_LOOKUP_OPEN: "Åbn listen (F4 åbner / lukker den)"

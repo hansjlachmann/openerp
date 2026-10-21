@@ -19,30 +19,39 @@
 		onclose?: () => void;
 		title?: string;
 		size?: 'normal' | 'expanded' | 'fullscreen';
+		// Ctrl+Shift+F12 on the top modal (a modal card's full screen button)
+		ontogglefullscreen?: () => void;
 		children: Snippet;
 	}
 
-	let { open = false, onclose, title, size = 'normal', children }: Props = $props();
+	let { open = false, onclose, title, size = 'normal', ontogglefullscreen, children }: Props = $props();
 
 	// Reference to modal content for focus management
 	let modalContentRef = $state<HTMLDivElement | null>(null);
 
 	// Esc closes the top modal — after the controls in it had the key (an open dropdown, a
 	// cell being edited, a filter field take Esc first and prevent its default). A modal
-	// without onclose (a running job) keeps Esc from the page under it.
+	// without onclose (a running job) keeps Esc from the page under it. Ctrl+Shift+F12 toggles
+	// full screen of the top modal when it has one (modal cards).
 	const id = Symbol('modal');
 	$effect(() => {
 		if (!open) return;
 		openModals.push(id);
-		function handleEscape(event: KeyboardEvent) {
-			if (event.key !== 'Escape' || openModals[openModals.length - 1] !== id) return;
+		function handleKey(event: KeyboardEvent) {
+			if (openModals[openModals.length - 1] !== id) return;
+			if (event.key === 'F12' && event.ctrlKey && event.shiftKey && ontogglefullscreen) {
+				event.preventDefault();
+				ontogglefullscreen();
+				return;
+			}
+			if (event.key !== 'Escape') return;
 			if (event.defaultPrevented) return;
 			event.preventDefault();
 			onclose?.();
 		}
-		document.addEventListener('keydown', handleEscape);
+		document.addEventListener('keydown', handleKey);
 		return () => {
-			document.removeEventListener('keydown', handleEscape);
+			document.removeEventListener('keydown', handleKey);
 			const i = openModals.indexOf(id);
 			if (i >= 0) openModals.splice(i, 1);
 		};

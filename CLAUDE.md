@@ -488,6 +488,7 @@ Matches classic ERP (see `screenshots/GeneralJournal01-07.png`).
 ### Modal Card Integration
 - When `modal_card: true` on the list page, Edit and New actions open a `ModalCardPage` overlay.
 - The modal auto-saves on field changes (no explicit Save button) — mirrors classic ERP behavior.
+- Ctrl+Shift+F12 toggles full screen of the top modal card (`Modal` prop `ontogglefullscreen`; the button's tooltip names the key). Esc closes a modal card once: the card's "Back to List" action (its own `list_page_id`, shortcut Esc) is left to the modal — the button closes the card (`onbacktolist`) — and on a card page it opens the list on the record (`?select=`), never as a page with `back` to the card (that made the list need a second Esc).
 - On modal close, if any changes were made (`modalHadChanges`), the list data is refreshed.
 - Save errors on new records set `modalSaveBlocked = true` to prevent further edits until cleared.
 - **Card insert waits for the key (ABSOLUTE RULE)**: a new record on a card (modal `handleModalSave`, page `handleCardSave`) is INSERTed only once every primary key field has a value (`hasPrimaryKey`); earlier field changes stay on the form and go with the insert. Inserting earlier failed with "… cannot be empty" and blocked the modal — e.g. Chrome/Edge password managers filling the User card's password before the User ID. Record inputs set `autocomplete` (`new-password` for masked fields, `off` otherwise) so browsers do not fill saved logins into them.

@@ -37,6 +37,8 @@
 		onaction?: (actionName: string) => void;
 		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
 		onclose?: () => void; // Callback when closing the card
+		// A card opened over its list (modal card): going back to the list closes it
+		onbacktolist?: () => void;
 		saveBlocked?: boolean; // Block editing due to save error (e.g., record already exists)
 		saveBlockedMessage?: string; // Error message to display when blocked
 		onclearerror?: () => void; // Callback to clear the error state
@@ -64,6 +66,7 @@
 		onaction,
 		onsave,
 		onclose,
+		onbacktolist,
 		saveBlocked = false,
 		saveBlockedMessage = '',
 		onclearerror,
@@ -312,8 +315,18 @@
 	}
 
 	// A card action or menu item: open a page, run an object, or a standard action
+	// The action going back to the card's own list (Back to List)
+	function isBackToList(action: Action): boolean {
+		return !!action.run_page && action.run_page === page.page.list_page_id && !action.run_page_filter_field;
+	}
+
 	function runCardAction(action: Action) {
-		if (action.run_page) {
+		if (isBackToList(action)) {
+			// Over the list (modal card): close the card; a card page: open the list on this
+			// record — not as a page to return from (its Esc would come back here)
+			if (onbacktolist) onbacktolist();
+			else goto(`/pages/${action.run_page}?select=${encodeURIComponent(getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)) ?? '')}`);
+		} else if (action.run_page) {
 			goto(runPageUrl(action));
 		} else if (action.run_object) {
 			handleRunObject(action.run_object);
@@ -347,6 +360,8 @@
 			if (action.shortcut && action.enabled !== false) {
 				// Normalize shortcut (e.g., "Esc" -> "Escape") to match keyboard event key names
 				const normalizedShortcut = normalizeShortcut(action.shortcut);
+				// Over the list, Esc belongs to the modal (it closes the card once)
+				if (onbacktolist && normalizedShortcut === 'Escape') return;
 				map[normalizedShortcut] = () => runCardAction(action);
 			}
 		});
