@@ -122,7 +122,8 @@
 
 	// Check if this is a new record (no ID)
 	function checkIsNewRecord(): boolean {
-		return isNewRecord(record);
+		// A setup record has a blank key and always exists
+		return !page?.page?.setup_table && isNewRecord(record);
 	}
 
 	// Edit mode state - start in edit mode for new records or if initialEditMode is true
@@ -141,7 +142,7 @@
 		// Only trigger when the record ID actually changes (not on every field change)
 		if (id !== lastRecordId) {
 			lastRecordId = id;
-			if (!id) {
+			if (!id && !page?.page?.setup_table) {
 				editMode = true;
 				// Reset focus flag only when loading a truly new record
 				initialFocusDone = false;
@@ -165,8 +166,9 @@
 					}
 				}
 			}, 250);
-		} else if (!editMode && !initialFocusDone && cardPageElement) {
-			// In non-edit mode, focus the card page element so keyboard shortcuts work
+		} else if (!initialFocusDone && cardPageElement) {
+			// Otherwise (view mode, or edit mode without a focus field) focus the card page
+			// element so keyboard shortcuts (Esc, Ctrl+E …) work
 			initialFocusDone = true;
 			setTimeout(() => {
 				cardPageElement?.focus();
