@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.104](https://github.com/hansjlachmann/openerp/compare/v0.1.103...v0.1.104) (2026-10-21)
+
+
+### Features
+
+* **pages:** arguments, sub-menus, card menus and functions, refreshing subpages ([0f96e6e](https://github.com/hansjlachmann/openerp/commit/0f96e6ea401053e069385a28e5b0903100ea6a23))
+
 ## [0.1.103](https://github.com/hansjlachmann/openerp/compare/v0.1.102...v0.1.103) (2026-10-21)
 
 
