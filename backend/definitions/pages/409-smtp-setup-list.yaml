@@ -32,6 +32,7 @@ page:
   actions:
     - name: Edit
       caption: Edit
+      image: Edit
       shortcut: Ctrl+E
       promoted: true
       enabled: true

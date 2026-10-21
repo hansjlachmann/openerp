@@ -29,6 +29,7 @@ common:
     line: "Line"
     run: "Run"
     send_test_e_mail: "Send Test E-mail"
+    test: "TEST"
     test_line_1: "Test Line 1"
     test_line_2: "Test Line 2"
     delete_log_entries: "Delete Log Entries"

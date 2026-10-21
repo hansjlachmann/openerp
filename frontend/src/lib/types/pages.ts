@@ -82,6 +82,7 @@ export interface Action {
 	run_object?: string; // "codeunit:455", "report:675", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)
+	image?: string; // the button's icon (actionIcons.ts names, e.g. "New", "Post"); a bullet by default
 }
 
 export interface MenuDefinition {

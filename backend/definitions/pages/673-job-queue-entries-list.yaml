@@ -38,6 +38,7 @@ page:
     # A menu button with menu items; an item can call a function with the current line
     - name: Line
       caption: Line
+      image: Lines
       promoted: true
       items:
         - name: Test Line 1

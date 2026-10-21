@@ -33,12 +33,17 @@ func TestPageCaptionsTranslated(t *testing.T) {
 	ts := i18n.GetInstance()
 	for id, page := range pages.GetRegistry().GetAllPages() {
 		for _, lang := range []string{"en-US", "nb-NO", "da-DK"} {
-			for _, a := range page.Page.Actions {
-				key := "actions." + captionKey(a.Name)
-				if ts.CommonTranslation(key, lang) == "common."+key {
-					t.Errorf("page %d, %s: no translation common.%s (action %q)", id, lang, key, a.Name)
+			var check func(actions []pages.Action)
+			check = func(actions []pages.Action) {
+				for _, a := range actions {
+					key := "actions." + captionKey(a.Name)
+					if ts.CommonTranslation(key, lang) == "common."+key {
+						t.Errorf("page %d, %s: no translation common.%s (action %q)", id, lang, key, a.Name)
+					}
+					check(a.Items) // menu items too
 				}
 			}
+			check(page.Page.Actions)
 			for _, s := range page.Page.Layout.Sections {
 				key := "sections." + captionKey(s.Name)
 				if ts.CommonTranslation(key, lang) == "common."+key {

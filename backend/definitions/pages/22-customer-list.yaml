@@ -45,15 +45,18 @@ page:
   actions:
     - name: New
       caption: New
+      image: New
       shortcut: Alt+N
       promoted: true
 
     - name: Edit
       caption: Edit
+      image: Edit
       shortcut: Ctrl+E
       promoted: true
 
     - name: Delete
       caption: Delete
+      image: Delete
       shortcut: Ctrl+D
       promoted: true

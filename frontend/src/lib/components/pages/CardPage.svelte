@@ -8,9 +8,6 @@
 	import Card from '$lib/components/Card.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
 	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
-	import EditIcon from '$lib/components/icons/EditIcon.svelte';
-	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
-	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
@@ -24,6 +21,7 @@
 	import { handleFieldEnterKey } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
+	import ActionButton from '../ActionButton.svelte';
 	import type { Subpage } from '$lib/types/pages';
 	import type { FixedFilter } from '$lib/types/api';
 
@@ -572,10 +570,10 @@
 			</div>
 
 			{#each page.page.actions?.filter((a) => a.promoted) || [] as action}
-				{@const variant = 'secondary'}
-				<Button
-					variant={variant}
-					size="sm"
+				<ActionButton
+					caption={action.caption}
+					image={action.image}
+					shortcut={action.shortcut}
 					tabindex={-1}
 					onclick={() => {
 						if (action.run_page) {
@@ -587,34 +585,13 @@
 						}
 					}}
 					disabled={action.enabled === false}
-				>
-					{#snippet icon()}
-						{#if action.name === 'New'}
-							<PlusIcon size={16} color="currentColor" />
-						{:else if action.name === 'Edit'}
-							<EditIcon size={16} color="currentColor" />
-						{:else if action.name === 'Delete'}
-							<TrashIcon size={16} color="currentColor" />
-						{:else if action.name === 'Refresh'}
-							<RefreshIcon size={16} color="currentColor" />
-						{/if}
-					{/snippet}
-					{action.caption}
-					{#if action.shortcut}
-						<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
-					{/if}
-				</Button>
+				/>
 			{/each}
 		{/snippet}
 
 		{#snippet rightActions()}
 			<!-- Customize button -->
-			<Button variant="secondary" size="sm" tabindex={-1} onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)}>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-				</svg>
-				<span class="ml-1">{t(LIST.CUSTOMIZE)}</span>
-			</Button>
+			<ActionButton caption={t(LIST.CUSTOMIZE)} image="Customize" tabindex={-1} onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)} />
 
 		{/snippet}
 	</PageHeader>

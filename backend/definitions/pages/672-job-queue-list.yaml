@@ -59,6 +59,7 @@ page:
   actions:
     - name: Run
       caption: Run
+      image: Run
       shortcut: F9
       promoted: true
       enabled: true
@@ -66,30 +67,35 @@ page:
 
     - name: Send Test E-mail
       caption: Send Test E-mail
+      image: Email
       promoted: true
       enabled: true
       run_object: codeunit:455
 
     - name: Delete Log Entries
       caption: Delete Log Entries
+      image: Delete
       promoted: true
       enabled: true
       run_object: report:675   # processing-only report: request page, then deletes old log entries
 
     - name: New
       caption: New
+      image: New
       shortcut: Alt+N
       promoted: true
       enabled: true
 
     - name: Edit
       caption: Edit
+      image: Edit
       shortcut: Ctrl+E
       promoted: true
       enabled: true
 
     - name: Delete
       caption: Delete
+      image: Delete
       shortcut: Ctrl+D
       promoted: true
       enabled: true

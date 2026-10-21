@@ -126,6 +126,10 @@ type Action struct {
 	// action of its own (run_object, run_page, shortcut). run_object can call a registered
 	// function with the current record: "table:Job_Queue_Entry.ShowLineNo" (foundation/functions)
 	Items []Action `yaml:"items,omitempty" json:"items,omitempty"`
+	// Image: the button's icon — a name of the frontend's action icon set
+	// (frontend/src/lib/components/icons/actionIcons.ts: New, Edit, Delete, Post, Print, …);
+	// without one the button shows a bullet point
+	Image string `yaml:"image,omitempty" json:"image,omitempty"`
 }
 
 // MenuDefinition represents the menu structure

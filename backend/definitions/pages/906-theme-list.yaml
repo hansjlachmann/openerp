@@ -41,6 +41,7 @@ page:
   actions:
     - name: Delete
       caption: Delete
+      image: Delete
       shortcut: Ctrl+D
       promoted: true
       enabled: true

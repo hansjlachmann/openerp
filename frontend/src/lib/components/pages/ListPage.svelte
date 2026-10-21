@@ -6,11 +6,11 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { t, MSG, ERR, DLG, BTN, LIST } from '$lib/services/i18n.svelte';
-	import Button from '$lib/components/Button.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ModalCardPage from './ModalCardPage.svelte';
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionMenu from '../ActionMenu.svelte';
+	import ActionButton from '../ActionButton.svelte';
 	import { splitLineNo, lineNo } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
 	import type { RequestDataItem, Action } from '$lib/types/pages';
@@ -22,10 +22,6 @@
 	import Modal, { isModalOpen } from '../Modal.svelte';
 	import ProgressModal from '../ProgressModal.svelte';
 	import { startJob, type SyncJobResult } from '$lib/services/jobs';
-	import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
-	import EditIcon from '$lib/components/icons/EditIcon.svelte';
-	import TrashIcon from '$lib/components/icons/TrashIcon.svelte';
-	import RefreshIcon from '$lib/components/icons/RefreshIcon.svelte';
 	import { shortcuts, normalizeShortcut, getShortcutKey, commonShortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
@@ -2878,29 +2874,13 @@
 						// Other buttons require selection
 						return !selectedRecord;
 					})()}
-					{@const variant = 'secondary'}
-					<Button
-						variant={variant}
-						size="sm"
+					<ActionButton
+						caption={action.caption}
+						image={action.image}
+						shortcut={action.shortcut}
 						onclick={() => handleAction(action.name)}
 						disabled={isDisabled}
-					>
-						{#snippet icon()}
-							{#if action.name === 'New'}
-								<PlusIcon size={16} color="currentColor" />
-							{:else if action.name === 'Edit'}
-								<EditIcon size={16} color="currentColor" />
-							{:else if action.name === 'Delete'}
-								<TrashIcon size={16} color="currentColor" />
-							{:else if action.name === 'Refresh'}
-								<RefreshIcon size={16} color="currentColor" />
-							{/if}
-						{/snippet}
-						{action.caption}
-						{#if action.shortcut}
-							<span class="ml-2 text-xs opacity-70">{action.shortcut}</span>
-						{/if}
-					</Button>
+					/>
 					{/if}
 				{/each}
 
@@ -2958,76 +2938,21 @@
 
 		{#snippet rightActions()}
 			<!-- Row Numbers toggle button -->
-			<Button
-					variant={showRowNumbers ? 'primary' : 'secondary'}
-					size="sm"
-					onclick={handleToggleRowNumbers}
-					title={t(LIST.TOGGLE_ROW_NUMBERS)}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-						/>
-					</svg>
-					<span class="ml-1">#</span>
-				</Button>
+			<ActionButton caption="" image="Rows" active={showRowNumbers} onclick={handleToggleRowNumbers} title={t(LIST.TOGGLE_ROW_NUMBERS)} />
 
 				<!-- Customize button -->
-				<Button variant="secondary" size="sm" onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)}>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-						/>
-					</svg>
-					<span class="ml-1">{t(LIST.CUSTOMIZE)}</span>
-				</Button>
+				<ActionButton caption={t(LIST.CUSTOMIZE)} image="Customize" onclick={handleCustomize} title={t(LIST.CUSTOMIZE_COLUMNS)} />
 
 				<!-- Filter button -->
-				<Button
-					variant={filterPaneOpen ? 'primary' : 'secondary'}
-					size="sm"
-					onclick={handleToggleFilters}
-					title={t(LIST.TOGGLE_FILTERS)}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-						/>
-					</svg>
-					<span class="ml-1">{t(LIST.FILTER)}</span>
-					{#if currentFilters.length + currentFlowFilters.length > 0}
-						<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-600 text-white rounded-full">
-							{currentFilters.length + currentFlowFilters.length}
-						</span>
-					{/if}
-				</Button>
+				<ActionButton caption={t(LIST.FILTER)} image="Filter" active={filterPaneOpen} onclick={handleToggleFilters} title={t(LIST.TOGGLE_FILTERS)}>
+					{#snippet after()}
+						{#if currentFilters.length + currentFlowFilters.length > 0}
+							<span class="px-1.5 py-0.5 text-xs bg-blue-600 text-white rounded-full">
+								{currentFilters.length + currentFlowFilters.length}
+							</span>
+						{/if}
+					{/snippet}
+				</ActionButton>
 		{/snippet}
 	</PageHeader>
 

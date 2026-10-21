@@ -2,7 +2,8 @@
 	// A menu button of a page's action bar: a dropdown with the action's menu items (actions of
 	// their own). Keyboard: Enter, Space or ↓ open it, ↑/↓ move, Enter picks, Esc / Tab close.
 	import { tick } from 'svelte';
-	import Button from './Button.svelte';
+	import ActionButton from './ActionButton.svelte';
+	import ActionIcon from './icons/ActionIcon.svelte';
 	import { portal } from '$lib/actions/portal';
 	import type { Action } from '$lib/types/pages';
 
@@ -121,12 +122,13 @@
 		if (!open && (e.target as HTMLElement).closest('.menu') === null) handleTriggerKeydown(e);
 	}}
 >
-	<Button variant="secondary" size="sm" {disabled} onclick={() => (open ? close() : openMenu())}>
-		{action.caption}
-		<svg class="menu-arrow" class:open xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-		</svg>
-	</Button>
+	<ActionButton caption={action.caption} image={action.image} {disabled} onclick={() => (open ? close() : openMenu())}>
+		{#snippet after()}
+			<svg class="menu-arrow" class:open xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		{/snippet}
+	</ActionButton>
 
 	{#if open}
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -140,7 +142,7 @@
 					disabled={!enabled(item)}
 					onclick={() => pick(item)}
 				>
-					<span>{item.caption}</span>
+					<span class="menu-label"><ActionIcon name={item.image} /><span class="truncate">{item.caption}</span></span>
 					{#if item.shortcut}<span class="menu-shortcut">{item.shortcut}</span>{/if}
 				</button>
 			{/each}
@@ -154,7 +156,7 @@
 	}
 
 	.menu-arrow {
-		@apply h-3.5 w-3.5 ml-1 transition-transform duration-150;
+		@apply h-3.5 w-3.5 shrink-0 transition-transform duration-150;
 	}
 
 	.menu-arrow.open {
@@ -189,6 +191,10 @@
 
 	.menu-item:disabled {
 		@apply opacity-50 cursor-not-allowed;
+	}
+
+	.menu-label {
+		@apply flex items-center gap-2 min-w-0;
 	}
 
 	.menu-shortcut {

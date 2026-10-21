@@ -70,30 +70,35 @@ page:
   actions:
     - name: Back to List
       caption: Back to List
+      image: Back
       shortcut: Esc
       promoted: true
       enabled: true
       run_page: 672
     - name: New
       caption: New
+      image: New
       shortcut: Alt+N
       promoted: true
       enabled: true
 
     - name: Delete
       caption: Delete
+      image: Delete
       shortcut: Ctrl+D
       promoted: true
       enabled: true
 
     - name: Send Test E-mail
       caption: Send Test E-mail
+      image: Email
       promoted: true
       enabled: true
       run_object: codeunit:455
 
     - name: Entries
       caption: Entries
+      image: Entries
       shortcut: Ctrl+F7
       promoted: true
       enabled: true

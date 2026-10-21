@@ -65,24 +65,28 @@ page:
   actions:
     - name: Back to List
       caption: Back to List
+      image: Back
       shortcut: Esc
       promoted: true
       enabled: true
       run_page: 59
     - name: New
       caption: New
+      image: New
       shortcut: Alt+N
       promoted: true
       enabled: true
 
     - name: Edit
       caption: Edit
+      image: Edit
       shortcut: Ctrl+E
       promoted: true
       enabled: true
 
     - name: Delete
       caption: Delete
+      image: Delete
       shortcut: Ctrl+D
       promoted: true
       enabled: true
