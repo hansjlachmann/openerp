@@ -4,6 +4,7 @@ table:
   caption: G/L Account
   description: General ledger accounts, the chart of accounts (table 15)
   data_caption_fields: [no, name]
+  lookup_page_id: 18   # G/L Account List (classic LookupFormID)
   # Not yet (TODO): the FlowFields and FlowFilters (with G/L Entry 17), 46 Picture, 10000
   fields:
     - name: no

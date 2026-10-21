@@ -29,6 +29,7 @@ export interface LookupData {
 	lazy_url?: string;
 	total?: number;
 	free_text?: boolean; // the relation is the lookup only: typed text is kept (e.g. a filter)
+	new_page_id?: number; // the related table's list page: the lookup's New opens it with a new record
 }
 
 // Table record type (generic)

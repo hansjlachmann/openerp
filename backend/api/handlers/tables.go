@@ -163,7 +163,9 @@ type LookupData struct {
 	LazyURL string `json:"lazy_url,omitempty"`
 	// FreeText: the relation is the lookup only (validate: false) — typed text is kept as it is
 	FreeText bool `json:"free_text,omitempty"`
-	Total    int  `json:"total,omitempty"` // rows in the related table (lazy lookups)
+	// NewPageID: the related table's list page — the lookup's "New" opens it with a new record
+	NewPageID int `json:"new_page_id,omitempty"`
+	Total     int `json:"total,omitempty"` // rows in the related table (lazy lookups)
 }
 
 // lookupInlineLimit: related tables with at most this many rows are sent along with every
@@ -199,6 +201,7 @@ func (h *TablesHandler) getLookupValues(tableName string, table ftables.Table, c
 			Simple:        make(map[string]string),
 			SearchTimeout: relInfo.SearchTimeout,
 			FreeText:      relInfo.NoValidate,
+			NewPageID:     pages.GetRegistry().LookupPage(relInfo.Table),
 		}
 
 		// Add column definitions if lookup_columns is specified (advanced mode)

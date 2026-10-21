@@ -262,3 +262,20 @@ func findProjectRoot() (string, error) {
 		dir = parent
 	}
 }
+
+// LookupPage returns the list page that shows a table's records — the page a lookup's "New"
+// opens: the table's lookup_page_id, else its list page with the lowest number; 0 for none
+func (r *Registry) LookupPage(tableName string) int {
+	if id := GetTableMetadata().GetLookupPageID(tableName); id != 0 {
+		return id
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	best := 0
+	for id, page := range r.pages {
+		if page.Page.Type == "List" && metadataKey(page.Page.SourceTable) == metadataKey(tableName) && (best == 0 || id < best) {
+			best = id
+		}
+	}
+	return best
+}

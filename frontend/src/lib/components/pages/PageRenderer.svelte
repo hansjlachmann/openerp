@@ -31,6 +31,7 @@
 		initialFilter?: string;
 		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
 		initialSelect?: string; // record key to select (returning from a drilldown)
+		startNew?: boolean; // a list opened from a lookup's New: start a new record
 		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
 		// Opened from a codeunit (RunModal) in a modal: no breadcrumb or navigation; the list is
 		// filtered (initialFilters) and read-only, and onclose reports how it was closed — in
@@ -58,6 +59,7 @@
 		initialFilter,
 		returnUrl,
 		initialSelect,
+		startNew = false,
 		navigationQuery,
 		embedded = false,
 		initialFilters,
@@ -757,6 +759,7 @@
 					{windowOffset}
 					{returnUrl}
 					initialSelectKey={initialSelect}
+					{startNew}
 					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 					pickOnEnter={embedded}
 					{subpage}
@@ -796,6 +799,7 @@
 				{windowOffset}
 				{returnUrl}
 				initialSelectKey={initialSelect}
+				{startNew}
 				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 				pickOnEnter={embedded}
 				{subpage}

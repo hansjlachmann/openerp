@@ -5,6 +5,8 @@
 	import type { LookupColumn } from '$lib/types/api';
 	import { clickOutside } from '$lib/actions/clickOutside';
 	import { api } from '$lib/services/api';
+	import { goto } from '$app/navigation';
+	import { withReturn } from '$lib/utils/returnUrl';
 
 	interface LookupRow {
 		_key: string;
@@ -26,6 +28,11 @@
 		// dropdown opens and while the user types (server search), at most a page at a time
 		lazyUrl?: string;
 		freeText?: boolean; // lookup only (validate: false): typed text is kept as it is
+		// Open when the input gets the focus — only when asked for (a list cell entered with
+		// Alt+↓ or its ▼): moving the cursor into the field never opens the lookup
+		openOnFocus?: boolean;
+		// The related table's list page: the lookup shows New, which opens it with a new record
+		newPageId?: number;
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -43,6 +50,8 @@
 		compact = false,
 		lazyUrl,
 		freeText = false,
+		openOnFocus = false,
+		newPageId,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -406,7 +415,9 @@
 			oninput={handleInput}
 			onkeydown={handleKeydown}
 			onblur={handleBlur}
-			onfocus={openDropdown}
+			onfocus={() => {
+				if (openOnFocus) openDropdown();
+			}}
 			role="combobox"
 			aria-haspopup="listbox"
 			aria-expanded={isOpen}
@@ -470,6 +481,25 @@
 					<div class="lookup-empty">{t(MSG.LOOKUP_MORE, String(loadedRows.length), String(loadedTotal))}</div>
 				{/if}
 			</div>
+			{#if newPageId}
+				<!-- New: the related table's list page with a new record ready to type; Esc there
+				     comes back here -->
+				<div class="lookup-footer">
+					<button
+						type="button"
+						class="lookup-new-btn"
+						tabindex={-1}
+						onmousedown={(e) => e.preventDefault()}
+						onclick={() => {
+							isOpen = false;
+							goto(withReturn(`/pages/${newPageId}?new=1`));
+						}}
+					>
+						<span aria-hidden="true">+</span>
+						{t(MSG.LOOKUP_NEW)}
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -478,6 +508,22 @@
 	.lookup-dropdown {
 		position: relative;
 		width: 100%;
+	}
+
+	.lookup-footer {
+		@apply flex border-t border-gray-200 px-2 py-1;
+	}
+
+	:global(.dark) .lookup-footer {
+		border-color: rgb(var(--gray-700));
+	}
+
+	.lookup-new-btn {
+		@apply flex items-center gap-1 px-2 py-1 text-sm rounded text-blue-600 hover:bg-blue-50;
+	}
+
+	:global(.dark) .lookup-new-btn {
+		@apply text-blue-400 hover:bg-blue-900/20;
 	}
 
 	.lookup-input-wrapper {

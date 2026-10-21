@@ -442,6 +442,11 @@ Matches classic ERP (see `screenshots/GeneralJournal01-07.png`).
 - Tab/Enter/blur stay synchronous: a typed key that is not among the loaded rows is taken as typed (uppercased); the server then checks it on save — `InsertRecord`/`ModifyRecord` reject a changed table-relation value that does not exist (`checkRelations`), the same check as `/validate`. Never let a relation field be saved without that check.
 - Give relations to large tables `lookup_columns` (e.g. customer: `no, name, city`) so users can search by name.
 
+### Lookup opening and New (ABSOLUTE RULE)
+- Moving the cursor into a relation field never opens its lookup: it opens with Alt+↓ (also ↓, F4, the ▼ button). `LookupDropdown` opens on focus only with `openOnFocus` — the list sets it for a cell entered with Alt+↓ or its ▼ (`openLookupOnEdit`); F2, typing and double-click only edit.
+- Every relation field shows its dropdown, also for an empty related table ("No records found").
+- The lookup panel has **New** when the related table has a list page (`LookupData.new_page_id`: the table YAML's `lookup_page_id` — classic LookupFormID — else its list page with the lowest number, `Registry.LookupPage`): it opens that page with `?new=1` (the list starts a new record ready to type: an inline row, or the modal card) and `back` to where it came from.
+
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
 - When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.
 - **Enter on a closed dropdown is never swallowed**: it commits the typed text and bubbles — in a list cell to `handleLookupCellKeyDown` (move down / new row on the last row), on a card page to the Enter-to-next-field handler. Swallowing it left the user stuck in the field. The dropdown opens with ArrowDown, Alt+ArrowDown or F4, never Enter.

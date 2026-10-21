@@ -9,12 +9,15 @@ export const load: PageLoad = ({ params, url }) => {
 	// to select when this page is the one returned to
 	const returnUrl = safeReturnUrl(url.searchParams.get('back'));
 	const select = url.searchParams.get('select') || undefined;
+	// Opened from a lookup's New: the list starts a new record ready to type
+	const startNew = url.searchParams.get('new') === '1';
 
 	return {
 		pageId,
 		recordId,
 		filter,
 		returnUrl,
-		select
+		select,
+		startNew
 	};
 };

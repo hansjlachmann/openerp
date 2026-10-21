@@ -17,6 +17,7 @@ type TableMetadata struct {
 	maskedFields   map[string]map[string]bool   // table name -> field name -> masked (write-only secret)
 	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
 	captionFields  map[string][]string          // table name -> data_caption_fields (the card title)
+	lookupPages    map[string]int               // table name -> lookup_page_id (the lookup's "New" opens it)
 	mu             sync.RWMutex
 }
 
@@ -26,6 +27,7 @@ type tableDefYAML struct {
 		Name              string          `yaml:"name"`
 		Fields            []tableFieldDef `yaml:"fields"`
 		DataCaptionFields []string        `yaml:"data_caption_fields"`
+		LookupPageID      int             `yaml:"lookup_page_id"`
 	} `yaml:"table"`
 }
 
@@ -52,6 +54,7 @@ func GetTableMetadata() *TableMetadata {
 			maskedFields:   make(map[string]map[string]bool),
 			fieldTypes:     make(map[string]map[string]string),
 			captionFields:  make(map[string][]string),
+			lookupPages:    make(map[string]int),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -135,6 +138,9 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 			tm.captionFields = make(map[string][]string)
 		}
 		tm.captionFields[metadataKey(tableDef.Table.Name)] = tableDef.Table.DataCaptionFields
+		if tableDef.Table.LookupPageID != 0 {
+			tm.lookupPages[metadataKey(tableDef.Table.Name)] = tableDef.Table.LookupPageID
+		}
 	}
 	if len(maskFields) > 0 {
 		if tm.maskedFields == nil {
@@ -186,6 +192,14 @@ func (tm *TableMetadata) GetDataCaptionFields(tableName string) []string {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.captionFields[metadataKey(tableName)]
+}
+
+// GetLookupPageID returns a table's lookup page (YAML lookup_page_id, classic LookupFormID), 0
+// when the table names none
+func (tm *TableMetadata) GetLookupPageID(tableName string) int {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.lookupPages[metadataKey(tableName)]
 }
 
 // IsFieldRequired returns whether a field is required for a table

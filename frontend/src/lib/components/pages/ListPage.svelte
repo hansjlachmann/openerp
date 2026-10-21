@@ -2,7 +2,7 @@
 	import type { PageDefinition, Field } from '$lib/types/pages';
 	import { navigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import type { TableFilter, LookupData, DialogResult, ListOptions } from '$lib/types/api';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { t, MSG, ERR, DLG, BTN, LIST } from '$lib/services/i18n.svelte';
@@ -70,6 +70,7 @@
 		returnUrl?: string;
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
+		startNew?: boolean; // opened from a lookup's New: start a new record at once
 		// Esc and the close button call this instead of leaving the page (RunModal: cancel;
 		// subpage: back to the card)
 		onclose?: () => void;
@@ -111,6 +112,7 @@
 		onwindow,
 		returnUrl,
 		initialSelectKey,
+		startNew = false,
 		onclose,
 		pickOnEnter = false,
 		subpage = false,
@@ -488,6 +490,18 @@
 		initialSelectDone = true;
 		const index = records.findIndex((r) => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === initialSelectKey);
 		if (index >= 0) selectedIndex = index;
+	});
+
+	// Opened from a lookup's New (?new=1): start a new record ready to type, once — the
+	// parameter leaves the URL, so a reload does not start another
+	let startNewDone = false;
+	$effect(() => {
+		if (startNewDone || !startNew || subpage) return;
+		startNewDone = true;
+		const url = new URL(window.location.href);
+		url.searchParams.delete('new');
+		replaceState(url.pathname + url.search, {});
+		setTimeout(() => handleAction('New'), 0);
 	});
 
 	// Keep the selection on a loaded row when the window gets shorter (search, delete)
@@ -919,7 +933,10 @@
 
 	// Enter cell-editing state from cell-selected
 	function enterCellEditing(clearContent: boolean = false, typedChar?: string) {
-		if (cellState !== 'cell-selected') return;
+		if (cellState !== 'cell-selected') {
+			openLookupOnEdit = false;
+			return;
+		}
 
 		const cols = visibleColumns();
 		const field = cols[currentCellCol];
@@ -940,6 +957,13 @@
 		// starts the new content with the cursor after it
 		focusCell(currentCellRow, currentCellCol, false);
 	}
+
+	// A lookup cell entered with Alt+↓ or its ▼ opens its dropdown; F2, typing or a
+	// double-click only edit (the lookup never opens just because the cursor arrived)
+	let openLookupOnEdit = $state(false);
+	$effect(() => {
+		if (cellState !== 'cell-editing') openLookupOnEdit = false;
+	});
 
 	// Exit cell-editing back to cell-selected
 	function exitEditingToCellSelected(revert: boolean) {
@@ -1339,6 +1363,7 @@
 		// Alt+ArrowDown opens the lookup/option dropdown
 		if (event.key === 'ArrowDown' && event.altKey && (hasLookup || hasOptions)) {
 			event.preventDefault();
+			openLookupOnEdit = true;
 			enterCellEditing(false);
 			return;
 		}
@@ -3153,6 +3178,8 @@
 												rows={lookups[field.source].rows ?? []}
 												lazyUrl={lookups[field.source].lazy_url}
 												freeText={lookups[field.source].free_text}
+												newPageId={lookups[field.source].new_page_id}
+												openOnFocus={openLookupOnEdit}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}
 												captions={captions}
@@ -3279,6 +3306,7 @@
 													class="cell-selected-lookup-arrow"
 													onclick={(e) => {
 														e.stopPropagation();
+														openLookupOnEdit = true;
 														enterCellEditing(false);
 													}}
 													role="button"
@@ -3304,6 +3332,7 @@
 													class="cell-selected-lookup-arrow"
 													onclick={(e) => {
 														e.stopPropagation();
+														openLookupOnEdit = true;
 														enterCellEditing(false);
 													}}
 													role="button"
