@@ -55,6 +55,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	// primary key is not displayed on the page (e.g. setup tables).
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
 	pageDef.Page.HasRecordTriggers = pages.HasRecordTriggers(pageID)
+	pageDef.Page.HasNewRecordTriggers = pages.HasNewRecordTriggers(pageID)
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		tbl := factory()
 		pageDef.Page.FlowFields = tbl.GetFlowFields()

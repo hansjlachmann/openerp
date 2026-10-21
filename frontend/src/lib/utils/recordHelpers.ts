@@ -327,3 +327,16 @@ export function findSelectedRecord(
 	const key = row._key ?? getRecordId(row, primaryKeyField, primaryKeyFields);
 	return records.find((r) => getRecordId(r, primaryKeyField, primaryKeyFields) === key) ?? null;
 }
+
+/**
+ * The /init context of a new record on a page with OnNewRecord triggers: the page and the record
+ * the new one is inserted next to (below it when below); nothing for other pages
+ */
+export function newRecordContext(
+	page: { id: number; has_new_record_triggers?: boolean },
+	xRec: Record<string, any> | undefined,
+	below: boolean
+): { pageId: number; xRec?: Record<string, any>; belowXRec: boolean } | undefined {
+	if (!page.has_new_record_triggers) return undefined;
+	return { pageId: page.id, xRec: xRec ? stripInternalFields(xRec) : undefined, belowXRec: below };
+}

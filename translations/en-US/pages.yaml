@@ -78,6 +78,12 @@ pages:
     caption: "Job Queue Entries"
 
   # Master data lists (migration step 1)
+  chart_of_accounts:
+    caption: "Chart of Accounts"
+  g/l_account_card:
+    caption: "G/L Account Card"
+  g/l_account_list:
+    caption: "G/L Account List"
   currencies:
     caption: "Currencies"
   currency_card:
@@ -86,6 +92,20 @@ pages:
     caption: "Currency Exchange Rates"
   general_ledger_setup:
     caption: "General Ledger Setup"
+  gen_business_posting_groups:
+    caption: "Gen. Business Posting Groups"
+  gen_product_posting_groups:
+    caption: "Gen. Product Posting Groups"
+  tax_area_list:
+    caption: "Tax Area List"
+  tax_area:
+    caption: "Tax Area"
+  tax_groups:
+    caption: "Tax Groups"
+  tax_business_posting_groups:
+    caption: "Tax Business Posting Groups"
+  tax_product_posting_groups:
+    caption: "Tax Product Posting Groups"
   finance_charge_terms:
     caption: "Finance Charge Terms"
   finance_charge_terms_card:

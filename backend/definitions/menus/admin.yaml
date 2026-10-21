@@ -10,6 +10,10 @@ menu:
         page_id: 25
         icon: list
 
+      - name: Chart of Accounts
+        page_id: 16
+        icon: list
+
   - name: Settings
     icon: settings
     items:
@@ -68,6 +72,30 @@ menu:
       - name: Locations
         page_id: 15
         icon: map-pin
+
+      - name: Gen. Business Posting Groups
+        page_id: 312
+        icon: tag
+
+      - name: Gen. Product Posting Groups
+        page_id: 313
+        icon: tag
+
+      - name: Tax Area List
+        page_id: 469
+        icon: map-pin
+
+      - name: Tax Groups
+        page_id: 467
+        icon: percent
+
+      - name: Tax Business Posting Groups
+        page_id: 470
+        icon: percent
+
+      - name: Tax Product Posting Groups
+        page_id: 471
+        icon: percent
 
       - name: SMTP Setup
         page_id: 409

@@ -44,6 +44,8 @@ const (
 	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
 	ErrSameCurrency       ErrorCode = "ERR_SAME_CURRENCY"
 	ErrNoExchangeRate     ErrorCode = "ERR_NO_EXCHANGE_RATE"
+	ErrFieldMustNotBe     ErrorCode = "ERR_FIELD_MUST_NOT_BE"
+	ErrEndTotalNoBegin    ErrorCode = "ERR_END_TOTAL_NO_BEGIN"
 	ErrPasteRecordFailed  ErrorCode = "ERR_PASTE_RECORD_FAILED"
 	ErrDeleteFailed       ErrorCode = "ERR_DELETE_FAILED"
 	ErrInsertFailed       ErrorCode = "ERR_INSERT_FAILED"
@@ -283,6 +285,18 @@ func SameCurrency(table, field string) *AppError {
 // NoExchangeRate: a currency has no exchange rate on or before a date
 func NoExchangeRate(currency, date string) *AppError {
 	return &AppError{Code: ErrNoExchangeRate, Params: []string{currency, date}}
+}
+
+// FieldMustNotBe: a table field has a value that does not allow the change (FieldError without
+// text: "Account Type must not be Posting")
+func FieldMustNotBe(table, field, value string) *AppError {
+	return &AppError{Code: ErrFieldMustNotBe, Table: table, Field: field, Params: []string{value}}
+}
+
+// EndTotalWithoutBeginTotal: indenting the chart of accounts found an End-Total account
+// without a Begin-Total before it
+func EndTotalWithoutBeginTotal(account string) *AppError {
+	return &AppError{Code: ErrEndTotalNoBegin, Params: []string{account}}
 }
 
 // FieldNotEditable: a page tried to change a read-only field (editable: false)

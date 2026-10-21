@@ -28,6 +28,7 @@ export interface LookupData {
 	// Large related table: no rows are sent; the dropdown loads them on demand from this URL
 	lazy_url?: string;
 	total?: number;
+	free_text?: boolean; // the relation is the lookup only: typed text is kept (e.g. a filter)
 }
 
 // Table record type (generic)

@@ -8,10 +8,13 @@ describe('isAdvancedLookup', () => {
 		expect(isAdvancedLookup({ columns, lazy_url: '/api/tables/X/lookup/f' })).toBe(true);
 		expect(isAdvancedLookup({ columns, rows: null, lazy_url: '/api/tables/X/lookup/f' })).toBe(true);
 	});
+	it('is also for an empty related table (the dropdown shows no rows)', () => {
+		expect(isAdvancedLookup({ columns, rows: [] })).toBe(true);
+	});
 	it('is not without columns, or without rows and lazy URL', () => {
 		expect(isAdvancedLookup(undefined)).toBe(false);
 		expect(isAdvancedLookup({ columns: [], rows: [{ _key: 'A' }] })).toBe(false);
-		expect(isAdvancedLookup({ columns, rows: [] })).toBe(false);
+		expect(isAdvancedLookup({ columns, rows: null })).toBe(false);
 	});
 });
 

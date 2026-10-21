@@ -186,3 +186,36 @@ func TestSetupCardAndReadOnlyKey(t *testing.T) {
 		t.Errorf("after modify: %s %s %v — want the key kept (EUR) and the amount changed", code, amount, err)
 	}
 }
+
+// /init with the page's OnNewRecord triggers: a new G/L account takes the Income/Balance of the
+// account it is inserted below; Totaling (a lookup-only relation) takes a filter of accounts
+func TestNewRecordTriggerAndLookupOnlyRelation(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := (&gtables.GLAccount{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/init", h.InitRecord)
+	app.Post("/api/tables/:table/insert", h.InsertRecord)
+
+	if _, out := sendJSON(t, app, "POST", "/api/tables/G_L_Account/init", ``); out["data"].(map[string]interface{})["income_balance"] != float64(0) {
+		t.Errorf("init without a page: %v", out["data"])
+	}
+	status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Account/init", `{"page_id":16,"x_rec":{"no":"1000","income_balance":1},"below_x_rec":true}`)
+	if status != 200 || out["data"].(map[string]interface{})["income_balance"] != float64(1) {
+		t.Errorf("init below a balance sheet account: %d %v", status, out)
+	}
+
+	if status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Account/insert", `{"no":"1999","account_type":4,"totaling":"1000..1998"}`); status != 200 {
+		t.Errorf("Totaling with a filter refused: %d %v", status, out["error"])
+	}
+}

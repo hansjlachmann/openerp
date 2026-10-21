@@ -2,6 +2,7 @@ package tables
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 )
@@ -59,4 +60,18 @@ func FilterableFields(table Table) []FieldInfo {
 		}
 	}
 	return fields
+}
+
+// FilterComparison returns the comparison operator a record filter part starts with (<=, >=,
+// <, >) — "" for anything else, also for <> (not equal), which the filter handles itself
+func FilterComparison(part string) string {
+	if strings.HasPrefix(part, "<>") {
+		return ""
+	}
+	for _, op := range []string{"<=", ">=", "<", ">"} {
+		if strings.HasPrefix(part, op) {
+			return op
+		}
+	}
+	return ""
 }

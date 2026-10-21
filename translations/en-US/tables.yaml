@@ -380,6 +380,16 @@ tables:
       appln_rounding_precision: "Appln. Rounding Precision"
       emu_currency: "EMU Currency"
       currency_factor: "Currency Factor"
+      unrealized_gains_acc: "Unrealized Gains Acc."
+      realized_gains_acc: "Realized Gains Acc."
+      unrealized_losses_acc: "Unrealized Losses Acc."
+      realized_losses_acc: "Realized Losses Acc."
+      realized_gl_gains_account: "Realized G/L Gains Account"
+      realized_gl_losses_account: "Realized G/L Losses Account"
+      residual_gains_account: "Residual Gains Account"
+      residual_losses_account: "Residual Losses Account"
+      conv_lcy_rndg_debit_acc: "Conv. LCY Rndg. Debit Acc."
+      conv_lcy_rndg_credit_acc: "Conv. LCY Rndg. Credit Acc."
 
     # Option field values
     options:
@@ -543,3 +553,106 @@ tables:
         currency: "Currency"
         relational_currency: "Relational Currency"
         both: "Both"
+
+  # Posting groups (tables 250, 251, 321, 323, 324)
+  gen_business_posting_group:
+    caption: "Gen. Business Posting Group"
+    fields:
+      code: "Code"
+      description: "Description"
+      def_tax_bus_posting_group: "Def. Tax Bus. Posting Group"
+      auto_insert_default: "Auto Insert Default"
+  gen_product_posting_group:
+    caption: "Gen. Product Posting Group"
+    fields:
+      code: "Code"
+      description: "Description"
+      def_tax_prod_posting_group: "Def. Tax Prod. Posting Group"
+      auto_insert_default: "Auto Insert Default"
+  tax_group:
+    caption: "Tax Group"
+    fields:
+      code: "Code"
+      description: "Description"
+  tax_business_posting_group:
+    caption: "Tax Business Posting Group"
+    fields:
+      code: "Code"
+      description: "Description"
+  tax_product_posting_group:
+    caption: "Tax Product Posting Group"
+    fields:
+      code: "Code"
+      description: "Description"
+  tax_area:
+    caption: "Tax Area"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # G/L Account (Table 15)
+  g_l_account:
+    caption: "G/L Account"
+    fields:
+      no: "No."
+      name: "Name"
+      search_name: "Search Name"
+      account_type: "Account Type"
+      department_code: "Department Code"
+      project_code: "Project Code"
+      income_balance: "Income/Balance"
+      debit_credit: "Debit/Credit"
+      no_2: "No. 2"
+      blocked: "Blocked"
+      direct_posting: "Direct Posting"
+      reconciliation_account: "Reconciliation Account"
+      new_page: "New Page"
+      no_of_blank_lines: "No. of Blank Lines"
+      indentation: "Indentation"
+      last_date_modified: "Last Date Modified"
+      totaling: "Totaling"
+      consol_debit_acc: "Consol. Debit Acc."
+      consol_credit_acc: "Consol. Credit Acc."
+      gen_posting_type: "Gen. Posting Type"
+      gen_bus_posting_group: "Gen. Bus. Posting Group"
+      gen_prod_posting_group: "Gen. Prod. Posting Group"
+      automatic_ext_text: "Automatic Ext. Text"
+      department_posting: "Department Posting"
+      project_posting: "Project Posting"
+      tax_area_code: "Tax Area Code"
+      tax_liable: "Tax Liable"
+      tax_group_code: "Tax Group Code"
+      tax_bus_posting_group: "Tax Bus. Posting Group"
+      tax_prod_posting_group: "Tax Prod. Posting Group"
+      exchange_rate_adjustment: "Exchange Rate Adjustment"
+
+    # Option field values
+    options:
+      account_type:
+        posting: "Posting"
+        heading: "Heading"
+        total: "Total"
+        begin_total: "Begin-Total"
+        end_total: "End-Total"
+      income_balance:
+        income_statement: "Income Statement"
+        balance_sheet: "Balance Sheet"
+      debit_credit:
+        both: "Both"
+        debit: "Debit"
+        credit: "Credit"
+      gen_posting_type:
+        purchase: "Purchase"
+        sale: "Sale"
+      department_posting:
+        code_mandatory: "Code Mandatory"
+        same_code: "Same Code"
+        no_code: "No Code"
+      project_posting:
+        code_mandatory: "Code Mandatory"
+        same_code: "Same Code"
+        no_code: "No Code"
+      exchange_rate_adjustment:
+        no_adjustment: "No Adjustment"
+        adjust_amount: "Adjust Amount"
+        adjust_additional_currency_amount: "Adjust Additional-Currency Amount"

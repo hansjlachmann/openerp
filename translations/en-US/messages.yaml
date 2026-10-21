@@ -296,6 +296,8 @@ messages:
   SIFT_VERIFY_DIFFERENCES: "%1 SIFT key(s) have totals that differ from the entries: %2. Run the job with parameter REPAIR to rebuild them."
   SIFT_VERIFY_REPAIRED: "Rebuilt %1 SIFT key(s) whose totals differed from the entries: %2."
   SIFT_VERIFY_BAD_PARAMETER: "Unknown parameter \"%1\". Use VERIFY or REPAIR."
+  INDENT_COA_CONFIRM: "This function updates the indentation of all the G/L accounts in the chart of accounts. All accounts between a Begin-Total and the matching End-Total are indented one level. The Totaling for each End-Total is also updated.\n\nDo you want to indent the chart of accounts?"
+  INDENT_COA_WINDOW: "Indenting the chart of accounts #1##########"
 
   # Demo data (codeunit 901)
   DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."

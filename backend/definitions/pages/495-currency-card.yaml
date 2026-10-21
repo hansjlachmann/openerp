@@ -18,6 +18,14 @@ page:
             importance: Promoted
           - source: description
             importance: Promoted
+          - source: unrealized_gains_acc
+            table_relation: G_L_Account
+          - source: realized_gains_acc
+            table_relation: G_L_Account
+          - source: unrealized_losses_acc
+            table_relation: G_L_Account
+          - source: realized_losses_acc
+            table_relation: G_L_Account
           - source: emu_currency
           - source: last_date_modified
           - source: last_date_adjusted
@@ -32,6 +40,22 @@ page:
           - source: unit_amount_rounding_precision
           - source: unit_amount_decimal_places
           - source: appln_rounding_precision
+          - source: conv_lcy_rndg_debit_acc
+            table_relation: G_L_Account
+          - source: conv_lcy_rndg_credit_acc
+            table_relation: G_L_Account
+
+      - name: Reporting
+        caption: Reporting
+        fields:
+          - source: realized_gl_gains_account
+            table_relation: G_L_Account
+          - source: realized_gl_losses_account
+            table_relation: G_L_Account
+          - source: residual_gains_account
+            table_relation: G_L_Account
+          - source: residual_losses_account
+            table_relation: G_L_Account
 
   actions:
     - name: Back to List

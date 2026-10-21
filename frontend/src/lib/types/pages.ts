@@ -26,7 +26,8 @@ export interface PageMetadata {
 	// identify records even when the PK is not shown on the page (e.g. setup tables).
 	primary_key_fields?: string[];
 	has_record_triggers?: boolean;
-	setup_table?: boolean; // a single record with a blank key (setup): the card opens on it // OnAfterGetRecord: the card asks for the field states of each record
+	setup_table?: boolean; // a single record with a blank key (setup): the card opens on it
+	has_new_record_triggers?: boolean; // OnNewRecord: new records get values from their neighbour // OnAfterGetRecord: the card asks for the field states of each record
 	flow_fields?: string[]; // computed fields: not searchable on the server
 	sortable_flow_fields?: string[]; // FlowFields lists can sort on (Sum/Count, by their value)
 	data_caption_fields?: string[]; // cards: the fields whose values follow the caption in the title
@@ -72,6 +73,16 @@ export interface Field {
 	required?: boolean;
 	masked?: boolean; // write-only secret (Masked): password input, value never shown
 	decimal_places?: string; // decimals: "min:max" digits after the point (table YAML decimal_places)
+	indent_field?: string; // lists: indent the cell by this field's value (levels)
+	style_expr?: StyleExpr; // lists: a style when the record's field (does not) equal a value
+}
+
+/** A conditional cell style: style when record[field] equals `equal` (or differs from `not_equal`) */
+export interface StyleExpr {
+	field: string;
+	equal?: string | number | boolean;
+	not_equal?: string | number | boolean;
+	style: 'Strong' | 'Attention' | 'Favorable' | 'Unfavorable';
 }
 
 export interface Action {

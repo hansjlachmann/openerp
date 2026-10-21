@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    functions: "Functions"
+    indent_chart_of_accounts: "Indent Chart of Accounts"
     exch_rates: "Exch. Rates"
     new: "New"
     edit: "Edit"
@@ -44,6 +46,8 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    posting: "Posting"
+    consolidation: "Consolidation"
     authentication: "Authentication"
     communication: "Communication"
     general: "General"
@@ -77,7 +81,14 @@ common:
     users: "Users"
     languages: "Languages"
     payment_terms: "Payment Terms"
+    chart_of_accounts: "Chart of Accounts"
     general_ledger_setup: "General Ledger Setup"
+    gen_business_posting_groups: "Gen. Business Posting Groups"
+    gen_product_posting_groups: "Gen. Product Posting Groups"
+    tax_area_list: "Tax Area List"
+    tax_groups: "Tax Groups"
+    tax_business_posting_groups: "Tax Business Posting Groups"
+    tax_product_posting_groups: "Tax Product Posting Groups"
     countries_regions: "Countries/Regions"
     currencies: "Currencies"
     finance_charge_terms: "Finance Charge Terms"

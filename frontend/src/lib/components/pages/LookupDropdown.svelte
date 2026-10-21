@@ -25,6 +25,7 @@
 		// Large related table: rows are not passed in but loaded from this URL when the
 		// dropdown opens and while the user types (server search), at most a page at a time
 		lazyUrl?: string;
+		freeText?: boolean; // lookup only (validate: false): typed text is kept as it is
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -41,6 +42,7 @@
 		error = false,
 		compact = false,
 		lazyUrl,
+		freeText = false,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -233,6 +235,11 @@
 					value = matchingRow._key;
 					inputValue = matchingRow._key;
 					onselect?.(matchingRow._key);
+				} else if (freeText) {
+					// The lookup only (validate: false): the text as typed (a filter)
+					value = inputValue.trim();
+					inputValue = value;
+					onselect?.(value);
 				} else if (lazyUrl) {
 					// Not among the loaded rows: take the typed key; saving the record checks
 					// that it exists (the table relation is validated on the server)
@@ -335,6 +342,14 @@
 		}
 		const term = typed.toLowerCase();
 		const exact = allRows.find((r) => r._key.toLowerCase() === term);
+		if (freeText) {
+			// The lookup only (a filter like 1000..1999): an exact key or the text as typed
+			value = exact?._key ?? typed;
+			inputValue = value;
+			selectHandled = true;
+			onselect?.(value);
+			return true;
+		}
 		// The row highlighted in the open dropdown, if it matches what was typed
 		const highlighted = isOpen && selectedIndex >= 0 ? filteredRows()[selectedIndex] : undefined;
 		const highlightedMatch = highlighted && rowMatches(highlighted, term) ? highlighted : undefined;

@@ -185,6 +185,7 @@
 					columns={[...lookups.columns]}
 					rows={[...(lookups.rows ?? [])]}
 					lazyUrl={lookups.lazy_url}
+					freeText={lookups.free_text}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
@@ -255,6 +256,7 @@
 					columns={[...lookups.columns]}
 					rows={[...(lookups.rows ?? [])]}
 					lazyUrl={lookups.lazy_url}
+					freeText={lookups.free_text}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}

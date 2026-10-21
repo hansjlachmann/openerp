@@ -78,6 +78,12 @@ pages:
     caption: "Opgavekøposter"
 
   # Master data lists (migration step 1)
+  chart_of_accounts:
+    caption: "Kontoplan"
+  g/l_account_card:
+    caption: "Finanskontokort"
+  g/l_account_list:
+    caption: "Finanskontooversigt"
   currencies:
     caption: "Valutaer"
   currency_card:
@@ -86,6 +92,20 @@ pages:
     caption: "Valutakurser"
   general_ledger_setup:
     caption: "Finansopsætning"
+  gen_business_posting_groups:
+    caption: "Virksomhedsbogføringsgrupper"
+  gen_product_posting_groups:
+    caption: "Produktbogføringsgrupper"
+  tax_area_list:
+    caption: "Momsområder"
+  tax_area:
+    caption: "Momsområde"
+  tax_groups:
+    caption: "Momsgrupper"
+  tax_business_posting_groups:
+    caption: "Momsvirksomhedsbogføringsgrupper"
+  tax_product_posting_groups:
+    caption: "Momsproduktbogføringsgrupper"
   finance_charge_terms:
     caption: "Rentebetingelser"
   finance_charge_terms_card:

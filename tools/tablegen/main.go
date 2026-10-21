@@ -3409,15 +3409,30 @@ func (t *{{ .StructName }}) parseFilterExpression(fieldName, expr string) (strin
 	for _, part := range orParts {
 		part = strings.TrimSpace(part)
 
-		// Check for range (..)
+		// Check for range (..); an open end ("..x", "x..") has one bound
 		if strings.Contains(part, "..") {
 			rangeParts := strings.Split(part, "..")
 			if len(rangeParts) == 2 {
 				min := strings.TrimSpace(rangeParts[0])
 				max := strings.TrimSpace(rangeParts[1])
-				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
-				args = append(args, min, max)
+				switch {
+				case min == "" && max == "":
+					conditions = append(conditions, "1=1")
+				case min == "":
+					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					args = append(args, max)
+				case max == "":
+					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
+					args = append(args, min)
+				default:
+					conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
+					args = append(args, min, max)
+				}
 			}
+		} else if op := tables.FilterComparison(part); op != "" {
+			// Comparison: <=, >=, <, > (a classic filter such as <3000)
+			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
 			likePattern := strings.ReplaceAll(part, "*", "%")
@@ -5269,6 +5284,9 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 			},
 {{- end }}
 			SearchTimeout: {{ .TableRelation.SearchTimeout }},
+{{- if not .TableRelation.ShouldValidate }}
+			NoValidate:    true,
+{{- end }}
 		},
 {{- end }}
 {{- end }}

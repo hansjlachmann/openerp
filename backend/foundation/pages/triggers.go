@@ -59,6 +59,7 @@ func (c *Control) States() map[string]FieldState {
 var (
 	triggersMu     sync.RWMutex
 	afterGetRecord = map[int][]func(rec any, page *Control) error{}
+	newRecord      = map[int][]func(rec, xRec any, belowXRec bool) error{}
 )
 
 // OnAfterGetRecord registers a trigger of a page that runs for each record the page shows
@@ -98,4 +99,43 @@ func RunAfterGetRecord(pageID int, rec any) (map[string]FieldState, error) {
 		}
 	}
 	return page.States(), nil
+}
+
+// OnNewRecord registers a trigger of a page that runs when the user starts a new record on it
+// (OnNewRecord): rec is the new record (with the table's initial values), xRec the record the
+// new one is inserted next to — below it when belowXRec, above it otherwise; an empty record
+// when the page has none. Used for values taken from the neighbour (SetupNewGLAcc).
+func OnNewRecord[T any](pageID int, fn func(rec, xRec T, belowXRec bool)) {
+	triggersMu.Lock()
+	defer triggersMu.Unlock()
+	newRecord[pageID] = append(newRecord[pageID], func(rec, xRec any, below bool) error {
+		r, ok1 := rec.(T)
+		x, ok2 := xRec.(T)
+		if !ok1 || !ok2 {
+			var want T
+			return fmt.Errorf("page %d: OnNewRecord takes %T, the page's record is %T", pageID, want, rec)
+		}
+		fn(r, x, below)
+		return nil
+	})
+}
+
+// HasNewRecordTriggers reports whether a page has OnNewRecord triggers
+func HasNewRecordTriggers(pageID int) bool {
+	triggersMu.RLock()
+	defer triggersMu.RUnlock()
+	return len(newRecord[pageID]) > 0
+}
+
+// RunNewRecord runs a page's OnNewRecord triggers on a new record
+func RunNewRecord(pageID int, rec, xRec any, belowXRec bool) error {
+	triggersMu.RLock()
+	triggers := newRecord[pageID]
+	triggersMu.RUnlock()
+	for _, trigger := range triggers {
+		if err := trigger(rec, xRec, belowXRec); err != nil {
+			return err
+		}
+	}
+	return nil
 }

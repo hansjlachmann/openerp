@@ -1,0 +1,101 @@
+page:
+  id: 16
+  type: List
+  name: Chart of Accounts
+  source_table: G_L_Account
+  caption: Chart of Accounts
+  card_page_id: 17
+  modal_card: true           # the card opens over the list (full screen with its button)
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 110
+          style_expr: {field: account_type, not_equal: 0, style: Strong}   # heading and total accounts bold
+
+        - source: name
+          width: 280
+          indent_field: indentation
+          style_expr: {field: account_type, not_equal: 0, style: Strong}
+
+        - source: income_balance
+          width: 150
+
+        - source: account_type
+          width: 130
+
+        - source: direct_posting
+          width: 120
+
+        - source: totaling
+          width: 160
+          table_relation: G_L_Account
+
+        - source: department_code
+          width: 140
+          table_relation: Department
+
+        - source: project_code
+          width: 130
+          table_relation: Project
+
+        - source: gen_posting_type
+          width: 140
+
+        - source: gen_bus_posting_group
+          width: 190
+          table_relation: Gen_Business_Posting_Group
+
+        - source: gen_prod_posting_group
+          width: 190
+          table_relation: Gen_Product_Posting_Group
+
+        - source: tax_bus_posting_group
+          width: 190
+          table_relation: Tax_Business_Posting_Group
+
+        - source: tax_prod_posting_group
+          width: 190
+          table_relation: Tax_Product_Posting_Group
+
+        - source: consol_debit_acc
+          width: 160
+
+        - source: consol_credit_acc
+          width: 160
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Functions
+      caption: Functions
+      image: Setup
+      promoted: true
+      enabled: true
+      items:
+        - name: Indent Chart of Accounts
+          caption: Indent Chart of Accounts
+          image: Rows
+          run_object: codeunit:3

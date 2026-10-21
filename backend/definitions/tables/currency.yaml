@@ -24,6 +24,62 @@ table:
       db_name: last_date_adjusted
       editable: false
 
+    - name: unrealized_gains_acc
+      no: 6
+      type: types.Code
+      db_name: unrealized_gains_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: realized_gains_acc
+      no: 7
+      type: types.Code
+      db_name: realized_gains_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: unrealized_losses_acc
+      no: 8
+      type: types.Code
+      db_name: unrealized_losses_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: realized_losses_acc
+      no: 9
+      type: types.Code
+      db_name: realized_losses_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
     - name: invoice_rounding_precision
       no: 10
       type: types.Decimal
@@ -100,6 +156,90 @@ table:
       precision: 18
       scale: 5
       editable: false
+
+    - name: realized_gl_gains_account
+      no: 40
+      type: types.Code
+      db_name: realized_gl_gains_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: realized_gl_losses_account
+      no: 41
+      type: types.Code
+      db_name: realized_gl_losses_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: residual_gains_account
+      no: 47
+      type: types.Code
+      db_name: residual_gains_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: residual_losses_account
+      no: 48
+      type: types.Code
+      db_name: residual_losses_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: conv_lcy_rndg_debit_acc
+      no: 50
+      type: types.Code
+      db_name: conv_lcy_rndg_debit_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: conv_lcy_rndg_credit_acc
+      no: 51
+      type: types.Code
+      db_name: conv_lcy_rndg_credit_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
 
   keys:
     - name: Primary

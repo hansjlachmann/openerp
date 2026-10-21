@@ -236,12 +236,13 @@ export function formatOptionValue(
 
 /**
  * A lookup rendered as LookupDropdown (table-style dropdown): it has columns and either its
- * rows (small related table, sent along) or a lazy_url to load them on demand (large table).
+ * rows (small related table, sent along — also none: an empty related table still shows its
+ * dropdown, as classic) or a lazy_url to load them on demand (large table).
  */
 export function isAdvancedLookup(
 	lookup?: { columns?: { source: string }[]; rows?: any[] | null; lazy_url?: string }
 ): boolean {
-	return !!lookup?.columns?.length && (!!lookup.rows?.length || !!lookup.lazy_url);
+	return !!lookup?.columns?.length && (Array.isArray(lookup.rows) || !!lookup.lazy_url);
 }
 
 /**
@@ -357,4 +358,23 @@ export function cardTitle(
 		.map((f) => (options?.[f] ? formatOptionValue(record?.[f], options[f]) : formatValue(record?.[f])))
 		.filter((v) => v.trim() !== '');
 	return values.length ? `${caption} – ${values.join(' · ')}` : caption;
+}
+
+/**
+ * A list cell's look for its record: the field's style classes — or the style_expr style when
+ * its condition holds — and an indent of `indent_field` levels (1rem each)
+ */
+export function cellStyle(field: Field, record: Record<string, any> | undefined): { classes: string; style: string } {
+	let style = field.style;
+	const expr = field.style_expr;
+	if (expr && record) {
+		const value = String(record[expr.field] ?? '');
+		if (expr.equal !== undefined && value === String(expr.equal)) style = expr.style;
+		if (expr.not_equal !== undefined && value !== String(expr.not_equal)) style = expr.style;
+	}
+	const levels = field.indent_field ? Number(record?.[field.indent_field]) || 0 : 0;
+	return {
+		classes: getFieldStyleClasses({ style, importance: field.importance }),
+		style: levels > 0 ? `padding-left: ${levels}rem` : ''
+	};
 }

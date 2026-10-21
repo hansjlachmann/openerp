@@ -1,0 +1,276 @@
+table:
+  id: 15
+  name: "G_L_Account"
+  caption: G/L Account
+  description: General ledger accounts, the chart of accounts (table 15)
+  data_caption_fields: [no, name]
+  # Not yet (TODO): the FlowFields and FlowFilters (with G/L Entry 17), 46 Picture, 10000
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 30
+
+    - name: search_name
+      no: 3
+      type: types.Code
+      db_name: search_name
+      length: 30
+
+    - name: account_type
+      no: 4
+      type: Option
+      db_name: account_type
+      options: ["Posting", "Heading", "Total", "Begin-Total", "End-Total"]
+
+    - name: department_code
+      no: 6
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 7
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: income_balance
+      no: 9
+      type: Option
+      db_name: income_balance
+      options: ["Income Statement", "Balance Sheet"]
+
+    - name: debit_credit
+      no: 10
+      type: Option
+      db_name: debit_credit
+      options: ["Both", "Debit", "Credit"]
+
+    - name: no_2
+      no: 11
+      type: types.Code
+      db_name: no_2
+      length: 20
+
+    - name: blocked
+      no: 13
+      type: bool
+      db_name: blocked
+
+    - name: direct_posting
+      no: 14
+      type: bool
+      db_name: direct_posting
+      default: true
+
+    - name: reconciliation_account
+      no: 16
+      type: bool
+      db_name: reconciliation_account
+
+    - name: new_page
+      no: 17
+      type: bool
+      db_name: new_page
+
+    - name: no_of_blank_lines
+      no: 18
+      type: int
+      db_name: no_of_blank_lines
+      validation: {min: 0}
+
+    - name: indentation
+      no: 19
+      type: int
+      db_name: indentation
+      validation: {min: 0}
+
+    - name: last_date_modified
+      no: 26
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: totaling
+      no: 34
+      type: types.Text
+      db_name: totaling
+      length: 30
+      table_relation:
+        table: G_L_Account
+        field: no
+        validate: false   # a filter of accounts (1000..1999|3000): the lookup only
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: consol_debit_acc
+      no: 40
+      type: types.Code
+      db_name: consol_debit_acc
+      length: 20
+
+    - name: consol_credit_acc
+      no: 41
+      type: types.Code
+      db_name: consol_credit_acc
+      length: 20
+
+    - name: gen_posting_type
+      no: 43
+      type: Option
+      db_name: gen_posting_type
+      options: [" ", "Purchase", "Sale"]
+
+    - name: gen_bus_posting_group
+      no: 44
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 45
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: automatic_ext_text
+      no: 49
+      type: bool
+      db_name: automatic_ext_text
+
+    - name: department_posting
+      no: 50
+      type: Option
+      db_name: department_posting
+      options: [" ", "Code Mandatory", "Same Code", "No Code"]
+
+    - name: project_posting
+      no: 51
+      type: Option
+      db_name: project_posting
+      options: [" ", "Code Mandatory", "Same Code", "No Code"]
+
+    - name: tax_area_code
+      no: 54
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 55
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 56
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_bus_posting_group
+      no: 57
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 58
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: exchange_rate_adjustment
+      no: 63
+      type: Option
+      db_name: exchange_rate_adjustment
+      options: ["No Adjustment", "Adjust Amount", "Adjust Additional-Currency Amount"]
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_name
+      fields: [search_name]
+    - name: reconciliation_account
+      fields: [reconciliation_account]
+    - name: gen_bus_posting_group
+      fields: [gen_bus_posting_group]
+    - name: gen_prod_posting_group
+      fields: [gen_prod_posting_group]

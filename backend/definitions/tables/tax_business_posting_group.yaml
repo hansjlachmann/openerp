@@ -1,0 +1,24 @@
+table:
+  id: 323
+  name: "Tax_Business_Posting_Group"
+  caption: Tax Business Posting Group
+  description: Tax business posting groups (table 323)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

@@ -1,0 +1,70 @@
+page:
+  id: 18
+  type: List
+  name: G/L Account List
+  source_table: G_L_Account
+  caption: G/L Account List
+  card_page_id: 17
+  modal_card: true
+  editable: false            # a lookup list, as classic
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 110
+          style_expr: {field: account_type, not_equal: 0, style: Strong}   # heading and total accounts bold
+
+        - source: name
+          width: 280
+          indent_field: indentation
+          style_expr: {field: account_type, not_equal: 0, style: Strong}
+
+        - source: income_balance
+          width: 150
+
+        - source: account_type
+          width: 130
+
+        - source: gen_posting_type
+          width: 140
+
+        - source: gen_bus_posting_group
+          width: 190
+
+        - source: gen_prod_posting_group
+          width: 190
+
+        - source: tax_bus_posting_group
+          width: 190
+
+        - source: tax_prod_posting_group
+          width: 190
+
+        - source: direct_posting
+          width: 120
+
+        - source: reconciliation_account
+          width: 170
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -51,3 +51,33 @@ func TestMasterDataStep2(t *testing.T) {
 		}
 	}
 }
+
+// READER reads the posting groups
+func TestPostingGroups(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = db.Close() })
+	for _, m := range []fmigrations.Migration{&Migration002SeedRoles{}, &Migration015PostingGroups{}} {
+		tx, err := db.Begin()
+		if err != nil {
+			t.Fatal(err)
+		}
+		ctx := &fmigrations.Context{DB: db, DBType: database.DBTypeSQLite, Companies: []string{"c1"}}
+		ctx.SetTx(tx)
+		if err := m.Up(ctx); err != nil {
+			t.Fatalf("migration %d: %v", m.Version(), err)
+		}
+		if err := tx.Commit(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, table := range postingGroupTables {
+		var read bool
+		if err := db.QueryRow(`SELECT can_read FROM "Permission" WHERE role_id = 'READER' AND table_name = ?`, table).Scan(&read); err != nil || !read {
+			t.Errorf("%s: read %v (%v)", table, read, err)
+		}
+	}
+}

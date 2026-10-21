@@ -1,0 +1,52 @@
+page:
+  id: 464
+  type: Card
+  name: Tax Area
+  source_table: Tax_Area
+  caption: Tax Area
+  list_page_id: 469
+  enable_navigation: true
+  editable: true
+  focus_field: "code"
+
+  # The classic card shows the area's lines (Tax Area Line 319 → Tax Jurisdiction 320) as a
+  # subpage: they come with those tables
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+            importance: Promoted
+          - source: description
+            importance: Promoted
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 469
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

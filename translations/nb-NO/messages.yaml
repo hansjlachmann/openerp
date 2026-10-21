@@ -296,6 +296,8 @@ messages:
   SIFT_VERIFY_DIFFERENCES: "%1 SIFT-nøkkel(er) har totaler som avviker fra postene: %2. Kjør jobben med parameter REPAIR for å bygge dem på nytt."
   SIFT_VERIFY_REPAIRED: "Bygde %1 SIFT-nøkkel(er) på nytt der totalene avvek fra postene: %2."
   SIFT_VERIFY_BAD_PARAMETER: "Ukjent parameter \"%1\". Bruk VERIFY eller REPAIR."
+  INDENT_COA_CONFIRM: "Denne funksjonen oppdaterer innrykket for alle finanskontoene i kontoplanen. Alle kontoer mellom en Start-total og den tilhørende Slutt-totalen rykkes inn ett nivå. Summeringen for hver Slutt-total oppdateres også.\n\nVil du rykke inn kontoplanen?"
+  INDENT_COA_WINDOW: "Rykker inn kontoplanen #1##########"
 
   # Demo data (codeunit 901)
   DEMO_DATA_DONE: "Demodata opprettet: %1 kunder og %2 kundeposter."

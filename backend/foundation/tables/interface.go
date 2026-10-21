@@ -137,6 +137,9 @@ type TableRelationInfo struct {
 	DisplayField  string             // Field to display in dropdown (simple mode)
 	LookupColumns []LookupColumnInfo // Columns to show in dropdown (advanced mode)
 	SearchTimeout int                // Auto-clear search after N milliseconds (0 = use default 1500)
+	// NoValidate (YAML validate: false, classic ValidateTableRelation=No): the relation is the
+	// field's lookup only — any value is accepted (e.g. Totaling holds a filter of accounts)
+	NoValidate bool
 }
 
 // FieldType represents the field types

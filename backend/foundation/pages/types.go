@@ -38,6 +38,9 @@ type PageMetadata struct {
 	// HasRecordTriggers (populated at request time): the page has OnAfterGetRecord triggers
 	// (business-logic/pages) — the card asks for the field states of each record it shows
 	HasRecordTriggers bool `yaml:"-" json:"has_record_triggers,omitempty"`
+	// HasNewRecordTriggers (populated at request time): the page has OnNewRecord triggers — a
+	// new record's initial values come from /init with the page and the neighbouring record
+	HasNewRecordTriggers bool `yaml:"-" json:"has_new_record_triggers,omitempty"`
 	// SetupTable (populated at request time): the source table holds a single record with a
 	// blank key (setup); its card page opens on that record
 	SetupTable bool `yaml:"-" json:"setup_table,omitempty"`
@@ -114,6 +117,20 @@ type Field struct {
 	// DecimalPlaces (populated at request time from the table field's decimal_places): the
 	// "min:max" digits after the point the page shows
 	DecimalPlaces string `yaml:"-" json:"decimal_places,omitempty"`
+	// IndentField (lists): indent the cell by this field's value of the record, one step per
+	// level (the chart of accounts indents names by Indentation)
+	IndentField string `yaml:"indent_field,omitempty" json:"indent_field,omitempty"`
+	// StyleExpr (lists): the cell takes Style when the record's field equals / does not equal a
+	// value (an option by its number) — bold heading and total accounts
+	StyleExpr *StyleExpr `yaml:"style_expr,omitempty" json:"style_expr,omitempty"`
+}
+
+// StyleExpr is a conditional style of a list cell: Style when Field = Equal (or <> NotEqual)
+type StyleExpr struct {
+	Field    string      `yaml:"field" json:"field"`
+	Equal    interface{} `yaml:"equal,omitempty" json:"equal,omitempty"`
+	NotEqual interface{} `yaml:"not_equal,omitempty" json:"not_equal,omitempty"`
+	Style    string      `yaml:"style" json:"style"` // Strong, Attention, Favorable, Unfavorable
 }
 
 // Action represents a page action/button

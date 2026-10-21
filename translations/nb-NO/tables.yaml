@@ -380,6 +380,16 @@ tables:
       appln_rounding_precision: "Utligningsavrundingspresisjon"
       emu_currency: "ØMU-valuta"
       currency_factor: "Valutafaktor"
+      unrealized_gains_acc: "Urealisert gevinstkonto"
+      realized_gains_acc: "Realisert gevinstkonto"
+      unrealized_losses_acc: "Urealisert tapskonto"
+      realized_losses_acc: "Realisert tapskonto"
+      realized_gl_gains_account: "Realisert finansgevinstkonto"
+      realized_gl_losses_account: "Realisert finanstapskonto"
+      residual_gains_account: "Restgevinstkonto"
+      residual_losses_account: "Resttapskonto"
+      conv_lcy_rndg_debit_acc: "Konv. NOK-avrund. debetkonto"
+      conv_lcy_rndg_credit_acc: "Konv. NOK-avrund. kreditkonto"
 
     # Option field values
     options:
@@ -543,3 +553,106 @@ tables:
         currency: "Valuta"
         relational_currency: "Relasjonsvaluta"
         both: "Begge"
+
+  # Posting groups (tables 250, 251, 321, 323, 324)
+  gen_business_posting_group:
+    caption: "Bedriftsbokføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      def_tax_bus_posting_group: "Std. mva.-bedriftsbokf.gruppe"
+      auto_insert_default: "Sett inn standard automatisk"
+  gen_product_posting_group:
+    caption: "Produktbokføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      def_tax_prod_posting_group: "Std. mva.-produktbokf.gruppe"
+      auto_insert_default: "Sett inn standard automatisk"
+  tax_group:
+    caption: "Mva.-gruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_business_posting_group:
+    caption: "Mva.-bedriftsbokføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_product_posting_group:
+    caption: "Mva.-produktbokføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_area:
+    caption: "Mva.-område"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # G/L Account (Table 15)
+  g_l_account:
+    caption: "Finanskonto"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      search_name: "Søkenavn"
+      account_type: "Kontotype"
+      department_code: "Avdelingskode"
+      project_code: "Prosjektkode"
+      income_balance: "Resultat/Balanse"
+      debit_credit: "Debet/Kredit"
+      no_2: "Nr. 2"
+      blocked: "Sperret"
+      direct_posting: "Direkte postering"
+      reconciliation_account: "Avstemmingskonto"
+      new_page: "Ny side"
+      no_of_blank_lines: "Antall tomme linjer"
+      indentation: "Innrykk"
+      last_date_modified: "Sist endret"
+      totaling: "Summering"
+      consol_debit_acc: "Konsol. debetkonto"
+      consol_credit_acc: "Konsol. kreditkonto"
+      gen_posting_type: "Bokføringstype"
+      gen_bus_posting_group: "Bedriftsbokføringsgruppe"
+      gen_prod_posting_group: "Produktbokføringsgruppe"
+      automatic_ext_text: "Automatisk utvidet tekst"
+      department_posting: "Avdelingspostering"
+      project_posting: "Prosjektpostering"
+      tax_area_code: "Mva.-områdekode"
+      tax_liable: "Mva.-pliktig"
+      tax_group_code: "Mva.-gruppekode"
+      tax_bus_posting_group: "Mva.-bedriftsbokf.gruppe"
+      tax_prod_posting_group: "Mva.-produktbokf.gruppe"
+      exchange_rate_adjustment: "Valutakursjustering"
+
+    # Option field values
+    options:
+      account_type:
+        posting: "Postering"
+        heading: "Overskrift"
+        total: "Sum"
+        begin_total: "Fra-sum"
+        end_total: "Til-sum"
+      income_balance:
+        income_statement: "Resultat"
+        balance_sheet: "Balanse"
+      debit_credit:
+        both: "Begge"
+        debit: "Debet"
+        credit: "Kredit"
+      gen_posting_type:
+        purchase: "Kjøp"
+        sale: "Salg"
+      department_posting:
+        code_mandatory: "Kode obligatorisk"
+        same_code: "Samme kode"
+        no_code: "Ingen kode"
+      project_posting:
+        code_mandatory: "Kode obligatorisk"
+        same_code: "Samme kode"
+        no_code: "Ingen kode"
+      exchange_rate_adjustment:
+        no_adjustment: "Ingen justering"
+        adjust_amount: "Juster beløp"
+        adjust_additional_currency_amount: "Juster tilleggsvalutabeløp"

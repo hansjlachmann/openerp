@@ -1,0 +1,46 @@
+page:
+  id: 313
+  type: List
+  name: Gen. Product Posting Groups
+  source_table: Gen_Product_Posting_Group
+  caption: Gen. Product Posting Groups
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: description
+          width: 300
+
+        - source: def_tax_prod_posting_group
+          width: 220
+          table_relation: Tax_Product_Posting_Group
+
+        - source: auto_insert_default
+          width: 170
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

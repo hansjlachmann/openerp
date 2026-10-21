@@ -13,6 +13,10 @@
 //	OnValidate_Code(rec *gtables.Currency) error
 //	OnValidate_Last_date_modified(rec *gtables.Currency) error
 //	OnValidate_Last_date_adjusted(rec *gtables.Currency) error
+//	OnValidate_Unrealized_gains_acc(rec *gtables.Currency) error
+//	OnValidate_Realized_gains_acc(rec *gtables.Currency) error
+//	OnValidate_Unrealized_losses_acc(rec *gtables.Currency) error
+//	OnValidate_Realized_losses_acc(rec *gtables.Currency) error
 //	OnValidate_Invoice_rounding_precision(rec *gtables.Currency) error
 //	OnValidate_Invoice_rounding_type(rec *gtables.Currency) error
 //	OnValidate_Amount_rounding_precision(rec *gtables.Currency) error
@@ -23,6 +27,12 @@
 //	OnValidate_Appln_rounding_precision(rec *gtables.Currency) error
 //	OnValidate_Emu_currency(rec *gtables.Currency) error
 //	OnValidate_Currency_factor(rec *gtables.Currency) error
+//	OnValidate_Realized_gl_gains_account(rec *gtables.Currency) error
+//	OnValidate_Realized_gl_losses_account(rec *gtables.Currency) error
+//	OnValidate_Residual_gains_account(rec *gtables.Currency) error
+//	OnValidate_Residual_losses_account(rec *gtables.Currency) error
+//	OnValidate_Conv_lcy_rndg_debit_acc(rec *gtables.Currency) error
+//	OnValidate_Conv_lcy_rndg_credit_acc(rec *gtables.Currency) error
 
 package tables
 
@@ -69,6 +79,10 @@ type Currency struct {
 	Code                           types.Code                    `db:"code,pk"`
 	Last_date_modified             types.Date                    `db:"last_date_modified"`
 	Last_date_adjusted             types.Date                    `db:"last_date_adjusted"`
+	Unrealized_gains_acc           types.Code                    `db:"unrealized_gains_acc"`
+	Realized_gains_acc             types.Code                    `db:"realized_gains_acc"`
+	Unrealized_losses_acc          types.Code                    `db:"unrealized_losses_acc"`
+	Realized_losses_acc            types.Code                    `db:"realized_losses_acc"`
 	Invoice_rounding_precision     types.Decimal                 `db:"invoice_rounding_precision"`
 	Invoice_rounding_type          CurrencyInvoice_rounding_type `db:"invoice_rounding_type"`
 	Amount_rounding_precision      types.Decimal                 `db:"amount_rounding_precision"`
@@ -79,6 +93,12 @@ type Currency struct {
 	Appln_rounding_precision       types.Decimal                 `db:"appln_rounding_precision"`
 	Emu_currency                   bool                          `db:"emu_currency"`
 	Currency_factor                types.Decimal                 `db:"currency_factor"`
+	Realized_gl_gains_account      types.Code                    `db:"realized_gl_gains_account"`
+	Realized_gl_losses_account     types.Code                    `db:"realized_gl_losses_account"`
+	Residual_gains_account         types.Code                    `db:"residual_gains_account"`
+	Residual_losses_account        types.Code                    `db:"residual_losses_account"`
+	Conv_lcy_rndg_debit_acc        types.Code                    `db:"conv_lcy_rndg_debit_acc"`
+	Conv_lcy_rndg_credit_acc       types.Code                    `db:"conv_lcy_rndg_credit_acc"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -163,6 +183,10 @@ var Currency_FieldNo = struct {
 	Code                           int
 	Last_date_modified             int
 	Last_date_adjusted             int
+	Unrealized_gains_acc           int
+	Realized_gains_acc             int
+	Unrealized_losses_acc          int
+	Realized_losses_acc            int
 	Invoice_rounding_precision     int
 	Invoice_rounding_type          int
 	Amount_rounding_precision      int
@@ -173,10 +197,20 @@ var Currency_FieldNo = struct {
 	Appln_rounding_precision       int
 	Emu_currency                   int
 	Currency_factor                int
+	Realized_gl_gains_account      int
+	Realized_gl_losses_account     int
+	Residual_gains_account         int
+	Residual_losses_account        int
+	Conv_lcy_rndg_debit_acc        int
+	Conv_lcy_rndg_credit_acc       int
 }{
 	Code:                           1,
 	Last_date_modified:             2,
 	Last_date_adjusted:             3,
+	Unrealized_gains_acc:           6,
+	Realized_gains_acc:             7,
+	Unrealized_losses_acc:          8,
+	Realized_losses_acc:            9,
 	Invoice_rounding_precision:     10,
 	Invoice_rounding_type:          12,
 	Amount_rounding_precision:      13,
@@ -187,6 +221,12 @@ var Currency_FieldNo = struct {
 	Appln_rounding_precision:       44,
 	Emu_currency:                   45,
 	Currency_factor:                46,
+	Realized_gl_gains_account:      40,
+	Realized_gl_losses_account:     41,
+	Residual_gains_account:         47,
+	Residual_losses_account:        48,
+	Conv_lcy_rndg_debit_acc:        50,
+	Conv_lcy_rndg_credit_acc:       51,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -198,6 +238,14 @@ func (t *Currency) FieldNo(fieldName string) int {
 		return 2
 	case "last_date_adjusted":
 		return 3
+	case "unrealized_gains_acc":
+		return 6
+	case "realized_gains_acc":
+		return 7
+	case "unrealized_losses_acc":
+		return 8
+	case "realized_losses_acc":
+		return 9
 	case "invoice_rounding_precision":
 		return 10
 	case "invoice_rounding_type":
@@ -218,6 +266,18 @@ func (t *Currency) FieldNo(fieldName string) int {
 		return 45
 	case "currency_factor":
 		return 46
+	case "realized_gl_gains_account":
+		return 40
+	case "realized_gl_losses_account":
+		return 41
+	case "residual_gains_account":
+		return 47
+	case "residual_losses_account":
+		return 48
+	case "conv_lcy_rndg_debit_acc":
+		return 50
+	case "conv_lcy_rndg_credit_acc":
+		return 51
 	}
 	return 0
 }
@@ -231,6 +291,14 @@ func (t *Currency) FieldName(fieldNo int) string {
 		return "last_date_modified"
 	case 3:
 		return "last_date_adjusted"
+	case 6:
+		return "unrealized_gains_acc"
+	case 7:
+		return "realized_gains_acc"
+	case 8:
+		return "unrealized_losses_acc"
+	case 9:
+		return "realized_losses_acc"
 	case 10:
 		return "invoice_rounding_precision"
 	case 12:
@@ -251,6 +319,18 @@ func (t *Currency) FieldName(fieldNo int) string {
 		return "emu_currency"
 	case 46:
 		return "currency_factor"
+	case 40:
+		return "realized_gl_gains_account"
+	case 41:
+		return "realized_gl_losses_account"
+	case 47:
+		return "residual_gains_account"
+	case 48:
+		return "residual_losses_account"
+	case 50:
+		return "conv_lcy_rndg_debit_acc"
+	case 51:
+		return "conv_lcy_rndg_credit_acc"
 	}
 	return ""
 }
@@ -295,6 +375,10 @@ type (
 	CurrencyOnValidate_Code                           interface{ OnValidate_Code(rec *Currency) error }
 	CurrencyOnValidate_Last_date_modified             interface{ OnValidate_Last_date_modified(rec *Currency) error }
 	CurrencyOnValidate_Last_date_adjusted             interface{ OnValidate_Last_date_adjusted(rec *Currency) error }
+	CurrencyOnValidate_Unrealized_gains_acc           interface{ OnValidate_Unrealized_gains_acc(rec *Currency) error }
+	CurrencyOnValidate_Realized_gains_acc             interface{ OnValidate_Realized_gains_acc(rec *Currency) error }
+	CurrencyOnValidate_Unrealized_losses_acc          interface{ OnValidate_Unrealized_losses_acc(rec *Currency) error }
+	CurrencyOnValidate_Realized_losses_acc            interface{ OnValidate_Realized_losses_acc(rec *Currency) error }
 	CurrencyOnValidate_Invoice_rounding_precision     interface{ OnValidate_Invoice_rounding_precision(rec *Currency) error }
 	CurrencyOnValidate_Invoice_rounding_type          interface{ OnValidate_Invoice_rounding_type(rec *Currency) error }
 	CurrencyOnValidate_Amount_rounding_precision      interface{ OnValidate_Amount_rounding_precision(rec *Currency) error }
@@ -305,6 +389,12 @@ type (
 	CurrencyOnValidate_Appln_rounding_precision       interface{ OnValidate_Appln_rounding_precision(rec *Currency) error }
 	CurrencyOnValidate_Emu_currency                   interface{ OnValidate_Emu_currency(rec *Currency) error }
 	CurrencyOnValidate_Currency_factor                interface{ OnValidate_Currency_factor(rec *Currency) error }
+	CurrencyOnValidate_Realized_gl_gains_account      interface{ OnValidate_Realized_gl_gains_account(rec *Currency) error }
+	CurrencyOnValidate_Realized_gl_losses_account     interface{ OnValidate_Realized_gl_losses_account(rec *Currency) error }
+	CurrencyOnValidate_Residual_gains_account         interface{ OnValidate_Residual_gains_account(rec *Currency) error }
+	CurrencyOnValidate_Residual_losses_account        interface{ OnValidate_Residual_losses_account(rec *Currency) error }
+	CurrencyOnValidate_Conv_lcy_rndg_debit_acc        interface{ OnValidate_Conv_lcy_rndg_debit_acc(rec *Currency) error }
+	CurrencyOnValidate_Conv_lcy_rndg_credit_acc       interface{ OnValidate_Conv_lcy_rndg_credit_acc(rec *Currency) error }
 )
 
 // currencyLogic is the registered business logic of Currency, in
@@ -340,6 +430,14 @@ func currencyTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(CurrencyOnValidate_Last_date_modified)
 	case "OnValidate_Last_date_adjusted":
 		_, ok = logic.(CurrencyOnValidate_Last_date_adjusted)
+	case "OnValidate_Unrealized_gains_acc":
+		_, ok = logic.(CurrencyOnValidate_Unrealized_gains_acc)
+	case "OnValidate_Realized_gains_acc":
+		_, ok = logic.(CurrencyOnValidate_Realized_gains_acc)
+	case "OnValidate_Unrealized_losses_acc":
+		_, ok = logic.(CurrencyOnValidate_Unrealized_losses_acc)
+	case "OnValidate_Realized_losses_acc":
+		_, ok = logic.(CurrencyOnValidate_Realized_losses_acc)
 	case "OnValidate_Invoice_rounding_precision":
 		_, ok = logic.(CurrencyOnValidate_Invoice_rounding_precision)
 	case "OnValidate_Invoice_rounding_type":
@@ -360,6 +458,18 @@ func currencyTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(CurrencyOnValidate_Emu_currency)
 	case "OnValidate_Currency_factor":
 		_, ok = logic.(CurrencyOnValidate_Currency_factor)
+	case "OnValidate_Realized_gl_gains_account":
+		_, ok = logic.(CurrencyOnValidate_Realized_gl_gains_account)
+	case "OnValidate_Realized_gl_losses_account":
+		_, ok = logic.(CurrencyOnValidate_Realized_gl_losses_account)
+	case "OnValidate_Residual_gains_account":
+		_, ok = logic.(CurrencyOnValidate_Residual_gains_account)
+	case "OnValidate_Residual_losses_account":
+		_, ok = logic.(CurrencyOnValidate_Residual_losses_account)
+	case "OnValidate_Conv_lcy_rndg_debit_acc":
+		_, ok = logic.(CurrencyOnValidate_Conv_lcy_rndg_debit_acc)
+	case "OnValidate_Conv_lcy_rndg_credit_acc":
+		_, ok = logic.(CurrencyOnValidate_Conv_lcy_rndg_credit_acc)
 	default:
 		return false, false
 	}
@@ -440,6 +550,18 @@ func (t *Currency) CheckFields() error {
 	if err := tables.CheckMaxLength(CurrencyTableName, "code", string(t.Code), 10); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "unrealized_gains_acc", string(t.Unrealized_gains_acc), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "realized_gains_acc", string(t.Realized_gains_acc), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "unrealized_losses_acc", string(t.Unrealized_losses_acc), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "realized_losses_acc", string(t.Realized_losses_acc), 20); err != nil {
+		return err
+	}
 	if err := tables.CheckDecimalRange(CurrencyTableName, "amount_rounding_precision", t.Amount_rounding_precision, "0", ""); err != nil {
 		return err
 	}
@@ -462,6 +584,24 @@ func (t *Currency) CheckFields() error {
 		return err
 	}
 	if err := tables.CheckDecimalRange(CurrencyTableName, "appln_rounding_precision", t.Appln_rounding_precision, "0", ""); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "realized_gl_gains_account", string(t.Realized_gl_gains_account), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "realized_gl_losses_account", string(t.Realized_gl_losses_account), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "residual_gains_account", string(t.Residual_gains_account), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "residual_losses_account", string(t.Residual_losses_account), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "conv_lcy_rndg_debit_acc", string(t.Conv_lcy_rndg_debit_acc), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CurrencyTableName, "conv_lcy_rndg_credit_acc", string(t.Conv_lcy_rndg_credit_acc), 20); err != nil {
 		return err
 	}
 	return nil
@@ -494,6 +634,10 @@ func GetCurrencyTableSchema() string {
 		code TEXT(10) PRIMARY KEY,
 		last_date_modified TEXT,
 		last_date_adjusted TEXT,
+		unrealized_gains_acc TEXT(20),
+		realized_gains_acc TEXT(20),
+		unrealized_losses_acc TEXT(20),
+		realized_losses_acc TEXT(20),
 		invoice_rounding_precision TEXT DEFAULT 1,
 		invoice_rounding_type INTEGER CHECK (invoice_rounding_type >= 0 AND invoice_rounding_type <= 2),
 		amount_rounding_precision TEXT DEFAULT 0.01,
@@ -503,7 +647,13 @@ func GetCurrencyTableSchema() string {
 		unit_amount_decimal_places TEXT(5) NOT NULL DEFAULT '2:5',
 		appln_rounding_precision TEXT,
 		emu_currency INTEGER,
-		currency_factor TEXT
+		currency_factor TEXT,
+		realized_gl_gains_account TEXT(20),
+		realized_gl_losses_account TEXT(20),
+		residual_gains_account TEXT(20),
+		residual_losses_account TEXT(20),
+		conv_lcy_rndg_debit_acc TEXT(20),
+		conv_lcy_rndg_credit_acc TEXT(20)
 	`
 }
 
@@ -513,6 +663,10 @@ func GetCurrencyPostgresTableSchema() string {
 		code VARCHAR(10) PRIMARY KEY,
 		last_date_modified DATE,
 		last_date_adjusted DATE,
+		unrealized_gains_acc VARCHAR(20),
+		realized_gains_acc VARCHAR(20),
+		unrealized_losses_acc VARCHAR(20),
+		realized_losses_acc VARCHAR(20),
 		invoice_rounding_precision NUMERIC DEFAULT 1,
 		invoice_rounding_type INTEGER CHECK (invoice_rounding_type >= 0 AND invoice_rounding_type <= 2),
 		amount_rounding_precision NUMERIC DEFAULT 0.01,
@@ -522,7 +676,13 @@ func GetCurrencyPostgresTableSchema() string {
 		unit_amount_decimal_places VARCHAR(5) NOT NULL DEFAULT '2:5',
 		appln_rounding_precision NUMERIC,
 		emu_currency BOOLEAN,
-		currency_factor NUMERIC
+		currency_factor NUMERIC,
+		realized_gl_gains_account VARCHAR(20),
+		realized_gl_losses_account VARCHAR(20),
+		residual_gains_account VARCHAR(20),
+		residual_losses_account VARCHAR(20),
+		conv_lcy_rndg_debit_acc VARCHAR(20),
+		conv_lcy_rndg_credit_acc VARCHAR(20)
 	`
 }
 
@@ -659,6 +819,10 @@ func (t *Currency) StoreOldValues() {
 	t.oldValues["code"] = t.Code
 	t.oldValues["last_date_modified"] = t.Last_date_modified
 	t.oldValues["last_date_adjusted"] = t.Last_date_adjusted
+	t.oldValues["unrealized_gains_acc"] = t.Unrealized_gains_acc
+	t.oldValues["realized_gains_acc"] = t.Realized_gains_acc
+	t.oldValues["unrealized_losses_acc"] = t.Unrealized_losses_acc
+	t.oldValues["realized_losses_acc"] = t.Realized_losses_acc
 	t.oldValues["invoice_rounding_precision"] = t.Invoice_rounding_precision
 	t.oldValues["invoice_rounding_type"] = t.Invoice_rounding_type
 	t.oldValues["amount_rounding_precision"] = t.Amount_rounding_precision
@@ -669,6 +833,12 @@ func (t *Currency) StoreOldValues() {
 	t.oldValues["appln_rounding_precision"] = t.Appln_rounding_precision
 	t.oldValues["emu_currency"] = t.Emu_currency
 	t.oldValues["currency_factor"] = t.Currency_factor
+	t.oldValues["realized_gl_gains_account"] = t.Realized_gl_gains_account
+	t.oldValues["realized_gl_losses_account"] = t.Realized_gl_losses_account
+	t.oldValues["residual_gains_account"] = t.Residual_gains_account
+	t.oldValues["residual_losses_account"] = t.Residual_losses_account
+	t.oldValues["conv_lcy_rndg_debit_acc"] = t.Conv_lcy_rndg_debit_acc
+	t.oldValues["conv_lcy_rndg_credit_acc"] = t.Conv_lcy_rndg_credit_acc
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -730,6 +900,10 @@ func (t *Currency) GetByPK(code types.Code) bool {
 	var codeNull sql.NullString
 	var last_date_modifiedNull sql.NullString
 	var last_date_adjustedNull sql.NullString
+	var unrealized_gains_accNull sql.NullString
+	var realized_gains_accNull sql.NullString
+	var unrealized_losses_accNull sql.NullString
+	var realized_losses_accNull sql.NullString
 	var invoice_rounding_precisionNull sql.NullString
 	var invoice_rounding_typeInt int
 	var amount_rounding_precisionNull sql.NullString
@@ -740,6 +914,12 @@ func (t *Currency) GetByPK(code types.Code) bool {
 	var appln_rounding_precisionNull sql.NullString
 	var emu_currencyBool sql.NullBool
 	var currency_factorNull sql.NullString
+	var realized_gl_gains_accountNull sql.NullString
+	var realized_gl_losses_accountNull sql.NullString
+	var residual_gains_accountNull sql.NullString
+	var residual_losses_accountNull sql.NullString
+	var conv_lcy_rndg_debit_accNull sql.NullString
+	var conv_lcy_rndg_credit_accNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -747,7 +927,7 @@ func (t *Currency) GetByPK(code types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -757,6 +937,10 @@ func (t *Currency) GetByPK(code types.Code) bool {
 		&codeNull,
 		&last_date_modifiedNull,
 		&last_date_adjustedNull,
+		&unrealized_gains_accNull,
+		&realized_gains_accNull,
+		&unrealized_losses_accNull,
+		&realized_losses_accNull,
 		&invoice_rounding_precisionNull,
 		&invoice_rounding_typeInt,
 		&amount_rounding_precisionNull,
@@ -767,6 +951,12 @@ func (t *Currency) GetByPK(code types.Code) bool {
 		&appln_rounding_precisionNull,
 		&emu_currencyBool,
 		&currency_factorNull,
+		&realized_gl_gains_accountNull,
+		&realized_gl_losses_accountNull,
+		&residual_gains_accountNull,
+		&residual_losses_accountNull,
+		&conv_lcy_rndg_debit_accNull,
+		&conv_lcy_rndg_credit_accNull,
 	)
 
 	if err != nil {
@@ -783,6 +973,10 @@ func (t *Currency) GetByPK(code types.Code) bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
 	t.Last_date_adjusted, _ = types.NewDateFromString(last_date_adjustedNull.String)
+	t.Unrealized_gains_acc = types.NewCode(unrealized_gains_accNull.String)
+	t.Realized_gains_acc = types.NewCode(realized_gains_accNull.String)
+	t.Unrealized_losses_acc = types.NewCode(unrealized_losses_accNull.String)
+	t.Realized_losses_acc = types.NewCode(realized_losses_accNull.String)
 	t.Invoice_rounding_precision, _ = types.NewDecimalFromString(invoice_rounding_precisionNull.String)
 	t.Invoice_rounding_type = CurrencyInvoice_rounding_type(invoice_rounding_typeInt)
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
@@ -793,6 +987,12 @@ func (t *Currency) GetByPK(code types.Code) bool {
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
 	t.Emu_currency = emu_currencyBool.Bool
 	t.Currency_factor, _ = types.NewDecimalFromString(currency_factorNull.String)
+	t.Realized_gl_gains_account = types.NewCode(realized_gl_gains_accountNull.String)
+	t.Realized_gl_losses_account = types.NewCode(realized_gl_losses_accountNull.String)
+	t.Residual_gains_account = types.NewCode(residual_gains_accountNull.String)
+	t.Residual_losses_account = types.NewCode(residual_losses_accountNull.String)
+	t.Conv_lcy_rndg_debit_acc = types.NewCode(conv_lcy_rndg_debit_accNull.String)
+	t.Conv_lcy_rndg_credit_acc = types.NewCode(conv_lcy_rndg_credit_accNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -818,6 +1018,10 @@ func (t *Currency) Insert(runTrigger bool) bool {
 		t.Code,
 		t.Last_date_modified,
 		t.Last_date_adjusted,
+		t.Unrealized_gains_acc,
+		t.Realized_gains_acc,
+		t.Unrealized_losses_acc,
+		t.Realized_losses_acc,
 		t.Invoice_rounding_precision,
 		t.Invoice_rounding_type,
 		t.Amount_rounding_precision,
@@ -828,10 +1032,16 @@ func (t *Currency) Insert(runTrigger bool) bool {
 		t.Appln_rounding_precision,
 		t.Emu_currency,
 		t.Currency_factor,
+		t.Realized_gl_gains_account,
+		t.Realized_gl_losses_account,
+		t.Residual_gains_account,
+		t.Residual_losses_account,
+		t.Conv_lcy_rndg_debit_acc,
+		t.Conv_lcy_rndg_credit_acc,
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -864,6 +1074,10 @@ func (t *Currency) InsertAll(records []*Currency, runTrigger bool) error {
 			r.Code,
 			r.Last_date_modified,
 			r.Last_date_adjusted,
+			r.Unrealized_gains_acc,
+			r.Realized_gains_acc,
+			r.Unrealized_losses_acc,
+			r.Realized_losses_acc,
 			r.Invoice_rounding_precision,
 			r.Invoice_rounding_type,
 			r.Amount_rounding_precision,
@@ -874,10 +1088,16 @@ func (t *Currency) InsertAll(records []*Currency, runTrigger bool) error {
 			r.Appln_rounding_precision,
 			r.Emu_currency,
 			r.Currency_factor,
+			r.Realized_gl_gains_account,
+			r.Realized_gl_losses_account,
+			r.Residual_gains_account,
+			r.Residual_losses_account,
+			r.Conv_lcy_rndg_debit_acc,
+			r.Conv_lcy_rndg_credit_acc,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, CurrencyTableName)
-	columns := []string{"code", "last_date_modified", "last_date_adjusted", "invoice_rounding_precision", "invoice_rounding_type", "amount_rounding_precision", "unit_amount_rounding_precision", "description", "amount_decimal_places", "unit_amount_decimal_places", "appln_rounding_precision", "emu_currency", "currency_factor"}
+	columns := []string{"code", "last_date_modified", "last_date_adjusted", "unrealized_gains_acc", "realized_gains_acc", "unrealized_losses_acc", "realized_losses_acc", "invoice_rounding_precision", "invoice_rounding_type", "amount_rounding_precision", "unit_amount_rounding_precision", "description", "amount_decimal_places", "unit_amount_decimal_places", "appln_rounding_precision", "emu_currency", "currency_factor", "realized_gl_gains_account", "realized_gl_losses_account", "residual_gains_account", "residual_losses_account", "conv_lcy_rndg_debit_acc", "conv_lcy_rndg_credit_acc"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -929,6 +1149,22 @@ func (t *Currency) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "last_date_adjusted = ?")
 			values = append(values, t.Last_date_adjusted)
 		}
+		if t.hasFieldChanged("unrealized_gains_acc") {
+			setClauses = append(setClauses, "unrealized_gains_acc = ?")
+			values = append(values, t.Unrealized_gains_acc)
+		}
+		if t.hasFieldChanged("realized_gains_acc") {
+			setClauses = append(setClauses, "realized_gains_acc = ?")
+			values = append(values, t.Realized_gains_acc)
+		}
+		if t.hasFieldChanged("unrealized_losses_acc") {
+			setClauses = append(setClauses, "unrealized_losses_acc = ?")
+			values = append(values, t.Unrealized_losses_acc)
+		}
+		if t.hasFieldChanged("realized_losses_acc") {
+			setClauses = append(setClauses, "realized_losses_acc = ?")
+			values = append(values, t.Realized_losses_acc)
+		}
 		if t.hasFieldChanged("invoice_rounding_precision") {
 			setClauses = append(setClauses, "invoice_rounding_precision = ?")
 			values = append(values, t.Invoice_rounding_precision)
@@ -969,6 +1205,30 @@ func (t *Currency) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "currency_factor = ?")
 			values = append(values, t.Currency_factor)
 		}
+		if t.hasFieldChanged("realized_gl_gains_account") {
+			setClauses = append(setClauses, "realized_gl_gains_account = ?")
+			values = append(values, t.Realized_gl_gains_account)
+		}
+		if t.hasFieldChanged("realized_gl_losses_account") {
+			setClauses = append(setClauses, "realized_gl_losses_account = ?")
+			values = append(values, t.Realized_gl_losses_account)
+		}
+		if t.hasFieldChanged("residual_gains_account") {
+			setClauses = append(setClauses, "residual_gains_account = ?")
+			values = append(values, t.Residual_gains_account)
+		}
+		if t.hasFieldChanged("residual_losses_account") {
+			setClauses = append(setClauses, "residual_losses_account = ?")
+			values = append(values, t.Residual_losses_account)
+		}
+		if t.hasFieldChanged("conv_lcy_rndg_debit_acc") {
+			setClauses = append(setClauses, "conv_lcy_rndg_debit_acc = ?")
+			values = append(values, t.Conv_lcy_rndg_debit_acc)
+		}
+		if t.hasFieldChanged("conv_lcy_rndg_credit_acc") {
+			setClauses = append(setClauses, "conv_lcy_rndg_credit_acc = ?")
+			values = append(values, t.Conv_lcy_rndg_credit_acc)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -980,6 +1240,14 @@ func (t *Currency) Modify(runTrigger bool) bool {
 		values = append(values, t.Last_date_modified)
 		setClauses = append(setClauses, "last_date_adjusted = ?")
 		values = append(values, t.Last_date_adjusted)
+		setClauses = append(setClauses, "unrealized_gains_acc = ?")
+		values = append(values, t.Unrealized_gains_acc)
+		setClauses = append(setClauses, "realized_gains_acc = ?")
+		values = append(values, t.Realized_gains_acc)
+		setClauses = append(setClauses, "unrealized_losses_acc = ?")
+		values = append(values, t.Unrealized_losses_acc)
+		setClauses = append(setClauses, "realized_losses_acc = ?")
+		values = append(values, t.Realized_losses_acc)
 		setClauses = append(setClauses, "invoice_rounding_precision = ?")
 		values = append(values, t.Invoice_rounding_precision)
 		setClauses = append(setClauses, "invoice_rounding_type = ?")
@@ -1000,6 +1268,18 @@ func (t *Currency) Modify(runTrigger bool) bool {
 		values = append(values, t.Emu_currency)
 		setClauses = append(setClauses, "currency_factor = ?")
 		values = append(values, t.Currency_factor)
+		setClauses = append(setClauses, "realized_gl_gains_account = ?")
+		values = append(values, t.Realized_gl_gains_account)
+		setClauses = append(setClauses, "realized_gl_losses_account = ?")
+		values = append(values, t.Realized_gl_losses_account)
+		setClauses = append(setClauses, "residual_gains_account = ?")
+		values = append(values, t.Residual_gains_account)
+		setClauses = append(setClauses, "residual_losses_account = ?")
+		values = append(values, t.Residual_losses_account)
+		setClauses = append(setClauses, "conv_lcy_rndg_debit_acc = ?")
+		values = append(values, t.Conv_lcy_rndg_debit_acc)
+		setClauses = append(setClauses, "conv_lcy_rndg_credit_acc = ?")
+		values = append(values, t.Conv_lcy_rndg_credit_acc)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1078,6 +1358,22 @@ func (t *Currency) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Date); ok {
 			return !t.Last_date_adjusted.Equal(old)
 		}
+	case "unrealized_gains_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Unrealized_gains_acc.Equal(old)
+		}
+	case "realized_gains_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Realized_gains_acc.Equal(old)
+		}
+	case "unrealized_losses_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Unrealized_losses_acc.Equal(old)
+		}
+	case "realized_losses_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Realized_losses_acc.Equal(old)
+		}
 	case "invoice_rounding_precision":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Invoice_rounding_precision.Equal(old)
@@ -1118,6 +1414,30 @@ func (t *Currency) hasFieldChanged(fieldName string) bool {
 	case "currency_factor":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Currency_factor.Equal(old)
+		}
+	case "realized_gl_gains_account":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Realized_gl_gains_account.Equal(old)
+		}
+	case "realized_gl_losses_account":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Realized_gl_losses_account.Equal(old)
+		}
+	case "residual_gains_account":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Residual_gains_account.Equal(old)
+		}
+	case "residual_losses_account":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Residual_losses_account.Equal(old)
+		}
+	case "conv_lcy_rndg_debit_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Conv_lcy_rndg_debit_acc.Equal(old)
+		}
+	case "conv_lcy_rndg_credit_acc":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Conv_lcy_rndg_credit_acc.Equal(old)
 		}
 	}
 
@@ -1349,6 +1669,14 @@ func (t *Currency) columnName(fieldName string) (string, bool) {
 		return "last_date_modified", true
 	case strings.ToLower("last_date_adjusted"):
 		return "last_date_adjusted", true
+	case strings.ToLower("unrealized_gains_acc"):
+		return "unrealized_gains_acc", true
+	case strings.ToLower("realized_gains_acc"):
+		return "realized_gains_acc", true
+	case strings.ToLower("unrealized_losses_acc"):
+		return "unrealized_losses_acc", true
+	case strings.ToLower("realized_losses_acc"):
+		return "realized_losses_acc", true
 	case strings.ToLower("invoice_rounding_precision"):
 		return "invoice_rounding_precision", true
 	case strings.ToLower("invoice_rounding_type"):
@@ -1369,6 +1697,18 @@ func (t *Currency) columnName(fieldName string) (string, bool) {
 		return "emu_currency", true
 	case strings.ToLower("currency_factor"):
 		return "currency_factor", true
+	case strings.ToLower("realized_gl_gains_account"):
+		return "realized_gl_gains_account", true
+	case strings.ToLower("realized_gl_losses_account"):
+		return "realized_gl_losses_account", true
+	case strings.ToLower("residual_gains_account"):
+		return "residual_gains_account", true
+	case strings.ToLower("residual_losses_account"):
+		return "residual_losses_account", true
+	case strings.ToLower("conv_lcy_rndg_debit_acc"):
+		return "conv_lcy_rndg_debit_acc", true
+	case strings.ToLower("conv_lcy_rndg_credit_acc"):
+		return "conv_lcy_rndg_credit_acc", true
 	}
 	return "", false
 }
@@ -1519,15 +1859,30 @@ func (t *Currency) parseFilterExpression(fieldName, expr string) (string, []inte
 	for _, part := range orParts {
 		part = strings.TrimSpace(part)
 
-		// Check for range (..)
+		// Check for range (..); an open end ("..x", "x..") has one bound
 		if strings.Contains(part, "..") {
 			rangeParts := strings.Split(part, "..")
 			if len(rangeParts) == 2 {
 				min := strings.TrimSpace(rangeParts[0])
 				max := strings.TrimSpace(rangeParts[1])
-				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
-				args = append(args, min, max)
+				switch {
+				case min == "" && max == "":
+					conditions = append(conditions, "1=1")
+				case min == "":
+					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					args = append(args, max)
+				case max == "":
+					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
+					args = append(args, min)
+				default:
+					conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
+					args = append(args, min, max)
+				}
 			}
+		} else if op := tables.FilterComparison(part); op != "" {
+			// Comparison: <=, >=, <, > (a classic filter such as <3000)
+			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
 			likePattern := strings.ReplaceAll(part, "*", "%")
@@ -1609,7 +1964,7 @@ func (t *Currency) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1617,6 +1972,10 @@ func (t *Currency) FindFirst() bool {
 	var codeNull sql.NullString
 	var last_date_modifiedNull sql.NullString
 	var last_date_adjustedNull sql.NullString
+	var unrealized_gains_accNull sql.NullString
+	var realized_gains_accNull sql.NullString
+	var unrealized_losses_accNull sql.NullString
+	var realized_losses_accNull sql.NullString
 	var invoice_rounding_precisionNull sql.NullString
 	var invoice_rounding_typeInt int
 	var amount_rounding_precisionNull sql.NullString
@@ -1627,11 +1986,21 @@ func (t *Currency) FindFirst() bool {
 	var appln_rounding_precisionNull sql.NullString
 	var emu_currencyBool sql.NullBool
 	var currency_factorNull sql.NullString
+	var realized_gl_gains_accountNull sql.NullString
+	var realized_gl_losses_accountNull sql.NullString
+	var residual_gains_accountNull sql.NullString
+	var residual_losses_accountNull sql.NullString
+	var conv_lcy_rndg_debit_accNull sql.NullString
+	var conv_lcy_rndg_credit_accNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
 		&last_date_modifiedNull,
 		&last_date_adjustedNull,
+		&unrealized_gains_accNull,
+		&realized_gains_accNull,
+		&unrealized_losses_accNull,
+		&realized_losses_accNull,
 		&invoice_rounding_precisionNull,
 		&invoice_rounding_typeInt,
 		&amount_rounding_precisionNull,
@@ -1642,6 +2011,12 @@ func (t *Currency) FindFirst() bool {
 		&appln_rounding_precisionNull,
 		&emu_currencyBool,
 		&currency_factorNull,
+		&realized_gl_gains_accountNull,
+		&realized_gl_losses_accountNull,
+		&residual_gains_accountNull,
+		&residual_losses_accountNull,
+		&conv_lcy_rndg_debit_accNull,
+		&conv_lcy_rndg_credit_accNull,
 	)
 
 	if err != nil {
@@ -1656,6 +2031,10 @@ func (t *Currency) FindFirst() bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
 	t.Last_date_adjusted, _ = types.NewDateFromString(last_date_adjustedNull.String)
+	t.Unrealized_gains_acc = types.NewCode(unrealized_gains_accNull.String)
+	t.Realized_gains_acc = types.NewCode(realized_gains_accNull.String)
+	t.Unrealized_losses_acc = types.NewCode(unrealized_losses_accNull.String)
+	t.Realized_losses_acc = types.NewCode(realized_losses_accNull.String)
 	t.Invoice_rounding_precision, _ = types.NewDecimalFromString(invoice_rounding_precisionNull.String)
 	t.Invoice_rounding_type = CurrencyInvoice_rounding_type(invoice_rounding_typeInt)
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
@@ -1666,6 +2045,12 @@ func (t *Currency) FindFirst() bool {
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
 	t.Emu_currency = emu_currencyBool.Bool
 	t.Currency_factor, _ = types.NewDecimalFromString(currency_factorNull.String)
+	t.Realized_gl_gains_account = types.NewCode(realized_gl_gains_accountNull.String)
+	t.Realized_gl_losses_account = types.NewCode(realized_gl_losses_accountNull.String)
+	t.Residual_gains_account = types.NewCode(residual_gains_accountNull.String)
+	t.Residual_losses_account = types.NewCode(residual_losses_accountNull.String)
+	t.Conv_lcy_rndg_debit_acc = types.NewCode(conv_lcy_rndg_debit_accNull.String)
+	t.Conv_lcy_rndg_credit_acc = types.NewCode(conv_lcy_rndg_credit_accNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1680,7 +2065,7 @@ func (t *Currency) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1688,6 +2073,10 @@ func (t *Currency) FindLast() bool {
 	var codeNull sql.NullString
 	var last_date_modifiedNull sql.NullString
 	var last_date_adjustedNull sql.NullString
+	var unrealized_gains_accNull sql.NullString
+	var realized_gains_accNull sql.NullString
+	var unrealized_losses_accNull sql.NullString
+	var realized_losses_accNull sql.NullString
 	var invoice_rounding_precisionNull sql.NullString
 	var invoice_rounding_typeInt int
 	var amount_rounding_precisionNull sql.NullString
@@ -1698,11 +2087,21 @@ func (t *Currency) FindLast() bool {
 	var appln_rounding_precisionNull sql.NullString
 	var emu_currencyBool sql.NullBool
 	var currency_factorNull sql.NullString
+	var realized_gl_gains_accountNull sql.NullString
+	var realized_gl_losses_accountNull sql.NullString
+	var residual_gains_accountNull sql.NullString
+	var residual_losses_accountNull sql.NullString
+	var conv_lcy_rndg_debit_accNull sql.NullString
+	var conv_lcy_rndg_credit_accNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
 		&last_date_modifiedNull,
 		&last_date_adjustedNull,
+		&unrealized_gains_accNull,
+		&realized_gains_accNull,
+		&unrealized_losses_accNull,
+		&realized_losses_accNull,
 		&invoice_rounding_precisionNull,
 		&invoice_rounding_typeInt,
 		&amount_rounding_precisionNull,
@@ -1713,6 +2112,12 @@ func (t *Currency) FindLast() bool {
 		&appln_rounding_precisionNull,
 		&emu_currencyBool,
 		&currency_factorNull,
+		&realized_gl_gains_accountNull,
+		&realized_gl_losses_accountNull,
+		&residual_gains_accountNull,
+		&residual_losses_accountNull,
+		&conv_lcy_rndg_debit_accNull,
+		&conv_lcy_rndg_credit_accNull,
 	)
 
 	if err != nil {
@@ -1727,6 +2132,10 @@ func (t *Currency) FindLast() bool {
 	t.Code = types.NewCode(codeNull.String)
 	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
 	t.Last_date_adjusted, _ = types.NewDateFromString(last_date_adjustedNull.String)
+	t.Unrealized_gains_acc = types.NewCode(unrealized_gains_accNull.String)
+	t.Realized_gains_acc = types.NewCode(realized_gains_accNull.String)
+	t.Unrealized_losses_acc = types.NewCode(unrealized_losses_accNull.String)
+	t.Realized_losses_acc = types.NewCode(realized_losses_accNull.String)
 	t.Invoice_rounding_precision, _ = types.NewDecimalFromString(invoice_rounding_precisionNull.String)
 	t.Invoice_rounding_type = CurrencyInvoice_rounding_type(invoice_rounding_typeInt)
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
@@ -1737,6 +2146,12 @@ func (t *Currency) FindLast() bool {
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
 	t.Emu_currency = emu_currencyBool.Bool
 	t.Currency_factor, _ = types.NewDecimalFromString(currency_factorNull.String)
+	t.Realized_gl_gains_account = types.NewCode(realized_gl_gains_accountNull.String)
+	t.Realized_gl_losses_account = types.NewCode(realized_gl_losses_accountNull.String)
+	t.Residual_gains_account = types.NewCode(residual_gains_accountNull.String)
+	t.Residual_losses_account = types.NewCode(residual_losses_accountNull.String)
+	t.Conv_lcy_rndg_debit_acc = types.NewCode(conv_lcy_rndg_debit_accNull.String)
+	t.Conv_lcy_rndg_credit_acc = types.NewCode(conv_lcy_rndg_credit_accNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1785,7 +2200,7 @@ func (t *Currency) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1857,6 +2272,10 @@ func (t *Currency) Next(steps ...int) bool {
 		var codeNull sql.NullString
 		var last_date_modifiedNull sql.NullString
 		var last_date_adjustedNull sql.NullString
+		var unrealized_gains_accNull sql.NullString
+		var realized_gains_accNull sql.NullString
+		var unrealized_losses_accNull sql.NullString
+		var realized_losses_accNull sql.NullString
 		var invoice_rounding_precisionNull sql.NullString
 		var invoice_rounding_typeInt int
 		var amount_rounding_precisionNull sql.NullString
@@ -1867,11 +2286,21 @@ func (t *Currency) Next(steps ...int) bool {
 		var appln_rounding_precisionNull sql.NullString
 		var emu_currencyBool sql.NullBool
 		var currency_factorNull sql.NullString
+		var realized_gl_gains_accountNull sql.NullString
+		var realized_gl_losses_accountNull sql.NullString
+		var residual_gains_accountNull sql.NullString
+		var residual_losses_accountNull sql.NullString
+		var conv_lcy_rndg_debit_accNull sql.NullString
+		var conv_lcy_rndg_credit_accNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&codeNull,
 			&last_date_modifiedNull,
 			&last_date_adjustedNull,
+			&unrealized_gains_accNull,
+			&realized_gains_accNull,
+			&unrealized_losses_accNull,
+			&realized_losses_accNull,
 			&invoice_rounding_precisionNull,
 			&invoice_rounding_typeInt,
 			&amount_rounding_precisionNull,
@@ -1882,6 +2311,12 @@ func (t *Currency) Next(steps ...int) bool {
 			&appln_rounding_precisionNull,
 			&emu_currencyBool,
 			&currency_factorNull,
+			&realized_gl_gains_accountNull,
+			&realized_gl_losses_accountNull,
+			&residual_gains_accountNull,
+			&residual_losses_accountNull,
+			&conv_lcy_rndg_debit_accNull,
+			&conv_lcy_rndg_credit_accNull,
 		)
 
 		if err != nil {
@@ -1895,6 +2330,10 @@ func (t *Currency) Next(steps ...int) bool {
 		t.Code = types.NewCode(codeNull.String)
 		t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
 		t.Last_date_adjusted, _ = types.NewDateFromString(last_date_adjustedNull.String)
+		t.Unrealized_gains_acc = types.NewCode(unrealized_gains_accNull.String)
+		t.Realized_gains_acc = types.NewCode(realized_gains_accNull.String)
+		t.Unrealized_losses_acc = types.NewCode(unrealized_losses_accNull.String)
+		t.Realized_losses_acc = types.NewCode(realized_losses_accNull.String)
 		t.Invoice_rounding_precision, _ = types.NewDecimalFromString(invoice_rounding_precisionNull.String)
 		t.Invoice_rounding_type = CurrencyInvoice_rounding_type(invoice_rounding_typeInt)
 		t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
@@ -1905,6 +2344,12 @@ func (t *Currency) Next(steps ...int) bool {
 		t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
 		t.Emu_currency = emu_currencyBool.Bool
 		t.Currency_factor, _ = types.NewDecimalFromString(currency_factorNull.String)
+		t.Realized_gl_gains_account = types.NewCode(realized_gl_gains_accountNull.String)
+		t.Realized_gl_losses_account = types.NewCode(realized_gl_losses_accountNull.String)
+		t.Residual_gains_account = types.NewCode(residual_gains_accountNull.String)
+		t.Residual_losses_account = types.NewCode(residual_losses_accountNull.String)
+		t.Conv_lcy_rndg_debit_acc = types.NewCode(conv_lcy_rndg_debit_accNull.String)
+		t.Conv_lcy_rndg_credit_acc = types.NewCode(conv_lcy_rndg_credit_accNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -1936,7 +2381,7 @@ func (t *Currency) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1961,6 +2406,10 @@ func (t *Currency) FindSetBuffered() bool {
 		var codeNull sql.NullString
 		var last_date_modifiedNull sql.NullString
 		var last_date_adjustedNull sql.NullString
+		var unrealized_gains_accNull sql.NullString
+		var realized_gains_accNull sql.NullString
+		var unrealized_losses_accNull sql.NullString
+		var realized_losses_accNull sql.NullString
 		var invoice_rounding_precisionNull sql.NullString
 		var invoice_rounding_typeInt int
 		var amount_rounding_precisionNull sql.NullString
@@ -1971,11 +2420,21 @@ func (t *Currency) FindSetBuffered() bool {
 		var appln_rounding_precisionNull sql.NullString
 		var emu_currencyBool sql.NullBool
 		var currency_factorNull sql.NullString
+		var realized_gl_gains_accountNull sql.NullString
+		var realized_gl_losses_accountNull sql.NullString
+		var residual_gains_accountNull sql.NullString
+		var residual_losses_accountNull sql.NullString
+		var conv_lcy_rndg_debit_accNull sql.NullString
+		var conv_lcy_rndg_credit_accNull sql.NullString
 
 		err := rows.Scan(
 			&codeNull,
 			&last_date_modifiedNull,
 			&last_date_adjustedNull,
+			&unrealized_gains_accNull,
+			&realized_gains_accNull,
+			&unrealized_losses_accNull,
+			&realized_losses_accNull,
 			&invoice_rounding_precisionNull,
 			&invoice_rounding_typeInt,
 			&amount_rounding_precisionNull,
@@ -1986,6 +2445,12 @@ func (t *Currency) FindSetBuffered() bool {
 			&appln_rounding_precisionNull,
 			&emu_currencyBool,
 			&currency_factorNull,
+			&realized_gl_gains_accountNull,
+			&realized_gl_losses_accountNull,
+			&residual_gains_accountNull,
+			&residual_losses_accountNull,
+			&conv_lcy_rndg_debit_accNull,
+			&conv_lcy_rndg_credit_accNull,
 		)
 
 		if err != nil {
@@ -1997,6 +2462,10 @@ func (t *Currency) FindSetBuffered() bool {
 		record.Code = types.NewCode(codeNull.String)
 		record.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
 		record.Last_date_adjusted, _ = types.NewDateFromString(last_date_adjustedNull.String)
+		record.Unrealized_gains_acc = types.NewCode(unrealized_gains_accNull.String)
+		record.Realized_gains_acc = types.NewCode(realized_gains_accNull.String)
+		record.Unrealized_losses_acc = types.NewCode(unrealized_losses_accNull.String)
+		record.Realized_losses_acc = types.NewCode(realized_losses_accNull.String)
 		record.Invoice_rounding_precision, _ = types.NewDecimalFromString(invoice_rounding_precisionNull.String)
 		record.Invoice_rounding_type = CurrencyInvoice_rounding_type(invoice_rounding_typeInt)
 		record.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
@@ -2007,6 +2476,12 @@ func (t *Currency) FindSetBuffered() bool {
 		record.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
 		record.Emu_currency = emu_currencyBool.Bool
 		record.Currency_factor, _ = types.NewDecimalFromString(currency_factorNull.String)
+		record.Realized_gl_gains_account = types.NewCode(realized_gl_gains_accountNull.String)
+		record.Realized_gl_losses_account = types.NewCode(realized_gl_losses_accountNull.String)
+		record.Residual_gains_account = types.NewCode(residual_gains_accountNull.String)
+		record.Residual_losses_account = types.NewCode(residual_losses_accountNull.String)
+		record.Conv_lcy_rndg_debit_acc = types.NewCode(conv_lcy_rndg_debit_accNull.String)
+		record.Conv_lcy_rndg_credit_acc = types.NewCode(conv_lcy_rndg_credit_accNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2038,6 +2513,10 @@ func (t *Currency) copyFromBuffered(record *Currency) {
 	t.Code = record.Code
 	t.Last_date_modified = record.Last_date_modified
 	t.Last_date_adjusted = record.Last_date_adjusted
+	t.Unrealized_gains_acc = record.Unrealized_gains_acc
+	t.Realized_gains_acc = record.Realized_gains_acc
+	t.Unrealized_losses_acc = record.Unrealized_losses_acc
+	t.Realized_losses_acc = record.Realized_losses_acc
 	t.Invoice_rounding_precision = record.Invoice_rounding_precision
 	t.Invoice_rounding_type = record.Invoice_rounding_type
 	t.Amount_rounding_precision = record.Amount_rounding_precision
@@ -2048,6 +2527,12 @@ func (t *Currency) copyFromBuffered(record *Currency) {
 	t.Appln_rounding_precision = record.Appln_rounding_precision
 	t.Emu_currency = record.Emu_currency
 	t.Currency_factor = record.Currency_factor
+	t.Realized_gl_gains_account = record.Realized_gl_gains_account
+	t.Realized_gl_losses_account = record.Realized_gl_losses_account
+	t.Residual_gains_account = record.Residual_gains_account
+	t.Residual_losses_account = record.Residual_losses_account
+	t.Conv_lcy_rndg_debit_acc = record.Conv_lcy_rndg_debit_acc
+	t.Conv_lcy_rndg_credit_acc = record.Conv_lcy_rndg_credit_acc
 	t.StoreOldValues()
 }
 
@@ -2243,6 +2728,78 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Last_date_adjusted); ok {
 				if err := trg.OnValidate_Last_date_adjusted(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "unrealized_gains_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Unrealized_gains_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Unrealized_gains_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field unrealized_gains_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Unrealized_gains_acc); ok {
+				if err := trg.OnValidate_Unrealized_gains_acc(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "realized_gains_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gains_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Realized_gains_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field realized_gains_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Realized_gains_acc); ok {
+				if err := trg.OnValidate_Realized_gains_acc(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "unrealized_losses_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Unrealized_losses_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Unrealized_losses_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field unrealized_losses_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Unrealized_losses_acc); ok {
+				if err := trg.OnValidate_Unrealized_losses_acc(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "realized_losses_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Realized_losses_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Realized_losses_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field realized_losses_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Realized_losses_acc); ok {
+				if err := trg.OnValidate_Realized_losses_acc(t); err != nil {
 					return err
 				}
 			}
@@ -2510,6 +3067,114 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "realized_gl_gains_account":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gl_gains_account = v
+		} else if v, ok := value.(string); ok {
+			t.Realized_gl_gains_account = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field realized_gl_gains_account")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Realized_gl_gains_account); ok {
+				if err := trg.OnValidate_Realized_gl_gains_account(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "realized_gl_losses_account":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gl_losses_account = v
+		} else if v, ok := value.(string); ok {
+			t.Realized_gl_losses_account = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field realized_gl_losses_account")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Realized_gl_losses_account); ok {
+				if err := trg.OnValidate_Realized_gl_losses_account(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "residual_gains_account":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Residual_gains_account = v
+		} else if v, ok := value.(string); ok {
+			t.Residual_gains_account = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field residual_gains_account")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Residual_gains_account); ok {
+				if err := trg.OnValidate_Residual_gains_account(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "residual_losses_account":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Residual_losses_account = v
+		} else if v, ok := value.(string); ok {
+			t.Residual_losses_account = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field residual_losses_account")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Residual_losses_account); ok {
+				if err := trg.OnValidate_Residual_losses_account(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "conv_lcy_rndg_debit_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Conv_lcy_rndg_debit_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Conv_lcy_rndg_debit_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field conv_lcy_rndg_debit_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Conv_lcy_rndg_debit_acc); ok {
+				if err := trg.OnValidate_Conv_lcy_rndg_debit_acc(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "conv_lcy_rndg_credit_acc":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Conv_lcy_rndg_credit_acc = v
+		} else if v, ok := value.(string); ok {
+			t.Conv_lcy_rndg_credit_acc = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field conv_lcy_rndg_credit_acc")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CurrencyOnValidate_Conv_lcy_rndg_credit_acc); ok {
+				if err := trg.OnValidate_Conv_lcy_rndg_credit_acc(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2528,6 +3193,14 @@ func (t *Currency) FieldValue(no int) (any, bool) {
 		return t.Last_date_modified, true
 	case 3:
 		return t.Last_date_adjusted, true
+	case 6:
+		return t.Unrealized_gains_acc, true
+	case 7:
+		return t.Realized_gains_acc, true
+	case 8:
+		return t.Unrealized_losses_acc, true
+	case 9:
+		return t.Realized_losses_acc, true
 	case 10:
 		return t.Invoice_rounding_precision, true
 	case 12:
@@ -2548,6 +3221,18 @@ func (t *Currency) FieldValue(no int) (any, bool) {
 		return t.Emu_currency, true
 	case 46:
 		return t.Currency_factor, true
+	case 40:
+		return t.Realized_gl_gains_account, true
+	case 41:
+		return t.Realized_gl_losses_account, true
+	case 47:
+		return t.Residual_gains_account, true
+	case 48:
+		return t.Residual_losses_account, true
+	case 50:
+		return t.Conv_lcy_rndg_debit_acc, true
+	case 51:
+		return t.Conv_lcy_rndg_credit_acc, true
 	}
 	return nil, false
 }
@@ -2573,6 +3258,42 @@ func (t *Currency) SetFieldValue(no int, value any) bool {
 	case 3:
 		if v, ok := value.(types.Date); ok {
 			t.Last_date_adjusted = v
+			return true
+		}
+	case 6:
+		if v, ok := value.(types.Code); ok {
+			t.Unrealized_gains_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Unrealized_gains_acc = types.NewCode(v)
+			return true
+		}
+	case 7:
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gains_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Realized_gains_acc = types.NewCode(v)
+			return true
+		}
+	case 8:
+		if v, ok := value.(types.Code); ok {
+			t.Unrealized_losses_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Unrealized_losses_acc = types.NewCode(v)
+			return true
+		}
+	case 9:
+		if v, ok := value.(types.Code); ok {
+			t.Realized_losses_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Realized_losses_acc = types.NewCode(v)
 			return true
 		}
 	case 10:
@@ -2635,6 +3356,60 @@ func (t *Currency) SetFieldValue(no int, value any) bool {
 	case 46:
 		if v, ok := value.(types.Decimal); ok {
 			t.Currency_factor = v
+			return true
+		}
+	case 40:
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gl_gains_account = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Realized_gl_gains_account = types.NewCode(v)
+			return true
+		}
+	case 41:
+		if v, ok := value.(types.Code); ok {
+			t.Realized_gl_losses_account = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Realized_gl_losses_account = types.NewCode(v)
+			return true
+		}
+	case 47:
+		if v, ok := value.(types.Code); ok {
+			t.Residual_gains_account = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Residual_gains_account = types.NewCode(v)
+			return true
+		}
+	case 48:
+		if v, ok := value.(types.Code); ok {
+			t.Residual_losses_account = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Residual_losses_account = types.NewCode(v)
+			return true
+		}
+	case 50:
+		if v, ok := value.(types.Code); ok {
+			t.Conv_lcy_rndg_debit_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Conv_lcy_rndg_debit_acc = types.NewCode(v)
+			return true
+		}
+	case 51:
+		if v, ok := value.(types.Code); ok {
+			t.Conv_lcy_rndg_credit_acc = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Conv_lcy_rndg_credit_acc = types.NewCode(v)
 			return true
 		}
 	}
@@ -3088,6 +3863,14 @@ func (t *Currency) columnValue(column string) (interface{}, bool) {
 		return t.Last_date_modified, true
 	case "last_date_adjusted":
 		return t.Last_date_adjusted, true
+	case "unrealized_gains_acc":
+		return t.Unrealized_gains_acc, true
+	case "realized_gains_acc":
+		return t.Realized_gains_acc, true
+	case "unrealized_losses_acc":
+		return t.Unrealized_losses_acc, true
+	case "realized_losses_acc":
+		return t.Realized_losses_acc, true
 	case "invoice_rounding_precision":
 		return t.Invoice_rounding_precision, true
 	case "invoice_rounding_type":
@@ -3108,6 +3891,18 @@ func (t *Currency) columnValue(column string) (interface{}, bool) {
 		return t.Emu_currency, true
 	case "currency_factor":
 		return t.Currency_factor, true
+	case "realized_gl_gains_account":
+		return t.Realized_gl_gains_account, true
+	case "realized_gl_losses_account":
+		return t.Realized_gl_losses_account, true
+	case "residual_gains_account":
+		return t.Residual_gains_account, true
+	case "residual_losses_account":
+		return t.Residual_losses_account, true
+	case "conv_lcy_rndg_debit_acc":
+		return t.Conv_lcy_rndg_debit_acc, true
+	case "conv_lcy_rndg_credit_acc":
+		return t.Conv_lcy_rndg_credit_acc, true
 	}
 	return nil, false
 }
@@ -3164,6 +3959,10 @@ func (t *Currency) setKeyValues(values []interface{}) {
 func (t *Currency) Init() {
 	t.Last_date_modified = *new(types.Date)
 	t.Last_date_adjusted = *new(types.Date)
+	t.Unrealized_gains_acc = *new(types.Code)
+	t.Realized_gains_acc = *new(types.Code)
+	t.Unrealized_losses_acc = *new(types.Code)
+	t.Realized_losses_acc = *new(types.Code)
 	t.Invoice_rounding_precision = *new(types.Decimal)
 	t.Invoice_rounding_type = 0
 	t.Amount_rounding_precision = *new(types.Decimal)
@@ -3174,6 +3973,12 @@ func (t *Currency) Init() {
 	t.Appln_rounding_precision = *new(types.Decimal)
 	t.Emu_currency = *new(bool)
 	t.Currency_factor = *new(types.Decimal)
+	t.Realized_gl_gains_account = *new(types.Code)
+	t.Realized_gl_losses_account = *new(types.Code)
+	t.Residual_gains_account = *new(types.Code)
+	t.Residual_losses_account = *new(types.Code)
+	t.Conv_lcy_rndg_debit_acc = *new(types.Code)
+	t.Conv_lcy_rndg_credit_acc = *new(types.Code)
 	t.applyDefaults()
 }
 
@@ -3211,6 +4016,10 @@ func (t *Currency) ToMap() map[string]interface{} {
 		"code":                           t.Code.String(),
 		"last_date_modified":             t.Last_date_modified.String(),
 		"last_date_adjusted":             t.Last_date_adjusted.String(),
+		"unrealized_gains_acc":           t.Unrealized_gains_acc.String(),
+		"realized_gains_acc":             t.Realized_gains_acc.String(),
+		"unrealized_losses_acc":          t.Unrealized_losses_acc.String(),
+		"realized_losses_acc":            t.Realized_losses_acc.String(),
 		"invoice_rounding_precision":     t.Invoice_rounding_precision.String(),
 		"invoice_rounding_type":          int(t.Invoice_rounding_type),
 		"amount_rounding_precision":      t.Amount_rounding_precision.String(),
@@ -3221,6 +4030,12 @@ func (t *Currency) ToMap() map[string]interface{} {
 		"appln_rounding_precision":       t.Appln_rounding_precision.String(),
 		"emu_currency":                   t.Emu_currency,
 		"currency_factor":                t.Currency_factor.String(),
+		"realized_gl_gains_account":      t.Realized_gl_gains_account.String(),
+		"realized_gl_losses_account":     t.Realized_gl_losses_account.String(),
+		"residual_gains_account":         t.Residual_gains_account.String(),
+		"residual_losses_account":        t.Residual_losses_account.String(),
+		"conv_lcy_rndg_debit_acc":        t.Conv_lcy_rndg_debit_acc.String(),
+		"conv_lcy_rndg_credit_acc":       t.Conv_lcy_rndg_credit_acc.String(),
 	}
 }
 
@@ -3239,6 +4054,26 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 	if v, ok := data["last_date_adjusted"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Last_date_adjusted, _ = types.NewDateFromString(s)
+		}
+	}
+	if v, ok := data["unrealized_gains_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Unrealized_gains_acc = types.NewCode(s)
+		}
+	}
+	if v, ok := data["realized_gains_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Realized_gains_acc = types.NewCode(s)
+		}
+	}
+	if v, ok := data["unrealized_losses_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Unrealized_losses_acc = types.NewCode(s)
+		}
+	}
+	if v, ok := data["realized_losses_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Realized_losses_acc = types.NewCode(s)
 		}
 	}
 	if v, ok := data["invoice_rounding_precision"]; ok && v != nil {
@@ -3338,6 +4173,36 @@ func (t *Currency) FromMap(data map[string]interface{}) {
 			t.Currency_factor = types.NewDecimalFromInt(val)
 		}
 	}
+	if v, ok := data["realized_gl_gains_account"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Realized_gl_gains_account = types.NewCode(s)
+		}
+	}
+	if v, ok := data["realized_gl_losses_account"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Realized_gl_losses_account = types.NewCode(s)
+		}
+	}
+	if v, ok := data["residual_gains_account"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Residual_gains_account = types.NewCode(s)
+		}
+	}
+	if v, ok := data["residual_losses_account"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Residual_losses_account = types.NewCode(s)
+		}
+	}
+	if v, ok := data["conv_lcy_rndg_debit_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Conv_lcy_rndg_debit_acc = types.NewCode(s)
+		}
+	}
+	if v, ok := data["conv_lcy_rndg_credit_acc"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Conv_lcy_rndg_credit_acc = types.NewCode(s)
+		}
+	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
@@ -3390,6 +4255,46 @@ func (t *Currency) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 			ReadOnly:   true,
+		},
+		{
+			No:         6,
+			Name:       "unrealized_gains_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         7,
+			Name:       "realized_gains_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         8,
+			Name:       "unrealized_losses_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         9,
+			Name:       "realized_losses_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
 		},
 		{
 			No:         10,
@@ -3494,6 +4399,66 @@ func (t *Currency) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 			ReadOnly:   true,
 		},
+		{
+			No:         40,
+			Name:       "realized_gl_gains_account",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         41,
+			Name:       "realized_gl_losses_account",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         47,
+			Name:       "residual_gains_account",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         48,
+			Name:       "residual_losses_account",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         50,
+			Name:       "conv_lcy_rndg_debit_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         51,
+			Name:       "conv_lcy_rndg_credit_acc",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -3524,5 +4489,106 @@ func (t *Currency) GetOptionFields() map[string][]string {
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
 func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo {
-	return map[string]tables.TableRelationInfo{}
+	return map[string]tables.TableRelationInfo{
+		"unrealized_gains_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"realized_gains_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"unrealized_losses_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"realized_losses_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"realized_gl_gains_account": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"realized_gl_losses_account": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"residual_gains_account": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"residual_losses_account": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"conv_lcy_rndg_debit_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"conv_lcy_rndg_credit_acc": {
+			Table:        "G_L_Account",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+	}
 }

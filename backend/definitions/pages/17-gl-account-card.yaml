@@ -1,0 +1,98 @@
+page:
+  id: 17
+  type: Card
+  name: G/L Account Card
+  source_table: G_L_Account
+  caption: G/L Account Card
+  list_page_id: 16
+  enable_navigation: true
+  editable: true
+  focus_field: "no"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: no
+            importance: Promoted
+          - source: name
+            importance: Promoted
+          - source: income_balance
+          - source: debit_credit
+          - source: account_type
+          - source: reconciliation_account
+          - source: direct_posting
+          - source: totaling
+            table_relation: G_L_Account
+          - source: no_of_blank_lines
+          - source: new_page
+          - source: search_name
+          - source: blocked
+          - source: last_date_modified
+          - source: automatic_ext_text
+
+      - name: Posting
+        caption: Posting
+        fields:
+          - source: department_code
+            table_relation: Department
+          - source: project_code
+            table_relation: Project
+          - source: gen_prod_posting_group
+            table_relation: Gen_Product_Posting_Group
+          - source: gen_bus_posting_group
+            table_relation: Gen_Business_Posting_Group
+          - source: gen_posting_type
+          - source: department_posting
+          - source: project_posting
+          - source: tax_bus_posting_group
+            table_relation: Tax_Business_Posting_Group
+          - source: tax_prod_posting_group
+            table_relation: Tax_Product_Posting_Group
+          - source: tax_area_code
+            table_relation: Tax_Area
+          - source: tax_liable
+          - source: tax_group_code
+            table_relation: Tax_Group
+
+      - name: Consolidation
+        caption: Consolidation
+        fields:
+          - source: consol_credit_acc
+          - source: consol_debit_acc
+
+      - name: Reporting
+        caption: Reporting
+        fields:
+          - source: exchange_rate_adjustment
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 16
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

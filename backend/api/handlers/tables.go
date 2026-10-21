@@ -19,6 +19,7 @@ import (
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/flowfilter"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -160,7 +161,9 @@ type LookupData struct {
 	// loads its rows on demand from this URL (GET …/lookup/:field?search=), Rows and
 	// Simple stay empty
 	LazyURL string `json:"lazy_url,omitempty"`
-	Total   int    `json:"total,omitempty"` // rows in the related table (lazy lookups)
+	// FreeText: the relation is the lookup only (validate: false) — typed text is kept as it is
+	FreeText bool `json:"free_text,omitempty"`
+	Total    int  `json:"total,omitempty"` // rows in the related table (lazy lookups)
 }
 
 // lookupInlineLimit: related tables with at most this many rows are sent along with every
@@ -195,6 +198,7 @@ func (h *TablesHandler) getLookupValues(tableName string, table ftables.Table, c
 			Rows:          []map[string]interface{}{},
 			Simple:        make(map[string]string),
 			SearchTimeout: relInfo.SearchTimeout,
+			FreeText:      relInfo.NoValidate,
 		}
 
 		// Add column definitions if lookup_columns is specified (advanced mode)
@@ -1310,6 +1314,32 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 
 	table.InitRecord()
 
+	// A page's OnNewRecord triggers (optional body): the record the new one is inserted next
+	// to (x_rec, below it when below_x_rec) gives values (e.g. Income/Balance of the account)
+	var req struct {
+		PageID    int                    `json:"page_id"`
+		XRec      map[string]interface{} `json:"x_rec"`
+		BelowXRec bool                   `json:"below_x_rec"`
+	}
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
+		}
+	}
+	if req.PageID != 0 && pages.HasNewRecordTriggers(req.PageID) {
+		xRec, err := h.getTable(tableName, company)
+		if err != nil {
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+		}
+		if req.XRec != nil {
+			ftables.DropMaskedPlaceholders(xRec, req.XRec)
+			xRec.FromMap(req.XRec)
+		}
+		if err := pages.RunNewRecord(req.PageID, table, xRec, req.BelowXRec); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
+	}
+
 	return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 }
 
@@ -1450,8 +1480,8 @@ func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Tabl
 		return nil
 	}
 	relInfo, hasRelation := table.GetTableRelationFields()[field]
-	if !hasRelation {
-		return nil
+	if !hasRelation || relInfo.NoValidate {
+		return nil // no relation, or the lookup only (validate: false)
 	}
 	relTable, err := h.getTableOn(exec, relInfo.Table, company)
 	if err != nil {

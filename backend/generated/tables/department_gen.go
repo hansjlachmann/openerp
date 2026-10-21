@@ -692,6 +692,17 @@ func (t *Department) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.Code)
 	}
+	// Renamed key fields that other tables refer to (Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			renamed = append(renamed, renamedKey{"code", t.oldValues["code"], t.Code})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
@@ -706,6 +717,17 @@ func (t *Department) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Department: %v\n", err)
 		return false
+	}
+	// A temporary record's rename stays in the record: other tables are not changed
+	for _, r := range renamed {
+		if t.temp != nil {
+			break
+		}
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to Department: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -749,6 +771,38 @@ func (t *Department) hasFieldChanged(fieldName string) bool {
 // run a Modify (with its rename cascade) inside a transaction.
 func (t *Department) SetDB(db database.Executor) {
 	t.db = db
+}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *Department) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table  string
+		global bool
+		column string
+	}
+	references := map[string][]reference{
+		"code": {{"G_L_Account", false, "department_code"}},
+	}
+	companies := []string{t.company}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
+			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete removes the record from the database
@@ -1088,15 +1142,30 @@ func (t *Department) parseFilterExpression(fieldName, expr string) (string, []in
 	for _, part := range orParts {
 		part = strings.TrimSpace(part)
 
-		// Check for range (..)
+		// Check for range (..); an open end ("..x", "x..") has one bound
 		if strings.Contains(part, "..") {
 			rangeParts := strings.Split(part, "..")
 			if len(rangeParts) == 2 {
 				min := strings.TrimSpace(rangeParts[0])
 				max := strings.TrimSpace(rangeParts[1])
-				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
-				args = append(args, min, max)
+				switch {
+				case min == "" && max == "":
+					conditions = append(conditions, "1=1")
+				case min == "":
+					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					args = append(args, max)
+				case max == "":
+					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
+					args = append(args, min)
+				default:
+					conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
+					args = append(args, min, max)
+				}
 			}
+		} else if op := tables.FilterComparison(part); op != "" {
+			// Comparison: <=, >=, <, > (a classic filter such as <3000)
+			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
 			likePattern := strings.ReplaceAll(part, "*", "%")

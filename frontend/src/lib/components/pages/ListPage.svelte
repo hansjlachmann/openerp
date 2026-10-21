@@ -28,7 +28,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
@@ -49,7 +49,7 @@
 		type ListSelection
 	} from '$lib/utils/selection';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -869,9 +869,9 @@
 			return;
 		}
 
-		const newRecord = createNewRecord();
-
-		// Insert below the currently selected row (or at end if none selected)
+		// Inserted below the currently selected row (or at the end if none is selected)
+		const anchor = selectedIndex >= 0 ? displayRecords[selectedIndex] : displayRecords[displayRecords.length - 1];
+		const newRecord = createNewRecord(anchor, true);
 		const insertIndex = insertRowAfter(newRecord, selectedIndex >= 0 ? displayRecords[selectedIndex] : undefined);
 
 		// Update selection to the new row
@@ -1077,7 +1077,7 @@
 			// Validate table_relation fields: check if the value exists in the related table
 			// Skip validation for fields using LookupDropdown (it validates internally)
 			const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === fieldName);
-			const hasAdvancedLookup = lookups[fieldName]?.columns && lookups[fieldName]?.rows?.length;
+			const hasAdvancedLookup = isAdvancedLookup(lookups[fieldName]);
 			const value = record[fieldName];
 			if (fieldDef?.table_relation && !hasAdvancedLookup && value && value !== '') {
 				try {
@@ -1224,7 +1224,9 @@
 		return { ...values, ...newRecordDefaults };
 	});
 
-	function createNewRecord(): Record<string, any> {
+	// xRec: the row the new one is inserted next to (below it when below) — OnNewRecord page
+	// triggers take values from it
+	function createNewRecord(xRec?: Record<string, any>, below = true): Record<string, any> {
 		const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 		// All repeater fields start as empty strings so composite PK fields are always defined
 		const blank: Record<string, any> = {};
@@ -1234,14 +1236,14 @@
 		// A subpage's link values (the card's key), and the line number (AutoSplitKey): part
 		// of the new row from the start, not user edits
 		Object.assign(blank, newRowValues, autoSplitKeyValue());
-		void applyNewRecordDefaults(tempId, blank);
+		void applyNewRecordDefaults(tempId, blank, xRec, below);
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
 
-	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>) {
+	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true) {
 		let defaults: Record<string, any>;
 		try {
-			defaults = await api.initRecord(page.page.source_table);
+			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below));
 		} catch (err) {
 			console.error('Failed to initialize new record, keeping it blank:', err);
 			return;
@@ -1308,10 +1310,9 @@
 		// Clean up any other empty new rows first
 		cleanupEmptyNewRows();
 
-		const newRecord = createNewRecord();
-
 		// Insert at the end, or above the current row (by identity in editableRecords)
 		const current = currentCellRow >= 0 ? displayRecords[currentCellRow] : undefined;
+		const newRecord = !atEnd && current ? createNewRecord(current, false) : createNewRecord(displayRecords[displayRecords.length - 1], true);
 		const currentPos = !atEnd && current ? editableRecords.indexOf(current) : -1;
 		const insertPos = currentPos >= 0 ? currentPos : editableRecords.length;
 		editableRecords = [...editableRecords.slice(0, insertPos), newRecord, ...editableRecords.slice(insertPos)];
@@ -2015,6 +2016,16 @@
 					console.error('Failed to load options/lookups:', err);
 					opts = {};
 					lkps = {};
+				}
+				// The card's OnNewRecord triggers: values from the selected row (the new record
+				// goes below it); the filter and link values stay
+				const context = newRecordContext(pageData.page, selectedRecord ?? undefined, true);
+				if (context) {
+					try {
+						recData = { ...(await api.initRecord(sourceTable, context)), ...record };
+					} catch (err) {
+						console.error('Failed to initialize the new record:', err);
+					}
 				}
 			}
 
@@ -3141,6 +3152,7 @@
 												columns={lookups[field.source].columns ?? []}
 												rows={lookups[field.source].rows ?? []}
 												lazyUrl={lookups[field.source].lazy_url}
+												freeText={lookups[field.source].free_text}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}
 												captions={captions}
@@ -3309,7 +3321,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											<span class="cell-selected-text">{formatCellValue(record[field.source], field.source)}</span>
+											<span class={cn('cell-selected-text', cellStyle(field, record).classes)} style={cellStyle(field, record).style}>{formatCellValue(record[field.source], field.source)}</span>
 										</div>
 									{/if}
 								{:else}
@@ -3318,7 +3330,8 @@
 									<!-- svelte-ignore a11y_no_static_element_interactions -->
 									<!-- svelte-ignore a11y_click_events_have_key_events -->
 									<div
-										class={cn('read-cell-content', getFieldStyleClasses(field))}
+										class={cn('read-cell-content', cellStyle(field, record).classes)}
+										style={cellStyle(field, record).style}
 										onclick={(e) => handleCellClick(index, colIndex, e)}
 										onmousedown={(e) => {
 											// Ctrl/Shift+click selects rows: no browser text selection

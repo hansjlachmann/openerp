@@ -9,12 +9,10 @@
 package demodata
 
 import (
-	// The table triggers (business logic) run for the records written here
 	"database/sql"
 	"embed"
 	"errors"
 	"fmt"
-	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"math"
 	"math/rand"
 	"sort"
@@ -29,7 +27,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	// The table triggers (business logic) run for the records written here
-	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 )
 
 //go:embed data/*.yaml
@@ -357,7 +355,8 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			p.step()
 		}
 	}
-	return nil
+	// The chart of accounts as the Indent Chart of Accounts function leaves it
+	return tables.IndentChartOfAccounts(exec, company, dbType, nil)
 }
 
 func insertCustomers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry, today time.Time, counts *Counts, p *progress) error {

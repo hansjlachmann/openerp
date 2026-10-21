@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    functions: "Funktioner"
+    indent_chart_of_accounts: "Indryk kontoplan"
     exch_rates: "Valutakurser"
     new: "Ny"
     edit: "Rediger"
@@ -44,6 +46,8 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    posting: "Bogføring"
+    consolidation: "Koncern"
     authentication: "Godkendelse"
     communication: "Kommunikation"
     general: "Generelt"
@@ -77,7 +81,14 @@ common:
     users: "Brugere"
     languages: "Sprog"
     payment_terms: "Betalingsbetingelser"
+    chart_of_accounts: "Kontoplan"
     general_ledger_setup: "Finansopsætning"
+    gen_business_posting_groups: "Virksomhedsbogføringsgrupper"
+    gen_product_posting_groups: "Produktbogføringsgrupper"
+    tax_area_list: "Momsområder"
+    tax_groups: "Momsgrupper"
+    tax_business_posting_groups: "Momsvirksomhedsbogføringsgrupper"
+    tax_product_posting_groups: "Momsproduktbogføringsgrupper"
     countries_regions: "Lande/områder"
     currencies: "Valutaer"
     finance_charge_terms: "Rentebetingelser"

@@ -17,6 +17,8 @@ errors:
   ERR_RELATED_NOT_FOUND: "%1 '%2' findes ikke"
   ERR_RELATED_INACTIVE: "%1 '%2' er inaktiv og kan ikke bruges"
   ERR_FIELD_MUST_BE: "%1 skal være %2"
+  ERR_FIELD_MUST_NOT_BE: "%1 må ikke være %2"
+  ERR_END_TOTAL_NO_BEGIN: "Slut-total %1 mangler en tilhørende Start-total."
   ERR_FIELD_ERROR: "%1 %2"
   ERR_EMAIL_INVALID: "%1: '%2' er ikke en gyldig e-mailadresse"
   ERR_DATE_FORMULA_INVALID: "%1: '%2' er ikke en gyldig datoformel (f.eks. 30D, 1M, CM, 1M+CM)"

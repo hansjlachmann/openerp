@@ -280,9 +280,18 @@ export const api = {
 	},
 
 	// Get a new, not yet inserted record with its defaults applied (OnNewRecord)
-	async initRecord<T = TableRecord>(tableName: string): Promise<T> {
+	// The initial values of a new record; with a page that has OnNewRecord triggers, the record
+	// the new one is inserted next to (xRec, below it when belowXRec) gives more of them
+	async initRecord<T = TableRecord>(
+		tableName: string,
+		newRecord?: { pageId: number; xRec?: Record<string, any>; belowXRec: boolean }
+	): Promise<T> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/init`, {
-			method: 'POST'
+			method: 'POST',
+			...(newRecord && {
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ page_id: newRecord.pageId, x_rec: newRecord.xRec ?? null, below_x_rec: newRecord.belowXRec })
+			})
 		});
 		return handleApiResponse<T>(response, `init ${tableName}`);
 	},

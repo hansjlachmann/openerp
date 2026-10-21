@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cardTitle, formatDecimal } from '../fieldHelpers';
+import { cardTitle, cellStyle, formatDecimal } from '../fieldHelpers';
 
 describe('formatDecimal', () => {
 	it('pads to the minimum places', () => {
@@ -45,5 +45,27 @@ describe('cardTitle', () => {
 		);
 		expect(cardTitle('Customer Card', ['no'], {})).toBe('Customer Card');
 		expect(cardTitle('Customer Card', undefined, { no: '1' })).toBe('Customer Card');
+	});
+});
+
+describe('cellStyle', () => {
+	const name = {
+		source: 'name',
+		indent_field: 'indentation',
+		style_expr: { field: 'account_type', not_equal: 0, style: 'Strong' as const }
+	};
+	it('indents by the record value and styles when the condition holds', () => {
+		const heading = cellStyle(name, { indentation: 2, account_type: 1 });
+		expect(heading.style).toBe('padding-left: 2rem');
+		expect(heading.classes).toContain('font-bold');
+		const posting = cellStyle(name, { indentation: 0, account_type: 0 });
+		expect(posting.style).toBe('');
+		expect(posting.classes).not.toContain('font-bold');
+	});
+
+	it('equal and the field style without a condition', () => {
+		expect(cellStyle({ source: 's', style_expr: { field: 'blocked', equal: true, style: 'Unfavorable' } }, { blocked: true }).classes).toContain('text-red-600');
+		expect(cellStyle({ source: 's', style: 'Strong' }, {}).classes).toContain('font-bold');
+		expect(cellStyle({ source: 's' }, undefined)).toEqual({ classes: '', style: '' });
 	});
 });

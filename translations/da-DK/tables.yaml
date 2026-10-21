@@ -380,6 +380,16 @@ tables:
       appln_rounding_precision: "Udligningsafrundingspræcision"
       emu_currency: "ØMU-valuta"
       currency_factor: "Valutafaktor"
+      unrealized_gains_acc: "Urealiseret gevinstkonto"
+      realized_gains_acc: "Realiseret gevinstkonto"
+      unrealized_losses_acc: "Urealiseret tabskonto"
+      realized_losses_acc: "Realiseret tabskonto"
+      realized_gl_gains_account: "Realiseret finansgevinstkonto"
+      realized_gl_losses_account: "Realiseret finanstabskonto"
+      residual_gains_account: "Restgevinstkonto"
+      residual_losses_account: "Resttabskonto"
+      conv_lcy_rndg_debit_acc: "Konv. RV-afrund. debetkonto"
+      conv_lcy_rndg_credit_acc: "Konv. RV-afrund. kreditkonto"
 
     # Option field values
     options:
@@ -543,3 +553,106 @@ tables:
         currency: "Valuta"
         relational_currency: "Relationsvaluta"
         both: "Begge"
+
+  # Posting groups (tables 250, 251, 321, 323, 324)
+  gen_business_posting_group:
+    caption: "Virksomhedsbogføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      def_tax_bus_posting_group: "Std. momsvirksomhedsbogf.gruppe"
+      auto_insert_default: "Indsæt standard automatisk"
+  gen_product_posting_group:
+    caption: "Produktbogføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      def_tax_prod_posting_group: "Std. momsproduktbogf.gruppe"
+      auto_insert_default: "Indsæt standard automatisk"
+  tax_group:
+    caption: "Momsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_business_posting_group:
+    caption: "Momsvirksomhedsbogføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_product_posting_group:
+    caption: "Momsproduktbogføringsgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  tax_area:
+    caption: "Momsområde"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # G/L Account (Table 15)
+  g_l_account:
+    caption: "Finanskonto"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      search_name: "Søgenavn"
+      account_type: "Kontotype"
+      department_code: "Afdelingskode"
+      project_code: "Projektkode"
+      income_balance: "Resultat/Status"
+      debit_credit: "Debet/Kredit"
+      no_2: "Nr. 2"
+      blocked: "Spærret"
+      direct_posting: "Direkte bogføring"
+      reconciliation_account: "Afstemningskonto"
+      new_page: "Ny side"
+      no_of_blank_lines: "Antal tomme linjer"
+      indentation: "Indrykning"
+      last_date_modified: "Rettet den"
+      totaling: "Sammentælling"
+      consol_debit_acc: "Konsol. debetkonto"
+      consol_credit_acc: "Konsol. kreditkonto"
+      gen_posting_type: "Bogføringstype"
+      gen_bus_posting_group: "Virksomhedsbogføringsgruppe"
+      gen_prod_posting_group: "Produktbogføringsgruppe"
+      automatic_ext_text: "Automatisk udvidet tekst"
+      department_posting: "Afdelingsbogføring"
+      project_posting: "Projektbogføring"
+      tax_area_code: "Momsområdekode"
+      tax_liable: "Momspligtig"
+      tax_group_code: "Momsgruppekode"
+      tax_bus_posting_group: "Momsvirksomhedsbogf.gruppe"
+      tax_prod_posting_group: "Momsproduktbogf.gruppe"
+      exchange_rate_adjustment: "Valutakursregulering"
+
+    # Option field values
+    options:
+      account_type:
+        posting: "Bogføring"
+        heading: "Overskrift"
+        total: "Sum"
+        begin_total: "Fra-sum"
+        end_total: "Til-sum"
+      income_balance:
+        income_statement: "Resultatopgørelse"
+        balance_sheet: "Balance"
+      debit_credit:
+        both: "Begge"
+        debit: "Debet"
+        credit: "Kredit"
+      gen_posting_type:
+        purchase: "Køb"
+        sale: "Salg"
+      department_posting:
+        code_mandatory: "Kode obligatorisk"
+        same_code: "Samme kode"
+        no_code: "Ingen kode"
+      project_posting:
+        code_mandatory: "Kode obligatorisk"
+        same_code: "Samme kode"
+        no_code: "Ingen kode"
+      exchange_rate_adjustment:
+        no_adjustment: "Ingen regulering"
+        adjust_amount: "Reguler beløb"
+        adjust_additional_currency_amount: "Reguler ekstra valutabeløb"

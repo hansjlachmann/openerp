@@ -85,3 +85,11 @@ func TestRangeChecks(t *testing.T) {
 		t.Error("a value on the bound refused")
 	}
 }
+
+func TestFilterComparison(t *testing.T) {
+	for part, want := range map[string]string{"<3000": "<", "<=3000": "<=", ">1": ">", ">=1": ">=", "<>A": "", "A": "", "1..2": ""} {
+		if got := FilterComparison(part); got != want {
+			t.Errorf("%q: %q, want %q", part, got, want)
+		}
+	}
+}

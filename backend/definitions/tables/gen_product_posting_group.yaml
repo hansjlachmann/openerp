@@ -1,0 +1,44 @@
+table:
+  id: 251
+  name: "Gen_Product_Posting_Group"
+  caption: Gen. Product Posting Group
+  description: General product posting groups (table 251)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: def_tax_prod_posting_group
+      no: 3
+      type: types.Code
+      db_name: def_tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 80
+          - source: description
+            width: 200
+
+    - name: auto_insert_default
+      no: 4
+      type: bool
+      db_name: auto_insert_default
+      default: true
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

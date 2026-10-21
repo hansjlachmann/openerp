@@ -35,7 +35,9 @@ func newTestDB(t *testing.T) *sql.DB {
 	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{},
 		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
 		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
-		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{}}
+		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
+		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
+		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -86,8 +88,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 28 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 28 master data records", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 81 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 81 master data records", counts)
 	}
 	// Master data: given fields and the tables' defaults for the others
 	var eur gtables.Currency
@@ -110,6 +112,15 @@ func TestCreateSmall(t *testing.T) {
 	setup.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !setup.Get("") || setup.Lcy_code != "NOK" || setup.Amount_decimal_places != "2:2" {
 		t.Errorf("General Ledger Setup = %+v", setup.ToMap())
+	}
+	// The chart of accounts is indented, End-Totals total their range
+	var acc gtables.GLAccount
+	acc.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !acc.Get("1120") || acc.Indentation != 2 || !acc.Get("1190") || acc.Totaling != "1110..1190" || acc.Indentation != 1 || !acc.Get("1000") || acc.Indentation != 0 {
+		t.Errorf("chart of accounts not indented: %+v", acc.ToMap())
+	}
+	if eur.Realized_gains_acc != "5140" {
+		t.Errorf("EUR realized gains account = %q", eur.Realized_gains_acc)
 	}
 	factor, err := tables.ExchangeRates(&eur).ExchangeRate(types.Today(), "EUR")
 	if err != nil || factor.Decimal.Round(6).String() != "0.086957" {
