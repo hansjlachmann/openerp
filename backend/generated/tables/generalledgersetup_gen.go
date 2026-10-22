@@ -1660,7 +1660,7 @@ func (t *GeneralLedgerSetup) CalcFields(fieldNames ...string) {
 // calcFlowField_cust_balances_due calculates the cust_balances_due FlowField
 // CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
 func (t *GeneralLedgerSetup) calcFlowField_cust_balances_due() {
-	t.Cust_balances_due = t.calcSumCustomerLedgerEntryRemaining_amt_lcy()
+	t.Cust_balances_due = t.calcSum_cust_balances_due()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -1696,7 +1696,7 @@ func (t *GeneralLedgerSetup) calcForRecords_cust_balances_due(records []map[stri
 
 // Helper methods for FlowField calculations
 
-func (t *GeneralLedgerSetup) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {
+func (t *GeneralLedgerSetup) calcSum_cust_balances_due() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true

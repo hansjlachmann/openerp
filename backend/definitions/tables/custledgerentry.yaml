@@ -210,18 +210,43 @@ table:
       type: types.Code
       db_name: user_id
       length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
 
     - name: source_code
       no: 28
       type: types.Code
       db_name: source_code
       length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
 
     - name: reason_code
       no: 50
       type: types.Code
       db_name: reason_code
       length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
 
     - name: journal_batch_name
       no: 49
@@ -298,6 +323,26 @@ table:
       type: types.Code
       db_name: bal_account_no
       length: 20
+      # The balancing account's table depends on Bal. Account Type (vendors, bank accounts and
+      # fixed assets come with their tables)
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
 
   # Keys (Indexes) - style
   # These indexes optimize FlowField calculations and common queries

@@ -625,6 +625,19 @@ tables:
       tax_bus_posting_group: "Momsvirksomhedsbogf.gruppe"
       tax_prod_posting_group: "Momsproduktbogf.gruppe"
       exchange_rate_adjustment: "Valutakursregulering"
+      date_filter: "Datofilter"
+      department_filter: "Afdelingsfilter"
+      project_filter: "Projektfilter"
+      balance_at_date: "Saldo til dato"
+      net_change: "Bevægelse"
+      balance: "Saldo"
+      debit_amount: "Debetbeløb"
+      credit_amount: "Kreditbeløb"
+      additional_currency_net_change: "Ekstra valuta bevægelse"
+      add_currency_balance_at_date: "Ekstra valuta saldo til dato"
+      additional_currency_balance: "Ekstra valuta saldo"
+      add_currency_debit_amount: "Ekstra valuta debetbeløb"
+      add_currency_credit_amount: "Ekstra valuta kreditbeløb"
 
     # Option field values
     options:
@@ -656,3 +669,89 @@ tables:
         no_adjustment: "Ingen regulering"
         adjust_amount: "Reguler beløb"
         adjust_additional_currency_amount: "Reguler ekstra valutabeløb"
+
+  # Source Code (Table 230)
+  source_code:
+    caption: "Kildespor"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # Reason Code (Table 231)
+  reason_code:
+    caption: "Årsagskode"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # G/L Entry (Table 17)
+  g_l_entry:
+    caption: "Finanspost"
+    fields:
+      entry_no: "Løbenr."
+      gl_account_no: "Finanskontonr."
+      posting_date: "Bogføringsdato"
+      document_type: "Bilagstype"
+      document_no: "Bilagsnr."
+      description: "Beskrivelse"
+      bal_account_no: "Modkontonr."
+      amount: "Beløb"
+      department_code: "Afdelingskode"
+      project_code: "Projektkode"
+      user_id: "Bruger-id"
+      source_code: "Kildespor"
+      system_created_entry: "Systemoprettet post"
+      prior_year_entry: "Post fra tidligere år"
+      job_no: "Sagsnr."
+      quantity: "Antal"
+      tax_amount: "Momsbeløb"
+      business_unit_code: "Koncernvirksomhedskode"
+      journal_batch_name: "Kladdenavn"
+      reason_code: "Årsagskode"
+      gen_posting_type: "Bogføringstype"
+      gen_bus_posting_group: "Virksomhedsbogføringsgruppe"
+      gen_prod_posting_group: "Produktbogføringsgruppe"
+      bal_account_type: "Modkontotype"
+      transaction_no: "Transaktionsnr."
+      debit_amount: "Debetbeløb"
+      credit_amount: "Kreditbeløb"
+      document_date: "Bilagsdato"
+      external_document_no: "Eksternt bilagsnr."
+      source_type: "Kildetype"
+      source_no: "Kildenr."
+      no_series: "Nummerserie"
+      tax_area_code: "Momsområdekode"
+      tax_liable: "Momspligtig"
+      tax_group_code: "Momsgruppekode"
+      use_tax: "Brugsafgift"
+      tax_bus_posting_group: "Momsvirksomhedsbogf.gruppe"
+      tax_prod_posting_group: "Momsproduktbogf.gruppe"
+      additional_currency_amount: "Ekstra valutabeløb"
+      add_currency_debit_amount: "Ekstra valuta debetbeløb"
+      add_currency_credit_amount: "Ekstra valuta kreditbeløb"
+
+    # Option field values
+    options:
+      document_type:
+        payment: "Betaling"
+        invoice: "Faktura"
+        credit_memo: "Kreditnota"
+        finance_charge_memo: "Rentenota"
+        reminder: "Rykker"
+      gen_posting_type:
+        purchase: "Køb"
+        sale: "Salg"
+        settlement: "Afregning"
+      bal_account_type:
+        g_l_account: "Finanskonto"
+        customer: "Debitor"
+        vendor: "Kreditor"
+        bank_account: "Bankkonto"
+        fixed_asset: "Anlægsaktiv"
+        employee: "Medarbejder"
+      source_type:
+        customer: "Debitor"
+        vendor: "Kreditor"
+        bank_account: "Bankkonto"
+        fixed_asset: "Anlægsaktiv"
+        employee: "Medarbejder"

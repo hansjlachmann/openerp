@@ -1,6 +1,8 @@
 package tables
 
 import (
+	"strconv"
+
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 )
 
@@ -140,6 +142,49 @@ type TableRelationInfo struct {
 	// NoValidate (YAML validate: false, classic ValidateTableRelation=No): the relation is the
 	// field's lookup only — any value is accepted (e.g. Totaling holds a filter of accounts)
 	NoValidate bool
+	// Conditions (YAML table_relation.conditions, classic IF (Type=CONST(x)) Table ELSE IF …):
+	// the relation depends on another field of the record — the condition whose value the
+	// record's field has applies; a value without a condition has no relation (its table is not
+	// migrated yet). Table and Field are blank then.
+	Conditions []ConditionalRelationInfo
+}
+
+// ConditionalRelationInfo is one branch of a conditional relation: Relation applies when the
+// record's Field (an option) has Value
+type ConditionalRelationInfo struct {
+	Field    string
+	Value    int
+	Relation TableRelationInfo
+}
+
+// For returns the relation that applies to a record (field name → value, e.g. ToMap); ok is
+// false when a conditional relation has no branch for the record's value
+func (ri TableRelationInfo) For(record map[string]interface{}) (TableRelationInfo, bool) {
+	if len(ri.Conditions) == 0 {
+		return ri, ri.Table != ""
+	}
+	for _, c := range ri.Conditions {
+		if v, ok := intValue(record[c.Field]); ok && v == c.Value {
+			return c.Relation, true
+		}
+	}
+	return TableRelationInfo{}, false
+}
+
+// intValue reads an option or integer value as the API and records carry it
+func intValue(v interface{}) (int, bool) {
+	switch x := v.(type) {
+	case int:
+		return x, true
+	case int64:
+		return int(x), true
+	case float64:
+		return int(x), true
+	case string:
+		n, err := strconv.Atoi(x)
+		return n, err == nil
+	}
+	return 0, false
 }
 
 // FieldType represents the field types

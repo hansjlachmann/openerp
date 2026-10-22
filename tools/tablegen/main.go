@@ -47,6 +47,10 @@ type Reference struct {
 	Table  string // referencing table name (e.g. "Customer Ledger Entry")
 	Global bool   // referencing table has no company prefix
 	Column string // referencing column (e.g. "customer_no")
+	// CondColumn / CondValue: a conditional relation refers only from records whose
+	// CondColumn has CondValue (balancing accounts of type Customer)
+	CondColumn string
+	CondValue  int
 }
 
 // Key represents an index/key on a table
@@ -62,26 +66,31 @@ type Key struct {
 
 // Field represents a single field in a table
 type Field struct {
-	No            int            `yaml:"no"`  // Field number (field ID): unique in the table, never changed or reused
-	App           string         `yaml:"app"` // Set by extmerge on fields an extension adds: the extension's app id
-	Name          string         `yaml:"name"`
-	Type          string         `yaml:"type"`
-	DBName        string         `yaml:"db_name"`
-	PrimaryKey    bool           `yaml:"primary_key"`
-	Length        int            `yaml:"length"`
-	Required      bool           `yaml:"required"`
-	Default       interface{}    `yaml:"default"`
-	AutoTimestamp bool           `yaml:"auto_timestamp"`
-	Validation    *Validation    `yaml:"validation"`
-	TableRelation *TableRelation `yaml:"table_relation"`
-	Options       []string       `yaml:"options"`      // For Option type fields (enum values)
-	Precision     int            `yaml:"precision"`    // For Decimal type (total digits)
-	Scale         int            `yaml:"scale"`        // For Decimal type (decimal places)
-	FlowField     bool           `yaml:"flow_field"`   // For FlowFields (calculated fields)
-	CalcFormula   string         `yaml:"calc_formula"` // Sum, Count, Lookup, Exist, Average, Min, Max
-	SourceTable   string         `yaml:"source_table"` // Table to calculate from
-	SourceField   string         `yaml:"source_field"` // Field to aggregate
-	FlowFilters   []FlowFilter   `yaml:"flow_filters"` // Filter conditions
+	No            int         `yaml:"no"`  // Field number (field ID): unique in the table, never changed or reused
+	App           string      `yaml:"app"` // Set by extmerge on fields an extension adds: the extension's app id
+	Name          string      `yaml:"name"`
+	Type          string      `yaml:"type"`
+	DBName        string      `yaml:"db_name"`
+	PrimaryKey    bool        `yaml:"primary_key"`
+	Length        int         `yaml:"length"`
+	Required      bool        `yaml:"required"`
+	Default       interface{} `yaml:"default"`
+	AutoTimestamp bool        `yaml:"auto_timestamp"`
+	Validation    *Validation `yaml:"validation"`
+	// HasFieldFilter / FieldFilterColumn (derived, FlowFields): a "field_filter" flow filter
+	// applies the filter held in the record's FieldFilterColumn (Totaling) — such FlowFields are
+	// calculated per record for those records and cannot be filtered or sorted on in lists
+	HasFieldFilter    bool           `yaml:"-"`
+	FieldFilterColumn string         `yaml:"-"`
+	TableRelation     *TableRelation `yaml:"table_relation"`
+	Options           []string       `yaml:"options"`      // For Option type fields (enum values)
+	Precision         int            `yaml:"precision"`    // For Decimal type (total digits)
+	Scale             int            `yaml:"scale"`        // For Decimal type (decimal places)
+	FlowField         bool           `yaml:"flow_field"`   // For FlowFields (calculated fields)
+	CalcFormula       string         `yaml:"calc_formula"` // Sum, Count, Lookup, Exist, Average, Min, Max
+	SourceTable       string         `yaml:"source_table"` // Table to calculate from
+	SourceField       string         `yaml:"source_field"` // Field to aggregate
+	FlowFilters       []FlowFilter   `yaml:"flow_filters"` // Filter conditions
 	// FlowFilter (FieldClass FlowFilter): not stored; holds a filter expression the
 	// user sets (e.g. Date Filter), applied by FlowFields with a flow filter of type "filter"
 	FlowFilter bool `yaml:"flow_filter"`
@@ -126,7 +135,7 @@ type Field struct {
 // FlowFilter represents a filter condition for FlowField calculation
 type FlowFilter struct {
 	Field string `yaml:"field"` // Field name in source table
-	Type  string `yaml:"type"`  // "const", "field" or "filter" (apply a FlowFilter field of this table)
+	Type  string `yaml:"type"`  // "const", "field", "filter" (apply a FlowFilter field of this table) or "field_filter" (a stored field of this table holding a filter, e.g. Totaling)
 	Value string `yaml:"value"` // Constant value, or field / FlowFilter field name of the current table
 	// UpperLimit (type "filter"): only the upper end of the FlowFilter applies — up to the
 	// filter's last date, from the start ("Balance at Date": Posting Date = UpperLimit(Date Filter))
@@ -137,6 +146,11 @@ type FlowFilter struct {
 	Kind        string `yaml:"-"`
 	// Derived for type "field": the database column of the current table's field
 	ValueColumn string `yaml:"-"`
+	// Derived for type "field" when a "field_filter" flow filter on the same source field
+	// exists: the struct field holding the filter (e.g. Totaling) and the source field's
+	// flowfilter kind — a filter in it replaces the equality (classic FIELD(FILTER(Totaling)))
+	OverrideField string `yaml:"-"`
+	OverrideKind  string `yaml:"-"`
 }
 
 // LookupColumn defines a column to display in the lookup dropdown
@@ -153,6 +167,27 @@ type TableRelation struct {
 	LookupColumns []LookupColumn `yaml:"lookup_columns"` // Columns to show in dropdown - advanced mode
 	SearchTimeout int            `yaml:"search_timeout"` // Auto-clear search after N milliseconds (default: 1500)
 	Validate      *bool          `yaml:"validate"`       // Whether to validate the relation (default: true)
+	// Conditions (classic IF (Type=CONST(x)) Table ELSE IF …): the relation depends on another
+	// field of the record — each condition is a relation of its own (Table, Field, lookup
+	// columns) that applies when the record's field equals the value; Table/Field stay blank
+	Conditions []RelationCondition `yaml:"conditions"`
+}
+
+// RelationCondition is one branch of a conditional table relation
+type RelationCondition struct {
+	When struct {
+		Field string `yaml:"field"` // an option field of the same table (e.g. bal_account_type)
+		Equal int    `yaml:"equal"` // the option's number
+	} `yaml:"when"`
+	TableRelation `yaml:",inline"`
+}
+
+// Branches returns the relations of a field: its conditions, or itself
+func (tr *TableRelation) Branches() []RelationCondition {
+	if len(tr.Conditions) > 0 {
+		return tr.Conditions
+	}
+	return []RelationCondition{{TableRelation: *tr}}
 }
 
 // ShouldValidate returns whether this table relation should be validated
@@ -267,6 +302,11 @@ func main() {
 			continue
 		}
 		if err := validateFieldNumbers(tableDef); err != nil {
+			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
+			failed = true
+			continue
+		}
+		if err := validateRelationConditions(tableDef); err != nil {
 			fmt.Printf("✗ %s: %v\n", filepath.Base(yamlFile), err)
 			failed = true
 			continue
@@ -472,12 +512,14 @@ func prepareTemplateData(def *TableDef) TemplateData {
 		data.SIFTKeys = append(data.SIFTKeys, kd)
 	}
 	data.UsesSIFT = true // SyncKeys always calls sift.Sync (drops totals of removed keys)
+	hasFieldFilter := false
 	for _, f := range def.Table.Fields {
-		if f.FlowField && (f.CalcFormula == "Sum" || f.CalcFormula == "Count") {
+		if f.FlowField && (f.CalcFormula == "Sum" || f.CalcFormula == "Count") && !f.HasFieldFilter {
 			data.HasFilterableFlowField = true
 		}
+		hasFieldFilter = hasFieldFilter || f.HasFieldFilter
 	}
-	data.UsesFlowFilter = len(def.FlowFilterFields) > 0 || data.HasFilterableFlowField
+	data.UsesFlowFilter = len(def.FlowFilterFields) > 0 || data.HasFilterableFlowField || hasFieldFilter
 
 	return data
 }
@@ -521,16 +563,25 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 			if f.TableRelation == nil || f.FlowField {
 				continue
 			}
-			target, ok := byName[normalizedTableName(f.TableRelation.Table)]
-			if !ok {
-				continue
-			}
-			for _, tf := range target.Table.Fields {
-				if tf.PrimaryKey && (tf.Name == f.TableRelation.Field || tf.DBName == f.TableRelation.Field) {
-					if target.References == nil {
-						target.References = map[string][]Reference{}
+			for _, branch := range f.TableRelation.Branches() {
+				target, ok := byName[normalizedTableName(branch.Table)]
+				if !ok {
+					continue
+				}
+				condColumn := ""
+				if branch.When.Field != "" {
+					condColumn = dbNameOf(d, branch.When.Field)
+				}
+				for _, tf := range target.Table.Fields {
+					if tf.PrimaryKey && (tf.Name == branch.Field || tf.DBName == branch.Field) {
+						if target.References == nil {
+							target.References = map[string][]Reference{}
+						}
+						target.References[tf.DBName] = append(target.References[tf.DBName], Reference{
+							Table: d.Table.Name, Global: d.Table.Global, Column: f.DBName,
+							CondColumn: condColumn, CondValue: branch.When.Equal,
+						})
 					}
-					target.References[tf.DBName] = append(target.References[tf.DBName], Reference{Table: d.Table.Name, Global: d.Table.Global, Column: f.DBName})
 				}
 			}
 		}
@@ -698,6 +749,41 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 					return fmt.Errorf("FlowField %s: flow filter on %s uses %q, which is not a stored field of %s", f.Name, ff.Field, ff.Value, def.Table.Name)
 				}
 			}
+			if ff.Type == "field_filter" {
+				var own *Field
+				for k := range def.Table.Fields {
+					if def.Table.Fields[k].Name == ff.Value && !def.Table.Fields[k].FlowField {
+						own = &def.Table.Fields[k]
+					}
+				}
+				if own == nil || (own.Type != "types.Text" && own.Type != "types.Code") {
+					return fmt.Errorf("FlowField %s: field_filter on %s uses %q, which is not a stored Text/Code field of %s", f.Name, ff.Field, ff.Value, def.Table.Name)
+				}
+				kind := "KindCode"
+				if source, ok := byStruct[toPascalCase(f.SourceTable)]; ok {
+					for _, sf := range source.Table.Fields {
+						if sf.Name == ff.Field {
+							if k, ok := flowFilterKind(sf); ok {
+								kind = k
+							}
+						}
+					}
+				}
+				found := false
+				for k := range f.FlowFilters {
+					if f.FlowFilters[k].Type == "field" && f.FlowFilters[k].Field == ff.Field {
+						f.FlowFilters[k].OverrideField = upperFirst(own.Name)
+						f.FlowFilters[k].OverrideKind = kind
+						found = true
+					}
+				}
+				if !found {
+					return fmt.Errorf("FlowField %s: field_filter on %s needs a flow filter of type field on the same field", f.Name, ff.Field)
+				}
+				f.HasFieldFilter = true
+				f.FieldFilterColumn = own.DBName
+				continue
+			}
 			if ff.UpperLimit && ff.Type != "filter" {
 				return fmt.Errorf("FlowField %s: upper_limit on %s needs a flow filter of type filter", f.Name, ff.Field)
 			}
@@ -764,25 +850,27 @@ func validateSensitiveFields(def *TableDef, byStruct map[string]*TableDef) error
 		}
 	}
 	for _, f := range def.Table.Fields {
-		rel := f.TableRelation
-		if rel == nil {
+		if f.TableRelation == nil {
 			continue
 		}
-		related, ok := byStruct[toPascalCase(rel.Table)]
-		if !ok {
-			continue
-		}
-		shown := []string{rel.Field, rel.DisplayField}
-		for _, col := range rel.LookupColumns {
-			shown = append(shown, col.Source)
-		}
-		for _, rf := range related.Table.Fields {
-			if !rf.Sensitive && !rf.Masked {
+		for _, branch := range f.TableRelation.Branches() {
+			rel := branch.TableRelation
+			related, ok := byStruct[toPascalCase(rel.Table)]
+			if !ok {
 				continue
 			}
-			for _, name := range shown {
-				if name == rf.Name {
-					return fmt.Errorf("table relation of %s shows secret (sensitive/masked) field %s.%s", f.Name, related.Table.Name, rf.Name)
+			shown := []string{rel.Field, rel.DisplayField}
+			for _, col := range rel.LookupColumns {
+				shown = append(shown, col.Source)
+			}
+			for _, rf := range related.Table.Fields {
+				if !rf.Sensitive && !rf.Masked {
+					continue
+				}
+				for _, name := range shown {
+					if name == rf.Name {
+						return fmt.Errorf("table relation of %s shows secret (sensitive/masked) field %s.%s", f.Name, related.Table.Name, rf.Name)
+					}
 				}
 			}
 		}
@@ -964,6 +1052,52 @@ func validateFieldProperties(def *TableDef) error {
 	return nil
 }
 
+// dbNameOf is the column of a field of a table (its db_name, else its name)
+func dbNameOf(def *TableDef, name string) string {
+	for _, f := range def.Table.Fields {
+		if f.Name == name {
+			if f.DBName != "" {
+				return f.DBName
+			}
+			return f.Name
+		}
+	}
+	return name
+}
+
+// validateRelationConditions checks conditional table relations: each condition names an
+// option or integer field of the table, a value, and a related table and field; no two
+// conditions share a value
+func validateRelationConditions(def *TableDef) error {
+	byName := map[string]Field{}
+	for _, f := range def.Table.Fields {
+		byName[f.Name] = f
+	}
+	for _, f := range def.Table.Fields {
+		if f.TableRelation == nil || len(f.TableRelation.Conditions) == 0 {
+			continue
+		}
+		if f.TableRelation.Table != "" {
+			return fmt.Errorf("field %s: table_relation has conditions and a table — the table goes into each condition", f.Name)
+		}
+		seen := map[int]bool{}
+		for _, c := range f.TableRelation.Conditions {
+			cf, ok := byName[c.When.Field]
+			if !ok || cf.FlowField || cf.FlowFilter || (cf.Type != "Option" && cf.Type != "int") {
+				return fmt.Errorf("field %s: relation condition on %q, which is not an option or integer field of the table", f.Name, c.When.Field)
+			}
+			if c.Table == "" || c.Field == "" {
+				return fmt.Errorf("field %s: relation condition %s = %d needs a table and a field", f.Name, c.When.Field, c.When.Equal)
+			}
+			if seen[c.When.Equal] {
+				return fmt.Errorf("field %s: two relation conditions for %s = %d", f.Name, c.When.Field, c.When.Equal)
+			}
+			seen[c.When.Equal] = true
+		}
+	}
+	return nil
+}
+
 // defaultText is a YAML default as text: decimals without exponent (0.00001, not 1e-05)
 func defaultText(v interface{}) string {
 	switch x := v.(type) {
@@ -1036,13 +1170,24 @@ func getTableNameExpr(isGlobal bool, structName, companyVar string) string {
 // templateFuncs returns template helper functions
 func templateFuncs() template.FuncMap {
 	return template.FuncMap{
-		"upperFirst":         upperFirst,
-		"lowerFirst":         lowerFirst,
-		"sqlType":            getSQLType,
-		"goDefault":          goDefault,
-		"rangeCheck":         rangeCheck,
-		"sqlRangeCheck":      sqlRangeCheck,
-		"readOnly":           func(f Field) bool { return f.Editable != nil && !*f.Editable },
+		"upperFirst":    upperFirst,
+		"lowerFirst":    lowerFirst,
+		"sqlType":       getSQLType,
+		"goDefault":     goDefault,
+		"rangeCheck":    rangeCheck,
+		"sqlRangeCheck": sqlRangeCheck,
+		"readOnly":      func(f Field) bool { return f.Editable != nil && !*f.Editable },
+		"dbFieldName": func(fields []Field, name string) string {
+			for _, f := range fields {
+				if f.Name == name {
+					if f.DBName != "" {
+						return f.DBName
+					}
+					return f.Name
+				}
+			}
+			return name
+		},
 		"sqlDefault":         sqlDefault,
 		"postgresSqlType":    getPostgresSQLType,
 		"tableName":          getTableNameExpr,
@@ -2626,13 +2771,15 @@ func (t *{{ .StructName }}) SetDB(db database.Executor) {
 // caller's transaction.
 func (t *{{ .StructName }}) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
-		table  string
-		global bool
-		column string
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
 	}
 	references := map[string][]reference{
 {{- range $field, $refs := .References }}
-		"{{ $field }}": { {{- range $refs }}{"{{ .Table }}", {{ .Global }}, "{{ .Column }}"}, {{ end -}} },
+		"{{ $field }}": { {{- range $refs }}{"{{ .Table }}", {{ .Global }}, "{{ .Column }}", "{{ .CondColumn }}", {{ .CondValue }}}, {{ end -}} },
 {{- end }}
 	}
 {{- if .Table.Global }}
@@ -2662,8 +2809,14 @@ func (t *{{ .StructName }}) renameReferences(field string, oldValue, newValue in
 			}
 		}
 		for _, tbl := range tables {
-			query := t.convertPlaceholders(fmt.Sprintf(` + "`UPDATE \"%s\" SET %s = ? WHERE %s = ?`" + `, tbl, ref.column, ref.column), 2)
-			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+			stmt := fmt.Sprintf(` + "`UPDATE \"%s\" SET %s = ? WHERE %s = ?`" + `, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
 				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
 			}
 		}
@@ -2754,9 +2907,9 @@ func (t *{{ .StructName }}) CalcFields(fieldNames ...string) {
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
 func (t *{{ $.StructName }}) calcFlowField_{{ .Name }}() {
 	{{- if eq .CalcFormula "Sum" }}
-	t.{{ upperFirst .Name }} = t.calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}()
+	t.{{ upperFirst .Name }} = t.calcSum_{{ .Name }}()
 	{{- else if eq .CalcFormula "Count" }}
-	t.{{ upperFirst .Name }} = t.calcCount{{ upperFirst .SourceTable }}()
+	t.{{ upperFirst .Name }} = t.calcCount_{{ .Name }}()
 	{{- else if eq .CalcFormula "Average" }}
 	t.{{ upperFirst .Name }} = t.calcAverage{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}()
 	{{- else if eq .CalcFormula "Min" }}
@@ -2801,6 +2954,32 @@ func (t *{{ .StructName }}) CalcFieldsForRecords(records []map[string]interface{
 // calcForRecords_{{ .Name }} calculates the {{ .Name }} FlowField for a set of records
 // CalcFormula: {{ .CalcFormula }}({{ .SourceTable }}.{{ .SourceField }})
 func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]interface{}) {
+{{- if .HasFieldFilter }}
+	// Records whose {{ .FieldFilterColumn }} holds a filter (total accounts) are calculated one by
+	// one, with this record's FlowFilters; the others in the grouped query below
+	var grouped []map[string]interface{}
+	for _, rec := range records {
+		if s := strings.TrimSpace(fmt.Sprint(rec["{{ .FieldFilterColumn }}"])); s == "" || s == "<nil>" {
+			grouped = append(grouped, rec)
+			continue
+		}
+		one := &{{ $.StructName }}{}
+		one.InitWithDBType(t.db, t.company, t.dbType)
+{{- range $.FlowFilterFields }}
+		one.{{ upperFirst .Name }} = t.{{ upperFirst .Name }}
+{{- end }}
+		one.FromMap(rec)
+{{- if eq .CalcFormula "Count" }}
+		rec["{{ .DBName }}"] = one.calcCount_{{ .Name }}()
+{{- else }}
+		rec["{{ .DBName }}"] = one.calcSum_{{ .Name }}().String()
+{{- end }}
+	}
+	records = grouped
+	if len(records) == 0 {
+		return
+	}
+{{- end }}
 {{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
 {{- template "flowSource" . }}
 
@@ -2914,7 +3093,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 {{- range .Table.Fields }}
 {{- if and .FlowField (eq .CalcFormula "Sum") }}
 
-func (t *{{ $.StructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}() {{ .Type }} {
+func (t *{{ $.StructName }}) calcSum_{{ .Name }}() {{ .Type }} {
 {{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
@@ -2925,6 +3104,19 @@ func (t *{{ $.StructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .
 	{{- if eq .Type "const" }}
 	whereClauses = append(whereClauses, "{{ .Field }} = ?")
 	args = append(args, {{ .Value }})
+	{{- else if and (eq .Type "field") .OverrideField }}
+	if s := strings.TrimSpace(t.{{ .OverrideField }}.String()); s != "" {
+		// {{ .OverrideField }} holds a filter of {{ .Field }} (a total account sums its range)
+		if clause, filterArgs, err := flowfilter.Clause("{{ .Field }}", flowfilter.{{ .OverrideKind }}, s); err == nil && clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		} else {
+			whereClauses = append(whereClauses, "1=0")
+		}
+	} else {
+		whereClauses = append(whereClauses, "{{ .Field }} = ?")
+		args = append(args, t.{{ upperFirst .Value }})
+	}
 	{{- else if eq .Type "field" }}
 	whereClauses = append(whereClauses, "{{ .Field }} = ?")
 	args = append(args, t.{{ upperFirst .Value }})
@@ -2955,7 +3147,7 @@ func (t *{{ $.StructName }}) calcSum{{ upperFirst .SourceTable }}{{ upperFirst .
 {{- end }}
 {{- if and .FlowField (eq .CalcFormula "Count") }}
 
-func (t *{{ $.StructName }}) calcCount{{ upperFirst .SourceTable }}() int {
+func (t *{{ $.StructName }}) calcCount_{{ .Name }}() int {
 {{- template "flowSource" . }}
 
 	// Build WHERE clause from FlowFilters
@@ -2966,6 +3158,19 @@ func (t *{{ $.StructName }}) calcCount{{ upperFirst .SourceTable }}() int {
 	{{- if eq .Type "const" }}
 	whereClauses = append(whereClauses, "{{ .Field }} = ?")
 	args = append(args, {{ .Value }})
+	{{- else if and (eq .Type "field") .OverrideField }}
+	if s := strings.TrimSpace(t.{{ .OverrideField }}.String()); s != "" {
+		// {{ .OverrideField }} holds a filter of {{ .Field }} (a total account sums its range)
+		if clause, filterArgs, err := flowfilter.Clause("{{ .Field }}", flowfilter.{{ .OverrideKind }}, s); err == nil && clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		} else {
+			whereClauses = append(whereClauses, "1=0")
+		}
+	} else {
+		whereClauses = append(whereClauses, "{{ .Field }} = ?")
+		args = append(args, t.{{ upperFirst .Value }})
+	}
 	{{- else if eq .Type "field" }}
 	whereClauses = append(whereClauses, "{{ .Field }} = ?")
 	args = append(args, t.{{ upperFirst .Value }})
@@ -3124,7 +3329,7 @@ func (t *{{ .StructName }}) SetFilter(fieldName, filterExpr string) {
 func (t *{{ .StructName }}) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	switch strings.ToLower(field) {
 {{- range .Table.Fields }}
-{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) (not .HasFieldFilter) }}
 	case "{{ .DBName }}":
 {{- if eq .CalcFormula "Count" }}
 		return flowfilter.KindInt, true
@@ -3149,7 +3354,7 @@ func (t *{{ .StructName }}) flowFieldExpr(field string) (string, []interface{}) 
 	_ = outer
 	switch strings.ToLower(field) {
 {{- range .Table.Fields }}
-{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+{{- if and .FlowField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) (not .HasFieldFilter) }}
 	case "{{ .DBName }}":
 {{- template "flowSource" . }}
 		var whereClauses []string
@@ -5272,6 +5477,24 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 	return map[string]tables.TableRelationInfo{
 {{- range .Table.Fields }}
 {{- if .TableRelation }}
+{{- if .TableRelation.Conditions }}
+		"{{ .DBName }}": {
+			Conditions: []tables.ConditionalRelationInfo{
+{{- range .TableRelation.Conditions }}
+				{Field: "{{ dbFieldName $.Table.Fields .When.Field }}", Value: {{ .When.Equal }}, Relation: tables.TableRelationInfo{
+					Table: "{{ .Table }}", Field: "{{ .Field }}", DisplayField: "{{ .DisplayField }}",
+{{- if .LookupColumns }}
+					LookupColumns: []tables.LookupColumnInfo{ {{- range .LookupColumns }}{Source: "{{ .Source }}", Width: {{ .Width }}}, {{ end -}} },
+{{- end }}
+					SearchTimeout: {{ .SearchTimeout }},
+{{- if not .ShouldValidate }}
+					NoValidate: true,
+{{- end }}
+				}},
+{{- end }}
+			},
+		},
+{{- else }}
 		"{{ .DBName }}": {
 			Table:        "{{ .TableRelation.Table }}",
 			Field:        "{{ .TableRelation.Field }}",
@@ -5288,6 +5511,7 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 			NoValidate:    true,
 {{- end }}
 		},
+{{- end }}
 {{- end }}
 {{- end }}
 	}

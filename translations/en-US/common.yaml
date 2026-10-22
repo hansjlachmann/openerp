@@ -86,6 +86,8 @@ common:
     gen_business_posting_groups: "Gen. Business Posting Groups"
     gen_product_posting_groups: "Gen. Product Posting Groups"
     tax_area_list: "Tax Area List"
+    source_codes: "Source Codes"
+    reason_codes: "Reason Codes"
     tax_groups: "Tax Groups"
     tax_business_posting_groups: "Tax Business Posting Groups"
     tax_product_posting_groups: "Tax Product Posting Groups"

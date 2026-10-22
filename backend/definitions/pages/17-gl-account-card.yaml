@@ -28,6 +28,8 @@ page:
           - source: no_of_blank_lines
           - source: new_page
           - source: search_name
+          - source: balance
+            style: Strong
           - source: blocked
           - source: last_date_modified
           - source: automatic_ext_text
@@ -96,3 +98,12 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 20
+      run_page_filter_field: gl_account_no
+      run_page_filter_value: no

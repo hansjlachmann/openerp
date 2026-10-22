@@ -1,0 +1,24 @@
+table:
+  id: 230
+  name: "Source_Code"
+  caption: Source Code
+  description: "Source codes, where an entry came from (table 230)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      primary_key: true
+      length: 10
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

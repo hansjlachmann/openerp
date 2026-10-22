@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -226,5 +228,85 @@ func TestLookupPage(t *testing.T) {
 		if got := pages.GetRegistry().LookupPage(table); got != want {
 			t.Errorf("%s: page %d, want %d", table, got, want)
 		}
+	}
+}
+
+// A conditional relation (Bal. Account No. by Bal. Account Type): the API checks the table of
+// the record's type, sends one lookup per type, and the G/L Account totals of a list include
+// total accounts (their Totaling) and the list's date filter
+func TestConditionalRelationAndGLTotals(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.GLAccount{}, &gtables.GLEntry{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}} {
+		if err := tbl.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	app.Get("/api/tables/:table/list", h.ListRecords)
+	app.Get("/api/tables/:table/lookup/:field", h.LookupRows)
+
+	for _, body := range []string{
+		`{"no":"1000","name":"Bank"}`, `{"no":"2000","name":"Sales"}`,
+		`{"no":"2999","name":"Total","account_type":2,"totaling":"1000..2000"}`,
+	} {
+		if status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Account/insert", body); status != 200 {
+			t.Fatalf("insert account %s: %d %v", body, status, out["error"])
+		}
+	}
+	if status, out := sendJSON(t, app, "POST", "/api/tables/Customer/insert", `{"no":"C1","name":"Acme"}`); status != 200 {
+		t.Fatalf("insert customer: %d %v", status, out["error"])
+	}
+
+	// Bal. Account No.: a G/L account for type G/L Account, a customer for type Customer
+	for body, ok := range map[string]bool{
+		`{"entry_no":1,"gl_account_no":"1000","posting_date":"2026-01-10","amount":"100","bal_account_type":0,"bal_account_no":"2000"}`: true,
+		`{"entry_no":2,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"-100","bal_account_type":1,"bal_account_no":"C1"}`:  true,
+		`{"entry_no":3,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":1,"bal_account_no":"2000"}`:   false,
+		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     true, // vendors: no table yet
+	} {
+		status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Entry/insert", body)
+		if (status == 200) != ok {
+			t.Errorf("%s: %d %v, want ok=%v", body, status, out["error"], ok)
+		}
+	}
+
+	// Lookups: one variant per type
+	_, out := getJSON(t, app, "/api/tables/G_L_Entry/list")
+	lookup := out["captions"].(map[string]interface{})["lookups"].(map[string]interface{})["bal_account_no"].(map[string]interface{})
+	variants := lookup["variants"].(map[string]interface{})
+	if lookup["variant_field"] != "bal_account_type" || len(variants) != 2 || variants["1"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
+		t.Errorf("bal_account_no lookup = %v", lookup)
+	}
+	if status, out := getJSON(t, app, "/api/tables/G_L_Entry/lookup/bal_account_no?variant=1"); status != 200 || out["data"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
+		t.Errorf("lazy lookup of variant 1: %d %v", status, out)
+	}
+
+	// Totals in a list: the total account sums its range; a date filter narrows them
+	totals := func(query string) map[string]string {
+		_, out := getJSON(t, app, "/api/tables/G_L_Account/list"+query)
+		got := map[string]string{}
+		for _, r := range out["data"].(map[string]interface{})["records"].([]interface{}) {
+			rec := r.(map[string]interface{})
+			got[rec["no"].(string)] = fmt.Sprint(rec["net_change"])
+		}
+		return got
+	}
+	if got := totals(""); got["1000"] != "100" || got["2000"] != "-100" || got["2999"] != "0" {
+		t.Errorf("net change = %v", got)
+	}
+	if got := totals("?flow_filters=" + url.QueryEscape(`[{"field":"date_filter","expression":"2026-01-01..2026-01-31"}]`)); got["2999"] != "100" || got["2000"] != "0" {
+		t.Errorf("net change in January = %v", got)
 	}
 }

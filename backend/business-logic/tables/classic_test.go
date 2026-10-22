@@ -189,6 +189,9 @@ func TestMoreRecordFunctions(t *testing.T) {
 	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
+	if err := (&gtables.GLEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
 	for _, no := range []string{"C1", "C2", "C3"} {
 		c := &gtables.Customer{}
 		c.InitWithDBType(db, "c1", database.DBTypeSQLite)

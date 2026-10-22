@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isAdvancedLookup, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput } from '../fieldHelpers';
+import type { LookupData } from '$lib/types/api';
+import { isAdvancedLookup, lookupFor, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput } from '../fieldHelpers';
 
 describe('isAdvancedLookup', () => {
 	const columns = [{ source: 'code' }];
@@ -49,5 +50,21 @@ describe('datetime-local input values', () => {
 		expect(toDateTimeInput(undefined)).toBe('');
 		expect(toDateTimeInput('not a date')).toBe('');
 		expect(fromDateTimeInput('')).toBe('');
+	});
+});
+
+describe('lookupFor', () => {
+	const gl: LookupData = { columns: [{ source: 'no', width: 100 }], rows: [{ _key: '1000' }] };
+	const cust: LookupData = { columns: [{ source: 'no', width: 100 }], rows: [{ _key: 'C1' }] };
+	const lookups: Record<string, LookupData> = {
+		payment_terms_code: gl,
+		bal_account_no: { variant_field: 'bal_account_type', variants: { '0': gl, '1': cust } }
+	};
+	it('picks the variant by the record type, none for a type without a table', () => {
+		expect(lookupFor(lookups, 'bal_account_no', { bal_account_type: 1 })).toBe(cust);
+		expect(lookupFor(lookups, 'bal_account_no', { bal_account_type: 0 })).toBe(gl);
+		expect(lookupFor(lookups, 'bal_account_no', { bal_account_type: 2 })).toBeUndefined();
+		expect(lookupFor(lookups, 'payment_terms_code', {})).toBe(gl);
+		expect(lookupFor(lookups, 'nothing', {})).toBeUndefined();
 	});
 });

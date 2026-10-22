@@ -1,0 +1,420 @@
+table:
+  id: 17
+  name: "G_L_Entry"
+  caption: G/L Entry
+  description: General ledger entries, posted (table 17)
+  lookup_page_id: 20
+  # Not yet (TODO): 5600/5601 FA Entry Type / No. (field series), closing dates on the dates,
+  # relations of Job No., Business Unit Code, Journal Batch Name, No. Series
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: gl_account_no
+      no: 3
+      type: types.Code
+      db_name: gl_account_no
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 5
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      no: 6
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: bal_account_no
+      no: 10
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      # The balancing account's table depends on Bal. Account Type (vendors, bank accounts, fixed
+      # assets and employees come with their tables)
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: amount
+      no: 17
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: department_code
+      no: 23
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 24
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 27
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: source_code
+      no: 28
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: system_created_entry
+      no: 29
+      type: bool
+      db_name: system_created_entry
+
+    - name: prior_year_entry
+      no: 30
+      type: bool
+      db_name: prior_year_entry
+
+    - name: job_no
+      no: 41
+      type: types.Code
+      db_name: job_no
+      length: 20
+
+    - name: quantity
+      no: 42
+      type: types.Decimal
+      db_name: quantity
+      precision: 18
+      scale: 5
+      decimal_places: "0:5"
+
+    - name: tax_amount
+      no: 43
+      type: types.Decimal
+      db_name: tax_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: business_unit_code
+      no: 45
+      type: types.Code
+      db_name: business_unit_code
+      length: 10
+
+    - name: journal_batch_name
+      no: 46
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: reason_code
+      no: 47
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_posting_type
+      no: 48
+      type: Option
+      db_name: gen_posting_type
+      options: [" ", "Purchase", "Sale", "Settlement"]
+
+    - name: gen_bus_posting_group
+      no: 49
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 50
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_account_type
+      no: 51
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: transaction_no
+      no: 52
+      type: int
+      db_name: transaction_no
+
+    - name: debit_amount
+      no: 53
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount
+      no: 54
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: document_date
+      no: 55
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 56
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: source_type
+      no: 57
+      type: Option
+      db_name: source_type
+      options: [" ", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: source_no
+      no: 58
+      type: types.Code
+      db_name: source_no
+      length: 20
+      # The source's table depends on Source Type (the others come with their tables)
+      table_relation:
+        conditions:
+          - when: {field: source_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: no_series
+      no: 59
+      type: types.Code
+      db_name: no_series
+      length: 10
+
+    - name: tax_area_code
+      no: 60
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 61
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 62
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: use_tax
+      no: 63
+      type: bool
+      db_name: use_tax
+
+    - name: tax_bus_posting_group
+      no: 64
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 65
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: additional_currency_amount
+      no: 68
+      type: types.Decimal
+      db_name: additional_currency_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: add_currency_debit_amount
+      no: 69
+      type: types.Decimal
+      db_name: add_currency_debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: add_currency_credit_amount
+      no: 70
+      type: types.Decimal
+      db_name: add_currency_credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    # SIFT keys: the G/L Account totals (Balance, Net Change, Balance at Date …) read the totals
+    - name: gl_account_date
+      fields: [gl_account_no, posting_date]
+      sum_index_fields:
+        - amount
+        - debit_amount
+        - credit_amount
+        - additional_currency_amount
+        - add_currency_debit_amount
+        - add_currency_credit_amount
+    - name: gl_account_dimensions
+      fields: [gl_account_no, business_unit_code, department_code, project_code, posting_date]
+      sum_index_fields:
+        - amount
+        - debit_amount
+        - credit_amount
+        - additional_currency_amount
+        - add_currency_debit_amount
+        - add_currency_credit_amount
+    - name: document
+      fields: [document_no, posting_date]
+    - name: transaction
+      fields: [transaction_no]

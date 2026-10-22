@@ -1193,12 +1193,14 @@ func (t *JobQueue) SetDB(db database.Executor) {
 // caller's transaction.
 func (t *JobQueue) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
-		table  string
-		global bool
-		column string
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Job_Queue_Entry", false, "job_queue_no"}},
+		"no": {{"Job_Queue_Entry", false, "job_queue_no", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1210,8 +1212,14 @@ func (t *JobQueue) renameReferences(field string, oldValue, newValue interface{}
 			}
 		}
 		for _, tbl := range tables {
-			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
-			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
 				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
 			}
 		}
@@ -1279,7 +1287,7 @@ func (t *JobQueue) CalcFields(fieldNames ...string) {
 // calcFlowField_number_of_entries calculates the number_of_entries FlowField
 // CalcFormula: Count(Job_Queue_Entry.entry_no)
 func (t *JobQueue) calcFlowField_number_of_entries() {
-	t.Number_of_entries = t.calcCountJob_Queue_Entry()
+	t.Number_of_entries = t.calcCount_number_of_entries()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -1370,7 +1378,7 @@ func (t *JobQueue) calcForRecords_number_of_entries(records []map[string]interfa
 
 // Helper methods for FlowField calculations
 
-func (t *JobQueue) calcCountJob_Queue_Entry() int {
+func (t *JobQueue) calcCount_number_of_entries() int {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, JobQueueEntryTableName), false
 	_ = useSIFT

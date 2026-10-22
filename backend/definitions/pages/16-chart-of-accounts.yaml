@@ -30,6 +30,18 @@ page:
         - source: direct_posting
           width: 120
 
+        - source: net_change
+          width: 140
+          drilldown: 20
+          drilldown_filter_field: gl_account_no
+          drilldown_filter_value: no
+
+        - source: balance_at_date
+          width: 150
+          drilldown: 20
+          drilldown_filter_field: gl_account_no
+          drilldown_filter_value: no
+
         - source: totaling
           width: 160
           table_relation: G_L_Account
@@ -88,6 +100,14 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 20
+      run_page_filter_field: gl_account_no
+      run_page_filter_value: no
 
     - name: Functions
       caption: Functions

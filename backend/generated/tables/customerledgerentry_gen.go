@@ -6751,5 +6751,50 @@ func (t *CustomerLedgerEntry) GetTableRelationFields() map[string]tables.TableRe
 			},
 			SearchTimeout: 0,
 		},
+		"user_id": {
+			Table:        "User",
+			Field:        "user_id",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "user_id", Width: 120},
+				{Source: "user_name", Width: 200},
+			},
+			SearchTimeout: 0,
+			NoValidate:    true,
+		},
+		"source_code": {
+			Table:        "Source_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"reason_code": {
+			Table:        "Reason_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"bal_account_no": {
+			Conditions: []tables.ConditionalRelationInfo{
+				{Field: "bal_account_type", Value: 0, Relation: tables.TableRelationInfo{
+					Table: "G_L_Account", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "bal_account_type", Value: 1, Relation: tables.TableRelationInfo{
+					Table: "Customer", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+			},
+		},
 	}
 }

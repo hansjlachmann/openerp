@@ -11,7 +11,7 @@
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
-	import { cardTitle, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { cardTitle, lookupFor, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
 	import { withReturn } from '$lib/utils/returnUrl';
@@ -702,7 +702,7 @@
 								editable={fieldEditable}
 								fieldType={fieldTypes[field.source]}
 								options={options[field.source]}
-								lookups={lookups[field.source]}
+								lookups={lookupFor(lookups, field.source, record)}
 								fieldCaptions={captions}
 								tabindex={fieldTabIndex}
 								onblur={handleFieldBlur}

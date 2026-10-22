@@ -28,7 +28,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, lookupFor, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
@@ -1101,7 +1101,7 @@
 			// Validate table_relation fields: check if the value exists in the related table
 			// Skip validation for fields using LookupDropdown (it validates internally)
 			const fieldDef = page.page.layout.repeater?.fields?.find(f => f.source === fieldName);
-			const hasAdvancedLookup = isAdvancedLookup(lookups[fieldName]);
+			const hasAdvancedLookup = isAdvancedLookup(lookupFor(lookups, fieldName, record));
 			const value = record[fieldName];
 			if (fieldDef?.table_relation && !hasAdvancedLookup && value && value !== '') {
 				try {
@@ -1357,7 +1357,7 @@
 
 		const field = cols[colIndex];
 		const isBoolean = typeof record[field.source] === 'boolean' || fieldTypes[field.source] === 'bool';
-		const hasLookup = lookups[field.source]?.columns || lookups[field.source]?.simple;
+		const hasLookup = lookupFor(lookups, field.source, record)?.columns || lookupFor(lookups, field.source, record)?.simple;
 		const hasOptions = !!options[field.source];
 
 		// Alt+ArrowDown opens the lookup/option dropdown
@@ -3168,17 +3168,17 @@
 												onblur={handleEditingInputBlur}
 											/>
 										</div>
-									{:else if isAdvancedLookup(lookups[field.source])}
+									{:else if isAdvancedLookup(lookupFor(lookups, field.source, record))}
 										<!-- Advanced lookup with columns - LookupDropdown -->
 										<!-- svelte-ignore a11y_no_static_element_interactions -->
 										<div data-row={index} data-col={colIndex} class="lookup-cell-wrapper"
 											onkeydown={(e) => handleLookupCellKeyDown(e, index, colIndex)}>
 											<LookupDropdown
-												columns={lookups[field.source].columns ?? []}
-												rows={lookups[field.source].rows ?? []}
-												lazyUrl={lookups[field.source].lazy_url}
-												freeText={lookups[field.source].free_text}
-												newPageId={lookups[field.source].new_page_id}
+												columns={lookupFor(lookups, field.source, record)!.columns ?? []}
+												rows={lookupFor(lookups, field.source, record)!.rows ?? []}
+												lazyUrl={lookupFor(lookups, field.source, record)!.lazy_url}
+												freeText={lookupFor(lookups, field.source, record)!.free_text}
+												newPageId={lookupFor(lookups, field.source, record)!.new_page_id}
 												openOnFocus={openLookupOnEdit}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}
@@ -3194,7 +3194,7 @@
 												}}
 											/>
 										</div>
-									{:else if lookups[field.source]?.simple}
+									{:else if lookupFor(lookups, field.source, record)?.simple}
 										<!-- Simple lookup - select dropdown -->
 										<select
 											data-row={index}
@@ -3213,7 +3213,7 @@
 											onblur={handleEditingInputBlur}
 										>
 											<option value="">—</option>
-											{#each Object.entries(lookups[field.source].simple ?? {}) as [key, label]}
+											{#each Object.entries(lookupFor(lookups, field.source, record)!.simple ?? {}) as [key, label]}
 												<option value={key}>{label}</option>
 											{/each}
 										</select>
@@ -3289,7 +3289,7 @@
 												}}
 											/>
 										</div>
-									{:else if lookups[field.source]?.columns || lookups[field.source]?.simple}
+									{:else if lookupFor(lookups, field.source, record)?.columns || lookupFor(lookups, field.source, record)?.simple}
 										<!-- Cell-selected with lookup: show value + dropdown arrow -->
 										<div
 											class="cell-selected-content cell-selected-active cell-selected-lookup"
@@ -3299,7 +3299,7 @@
 											ondblclick={() => enterCellEditing(false)}
 											onkeydown={(e) => handleCellSelectedKeyDown(e, index, colIndex)}
 										>
-											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{#if lookups[field.source]?.rows?.length}{formatLookupValue(record[field.source], lookups[field.source])}{:else}{formatCellValue(record[field.source], field.source)}{/if}</span></span>
+											<span class="cell-selected-lookup-value"><span class="cell-selected-text">{#if lookupFor(lookups, field.source, record)?.rows?.length}{formatLookupValue(record[field.source], lookupFor(lookups, field.source, record))}{:else}{formatCellValue(record[field.source], field.source)}{/if}</span></span>
 											{#if isCellEditable(field)}
 												<!-- svelte-ignore a11y_click_events_have_key_events -->
 												<span
@@ -3422,8 +3422,8 @@
 											</button>
 											{:else if options[field.source]}
 												{formatOptionValue(record[field.source], options[field.source])}
-										{:else if lookups[field.source]?.rows?.length}
-											{formatLookupValue(record[field.source], lookups[field.source])}
+										{:else if lookupFor(lookups, field.source, record)?.rows?.length}
+											{formatLookupValue(record[field.source], lookupFor(lookups, field.source, record))}
 										{:else}
 											{formatCellValue(record[field.source], field.source)}
 										{/if}

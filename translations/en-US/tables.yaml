@@ -625,6 +625,19 @@ tables:
       tax_bus_posting_group: "Tax Bus. Posting Group"
       tax_prod_posting_group: "Tax Prod. Posting Group"
       exchange_rate_adjustment: "Exchange Rate Adjustment"
+      date_filter: "Date Filter"
+      department_filter: "Department Filter"
+      project_filter: "Project Filter"
+      balance_at_date: "Balance at Date"
+      net_change: "Net Change"
+      balance: "Balance"
+      debit_amount: "Debit Amount"
+      credit_amount: "Credit Amount"
+      additional_currency_net_change: "Additional-Currency Net Change"
+      add_currency_balance_at_date: "Add.-Currency Balance at Date"
+      additional_currency_balance: "Additional-Currency Balance"
+      add_currency_debit_amount: "Add.-Currency Debit Amount"
+      add_currency_credit_amount: "Add.-Currency Credit Amount"
 
     # Option field values
     options:
@@ -656,3 +669,89 @@ tables:
         no_adjustment: "No Adjustment"
         adjust_amount: "Adjust Amount"
         adjust_additional_currency_amount: "Adjust Additional-Currency Amount"
+
+  # Source Code (Table 230)
+  source_code:
+    caption: "Source Code"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # Reason Code (Table 231)
+  reason_code:
+    caption: "Reason Code"
+    fields:
+      code: "Code"
+      description: "Description"
+
+  # G/L Entry (Table 17)
+  g_l_entry:
+    caption: "G/L Entry"
+    fields:
+      entry_no: "Entry No."
+      gl_account_no: "G/L Account No."
+      posting_date: "Posting Date"
+      document_type: "Document Type"
+      document_no: "Document No."
+      description: "Description"
+      bal_account_no: "Bal. Account No."
+      amount: "Amount"
+      department_code: "Department Code"
+      project_code: "Project Code"
+      user_id: "User ID"
+      source_code: "Source Code"
+      system_created_entry: "System-Created Entry"
+      prior_year_entry: "Prior-Year Entry"
+      job_no: "Job No."
+      quantity: "Quantity"
+      tax_amount: "Tax Amount"
+      business_unit_code: "Business Unit Code"
+      journal_batch_name: "Journal Batch Name"
+      reason_code: "Reason Code"
+      gen_posting_type: "Gen. Posting Type"
+      gen_bus_posting_group: "Gen. Bus. Posting Group"
+      gen_prod_posting_group: "Gen. Prod. Posting Group"
+      bal_account_type: "Bal. Account Type"
+      transaction_no: "Transaction No."
+      debit_amount: "Debit Amount"
+      credit_amount: "Credit Amount"
+      document_date: "Document Date"
+      external_document_no: "External Document No."
+      source_type: "Source Type"
+      source_no: "Source No."
+      no_series: "No. Series"
+      tax_area_code: "Tax Area Code"
+      tax_liable: "Tax Liable"
+      tax_group_code: "Tax Group Code"
+      use_tax: "Use Tax"
+      tax_bus_posting_group: "Tax Bus. Posting Group"
+      tax_prod_posting_group: "Tax Prod. Posting Group"
+      additional_currency_amount: "Additional-Currency Amount"
+      add_currency_debit_amount: "Add.-Currency Debit Amount"
+      add_currency_credit_amount: "Add.-Currency Credit Amount"
+
+    # Option field values
+    options:
+      document_type:
+        payment: "Payment"
+        invoice: "Invoice"
+        credit_memo: "Credit Memo"
+        finance_charge_memo: "Finance Charge Memo"
+        reminder: "Reminder"
+      gen_posting_type:
+        purchase: "Purchase"
+        sale: "Sale"
+        settlement: "Settlement"
+      bal_account_type:
+        g_l_account: "G/L Account"
+        customer: "Customer"
+        vendor: "Vendor"
+        bank_account: "Bank Account"
+        fixed_asset: "Fixed Asset"
+        employee: "Employee"
+      source_type:
+        customer: "Customer"
+        vendor: "Vendor"
+        bank_account: "Bank Account"
+        fixed_asset: "Fixed Asset"
+        employee: "Employee"

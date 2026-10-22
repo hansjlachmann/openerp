@@ -86,6 +86,8 @@ common:
     gen_business_posting_groups: "Bedriftsbokføringsgrupper"
     gen_product_posting_groups: "Produktbokføringsgrupper"
     tax_area_list: "Mva.-områder"
+    source_codes: "Kildekoder"
+    reason_codes: "Årsakskoder"
     tax_groups: "Mva.-grupper"
     tax_business_posting_groups: "Mva.-bedriftsbokføringsgrupper"
     tax_product_posting_groups: "Mva.-produktbokføringsgrupper"

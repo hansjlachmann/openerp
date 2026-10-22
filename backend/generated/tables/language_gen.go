@@ -779,12 +779,14 @@ func (t *Language) SetDB(db database.Executor) {
 // caller's transaction.
 func (t *Language) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
-		table  string
-		global bool
-		column string
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Job_Queue", false, "notification_language"}, {"User", true, "language"}},
+		"code": {{"Job_Queue", false, "notification_language", "", 0}, {"User", true, "language", "", 0}},
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)
@@ -809,8 +811,14 @@ func (t *Language) renameReferences(field string, oldValue, newValue interface{}
 			}
 		}
 		for _, tbl := range tables {
-			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
-			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
 				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
 			}
 		}

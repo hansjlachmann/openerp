@@ -1,0 +1,71 @@
+page:
+  id: 20
+  type: List
+  name: General Ledger Entries
+  source_table: G_L_Entry
+  caption: General Ledger Entries
+  editable: false            # posted entries
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 110
+
+        - source: document_type
+          width: 120
+
+        - source: document_no
+          width: 130
+
+        - source: gl_account_no
+          width: 120
+
+        - source: description
+          width: 250
+
+        - source: job_no
+          width: 110
+
+        - source: department_code
+          width: 130
+
+        - source: project_code
+          width: 120
+
+        - source: gen_posting_type
+          width: 140
+
+        - source: gen_bus_posting_group
+          width: 190
+
+        - source: gen_prod_posting_group
+          width: 190
+
+        - source: amount
+          width: 130
+
+        - source: additional_currency_amount
+          width: 190
+
+        - source: tax_amount
+          width: 120
+
+        - source: bal_account_type
+          width: 150
+
+        - source: bal_account_no
+          width: 150
+
+        - source: user_id
+          width: 120
+
+        - source: source_code
+          width: 120
+
+        - source: reason_code
+          width: 120
+
+        - source: entry_no
+          width: 100
+

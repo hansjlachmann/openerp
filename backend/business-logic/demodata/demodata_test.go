@@ -37,7 +37,8 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
 		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
 		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
-		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{}}
+		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
+		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -88,8 +89,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 81 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 81 master data records", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 155 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 155 master data records, at least 500 G/L entries", counts)
 	}
 	// Master data: given fields and the tables' defaults for the others
 	var eur gtables.Currency
@@ -116,10 +117,36 @@ func TestCreateSmall(t *testing.T) {
 	// The chart of accounts is indented, End-Totals total their range
 	var acc gtables.GLAccount
 	acc.InitWithDBType(db, testCompany, database.DBTypeSQLite)
-	if !acc.Get("1120") || acc.Indentation != 2 || !acc.Get("1190") || acc.Totaling != "1110..1190" || acc.Indentation != 1 || !acc.Get("1000") || acc.Indentation != 0 {
+	if !acc.Get("1210") || acc.Indentation != 2 || !acc.Get("1299") || acc.Totaling != "1200..1299" || acc.Indentation != 1 || !acc.Get("1000") || acc.Indentation != 0 {
 		t.Errorf("chart of accounts not indented: %+v", acc.ToMap())
 	}
-	if eur.Realized_gains_acc != "5140" {
+	// G/L totals: every demo transaction balances, so the income statement (NET INCOME, a Total
+	// over 3000..6999) and the two sides of the balance sheet add up to zero; the totals on
+	// End-Total and Total accounts follow their Totaling
+	total := func(no string) types.Decimal {
+		var a gtables.GLAccount
+		a.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		if !a.Get(no) {
+			t.Fatalf("account %s missing", no)
+		}
+		a.CalcFields("balance")
+		return a.Balance
+	}
+	net, assets, liabilities := total("8999"), total("1999"), total("2999")
+	cents := func(d types.Decimal) string { return d.Decimal.Round(2).String() } // SQLite sums in floating point
+	if net.IsZero() || assets.IsZero() || cents(net.Add(assets).Add(liabilities)) != "0" {
+		t.Errorf("net income %v + total assets %v + total liabilities and equity %v, want 0", net, assets, liabilities)
+	}
+	if gross := total("4900"); cents(gross) != cents(total("3199").Add(total("4199"))) {
+		t.Errorf("gross profit %v, want revenue + cost of goods sold", gross)
+	}
+	if bank := total("1520"); bank.IsZero() {
+		t.Error("no bank balance")
+	}
+	if !net.IsNegative() {
+		t.Errorf("the demo company makes a loss: net income %v (a profit is a credit, negative)", net)
+	}
+	if eur.Realized_gains_acc != "6140" {
 		t.Errorf("EUR realized gains account = %q", eur.Realized_gains_acc)
 	}
 	factor, err := tables.ExchangeRates(&eur).ExchangeRate(types.Today(), "EUR")

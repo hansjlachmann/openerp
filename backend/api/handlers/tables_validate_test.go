@@ -327,6 +327,9 @@ func TestRenameToExistingKey(t *testing.T) {
 	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
+	if err := (&gtables.GLEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
 	for _, no := range []string{"C1", "C2"} {
 		if out := postJSON(t, app, "/api/tables/Customer/insert", `{"no":"`+no+`","name":"Customer `+no+`"}`); out["success"] != true {
 			t.Fatalf("insert %s: %v", no, out["error"])

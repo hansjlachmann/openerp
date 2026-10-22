@@ -85,6 +85,14 @@ menu:
         page_id: 469
         icon: map-pin
 
+      - name: Source Codes
+        page_id: 257
+        icon: tag
+
+      - name: Reason Codes
+        page_id: 259
+        icon: tag
+
       - name: Tax Groups
         page_id: 467
         icon: percent

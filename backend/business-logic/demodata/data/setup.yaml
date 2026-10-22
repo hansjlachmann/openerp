@@ -39,6 +39,15 @@ master_data:
       - {code: STANDARD, description: Standard rate}
       - {code: REDUCED, description: Reduced rate}
       - {code: EXEMPT, description: Exempt}
+  - table: Source_Code
+    records:
+      - {code: GENJNL, description: General journal}
+      - {code: SALES, description: Sales}
+      - {code: PURCHASES, description: Purchases}
+  - table: Reason_Code
+    records:
+      - {code: CORRECTION, description: Correction of an entry}
+      - {code: RETURN, description: Returned goods}
   - table: Tax_Area
     records:
       - {code: DOMESTIC, description: Domestic}
@@ -56,51 +65,120 @@ master_data:
       - {code: RETAIL, description: Retail goods, def_tax_prod_posting_group: STANDARD}
       - {code: SERVICES, description: Services, def_tax_prod_posting_group: STANDARD}
       - {code: FOOD, description: Food, def_tax_prod_posting_group: REDUCED}
-  - table: G_L_Account   # a small chart of accounts, indented at the end (Indent Chart of Accounts)
+  - table: G_L_Account   # the demo chart of accounts, indented at the end (Indent Chart of Accounts)
     records:
       - {no: "1000", name: "BALANCE SHEET", account_type: 1, income_balance: 1, direct_posting: false}
       - {no: "1100", name: "Assets", account_type: 3, income_balance: 1, direct_posting: false}
-      - {no: "1110", name: "Fixed Assets", account_type: 3, income_balance: 1, direct_posting: false}
-      - {no: "1120", name: "Machinery and Equipment", account_type: 0, income_balance: 1}
-      - {no: "1130", name: "Vehicles", account_type: 0, income_balance: 1}
-      - {no: "1190", name: "Total Fixed Assets", account_type: 4, income_balance: 1, direct_posting: false}
-      - {no: "1200", name: "Current Assets", account_type: 3, income_balance: 1, direct_posting: false}
-      - {no: "1210", name: "Inventory", account_type: 0, income_balance: 1}
-      - {no: "1220", name: "Accounts Receivable", account_type: 0, income_balance: 1}
-      - {no: "1230", name: "Bank", account_type: 0, income_balance: 1, reconciliation_account: true}
-      - {no: "1240", name: "Cash", account_type: 0, income_balance: 1}
-      - {no: "1290", name: "Total Current Assets", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "1200", name: "Fixed Assets", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "1210", name: "Land and Buildings", account_type: 0, income_balance: 1}
+      - {no: "1220", name: "Accum. Depreciation, Buildings", account_type: 0, income_balance: 1}
+      - {no: "1230", name: "Machinery and Equipment", account_type: 0, income_balance: 1}
+      - {no: "1240", name: "Accum. Depreciation, Machinery", account_type: 0, income_balance: 1}
+      - {no: "1250", name: "Vehicles", account_type: 0, income_balance: 1}
+      - {no: "1260", name: "Accum. Depreciation, Vehicles", account_type: 0, income_balance: 1}
+      - {no: "1270", name: "Office Equipment", account_type: 0, income_balance: 1}
+      - {no: "1280", name: "Accum. Depr., Office Equipment", account_type: 0, income_balance: 1}
+      - {no: "1299", name: "Total Fixed Assets", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "1300", name: "Current Assets", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "1310", name: "Inventory", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "1320", name: "Raw Materials", account_type: 0, income_balance: 1}
+      - {no: "1330", name: "Finished Goods", account_type: 0, income_balance: 1}
+      - {no: "1339", name: "Total Inventory", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "1400", name: "Receivables", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "1410", name: "Accounts Receivable, Domestic", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "1420", name: "Accounts Receivable, Foreign", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "1430", name: "Other Receivables", account_type: 0, income_balance: 1}
+      - {no: "1440", name: "Purchase Tax Receivable", account_type: 0, income_balance: 1}
+      - {no: "1449", name: "Total Receivables", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "1500", name: "Liquid Assets", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "1510", name: "Cash", account_type: 0, income_balance: 1}
+      - {no: "1520", name: "Bank, Checking", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "1530", name: "Bank, Savings", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "1549", name: "Total Liquid Assets", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "1599", name: "Total Current Assets", account_type: 4, income_balance: 1, direct_posting: false}
       - {no: "1999", name: "Total Assets", account_type: 4, income_balance: 1, direct_posting: false}
       - {no: "2000", name: "Liabilities and Equity", account_type: 3, income_balance: 1, direct_posting: false}
-      - {no: "2100", name: "Equity", account_type: 0, income_balance: 1}
-      - {no: "2200", name: "Long-term Liabilities", account_type: 0, income_balance: 1}
-      - {no: "2300", name: "Accounts Payable", account_type: 0, income_balance: 1}
-      - {no: "2400", name: "Sales Tax Payable", account_type: 0, income_balance: 1}
+      - {no: "2100", name: "Equity", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "2110", name: "Share Capital", account_type: 0, income_balance: 1}
+      - {no: "2120", name: "Retained Earnings", account_type: 0, income_balance: 1}
+      - {no: "2199", name: "Total Equity", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "2200", name: "Long-term Liabilities", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "2210", name: "Bank Loans", account_type: 0, income_balance: 1}
+      - {no: "2220", name: "Mortgage", account_type: 0, income_balance: 1}
+      - {no: "2299", name: "Total Long-term Liabilities", account_type: 4, income_balance: 1, direct_posting: false}
+      - {no: "2300", name: "Short-term Liabilities", account_type: 3, income_balance: 1, direct_posting: false}
+      - {no: "2310", name: "Accounts Payable, Domestic", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "2320", name: "Accounts Payable, Foreign", account_type: 0, income_balance: 1, reconciliation_account: true}
+      - {no: "2330", name: "Sales Tax Payable", account_type: 0, income_balance: 1}
+      - {no: "2340", name: "Tax Settlement", account_type: 0, income_balance: 1}
+      - {no: "2350", name: "Payroll Taxes Payable", account_type: 0, income_balance: 1}
+      - {no: "2360", name: "Accrued Salaries", account_type: 0, income_balance: 1}
+      - {no: "2399", name: "Total Short-term Liabilities", account_type: 4, income_balance: 1, direct_posting: false}
       - {no: "2999", name: "Total Liabilities and Equity", account_type: 4, income_balance: 1, direct_posting: false}
       - {no: "3000", name: "INCOME STATEMENT", account_type: 1, income_balance: 0, direct_posting: false}
       - {no: "3100", name: "Revenue", account_type: 3, income_balance: 0, direct_posting: false}
-      - {no: "3110", name: "Sales, Retail", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "3120", name: "Sales, Services", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "3130", name: "Sales, Export", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: STANDARD}
-      - {no: "3190", name: "Total Revenue", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "3110", name: "Sales, Retail Domestic", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
+      - {no: "3120", name: "Sales, Retail Export", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT}
+      - {no: "3130", name: "Sales, Services", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
+      - {no: "3140", name: "Sales, Food", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: REDUCED}
+      - {no: "3150", name: "Sales Discounts", account_type: 0, income_balance: 0}
+      - {no: "3199", name: "Total Revenue", account_type: 4, income_balance: 0, direct_posting: false}
       - {no: "4000", name: "Cost of Goods Sold", account_type: 3, income_balance: 0, direct_posting: false}
       - {no: "4110", name: "Cost of Materials", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "4120", name: "Freight", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "4190", name: "Total Cost of Goods Sold", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "4120", name: "Cost of Retail Goods", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT}
+      - {no: "4130", name: "Freight In", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
+      - {no: "4140", name: "Inventory Adjustment", account_type: 0, income_balance: 0}
+      - {no: "4199", name: "Total Cost of Goods Sold", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "4900", name: "GROSS PROFIT", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3100..4199"}
       - {no: "5000", name: "Operating Expenses", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5100", name: "Personnel", account_type: 3, income_balance: 0, direct_posting: false}
       - {no: "5110", name: "Salaries", account_type: 0, income_balance: 0}
-      - {no: "5120", name: "Rent", account_type: 0, income_balance: 0}
-      - {no: "5130", name: "Office Supplies", account_type: 0, income_balance: 0}
-      - {no: "5140", name: "Realized Exchange Gains", account_type: 0, income_balance: 0}
-      - {no: "5150", name: "Realized Exchange Losses", account_type: 0, income_balance: 0}
-      - {no: "5160", name: "Unrealized Exchange Gains", account_type: 0, income_balance: 0}
-      - {no: "5170", name: "Unrealized Exchange Losses", account_type: 0, income_balance: 0}
-      - {no: "5190", name: "Total Operating Expenses", account_type: 4, income_balance: 0, direct_posting: false}
-      - {no: "8999", name: "NET INCOME", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3000..5999"}
+      - {no: "5120", name: "Payroll Taxes", account_type: 0, income_balance: 0}
+      - {no: "5130", name: "Pensions", account_type: 0, income_balance: 0}
+      - {no: "5199", name: "Total Personnel", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5200", name: "Premises", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5210", name: "Rent", account_type: 0, income_balance: 0}
+      - {no: "5220", name: "Electricity and Heating", account_type: 0, income_balance: 0}
+      - {no: "5230", name: "Cleaning", account_type: 0, income_balance: 0}
+      - {no: "5299", name: "Total Premises", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5300", name: "Vehicles", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5310", name: "Fuel", account_type: 0, income_balance: 0}
+      - {no: "5320", name: "Repairs and Maintenance", account_type: 0, income_balance: 0}
+      - {no: "5330", name: "Vehicle Insurance", account_type: 0, income_balance: 0}
+      - {no: "5399", name: "Total Vehicles", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5400", name: "Administration", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5410", name: "Office Supplies", account_type: 0, income_balance: 0}
+      - {no: "5420", name: "Phone and Internet", account_type: 0, income_balance: 0}
+      - {no: "5430", name: "Software Licences", account_type: 0, income_balance: 0}
+      - {no: "5440", name: "Accounting and Audit", account_type: 0, income_balance: 0}
+      - {no: "5450", name: "Insurance", account_type: 0, income_balance: 0}
+      - {no: "5499", name: "Total Administration", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5500", name: "Marketing", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5510", name: "Advertising", account_type: 0, income_balance: 0}
+      - {no: "5520", name: "Travel", account_type: 0, income_balance: 0}
+      - {no: "5530", name: "Entertainment", account_type: 0, income_balance: 0}
+      - {no: "5599", name: "Total Marketing", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5600", name: "Depreciation", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "5610", name: "Depreciation, Buildings", account_type: 0, income_balance: 0}
+      - {no: "5620", name: "Depreciation, Machinery", account_type: 0, income_balance: 0}
+      - {no: "5630", name: "Depreciation, Vehicles", account_type: 0, income_balance: 0}
+      - {no: "5640", name: "Depreciation, Office Equipment", account_type: 0, income_balance: 0}
+      - {no: "5699", name: "Total Depreciation", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "5999", name: "Total Operating Expenses", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "6000", name: "Financial Items", account_type: 3, income_balance: 0, direct_posting: false}
+      - {no: "6110", name: "Interest Income", account_type: 0, income_balance: 0}
+      - {no: "6120", name: "Interest Expenses", account_type: 0, income_balance: 0}
+      - {no: "6130", name: "Bank Fees", account_type: 0, income_balance: 0}
+      - {no: "6140", name: "Realized Exchange Gains", account_type: 0, income_balance: 0}
+      - {no: "6150", name: "Realized Exchange Losses", account_type: 0, income_balance: 0}
+      - {no: "6160", name: "Unrealized Exchange Gains", account_type: 0, income_balance: 0}
+      - {no: "6170", name: "Unrealized Exchange Losses", account_type: 0, income_balance: 0}
+      - {no: "6199", name: "Total Financial Items", account_type: 4, income_balance: 0, direct_posting: false}
+      - {no: "8999", name: "NET INCOME", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3000..6999"}
   - table: Currency
     records:
-      - {code: EUR, description: Euro, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01, realized_gains_acc: "5140", realized_losses_acc: "5150", unrealized_gains_acc: "5160", unrealized_losses_acc: "5170"}
-      - {code: USD, description: US dollar, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01, realized_gains_acc: "5140", realized_losses_acc: "5150", unrealized_gains_acc: "5160", unrealized_losses_acc: "5170"}
+      - {code: EUR, description: Euro, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01, realized_gains_acc: "6140", realized_losses_acc: "6150", unrealized_gains_acc: "6160", unrealized_losses_acc: "6170"}
+      - {code: USD, description: US dollar, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01, realized_gains_acc: "6140", realized_losses_acc: "6150", unrealized_gains_acc: "6160", unrealized_losses_acc: "6170"}
       - {code: SEK, description: Swedish krona, amount_rounding_precision: 0.01, invoice_rounding_precision: 1}
       - {code: GBP, description: Pound sterling, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01}
   - table: Currency_Exchange_Rate

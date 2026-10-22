@@ -86,6 +86,8 @@ common:
     gen_business_posting_groups: "Virksomhedsbogføringsgrupper"
     gen_product_posting_groups: "Produktbogføringsgrupper"
     tax_area_list: "Momsområder"
+    source_codes: "Kildespor"
+    reason_codes: "Årsagskoder"
     tax_groups: "Momsgrupper"
     tax_business_posting_groups: "Momsvirksomhedsbogføringsgrupper"
     tax_product_posting_groups: "Momsproduktbogføringsgrupper"

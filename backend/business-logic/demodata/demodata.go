@@ -93,6 +93,7 @@ type Counts struct {
 	MasterData    int // records of the master data tables (setup.yaml master_data)
 	Customers     int
 	LedgerEntries int
+	GLEntries     int // demo G/L entries (monthly sales and costs against the bank)
 }
 
 // ErrCompanyNotEmpty is returned when the company already has customers.
@@ -282,6 +283,14 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return Counts{}, err
 	}
 	if err := (&gtables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType); err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	if err := insertGLEntries(exec, company, dbType, generateGLEntries(today, opts.Size, customerNos(customers), func() *gtables.GLEntry {
+		e := &gtables.GLEntry{}
+		e.InitWithDBType(exec, company, dbType)
+		return e
+	}), &counts); err != nil {
 		rollback()
 		return Counts{}, err
 	}
@@ -705,4 +714,13 @@ func primaryKey(rec ftables.Table) interface{} {
 		return rec.GetPrimaryKeyValue()
 	}
 	return key
+}
+
+// customerNos are the numbers of the demo customers (balancing accounts of the G/L entries)
+func customerNos(customers []customerData) []string {
+	nos := make([]string, 0, len(customers))
+	for _, c := range customers {
+		nos = append(nos, c.No)
+	}
+	return nos
 }

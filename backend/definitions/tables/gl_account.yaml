@@ -5,7 +5,7 @@ table:
   description: General ledger accounts, the chart of accounts (table 15)
   data_caption_fields: [no, name]
   lookup_page_id: 18   # G/L Account List (classic LookupFormID)
-  # Not yet (TODO): the FlowFields and FlowFilters (with G/L Entry 17), 46 Picture, 10000
+  # Not yet (TODO): 12 Comment, the budget FlowFields/Filter, Business Unit Filter, 46 Picture, 10000
   fields:
     - name: no
       no: 1
@@ -132,6 +132,271 @@ table:
             width: 100
           - source: name
             width: 250
+
+    # FlowFilters (not stored) for the totals below
+    - name: date_filter
+      no: 28
+      type: types.Date
+      flow_filter: true
+
+    - name: department_filter
+      no: 29
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: project_filter
+      no: 30
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    # FlowFields: totals of the G/L entries (a total account: of the accounts in its Totaling)
+    - name: balance_at_date
+      no: 31
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+          upper_limit: true
+
+    - name: net_change
+      no: 32
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: balance
+      no: 36
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
+    - name: debit_amount
+      no: 47
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: debit_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: credit_amount
+      no: 48
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: credit_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: additional_currency_net_change
+      no: 60
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: additional_currency_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: add_currency_balance_at_date
+      no: 61
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: additional_currency_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+          upper_limit: true
+
+    - name: additional_currency_balance
+      no: 62
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: additional_currency_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
+    - name: add_currency_debit_amount
+      no: 64
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: add_currency_debit_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: add_currency_credit_amount
+      no: 65
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"   # an amount (classic AutoFormatType=1)
+      calc_formula: Sum
+      source_table: GLEntry
+      source_field: add_currency_credit_amount
+      flow_filters:
+        - field: gl_account_no
+          type: field
+          value: no
+        - field: gl_account_no
+          type: field_filter   # a total account sums the accounts of its Totaling
+          value: totaling
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
 
     - name: consol_debit_acc
       no: 40

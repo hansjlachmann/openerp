@@ -1165,12 +1165,14 @@ func (t *Customer) SetDB(db database.Executor) {
 // caller's transaction.
 func (t *Customer) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
-		table  string
-		global bool
-		column string
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Customer Ledger Entry", false, "customer_no"}, {"Customer Ledger Entry", false, "sell_to_customer_no"}},
+		"no": {{"Customer Ledger Entry", false, "customer_no", "", 0}, {"Customer Ledger Entry", false, "sell_to_customer_no", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "source_no", "source_type", 1}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1182,8 +1184,14 @@ func (t *Customer) renameReferences(field string, oldValue, newValue interface{}
 			}
 		}
 		for _, tbl := range tables {
-			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
-			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
 				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
 			}
 		}
@@ -1257,19 +1265,19 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 // calcFlowField_balance_lcy calculates the balance_lcy FlowField
 // CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
 func (t *Customer) calcFlowField_balance_lcy() {
-	t.Balance_lcy = t.calcSumCustomerLedgerEntryRemaining_amt_lcy()
+	t.Balance_lcy = t.calcSum_balance_lcy()
 }
 
 // calcFlowField_sales_lcy calculates the sales_lcy FlowField
 // CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
 func (t *Customer) calcFlowField_sales_lcy() {
-	t.Sales_lcy = t.calcSumCustomerLedgerEntrySales_lcy()
+	t.Sales_lcy = t.calcSum_sales_lcy()
 }
 
 // calcFlowField_no_of_ledger_entries calculates the no_of_ledger_entries FlowField
 // CalcFormula: Count(CustomerLedgerEntry.entry_no)
 func (t *Customer) calcFlowField_no_of_ledger_entries() {
-	t.No_of_ledger_entries = t.calcCountCustomerLedgerEntry()
+	t.No_of_ledger_entries = t.calcCount_no_of_ledger_entries()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -1536,7 +1544,7 @@ func (t *Customer) calcForRecords_no_of_ledger_entries(records []map[string]inte
 
 // Helper methods for FlowField calculations
 
-func (t *Customer) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {
+func (t *Customer) calcSum_balance_lcy() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
@@ -1582,7 +1590,7 @@ func (t *Customer) calcSumCustomerLedgerEntryRemaining_amt_lcy() types.Decimal {
 	return sum
 }
 
-func (t *Customer) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
+func (t *Customer) calcSum_sales_lcy() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
@@ -1626,7 +1634,7 @@ func (t *Customer) calcSumCustomerLedgerEntrySales_lcy() types.Decimal {
 	return sum
 }
 
-func (t *Customer) calcCountCustomerLedgerEntry() int {
+func (t *Customer) calcCount_no_of_ledger_entries() int {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true

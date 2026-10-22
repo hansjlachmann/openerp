@@ -1,0 +1,39 @@
+page:
+  id: 257
+  type: List
+  name: Source Codes
+  source_table: Source_Code
+  caption: Source Codes
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: description
+          width: 300
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -30,6 +30,8 @@ export interface LookupData {
 	total?: number;
 	free_text?: boolean; // the relation is the lookup only: typed text is kept (e.g. a filter)
 	new_page_id?: number; // the related table's list page: the lookup's New opens it with a new record
+	variants?: Record<string, LookupData>; // a conditional relation: the lookup per value of variant_field
+	variant_field?: string;
 }
 
 // Table record type (generic)

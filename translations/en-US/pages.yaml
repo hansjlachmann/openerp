@@ -78,6 +78,12 @@ pages:
     caption: "Job Queue Entries"
 
   # Master data lists (migration step 1)
+  general_ledger_entries:
+    caption: "General Ledger Entries"
+  source_codes:
+    caption: "Source Codes"
+  reason_codes:
+    caption: "Reason Codes"
   chart_of_accounts:
     caption: "Chart of Accounts"
   g/l_account_card:

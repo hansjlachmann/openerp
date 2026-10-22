@@ -747,12 +747,14 @@ func (t *TaxArea) SetDB(db database.Executor) {
 // caller's transaction.
 func (t *TaxArea) renameReferences(field string, oldValue, newValue interface{}) error {
 	type reference struct {
-		table  string
-		global bool
-		column string
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"G_L_Account", false, "tax_area_code"}},
+		"code": {{"G_L_Account", false, "tax_area_code", "", 0}, {"G_L_Entry", false, "tax_area_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -764,8 +766,14 @@ func (t *TaxArea) renameReferences(field string, oldValue, newValue interface{})
 			}
 		}
 		for _, tbl := range tables {
-			query := t.convertPlaceholders(fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column), 2)
-			if _, err := t.db.Exec(query, newValue, oldValue); err != nil {
+			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
 				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
 			}
 		}

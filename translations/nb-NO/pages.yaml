@@ -78,6 +78,12 @@ pages:
     caption: "Jobbkøposter"
 
   # Master data lists (migration step 1)
+  general_ledger_entries:
+    caption: "Finansposter"
+  source_codes:
+    caption: "Kildekoder"
+  reason_codes:
+    caption: "Årsakskoder"
   chart_of_accounts:
     caption: "Kontoplan"
   g/l_account_card:

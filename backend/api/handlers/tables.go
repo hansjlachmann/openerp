@@ -165,7 +165,12 @@ type LookupData struct {
 	FreeText bool `json:"free_text,omitempty"`
 	// NewPageID: the related table's list page — the lookup's "New" opens it with a new record
 	NewPageID int `json:"new_page_id,omitempty"`
-	Total     int `json:"total,omitempty"` // rows in the related table (lazy lookups)
+	// Variants (a conditional relation): the lookup per value of VariantField (the record's
+	// type field, e.g. bal_account_type) — the page picks it by the record; types without a
+	// variant have no lookup
+	Variants     map[string]*LookupData `json:"variants,omitempty"`
+	VariantField string                 `json:"variant_field,omitempty"`
+	Total        int                    `json:"total,omitempty"` // rows in the related table (lazy lookups)
 }
 
 // lookupInlineLimit: related tables with at most this many rows are sent along with every
@@ -187,83 +192,97 @@ func (h *TablesHandler) getLookupValues(tableName string, table ftables.Table, c
 	lookups := make(map[string]*LookupData)
 
 	for fieldName, relInfo := range table.GetTableRelationFields() {
-		// Get the related table
-		relFactory, ok := gtables.GetTableFactory(relInfo.Table)
-		if !ok {
-			continue // Skip if related table not found
-		}
-
-		relTable := relFactory()
-		relTable.InitWithDBType(h.db, company, h.dbType)
-
-		lookup := &LookupData{
-			Rows:          []map[string]interface{}{},
-			Simple:        make(map[string]string),
-			SearchTimeout: relInfo.SearchTimeout,
-			FreeText:      relInfo.NoValidate,
-			NewPageID:     pages.GetRegistry().LookupPage(relInfo.Table),
-		}
-
-		// Add column definitions if lookup_columns is specified (advanced mode)
-		if len(relInfo.LookupColumns) > 0 {
-			for _, col := range relInfo.LookupColumns {
-				lookup.Columns = append(lookup.Columns, LookupColumn{
-					Source: col.Source,
-					Width:  col.Width,
-				})
+		if len(relInfo.Conditions) == 0 {
+			if lookup := h.buildLookup(tableName, fieldName, relInfo, company, ""); lookup != nil {
+				lookups[fieldName] = lookup
 			}
-		}
-
-		// Large related table: no rows, the dropdown loads them on demand
-		if total := relTable.Count(); total > lookupInlineLimit {
-			if len(lookup.Columns) == 0 {
-				lookup.Columns = []LookupColumn{{Source: relInfo.Field, Width: 150}}
-			}
-			lookup.Rows = nil
-			lookup.Simple = nil
-			lookup.LazyURL = fmt.Sprintf("/api/tables/%s/lookup/%s", url.PathEscape(tableName), url.PathEscape(fieldName))
-			lookup.Total = total
-			lookups[fieldName] = lookup
 			continue
 		}
-
-		// Fetch all records from related table
-		if relTable.FindSet() {
-			for {
-				keyValue := relTable.GetPrimaryKeyValue()
-				recordMap := relTable.ToMap()
-
-				// For advanced mode: add full row data
-				if len(relInfo.LookupColumns) > 0 {
-					row := make(map[string]interface{})
-					row["_key"] = keyValue // Always include the key
-					for _, col := range relInfo.LookupColumns {
-						if val, ok := recordMap[col.Source]; ok {
-							row[col.Source] = val
-						}
-					}
-					lookup.Rows = append(lookup.Rows, row)
-				}
-
-				// For simple mode: add key->display mapping
-				displayValue := keyValue
-				if relInfo.DisplayField != "" {
-					if dv, ok := recordMap[relInfo.DisplayField]; ok && dv != nil {
-						displayValue = fmt.Sprintf("%v", dv)
-					}
-				}
-				lookup.Simple[keyValue] = displayValue
-
-				if !relTable.Next() {
-					break
-				}
+		// A conditional relation: one lookup per condition, picked by the record's field
+		lookup := &LookupData{VariantField: relInfo.Conditions[0].Field, Variants: map[string]*LookupData{}}
+		for _, cond := range relInfo.Conditions {
+			variant := strconv.Itoa(cond.Value)
+			if v := h.buildLookup(tableName, fieldName, cond.Relation, company, variant); v != nil {
+				lookup.Variants[variant] = v
 			}
 		}
-
 		lookups[fieldName] = lookup
 	}
 
 	return lookups
+}
+
+// buildLookup is the lookup of one relation (of a conditional relation: one variant, which
+// the on-demand URL names); nil when the related table is not registered
+func (h *TablesHandler) buildLookup(tableName, fieldName string, relInfo ftables.TableRelationInfo, company, variant string) *LookupData {
+	relFactory, ok := gtables.GetTableFactory(relInfo.Table)
+	if !ok {
+		return nil
+	}
+	relTable := relFactory()
+	relTable.InitWithDBType(h.db, company, h.dbType)
+
+	lookup := &LookupData{
+		Rows:          []map[string]interface{}{},
+		Simple:        make(map[string]string),
+		SearchTimeout: relInfo.SearchTimeout,
+		FreeText:      relInfo.NoValidate,
+		NewPageID:     pages.GetRegistry().LookupPage(relInfo.Table),
+	}
+
+	// Add column definitions if lookup_columns is specified (advanced mode)
+	for _, col := range relInfo.LookupColumns {
+		lookup.Columns = append(lookup.Columns, LookupColumn{Source: col.Source, Width: col.Width})
+	}
+
+	// Large related table: no rows, the dropdown loads them on demand
+	if total := relTable.Count(); total > lookupInlineLimit {
+		if len(lookup.Columns) == 0 {
+			lookup.Columns = []LookupColumn{{Source: relInfo.Field, Width: 150}}
+		}
+		lookup.Rows = nil
+		lookup.Simple = nil
+		lookup.LazyURL = fmt.Sprintf("/api/tables/%s/lookup/%s", url.PathEscape(tableName), url.PathEscape(fieldName))
+		if variant != "" {
+			lookup.LazyURL += "?variant=" + url.QueryEscape(variant)
+		}
+		lookup.Total = total
+		return lookup
+	}
+
+	// Fetch all records from related table
+	if relTable.FindSet() {
+		for {
+			keyValue := relTable.GetPrimaryKeyValue()
+			recordMap := relTable.ToMap()
+
+			// For advanced mode: add full row data
+			if len(relInfo.LookupColumns) > 0 {
+				row := make(map[string]interface{})
+				row["_key"] = keyValue // Always include the key
+				for _, col := range relInfo.LookupColumns {
+					if val, ok := recordMap[col.Source]; ok {
+						row[col.Source] = val
+					}
+				}
+				lookup.Rows = append(lookup.Rows, row)
+			}
+
+			// For simple mode: add key->display mapping
+			displayValue := keyValue
+			if relInfo.DisplayField != "" {
+				if dv, ok := recordMap[relInfo.DisplayField]; ok && dv != nil {
+					displayValue = fmt.Sprintf("%v", dv)
+				}
+			}
+			lookup.Simple[keyValue] = displayValue
+
+			if !relTable.Next() {
+				break
+			}
+		}
+	}
+	return lookup
 }
 
 // LookupRows returns rows for an on-demand dropdown (lookups with lazy_url): rows of the
@@ -287,6 +306,13 @@ func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
 	relInfo, ok := table.GetTableRelationFields()[fieldName]
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
+	}
+	if len(relInfo.Conditions) > 0 {
+		// A conditional relation: the variant (the type's value) names the related table
+		record := map[string]interface{}{relInfo.Conditions[0].Field: c.Query("variant", "")}
+		if relInfo, ok = relInfo.For(record); !ok {
+			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.InvalidFields().Message(language)))
+		}
 	}
 	relFactory, ok := gtables.GetTableFactory(relInfo.Table)
 	if !ok {
@@ -1408,7 +1434,7 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 	}
 
 	// Check table relation: verify the value exists in the related table
-	if err := h.checkRelation(h.db, table, company, language, req.Field, req.Value); err != nil {
+	if err := h.checkRelation(h.db, table, company, language, req.Field, req.Value, table.ToMap()); err != nil {
 		return c.JSON(apitypes.APIResponse{Success: false, Error: err.Error()})
 	}
 
@@ -1477,14 +1503,19 @@ func errorMessage(err error, language string) string {
 
 // checkRelation returns an error when value (a non-empty key) does not exist in the
 // table related to field. Fields without a table relation always pass.
-func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Table, company, language, field string, value interface{}) error {
+// record holds the record's values (a conditional relation picks its table by them).
+func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Table, company, language, field string, value interface{}, record map[string]interface{}) error {
 	valueStr, ok := value.(string)
 	if !ok || valueStr == "" {
 		return nil
 	}
 	relInfo, hasRelation := table.GetTableRelationFields()[field]
+	if !hasRelation {
+		return nil
+	}
+	relInfo, hasRelation = relInfo.For(record)
 	if !hasRelation || relInfo.NoValidate {
-		return nil // no relation, or the lookup only (validate: false)
+		return nil // no relation for this record, or the lookup only (validate: false)
 	}
 	relTable, err := h.getTableOn(exec, relInfo.Table, company)
 	if err != nil {
@@ -1502,12 +1533,24 @@ func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Tabl
 // on-demand dropdowns (large related tables) accept a typed key and rely on this check.
 func (h *TablesHandler) checkRelations(exec database.Executor, table ftables.Table, company, language string, data map[string]interface{}) error {
 	current := table.ToMap()
-	for field := range table.GetTableRelationFields() {
+	record := make(map[string]interface{}, len(current))
+	for k, v := range current {
+		record[k] = v
+	}
+	for k, v := range data {
+		record[k] = v
+	}
+	for field, relInfo := range table.GetTableRelationFields() {
 		value, ok := data[field]
-		if !ok || fmt.Sprint(current[field]) == fmt.Sprint(value) {
+		// Unchanged values pass — unless the type of a conditional relation changed
+		typeChanged := len(relInfo.Conditions) > 0 && fmt.Sprint(current[relInfo.Conditions[0].Field]) != fmt.Sprint(record[relInfo.Conditions[0].Field])
+		if !ok && typeChanged {
+			value, ok = current[field], true
+		}
+		if !ok || (fmt.Sprint(current[field]) == fmt.Sprint(value) && !typeChanged) {
 			continue
 		}
-		if err := h.checkRelation(exec, table, company, language, field, value); err != nil {
+		if err := h.checkRelation(exec, table, company, language, field, value, record); err != nil {
 			return err
 		}
 	}

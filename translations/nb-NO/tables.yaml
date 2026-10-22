@@ -625,6 +625,19 @@ tables:
       tax_bus_posting_group: "Mva.-bedriftsbokf.gruppe"
       tax_prod_posting_group: "Mva.-produktbokf.gruppe"
       exchange_rate_adjustment: "Valutakursjustering"
+      date_filter: "Datofilter"
+      department_filter: "Avdelingsfilter"
+      project_filter: "Prosjektfilter"
+      balance_at_date: "Saldo til dato"
+      net_change: "Bevegelse"
+      balance: "Saldo"
+      debit_amount: "Debetbeløp"
+      credit_amount: "Kreditbeløp"
+      additional_currency_net_change: "Tilleggsvaluta bevegelse"
+      add_currency_balance_at_date: "Tilleggsvaluta saldo til dato"
+      additional_currency_balance: "Tilleggsvaluta saldo"
+      add_currency_debit_amount: "Tilleggsvaluta debetbeløp"
+      add_currency_credit_amount: "Tilleggsvaluta kreditbeløp"
 
     # Option field values
     options:
@@ -656,3 +669,89 @@ tables:
         no_adjustment: "Ingen justering"
         adjust_amount: "Juster beløp"
         adjust_additional_currency_amount: "Juster tilleggsvalutabeløp"
+
+  # Source Code (Table 230)
+  source_code:
+    caption: "Kildekode"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # Reason Code (Table 231)
+  reason_code:
+    caption: "Årsakskode"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+
+  # G/L Entry (Table 17)
+  g_l_entry:
+    caption: "Finanspost"
+    fields:
+      entry_no: "Løpenr."
+      gl_account_no: "Finanskontonr."
+      posting_date: "Bokføringsdato"
+      document_type: "Bilagstype"
+      document_no: "Bilagsnr."
+      description: "Beskrivelse"
+      bal_account_no: "Motkontonr."
+      amount: "Beløp"
+      department_code: "Avdelingskode"
+      project_code: "Prosjektkode"
+      user_id: "Bruker-ID"
+      source_code: "Kildekode"
+      system_created_entry: "Systemopprettet post"
+      prior_year_entry: "Post fra tidligere år"
+      job_no: "Prosjektnr."
+      quantity: "Antall"
+      tax_amount: "Mva.-beløp"
+      business_unit_code: "Konsernenhetskode"
+      journal_batch_name: "Kladdenavn"
+      reason_code: "Årsakskode"
+      gen_posting_type: "Bokføringstype"
+      gen_bus_posting_group: "Bedriftsbokføringsgruppe"
+      gen_prod_posting_group: "Produktbokføringsgruppe"
+      bal_account_type: "Motkontotype"
+      transaction_no: "Transaksjonsnr."
+      debit_amount: "Debetbeløp"
+      credit_amount: "Kreditbeløp"
+      document_date: "Bilagsdato"
+      external_document_no: "Eksternt bilagsnr."
+      source_type: "Kildetype"
+      source_no: "Kildenr."
+      no_series: "Nummerserie"
+      tax_area_code: "Mva.-områdekode"
+      tax_liable: "Mva.-pliktig"
+      tax_group_code: "Mva.-gruppekode"
+      use_tax: "Bruksavgift"
+      tax_bus_posting_group: "Mva.-bedriftsbokf.gruppe"
+      tax_prod_posting_group: "Mva.-produktbokf.gruppe"
+      additional_currency_amount: "Tilleggsvalutabeløp"
+      add_currency_debit_amount: "Tilleggsvaluta debetbeløp"
+      add_currency_credit_amount: "Tilleggsvaluta kreditbeløp"
+
+    # Option field values
+    options:
+      document_type:
+        payment: "Betaling"
+        invoice: "Faktura"
+        credit_memo: "Kreditnota"
+        finance_charge_memo: "Rentenota"
+        reminder: "Purring"
+      gen_posting_type:
+        purchase: "Kjøp"
+        sale: "Salg"
+        settlement: "Oppgjør"
+      bal_account_type:
+        g_l_account: "Finanskonto"
+        customer: "Kunde"
+        vendor: "Leverandør"
+        bank_account: "Bankkonto"
+        fixed_asset: "Aktivum"
+        employee: "Ansatt"
+      source_type:
+        customer: "Kunde"
+        vendor: "Leverandør"
+        bank_account: "Bankkonto"
+        fixed_asset: "Aktivum"
+        employee: "Ansatt"

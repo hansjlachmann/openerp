@@ -378,3 +378,19 @@ export function cellStyle(field: Field, record: Record<string, any> | undefined)
 		style: levels > 0 ? `padding-left: ${levels}rem` : ''
 	};
 }
+
+/**
+ * The lookup of a field for a record: a conditional relation (variants) picks the lookup by the
+ * record's type field (e.g. Bal. Account Type → G/L accounts or customers); none for a type
+ * without a related table
+ */
+export function lookupFor<L extends { variants?: Record<string, L>; variant_field?: string }>(
+	lookups: Record<string, L> | undefined,
+	field: string,
+	record: Record<string, any> | undefined
+): L | undefined {
+	const lookup = lookups?.[field];
+	if (!lookup?.variants) return lookup;
+	const type = record?.[lookup.variant_field ?? ''];
+	return lookup.variants[String(type ?? '')];
+}
