@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.107](https://github.com/hansjlachmann/openerp/compare/v0.1.106...v0.1.107) (2026-10-22)
+
+
+### Features
+
+* G/L entries with account totals, conditional table relations, more demo data ([a95fb02](https://github.com/hansjlachmann/openerp/commit/a95fb02cb656ff95e913df22af5b8dc50e20caab))
+* **pages:** lookups open with Alt+Down only, New in the lookup ([5c94f80](https://github.com/hansjlachmann/openerp/commit/5c94f80fb6871708ba8ca00909403bfc801dc6f0))
+* posting groups, tax areas and the chart of accounts (G/L Account) ([458553f](https://github.com/hansjlachmann/openerp/commit/458553fd97db6c67ab66dec818b27af0bd388a39))
+
 ## [0.1.106](https://github.com/hansjlachmann/openerp/compare/v0.1.105...v0.1.106) (2026-10-21)
 
 
