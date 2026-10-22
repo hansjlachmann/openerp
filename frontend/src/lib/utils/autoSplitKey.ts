@@ -21,3 +21,19 @@ export function lineNo(value: unknown): number | undefined {
 	const n = typeof value === 'number' ? value : Number(value);
 	return Number.isFinite(n) && String(value).trim() !== '' ? n : undefined;
 }
+
+/**
+ * The line number of a new line inserted after the row at `index` (none selected: after the
+ * last line) — from every row that has a number, also rows still being saved (Enter on the last
+ * line starts the next one before the insert has returned). null when there is no room.
+ */
+export function newLineNo(rows: Record<string, unknown>[], index: number, field: string): number | null {
+	const numbered = (r: Record<string, unknown>) => (lineNo(r[field]) ?? 0) > 0;
+	const anchor = index >= 0 ? rows[index] : undefined;
+	if (anchor && numbered(anchor)) {
+		const next = rows.slice(index + 1).find(numbered);
+		return splitLineNo(lineNo(anchor[field]), next ? lineNo(next[field]) : undefined);
+	}
+	const nos = rows.filter(numbered).map((r) => lineNo(r[field]) as number);
+	return splitLineNo(nos.length ? Math.max(...nos) : undefined, undefined);
+}

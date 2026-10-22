@@ -171,6 +171,39 @@ type TableRelation struct {
 	// field of the record — each condition is a relation of its own (Table, Field, lookup
 	// columns) that applies when the record's field equals the value; Table/Field stay blank
 	Conditions []RelationCondition `yaml:"conditions"`
+	// Filters (classic TableRelation … WHERE (Field=FIELD(x)) / CONST(y)): the related records
+	// are those whose column matches this record's field (field) or a constant (const) — for a
+	// key part of a composite key (Reminder Level No. of the record's Reminder Terms)
+	Filters map[string]RelationFilter `yaml:"filters"`
+}
+
+// RelationFilter is one WHERE condition of a table relation: a field of this record or a constant
+type RelationFilter struct {
+	Field string      `yaml:"field"`
+	Const interface{} `yaml:"const"`
+}
+
+// SortedFilters returns the relation's filters in column order (stable generated code)
+func (tr *TableRelation) SortedFilters() []struct {
+	Column string
+	RelationFilter
+} {
+	var out []struct {
+		Column string
+		RelationFilter
+	}
+	cols := make([]string, 0, len(tr.Filters))
+	for col := range tr.Filters {
+		cols = append(cols, col)
+	}
+	sort.Strings(cols)
+	for _, col := range cols {
+		out = append(out, struct {
+			Column string
+			RelationFilter
+		}{col, tr.Filters[col]})
+	}
+	return out
 }
 
 // RelationCondition is one branch of a conditional table relation
@@ -563,6 +596,9 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 			if f.TableRelation == nil || f.FlowField {
 				continue
 			}
+			if len(f.TableRelation.Filters) > 0 {
+				continue // a relation to part of a composite key: no rename cascade (yet)
+			}
 			for _, branch := range f.TableRelation.Branches() {
 				target, ok := byName[normalizedTableName(branch.Table)]
 				if !ok {
@@ -725,6 +761,11 @@ func flowFilterKind(f Field) (string, bool) {
 // FlowFields (FlowFilter field of this table, stored field of the source table), and fills
 // their derived struct field / kind.
 func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
+	for _, f := range def.Table.Fields {
+		if f.FlowField && f.CalcFormula == "Lookup" && f.Type != "types.Text" && f.Type != "types.Code" {
+			return fmt.Errorf("Lookup FlowField %s must be types.Text or types.Code, not %s", f.Name, f.Type)
+		}
+	}
 	filters := map[string]Field{}
 	for _, f := range def.FlowFilterFields {
 		if _, ok := flowFilterKind(f); !ok {
@@ -1198,14 +1239,32 @@ func templateFuncs() template.FuncMap {
 		"join":               strings.Join,
 		"sub":                func(a, b int) int { return a - b },
 		"sanitizeIdentifier": sanitizeIdentifier,
-		"pkCount":            countPrimaryKeys,
-		"firstPK":            getFirstPK,
-		"toPascalCase":       toPascalCase,
-		"lower":              strings.ToLower,
-		"tableNameVar":       getTableNameVarCode,
-		"filterSetExpr":      filterSetExpr,
-		"flowFilterKind":     func(f Field) string { k, _ := flowFilterKind(f); return k },
-		"maxEncryptedPlain":  maxEncryptedPlain,
+		// optionIdent: the constant name of option i; a name an earlier option already has
+		// gets the option's number ("Qty. Disc. + …" and "Qty. Disc. * …")
+		"optionIdent": func(options []string, i int) string {
+			name := sanitizeIdentifier(options[i])
+			for j := 0; j < i; j++ {
+				if sanitizeIdentifier(options[j]) == name {
+					return fmt.Sprintf("%s%d", name, i)
+				}
+			}
+			return name
+		},
+		// fieldGoType: the Go type of a field (an option field has its own named type)
+		"fieldGoType": func(structName string, f Field) string {
+			if f.Type == "Option" {
+				return structName + upperFirst(f.Name)
+			}
+			return f.Type
+		},
+		"pkCount":           countPrimaryKeys,
+		"firstPK":           getFirstPK,
+		"toPascalCase":      toPascalCase,
+		"lower":             strings.ToLower,
+		"tableNameVar":      getTableNameVarCode,
+		"filterSetExpr":     filterSetExpr,
+		"flowFilterKind":    func(f Field) string { k, _ := flowFilterKind(f); return k },
+		"maxEncryptedPlain": maxEncryptedPlain,
 	}
 }
 
@@ -1822,12 +1881,13 @@ const {{ .StructName }}TableName = "{{ .Table.Name }}"
 // {{ $.StructName }}_{{ upperFirst .Name }} provides named constants for the {{ .Name }} option field (FieldName.OptionValue syntax)
 var {{ $.StructName }}_{{ upperFirst .Name }} = struct {
 {{- $fieldName := .Name }}
+{{- $opts := .Options }}
 {{- range $i, $opt := .Options }}
-	{{ sanitizeIdentifier $opt }}    {{ $.StructName }}{{ upperFirst $fieldName }}
+	{{ optionIdent $opts $i }}    {{ $.StructName }}{{ upperFirst $fieldName }}
 {{- end }}
 }{
 {{- range $i, $opt := .Options }}
-	{{ sanitizeIdentifier $opt }}:    {{ $i }},
+	{{ optionIdent $opts $i }}:    {{ $i }},
 {{- end }}
 }
 {{- end }}
@@ -2163,7 +2223,7 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 	// Handle composite primary key (map[string]interface{})
 	if pkMap, ok := primaryKey.(map[string]interface{}); ok {
 {{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}
-		var {{ lowerFirst $f.Name }}Val {{ $f.Type }}
+		var {{ lowerFirst $f.Name }}Val {{ fieldGoType $.StructName $f }}
 		if v, exists := pkMap["{{ $f.DBName }}"]; exists {
 {{- if eq $f.Type "types.Code" }}
 			switch val := v.(type) {
@@ -2185,6 +2245,11 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 				{{ lowerFirst $f.Name }}Val = val
 			case float64:
 				{{ lowerFirst $f.Name }}Val = int(val)
+			case string:
+				// the key part as text: the API's "CUSTOMER1,10000"
+				if n, err := strconv.Atoi(strings.TrimSpace(val)); err == nil {
+					{{ lowerFirst $f.Name }}Val = n
+				}
 			}
 {{- else if eq $f.Type "int64" }}
 			switch val := v.(type) {
@@ -2194,10 +2259,27 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 				{{ lowerFirst $f.Name }}Val = int64(val)
 			case float64:
 				{{ lowerFirst $f.Name }}Val = int64(val)
+			case string:
+				if n, err := strconv.ParseInt(strings.TrimSpace(val), 10, 64); err == nil {
+					{{ lowerFirst $f.Name }}Val = n
+				}
 			}
 {{- else if eq $f.Type "string" }}
 			if val, ok := v.(string); ok {
 				{{ lowerFirst $f.Name }}Val = val
+			}
+{{- else if eq $f.Type "Option" }}
+			switch val := v.(type) {
+			case {{ fieldGoType $.StructName $f }}:
+				{{ lowerFirst $f.Name }}Val = val
+			case int:
+				{{ lowerFirst $f.Name }}Val = {{ fieldGoType $.StructName $f }}(val)
+			case float64:
+				{{ lowerFirst $f.Name }}Val = {{ fieldGoType $.StructName $f }}(int(val))
+			case string:
+				if n, err := strconv.Atoi(val); err == nil {
+					{{ lowerFirst $f.Name }}Val = {{ fieldGoType $.StructName $f }}(n)
+				}
 			}
 {{- else if eq $f.Type "types.Date" }}
 			switch val := v.(type) {
@@ -2272,7 +2354,7 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 }
 
 // GetByPK retrieves a record by its typed primary key(s) - for direct typed access
-func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ $f.Type }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
+func (t *{{ .StructName }}) GetByPK({{- range $i, $f := .Table.Fields }}{{- if $f.PrimaryKey }}{{ lowerFirst $f.Name }} {{ fieldGoType $.StructName $f }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{- end }}{{- end }}) bool {
 {{- if .Table.Global }}
 	tableName := {{ .StructName }}TableName
 {{- else }}
@@ -2917,7 +2999,7 @@ func (t *{{ $.StructName }}) calcFlowField_{{ .Name }}() {
 	{{- else if eq .CalcFormula "Max" }}
 	t.{{ upperFirst .Name }} = t.calcMax{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}()
 	{{- else if eq .CalcFormula "Lookup" }}
-	t.{{ upperFirst .Name }} = t.calcLookup{{ upperFirst .SourceTable }}{{ upperFirst .SourceField }}()
+	t.{{ upperFirst .Name }} = t.calcLookup_{{ .Name }}()
 	{{- else if eq .CalcFormula "Exist" }}
 	t.{{ upperFirst .Name }} = t.calcExist{{ upperFirst .SourceTable }}()
 	{{- end }}
@@ -3202,6 +3284,42 @@ func (t *{{ $.StructName }}) calcCount_{{ .Name }}() int {
 	return count
 }
 {{- end }}
+{{- if and .FlowField (eq .CalcFormula "Lookup") }}
+
+// calcLookup_{{ .Name }} reads {{ .SourceTable }}.{{ .SourceField }} of the first record matching the
+// flow filters (CalcFormula Lookup); blank when there is none
+func (t *{{ $.StructName }}) calcLookup_{{ .Name }}() {{ .Type }} {
+	tableName := fmt.Sprintf("%s$%s", t.company, {{ toPascalCase .SourceTable }}TableName)
+	var whereClauses []string
+	var args []interface{}
+	{{- range .FlowFilters }}
+	{{- if eq .Type "const" }}
+	whereClauses = append(whereClauses, "{{ .Field }} = ?")
+	args = append(args, {{ .Value }})
+	{{- else if eq .Type "field" }}
+	whereClauses = append(whereClauses, "{{ .Field }} = ?")
+	args = append(args, t.{{ upperFirst .Value }})
+	{{- end }}
+	{{- end }}
+	{{- template "flowFilterWhere" . }}
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+	query := t.convertPlaceholders(fmt.Sprintf(` + "`SELECT {{ .SourceField }} FROM \"%s\" WHERE %s LIMIT 1`" + `, tableName, whereClause), len(args))
+	var value sql.NullString
+	if err := t.db.QueryRow(query, args...).Scan(&value); err != nil && err != sql.ErrNoRows {
+		fmt.Printf("Error: Failed to look up {{ .Name }}: %v\n", err)
+	}
+{{- if eq .Type "types.Code" }}
+	return types.NewCode(value.String)
+{{- else if eq .Type "types.Text" }}
+	return types.NewText(value.String)
+{{- else }}
+	return value.String
+{{- end }}
+}
+{{- end }}
 {{- end }}
 
 {{- else }}
@@ -3230,6 +3348,7 @@ type {{ lowerFirst .StructName }}FilterCondition struct {
 	filterExpr   string        // For complex SetFilter expressions
 	isExpression bool          // True if using filterExpr instead of min/max
 	invalidField bool          // Filter on an unknown field: matches no rows (fail closed)
+	blankDate    bool          // A date range from the blank date: blank dates (NULL) match too
 {{- if .HasFilterableFlowField }}
 	flowField    string        // Filter on a FlowField (filterExpr applied to its subquery)
 {{- end }}
@@ -3262,11 +3381,6 @@ func (t *{{ .StructName }}) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
-		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
-		// stored as NULL, which no BETWEEN matches
-		if d, ok := minValue.(types.Date); ok && d.IsZero() {
-			minValue = nil
-		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -3281,10 +3395,22 @@ func (t *{{ .StructName }}) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
+	// Blank dates are stored as NULL and come before every date: a range from the blank date
+	// (or the blank date itself) matches them
+	blankDate := false
+	if d, ok := values[0].(types.Date); ok && d.IsZero() {
+		blankDate = true
+		minValue = nil
+		if len(values) == 1 {
+			maxValue = nil
+		}
+	}
+
 	t.filters[column] = &{{ lowerFirst .StructName }}FilterCondition{
 		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
+		blankDate: blankDate,
 	}
 }
 
@@ -3520,7 +3646,12 @@ func (t *{{ .StructName }}) buildWhereClause() (string, []interface{}) {
 			args = append(args, exprArgs...)
 		} else {
 			// Simple range filter
-			if filter.minValue != nil && filter.maxValue != nil {
+			if filter.blankDate && filter.maxValue != nil {
+				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
+				args = append(args, filter.maxValue)
+			} else if filter.blankDate {
+				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
 			} else if filter.minValue != nil {
@@ -4709,7 +4840,7 @@ func (t *{{ .StructName }}) TestField(fieldName string, value ...any) error {
 		return nil
 	}
 	if !tables.SameValue(current, value[0]) {
-		return apperrors.FieldMustBe({{ .StructName }}TableName, field, fmt.Sprint(value[0]))
+		return apperrors.FieldMustBeValue({{ .StructName }}TableName, field, value[0])
 	}
 	return nil
 }
@@ -5034,13 +5165,15 @@ func (t *{{ .StructName }}) Find(which ...string) bool {
 		return t.findInKey("", true)
 	}
 	if strings.Contains(how, "=") {
-		saved := make(map[string]*{{ lowerFirst .StructName }}FilterCondition, len(t.filters))
-		for k, v := range t.filters {
-			saved[k] = v
-		}
+		// The record's key in a filter group of its own: the filters still apply (also those
+		// on key fields)
+		group := t.FilterGroup()
+		t.FilterGroup(tables.FindKeyFilterGroup)
+		t.filters = nil
 		t.SetRecFilter()
 		found := t.FindFirst()
-		t.filters = saved
+		t.filters = nil
+		t.FilterGroup(group)
 		if found {
 			return true
 		}
@@ -5509,6 +5642,13 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 			SearchTimeout: {{ .TableRelation.SearchTimeout }},
 {{- if not .TableRelation.ShouldValidate }}
 			NoValidate:    true,
+{{- end }}
+{{- if .TableRelation.Filters }}
+			Filters: []tables.RelationFilterInfo{
+{{- range .TableRelation.SortedFilters }}
+				{Column: "{{ .Column }}", Field: "{{ .Field }}", Const: "{{ if .Const }}{{ .Const }}{{ end }}"},
+{{- end }}
+			},
 {{- end }}
 		},
 {{- end }}

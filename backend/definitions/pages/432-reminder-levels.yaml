@@ -1,0 +1,74 @@
+page:
+  id: 432
+  type: List
+  name: Reminder Levels
+  source_table: Reminder_Level   # opened from Reminder Terms (filter reminder_terms_code); a new level gets the next No.
+  caption: Reminder Levels
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: reminder_terms_code
+          width: 170
+          visible: false
+
+        - source: no
+          width: 80
+
+        - source: grace_period
+          width: 130
+
+        - source: due_date_calculation
+          width: 180
+
+        - source: calculate_interest
+          width: 150
+
+        - source: additional_fee_lcy
+          width: 170
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Beginning Text
+      caption: Beginning Text
+      image: Edit
+      promoted: true
+      enabled: true
+      run_page: 433
+      run_page_filters:
+        - {field: reminder_terms_code, value: reminder_terms_code}
+        - {field: reminder_level, value: "no"}
+        - {field: position, const: "0"}
+
+    - name: Ending Text
+      caption: Ending Text
+      image: Edit
+      promoted: true
+      enabled: true
+      run_page: 433
+      run_page_filters:
+        - {field: reminder_terms_code, value: reminder_terms_code}
+        - {field: reminder_level, value: "no"}
+        - {field: position, const: "1"}

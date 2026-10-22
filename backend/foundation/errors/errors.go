@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,17 @@ const (
 	ErrModifyFailed       ErrorCode = "ERR_MODIFY_FAILED"
 	ErrEmptyPrimaryKey    ErrorCode = "ERR_EMPTY_PRIMARY_KEY"
 	ErrTableNotFound      ErrorCode = "ERR_TABLE_NOT_FOUND"
+
+	// Number series (codeunit NoSeriesManagement)
+	ErrNoSeriesManual       ErrorCode = "ERR_NO_SERIES_MANUAL"
+	ErrNoSeriesDefault      ErrorCode = "ERR_NO_SERIES_DEFAULT"
+	ErrNoSeriesNoLineOnDate ErrorCode = "ERR_NO_SERIES_NO_LINE_ON_DATE"
+	ErrNoSeriesNoLine       ErrorCode = "ERR_NO_SERIES_NO_LINE"
+	ErrNoSeriesDateOrder    ErrorCode = "ERR_NO_SERIES_DATE_ORDER"
+	ErrNoSeriesEndingNo     ErrorCode = "ERR_NO_SERIES_ENDING_NO"
+	ErrNoSeriesNoNumber     ErrorCode = "ERR_NO_SERIES_NO_NUMBER"
+	ErrNoSeriesNumberFormat ErrorCode = "ERR_NO_SERIES_NUMBER_FORMAT"
+	ErrNoSeriesTooLong      ErrorCode = "ERR_NO_SERIES_TOO_LONG"
 
 	// Session/Auth
 	ErrNoActiveSession    ErrorCode = "ERR_NO_ACTIVE_SESSION"
@@ -105,6 +117,13 @@ type AppError struct {
 	// Table and Field name a table field the error is about: its caption in the message's
 	// language becomes %1 (Params follow as %2, %3, ...)
 	Table, Field string
+	// Field2 (optional) is another field of Table: its caption follows Field's
+	Field2 string
+	// WithTableCaption puts Table's caption after the field captions
+	WithTableCaption bool
+	// Value (optional) is the last parameter, shown in the message's language: a boolean as
+	// Yes/No, an option of the table field as its caption
+	Value any
 }
 
 // Error implements the error interface
@@ -118,9 +137,20 @@ func (e *AppError) Message(language string) string {
 	key := "errors." + string(e.Code)
 	template := ts.Translate(key, language)
 
-	params := e.Params
+	var params []string
+	var captions []string
 	if e.Field != "" {
-		params = append([]string{ts.FieldCaption(e.Table, e.Field, language)}, params...)
+		captions = append(captions, ts.FieldCaption(e.Table, e.Field, language))
+	}
+	if e.Field2 != "" {
+		captions = append(captions, ts.FieldCaption(e.Table, e.Field2, language))
+	}
+	if e.WithTableCaption {
+		captions = append(captions, ts.TableCaption(e.Table, language))
+	}
+	params = append(captions, e.Params...)
+	if e.Value != nil {
+		params = append(params, e.formatValue(language))
 	}
 
 	// Replace placeholders %1, %2, %3, etc. with params
@@ -213,6 +243,87 @@ func FieldFormat(table, field, format string) *AppError {
 // RelatedNotFound: a table field refers to a record (value) that does not exist
 func RelatedNotFound(table, field, value string) *AppError {
 	return &AppError{Code: ErrRelatedNotFound, Table: table, Field: field, Params: []string{value}}
+}
+
+// formatValue is Value in the language: Yes/No, an option's caption, otherwise as printed
+func (e *AppError) formatValue(language string) string {
+	ts := i18n.GetInstance()
+	switch v := e.Value.(type) {
+	case bool:
+		key := "terms.no"
+		if v {
+			key = "terms.yes"
+		}
+		return ts.CommonTranslation(key, language)
+	case interface{ IsValid() bool }:
+		// an option (its String() is the English option value)
+		name := fmt.Sprint(v)
+		if caption := ts.OptionCaption(e.Table, e.Field, i18n.Key(name), language); !strings.HasPrefix(caption, "tables.") {
+			return caption
+		}
+		return name
+	}
+	return fmt.Sprint(e.Value)
+}
+
+// NoSeriesManual: numbers of a series may not be entered manually (field Manual Nos. of
+// table No. Series, series code)
+func NoSeriesManual(table, field, series string) *AppError {
+	return &AppError{Code: ErrNoSeriesManual, Table: table, Field: field, WithTableCaption: true, Params: []string{series}}
+}
+
+// NoSeriesDefault: a series does not assign numbers automatically (field Default Nos.)
+func NoSeriesDefault(table, field, series string) *AppError {
+	return &AppError{Code: ErrNoSeriesDefault, Table: table, Field: field, WithTableCaption: true, Params: []string{series}}
+}
+
+// NoSeriesNoLineOnDate: a series has lines but none open on the date
+func NoSeriesNoLineOnDate(series, date string) *AppError {
+	return &AppError{Code: ErrNoSeriesNoLineOnDate, Params: []string{series, date}}
+}
+
+// NoSeriesNoLine: a series has no lines
+func NoSeriesNoLine(series string) *AppError {
+	return &AppError{Code: ErrNoSeriesNoLine, Params: []string{series}}
+}
+
+// NoSeriesDateOrder: a series in date order cannot give a number on a date before its last
+// date used
+func NoSeriesDateOrder(series, lastDate string) *AppError {
+	return &AppError{Code: ErrNoSeriesDateOrder, Params: []string{series, lastDate}}
+}
+
+// NoSeriesEndingNo: a series has no numbers after its ending number (also the warning
+// when the warning number is reached)
+func NoSeriesEndingNo(endingNo, series string) *AppError {
+	return &AppError{Code: ErrNoSeriesEndingNo, Params: []string{endingNo, series}}
+}
+
+// NoSeriesNoNumber: a number series field (e.g. Starting No.) holds a value without a number
+func NoSeriesNoNumber(table, field string) *AppError {
+	return &AppError{Code: ErrNoSeriesNoNumber, Table: table, Field: field}
+}
+
+// NoSeriesNumberFormat: a number series field's number format differs from Last No. Used's
+func NoSeriesNumberFormat(table, field, lastNoUsedField string) *AppError {
+	return &AppError{Code: ErrNoSeriesNumberFormat, Table: table, Field: field, Field2: lastNoUsedField}
+}
+
+// NoSeriesTooLong: a number would become longer than 20 characters
+func NoSeriesTooLong(no string) *AppError {
+	return &AppError{Code: ErrNoSeriesTooLong, Params: []string{no}}
+}
+
+// TableRecordNotFound: a record of a table (key: its key values) does not exist — the
+// table's caption in the user's language (Get without IF)
+func TableRecordNotFound(table, key string) *AppError {
+	return &AppError{Code: ErrRecordNotFound, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+// FieldMustBeValue: a table field must have a certain value (TestField with a value); the
+// value is shown in the user's language (Yes/No, option captions)
+func FieldMustBeValue(table, field string, value any) *AppError {
+	return &AppError{Code: ErrFieldMustBe, Table: table, Field: field, Value: value}
 }
 
 // FieldMustBe: a table field must have a certain value (TestField with a value)

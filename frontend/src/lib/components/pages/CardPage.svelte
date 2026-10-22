@@ -14,6 +14,7 @@
 	import { cardTitle, lookupFor, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
+	import { runPagePath, type RunPageAction } from '$lib/utils/runPage';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
@@ -288,12 +289,8 @@
 	// Handle run_object actions (codeunits)
 	// URL of an action's run_page, filtered to this record when the action names a filter
 	// (run_page_filter_field = record[run_page_filter_value]), e.g. the customer's ledger entries
-	function runPageUrl(action: { run_page?: number; run_page_filter_field?: string; run_page_filter_value?: string }): string {
-		let url = `/pages/${action.run_page}`;
-		const value = action.run_page_filter_value ? record?.[action.run_page_filter_value] : undefined;
-		if (action.run_page_filter_field && value !== undefined && value !== null && value !== '') {
-			url += `?filter=${encodeURIComponent(`${action.run_page_filter_field}=${value}`)}`;
-		}
+	function runPageUrl(action: RunPageAction): string {
+		const url = runPagePath(action, record) ?? `/pages/${action.run_page}`;
 		// Esc / close on the opened page comes back here (from a modal card: to its list,
 		// on this record)
 		return withReturn(url, getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)));
@@ -319,7 +316,7 @@
 	// A card action or menu item: open a page, run an object, or a standard action
 	// The action going back to the card's own list (Back to List)
 	function isBackToList(action: Action): boolean {
-		return !!action.run_page && action.run_page === page.page.list_page_id && !action.run_page_filter_field;
+		return !!action.run_page && action.run_page === page.page.list_page_id && !action.run_page_filter_field && !action.run_page_filters?.length;
 	}
 
 	function runCardAction(action: Action) {

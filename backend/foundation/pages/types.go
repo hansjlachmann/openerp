@@ -123,6 +123,11 @@ type Field struct {
 	// StyleExpr (lists): the cell takes Style when the record's field equals / does not equal a
 	// value (an option by its number) — bold heading and total accounts
 	StyleExpr *StyleExpr `yaml:"style_expr,omitempty" json:"style_expr,omitempty"`
+	// Calculated: not a table field — the page's OnAfterGetRecord trigger fills it per record
+	// (page.SetValue; classic page variables shown in a column); read-only, not searchable or
+	// sortable. Type (e.g. types.Date) formats it; its caption is tables.<table>.fields.<source>.
+	Calculated bool   `yaml:"calculated,omitempty" json:"calculated,omitempty"`
+	Type       string `yaml:"type,omitempty" json:"-"`
 }
 
 // StyleExpr is a conditional style of a list cell: Style when Field = Equal (or <> NotEqual)
@@ -131,6 +136,14 @@ type StyleExpr struct {
 	Equal    interface{} `yaml:"equal,omitempty" json:"equal,omitempty"`
 	NotEqual interface{} `yaml:"not_equal,omitempty" json:"not_equal,omitempty"`
 	Style    string      `yaml:"style" json:"style"` // Strong, Attention, Favorable, Unfavorable
+}
+
+// RunPageFilter is one filter of an action's run_page: Field of the opened page = this record's
+// Value field, or Const
+type RunPageFilter struct {
+	Field string `yaml:"field" json:"field"`
+	Value string `yaml:"value,omitempty" json:"value,omitempty"`
+	Const string `yaml:"const,omitempty" json:"const,omitempty"`
 }
 
 // Action represents a page action/button
@@ -144,7 +157,11 @@ type Action struct {
 	// filter_field = this record's filter_value field (e.g. the customer's ledger entries)
 	RunPageFilterField string `yaml:"run_page_filter_field,omitempty" json:"run_page_filter_field,omitempty"`
 	RunPageFilterValue string `yaml:"run_page_filter_value,omitempty" json:"run_page_filter_value,omitempty"`
-	RunObject          string `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
+	// RunPageFilters (optional): several filters of run_page — each a field of the opened page
+	// set to this record's field (value) or a constant (const, an option by its number);
+	// classic RunFormLink=A=FIELD(x),B=CONST(y)
+	RunPageFilters []RunPageFilter `yaml:"run_page_filters,omitempty" json:"run_page_filters,omitempty"`
+	RunObject      string          `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
 	// Enabled: actions are enabled unless the YAML says enabled: false (a missing value is
 	// omitted from the JSON; a plain bool sent false and disabled such actions and their shortcuts)
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`

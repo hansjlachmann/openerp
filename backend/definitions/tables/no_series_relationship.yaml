@@ -1,0 +1,68 @@
+table:
+  id: 310
+  name: "No_Series_Relationship"
+  caption: No. Series Relationship
+  description: "Number series that may be used instead of another (table 310)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: series_code
+      no: 2
+      type: types.Code
+      db_name: series_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: description
+      no: 3
+      type: types.Text
+      length: 50
+      flow_field: true
+      calc_formula: Lookup
+      source_table: NoSeries
+      source_field: description
+      flow_filters:
+        - field: code
+          type: field
+          value: code
+
+    - name: series_description
+      no: 4
+      type: types.Text
+      length: 50
+      flow_field: true
+      calc_formula: Lookup
+      source_table: NoSeries
+      source_field: description
+      flow_filters:
+        - field: code
+          type: field
+          value: series_code
+
+  keys:
+    - name: Primary
+      fields: [code, series_code]
+      clustered: true

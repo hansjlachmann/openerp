@@ -38,7 +38,11 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
 		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
 		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
-		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{}}
+		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{},
+		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
+		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.ZIPCode{}, &gtables.ReminderTerms{},
+		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
+		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -89,8 +93,21 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 155 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 155 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 237 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 237 master data records, at least 500 G/L entries", counts)
+	}
+	// The number series continue after the demo customers and posted documents
+	for series, prefix := range map[string]string{"CUST": "C00", "S-INV+": "SI0", "S-CR+": "SCM0"} {
+		var line gtables.NoSeriesLine
+		line.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+		if !line.GetByPK(types.Code(series), 10000) || !strings.HasPrefix(line.Last_no_used.String(), prefix) {
+			t.Errorf("%s line = %+v", series, line.ToMap())
+		}
+	}
+	var sales gtables.SalesReceivablesSetup
+	sales.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !sales.Get("") || sales.Customer_nos != "CUST" || sales.Posted_invoice_nos != "S-INV+" || !sales.Stockout_warning {
+		t.Errorf("Sales & Receivables Setup = %+v", sales.ToMap())
 	}
 	// Master data: given fields and the tables' defaults for the others
 	var eur gtables.Currency

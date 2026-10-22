@@ -68,3 +68,19 @@ describe('lookupFor', () => {
 		expect(lookupFor(lookups, 'nothing', {})).toBeUndefined();
 	});
 });
+
+describe('lookupFor with relation filters', () => {
+	it('keeps the rows matching the record', () => {
+		const levels: LookupData = {
+			columns: [{ source: 'no', width: 60 }],
+			rows: [
+				{ _key: '1', no: 1, reminder_terms_code: 'DOM' },
+				{ _key: '2', no: 2, reminder_terms_code: 'DOM' },
+				{ _key: '1', no: 1, reminder_terms_code: 'FOR' }
+			],
+			filters: [{ column: 'reminder_terms_code', field: 'reminder_terms_code' }]
+		};
+		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'DOM' })?.rows?.length).toBe(2);
+		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'FOR' })?.rows?.length).toBe(1);
+	});
+});

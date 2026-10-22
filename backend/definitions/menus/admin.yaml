@@ -29,6 +29,14 @@ menu:
         page_id: 118
         icon: settings
 
+      - name: Sales & Receivables Setup
+        page_id: 459
+        icon: settings
+
+      - name: No. Series
+        page_id: 456
+        icon: list
+
       - name: Payment Terms
         page_id: 4
         icon: calendar
@@ -80,6 +88,34 @@ menu:
       - name: Gen. Product Posting Groups
         page_id: 313
         icon: tag
+
+      - name: Customer Posting Groups
+        page_id: 110
+        icon: tag
+
+      - name: Customer Disc. Groups
+        page_id: 512
+        icon: tag
+
+      - name: Payment Methods
+        page_id: 427
+        icon: credit-card
+
+      - name: Shipping Agents
+        page_id: 428
+        icon: truck
+
+      - name: Territories
+        page_id: 429
+        icon: map-pin
+
+      - name: Post Codes
+        page_id: 367
+        icon: map-pin
+
+      - name: Reminder Terms
+        page_id: 431
+        icon: bell
 
       - name: Tax Area List
         page_id: 469

@@ -75,6 +75,7 @@ export interface Field {
 	decimal_places?: string; // decimals: "min:max" digits after the point (table YAML decimal_places)
 	indent_field?: string; // lists: indent the cell by this field's value (levels)
 	style_expr?: StyleExpr; // lists: a style when the record's field (does not) equal a value
+	calculated?: boolean; // not a table field: the page's triggers fill it per record (read-only)
 }
 
 /** A conditional cell style: style when record[field] equals `equal` (or differs from `not_equal`) */
@@ -93,6 +94,7 @@ export interface Action {
 	run_page?: number;
 	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
 	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
+	run_page_filters?: { field: string; value?: string; const?: string }[]; // several filters (record fields or constants)
 	run_object?: string; // "codeunit:455", "report:675", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)

@@ -222,3 +222,111 @@ master_data:
     records:
       - {code: MAIN, name: Main warehouse}
       - {code: OSLO, name: Oslo store}
+  - table: Customer_Posting_Group   # the receivables accounts of the customers' country
+    records:
+      - {code: DOMESTIC, receivables_account: "1410", service_charge_acc: "3130", payment_disc_acc: "3150", invoice_rounding_account: "3150", additional_fee_account: "3130", interest_account: "6110", curr_appln_rounding_account: "6140"}
+      - {code: FOREIGN, receivables_account: "1420", service_charge_acc: "3130", payment_disc_acc: "3150", invoice_rounding_account: "3150", additional_fee_account: "3130", interest_account: "6110", curr_appln_rounding_account: "6140"}
+  - table: Customer_Discount_Group
+    records:
+      - {code: RETAIL, description: Retail customers}
+      - {code: WHOLESALE, description: Wholesale customers}
+      - {code: LARGE, description: Large accounts}
+  - table: Payment_Method
+    records:
+      - {code: CASH, description: Cash payment, bal_account_type: 0, bal_account_no: "1510"}
+      - {code: BANK, description: Bank transfer, bal_account_type: 0, bal_account_no: "1520"}
+      - {code: CARD, description: Card payment}
+  - table: Shipping_Agent
+    records:
+      - {code: POSTEN, name: Posten Norge, internet_address: "https://www.posten.no"}
+      - {code: DHL, name: DHL Express, internet_address: "https://www.dhl.com"}
+      - {code: OWN, name: Own transport}
+  - table: Territory
+    records:
+      - {code: EAST, name: Eastern Norway}
+      - {code: WEST, name: Western Norway}
+      - {code: NORTH, name: Northern Norway}
+      - {code: NORDIC, name: Nordic countries}
+      - {code: UK, name: United Kingdom}
+  - table: ZIP_Code   # Post Codes: the cities of the demo customers
+    records:
+      - {code: "0159", city: Oslo}
+      - {code: "1607", city: Fredrikstad}
+      - {code: "4006", city: Stavanger}
+      - {code: "4611", city: Kristiansand}
+      - {code: "5003", city: Bergen}
+      - {code: "7011", city: Trondheim}
+      - {code: "9008", city: Tromsø}
+      - {code: "2200", city: København N}
+      - {code: "2900", city: Hellerup}
+      - {code: "4000", city: Roskilde}
+      - {code: "5000", city: Odense C}
+      - {code: "6700", city: Esbjerg}
+      - {code: "8000", city: Aarhus C}
+      - {code: "9000", city: Aalborg}
+      - {code: "EC4V", city: London}
+      - {code: "WC2B", city: London}
+      - {code: "GL7", city: Cirencester}
+      - {code: "L2", city: Liverpool}
+      - {code: "LS1", city: Leeds}
+      - {code: "M3", city: Manchester}
+  - table: Reminder_Terms
+    records:
+      - {code: DOMESTIC, description: Domestic customers, post_interest: true, post_additional_fee: true, max_no_of_reminders: 3}
+      - {code: FOREIGN, description: Customers abroad, post_interest: true, post_additional_fee: false, max_no_of_reminders: 2}
+  - table: Reminder_Level
+    records:
+      - {reminder_terms_code: DOMESTIC, no: 1, grace_period: 5D, due_date_calculation: 14D, additional_fee_lcy: 0, calculate_interest: false}
+      - {reminder_terms_code: DOMESTIC, no: 2, grace_period: 5D, due_date_calculation: 14D, additional_fee_lcy: 70, calculate_interest: true}
+      - {reminder_terms_code: DOMESTIC, no: 3, grace_period: 5D, due_date_calculation: 10D, additional_fee_lcy: 140, calculate_interest: true}
+      - {reminder_terms_code: FOREIGN, no: 1, grace_period: 7D, due_date_calculation: 14D, additional_fee_lcy: 0, calculate_interest: false}
+      - {reminder_terms_code: FOREIGN, no: 2, grace_period: 7D, due_date_calculation: 14D, additional_fee_lcy: 0, calculate_interest: true}
+  - table: Reminder_Text   # position 0 Beginning, 1 Ending
+    records:
+      - {reminder_terms_code: DOMESTIC, reminder_level: 1, position: 0, line_no: 10000, text: "Our records show that the following amounts are overdue."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 1, position: 0, line_no: 20000, text: "If you have already paid, please disregard this reminder."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 1, position: 1, line_no: 10000, text: "Please pay the amount due within 14 days."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 2, position: 0, line_no: 10000, text: "We have not received payment of the following amounts in spite of our reminder."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 2, position: 1, line_no: 10000, text: "Please pay at once to avoid further fees and interest."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 3, position: 0, line_no: 10000, text: "This is our final reminder."}
+      - {reminder_terms_code: DOMESTIC, reminder_level: 3, position: 1, line_no: 10000, text: "Unless we receive payment within 10 days, the claim will be sent to debt collection."}
+      - {reminder_terms_code: FOREIGN, reminder_level: 1, position: 0, line_no: 10000, text: "Our records show that the following amounts are overdue."}
+      - {reminder_terms_code: FOREIGN, reminder_level: 2, position: 0, line_no: 10000, text: "We have still not received payment of the following amounts."}
+  - table: No_Series
+    records:
+      - {code: "CUST", description: Customers, default_nos: true, manual_nos: true}
+      - {code: "CUST-EXP", description: Customers abroad, default_nos: true, manual_nos: true}
+      - {code: "S-QUO", description: Sales quotes, default_nos: true, manual_nos: true}
+      - {code: "S-BLK", description: Blanket sales orders, default_nos: true, manual_nos: true}
+      - {code: "S-ORD", description: Sales orders, default_nos: true, manual_nos: true}
+      - {code: "S-INV", description: Sales invoices, default_nos: true, manual_nos: true}
+      - {code: "S-INV+", description: Posted sales invoices, default_nos: true, manual_nos: false}
+      - {code: "S-CR", description: Sales credit memos, default_nos: true, manual_nos: true}
+      - {code: "S-CR+", description: Posted sales credit memos, default_nos: true, manual_nos: false}
+      - {code: "S-SHPT", description: Posted sales shipments, default_nos: true, manual_nos: false}
+      - {code: "S-REM", description: Reminders, default_nos: true, manual_nos: true}
+      - {code: "S-REM+", description: Issued reminders, default_nos: true, manual_nos: false}
+      - {code: "S-FIN", description: Finance charge memos, default_nos: true, manual_nos: true}
+      - {code: "S-FIN+", description: Issued finance charge memos, default_nos: true, manual_nos: false}
+  - table: No_Series_Line   # starting at the beginning (blank Starting Date)
+    records:
+      - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
+      - {series_code: "CUST-EXP", line_no: 10000, starting_no: "E00001", ending_no: "E99999", warning_no: "E99000", increment_by_no: 1, open: true}
+      - {series_code: "S-QUO", line_no: 10000, starting_no: "SQ000001", increment_by_no: 1, open: true}
+      - {series_code: "S-BLK", line_no: 10000, starting_no: "SB000001", increment_by_no: 1, open: true}
+      - {series_code: "S-ORD", line_no: 10000, starting_no: "SO000001", increment_by_no: 1, open: true}
+      - {series_code: "S-INV", line_no: 10000, starting_no: "SINV000001", increment_by_no: 1, open: true}
+      - {series_code: "S-INV+", line_no: 10000, starting_no: "SI000001", increment_by_no: 1, open: true}
+      - {series_code: "S-CR", line_no: 10000, starting_no: "SCR000001", increment_by_no: 1, open: true}
+      - {series_code: "S-CR+", line_no: 10000, starting_no: "SCM000001", increment_by_no: 1, open: true}
+      - {series_code: "S-SHPT", line_no: 10000, starting_no: "SS000001", increment_by_no: 1, open: true}
+      - {series_code: "S-REM", line_no: 10000, starting_no: "SR000001", increment_by_no: 1, open: true}
+      - {series_code: "S-REM+", line_no: 10000, starting_no: "ISR000001", increment_by_no: 1, open: true}
+      - {series_code: "S-FIN", line_no: 10000, starting_no: "SF000001", increment_by_no: 1, open: true}
+      - {series_code: "S-FIN+", line_no: 10000, starting_no: "ISF000001", increment_by_no: 1, open: true}
+  - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
+    records:
+      - {code: CUST, series_code: CUST-EXP}
+  - table: Sales_Receivables_Setup   # the single setup record (blank key)
+    records:
+      - {customer_nos: CUST, quote_nos: S-QUO, blanket_order_nos: S-BLK, order_nos: S-ORD, invoice_nos: S-INV, posted_invoice_nos: S-INV+, credit_memo_nos: S-CR, posted_credit_memo_nos: S-CR+, posted_shipment_nos: S-SHPT, reminder_nos: S-REM, issued_reminder_nos: S-REM+, fin_chrg_memo_nos: S-FIN, issued_fin_chrg_m_nos: S-FIN+, credit_warnings: 0, stockout_warning: true, calc_inv_discount: true}

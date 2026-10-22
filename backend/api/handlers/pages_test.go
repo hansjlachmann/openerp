@@ -114,12 +114,13 @@ func TestOptionCaptionsTranslated(t *testing.T) {
 		factory, _ := gtables.GetTableFactory(name)
 		table := factory()
 		for field, values := range table.GetOptionFields() {
-			for _, value := range values {
-				if captionKey(value) == "" {
+			for i, key := range optionKeys(values) {
+				value := values[i]
+				if key == "" {
 					continue // blank option " ": shown blank
 				}
 				for _, lang := range []string{"en-US", "nb-NO", "da-DK"} {
-					if c := ts.OptionCaption(name, field, captionKey(value), lang); strings.HasPrefix(c, "tables.") {
+					if c := ts.OptionCaption(name, field, key, lang); strings.HasPrefix(c, "tables.") {
 						t.Errorf("%s: no caption %s (option %q of %s.%s)", lang, c, value, name, field)
 					}
 				}

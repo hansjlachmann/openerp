@@ -1,0 +1,24 @@
+table:
+  id: 340
+  name: "Customer_Discount_Group"
+  caption: Customer Discount Group
+  description: "Customer discount groups (table 340)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 30
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

@@ -279,3 +279,29 @@ func (r *Registry) LookupPage(tableName string) int {
 	}
 	return best
 }
+
+// CalculatedFields returns the calculated fields (calculated: true) of the pages showing a
+// table: page values a record sent from such a page carries, which are not table fields
+func (r *Registry) CalculatedFields(tableName string) map[string]bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	fields := map[string]bool{}
+	for _, page := range r.pages {
+		if metadataKey(page.Page.SourceTable) != metadataKey(tableName) {
+			continue
+		}
+		all := []Field{}
+		if page.Page.Layout.Repeater != nil {
+			all = append(all, page.Page.Layout.Repeater.Fields...)
+		}
+		for _, s := range page.Page.Layout.Sections {
+			all = append(all, s.Fields...)
+		}
+		for _, f := range all {
+			if f.Calculated {
+				fields[strings.ToLower(f.Source)] = true
+			}
+		}
+	}
+	return fields
+}

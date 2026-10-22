@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -53,9 +55,30 @@ func (h *PageTriggersHandler) FieldStates(c *fiber.Ctx) error {
 	rec := factory()
 	rec.InitWithDBType(h.db, sess.GetCompany(), h.dbType)
 	rec.FromMap(record)
-	states, err := pages.RunAfterGetRecord(pageID, rec)
+	control, err := pages.RunAfterGetRecordControl(pageID, rec)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
-	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"field_states": states}))
+	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"field_states": control.States(), "values": control.Values()}))
+}
+
+// calculatedValues fills the calculated fields of a list's rows: the page's OnAfterGetRecord
+// triggers run for each row (records are the rows' maps) and their SetValue values join the row
+func calculatedValues(pageID int, table string, records []map[string]interface{}, newRecord func() ftables.Table) error {
+	page, err := pages.GetRegistry().GetPage(pageID)
+	if err != nil || !pages.HasRecordTriggers(pageID) || !strings.EqualFold(strings.ReplaceAll(page.Page.SourceTable, " ", "_"), strings.ReplaceAll(table, " ", "_")) {
+		return nil // not this table's page, or nothing to calculate
+	}
+	for _, row := range records {
+		rec := newRecord()
+		rec.FromMap(row)
+		control, err := pages.RunAfterGetRecordControl(pageID, rec)
+		if err != nil {
+			return err
+		}
+		for field, value := range control.Values() {
+			row[field] = value
+		}
+	}
+	return nil
 }

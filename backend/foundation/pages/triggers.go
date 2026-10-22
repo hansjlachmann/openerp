@@ -2,6 +2,7 @@ package pages
 
 import (
 	"fmt"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	"strings"
 	"sync"
 )
@@ -22,9 +23,42 @@ type FieldState struct {
 	Visible  *bool `json:"visible,omitempty"`
 }
 
-// Control is the page as a trigger sees it: it switches fields for the current record
+// Control is the page as a trigger sees it: it switches fields for the current record and
+// fills its calculated fields (page fields with calculated: true, classic page variables)
 type Control struct {
 	states map[string]FieldState
+	values map[string]interface{}
+}
+
+// SetValue fills a calculated page field for the current record (e.g. the No. Series list's
+// Last No. Used of the series' current line)
+func (c *Control) SetValue(field string, value interface{}) {
+	if c.values == nil {
+		c.values = map[string]interface{}{}
+	}
+	// as the records carry their fields (ToMap): dates, codes, texts and decimals as text — a
+	// blank date ""
+	switch v := value.(type) {
+	case types.Date:
+		value = v.String()
+	case types.DateTime:
+		value = v.String()
+	case types.Code:
+		value = v.String()
+	case types.Text:
+		value = v.String()
+	case types.Decimal:
+		value = v.String()
+	}
+	c.values[strings.ToLower(field)] = value
+}
+
+// Values returns the calculated fields the triggers filled, by field name
+func (c *Control) Values() map[string]interface{} {
+	if c.values == nil {
+		return map[string]interface{}{}
+	}
+	return c.values
 }
 
 // SetEditable makes a field editable or read-only for the current record
@@ -89,6 +123,16 @@ func HasRecordTriggers(pageID int) bool {
 // RunAfterGetRecord runs a page's OnAfterGetRecord triggers for a record and returns the
 // field states they set
 func RunAfterGetRecord(pageID int, rec any) (map[string]FieldState, error) {
+	page, err := RunAfterGetRecordControl(pageID, rec)
+	if err != nil {
+		return nil, err
+	}
+	return page.States(), nil
+}
+
+// RunAfterGetRecordControl runs a page's OnAfterGetRecord triggers for a record and returns
+// the page as they left it (field states and calculated values)
+func RunAfterGetRecordControl(pageID int, rec any) (*Control, error) {
 	triggersMu.RLock()
 	triggers := afterGetRecord[pageID]
 	triggersMu.RUnlock()
@@ -98,7 +142,7 @@ func RunAfterGetRecord(pageID int, rec any) (map[string]FieldState, error) {
 			return nil, err
 		}
 	}
-	return page.States(), nil
+	return page, nil
 }
 
 // OnNewRecord registers a trigger of a page that runs when the user starts a new record on it

@@ -130,3 +130,31 @@ pages:
     caption: "Salespeople/Purchasers"
   locations:
     caption: "Locations"
+
+  # Customer preparation: posting groups, codes, reminders, number series, sales setup
+  customer_posting_groups:
+    caption: "Customer Posting Groups"
+  post_codes:
+    caption: "Post Codes"
+  territories:
+    caption: "Territories"
+  payment_methods:
+    caption: "Payment Methods"
+  shipping_agents:
+    caption: "Shipping Agents"
+  reminder_terms:
+    caption: "Reminder Terms"
+  reminder_levels:
+    caption: "Reminder Levels"
+  reminder_text:
+    caption: "Reminder Text"
+  customer_disc_groups:
+    caption: "Customer Disc. Groups"
+  no_series:
+    caption: "No. Series"
+  no_series_lines:
+    caption: "No. Series Lines"
+  no_series_relationships:
+    caption: "No. Series Relationships"
+  sales_receivables_setup:
+    caption: "Sales & Receivables Setup"

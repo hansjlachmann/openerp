@@ -1,0 +1,57 @@
+page:
+  id: 110
+  type: List
+  name: Customer Posting Groups
+  source_table: Customer_Posting_Group
+  caption: Customer Posting Groups
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: receivables_account
+          width: 170
+
+        - source: service_charge_acc
+          width: 170
+
+        - source: payment_disc_acc
+          width: 170
+
+        - source: invoice_rounding_account
+          width: 190
+
+        - source: additional_fee_account
+          width: 180
+
+        - source: interest_account
+          width: 150
+
+        - source: curr_appln_rounding_account
+          width: 230
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

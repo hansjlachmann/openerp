@@ -755,3 +755,173 @@ tables:
         bank_account: "Bankkonto"
         fixed_asset: "Anlægsaktiv"
         employee: "Medarbejder"
+
+  # Customer Posting Group (Table 92)
+  customer_posting_group:
+    caption: "Debitorbogføringsgruppe"
+    fields:
+      code: "Kode"
+      receivables_account: "Debitorkonto"
+      service_charge_acc: "Konto for servicegebyr"
+      payment_disc_acc: "Konto for kontantrabat"
+      invoice_rounding_account: "Konto for fakturaafrunding"
+      additional_fee_account: "Konto for opkrævningsgebyr"
+      interest_account: "Rentekonto"
+      curr_appln_rounding_account: "Afrundingskonto for valutaudligning"
+  # Post Code (Table 225)
+  zip_code:
+    caption: "Postnummer"
+    fields:
+      code: "Kode"
+      city: "By"
+  # Territory (Table 286)
+  territory:
+    caption: "Distrikt"
+    fields:
+      code: "Kode"
+      name: "Navn"
+  # Payment Method (Table 289)
+  payment_method:
+    caption: "Betalingsform"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      bal_account_type: "Modkontotype"
+      bal_account_no: "Modkontonr."
+    options:
+      bal_account_type:
+        g_l_account: "Finanskonto"
+        bank_account: "Bankkonto"
+  # Shipping Agent (Table 291)
+  shipping_agent:
+    caption: "Speditør"
+    fields:
+      code: "Kode"
+      name: "Navn"
+      internet_address: "Internetadresse"
+      account_no: "Kontonr."
+  # Reminder Terms (Table 292)
+  reminder_terms:
+    caption: "Rykkerbetingelser"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      post_interest: "Bogfør renter"
+      post_additional_fee: "Bogfør gebyr"
+      max_no_of_reminders: "Maks. antal rykkere"
+  # Reminder Level (Table 293)
+  reminder_level:
+    caption: "Rykkerniveau"
+    fields:
+      reminder_terms_code: "Rykkerbetingelseskode"
+      no: "Nr."
+      grace_period: "Frist"
+      additional_fee_lcy: "Gebyr (DKK)"
+      calculate_interest: "Beregn rente"
+      due_date_calculation: "Forfaldsdatoberegning"
+  # Reminder Text (Table 294)
+  reminder_text:
+    caption: "Rykkertekst"
+    fields:
+      reminder_terms_code: "Rykkerbetingelseskode"
+      reminder_level: "Rykkerniveau"
+      position: "Placering"
+      line_no: "Linjenr."
+      text: "Tekst"
+    options:
+      position:
+        beginning: "Start"
+        ending: "Slut"
+  # Customer Discount Group (Table 340)
+  customer_discount_group:
+    caption: "Debitorrabatgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  # No. Series (Table 308)
+  no_series:
+    caption: "Nummerserie"
+    fields:
+      starting_date: "Startdato"
+      starting_no: "Startnr."
+      ending_no: "Slutnr."
+      last_date_used: "Sidst anvendt den"
+      last_no_used: "Sidst anvendte nr."
+      warning_no: "Advarselsnr."
+      increment_by_no: "Interval"
+      code: "Kode"
+      description: "Beskrivelse"
+      default_nos: "Standardnumre"
+      manual_nos: "Manuelle numre"
+      date_order: "Datorækkefølge"
+      no_of_lines: "Antal linjer"
+  # No. Series Line (Table 309)
+  no_series_line:
+    caption: "Nummerserielinje"
+    fields:
+      series_code: "Seriekode"
+      line_no: "Linjenr."
+      starting_date: "Startdato"
+      starting_no: "Startnr."
+      ending_no: "Slutnr."
+      warning_no: "Advarselsnr."
+      increment_by_no: "Interval"
+      last_no_used: "Sidst anvendte nr."
+      open: "Åben"
+      last_date_used: "Sidst anvendt den"
+  # No. Series Relationship (Table 310)
+  no_series_relationship:
+    caption: "Nummerserierelation"
+    fields:
+      code: "Kode"
+      series_code: "Seriekode"
+      description: "Beskrivelse"
+      series_description: "Seriebeskrivelse"
+  # Sales & Receivables Setup (Table 311)
+  sales_receivables_setup:
+    caption: "Salgsopsætning"
+    fields:
+      primary_key: "Primær nøgle"
+      discount_posting: "Rabatbogføring"
+      line_discount_calculation: "Linjerabatberegning"
+      credit_warnings: "Kreditadvarsler"
+      stockout_warning: "Beholdningsadvarsel"
+      shipment_on_invoice: "Følgeseddel ved fakturering"
+      invoice_rounding: "Fakturaafrunding"
+      ext_doc_no_mandatory: "Eksternt bilagsnr. obligatorisk"
+      customer_nos: "Debitornumre"
+      quote_nos: "Tilbudsnumre"
+      order_nos: "Ordrenumre"
+      invoice_nos: "Fakturanumre"
+      posted_invoice_nos: "Bogførte fakturanumre"
+      credit_memo_nos: "Kreditnotanumre"
+      posted_credit_memo_nos: "Bogførte kreditnotanumre"
+      posted_shipment_nos: "Bogførte følgeseddelnumre"
+      reminder_nos: "Rykkernumre"
+      issued_reminder_nos: "Udstedte rykkernumre"
+      fin_chrg_memo_nos: "Rentenotanumre"
+      issued_fin_chrg_m_nos: "Udstedte rentenotanumre"
+      blanket_order_nos: "Rammeordrenumre"
+      calc_inv_discount: "Beregn fakturarabat"
+      appln_between_currencies: "Udligning mellem valutaer"
+      copy_comments_blanket_to_order: "Kopier bemærkninger fra rammeordre til ordre"
+      copy_comments_order_to_invoice: "Kopier bemærkninger fra ordre til faktura"
+      copy_comments_order_to_shpt: "Kopier bemærkninger fra ordre til følgeseddel"
+    options:
+      discount_posting:
+        no_discounts: "Ingen rabatter"
+        invoice_discounts: "Fakturarabatter"
+        line_discounts: "Linjerabatter"
+        all_discounts: "Alle rabatter"
+      line_discount_calculation:
+        qty_disc_cust_item_disc: "Antalsrabat + debitor-/varerabat"
+        qty_disc_cust_item_disc_2: "Antalsrabat * debitor-/varerabat"
+      credit_warnings:
+        both_warnings: "Begge advarsler"
+        credit_limit: "Kreditmaksimum"
+        overdue_balance: "Forfalden saldo"
+        no_warning: "Ingen advarsel"
+      appln_between_currencies:
+        none: "Ingen"
+        emu: "ØMU"
+        all: "Alle"

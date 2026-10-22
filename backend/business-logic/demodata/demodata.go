@@ -286,6 +286,10 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
+	if err := useSeriesNumbers(exec, company, dbType, customers, entries); err != nil {
+		rollback()
+		return Counts{}, err
+	}
 	if err := insertGLEntries(exec, company, dbType, generateGLEntries(today, opts.Size, customerNos(customers), func() *gtables.GLEntry {
 		e := &gtables.GLEntry{}
 		e.InitWithDBType(exec, company, dbType)
@@ -698,6 +702,48 @@ func (p *progress) emit(pct int) {
 	}
 	p.last = pct
 	p.report(pct, p.current)
+}
+
+// useSeriesNumbers marks the numbers the demo customers and posted documents have as used in
+// their number series (CUST, S-INV+, S-CR+), so the next number continues after them
+func useSeriesNumbers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry) error {
+	last := map[string]ledgerUse{}
+	use := func(series, no string, date time.Time) {
+		if u := last[series]; no > u.no {
+			last[series] = ledgerUse{no, date}
+		}
+	}
+	for _, c := range customers {
+		use("CUST", c.No, time.Time{})
+	}
+	for _, e := range entries {
+		switch e.docType {
+		case gtables.CustomerLedgerEntry_Document_type.Invoice:
+			use("S-INV+", e.docNo, e.date)
+		case gtables.CustomerLedgerEntry_Document_type.CreditMemo:
+			use("S-CR+", e.docNo, e.date)
+		}
+	}
+	for series, u := range last {
+		var line gtables.NoSeriesLine
+		line.InitWithDBType(exec, company, dbType)
+		if !line.GetByPK(types.Code(series), 10000) {
+			continue
+		}
+		line.Last_no_used = types.Code(u.no)
+		if !u.date.IsZero() {
+			line.Last_date_used = types.NewDateFromTime(u.date)
+		}
+		if !line.Modify(false) {
+			return &InsertError{Table: gtables.NoSeriesLineTableName, Key: series, Err: insertErr(line.TriggerError())}
+		}
+	}
+	return nil
+}
+
+type ledgerUse struct {
+	no   string
+	date time.Time
 }
 
 // primaryKey is a record's key for Get: the value of its key field, or field → value for a

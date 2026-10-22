@@ -329,14 +329,23 @@ export function findSelectedRecord(
 }
 
 /**
- * The /init context of a new record on a page with OnNewRecord triggers: the page and the record
- * the new one is inserted next to (below it when below); nothing for other pages
+ * The /init context of a new record on a page with OnNewRecord triggers: the page, the record
+ * the new one is inserted next to (below it when below) and the values the new record already
+ * has (the filters' and link values, which the triggers see); nothing for other pages
  */
 export function newRecordContext(
 	page: { id: number; has_new_record_triggers?: boolean },
 	xRec: Record<string, any> | undefined,
-	below: boolean
-): { pageId: number; xRec?: Record<string, any>; belowXRec: boolean } | undefined {
+	below: boolean,
+	values?: Record<string, any>
+): NewRecordContext | undefined {
 	if (!page.has_new_record_triggers) return undefined;
-	return { pageId: page.id, xRec: xRec ? stripInternalFields(xRec) : undefined, belowXRec: below };
+	return { pageId: page.id, xRec: xRec ? stripInternalFields(xRec) : undefined, belowXRec: below, values };
+}
+
+export interface NewRecordContext {
+	pageId: number;
+	xRec?: Record<string, any>;
+	belowXRec: boolean;
+	values?: Record<string, any>;
 }

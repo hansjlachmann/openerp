@@ -167,3 +167,11 @@ func IndentChartOfAccounts(db database.Executor, company string, dbType database
 	}
 	return nil
 }
+
+// CheckGLAcc returns an error unless the account is a posting account that is not blocked
+func CheckGLAcc(rec *gtables.GLAccount) error {
+	if err := rec.TestField("account_type", gtables.GLAccount_Account_type.Posting); err != nil {
+		return err
+	}
+	return rec.TestField("blocked", false)
+}

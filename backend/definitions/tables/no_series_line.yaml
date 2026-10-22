@@ -1,0 +1,85 @@
+table:
+  id: 309
+  name: "No_Series_Line"
+  caption: No. Series Line
+  description: "The number ranges of a number series by starting date (table 309)"
+  lookup_page_id: 457
+  fields:
+    - name: series_code
+      no: 1
+      type: types.Code
+      db_name: series_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: starting_date
+      no: 3
+      type: types.Date
+      db_name: starting_date
+
+    - name: starting_no
+      no: 4
+      type: types.Code
+      db_name: starting_no
+      length: 20
+
+    - name: ending_no
+      no: 5
+      type: types.Code
+      db_name: ending_no
+      length: 20
+
+    - name: warning_no
+      no: 6
+      type: types.Code
+      db_name: warning_no
+      length: 20
+
+    - name: increment_by_no
+      no: 7
+      type: int
+      db_name: increment_by_no
+      default: 1
+      validation: {min: 1}
+
+    - name: last_no_used
+      no: 8
+      type: types.Code
+      db_name: last_no_used
+      length: 20
+
+    - name: open
+      no: 9
+      type: bool
+      db_name: open
+      default: true
+      editable: false
+
+    - name: last_date_used
+      no: 10
+      type: types.Date
+      db_name: last_date_used
+
+  keys:
+    - name: Primary
+      fields: [series_code, line_no]
+      clustered: true
+    - name: series_code_starting_date_starting_no
+      fields: [series_code, starting_date, starting_no]
+    - name: starting_no
+      fields: [starting_no]

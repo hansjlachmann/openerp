@@ -1,0 +1,63 @@
+table:
+  id: 293
+  name: "Reminder_Level"
+  caption: Reminder Level
+  description: "Levels of a reminder terms (table 293)"
+  lookup_page_id: 432
+  fields:
+    - name: reminder_terms_code
+      no: 1
+      type: types.Code
+      db_name: reminder_terms_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Reminder_Terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: no
+      no: 2
+      type: int
+      db_name: no
+      primary_key: true
+      required: true
+      validation: {min: 1}
+
+    - name: grace_period
+      no: 3
+      type: types.Code
+      db_name: grace_period
+      length: 20
+      date_formula: true
+
+    - name: additional_fee_lcy
+      no: 4
+      type: types.Decimal
+      db_name: additional_fee_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+      validation: {min: 0}
+
+    - name: calculate_interest
+      no: 5
+      type: bool
+      db_name: calculate_interest
+
+    - name: due_date_calculation
+      no: 6
+      type: types.Code
+      db_name: due_date_calculation
+      length: 20
+      date_formula: true
+
+  keys:
+    - name: Primary
+      fields: [reminder_terms_code, no]
+      clustered: true

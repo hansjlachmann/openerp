@@ -130,3 +130,31 @@ pages:
     caption: "Sælgere/indkøbere"
   locations:
     caption: "Lokationer"
+
+  # Customer preparation: posting groups, codes, reminders, number series, sales setup
+  customer_posting_groups:
+    caption: "Debitorbogføringsgrupper"
+  post_codes:
+    caption: "Postnumre"
+  territories:
+    caption: "Distrikter"
+  payment_methods:
+    caption: "Betalingsformer"
+  shipping_agents:
+    caption: "Speditører"
+  reminder_terms:
+    caption: "Rykkerbetingelser"
+  reminder_levels:
+    caption: "Rykkerniveauer"
+  reminder_text:
+    caption: "Rykkertekst"
+  customer_disc_groups:
+    caption: "Debitorrabatgrupper"
+  no_series:
+    caption: "Nummerserier"
+  no_series_lines:
+    caption: "Nummerserielinjer"
+  no_series_relationships:
+    caption: "Nummerserierelationer"
+  sales_receivables_setup:
+    caption: "Salgsopsætning"

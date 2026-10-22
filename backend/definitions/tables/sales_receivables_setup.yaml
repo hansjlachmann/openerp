@@ -1,0 +1,268 @@
+table:
+  id: 311
+  name: "Sales_Receivables_Setup"
+  caption: Sales & Receivables Setup
+  description: "Sales and receivables setup (table 311), a single record per company"
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: discount_posting
+      no: 2
+      type: Option
+      db_name: discount_posting
+      options: ["No Discounts", "Invoice Discounts", "Line Discounts", "All Discounts"]
+
+    - name: line_discount_calculation
+      no: 3
+      type: Option
+      db_name: line_discount_calculation
+      options: ["Qty. Disc. + Cust./Item Disc.", "Qty. Disc. * Cust./Item Disc."]
+
+    - name: credit_warnings
+      no: 4
+      type: Option
+      db_name: credit_warnings
+      options: ["Both Warnings", "Credit Limit", "Overdue Balance", "No Warning"]
+
+    - name: stockout_warning
+      no: 5
+      type: bool
+      db_name: stockout_warning
+      default: true
+
+    - name: shipment_on_invoice
+      no: 6
+      type: bool
+      db_name: shipment_on_invoice
+
+    - name: invoice_rounding
+      no: 7
+      type: bool
+      db_name: invoice_rounding
+
+    - name: ext_doc_no_mandatory
+      no: 8
+      type: bool
+      db_name: ext_doc_no_mandatory
+
+    - name: customer_nos
+      no: 9
+      type: types.Code
+      db_name: customer_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: quote_nos
+      no: 10
+      type: types.Code
+      db_name: quote_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: order_nos
+      no: 11
+      type: types.Code
+      db_name: order_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: invoice_nos
+      no: 12
+      type: types.Code
+      db_name: invoice_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_invoice_nos
+      no: 13
+      type: types.Code
+      db_name: posted_invoice_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: credit_memo_nos
+      no: 14
+      type: types.Code
+      db_name: credit_memo_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_credit_memo_nos
+      no: 15
+      type: types.Code
+      db_name: posted_credit_memo_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_shipment_nos
+      no: 16
+      type: types.Code
+      db_name: posted_shipment_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reminder_nos
+      no: 17
+      type: types.Code
+      db_name: reminder_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: issued_reminder_nos
+      no: 18
+      type: types.Code
+      db_name: issued_reminder_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fin_chrg_memo_nos
+      no: 19
+      type: types.Code
+      db_name: fin_chrg_memo_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: issued_fin_chrg_m_nos
+      no: 20
+      type: types.Code
+      db_name: issued_fin_chrg_m_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: blanket_order_nos
+      no: 23
+      type: types.Code
+      db_name: blanket_order_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: calc_inv_discount
+      no: 24
+      type: bool
+      db_name: calc_inv_discount
+
+    - name: appln_between_currencies
+      no: 25
+      type: Option
+      db_name: appln_between_currencies
+      options: ["None", "EMU", "All"]
+
+    - name: copy_comments_blanket_to_order
+      no: 26
+      type: bool
+      db_name: copy_comments_blanket_to_order
+      default: true
+
+    - name: copy_comments_order_to_invoice
+      no: 27
+      type: bool
+      db_name: copy_comments_order_to_invoice
+      default: true
+
+    - name: copy_comments_order_to_shpt
+      no: 28
+      type: bool
+      db_name: copy_comments_order_to_shpt
+      default: true
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

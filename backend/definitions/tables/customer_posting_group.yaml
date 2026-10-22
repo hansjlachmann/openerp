@@ -1,0 +1,116 @@
+table:
+  id: 92
+  name: "Customer_Posting_Group"
+  caption: Customer Posting Group
+  description: "Customer posting groups, the G/L accounts of receivables (table 92)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: receivables_account
+      no: 2
+      type: types.Code
+      db_name: receivables_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: service_charge_acc
+      no: 7
+      type: types.Code
+      db_name: service_charge_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: payment_disc_acc
+      no: 8
+      type: types.Code
+      db_name: payment_disc_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: invoice_rounding_account
+      no: 9
+      type: types.Code
+      db_name: invoice_rounding_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: additional_fee_account
+      no: 10
+      type: types.Code
+      db_name: additional_fee_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: interest_account
+      no: 11
+      type: types.Code
+      db_name: interest_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: curr_appln_rounding_account
+      no: 12
+      type: types.Code
+      db_name: curr_appln_rounding_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

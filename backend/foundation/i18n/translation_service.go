@@ -205,9 +205,7 @@ func (s *TranslationService) PageCaption(pageName, language string) string {
 // The lookup key is derived by lowercasing and replacing spaces with underscores.
 // Falls back to the original name if no translation is found.
 func (s *TranslationService) MenuItemCaption(menuName, language string) string {
-	normalized := strings.ToLower(menuName)
-	normalized = strings.ReplaceAll(normalized, " ", "_")
-	key := fmt.Sprintf("common.menu.%s", normalized)
+	key := fmt.Sprintf("common.menu.%s", Key(menuName))
 	translated := s.Translate(key, language)
 	// If Translate returns the key itself, fall back to original name
 	if translated == key {
@@ -319,8 +317,23 @@ func findProjectRoot() (string, error) {
 // normalizeTableName converts table names to snake_case for translation lookup
 // Examples: "Customer" -> "customer", "Payment Terms" -> "payment_terms", "Customer Ledger Entry" -> "customer_ledger_entry"
 func normalizeTableName(tableName string) string {
-	// Convert to lowercase and replace spaces with underscores
-	normalized := strings.ToLower(tableName)
-	normalized = strings.ReplaceAll(normalized, " ", "_")
-	return normalized
+	return Key(tableName)
+}
+
+// Key is a name's translation key: lower case, every run of other characters than letters
+// and digits one underscore ("Gen. Business Posting Groups" → gen_business_posting_groups,
+// "Sales & Receivables Setup" → sales_receivables_setup, "G_L_Account" → g_l_account)
+func Key(name string) string {
+	var b strings.Builder
+	underscore := false
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			underscore = false
+		} else if !underscore && b.Len() > 0 {
+			b.WriteByte('_')
+			underscore = true
+		}
+	}
+	return strings.TrimSuffix(b.String(), "_")
 }

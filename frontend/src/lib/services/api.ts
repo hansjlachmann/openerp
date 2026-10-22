@@ -59,6 +59,7 @@ export function buildQueryString(options?: ListOptions): string {
 	if (options.fields && options.fields.length > 0) {
 		params.append('fields', JSON.stringify(options.fields));
 	}
+	if (options.page_id) params.append('page_id', options.page_id.toString());
 
 	return params.toString();
 }
@@ -284,13 +285,18 @@ export const api = {
 	// the new one is inserted next to (xRec, below it when belowXRec) gives more of them
 	async initRecord<T = TableRecord>(
 		tableName: string,
-		newRecord?: { pageId: number; xRec?: Record<string, any>; belowXRec: boolean }
+		newRecord?: { pageId: number; xRec?: Record<string, any>; belowXRec: boolean; values?: Record<string, any> }
 	): Promise<T> {
 		const response = await fetch(`${API_BASE}/tables/${tableName}/init`, {
 			method: 'POST',
 			...(newRecord && {
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ page_id: newRecord.pageId, x_rec: newRecord.xRec ?? null, below_x_rec: newRecord.belowXRec })
+				body: JSON.stringify({
+					page_id: newRecord.pageId,
+					x_rec: newRecord.xRec ?? null,
+					below_x_rec: newRecord.belowXRec,
+					values: newRecord.values ?? null
+				})
 			})
 		});
 		return handleApiResponse<T>(response, `init ${tableName}`);

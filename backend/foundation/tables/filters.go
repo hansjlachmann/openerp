@@ -75,3 +75,7 @@ func FilterComparison(part string) string {
 	}
 	return ""
 }
+
+// FindKeyFilterGroup is the filter group Find("=") puts the record's key in, so the record's
+// filters (also on key fields) still apply; code uses groups 0 and up
+const FindKeyFilterGroup = -1

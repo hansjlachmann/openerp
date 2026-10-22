@@ -384,13 +384,26 @@ export function cellStyle(field: Field, record: Record<string, any> | undefined)
  * record's type field (e.g. Bal. Account Type → G/L accounts or customers); none for a type
  * without a related table
  */
-export function lookupFor<L extends { variants?: Record<string, L>; variant_field?: string }>(
-	lookups: Record<string, L> | undefined,
-	field: string,
-	record: Record<string, any> | undefined
-): L | undefined {
-	const lookup = lookups?.[field];
-	if (!lookup?.variants) return lookup;
-	const type = record?.[lookup.variant_field ?? ''];
-	return lookup.variants[String(type ?? '')];
+export function lookupFor<
+	L extends {
+		variants?: Record<string, L>;
+		variant_field?: string;
+		filters?: { column: string; field?: string; const?: string }[];
+		rows?: Array<Record<string, any>> | null;
+	}
+>(lookups: Record<string, L> | undefined, field: string, record: Record<string, any> | undefined): L | undefined {
+	let lookup = lookups?.[field];
+	if (lookup?.variants) {
+		const type = record?.[lookup.variant_field ?? ''];
+		lookup = lookup.variants[String(type ?? '')];
+	}
+	// A relation with WHERE filters: only the rows matching the record (a level of its terms)
+	if (lookup?.filters?.length && lookup.rows) {
+		const filters = lookup.filters;
+		const rows = lookup.rows.filter((row) =>
+			filters.every((f) => String(row[f.column] ?? '') === String((f.field ? record?.[f.field] : f.const) ?? ''))
+		);
+		lookup = { ...lookup, rows };
+	}
+	return lookup;
 }

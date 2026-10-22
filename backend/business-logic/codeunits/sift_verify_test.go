@@ -31,7 +31,11 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
 		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
 		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
-		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{}} {
+		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{},
+		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
+		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.ZIPCode{}, &gtables.ReminderTerms{},
+		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
+		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}

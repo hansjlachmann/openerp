@@ -1,0 +1,45 @@
+page:
+  id: 428
+  type: List
+  name: Shipping Agents
+  source_table: Shipping_Agent
+  caption: Shipping Agents
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: name
+          width: 250
+
+        - source: internet_address
+          width: 300
+
+        - source: account_no
+          width: 160
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

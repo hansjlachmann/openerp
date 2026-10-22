@@ -1,0 +1,66 @@
+page:
+  id: 457
+  type: List
+  name: No. Series Lines
+  source_table: No_Series_Line   # opened from No. Series (filter series_code)
+  caption: No. Series Lines
+  editable: true
+  auto_split_key: true      # a new line gets Line No. 10000, 20000 … or halfway between its neighbours (15000)
+  delayed_insert: true      # inserted when the user leaves the line
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: series_code
+          width: 120
+          visible: false
+
+        - source: line_no
+          width: 100
+
+        - source: starting_date
+          width: 130
+
+        - source: starting_no
+          width: 140
+
+        - source: ending_no
+          width: 140
+
+        - source: warning_no
+          width: 140
+
+        - source: increment_by_no
+          width: 140
+
+        - source: last_no_used
+          width: 140
+
+        - source: last_date_used
+          width: 140
+
+        - source: open
+          width: 80
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

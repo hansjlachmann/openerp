@@ -28,7 +28,7 @@
 	interface Props {
 		pageid: number;
 		recordid?: string;
-		initialFilter?: string;
+		initialFilter?: string | string[]; // ?filter=field=expression (several: one per field)
 		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
 		initialSelect?: string; // record key to select (returning from a drilldown)
 		startNew?: boolean; // a list opened from a lookup's New: start a new record
@@ -127,11 +127,13 @@
 	// FlowFilters as typed in the filter pane (e.g. Date Filter "01.01.26..31.03.26"); sent as ISO
 	let currentFlowFilters: import('$lib/types/api').TableFilter[] = $state([]);
 
-	function parseInitialFilter(filter: string | undefined): import('$lib/types/api').TableFilter[] {
-		if (!filter) return [];
-		const eqIndex = filter.indexOf('=');
-		if (eqIndex <= 0) return [];
-		return [{ field: filter.substring(0, eqIndex), expression: filter.substring(eqIndex + 1) }];
+	function parseInitialFilter(filter: string | string[] | undefined): import('$lib/types/api').TableFilter[] {
+		const filters: import('$lib/types/api').TableFilter[] = [];
+		for (const f of Array.isArray(filter) ? filter : filter ? [filter] : []) {
+			const eqIndex = f.indexOf('=');
+			if (eqIndex > 0) filters.push({ field: f.substring(0, eqIndex), expression: f.substring(eqIndex + 1) });
+		}
+		return filters;
 	}
 
 	// Navigation data for card pages
@@ -342,6 +344,8 @@
 			if (visibleFields.length > 0) {
 				listOptions.fields = visibleFields;
 			}
+			// The page's triggers fill its calculated fields (OnAfterGetRecord)
+			if (page.page.has_record_triggers) listOptions.page_id = page.page.id;
 
 			// Fetch records, options, and lookups in a single API call
 			const response = await api.listRecordsWithOptions(page.page.source_table, listOptions);

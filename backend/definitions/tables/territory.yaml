@@ -1,0 +1,24 @@
+table:
+  id: 286
+  name: "Territory"
+  caption: Territory
+  description: "Sales territories (table 286)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

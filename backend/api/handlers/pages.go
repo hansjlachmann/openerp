@@ -133,6 +133,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
 					fieldTypes[field.Source] = ft
 				}
+				if field.Calculated {
+					markCalculated(&pageDef.Page, field, fieldTypes)
+				}
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
 				}
@@ -153,6 +156,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
 				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
 					fieldTypes[field.Source] = ft
+				}
+				if field.Calculated {
+					markCalculated(&pageDef.Page, field, fieldTypes)
 				}
 				if pkSet[field.Source] {
 					field.PrimaryKey = true
@@ -228,25 +234,41 @@ func commonCaption(ts *i18n.TranslationService, group, name, fallback, lang stri
 // captionKey turns a name into a translation key: lower case, other characters "_"
 // ("Send Test E-mail" → "send_test_e_mail", "Back to List" → "back_to_list")
 func captionKey(name string) string {
-	var b strings.Builder
-	underscore := false
-	for _, r := range strings.ToLower(name) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			b.WriteRune(r)
-			underscore = false
-		} else if !underscore && b.Len() > 0 {
-			b.WriteByte('_')
-			underscore = true
+	return i18n.Key(name)
+}
+
+// optionKeys are the translation keys of an option field's values (captionKey); a value whose
+// key an earlier one has gets a number ("Qty. Disc. + Cust./Item Disc." and "Qty. Disc. *
+// Cust./Item Disc." → qty_disc_cust_item_disc, qty_disc_cust_item_disc_2)
+func optionKeys(values []string) []string {
+	keys := make([]string, len(values))
+	seen := map[string]int{}
+	for i, value := range values {
+		key := captionKey(value)
+		if key != "" {
+			if seen[key]++; seen[key] > 1 {
+				key = fmt.Sprintf("%s_%d", key, seen[key])
+			}
 		}
+		keys[i] = key
 	}
-	return strings.TrimSuffix(b.String(), "_")
+	return keys
 }
 
 // normalizePageName converts "Customer Card" to "customer_card"
+// markCalculated makes a calculated page field (filled by the page's triggers) read-only, gives
+// it its type, and lists it with the computed fields (not searched or sorted on the server)
+func markCalculated(page *pages.PageMetadata, field *pages.Field, fieldTypes map[string]string) {
+	readOnly := false
+	field.Editable = &readOnly
+	if field.Type != "" {
+		fieldTypes[field.Source] = field.Type
+	}
+	page.FlowFields = append(page.FlowFields, field.Source)
+}
+
 func normalizePageName(name string) string {
-	result := strings.ToLower(name)
-	result = strings.ReplaceAll(result, " ", "_")
-	return result
+	return i18n.Key(name)
 }
 
 // normalizeLanguageCode converts language codes to proper BCP-47 format

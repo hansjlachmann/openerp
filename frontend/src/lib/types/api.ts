@@ -32,6 +32,7 @@ export interface LookupData {
 	new_page_id?: number; // the related table's list page: the lookup's New opens it with a new record
 	variants?: Record<string, LookupData>; // a conditional relation: the lookup per value of variant_field
 	variant_field?: string;
+	filters?: { column: string; field?: string; const?: string }[]; // a relation with WHERE filters: rows matching the record
 }
 
 // Table record type (generic)
@@ -80,6 +81,7 @@ export interface ListOptions {
 	search_fields?: string[];
 	flow_filters?: TableFilter[]; // FlowFilter fields (e.g. Date Filter) the FlowFields apply, ISO dates
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
+	page_id?: number; // the page showing the list: its triggers fill its calculated fields
 }
 
 // Dialog result from codeunit

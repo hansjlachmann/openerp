@@ -42,6 +42,17 @@ errors:
   ERR_EMPTY_PRIMARY_KEY: "%1 number cannot be empty"
   ERR_TABLE_NOT_FOUND: "Table '%1' not found"
 
+  # Number series
+  ERR_NO_SERIES_MANUAL: "You may not enter numbers manually. If you want to enter numbers manually, please activate %1 in %2 %3."
+  ERR_NO_SERIES_DEFAULT: "It is not possible to assign numbers automatically. If you want the program to assign numbers automatically, please activate %1 in %2 %3."
+  ERR_NO_SERIES_NO_LINE_ON_DATE: "You cannot assign new numbers from the number series %1 on %2."
+  ERR_NO_SERIES_NO_LINE: "You cannot assign new numbers from the number series %1."
+  ERR_NO_SERIES_DATE_ORDER: "You cannot assign new numbers from the number series %1 on a date before %2."
+  ERR_NO_SERIES_ENDING_NO: "You cannot assign numbers greater than %1 from the number series %2."
+  ERR_NO_SERIES_NO_NUMBER: "%1 must contain a number."
+  ERR_NO_SERIES_NUMBER_FORMAT: "The number format in %1 must be the same as the number format in %2."
+  ERR_NO_SERIES_TOO_LONG: "The number %1 cannot be extended to more than 20 characters."
+
   # Session/Auth
   ERR_NO_ACTIVE_SESSION: "No active session"
   ERR_NOT_LOGGED_IN: "No user logged in"

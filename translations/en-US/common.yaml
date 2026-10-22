@@ -8,6 +8,11 @@ common:
 
   # Common actions
   actions:
+    levels: "Levels"
+    beginning_text: "Beginning Text"
+    ending_text: "Ending Text"
+    lines: "Lines"
+    relationships: "Relationships"
     functions: "Functions"
     indent_chart_of_accounts: "Indent Chart of Accounts"
     exch_rates: "Exch. Rates"
@@ -46,6 +51,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    numbering: "Numbering"
     posting: "Posting"
     consolidation: "Consolidation"
     authentication: "Authentication"
@@ -73,6 +79,15 @@ common:
 
   # Menu items
   menu:
+    customer_posting_groups: "Customer Posting Groups"
+    post_codes: "Post Codes"
+    territories: "Territories"
+    payment_methods: "Payment Methods"
+    shipping_agents: "Shipping Agents"
+    reminder_terms: "Reminder Terms"
+    customer_disc_groups: "Customer Disc. Groups"
+    no_series: "No. Series"
+    sales_receivables_setup: "Sales & Receivables Setup"
     general: "General"
     settings: "Settings"
     jobs: "Jobs"

@@ -1,0 +1,54 @@
+table:
+  id: 308
+  name: "No_Series"
+  caption: No. Series
+  description: "Number series, the automatic numbers of records (table 308)"
+  data_caption_fields: [code, description]
+  lookup_page_id: 456
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: default_nos
+      no: 3
+      type: bool
+      db_name: default_nos
+
+    - name: manual_nos
+      no: 4
+      type: bool
+      db_name: manual_nos
+
+    - name: date_order
+      no: 5
+      type: bool
+      db_name: date_order
+
+    # FlowField - the series' lines (not a classic field: 900 series)
+    - name: no_of_lines
+      no: 900
+      type: int
+      flow_field: true
+      calc_formula: Count
+      source_table: No_Series_Line
+      source_field: line_no
+      flow_filters:
+        - field: series_code
+          type: field
+          value: code
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

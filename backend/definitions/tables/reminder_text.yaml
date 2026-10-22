@@ -1,0 +1,64 @@
+table:
+  id: 294
+  name: "Reminder_Text"
+  caption: Reminder Text
+  description: "Beginning and ending texts of a reminder level (table 294)"
+  fields:
+    - name: reminder_terms_code
+      no: 1
+      type: types.Code
+      db_name: reminder_terms_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Reminder_Terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reminder_level
+      no: 2
+      type: int
+      db_name: reminder_level
+      primary_key: true
+      # A level of this record's reminder terms
+      table_relation:
+        table: Reminder_Level
+        field: no
+        filters:
+          reminder_terms_code: {field: reminder_terms_code}
+        lookup_columns:
+          - source: no
+            width: 60
+          - source: grace_period
+            width: 120
+          - source: due_date_calculation
+            width: 140
+
+    - name: position
+      no: 3
+      type: Option
+      db_name: position
+      primary_key: true
+      options: ["Beginning", "Ending"]
+
+    - name: line_no
+      no: 4
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: text
+      no: 5
+      type: types.Text
+      db_name: text
+      length: 100
+
+  keys:
+    - name: Primary
+      fields: [reminder_terms_code, reminder_level, position, line_no]
+      clustered: true

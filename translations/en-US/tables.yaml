@@ -755,3 +755,173 @@ tables:
         bank_account: "Bank Account"
         fixed_asset: "Fixed Asset"
         employee: "Employee"
+
+  # Customer Posting Group (Table 92)
+  customer_posting_group:
+    caption: "Customer Posting Group"
+    fields:
+      code: "Code"
+      receivables_account: "Receivables Account"
+      service_charge_acc: "Service Charge Acc."
+      payment_disc_acc: "Payment Disc. Acc."
+      invoice_rounding_account: "Invoice Rounding Account"
+      additional_fee_account: "Additional Fee Account"
+      interest_account: "Interest Account"
+      curr_appln_rounding_account: "Curr. Appln. Rounding Account"
+  # Post Code (Table 225)
+  zip_code:
+    caption: "Post Code"
+    fields:
+      code: "Code"
+      city: "City"
+  # Territory (Table 286)
+  territory:
+    caption: "Territory"
+    fields:
+      code: "Code"
+      name: "Name"
+  # Payment Method (Table 289)
+  payment_method:
+    caption: "Payment Method"
+    fields:
+      code: "Code"
+      description: "Description"
+      bal_account_type: "Bal. Account Type"
+      bal_account_no: "Bal. Account No."
+    options:
+      bal_account_type:
+        g_l_account: "G/L Account"
+        bank_account: "Bank Account"
+  # Shipping Agent (Table 291)
+  shipping_agent:
+    caption: "Shipping Agent"
+    fields:
+      code: "Code"
+      name: "Name"
+      internet_address: "Internet Address"
+      account_no: "Account No."
+  # Reminder Terms (Table 292)
+  reminder_terms:
+    caption: "Reminder Terms"
+    fields:
+      code: "Code"
+      description: "Description"
+      post_interest: "Post Interest"
+      post_additional_fee: "Post Additional Fee"
+      max_no_of_reminders: "Max. No. of Reminders"
+  # Reminder Level (Table 293)
+  reminder_level:
+    caption: "Reminder Level"
+    fields:
+      reminder_terms_code: "Reminder Terms Code"
+      no: "No."
+      grace_period: "Grace Period"
+      additional_fee_lcy: "Additional Fee (LCY)"
+      calculate_interest: "Calculate Interest"
+      due_date_calculation: "Due Date Calculation"
+  # Reminder Text (Table 294)
+  reminder_text:
+    caption: "Reminder Text"
+    fields:
+      reminder_terms_code: "Reminder Terms Code"
+      reminder_level: "Reminder Level"
+      position: "Position"
+      line_no: "Line No."
+      text: "Text"
+    options:
+      position:
+        beginning: "Beginning"
+        ending: "Ending"
+  # Customer Discount Group (Table 340)
+  customer_discount_group:
+    caption: "Customer Discount Group"
+    fields:
+      code: "Code"
+      description: "Description"
+  # No. Series (Table 308)
+  no_series:
+    caption: "No. Series"
+    fields:
+      starting_date: "Starting Date"
+      starting_no: "Starting No."
+      ending_no: "Ending No."
+      last_date_used: "Last Date Used"
+      last_no_used: "Last No. Used"
+      warning_no: "Warning No."
+      increment_by_no: "Increment-by No."
+      code: "Code"
+      description: "Description"
+      default_nos: "Default Nos."
+      manual_nos: "Manual Nos."
+      date_order: "Date Order"
+      no_of_lines: "No. of Lines"
+  # No. Series Line (Table 309)
+  no_series_line:
+    caption: "No. Series Line"
+    fields:
+      series_code: "Series Code"
+      line_no: "Line No."
+      starting_date: "Starting Date"
+      starting_no: "Starting No."
+      ending_no: "Ending No."
+      warning_no: "Warning No."
+      increment_by_no: "Increment-by No."
+      last_no_used: "Last No. Used"
+      open: "Open"
+      last_date_used: "Last Date Used"
+  # No. Series Relationship (Table 310)
+  no_series_relationship:
+    caption: "No. Series Relationship"
+    fields:
+      code: "Code"
+      series_code: "Series Code"
+      description: "Description"
+      series_description: "Series Description"
+  # Sales & Receivables Setup (Table 311)
+  sales_receivables_setup:
+    caption: "Sales & Receivables Setup"
+    fields:
+      primary_key: "Primary Key"
+      discount_posting: "Discount Posting"
+      line_discount_calculation: "Line Discount Calculation"
+      credit_warnings: "Credit Warnings"
+      stockout_warning: "Stockout Warning"
+      shipment_on_invoice: "Shipment on Invoice"
+      invoice_rounding: "Invoice Rounding"
+      ext_doc_no_mandatory: "Ext. Doc. No. Mandatory"
+      customer_nos: "Customer Nos."
+      quote_nos: "Quote Nos."
+      order_nos: "Order Nos."
+      invoice_nos: "Invoice Nos."
+      posted_invoice_nos: "Posted Invoice Nos."
+      credit_memo_nos: "Credit Memo Nos."
+      posted_credit_memo_nos: "Posted Credit Memo Nos."
+      posted_shipment_nos: "Posted Shipment Nos."
+      reminder_nos: "Reminder Nos."
+      issued_reminder_nos: "Issued Reminder Nos."
+      fin_chrg_memo_nos: "Fin. Chrg. Memo Nos."
+      issued_fin_chrg_m_nos: "Issued Fin. Chrg. M. Nos."
+      blanket_order_nos: "Blanket Order Nos."
+      calc_inv_discount: "Calc. Inv. Discount"
+      appln_between_currencies: "Appln. between Currencies"
+      copy_comments_blanket_to_order: "Copy Comments Blanket to Order"
+      copy_comments_order_to_invoice: "Copy Comments Order to Invoice"
+      copy_comments_order_to_shpt: "Copy Comments Order to Shpt."
+    options:
+      discount_posting:
+        no_discounts: "No Discounts"
+        invoice_discounts: "Invoice Discounts"
+        line_discounts: "Line Discounts"
+        all_discounts: "All Discounts"
+      line_discount_calculation:
+        qty_disc_cust_item_disc: "Qty. Disc. + Cust./Item Disc."
+        qty_disc_cust_item_disc_2: "Qty. Disc. * Cust./Item Disc."
+      credit_warnings:
+        both_warnings: "Both Warnings"
+        credit_limit: "Credit Limit"
+        overdue_balance: "Overdue Balance"
+        no_warning: "No Warning"
+      appln_between_currencies:
+        none: "None"
+        emu: "EMU"
+        all: "All"

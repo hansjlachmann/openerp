@@ -170,7 +170,17 @@ type LookupData struct {
 	// variant have no lookup
 	Variants     map[string]*LookupData `json:"variants,omitempty"`
 	VariantField string                 `json:"variant_field,omitempty"`
-	Total        int                    `json:"total,omitempty"` // rows in the related table (lazy lookups)
+	// Filters (a relation with WHERE filters): the rows matching the record — row[column]
+	// equals the record's field (or const)
+	Filters []LookupFilter `json:"filters,omitempty"`
+	Total   int            `json:"total,omitempty"` // rows in the related table (lazy lookups)
+}
+
+// LookupFilter is a relation filter the page applies to the lookup rows
+type LookupFilter struct {
+	Column string `json:"column"`
+	Field  string `json:"field,omitempty"`
+	Const  string `json:"const,omitempty"`
 }
 
 // lookupInlineLimit: related tables with at most this many rows are sent along with every
@@ -229,6 +239,9 @@ func (h *TablesHandler) buildLookup(tableName, fieldName string, relInfo ftables
 		FreeText:      relInfo.NoValidate,
 		NewPageID:     pages.GetRegistry().LookupPage(relInfo.Table),
 	}
+	for _, f := range relInfo.Filters {
+		lookup.Filters = append(lookup.Filters, LookupFilter{Column: f.Column, Field: f.Field, Const: f.Const})
+	}
 
 	// Add column definitions if lookup_columns is specified (advanced mode)
 	for _, col := range relInfo.LookupColumns {
@@ -264,6 +277,12 @@ func (h *TablesHandler) buildLookup(tableName, fieldName string, relInfo ftables
 					if val, ok := recordMap[col.Source]; ok {
 						row[col.Source] = val
 					}
+				}
+				for _, f := range relInfo.Filters {
+					row[f.Column] = recordMap[f.Column] // the page shows the rows matching the record
+				}
+				if len(relInfo.Filters) > 0 {
+					row["_key"] = fmt.Sprint(recordMap[relInfo.Field]) // the related field, not the composite key
 				}
 				lookup.Rows = append(lookup.Rows, row)
 			}
@@ -375,9 +394,10 @@ func optionCaptions(tableName string, table ftables.Table, language string) map[
 	options := make(map[string]map[string]string)
 	for fieldName, values := range table.GetOptionFields() {
 		optionMap := make(map[string]string, len(values))
+		keys := optionKeys(values)
 		for i, value := range values {
 			caption := value
-			key := captionKey(value)
+			key := keys[i]
 			if key != "" {
 				if translated := ts.OptionCaption(tableName, fieldName, key, lang); !strings.HasPrefix(translated, "tables.") {
 					caption = translated
@@ -652,6 +672,16 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	// per row and FlowField); only those requested when the client names its fields
 	if calc := flowFieldsToCalc(table.GetFlowFields(), requestedFields); len(calc) > 0 {
 		table.CalcFieldsForRecords(records, calc...)
+	}
+
+	// The calculated fields of the page showing the list (page_id: its OnAfterGetRecord triggers)
+	if pageID := c.QueryInt("page_id", 0); pageID > 0 {
+		if err := calculatedValues(pageID, tableName, records, func() ftables.Table {
+			rec, _ := h.getTable(tableName, company)
+			return rec
+		}); err != nil {
+			return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
 	}
 
 	// Get captions
@@ -1285,6 +1315,11 @@ func validateChangedFields(table ftables.Table, tableName string, data map[strin
 	for _, ff := range table.GetFlowFields() {
 		skip[ff] = true // FlowFields are calculated, not validated
 	}
+	for field := range pages.GetRegistry().CalculatedFields(tableName) {
+		if !table.HasColumn(field) {
+			skip[field] = true // a page's calculated field (e.g. the No. Series list's Ending No.)
+		}
+	}
 	if tableName == "User" {
 		skip["password"] = true // virtual field, handled separately by the caller
 	}
@@ -1344,11 +1379,13 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 	table.InitRecord()
 
 	// A page's OnNewRecord triggers (optional body): the record the new one is inserted next
-	// to (x_rec, below it when below_x_rec) gives values (e.g. Income/Balance of the account)
+	// to (x_rec, below it when below_x_rec) gives values (e.g. Income/Balance of the account);
+	// values are what the new record already has (the page's filters and link values)
 	var req struct {
 		PageID    int                    `json:"page_id"`
 		XRec      map[string]interface{} `json:"x_rec"`
 		BelowXRec bool                   `json:"below_x_rec"`
+		Values    map[string]interface{} `json:"values"`
 	}
 	if len(c.Body()) > 0 {
 		if err := c.BodyParser(&req); err != nil {
@@ -1363,6 +1400,9 @@ func (h *TablesHandler) InitRecord(c *fiber.Ctx) error {
 		if req.XRec != nil {
 			ftables.DropMaskedPlaceholders(xRec, req.XRec)
 			xRec.FromMap(req.XRec)
+		}
+		if req.Values != nil {
+			table.UpdateFromMap(req.Values)
 		}
 		if err := pages.RunNewRecord(req.PageID, table, xRec, req.BelowXRec); err != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
@@ -1505,8 +1545,16 @@ func errorMessage(err error, language string) string {
 // table related to field. Fields without a table relation always pass.
 // record holds the record's values (a conditional relation picks its table by them).
 func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Table, company, language, field string, value interface{}, record map[string]interface{}) error {
-	valueStr, ok := value.(string)
-	if !ok || valueStr == "" {
+	var valueStr string
+	switch v := value.(type) {
+	case string:
+		valueStr = v
+	case float64, int, int64:
+		if valueStr = fmt.Sprint(v); valueStr == "0" {
+			valueStr = "" // a blank integer relation
+		}
+	}
+	if valueStr == "" {
 		return nil
 	}
 	relInfo, hasRelation := table.GetTableRelationFields()[field]
@@ -1521,11 +1569,35 @@ func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Tabl
 	if err != nil {
 		return nil // related table not registered: nothing to check against
 	}
-	if !relTable.Get(valueStr) {
+	found := false
+	if len(relInfo.Filters) > 0 {
+		// A relation to part of a composite key: the related record with this value among
+		// those matching the relation's filters (e.g. a level of the record's reminder terms)
+		relTable.SetFilter(relInfo.Field, valueStr)
+		for _, f := range relInfo.Filters {
+			relTable.SetFilter(f.Column, relationFilterValue(f, record))
+		}
+		found = relTable.Count() > 0
+	} else {
+		found = relTable.Get(valueStr)
+	}
+	if !found {
 		relCaption := i18n.GetInstance().TableCaption(relInfo.Table, language)
 		return fmt.Errorf("%s '%s' does not exist", relCaption, valueStr)
 	}
 	return nil
+}
+
+// relationFilterValue is the value a relation filter compares with: the record's field, or the
+// filter's constant
+func relationFilterValue(f ftables.RelationFilterInfo, record map[string]interface{}) string {
+	if f.Field == "" {
+		return f.Const
+	}
+	if v := record[f.Field]; v != nil {
+		return fmt.Sprint(v)
+	}
+	return ""
 }
 
 // checkRelations checks every table relation field in data whose value differs from the

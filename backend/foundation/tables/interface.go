@@ -147,6 +147,17 @@ type TableRelationInfo struct {
 	// record's field has applies; a value without a condition has no relation (its table is not
 	// migrated yet). Table and Field are blank then.
 	Conditions []ConditionalRelationInfo
+	// Filters (YAML table_relation.filters, classic … WHERE (x=FIELD(y))): the related records
+	// whose Column equals this record's Field (or Const) — e.g. a level of the record's terms
+	Filters []RelationFilterInfo
+}
+
+// RelationFilterInfo is a WHERE condition of a table relation: the related table's Column
+// equals this record's Field, or Const when Field is blank
+type RelationFilterInfo struct {
+	Column string
+	Field  string
+	Const  string
 }
 
 // ConditionalRelationInfo is one branch of a conditional relation: Relation applies when the

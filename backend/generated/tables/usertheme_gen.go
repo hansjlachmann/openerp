@@ -814,6 +814,7 @@ type userThemeFilterCondition struct {
 	filterExpr   string // For complex SetFilter expressions
 	isExpression bool   // True if using filterExpr instead of min/max
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
+	blankDate    bool   // A date range from the blank date: blank dates (NULL) match too
 }
 
 // SetRange sets a range filter on a field
@@ -844,11 +845,6 @@ func (t *UserTheme) SetRange(fieldName string, values ...interface{}) {
 		// Range: SetRange("No", "10000", "20000")
 		minValue = values[0]
 		maxValue = values[1]
-		// A blank date as the lower bound (SetRange(date, 0D, x)) is the start: blank dates are
-		// stored as NULL, which no BETWEEN matches
-		if d, ok := minValue.(types.Date); ok && d.IsZero() {
-			minValue = nil
-		}
 	default:
 		fmt.Printf("Error: SetRange requires 1 or 2 values, got %d\n", len(values))
 		return
@@ -863,10 +859,22 @@ func (t *UserTheme) SetRange(fieldName string, values ...interface{}) {
 		return
 	}
 
+	// Blank dates are stored as NULL and come before every date: a range from the blank date
+	// (or the blank date itself) matches them
+	blankDate := false
+	if d, ok := values[0].(types.Date); ok && d.IsZero() {
+		blankDate = true
+		minValue = nil
+		if len(values) == 1 {
+			maxValue = nil
+		}
+	}
+
 	t.filters[column] = &userThemeFilterCondition{
 		fieldName: column,
 		minValue:  minValue,
 		maxValue:  maxValue,
+		blankDate: blankDate,
 	}
 }
 
@@ -1003,7 +1011,12 @@ func (t *UserTheme) buildWhereClause() (string, []interface{}) {
 			args = append(args, exprArgs...)
 		} else {
 			// Simple range filter
-			if filter.minValue != nil && filter.maxValue != nil {
+			if filter.blankDate && filter.maxValue != nil {
+				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
+				args = append(args, filter.maxValue)
+			} else if filter.blankDate {
+				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
 			} else if filter.minValue != nil {
@@ -1804,7 +1817,7 @@ func (t *UserTheme) TestField(fieldName string, value ...any) error {
 		return nil
 	}
 	if !tables.SameValue(current, value[0]) {
-		return apperrors.FieldMustBe(UserThemeTableName, field, fmt.Sprint(value[0]))
+		return apperrors.FieldMustBeValue(UserThemeTableName, field, value[0])
 	}
 	return nil
 }
@@ -2073,13 +2086,15 @@ func (t *UserTheme) Find(which ...string) bool {
 		return t.findInKey("", true)
 	}
 	if strings.Contains(how, "=") {
-		saved := make(map[string]*userThemeFilterCondition, len(t.filters))
-		for k, v := range t.filters {
-			saved[k] = v
-		}
+		// The record's key in a filter group of its own: the filters still apply (also those
+		// on key fields)
+		group := t.FilterGroup()
+		t.FilterGroup(tables.FindKeyFilterGroup)
+		t.filters = nil
 		t.SetRecFilter()
 		found := t.FindFirst()
-		t.filters = saved
+		t.filters = nil
+		t.FilterGroup(group)
 		if found {
 			return true
 		}

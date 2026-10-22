@@ -42,6 +42,17 @@ errors:
   ERR_EMPTY_PRIMARY_KEY: "%1-nummer kan ikke være tomt"
   ERR_TABLE_NOT_FOUND: "Tabel '%1' blev ikke fundet"
 
+  # Number series
+  ERR_NO_SERIES_MANUAL: "Du må ikke angive numre manuelt. Hvis du vil angive numre manuelt, skal du aktivere %1 i %2 %3."
+  ERR_NO_SERIES_DEFAULT: "Det er ikke muligt at tildele numre automatisk. Hvis programmet skal tildele numre automatisk, skal du aktivere %1 i %2 %3."
+  ERR_NO_SERIES_NO_LINE_ON_DATE: "Du kan ikke tildele nye numre fra nummerserien %1 den %2."
+  ERR_NO_SERIES_NO_LINE: "Du kan ikke tildele nye numre fra nummerserien %1."
+  ERR_NO_SERIES_DATE_ORDER: "Du kan ikke tildele nye numre fra nummerserien %1 på en dato før %2."
+  ERR_NO_SERIES_ENDING_NO: "Du kan ikke tildele numre større end %1 fra nummerserien %2."
+  ERR_NO_SERIES_NO_NUMBER: "%1 skal indeholde et nummer."
+  ERR_NO_SERIES_NUMBER_FORMAT: "Nummerformatet i %1 skal være det samme som nummerformatet i %2."
+  ERR_NO_SERIES_TOO_LONG: "Nummeret %1 kan ikke udvides til mere end 20 tegn."
+
   # Session/Auth
   ERR_NO_ACTIVE_SESSION: "Ingen aktiv session"
   ERR_NOT_LOGGED_IN: "Ingen bruger logget ind"

@@ -11,7 +11,7 @@
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionMenu from '../ActionMenu.svelte';
 	import ActionButton from '../ActionButton.svelte';
-	import { splitLineNo, lineNo } from '$lib/utils/autoSplitKey';
+	import { newLineNo } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
 	import type { RequestDataItem, Action } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
@@ -33,6 +33,7 @@
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
+	import { runPagePath } from '$lib/utils/runPage';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import ColumnHeaderMenu, { type ColumnMenuItem } from './ColumnHeaderMenu.svelte';
 	import { keyValuesFromFilters, loadClipboard, recordsToPaste, saveClipboard, singleValueFilters } from '$lib/utils/recordClipboard';
@@ -771,12 +772,8 @@
 		// (run_page_filter_field = row[run_page_filter_value]); Esc there comes back to this row
 		if (action?.run_page) {
 			const row = selectedRecord;
-			let url = `/pages/${action.run_page}`;
-			const value = action.run_page_filter_value ? row?.[action.run_page_filter_value] : undefined;
-			if (action.run_page_filter_field) {
-				if (value === undefined || value === null || value === '') return; // no row to filter on
-				url += `?filter=${encodeURIComponent(`${action.run_page_filter_field}=${value}`)}`;
-			}
+			const url = runPagePath(action, row);
+			if (!url) return; // no row to filter on
 			goto(withReturn(url, row ? getRecordId(row, primaryKeyField, primaryKeyFieldsList) : undefined));
 			return;
 		}
@@ -1216,18 +1213,7 @@
 	function autoSplitKeyValue(): Record<string, any> {
 		if (!page.page.auto_split_key || primaryKeyFieldsList.length === 0) return {};
 		const field = primaryKeyFieldsList[primaryKeyFieldsList.length - 1];
-		const saved = displayRecords.filter((r) => !r._isNew);
-		const anchor = selectedIndex >= 0 ? displayRecords[selectedIndex] : undefined;
-		let after: number | undefined;
-		let before: number | undefined;
-		if (anchor && !anchor._isNew) {
-			after = lineNo(anchor[field]);
-			const next = displayRecords.slice(selectedIndex + 1).find((r) => !r._isNew);
-			before = next ? lineNo(next[field]) : undefined;
-		} else if (saved.length > 0) {
-			after = Math.max(...saved.map((r) => lineNo(r[field]) ?? 0));
-		}
-		const value = splitLineNo(after, before);
+		const value = newLineNo(displayRecords, selectedIndex, field);
 		if (value === null) {
 			toast.error(t(ERR.NO_ROOM_FOR_LINE));
 			return {};
@@ -1237,13 +1223,16 @@
 
 	// Values a new record gets: the list's filters on one exact value (classic: a field filtered
 	// to one value is set to it — Exchange Rates opened for a currency), then a subpage's link
-	// values. Only Code, Text and number fields (dates, options and booleans are filtered in
-	// the user's format).
+	// values. Code, Text and number fields, and options filtered by their number (dates,
+	// booleans and option captions are in the user's format).
 	const newRowValues = $derived.by(() => {
-		const accept = (field: string) => /^(types\.)?(code|text|int|int64|decimal)$/i.test(fieldTypes[field] ?? '');
+		const accept = (field: string) => /^(types\.)?(code|text|int|int64|decimal)$/i.test(fieldTypes[field] ?? '') || !!options[field];
 		const values: Record<string, any> = singleValueFilters(currentFilters, accept);
 		for (const field of Object.keys(values)) {
-			if (isCodeType(fieldTypes[field])) values[field] = String(values[field]).toUpperCase();
+			if (options[field]) {
+				if (/^\d+$/.test(values[field])) values[field] = Number(values[field]);
+				else delete values[field];
+			} else if (isCodeType(fieldTypes[field])) values[field] = String(values[field]).toUpperCase();
 		}
 		return { ...values, ...newRecordDefaults };
 	});
@@ -1267,7 +1256,7 @@
 	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true) {
 		let defaults: Record<string, any>;
 		try {
-			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below));
+			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below, { ...newRowValues, ...autoSplitKeyValue() }));
 		} catch (err) {
 			console.error('Failed to initialize new record, keeping it blank:', err);
 			return;
@@ -1283,7 +1272,10 @@
 				row[key] = value;
 			}
 		}
-		row._pristine = { ...blank, ...defaults };
+		// Untouched: the defaults, with the link values and the line number the row started with
+		// (/init does not know them — line_no 0 there must not make the row look edited)
+		const fixed = Object.fromEntries([...fixedKeys].filter((key) => key in blank).map((key) => [key, blank[key]]));
+		row._pristine = { ...blank, ...defaults, ...fixed };
 		editableRecords = [...editableRecords];
 	}
 
@@ -2044,7 +2036,7 @@
 				}
 				// The card's OnNewRecord triggers: values from the selected row (the new record
 				// goes below it); the filter and link values stay
-				const context = newRecordContext(pageData.page, selectedRecord ?? undefined, true);
+				const context = newRecordContext(pageData.page, selectedRecord ?? undefined, true, record);
 				if (context) {
 					try {
 						recData = { ...(await api.initRecord(sourceTable, context)), ...record };
@@ -3404,7 +3396,7 @@
 											>
 												{formatCellValue(record[field.source], field.source)}
 											</button>
-										{:else if field.drilldown && record[field.source]}
+										{:else if field.drilldown && !record._isNew && (record[field.source] || record[field.source] === 0 || page.page.flow_fields?.includes(field.source))}
 											<button
 												type="button"
 												class="primary-key-link"

@@ -1,0 +1,50 @@
+page:
+  id: 433
+  type: List
+  name: Reminder Text
+  source_table: Reminder_Text   # opened from Reminder Levels (terms, level, position)
+  caption: Reminder Text
+  editable: true
+  auto_split_key: true      # a new line gets a Line No. between its neighbours
+  delayed_insert: true      # inserted when the user leaves the line
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: reminder_terms_code
+          width: 170
+          visible: false
+
+        - source: reminder_level
+          width: 130
+          visible: false
+
+        - source: position
+          width: 120
+          visible: false
+
+        - source: text
+          width: 600
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

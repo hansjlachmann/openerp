@@ -8,6 +8,11 @@ common:
 
   # Common actions
   actions:
+    levels: "Niveauer"
+    beginning_text: "Starttekst"
+    ending_text: "Sluttekst"
+    lines: "Linjer"
+    relationships: "Relationer"
     functions: "Funktioner"
     indent_chart_of_accounts: "Indryk kontoplan"
     exch_rates: "Valutakurser"
@@ -46,6 +51,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    numbering: "Nummerering"
     posting: "Bogføring"
     consolidation: "Koncern"
     authentication: "Godkendelse"
@@ -73,6 +79,15 @@ common:
 
   # Menu items
   menu:
+    customer_posting_groups: "Debitorbogføringsgrupper"
+    post_codes: "Postnumre"
+    territories: "Distrikter"
+    payment_methods: "Betalingsformer"
+    shipping_agents: "Speditører"
+    reminder_terms: "Rykkerbetingelser"
+    customer_disc_groups: "Debitorrabatgrupper"
+    no_series: "Nummerserier"
+    sales_receivables_setup: "Salgsopsætning"
     general: "Generelt"
     settings: "Indstillinger"
     jobs: "Opgaver"
