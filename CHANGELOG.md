@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.108](https://github.com/hansjlachmann/openerp/compare/v0.1.107...v0.1.108) (2026-10-22)
+
+
+### Features
+
+* customer preparation — posting groups, codes, reminders, number series, sales setup ([58665c1](https://github.com/hansjlachmann/openerp/commit/58665c101fd509a94338cc50d1bf8c31fae6ad87))
+
 ## [0.1.107](https://github.com/hansjlachmann/openerp/compare/v0.1.106...v0.1.107) (2026-10-22)
 
 
