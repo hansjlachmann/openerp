@@ -29,7 +29,7 @@ payment_terms:
 master_data:
   - table: General_Ledger_Setup   # the single setup record (blank key)
     records:
-      - {lcy_code: NOK, amount_rounding_precision: 0.01, unit_amount_rounding_precision: 0.00001, inv_rounding_precision_lcy: 1, appln_rounding_precision: 0.01, local_address_format: 0}
+      - {lcy_code: NOK, amount_rounding_precision: 0.01, unit_amount_rounding_precision: 0.00001, inv_rounding_precision_lcy: 1, appln_rounding_precision: 0.01, local_address_format: 0, bank_account_nos: BANK}
   - table: Tax_Business_Posting_Group
     records:
       - {code: DOMESTIC, description: Domestic customers and vendors}
@@ -235,10 +235,19 @@ master_data:
       - {code: RETAIL, description: Retail customers}
       - {code: WHOLESALE, description: Wholesale customers}
       - {code: LARGE, description: Large accounts}
+  - table: Bank_Account_Posting_Group   # the G/L account of the bank accounts
+    records:
+      - {code: CHECKING, g_l_bank_account_no: "1520"}
+      - {code: SAVINGS, g_l_bank_account_no: "1530"}
+  - table: Bank_Account   # numbered B010, B020 … (series BANK, increment 10); the payments go through B010 (B030: GBP)
+    records:
+      - {"no": B010, name: DNB Driftskonto, search_name: DNB DRIFTSKONTO, bank_account_no: "1503.12.34567", bank_branch_no: "1503", bank_acc_posting_group: CHECKING, our_contact_code: AH, post_code: "0159", city: Oslo, country_code: "NO", phone_no: +47 915 04800, min_balance: 50000}
+      - {"no": B020, name: DNB Sparekonto, search_name: DNB SPAREKONTO, bank_account_no: "1503.98.76543", bank_branch_no: "1503", bank_acc_posting_group: SAVINGS, our_contact_code: AH, post_code: "0159", city: Oslo, country_code: "NO", phone_no: +47 915 04800}
+      - {"no": B030, name: HSBC GBP Account, search_name: HSBC GBP ACCOUNT, bank_account_no: "40-11-60 87654321", bank_acc_posting_group: CHECKING, currency_code: GBP, our_contact_code: JB, city: London, country_code: GB}
   - table: Payment_Method
     records:
       - {code: CASH, description: Cash payment, bal_account_type: 0, bal_account_no: "1510"}
-      - {code: BANK, description: Bank transfer, bal_account_type: 0, bal_account_no: "1520"}
+      - {code: BANK, description: Bank transfer, bal_account_type: 1, bal_account_no: B010}
       - {code: CARD, description: Card payment}
   - table: Shipping_Agent
     records:
@@ -313,6 +322,9 @@ master_data:
       - {code: "S-FIN", description: Finance charge memos, default_nos: true, manual_nos: true}
       - {code: "S-FIN+", description: Issued finance charge memos, default_nos: true, manual_nos: false}
       - {code: "VEND", description: Vendors, default_nos: true, manual_nos: true}
+      - {code: "BANK", description: Bank accounts, default_nos: true, manual_nos: true}
+      - {code: "FA", description: Fixed assets, default_nos: true, manual_nos: true}
+      - {code: "INS", description: Insurance, default_nos: true, manual_nos: true}
       - {code: "P-QUO", description: Purchase quotes, default_nos: true, manual_nos: true}
       - {code: "P-BLK", description: Blanket purchase orders, default_nos: true, manual_nos: true}
       - {code: "P-ORD", description: Purchase orders, default_nos: true, manual_nos: true}
@@ -337,6 +349,9 @@ master_data:
       - {series_code: "S-REM+", line_no: 10000, starting_no: "ISR000001", increment_by_no: 1, open: true}
       - {series_code: "S-FIN", line_no: 10000, starting_no: "SF000001", increment_by_no: 1, open: true}
       - {series_code: "S-FIN+", line_no: 10000, starting_no: "ISF000001", increment_by_no: 1, open: true}
+      - {series_code: "FA", line_no: 10000, starting_no: "FA0010", ending_no: "FA9990", increment_by_no: 10, open: true}
+      - {series_code: "INS", line_no: 10000, starting_no: "INS010", ending_no: "INS990", increment_by_no: 10, open: true}
+      - {series_code: "BANK", line_no: 10000, starting_no: "B010", ending_no: "B990", increment_by_no: 10, open: true}
       - {series_code: "VEND", line_no: 10000, starting_no: "V00001", ending_no: "V99999", warning_no: "V99000", increment_by_no: 1, open: true}
       - {series_code: "P-QUO", line_no: 10000, starting_no: "PQ000001", increment_by_no: 1, open: true}
       - {series_code: "P-BLK", line_no: 10000, starting_no: "PB000001", increment_by_no: 1, open: true}
@@ -356,6 +371,40 @@ master_data:
   - table: Purchases_Payables_Setup   # the single setup record (blank key)
     records:
       - {vendor_nos: VEND, quote_nos: P-QUO, blanket_order_nos: P-BLK, order_nos: P-ORD, invoice_nos: P-INV, posted_invoice_nos: P-INV+, credit_memo_nos: P-CR, posted_credit_memo_nos: P-CR+, posted_receipt_nos: P-RCPT, ext_doc_no_mandatory: true, calc_inv_discount: true}
+  - table: Depreciation_Book   # the book the demo assets are depreciated in, posted to the G/L
+    records:
+      - {code: COMPANY, description: Company book, g_l_integration_acq_cost: true, g_l_integration_depreciation: true, g_l_integration_write_down: true, g_l_integration_appreciation: true, g_l_integration_disposal: true, g_l_integration_maintenance: true, use_fa_ledger_check: true, use_same_fa_g_l_posting_dates: true}
+      - {code: TAX, description: Tax book, use_fa_ledger_check: true, use_same_fa_g_l_posting_dates: true}
+  - table: FA_Setup   # the single setup record (blank key)
+    records:
+      - {default_depr_book: COMPANY, insurance_depr_book: COMPANY, fixed_asset_nos: FA, insurance_nos: INS, automatic_insurance_posting: true}
+  - table: FA_Class
+    records:
+      - {code: TANGIBLE, name: Tangible assets}
+      - {code: INTANGIBLE, name: Intangible assets}
+  - table: FA_Subclass
+    records:
+      - {code: VEHICLES, name: Vehicles}
+      - {code: EQUIPMENT, name: Machinery and equipment}
+      - {code: OFFICE, name: Office equipment and furniture}
+  - table: FA_Location
+    records:
+      - {code: HQ, name: Head office, Oslo}
+      - {code: WAREHOUSE, name: Main warehouse}
+  - table: FA_Posting_Group   # the asset, accumulated depreciation and depreciation expense accounts
+    records:
+      - {code: VEHICLES, acquisition_cost_account: "1250", accum_depreciation_account: "1260", acq_cost_acc_on_disposal: "1250", accum_depr_acc_on_disposal: "1260", depreciation_expense_acc: "5630", maintenance_expense_account: "5320", acquisition_cost_bal_acc: "2310"}
+      - {code: EQUIPMENT, acquisition_cost_account: "1230", accum_depreciation_account: "1240", acq_cost_acc_on_disposal: "1230", accum_depr_acc_on_disposal: "1240", depreciation_expense_acc: "5620", maintenance_expense_account: "5320", acquisition_cost_bal_acc: "2310"}
+      - {code: OFFICE, acquisition_cost_account: "1270", accum_depreciation_account: "1280", acq_cost_acc_on_disposal: "1270", accum_depr_acc_on_disposal: "1280", depreciation_expense_acc: "5640", maintenance_expense_account: "5320", acquisition_cost_bal_acc: "2310"}
+  - table: Maintenance
+    records:
+      - {code: SERVICE, description: Periodic service}
+      - {code: REPAIR, description: Repair}
+      - {code: TIRES, description: Tire change}
+  - table: Insurance_Type
+    records:
+      - {code: VEHICLE, description: Vehicle insurance}
+      - {code: PROPERTY, description: Property insurance}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)

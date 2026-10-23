@@ -56,6 +56,19 @@ errors:
   # Deleting records with ledger entries
   ERR_DELETE_HAS_ENTRIES: "You cannot delete %1 %2 because it has ledger entries in a fiscal year that has not been closed yet."
   ERR_DELETE_OPEN_ENTRIES: "You cannot delete %1 %2 because there are one or more open ledger entries."
+  ERR_CHANGE_OPEN_ENTRIES: "You cannot change %1 because there are one or more open ledger entries for this bank account."
+  ERR_FA_MAIN_ASSET_DELETE: "A main asset cannot be deleted."
+  ERR_FA_HAS_DEPR_BOOKS: "You cannot delete %1 %2 because it has associated depreciation books."
+  ERR_FA_NOT_DISPOSED: "Only disposed fixed assets can be deleted."
+  ERR_FA_DELETE_ENTRIES: "You cannot delete a fixed asset that has ledger entries in a fiscal year that has not been closed yet."
+  ERR_FA_BUDGET_ENTRIES: "The field %1 cannot be changed for a fixed asset with ledger entries."
+  ERR_FA_BUDGET_INSURANCE: "The field %1 cannot be changed for a fixed asset with insurance coverage ledger entries."
+  ERR_FA_IS_A: "%2 %3 is a %4."
+  ERR_FA_IS_NOT_A: "%2 %3 is not a %4."
+  ERR_DEPR_BOOK_IN_USE: "The book cannot be deleted because it is in use."
+  ERR_DEPR_BOOK_INSURANCE: "The book cannot be deleted because %2 %1 = %3."
+  ERR_RENAME_NOT_ALLOWED: "You cannot rename a %1."
+  ERR_DATE_LATER: "%1 is later than %2."
 
   # Session/Auth
   ERR_NO_ACTIVE_SESSION: "No active session"

@@ -871,7 +871,7 @@ func (t *Department) renameReferences(field string, oldValue, newValue interface
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer Ledger Entry", false, "department_code", "", 0}, {"Customer", false, "department_code", "", 0}, {"G_L_Account", false, "department_code", "", 0}, {"G_L_Entry", false, "department_code", "", 0}, {"Vendor", false, "department_code", "", 0}, {"Vendor Ledger Entry", false, "department_code", "", 0}},
+		"code": {{"Bank_Account", false, "department_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "department_code", "", 0}, {"Customer Ledger Entry", false, "department_code", "", 0}, {"Customer", false, "department_code", "", 0}, {"FA_Ledger_Entry", false, "department_code", "", 0}, {"Fixed_Asset", false, "department_code", "", 0}, {"G_L_Account", false, "department_code", "", 0}, {"G_L_Entry", false, "department_code", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "department_code", "", 0}, {"Insurance", false, "department_code", "", 0}, {"Maintenance_Ledger_Entry", false, "department_code", "", 0}, {"Vendor", false, "department_code", "", 0}, {"Vendor Ledger Entry", false, "department_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1890,6 +1890,13 @@ func (t *Department) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *Department) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *Department) SetFieldValue(no int, value any) bool {
@@ -1961,7 +1968,11 @@ func (t *Department) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Department", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Department", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

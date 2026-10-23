@@ -274,3 +274,78 @@ pages:
       to_date_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
       to_date_payments_lcy: "Payments (LCY)"
       to_date_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+
+  # Bank pages
+  bank_account_card:
+    caption: "Bank Account Card"
+  bank_account_list:
+    caption: "Bank Account List"
+  bank_account_ledger_entries:
+    caption: "Bank Account Ledger Entries"
+  bank_account_posting_groups:
+    caption: "Bank Account Posting Groups"
+  check_ledger_entries:
+    caption: "Check Ledger Entries"
+  bank_account_statistics:
+    caption: "Bank Account Statistics"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      this_period_name: "Period"
+      this_period_net_change: "Net Change"
+      this_period_net_change_lcy: "Net Change (LCY)"
+      this_year_name: "Period"
+      this_year_net_change: "Net Change"
+      this_year_net_change_lcy: "Net Change (LCY)"
+      last_year_name: "Period"
+      last_year_net_change: "Net Change"
+      last_year_net_change_lcy: "Net Change (LCY)"
+      to_date_name: "Period"
+      to_date_net_change: "Net Change"
+      to_date_net_change_lcy: "Net Change (LCY)"
+
+  # Fixed asset pages
+  fixed_asset_card:
+    caption: "Fixed Asset Card"
+  fixed_asset_list:
+    caption: "Fixed Asset List"
+  fixed_asset_statistics:
+    caption: "Fixed Asset Statistics"
+  fa_ledger_entries:
+    caption: "FA Ledger Entries"
+  fixed_asset_setup:
+    caption: "Fixed Asset Setup"
+  depreciation_book_card:
+    caption: "Depreciation Book Card"
+  depreciation_book_list:
+    caption: "Depreciation Book List"
+  fa_posting_group_card:
+    caption: "FA Posting Group Card"
+  fa_posting_groups:
+    caption: "FA Posting Groups"
+  fa_classes:
+    caption: "FA Classes"
+  fa_subclasses:
+    caption: "FA Subclasses"
+  fa_locations:
+    caption: "FA Locations"
+  fa_depreciation_books:
+    caption: "FA Depreciation Books"
+  maintenance_registration:
+    caption: "Maintenance Registration"
+  maintenance_ledger_entries:
+    caption: "Maintenance Ledger Entries"
+  maintenance:
+    caption: "Maintenance"
+  insurance_card:
+    caption: "Insurance Card"
+  insurance_list:
+    caption: "Insurance List"
+  ins_coverage_ledger_entries:
+    caption: "Ins. Coverage Ledger Entries"
+  insurance_types:
+    caption: "Insurance Types"
+  main_asset_components:
+    caption: "Main Asset Components"
+  insurance_statistics:
+    caption: "Insurance Statistics"
+    fields:  # the calculated field (OnAfterGetRecord)
+      over_underinsured: "Over/Underinsured"

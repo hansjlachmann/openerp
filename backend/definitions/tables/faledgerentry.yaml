@@ -1,0 +1,675 @@
+table:
+  id: 5601
+  name: "FA_Ledger_Entry"
+  caption: FA Ledger Entry
+  description: "Fixed asset ledger entries, posted (table 5601)"
+  lookup_page_id: 5604
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: g_l_entry_no
+      no: 2
+      type: int
+      db_name: g_l_entry_no
+
+    - name: fa_no
+      no: 3
+      type: types.Code
+      db_name: fa_no
+      length: 20
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_posting_date
+      no: 4
+      type: types.Date
+      db_name: fa_posting_date
+
+    - name: posting_date
+      no: 5
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 6
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_date
+      no: 7
+      type: types.Date
+      db_name: document_date
+
+    - name: document_no
+      no: 8
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: external_document_no
+      no: 9
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: description
+      no: 10
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: depreciation_book_code
+      no: 11
+      type: types.Code
+      db_name: depreciation_book_code
+      length: 10
+      table_relation:
+        table: Depreciation_Book
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_posting_category
+      no: 12
+      type: Option
+      db_name: fa_posting_category
+      options: [" ", "Disposal", "Bal. Disposal"]
+
+    - name: fa_posting_type
+      no: 13
+      type: Option
+      db_name: fa_posting_type
+      options: ["Acquisition Cost", "Depreciation", "Write-Down", "Appreciation", "Custom 1", "Custom 2", "Proceeds on Disposal", "Salvage Value", "Gain/Loss", "Book Value on Disposal"]
+
+    - name: amount
+      no: 14
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: debit_amount
+      no: 15
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount
+      no: 16
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: reclassification_entry
+      no: 17
+      type: bool
+      db_name: reclassification_entry
+
+    - name: part_of_book_value
+      no: 18
+      type: bool
+      db_name: part_of_book_value
+
+    - name: part_of_depreciable_basis
+      no: 19
+      type: bool
+      db_name: part_of_depreciable_basis
+
+    - name: disposal_calculation_method
+      no: 20
+      type: Option
+      db_name: disposal_calculation_method
+      options: [" ", "Net", "Gross"]
+
+    - name: disposal_entry_no
+      no: 21
+      type: int
+      db_name: disposal_entry_no
+
+    - name: no_of_depreciation_days
+      no: 22
+      type: int
+      db_name: no_of_depreciation_days
+
+    - name: quantity
+      no: 23
+      type: types.Decimal
+      db_name: quantity
+      precision: 18
+      scale: 2
+      decimal_places: "0:5"
+
+    - name: fa_no_budgeted_fa_no
+      no: 24
+      type: types.Code
+      db_name: fa_no_budgeted_fa_no
+      length: 20
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_subclass_code
+      no: 25
+      type: types.Code
+      db_name: fa_subclass_code
+      length: 10
+      table_relation:
+        table: FA_Subclass
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_location_code
+      no: 26
+      type: types.Code
+      db_name: fa_location_code
+      length: 10
+      table_relation:
+        table: FA_Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_posting_group
+      no: 27
+      type: types.Code
+      db_name: fa_posting_group
+      length: 10
+      table_relation:
+        table: FA_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: acquisition_cost_account
+            width: 250
+
+    - name: department_code
+      no: 28
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 29
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: location_code
+      no: 30
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 32
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 100
+          - source: user_name
+            width: 250
+
+    - name: depreciation_method
+      no: 33
+      type: Option
+      db_name: depreciation_method
+      options: ["Straight-Line", "Declining-Balance 1", "Declining-Balance 2", "DB1/SL", "DB2/SL", "User-Defined", "Manual"]
+
+    - name: depreciation_starting_date
+      no: 34
+      type: types.Date
+      db_name: depreciation_starting_date
+
+    - name: straight_line_percent
+      no: 35
+      type: types.Decimal
+      db_name: straight_line_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: no_of_depreciation_years
+      no: 36
+      type: types.Decimal
+      db_name: no_of_depreciation_years
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: fixed_depr_amount
+      no: 37
+      type: types.Decimal
+      db_name: fixed_depr_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: declining_balance_percent
+      no: 38
+      type: types.Decimal
+      db_name: declining_balance_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: depreciation_table_code
+      no: 39
+      type: types.Code
+      db_name: depreciation_table_code
+      length: 10
+
+    - name: journal_batch_name
+      no: 40
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: source_code
+      no: 41
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reason_code
+      no: 42
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: transaction_no
+      no: 43
+      type: int
+      db_name: transaction_no
+
+    - name: bal_account_type
+      no: 44
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: bal_account_no
+      no: 45
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: tax_amount
+      no: 46
+      type: types.Decimal
+      db_name: tax_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: gen_posting_type
+      no: 47
+      type: Option
+      db_name: gen_posting_type
+      options: [" ", "Purchase", "Sale", "Settlement"]
+
+    - name: gen_bus_posting_group
+      no: 48
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 49
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_class_code
+      no: 50
+      type: types.Code
+      db_name: fa_class_code
+      length: 10
+      table_relation:
+        table: FA_Class
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_exchange_rate
+      no: 51
+      type: types.Decimal
+      db_name: fa_exchange_rate
+      precision: 18
+      scale: 2
+      decimal_places: "4:4"
+
+    - name: amount_lcy
+      no: 52
+      type: types.Decimal
+      db_name: amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: result_on_disposal
+      no: 53
+      type: Option
+      db_name: result_on_disposal
+      options: [" ", "Gain", "Loss"]
+
+    - name: correction
+      no: 54
+      type: bool
+      db_name: correction
+
+    - name: index_entry
+      no: 55
+      type: bool
+      db_name: index_entry
+
+    - name: canceled_from_fa_no
+      no: 56
+      type: types.Code
+      db_name: canceled_from_fa_no
+      length: 20
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: depreciation_ending_date
+      no: 57
+      type: types.Date
+      db_name: depreciation_ending_date
+
+    - name: use_fa_ledger_check
+      no: 58
+      type: bool
+      db_name: use_fa_ledger_check
+
+    - name: automatic_entry
+      no: 59
+      type: bool
+      db_name: automatic_entry
+
+    - name: depr_starting_date_custom_1
+      no: 60
+      type: types.Date
+      db_name: depr_starting_date_custom_1
+
+    - name: depr_ending_date_custom_1
+      no: 61
+      type: types.Date
+      db_name: depr_ending_date_custom_1
+
+    - name: accum_depr_percent_custom_1
+      no: 62
+      type: types.Decimal
+      db_name: accum_depr_percent_custom_1
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: depr_percent_this_year_custom_1
+      no: 63
+      type: types.Decimal
+      db_name: depr_percent_this_year_custom_1
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: property_class_custom_1
+      no: 64
+      type: Option
+      db_name: property_class_custom_1
+      options: [" ", "Personal Property", "Real Property"]
+
+    - name: no_series
+      no: 65
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 66
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 67
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 68
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: use_tax
+      no: 69
+      type: bool
+      db_name: use_tax
+
+    - name: tax_bus_posting_group
+      no: 70
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 71
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: fa_book_date
+      fields: [fa_no, depreciation_book_code, fa_posting_date]
+      sum_index_fields:
+        - amount
+    - name: fa_book_type
+      fields: [fa_no, depreciation_book_code, fa_posting_category, fa_posting_type, fa_posting_date, part_of_book_value, reclassification_entry]
+      sum_index_fields:
+        - amount
+    - name: fa_book_value
+      fields: [fa_no, depreciation_book_code, part_of_book_value, fa_posting_date]
+      sum_index_fields:
+        - amount
+    - name: fa_book_basis
+      fields: [fa_no, depreciation_book_code, part_of_depreciable_basis, fa_posting_date]
+      sum_index_fields:
+        - amount
+    - name: fa_book_type_posting_date
+      fields: [fa_no, depreciation_book_code, fa_posting_category, fa_posting_type, posting_date]
+      sum_index_fields:
+        - amount
+    - name: canceled_from
+      fields: [canceled_from_fa_no, depreciation_book_code, fa_posting_date]
+    - name: document
+      fields: [document_no, posting_date]
+    - name: g_l_entry
+      fields: [g_l_entry_no]

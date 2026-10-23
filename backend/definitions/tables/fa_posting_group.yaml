@@ -1,0 +1,426 @@
+table:
+  id: 5606
+  name: "FA_Posting_Group"
+  caption: FA Posting Group
+  description: "Fixed asset posting groups, the G/L accounts of fixed asset postings (table 5606)"
+  lookup_page_id: 5613
+  # Left out until FA Allocation (5615) comes with posting: 31–41 Allocated … % (FlowFields)
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: acquisition_cost_account
+      no: 2
+      type: types.Code
+      db_name: acquisition_cost_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: accum_depreciation_account
+      no: 3
+      type: types.Code
+      db_name: accum_depreciation_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: write_down_account
+      no: 4
+      type: types.Code
+      db_name: write_down_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: appreciation_account
+      no: 5
+      type: types.Code
+      db_name: appreciation_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_1_account
+      no: 6
+      type: types.Code
+      db_name: custom_1_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_2_account
+      no: 7
+      type: types.Code
+      db_name: custom_2_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: acq_cost_acc_on_disposal
+      no: 8
+      type: types.Code
+      db_name: acq_cost_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: accum_depr_acc_on_disposal
+      no: 9
+      type: types.Code
+      db_name: accum_depr_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: write_down_acc_on_disposal
+      no: 10
+      type: types.Code
+      db_name: write_down_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: appreciation_acc_on_disposal
+      no: 11
+      type: types.Code
+      db_name: appreciation_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_1_account_on_disposal
+      no: 12
+      type: types.Code
+      db_name: custom_1_account_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_2_account_on_disposal
+      no: 13
+      type: types.Code
+      db_name: custom_2_account_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: gains_acc_on_disposal
+      no: 14
+      type: types.Code
+      db_name: gains_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: losses_acc_on_disposal
+      no: 15
+      type: types.Code
+      db_name: losses_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: book_value_acc_on_disposal
+      no: 16
+      type: types.Code
+      db_name: book_value_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_acc_on_disposal
+      no: 17
+      type: types.Code
+      db_name: sales_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: write_down_bal_acc_on_disp
+      no: 18
+      type: types.Code
+      db_name: write_down_bal_acc_on_disp
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: apprec_bal_acc_on_disp
+      no: 19
+      type: types.Code
+      db_name: apprec_bal_acc_on_disp
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_1_bal_acc_on_disposal
+      no: 20
+      type: types.Code
+      db_name: custom_1_bal_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_2_bal_acc_on_disposal
+      no: 21
+      type: types.Code
+      db_name: custom_2_bal_acc_on_disposal
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: maintenance_expense_account
+      no: 22
+      type: types.Code
+      db_name: maintenance_expense_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: maintenance_bal_acc
+      no: 23
+      type: types.Code
+      db_name: maintenance_bal_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: acquisition_cost_bal_acc
+      no: 24
+      type: types.Code
+      db_name: acquisition_cost_bal_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: depreciation_expense_acc
+      no: 25
+      type: types.Code
+      db_name: depreciation_expense_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: write_down_expense_acc
+      no: 26
+      type: types.Code
+      db_name: write_down_expense_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: appreciation_bal_account
+      no: 27
+      type: types.Code
+      db_name: appreciation_bal_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_1_expense_acc
+      no: 28
+      type: types.Code
+      db_name: custom_1_expense_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: custom_2_expense_acc
+      no: 29
+      type: types.Code
+      db_name: custom_2_expense_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_bal_acc
+      no: 30
+      type: types.Code
+      db_name: sales_bal_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

@@ -1,0 +1,291 @@
+table:
+  id: 5600
+  name: "Fixed_Asset"
+  caption: Fixed Asset
+  description: "Fixed assets (table 5600)"
+  data_caption_fields: [no, description]
+  auto_key: true   # OnInsert gives a fixed asset without No. the next number of its series
+  lookup_page_id: 5601
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: search_description
+      no: 3
+      type: types.Code
+      db_name: search_description
+      length: 50
+
+    - name: description_2
+      no: 4
+      type: types.Text
+      db_name: description_2
+      length: 50
+
+    - name: fa_class_code
+      no: 5
+      type: types.Code
+      db_name: fa_class_code
+      length: 10
+      table_relation:
+        table: FA_Class
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_subclass_code
+      no: 6
+      type: types.Code
+      db_name: fa_subclass_code
+      length: 10
+      table_relation:
+        table: FA_Subclass
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 7
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 8
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: location_code
+      no: 9
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_location_code
+      no: 10
+      type: types.Code
+      db_name: fa_location_code
+      length: 10
+      table_relation:
+        table: FA_Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: vendor_no
+      no: 11
+      type: types.Code
+      db_name: vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: main_asset_component
+      no: 12
+      type: Option
+      db_name: main_asset_component
+      options: [" ", "Main Asset", "Component"]
+      editable: false
+
+    - name: component_of_main_asset
+      no: 13
+      type: types.Code
+      db_name: component_of_main_asset
+      length: 20
+      editable: false
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: budgeted_asset
+      no: 14
+      type: bool
+      db_name: budgeted_asset
+
+    - name: warranty_date
+      no: 15
+      type: types.Date
+      db_name: warranty_date
+
+    - name: responsible_employee
+      no: 16
+      type: types.Code
+      db_name: responsible_employee
+      length: 20
+      # relates to the Employee table (comes with it)
+
+    - name: serial_no
+      no: 17
+      type: types.Text
+      db_name: serial_no
+      length: 30
+
+    - name: last_date_modified
+      no: 18
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: insured
+      no: 19
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: InsCoverageLedgerEntry
+      source_field: entry_no
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: no
+        - field: disposed_fa
+          type: const
+          value: "false"
+
+    - name: comment
+      no: 20
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 10
+        - field: no
+          type: field
+          value: no
+
+    - name: blocked
+      no: 21
+      type: bool
+      db_name: blocked
+
+    - name: picture
+      no: 22
+      type: "[]byte"
+      db_name: picture
+
+    - name: maintenance_vendor_no
+      no: 23
+      type: types.Code
+      db_name: maintenance_vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: under_maintenance
+      no: 24
+      type: bool
+      db_name: under_maintenance
+
+    - name: next_service_date
+      no: 25
+      type: types.Date
+      db_name: next_service_date
+
+    - name: inactive
+      no: 26
+      type: bool
+      db_name: inactive
+
+    - name: fa_posting_date_filter
+      no: 27
+      type: types.Date
+      flow_filter: true
+
+    - name: no_series
+      no: 28
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_description
+      fields: [search_description]
+    - name: fa_class_code
+      fields: [fa_class_code]
+    - name: fa_subclass_code
+      fields: [fa_subclass_code]
+    - name: component_of_main_asset
+      fields: [component_of_main_asset, main_asset_component]
+    - name: fa_location_code
+      fields: [fa_location_code]
+    - name: department_code
+      fields: [department_code]
+    - name: project_code
+      fields: [project_code]

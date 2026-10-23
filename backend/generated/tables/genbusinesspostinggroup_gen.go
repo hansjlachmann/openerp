@@ -921,7 +921,7 @@ func (t *GenBusinessPostingGroup) renameReferences(field string, oldValue, newVa
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "gen_bus_posting_group", "", 0}, {"G_L_Account", false, "gen_bus_posting_group", "", 0}, {"G_L_Entry", false, "gen_bus_posting_group", "", 0}, {"Vendor", false, "gen_bus_posting_group", "", 0}},
+		"code": {{"Customer", false, "gen_bus_posting_group", "", 0}, {"FA_Ledger_Entry", false, "gen_bus_posting_group", "", 0}, {"G_L_Account", false, "gen_bus_posting_group", "", 0}, {"G_L_Entry", false, "gen_bus_posting_group", "", 0}, {"Maintenance_Ledger_Entry", false, "gen_bus_posting_group", "", 0}, {"Vendor", false, "gen_bus_posting_group", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1980,6 +1980,13 @@ func (t *GenBusinessPostingGroup) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *GenBusinessPostingGroup) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *GenBusinessPostingGroup) SetFieldValue(no int, value any) bool {
@@ -2056,7 +2063,11 @@ func (t *GenBusinessPostingGroup) TestField(fieldName string, value ...any) erro
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Gen_Business_Posting_Group", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Gen_Business_Posting_Group", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

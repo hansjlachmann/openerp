@@ -1,0 +1,113 @@
+page:
+  id: 372
+  type: List
+  name: Bank Account Ledger Entries
+  source_table: Bank_Account_Ledger_Entry
+  caption: Bank Account Ledger Entries
+  # Editable for now (demo data). Posted ledger entries are read-only — make this page
+  # read-only once posting exists.
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 110
+
+        - source: document_no
+          width: 110
+
+        - source: bank_account_no
+          width: 110
+
+        - source: description
+          width: 220
+
+        - source: currency_code
+          width: 90
+          visible: false
+
+        - source: amount
+          width: 120
+
+        - source: amount_lcy
+          width: 120
+          visible: false
+
+        - source: remaining_amount
+          width: 120
+
+        - source: bal_account_type
+          width: 120
+          visible: false
+
+        - source: bal_account_no
+          width: 120
+          visible: false
+
+        - source: open
+          width: 60
+
+        - source: statement_status
+          width: 140
+          visible: false
+
+        - source: statement_no
+          width: 110
+          visible: false
+
+        - source: department_code
+          width: 120
+          visible: false
+
+        - source: project_code
+          width: 120
+          visible: false
+
+        - source: our_contact_code
+          width: 120
+          visible: false
+
+        - source: user_id
+          width: 100
+          visible: false
+
+        - source: source_code
+          width: 100
+          visible: false
+
+        - source: reason_code
+          width: 100
+          visible: false
+
+        - source: external_document_no
+          width: 140
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

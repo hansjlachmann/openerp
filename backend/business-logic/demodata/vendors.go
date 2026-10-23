@@ -50,6 +50,7 @@ type vendorEntry struct {
 	closedBy    *vendorEntry
 	closedAt    time.Time
 	entryNo     int
+	bankAccount string // the bank account of a payment
 }
 
 func insertVendors(exec database.Executor, company string, dbType database.DBType, vendors []vendorData, counts *Counts) error {
@@ -91,6 +92,13 @@ func insertVendors(exec database.Executor, company string, dbType database.DBTyp
 // generateVendorEntries: one to two purchase invoices a month per vendor over the last year;
 // those due more than five days ago are paid (most of them)
 func generateVendorEntries(vendors []vendorData, dueDays map[string]int, today time.Time) []*vendorEntry {
+	// payments in pounds go through the GBP account, the others through the operating account
+	bankAccount := func(v vendorData) string {
+		if v.Currency == "GBP" {
+			return "B030"
+		}
+		return string(demoBankAccount)
+	}
 	rng := rand.New(rand.NewSource(seed + 23))
 	day := func(t time.Time, days int) time.Time { return t.AddDate(0, 0, days) }
 	var entries []*vendorEntry
@@ -117,12 +125,13 @@ func generateVendorEntries(vendors []vendorData, dueDays map[string]int, today t
 					payDate = today
 				}
 				pay := &vendorEntry{
-					vendorNo: v.No,
-					date:     payDate,
-					docType:  gtables.VendorLedgerEntry_Document_type.Payment,
-					amount:   -inv.remaining,
-					closedBy: inv,
-					closedAt: payDate,
+					vendorNo:    v.No,
+					date:        payDate,
+					docType:     gtables.VendorLedgerEntry_Document_type.Payment,
+					amount:      -inv.remaining,
+					closedBy:    inv,
+					closedAt:    payDate,
+					bankAccount: bankAccount(v),
 				}
 				entries = append(entries, pay)
 				inv.remaining, inv.open = 0, false
@@ -189,6 +198,7 @@ func insertVendorEntries(exec database.Executor, company string, dbType database
 		}
 		if e.docType == gtables.VendorLedgerEntry_Document_type.Payment {
 			rec.Bal_account_type = gtables.VendorLedgerEntry_Bal_account_type.BankAccount
+			rec.Bal_account_no = types.NewCode(e.bankAccount)
 		}
 		batch = append(batch, rec)
 	}

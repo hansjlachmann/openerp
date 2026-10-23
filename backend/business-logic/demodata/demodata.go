@@ -89,16 +89,20 @@ type Options struct {
 
 // Counts reports what Create inserted.
 type Counts struct {
-	Countries           int
-	PaymentTerms        int
-	MasterData          int // records of the master data tables (setup.yaml master_data)
-	CustomerData        int // the customers' comments, ship-to addresses, bank accounts (customer_data)
-	Vendors             int
-	VendorLedgerEntries int
-	VendorData          int // the vendors' comments, order addresses, bank accounts (vendor_data)
-	Customers           int
-	LedgerEntries       int
-	GLEntries           int // demo G/L entries (monthly sales and costs against the bank)
+	Countries                int
+	PaymentTerms             int
+	MasterData               int // records of the master data tables (setup.yaml master_data)
+	CustomerData             int // the customers' comments, ship-to addresses, bank accounts (customer_data)
+	Vendors                  int
+	VendorLedgerEntries      int
+	VendorData               int // the vendors' comments, order addresses, bank accounts (vendor_data)
+	BankLedgerEntries        int // the bank side of the demo payments
+	FixedAssets              int
+	FALedgerEntries          int // acquisitions and monthly depreciation
+	MaintenanceLedgerEntries int
+	Customers                int
+	LedgerEntries            int
+	GLEntries                int // demo G/L entries (monthly sales and costs against the bank)
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -148,6 +152,24 @@ type setupData struct {
 	CustomerData []tableRecords `yaml:"customer_data"`
 	// VendorData: the vendors' comments, order addresses and bank accounts, inserted after them
 	VendorData []tableRecords `yaml:"vendor_data"`
+}
+
+// lastRecordNo is the highest No. of a table's records in the setup data (its series continues
+// after it)
+func lastRecordNo(data []tableRecords, table string) string {
+	last := ""
+	for _, t := range data {
+		if t.Table != table {
+			continue
+		}
+		for _, r := range t.Records {
+			no := fmt.Sprint(r["no"])
+			if no > last {
+				last = no
+			}
+		}
+	}
+	return last
 }
 
 // tableRecords are records of a table (API name), field name → value
@@ -240,6 +262,11 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	}
 	var vendors vendorsFile
 	err = loadYAML("vendors.yaml", &vendors)
+	if err != nil {
+		return counts, err
+	}
+	var fixedAssets fixedAssetsFile
+	err = loadYAML("fixedassets.yaml", &fixedAssets)
 	if err != nil {
 		return counts, err
 	}
@@ -344,7 +371,21 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
-	err = useSeriesNumbers(exec, company, dbType, customers, entries, vendorSeriesUse(vendors.Vendors, vendorEntries))
+	err = insertBankEntries(exec, company, dbType, entries, vendorEntries, today, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = insertFixedAssets(exec, company, dbType, fixedAssets, today, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	seriesUse := vendorSeriesUse(vendors.Vendors, vendorEntries)
+	seriesUse["BANK"] = ledgerUse{no: lastRecordNo(setup.MasterData, gtables.BankAccountTableName)}
+	seriesUse["FA"] = ledgerUse{no: fixedAssets.FixedAssets[len(fixedAssets.FixedAssets)-1].No}
+	seriesUse["INS"] = ledgerUse{no: fixedAssets.Insurance.No}
+	err = useSeriesNumbers(exec, company, dbType, customers, entries, seriesUse)
 	if err != nil {
 		rollback()
 		return Counts{}, err
@@ -595,6 +636,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		}
 		if e.docType == gtables.CustomerLedgerEntry_Document_type.Payment {
 			rec.Bal_account_type = gtables.CustomerLedgerEntry_Bal_account_type.BankAccount
+			rec.Bal_account_no = demoBankAccount
 		}
 		batch = append(batch, rec)
 		if len(batch) == chunk {

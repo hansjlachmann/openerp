@@ -387,8 +387,8 @@ table:
       type: types.Code
       db_name: bal_account_no
       length: 20
-      # The balancing account's table depends on Bal. Account Type (vendors, bank accounts and
-      # fixed assets come with their tables)
+      # The balancing account's table depends on Bal. Account Type (fixed assets come with
+      # their table)
       table_relation:
         conditions:
           - when: {field: bal_account_type, equal: 0}
@@ -406,6 +406,30 @@ table:
               - source: no
                 width: 100
               - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
                 width: 250
 
   # Keys (Indexes) - style

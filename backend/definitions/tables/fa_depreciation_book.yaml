@@ -1,0 +1,658 @@
+table:
+  id: 5612
+  name: "FA_Depreciation_Book"
+  caption: FA Depreciation Book
+  description: "The depreciation books of a fixed asset, its values per book (table 5612)"
+  lookup_page_id: 5619
+  fields:
+    - name: fa_no
+      no: 1
+      type: types.Code
+      db_name: fa_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: depreciation_book_code
+      no: 2
+      type: types.Code
+      db_name: depreciation_book_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Depreciation_Book
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: depreciation_method
+      no: 3
+      type: Option
+      db_name: depreciation_method
+      options: ["Straight-Line", "Declining-Balance 1", "Declining-Balance 2", "DB1/SL", "DB2/SL", "User-Defined", "Manual"]
+
+    - name: depreciation_starting_date
+      no: 4
+      type: types.Date
+      db_name: depreciation_starting_date
+
+    - name: straight_line_percent
+      no: 5
+      type: types.Decimal
+      db_name: straight_line_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: no_of_depreciation_years
+      no: 6
+      type: types.Decimal
+      db_name: no_of_depreciation_years
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: no_of_depreciation_months
+      no: 7
+      type: types.Decimal
+      db_name: no_of_depreciation_months
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: fixed_depr_amount
+      no: 8
+      type: types.Decimal
+      db_name: fixed_depr_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: declining_balance_percent
+      no: 9
+      type: types.Decimal
+      db_name: declining_balance_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: depreciation_table_code
+      no: 10
+      type: types.Code
+      db_name: depreciation_table_code
+      length: 10
+      # relates to the Depreciation Table Header (comes with the depreciation tables)
+
+    - name: final_rounding_amount
+      no: 11
+      type: types.Decimal
+      db_name: final_rounding_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: ending_book_value
+      no: 12
+      type: types.Decimal
+      db_name: ending_book_value
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: fa_posting_group
+      no: 13
+      type: types.Code
+      db_name: fa_posting_group
+      length: 10
+      table_relation:
+        table: FA_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: acquisition_cost_account
+            width: 250
+
+    - name: depreciation_ending_date
+      no: 14
+      type: types.Date
+      db_name: depreciation_ending_date
+
+    - name: acquisition_cost
+      no: 15
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 0
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: depreciation
+      no: 16
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 1
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: book_value
+      no: 17
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: part_of_book_value
+          type: const
+          value: "true"
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: proceeds_on_disposal
+      no: 18
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 6
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: gain_loss
+      no: 19
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 8
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: write_down
+      no: 20
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 2
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: appreciation
+      no: 21
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 3
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: custom_1
+      no: 22
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 4
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: custom_2
+      no: 23
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 5
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: depreciable_basis
+      no: 24
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: part_of_depreciable_basis
+          type: const
+          value: "true"
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: salvage_value
+      no: 25
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 0
+        - field: fa_posting_type
+          type: const
+          value: 7
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: book_value_on_disposal
+      no: 26
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: FALedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: fa_posting_category
+          type: const
+          value: 1
+        - field: fa_posting_type
+          type: const
+          value: 9
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: maintenance
+      no: 27
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: MaintenanceLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: fa_no
+          type: field
+          value: fa_no
+        - field: depreciation_book_code
+          type: field
+          value: depreciation_book_code
+        - field: maintenance_code
+          type: filter
+          value: maintenance_code_filter
+        - field: fa_posting_date
+          type: filter
+          value: fa_posting_date_filter
+
+    - name: maintenance_code_filter
+      no: 28
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: fa_posting_date_filter
+      no: 29
+      type: types.Date
+      flow_filter: true
+
+    - name: acquisition_date
+      no: 30
+      type: types.Date
+      db_name: acquisition_date
+      editable: false
+
+    - name: g_l_acquisition_date
+      no: 31
+      type: types.Date
+      db_name: g_l_acquisition_date
+      editable: false
+
+    - name: disposal_date
+      no: 32
+      type: types.Date
+      db_name: disposal_date
+      editable: false
+
+    - name: last_acquisition_cost_date
+      no: 33
+      type: types.Date
+      db_name: last_acquisition_cost_date
+      editable: false
+
+    - name: last_depreciation_date
+      no: 34
+      type: types.Date
+      db_name: last_depreciation_date
+      editable: false
+
+    - name: last_write_down_date
+      no: 35
+      type: types.Date
+      db_name: last_write_down_date
+      editable: false
+
+    - name: last_appreciation_date
+      no: 36
+      type: types.Date
+      db_name: last_appreciation_date
+      editable: false
+
+    - name: last_custom_1_date
+      no: 37
+      type: types.Date
+      db_name: last_custom_1_date
+      editable: false
+
+    - name: last_custom_2_date
+      no: 38
+      type: types.Date
+      db_name: last_custom_2_date
+      editable: false
+
+    - name: last_salvage_value_date
+      no: 39
+      type: types.Date
+      db_name: last_salvage_value_date
+      editable: false
+
+    - name: fa_exchange_rate
+      no: 40
+      type: types.Decimal
+      db_name: fa_exchange_rate
+      precision: 18
+      scale: 2
+      decimal_places: "4:4"
+
+    - name: fixed_depr_amount_below_zero
+      no: 41
+      type: types.Decimal
+      db_name: fixed_depr_amount_below_zero
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: last_date_modified
+      no: 42
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: first_user_defined_depr_date
+      no: 43
+      type: types.Date
+      db_name: first_user_defined_depr_date
+
+    - name: use_fa_ledger_check
+      no: 44
+      type: bool
+      db_name: use_fa_ledger_check
+      default: true
+
+    - name: last_maintenance_date
+      no: 45
+      type: types.Date
+      db_name: last_maintenance_date
+      editable: false
+
+    - name: depr_below_zero_percent
+      no: 46
+      type: types.Decimal
+      db_name: depr_below_zero_percent
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: projected_disposal_date
+      no: 47
+      type: types.Date
+      db_name: projected_disposal_date
+
+    - name: projected_proceeds_on_disposal
+      no: 48
+      type: types.Decimal
+      db_name: projected_proceeds_on_disposal
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: depr_starting_date_custom_1
+      no: 50
+      type: types.Date
+      db_name: depr_starting_date_custom_1
+
+    - name: depr_ending_date_custom_1
+      no: 51
+      type: types.Date
+      db_name: depr_ending_date_custom_1
+
+    - name: accum_depr_percent_custom_1
+      no: 52
+      type: types.Decimal
+      db_name: accum_depr_percent_custom_1
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: depr_this_year_percent_custom_1
+      no: 53
+      type: types.Decimal
+      db_name: depr_this_year_percent_custom_1
+      precision: 18
+      scale: 2
+      decimal_places: "2:8"
+
+    - name: property_class_custom_1
+      no: 54
+      type: Option
+      db_name: property_class_custom_1
+      options: [" ", "Personal Property", "Real Property"]
+
+    - name: description
+      no: 55
+      type: types.Text
+      db_name: description
+      length: 50
+      editable: false
+
+    - name: main_asset_component
+      no: 56
+      type: Option
+      db_name: main_asset_component
+      options: [" ", "Main Asset", "Component"]
+      editable: false
+
+    - name: component_of_main_asset
+      no: 57
+      type: types.Code
+      db_name: component_of_main_asset
+      length: 20
+      editable: false
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_add_currency_factor
+      no: 58
+      type: types.Decimal
+      db_name: fa_add_currency_factor
+      precision: 18
+      scale: 2
+      decimal_places: "0:15"
+
+  keys:
+    - name: Primary
+      fields: [fa_no, depreciation_book_code]
+      clustered: true
+    - name: book_fa
+      fields: [depreciation_book_code, fa_no]
+    - name: book_main_asset
+      fields: [depreciation_book_code, component_of_main_asset, main_asset_component]
+    - name: main_asset_book
+      fields: [main_asset_component, depreciation_book_code]

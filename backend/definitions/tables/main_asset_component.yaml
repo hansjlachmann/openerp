@@ -1,0 +1,52 @@
+table:
+  id: 5640
+  name: "Main_Asset_Component"
+  caption: Main Asset Component
+  description: "The components of a main asset (table 5640)"
+  lookup_page_id: 5658
+  fields:
+    - name: main_asset_no
+      no: 1
+      type: types.Code
+      db_name: main_asset_no
+      length: 20
+      primary_key: true
+      required: true
+      editable: false
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_no
+      no: 3
+      type: types.Code
+      db_name: fa_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: description
+      no: 4
+      type: types.Text
+      db_name: description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [main_asset_no, fa_no]
+      clustered: true
+    - name: fa_no
+      fields: [fa_no]

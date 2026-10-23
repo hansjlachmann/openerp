@@ -37,7 +37,11 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
 		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
 		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
-		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{}} {
+		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{},
+		&gtables.BankAccount{}, &gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.BankAccountPostingGroup{},
+		&gtables.FixedAsset{}, &gtables.FALedgerEntry{}, &gtables.FASetup{}, &gtables.FAPostingGroup{}, &gtables.FAClass{}, &gtables.FASubclass{},
+		&gtables.FALocation{}, &gtables.DepreciationBook{}, &gtables.FADepreciationBook{}, &gtables.MaintenanceLedgerEntry{}, &gtables.Maintenance{},
+		&gtables.MaintenanceRegistration{}, &gtables.MainAssetComponent{}, &gtables.Insurance{}, &gtables.InsuranceType{}, &gtables.InsCoverageLedgerEntry{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -68,9 +72,10 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		return e.Status
 	}
 
-	// Correct totals: success, the 4 keys checked (customer and vendor ledger, G/L entries)
+	// Correct totals: success, the 19 keys checked (customer, vendor, bank, FA, maintenance and
+	// insurance coverage ledger, G/L entries)
 	msg, err := run("")
-	if err != nil || !strings.Contains(msg, "4 SIFT keys") {
+	if err != nil || !strings.Contains(msg, "19 SIFT keys") {
 		t.Fatalf("verify on correct totals: %q, %v", msg, err)
 	}
 	if lastEntryStatus() != gtables.JobQueueEntry_Status.Success {

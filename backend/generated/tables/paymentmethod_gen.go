@@ -2048,6 +2048,13 @@ func (t *PaymentMethod) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *PaymentMethod) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *PaymentMethod) SetFieldValue(no int, value any) bool {
@@ -2124,7 +2131,11 @@ func (t *PaymentMethod) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Payment_Method", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Payment_Method", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -2715,6 +2726,11 @@ func (t *PaymentMethod) GetTableRelationFields() map[string]tables.TableRelation
 			Conditions: []tables.ConditionalRelationInfo{
 				{Field: "bal_account_type", Value: 0, Relation: tables.TableRelationInfo{
 					Table: "G_L_Account", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "bal_account_type", Value: 1, Relation: tables.TableRelationInfo{
+					Table: "Bank_Account", Field: "no", DisplayField: "",
 					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
 					SearchTimeout: 0,
 				}},

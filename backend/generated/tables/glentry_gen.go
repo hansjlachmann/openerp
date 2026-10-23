@@ -4902,6 +4902,13 @@ func (t *GLEntry) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *GLEntry) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *GLEntry) SetFieldValue(no int, value any) bool {
@@ -5235,7 +5242,11 @@ func (t *GLEntry) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of G_L_Entry", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of G_L_Entry", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -6759,6 +6770,21 @@ func (t *GLEntry) GetTableRelationFields() map[string]tables.TableRelationInfo {
 					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
 					SearchTimeout: 0,
 				}},
+				{Field: "bal_account_type", Value: 2, Relation: tables.TableRelationInfo{
+					Table: "Vendor", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "bal_account_type", Value: 3, Relation: tables.TableRelationInfo{
+					Table: "Bank_Account", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "bal_account_type", Value: 4, Relation: tables.TableRelationInfo{
+					Table: "Fixed_Asset", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "description", Width: 250}},
+					SearchTimeout: 0,
+				}},
 			},
 		},
 		"department_code": {
@@ -6837,6 +6863,21 @@ func (t *GLEntry) GetTableRelationFields() map[string]tables.TableRelationInfo {
 				{Field: "source_type", Value: 1, Relation: tables.TableRelationInfo{
 					Table: "Customer", Field: "no", DisplayField: "",
 					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "source_type", Value: 2, Relation: tables.TableRelationInfo{
+					Table: "Vendor", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "source_type", Value: 3, Relation: tables.TableRelationInfo{
+					Table: "Bank_Account", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "source_type", Value: 4, Relation: tables.TableRelationInfo{
+					Table: "Fixed_Asset", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "description", Width: 250}},
 					SearchTimeout: 0,
 				}},
 			},

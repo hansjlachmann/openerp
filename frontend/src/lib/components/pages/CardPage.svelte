@@ -130,8 +130,13 @@
 
 	// Check if this is a new record (no ID)
 	function checkIsNewRecord(): boolean {
-		// A setup record has a blank key and always exists
-		return !page?.page?.setup_table && isNewRecord(record);
+		// A setup record has a blank key and always exists. A composite key (FA No. + Depreciation
+		// Book Code) is new while one of its fields is blank — a new record from a filtered list
+		// already has the filter's field (Ship-to Address: Customer No.)
+		if (page?.page?.setup_table) return false;
+		const keyFields = getPrimaryKeyFields(page);
+		if (keyFields.length > 1) return keyFields.some((f) => record?.[f] === undefined || record?.[f] === null || record?.[f] === '');
+		return isNewRecord(record);
 	}
 
 	// Edit mode state - start in edit mode for new records or if initialEditMode is true
@@ -146,7 +151,7 @@
 
 	// Auto-enable edit mode when a new record is loaded (not when field values change)
 	$effect(() => {
-		const id = getRecordId(record, primaryKeyField);
+		const id = checkIsNewRecord() ? undefined : getRecordId(record, primaryKeyField, getPrimaryKeyFields(page));
 		// Only trigger when the record ID actually changes (not on every field change)
 		if (id !== lastRecordId) {
 			lastRecordId = id;

@@ -1,0 +1,28 @@
+page:
+  id: 5646
+  type: Card
+  name: Insurance Statistics
+  source_table: Insurance   # opened from the Insurance Card and List (F7)
+  caption: Insurance Statistics
+  editable: false
+
+  # Over/Underinsured is filled by the page's OnAfterGetRecord trigger
+  # (business-logic/pages/insurancestatistics.go); its caption is pages.insurance_statistics.fields.*
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+          - source: description
+          - source: annual_premium
+          - source: policy_coverage
+          - source: total_value_insured
+            drilldown: 5647
+            drilldown_filter_field: insurance_no
+            drilldown_filter_value: "no"
+          - source: over_underinsured
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+            style: Strong

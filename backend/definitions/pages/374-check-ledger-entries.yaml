@@ -1,0 +1,101 @@
+page:
+  id: 374
+  type: List
+  name: Check Ledger Entries
+  source_table: Check_Ledger_Entry
+  caption: Check Ledger Entries
+  # Editable for now (demo data); read-only once posting exists
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 110
+
+        - source: document_no
+          width: 110
+
+        - source: bank_account_no
+          width: 110
+
+        - source: description
+          width: 220
+
+        - source: amount
+          width: 120
+
+        - source: check_date
+          width: 100
+
+        - source: check_no
+          width: 110
+
+        - source: check_type
+          width: 120
+          visible: false
+
+        - source: bank_payment_type
+          width: 150
+
+        - source: entry_status
+          width: 120
+
+        - source: original_entry_status
+          width: 150
+          visible: false
+
+        - source: bal_account_type
+          width: 120
+          visible: false
+
+        - source: bal_account_no
+          width: 120
+          visible: false
+
+        - source: open
+          width: 60
+
+        - source: statement_status
+          width: 140
+          visible: false
+
+        - source: statement_no
+          width: 110
+          visible: false
+
+        - source: user_id
+          width: 100
+          visible: false
+
+        - source: external_document_no
+          width: 140
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

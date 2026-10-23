@@ -836,7 +836,7 @@ func (t *Territory) renameReferences(field string, oldValue, newValue interface{
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "territory_code", "", 0}, {"Vendor", false, "territory_code", "", 0}},
+		"code": {{"Bank_Account", false, "territory_code", "", 0}, {"Customer", false, "territory_code", "", 0}, {"Vendor", false, "territory_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1820,6 +1820,13 @@ func (t *Territory) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *Territory) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *Territory) SetFieldValue(no int, value any) bool {
@@ -1882,7 +1889,11 @@ func (t *Territory) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Territory", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Territory", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

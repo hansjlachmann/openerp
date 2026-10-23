@@ -1,0 +1,218 @@
+table:
+  id: 272
+  name: "Check_Ledger_Entry"
+  caption: Check Ledger Entry
+  description: "Check ledger entries, posted (table 272)"
+  lookup_page_id: 374
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: bank_account_no
+      no: 2
+      type: types.Code
+      db_name: bank_account_no
+      length: 20
+      table_relation:
+        table: Bank_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: bank_account_ledger_entry_no
+      no: 3
+      type: int
+      db_name: bank_account_ledger_entry_no
+      table_relation:
+        table: Bank_Account_Ledger_Entry
+        field: entry_no
+        lookup_columns:
+          - source: entry_no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 5
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      no: 6
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: amount
+      no: 8
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: check_date
+      no: 9
+      type: types.Date
+      db_name: check_date
+
+    - name: check_no
+      no: 10
+      type: types.Code
+      db_name: check_no
+      length: 20
+
+    - name: check_type
+      no: 11
+      type: Option
+      db_name: check_type
+      options: ["Total Check", "Partial Check"]
+
+    - name: bank_payment_type
+      no: 12
+      type: Option
+      db_name: bank_payment_type
+      options: [" ", "Computer Check", "Manual Check", "Electronic Payment"]
+
+    - name: entry_status
+      no: 13
+      type: Option
+      db_name: entry_status
+      options: [" ", "Printed", "Voided", "Posted", "Financially Voided", "Test Print", "Exported", "Transmitted"]
+
+    - name: original_entry_status
+      no: 14
+      type: Option
+      db_name: original_entry_status
+      options: [" ", "Printed", "Voided", "Posted", "Financially Voided", "Test Print", "Exported", "Transmitted"]
+
+    - name: bal_account_type
+      no: 15
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: bal_account_no
+      no: 16
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: open
+      no: 17
+      type: bool
+      db_name: open
+
+    - name: statement_status
+      no: 18
+      type: Option
+      db_name: statement_status
+      options: ["Open", "Bank Acc. Entry Applied", "Check Entry Applied", "Closed"]
+
+    - name: statement_no
+      no: 19
+      type: types.Code
+      db_name: statement_no
+      length: 20
+
+    - name: statement_line_no
+      no: 20
+      type: int
+      db_name: statement_line_no
+
+    - name: user_id
+      no: 21
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 100
+          - source: user_name
+            width: 250
+
+    - name: external_document_no
+      no: 22
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: bank_account_status_check
+      fields: [bank_account_no, entry_status, check_no]
+    - name: bank_ledger_entry_status
+      fields: [bank_account_ledger_entry_no, entry_status]
+    - name: bank_account_check_date
+      fields: [bank_account_no, check_date]
+    - name: bank_account_open
+      fields: [bank_account_no, open]
+    - name: document
+      fields: [document_no, posting_date]

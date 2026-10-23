@@ -18,6 +18,37 @@ menu:
         page_id: 29
         icon: list
 
+      - name: Bank Accounts
+        page_id: 371
+        icon: landmark
+
+      - name: Bank Account Ledger Entries
+        page_id: 372
+        icon: list
+
+  - name: Fixed Assets
+    icon: package
+    items:
+      - name: Fixed Assets
+        page_id: 5601
+        icon: package
+
+      - name: FA Ledger Entries
+        page_id: 5604
+        icon: list
+
+      - name: Maintenance Ledger Entries
+        page_id: 5641
+        icon: list
+
+      - name: Insurance
+        page_id: 5645
+        icon: shield
+
+      - name: Ins. Coverage Ledger Entries
+        page_id: 5647
+        icon: list
+
       - name: Chart of Accounts
         page_id: 16
         icon: list
@@ -112,6 +143,42 @@ menu:
       - name: Vendor Posting Groups
         page_id: 111
         icon: tag
+
+      - name: Bank Account Posting Groups
+        page_id: 373
+        icon: tag
+
+      - name: Fixed Asset Setup
+        page_id: 5607
+        icon: settings
+
+      - name: Depreciation Books
+        page_id: 5611
+        icon: list
+
+      - name: FA Posting Groups
+        page_id: 5613
+        icon: tag
+
+      - name: FA Classes
+        page_id: 5615
+        icon: list
+
+      - name: FA Subclasses
+        page_id: 5616
+        icon: list
+
+      - name: FA Locations
+        page_id: 5617
+        icon: map-pin
+
+      - name: Maintenance
+        page_id: 5642
+        icon: list
+
+      - name: Insurance Types
+        page_id: 5648
+        icon: list
 
       - name: Customer Disc. Groups
         page_id: 512

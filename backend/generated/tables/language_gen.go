@@ -871,7 +871,7 @@ func (t *Language) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "language_code", "", 0}, {"Customer_Bank_Account", false, "language_code", "", 0}, {"Job_Queue", false, "notification_language", "", 0}, {"User", true, "language", "", 0}, {"Vendor", false, "language_code", "", 0}, {"Vendor_Bank_Account", false, "language_code", "", 0}},
+		"code": {{"Bank_Account", false, "language_code", "", 0}, {"Customer", false, "language_code", "", 0}, {"Customer_Bank_Account", false, "language_code", "", 0}, {"Job_Queue", false, "notification_language", "", 0}, {"User", true, "language", "", 0}, {"Vendor", false, "language_code", "", 0}, {"Vendor_Bank_Account", false, "language_code", "", 0}},
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)
@@ -1903,6 +1903,13 @@ func (t *Language) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *Language) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *Language) SetFieldValue(no int, value any) bool {
@@ -1974,7 +1981,11 @@ func (t *Language) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Language", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Language", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

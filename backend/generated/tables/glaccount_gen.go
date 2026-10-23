@@ -2195,7 +2195,7 @@ func (t *GLAccount) renameReferences(field string, oldValue, newValue interface{
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}, {"Vendor_Posting_Group", false, "payables_account", "", 0}, {"Vendor_Posting_Group", false, "service_charge_acc", "", 0}, {"Vendor_Posting_Group", false, "payment_disc_acc", "", 0}, {"Vendor_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Vendor_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 0}},
+		"no": {{"Bank_Account_Posting_Group", false, "g_l_bank_account_no", "", 0}, {"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_account", "", 0}, {"FA_Posting_Group", false, "accum_depreciation_account", "", 0}, {"FA_Posting_Group", false, "write_down_account", "", 0}, {"FA_Posting_Group", false, "appreciation_account", "", 0}, {"FA_Posting_Group", false, "custom_1_account", "", 0}, {"FA_Posting_Group", false, "custom_2_account", "", 0}, {"FA_Posting_Group", false, "acq_cost_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "accum_depr_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "appreciation_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_1_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "gains_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "losses_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "book_value_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "sales_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "apprec_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "custom_1_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "maintenance_expense_account", "", 0}, {"FA_Posting_Group", false, "maintenance_bal_acc", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_bal_acc", "", 0}, {"FA_Posting_Group", false, "depreciation_expense_acc", "", 0}, {"FA_Posting_Group", false, "write_down_expense_acc", "", 0}, {"FA_Posting_Group", false, "appreciation_bal_account", "", 0}, {"FA_Posting_Group", false, "custom_1_expense_acc", "", 0}, {"FA_Posting_Group", false, "custom_2_expense_acc", "", 0}, {"FA_Posting_Group", false, "sales_bal_acc", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}, {"Vendor_Posting_Group", false, "payables_account", "", 0}, {"Vendor_Posting_Group", false, "service_charge_acc", "", 0}, {"Vendor_Posting_Group", false, "payment_disc_acc", "", 0}, {"Vendor_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Vendor_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -6512,6 +6512,35 @@ func (t *GLAccount) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *GLAccount) flowFieldValue(no int) (any, bool) {
+	switch no {
+	case 31:
+		return t.Balance_at_date, true
+	case 32:
+		return t.Net_change, true
+	case 36:
+		return t.Balance, true
+	case 47:
+		return t.Debit_amount, true
+	case 48:
+		return t.Credit_amount, true
+	case 60:
+		return t.Additional_currency_net_change, true
+	case 61:
+		return t.Add_currency_balance_at_date, true
+	case 62:
+		return t.Additional_currency_balance, true
+	case 64:
+		return t.Add_currency_debit_amount, true
+	case 65:
+		return t.Add_currency_credit_amount, true
+	case 12:
+		return t.Comment, true
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *GLAccount) SetFieldValue(no int, value any) bool {
@@ -6771,7 +6800,11 @@ func (t *GLAccount) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of G_L_Account", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of G_L_Account", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

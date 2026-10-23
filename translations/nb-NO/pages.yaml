@@ -274,3 +274,78 @@ pages:
       to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
       to_date_payments_lcy: "Betalinger (NOK)"
       to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"
+
+  # Bank pages
+  bank_account_card:
+    caption: "Bankkontokort"
+  bank_account_list:
+    caption: "Bankkontooversikt"
+  bank_account_ledger_entries:
+    caption: "Bankkontoposter"
+  bank_account_posting_groups:
+    caption: "Bankkontobokføringsgrupper"
+  check_ledger_entries:
+    caption: "Sjekkposter"
+  bank_account_statistics:
+    caption: "Bankkontostatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      this_period_name: "Periode"
+      this_period_net_change: "Bevegelse"
+      this_period_net_change_lcy: "Bevegelse (NOK)"
+      this_year_name: "Periode"
+      this_year_net_change: "Bevegelse"
+      this_year_net_change_lcy: "Bevegelse (NOK)"
+      last_year_name: "Periode"
+      last_year_net_change: "Bevegelse"
+      last_year_net_change_lcy: "Bevegelse (NOK)"
+      to_date_name: "Periode"
+      to_date_net_change: "Bevegelse"
+      to_date_net_change_lcy: "Bevegelse (NOK)"
+
+  # Fixed asset pages
+  fixed_asset_card:
+    caption: "Anleggskort"
+  fixed_asset_list:
+    caption: "Anleggsoversikt"
+  fixed_asset_statistics:
+    caption: "Anleggsstatistikk"
+  fa_ledger_entries:
+    caption: "Anleggsposter"
+  fixed_asset_setup:
+    caption: "Anleggsoppsett"
+  depreciation_book_card:
+    caption: "Avskrivningsprofilkort"
+  depreciation_book_list:
+    caption: "Avskrivningsprofiloversikt"
+  fa_posting_group_card:
+    caption: "Anleggsbokføringsgruppekort"
+  fa_posting_groups:
+    caption: "Anleggsbokføringsgrupper"
+  fa_classes:
+    caption: "Anleggsklasser"
+  fa_subclasses:
+    caption: "Anleggsunderklasser"
+  fa_locations:
+    caption: "Anleggslokasjoner"
+  fa_depreciation_books:
+    caption: "Anleggsavskrivningsprofiler"
+  maintenance_registration:
+    caption: "Vedlikeholdsregistrering"
+  maintenance_ledger_entries:
+    caption: "Vedlikeholdsposter"
+  maintenance:
+    caption: "Vedlikehold"
+  insurance_card:
+    caption: "Forsikringskort"
+  insurance_list:
+    caption: "Forsikringsoversikt"
+  ins_coverage_ledger_entries:
+    caption: "Forsikringsdekningsposter"
+  insurance_types:
+    caption: "Forsikringstyper"
+  main_asset_components:
+    caption: "Hovedeiendelskomponenter"
+  insurance_statistics:
+    caption: "Forsikringsstatistikk"
+    fields:  # the calculated field (OnAfterGetRecord)
+      over_underinsured: "Over-/underforsikret"

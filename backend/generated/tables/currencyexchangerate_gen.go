@@ -2340,6 +2340,13 @@ func (t *CurrencyExchangeRate) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *CurrencyExchangeRate) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *CurrencyExchangeRate) SetFieldValue(no int, value any) bool {
@@ -2432,7 +2439,11 @@ func (t *CurrencyExchangeRate) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Currency_Exchange_Rate", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Currency_Exchange_Rate", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

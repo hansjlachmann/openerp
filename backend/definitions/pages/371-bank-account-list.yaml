@@ -1,0 +1,130 @@
+page:
+  id: 371
+  type: List
+  name: Bank Account List
+  source_table: Bank_Account
+  caption: Bank Account List
+  card_page_id: 370
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 100
+
+        - source: name
+          width: 250
+
+        - source: post_code
+          width: 100
+          visible: false
+
+        - source: country_code
+          width: 100
+          visible: false
+
+        - source: phone_no
+          width: 150
+
+        - source: fax_no
+          width: 150
+          visible: false
+
+        - source: contact
+          width: 180
+
+        - source: bank_account_no
+          width: 160
+
+        - source: our_contact_code
+          width: 130
+          visible: false
+
+        - source: bank_acc_posting_group
+          width: 170
+          visible: false
+
+        - source: currency_code
+          width: 110
+
+        - source: language_code
+          width: 110
+          visible: false
+
+        - source: search_name
+          width: 200
+
+        - source: balance
+          width: 140
+          drilldown: 372
+          drilldown_filter_field: bank_account_no
+          drilldown_filter_value: "no"
+
+        - source: balance_lcy
+          width: 140
+          visible: false
+          drilldown: 372
+          drilldown_filter_field: bank_account_no
+          drilldown_filter_value: "no"
+
+        - source: blocked
+          width: 90
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 372
+      run_page_filter_field: bank_account_no
+      run_page_filter_value: "no"
+
+    - name: Check Ledger Entries
+      caption: Check Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 374
+      run_page_filter_field: bank_account_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 375
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "8"}   # Bank Account
+        - {field: "no", value: "no"}

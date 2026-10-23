@@ -34,6 +34,7 @@
 //	OnValidate_Amount_rounding_precision(rec *gtables.GeneralLedgerSetup) error
 //	OnValidate_Unit_amount_rounding_precision(rec *gtables.GeneralLedgerSetup) error
 //	OnValidate_Appln_rounding_precision(rec *gtables.GeneralLedgerSetup) error
+//	OnValidate_Bank_account_nos(rec *gtables.GeneralLedgerSetup) error
 
 package tables
 
@@ -135,7 +136,9 @@ type GeneralLedgerSetup struct {
 	Register_time      bool       `db:"register_time"`
 	Pmt_disc_excl_tax  bool       `db:"pmt_disc_excl_tax"`
 	// FlowField: Sum(CustomerLedgerEntry.remaining_amt_lcy)
-	Cust_balances_due              types.Decimal
+	Cust_balances_due types.Decimal
+	// FlowField: Sum(VendorLedgerEntry.remaining_amt_lcy)
+	Vendor_balances_due            types.Decimal
 	Unrealized_tax                 bool                                           `db:"unrealized_tax"`
 	Adjust_for_payment_disc        bool                                           `db:"adjust_for_payment_disc"`
 	Mark_cr_memos_as_corrections   bool                                           `db:"mark_cr_memos_as_corrections"`
@@ -155,6 +158,7 @@ type GeneralLedgerSetup struct {
 	Amount_rounding_precision      types.Decimal                                  `db:"amount_rounding_precision"`
 	Unit_amount_rounding_precision types.Decimal                                  `db:"unit_amount_rounding_precision"`
 	Appln_rounding_precision       types.Decimal                                  `db:"appln_rounding_precision"`
+	Bank_account_nos               types.Code                                     `db:"bank_account_nos"`
 	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
 	Date_filter string
 	// FlowFilter department_filter (types.Code): the filter expression FlowFields apply — not stored
@@ -283,6 +287,7 @@ var GeneralLedgerSetup_FieldNo = struct {
 	Register_time                  int
 	Pmt_disc_excl_tax              int
 	Cust_balances_due              int
+	Vendor_balances_due            int
 	Unrealized_tax                 int
 	Adjust_for_payment_disc        int
 	Mark_cr_memos_as_corrections   int
@@ -302,6 +307,7 @@ var GeneralLedgerSetup_FieldNo = struct {
 	Amount_rounding_precision      int
 	Unit_amount_rounding_precision int
 	Appln_rounding_precision       int
+	Bank_account_nos               int
 	Date_filter                    int
 	Department_filter              int
 	Project_filter                 int
@@ -312,6 +318,7 @@ var GeneralLedgerSetup_FieldNo = struct {
 	Register_time:                  4,
 	Pmt_disc_excl_tax:              28,
 	Cust_balances_due:              44,
+	Vendor_balances_due:            45,
 	Unrealized_tax:                 48,
 	Adjust_for_payment_disc:        49,
 	Mark_cr_memos_as_corrections:   56,
@@ -331,6 +338,7 @@ var GeneralLedgerSetup_FieldNo = struct {
 	Amount_rounding_precision:      73,
 	Unit_amount_rounding_precision: 74,
 	Appln_rounding_precision:       75,
+	Bank_account_nos:               63,
 	Date_filter:                    41,
 	Department_filter:              42,
 	Project_filter:                 43,
@@ -351,6 +359,8 @@ func (t *GeneralLedgerSetup) FieldNo(fieldName string) int {
 		return 28
 	case "cust_balances_due":
 		return 44
+	case "vendor_balances_due":
+		return 45
 	case "unrealized_tax":
 		return 48
 	case "adjust_for_payment_disc":
@@ -389,6 +399,8 @@ func (t *GeneralLedgerSetup) FieldNo(fieldName string) int {
 		return 74
 	case "appln_rounding_precision":
 		return 75
+	case "bank_account_nos":
+		return 63
 	case "date_filter":
 		return 41
 	case "department_filter":
@@ -414,6 +426,8 @@ func (t *GeneralLedgerSetup) FieldName(fieldNo int) string {
 		return "pmt_disc_excl_tax"
 	case 44:
 		return "cust_balances_due"
+	case 45:
+		return "vendor_balances_due"
 	case 48:
 		return "unrealized_tax"
 	case 49:
@@ -452,6 +466,8 @@ func (t *GeneralLedgerSetup) FieldName(fieldNo int) string {
 		return "unit_amount_rounding_precision"
 	case 75:
 		return "appln_rounding_precision"
+	case 63:
+		return "bank_account_nos"
 	case 41:
 		return "date_filter"
 	case 42:
@@ -631,6 +647,9 @@ type (
 	GeneralLedgerSetupOnValidate_Appln_rounding_precision interface {
 		OnValidate_Appln_rounding_precision(rec *GeneralLedgerSetup) error
 	}
+	GeneralLedgerSetupOnValidate_Bank_account_nos interface {
+		OnValidate_Bank_account_nos(rec *GeneralLedgerSetup) error
+	}
 )
 
 // generalLedgerSetupLogic is the registered business logic of General_Ledger_Setup, in
@@ -708,6 +727,8 @@ func generalLedgerSetupTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(GeneralLedgerSetupOnValidate_Unit_amount_rounding_precision)
 	case "OnValidate_Appln_rounding_precision":
 		_, ok = logic.(GeneralLedgerSetupOnValidate_Appln_rounding_precision)
+	case "OnValidate_Bank_account_nos":
+		_, ok = logic.(GeneralLedgerSetupOnValidate_Bank_account_nos)
 	default:
 		return false, false
 	}
@@ -803,6 +824,9 @@ func (t *GeneralLedgerSetup) CheckFields() error {
 	if err := tables.CheckDecimalRange(GeneralLedgerSetupTableName, "appln_rounding_precision", t.Appln_rounding_precision, "0", ""); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(GeneralLedgerSetupTableName, "bank_account_nos", string(t.Bank_account_nos), 10); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -848,6 +872,7 @@ func GetGeneralLedgerSetupTableSchema() string {
 		register_time INTEGER,
 		pmt_disc_excl_tax INTEGER,
 		cust_balances_due TEXT,
+		vendor_balances_due TEXT,
 		unrealized_tax INTEGER,
 		adjust_for_payment_disc INTEGER,
 		mark_cr_memos_as_corrections INTEGER,
@@ -866,7 +891,8 @@ func GetGeneralLedgerSetupTableSchema() string {
 		tax_exchange_rate_adjustment INTEGER CHECK (tax_exchange_rate_adjustment >= 0 AND tax_exchange_rate_adjustment <= 2),
 		amount_rounding_precision TEXT,
 		unit_amount_rounding_precision TEXT,
-		appln_rounding_precision TEXT
+		appln_rounding_precision TEXT,
+		bank_account_nos TEXT(10)
 	`
 }
 
@@ -879,6 +905,7 @@ func GetGeneralLedgerSetupPostgresTableSchema() string {
 		register_time BOOLEAN,
 		pmt_disc_excl_tax BOOLEAN,
 		cust_balances_due NUMERIC,
+		vendor_balances_due NUMERIC,
 		unrealized_tax BOOLEAN,
 		adjust_for_payment_disc BOOLEAN,
 		mark_cr_memos_as_corrections BOOLEAN,
@@ -897,7 +924,8 @@ func GetGeneralLedgerSetupPostgresTableSchema() string {
 		tax_exchange_rate_adjustment INTEGER CHECK (tax_exchange_rate_adjustment >= 0 AND tax_exchange_rate_adjustment <= 2),
 		amount_rounding_precision NUMERIC,
 		unit_amount_rounding_precision NUMERIC,
-		appln_rounding_precision NUMERIC
+		appln_rounding_precision NUMERIC,
+		bank_account_nos VARCHAR(10)
 	`
 }
 
@@ -1053,6 +1081,7 @@ func (t *GeneralLedgerSetup) StoreOldValues() {
 	t.oldValues["amount_rounding_precision"] = t.Amount_rounding_precision
 	t.oldValues["unit_amount_rounding_precision"] = t.Unit_amount_rounding_precision
 	t.oldValues["appln_rounding_precision"] = t.Appln_rounding_precision
+	t.oldValues["bank_account_nos"] = t.Bank_account_nos
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -1139,6 +1168,9 @@ func (t *GeneralLedgerSetup) XRec() *GeneralLedgerSetup {
 	if v, ok := t.oldValues["appln_rounding_precision"].(types.Decimal); ok {
 		x.Appln_rounding_precision = v
 	}
+	if v, ok := t.oldValues["bank_account_nos"].(types.Code); ok {
+		x.Bank_account_nos = v
+	}
 	return x
 }
 
@@ -1224,6 +1256,7 @@ func (t *GeneralLedgerSetup) GetByPK(primary_key types.Code) bool {
 	var amount_rounding_precisionNull sql.NullString
 	var unit_amount_rounding_precisionNull sql.NullString
 	var appln_rounding_precisionNull sql.NullString
+	var bank_account_nosNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -1231,7 +1264,7 @@ func (t *GeneralLedgerSetup) GetByPK(primary_key types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1262,6 +1295,7 @@ func (t *GeneralLedgerSetup) GetByPK(primary_key types.Code) bool {
 		&amount_rounding_precisionNull,
 		&unit_amount_rounding_precisionNull,
 		&appln_rounding_precisionNull,
+		&bank_account_nosNull,
 	)
 
 	if err != nil {
@@ -1299,6 +1333,7 @@ func (t *GeneralLedgerSetup) GetByPK(primary_key types.Code) bool {
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
 	t.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(unit_amount_rounding_precisionNull.String)
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
+	t.Bank_account_nos = types.NewCode(bank_account_nosNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1345,11 +1380,12 @@ func (t *GeneralLedgerSetup) Insert(runTrigger bool) bool {
 		t.Amount_rounding_precision,
 		t.Unit_amount_rounding_precision,
 		t.Appln_rounding_precision,
+		t.Bank_account_nos,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1409,10 +1445,11 @@ func (t *GeneralLedgerSetup) InsertAll(records []*GeneralLedgerSetup, runTrigger
 			r.Amount_rounding_precision,
 			r.Unit_amount_rounding_precision,
 			r.Appln_rounding_precision,
+			r.Bank_account_nos,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, GeneralLedgerSetupTableName)
-	columns := []string{"primary_key", "allow_posting_from", "allow_posting_to", "register_time", "pmt_disc_excl_tax", "unrealized_tax", "adjust_for_payment_disc", "mark_cr_memos_as_corrections", "local_address_format", "inv_rounding_precision_lcy", "inv_rounding_type_lcy", "local_cont_addr_format", "recalculate_sales_tax", "summarize_gl_entries", "amount_decimal_places", "unit_amount_decimal_places", "additional_reporting_currency", "vat_tolerance_percent", "emu_currency", "lcy_code", "tax_exchange_rate_adjustment", "amount_rounding_precision", "unit_amount_rounding_precision", "appln_rounding_precision"}
+	columns := []string{"primary_key", "allow_posting_from", "allow_posting_to", "register_time", "pmt_disc_excl_tax", "unrealized_tax", "adjust_for_payment_disc", "mark_cr_memos_as_corrections", "local_address_format", "inv_rounding_precision_lcy", "inv_rounding_type_lcy", "local_cont_addr_format", "recalculate_sales_tax", "summarize_gl_entries", "amount_decimal_places", "unit_amount_decimal_places", "additional_reporting_currency", "vat_tolerance_percent", "emu_currency", "lcy_code", "tax_exchange_rate_adjustment", "amount_rounding_precision", "unit_amount_rounding_precision", "appln_rounding_precision", "bank_account_nos"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -1548,6 +1585,10 @@ func (t *GeneralLedgerSetup) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "appln_rounding_precision = ?")
 			values = append(values, t.Appln_rounding_precision)
 		}
+		if t.hasFieldChanged("bank_account_nos") {
+			setClauses = append(setClauses, "bank_account_nos = ?")
+			values = append(values, t.Bank_account_nos)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -1601,6 +1642,8 @@ func (t *GeneralLedgerSetup) Modify(runTrigger bool) bool {
 		values = append(values, t.Unit_amount_rounding_precision)
 		setClauses = append(setClauses, "appln_rounding_precision = ?")
 		values = append(values, t.Appln_rounding_precision)
+		setClauses = append(setClauses, "bank_account_nos = ?")
+		values = append(values, t.Bank_account_nos)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1749,6 +1792,10 @@ func (t *GeneralLedgerSetup) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Appln_rounding_precision.Equal(old)
 		}
+	case "bank_account_nos":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Bank_account_nos.Equal(old)
+		}
 	}
 
 	return false
@@ -1805,6 +1852,7 @@ func (t *GeneralLedgerSetup) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
 		t.calcFlowField_cust_balances_due()
+		t.calcFlowField_vendor_balances_due()
 		return
 	}
 
@@ -1813,6 +1861,8 @@ func (t *GeneralLedgerSetup) CalcFields(fieldNames ...string) {
 		switch fieldName {
 		case "cust_balances_due":
 			t.calcFlowField_cust_balances_due()
+		case "vendor_balances_due":
+			t.calcFlowField_vendor_balances_due()
 		}
 	}
 }
@@ -1821,6 +1871,12 @@ func (t *GeneralLedgerSetup) CalcFields(fieldNames ...string) {
 // CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
 func (t *GeneralLedgerSetup) calcFlowField_cust_balances_due() {
 	t.Cust_balances_due = t.calcSum_cust_balances_due()
+}
+
+// calcFlowField_vendor_balances_due calculates the vendor_balances_due FlowField
+// CalcFormula: Sum(VendorLedgerEntry.remaining_amt_lcy)
+func (t *GeneralLedgerSetup) calcFlowField_vendor_balances_due() {
+	t.Vendor_balances_due = t.calcSum_vendor_balances_due()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -1838,6 +1894,8 @@ func (t *GeneralLedgerSetup) CalcFieldsForRecords(records []map[string]interface
 		switch fieldName {
 		case "cust_balances_due":
 			t.calcForRecords_cust_balances_due(records)
+		case "vendor_balances_due":
+			t.calcForRecords_vendor_balances_due(records)
 		}
 	}
 }
@@ -1851,6 +1909,18 @@ func (t *GeneralLedgerSetup) calcForRecords_cust_balances_due(records []map[stri
 		r.FromMap(rec)
 		r.calcFlowField_cust_balances_due()
 		rec["cust_balances_due"] = r.Cust_balances_due.String()
+	}
+}
+
+// calcForRecords_vendor_balances_due calculates the vendor_balances_due FlowField for a set of records
+// CalcFormula: Sum(VendorLedgerEntry.remaining_amt_lcy)
+func (t *GeneralLedgerSetup) calcForRecords_vendor_balances_due(records []map[string]interface{}) {
+	// No single key field to group by: calculate per record
+	for _, rec := range records {
+		r := &GeneralLedgerSetup{db: t.db, company: t.company, dbType: t.dbType}
+		r.FromMap(rec)
+		r.calcFlowField_vendor_balances_due()
+		rec["vendor_balances_due"] = r.Vendor_balances_due.String()
 	}
 }
 
@@ -1907,6 +1977,64 @@ func (t *GeneralLedgerSetup) calcSum_cust_balances_due() types.Decimal {
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
 		fmt.Printf("Error: Failed to calculate sum for cust_balances_due: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *GeneralLedgerSetup) calcSum_vendor_balances_due() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, VendorLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, VendorLedgerEntryTableName, "vendor_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, VendorLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "open = ?")
+	args = append(args, true)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for vendor_balances_due: %v\n", err)
 		return types.ZeroDecimal()
 	}
 
@@ -2030,6 +2158,8 @@ func (t *GeneralLedgerSetup) FlowFieldFilterKind(field string) (flowfilter.Kind,
 	switch strings.ToLower(field) {
 	case "cust_balances_due":
 		return flowfilter.KindDecimal, true
+	case "vendor_balances_due":
+		return flowfilter.KindDecimal, true
 	}
 	return "", false
 }
@@ -2080,6 +2210,46 @@ func (t *GeneralLedgerSetup) flowFieldExpr(field string) (string, []interface{})
 			where = strings.Join(whereClauses, " AND ")
 		}
 		agg := "COALESCE(SUM(remaining_amt_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "vendor_balances_due":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, VendorLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, VendorLedgerEntryTableName, "vendor_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, VendorLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(remaining_amt_lcy), 0)"
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
 	}
 	return "NULL", nil
@@ -2186,6 +2356,8 @@ func (t *GeneralLedgerSetup) columnName(fieldName string) (string, bool) {
 		return "unit_amount_rounding_precision", true
 	case strings.ToLower("appln_rounding_precision"):
 		return "appln_rounding_precision", true
+	case strings.ToLower("bank_account_nos"):
+		return "bank_account_nos", true
 	}
 	return "", false
 }
@@ -2464,7 +2636,7 @@ func (t *GeneralLedgerSetup) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2493,6 +2665,7 @@ func (t *GeneralLedgerSetup) FindFirst() bool {
 	var amount_rounding_precisionNull sql.NullString
 	var unit_amount_rounding_precisionNull sql.NullString
 	var appln_rounding_precisionNull sql.NullString
+	var bank_account_nosNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&primary_keyNull,
@@ -2519,6 +2692,7 @@ func (t *GeneralLedgerSetup) FindFirst() bool {
 		&amount_rounding_precisionNull,
 		&unit_amount_rounding_precisionNull,
 		&appln_rounding_precisionNull,
+		&bank_account_nosNull,
 	)
 
 	if err != nil {
@@ -2554,6 +2728,7 @@ func (t *GeneralLedgerSetup) FindFirst() bool {
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
 	t.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(unit_amount_rounding_precisionNull.String)
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
+	t.Bank_account_nos = types.NewCode(bank_account_nosNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2568,7 +2743,7 @@ func (t *GeneralLedgerSetup) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2597,6 +2772,7 @@ func (t *GeneralLedgerSetup) FindLast() bool {
 	var amount_rounding_precisionNull sql.NullString
 	var unit_amount_rounding_precisionNull sql.NullString
 	var appln_rounding_precisionNull sql.NullString
+	var bank_account_nosNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&primary_keyNull,
@@ -2623,6 +2799,7 @@ func (t *GeneralLedgerSetup) FindLast() bool {
 		&amount_rounding_precisionNull,
 		&unit_amount_rounding_precisionNull,
 		&appln_rounding_precisionNull,
+		&bank_account_nosNull,
 	)
 
 	if err != nil {
@@ -2658,6 +2835,7 @@ func (t *GeneralLedgerSetup) FindLast() bool {
 	t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
 	t.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(unit_amount_rounding_precisionNull.String)
 	t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
+	t.Bank_account_nos = types.NewCode(bank_account_nosNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2706,7 +2884,7 @@ func (t *GeneralLedgerSetup) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2799,6 +2977,7 @@ func (t *GeneralLedgerSetup) Next(steps ...int) bool {
 		var amount_rounding_precisionNull sql.NullString
 		var unit_amount_rounding_precisionNull sql.NullString
 		var appln_rounding_precisionNull sql.NullString
+		var bank_account_nosNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&primary_keyNull,
@@ -2825,6 +3004,7 @@ func (t *GeneralLedgerSetup) Next(steps ...int) bool {
 			&amount_rounding_precisionNull,
 			&unit_amount_rounding_precisionNull,
 			&appln_rounding_precisionNull,
+			&bank_account_nosNull,
 		)
 
 		if err != nil {
@@ -2859,6 +3039,7 @@ func (t *GeneralLedgerSetup) Next(steps ...int) bool {
 		t.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
 		t.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(unit_amount_rounding_precisionNull.String)
 		t.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
+		t.Bank_account_nos = types.NewCode(bank_account_nosNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -2908,7 +3089,7 @@ func (t *GeneralLedgerSetup) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2954,6 +3135,7 @@ func (t *GeneralLedgerSetup) FindSetBuffered() bool {
 		var amount_rounding_precisionNull sql.NullString
 		var unit_amount_rounding_precisionNull sql.NullString
 		var appln_rounding_precisionNull sql.NullString
+		var bank_account_nosNull sql.NullString
 
 		err := rows.Scan(
 			&primary_keyNull,
@@ -2980,6 +3162,7 @@ func (t *GeneralLedgerSetup) FindSetBuffered() bool {
 			&amount_rounding_precisionNull,
 			&unit_amount_rounding_precisionNull,
 			&appln_rounding_precisionNull,
+			&bank_account_nosNull,
 		)
 
 		if err != nil {
@@ -3012,6 +3195,7 @@ func (t *GeneralLedgerSetup) FindSetBuffered() bool {
 		record.Amount_rounding_precision, _ = types.NewDecimalFromString(amount_rounding_precisionNull.String)
 		record.Unit_amount_rounding_precision, _ = types.NewDecimalFromString(unit_amount_rounding_precisionNull.String)
 		record.Appln_rounding_precision, _ = types.NewDecimalFromString(appln_rounding_precisionNull.String)
+		record.Bank_account_nos = types.NewCode(bank_account_nosNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -3046,6 +3230,7 @@ func (t *GeneralLedgerSetup) copyFromBuffered(record *GeneralLedgerSetup) {
 	t.Register_time = record.Register_time
 	t.Pmt_disc_excl_tax = record.Pmt_disc_excl_tax
 	t.Cust_balances_due = record.Cust_balances_due
+	t.Vendor_balances_due = record.Vendor_balances_due
 	t.Unrealized_tax = record.Unrealized_tax
 	t.Adjust_for_payment_disc = record.Adjust_for_payment_disc
 	t.Mark_cr_memos_as_corrections = record.Mark_cr_memos_as_corrections
@@ -3065,6 +3250,7 @@ func (t *GeneralLedgerSetup) copyFromBuffered(record *GeneralLedgerSetup) {
 	t.Amount_rounding_precision = record.Amount_rounding_precision
 	t.Unit_amount_rounding_precision = record.Unit_amount_rounding_precision
 	t.Appln_rounding_precision = record.Appln_rounding_precision
+	t.Bank_account_nos = record.Bank_account_nos
 	t.StoreOldValues()
 }
 
@@ -3829,6 +4015,28 @@ func (t *GeneralLedgerSetup) ValidateField(fieldName string, value interface{}) 
 			}
 		}
 		return nil
+	case "bank_account_nos":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Bank_account_nos = v
+		} else if v, ok := value.(string); ok {
+			t.Bank_account_nos = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field bank_account_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "bank_account_nos"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(GeneralLedgerSetupOnValidate_Bank_account_nos); ok {
+				if err := trg.OnValidate_Bank_account_nos(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -3889,6 +4097,19 @@ func (t *GeneralLedgerSetup) FieldValue(no int) (any, bool) {
 		return t.Unit_amount_rounding_precision, true
 	case 75:
 		return t.Appln_rounding_precision, true
+	case 63:
+		return t.Bank_account_nos, true
+	}
+	return nil, false
+}
+
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *GeneralLedgerSetup) flowFieldValue(no int) (any, bool) {
+	switch no {
+	case 44:
+		return t.Cust_balances_due, true
+	case 45:
+		return t.Vendor_balances_due, true
 	}
 	return nil, false
 }
@@ -4037,6 +4258,15 @@ func (t *GeneralLedgerSetup) SetFieldValue(no int, value any) bool {
 			t.Appln_rounding_precision = v
 			return true
 		}
+	case 63:
+		if v, ok := value.(types.Code); ok {
+			t.Bank_account_nos = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Bank_account_nos = types.NewCode(v)
+			return true
+		}
 	}
 	return false
 }
@@ -4077,7 +4307,11 @@ func (t *GeneralLedgerSetup) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of General_Ledger_Setup", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of General_Ledger_Setup", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -4536,6 +4770,8 @@ func (t *GeneralLedgerSetup) columnValue(column string) (interface{}, bool) {
 		return t.Unit_amount_rounding_precision, true
 	case "appln_rounding_precision":
 		return t.Appln_rounding_precision, true
+	case "bank_account_nos":
+		return t.Bank_account_nos, true
 	}
 	return nil, false
 }
@@ -4613,6 +4849,7 @@ func (t *GeneralLedgerSetup) Init() {
 	t.Amount_rounding_precision = *new(types.Decimal)
 	t.Unit_amount_rounding_precision = *new(types.Decimal)
 	t.Appln_rounding_precision = *new(types.Decimal)
+	t.Bank_account_nos = *new(types.Code)
 	t.applyDefaults()
 }
 
@@ -4653,7 +4890,9 @@ func (t *GeneralLedgerSetup) ToMap() map[string]interface{} {
 		"register_time":      t.Register_time,
 		"pmt_disc_excl_tax":  t.Pmt_disc_excl_tax,
 		// FlowField: cust_balances_due
-		"cust_balances_due":              t.Cust_balances_due.String(),
+		"cust_balances_due": t.Cust_balances_due.String(),
+		// FlowField: vendor_balances_due
+		"vendor_balances_due":            t.Vendor_balances_due.String(),
 		"unrealized_tax":                 t.Unrealized_tax,
 		"adjust_for_payment_disc":        t.Adjust_for_payment_disc,
 		"mark_cr_memos_as_corrections":   t.Mark_cr_memos_as_corrections,
@@ -4673,6 +4912,7 @@ func (t *GeneralLedgerSetup) ToMap() map[string]interface{} {
 		"amount_rounding_precision":      t.Amount_rounding_precision.String(),
 		"unit_amount_rounding_precision": t.Unit_amount_rounding_precision.String(),
 		"appln_rounding_precision":       t.Appln_rounding_precision.String(),
+		"bank_account_nos":               t.Bank_account_nos.String(),
 	}
 }
 
@@ -4881,6 +5121,11 @@ func (t *GeneralLedgerSetup) FromMap(data map[string]interface{}) {
 			t.Appln_rounding_precision = types.NewDecimalFromInt(val)
 		}
 	}
+	if v, ok := data["bank_account_nos"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Bank_account_nos = types.NewCode(s)
+		}
+	}
 }
 
 // UpdateFromMap updates only the provided fields (for PATCH-style updates)
@@ -4955,6 +5200,16 @@ func (t *GeneralLedgerSetup) GetFields() []tables.FieldInfo {
 		{
 			No:         44,
 			Name:       "cust_balances_due",
+			Type:       tables.FieldTypeDecimal,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  true,
+		},
+		{
+			No:         45,
+			Name:       "vendor_balances_due",
 			Type:       tables.FieldTypeDecimal,
 			Length:     0,
 			Required:   false,
@@ -5157,6 +5412,16 @@ func (t *GeneralLedgerSetup) GetFields() []tables.FieldInfo {
 			FlowField:     false,
 			DecimalPlaces: "2:2",
 		},
+		{
+			No:         63,
+			Name:       "bank_account_nos",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -5199,6 +5464,7 @@ func (t *GeneralLedgerSetup) GetFlowFilterFields() []tables.FlowFilterFieldInfo 
 func (t *GeneralLedgerSetup) GetFlowFields() []string {
 	return []string{
 		"cust_balances_due",
+		"vendor_balances_due",
 	}
 }
 
@@ -5222,6 +5488,16 @@ func (t *GeneralLedgerSetup) GetTableRelationFields() map[string]tables.TableRel
 			LookupColumns: []tables.LookupColumnInfo{
 				{Source: "code", Width: 80},
 				{Source: "description", Width: 200},
+			},
+			SearchTimeout: 0,
+		},
+		"bank_account_nos": {
+			Table:        "No_Series",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
 			},
 			SearchTimeout: 0,
 		},

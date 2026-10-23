@@ -58,7 +58,7 @@ func TestSyncInstalledApps(t *testing.T) {
 	if !rec.Get(types.NewText(base.ID)) {
 		t.Fatal("installed app not written")
 	}
-	if rec.Name.String() != base.Name || rec.Object_series.String() != "1–999" || rec.System_tables.String() != "2000000000–2000000199" {
+	if rec.Name.String() != base.Name || rec.Object_series.String() != "1–999, 5600–5699" || rec.System_tables.String() != "2000000000–2000000199" {
 		t.Errorf("row %v", rec.ToMap())
 	}
 	if n := rec.Count(); n != 1 {

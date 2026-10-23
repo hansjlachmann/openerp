@@ -1,0 +1,39 @@
+page:
+  id: 5617
+  type: List
+  name: FA Locations
+  source_table: FA_Location
+  caption: FA Locations
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: name
+          width: 300
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

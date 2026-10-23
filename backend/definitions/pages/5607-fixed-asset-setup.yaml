@@ -1,0 +1,34 @@
+page:
+  id: 5607
+  type: Card
+  name: Fixed Asset Setup
+  source_table: FA_Setup
+  caption: Fixed Asset Setup
+  # setup table: opens on its single record
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: default_depr_book
+          - source: allow_posting_to_main_assets
+          - source: allow_fa_posting_from
+          - source: allow_fa_posting_to
+          - source: insurance_depr_book
+          - source: automatic_insurance_posting
+
+      - name: Numbering
+        caption: Numbering
+        fields:
+          - source: fixed_asset_nos
+          - source: insurance_nos
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true

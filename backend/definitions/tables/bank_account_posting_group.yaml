@@ -1,0 +1,33 @@
+table:
+  id: 277
+  name: "Bank_Account_Posting_Group"
+  caption: Bank Account Posting Group
+  description: "Bank account posting groups, the G/L account of a bank account (table 277)"
+  lookup_page_id: 373
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: g_l_bank_account_no
+      no: 2
+      type: types.Code
+      db_name: g_l_bank_account_no
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

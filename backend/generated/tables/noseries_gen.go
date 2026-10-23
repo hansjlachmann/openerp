@@ -946,7 +946,7 @@ func (t *NoSeries) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Purchases_Payables_Setup", false, "vendor_nos", "", 0}, {"Purchases_Payables_Setup", false, "quote_nos", "", 0}, {"Purchases_Payables_Setup", false, "order_nos", "", 0}, {"Purchases_Payables_Setup", false, "invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_receipt_nos", "", 0}, {"Purchases_Payables_Setup", false, "blanket_order_nos", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}, {"Vendor", false, "no_series", "", 0}},
+		"code": {{"Bank_Account", false, "no_series", "", 0}, {"Customer", false, "no_series", "", 0}, {"FA_Setup", false, "fixed_asset_nos", "", 0}, {"FA_Setup", false, "insurance_nos", "", 0}, {"FA_Ledger_Entry", false, "no_series", "", 0}, {"Fixed_Asset", false, "no_series", "", 0}, {"General_Ledger_Setup", false, "bank_account_nos", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "no_series", "", 0}, {"Insurance", false, "no_series", "", 0}, {"Maintenance_Ledger_Entry", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Purchases_Payables_Setup", false, "vendor_nos", "", 0}, {"Purchases_Payables_Setup", false, "quote_nos", "", 0}, {"Purchases_Payables_Setup", false, "order_nos", "", 0}, {"Purchases_Payables_Setup", false, "invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_receipt_nos", "", 0}, {"Purchases_Payables_Setup", false, "blanket_order_nos", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}, {"Vendor", false, "no_series", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2254,6 +2254,15 @@ func (t *NoSeries) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *NoSeries) flowFieldValue(no int) (any, bool) {
+	switch no {
+	case 900:
+		return t.No_of_lines, true
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *NoSeries) SetFieldValue(no int, value any) bool {
@@ -2331,7 +2340,11 @@ func (t *NoSeries) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of No_Series", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of No_Series", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

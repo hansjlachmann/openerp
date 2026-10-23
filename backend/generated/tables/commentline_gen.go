@@ -2173,6 +2173,13 @@ func (t *CommentLine) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *CommentLine) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *CommentLine) SetFieldValue(no int, value any) bool {
@@ -2259,7 +2266,11 @@ func (t *CommentLine) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Comment_Line", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Comment_Line", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -2931,6 +2942,26 @@ func (t *CommentLine) GetTableRelationFields() map[string]tables.TableRelationIn
 				{Field: "table_name", Value: 1, Relation: tables.TableRelationInfo{
 					Table: "Customer", Field: "no", DisplayField: "",
 					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "table_name", Value: 2, Relation: tables.TableRelationInfo{
+					Table: "Vendor", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "table_name", Value: 8, Relation: tables.TableRelationInfo{
+					Table: "Bank_Account", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "table_name", Value: 10, Relation: tables.TableRelationInfo{
+					Table: "Fixed_Asset", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "description", Width: 250}},
+					SearchTimeout: 0,
+				}},
+				{Field: "table_name", Value: 11, Relation: tables.TableRelationInfo{
+					Table: "Insurance", Field: "no", DisplayField: "",
+					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "description", Width: 250}},
 					SearchTimeout: 0,
 				}},
 			},

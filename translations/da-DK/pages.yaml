@@ -274,3 +274,78 @@ pages:
       to_date_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
       to_date_payments_lcy: "Betalinger (RV)"
       to_date_reminder_amounts_lcy: "Rykkerbeløb (RV)"
+
+  # Bank pages
+  bank_account_card:
+    caption: "Bankkontokort"
+  bank_account_list:
+    caption: "Bankkontooversigt"
+  bank_account_ledger_entries:
+    caption: "Bankkontoposter"
+  bank_account_posting_groups:
+    caption: "Bankkontobogføringsgrupper"
+  check_ledger_entries:
+    caption: "Checkposter"
+  bank_account_statistics:
+    caption: "Bankkontostatistik"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      this_period_name: "Periode"
+      this_period_net_change: "Bevægelse"
+      this_period_net_change_lcy: "Bevægelse (RV)"
+      this_year_name: "Periode"
+      this_year_net_change: "Bevægelse"
+      this_year_net_change_lcy: "Bevægelse (RV)"
+      last_year_name: "Periode"
+      last_year_net_change: "Bevægelse"
+      last_year_net_change_lcy: "Bevægelse (RV)"
+      to_date_name: "Periode"
+      to_date_net_change: "Bevægelse"
+      to_date_net_change_lcy: "Bevægelse (RV)"
+
+  # Fixed asset pages
+  fixed_asset_card:
+    caption: "Anlægskort"
+  fixed_asset_list:
+    caption: "Anlægsoversigt"
+  fixed_asset_statistics:
+    caption: "Anlægsstatistik"
+  fa_ledger_entries:
+    caption: "Anlægsposter"
+  fixed_asset_setup:
+    caption: "Anlægsopsætning"
+  depreciation_book_card:
+    caption: "Afskrivningsprofilkort"
+  depreciation_book_list:
+    caption: "Afskrivningsprofiloversigt"
+  fa_posting_group_card:
+    caption: "Anlægsbogføringsgruppekort"
+  fa_posting_groups:
+    caption: "Anlægsbogføringsgrupper"
+  fa_classes:
+    caption: "Anlægsklasser"
+  fa_subclasses:
+    caption: "Anlægsunderklasser"
+  fa_locations:
+    caption: "Anlægsplaceringer"
+  fa_depreciation_books:
+    caption: "Anlægsafskrivningsprofiler"
+  maintenance_registration:
+    caption: "Vedligeholdelsesregistrering"
+  maintenance_ledger_entries:
+    caption: "Vedligeholdelsesposter"
+  maintenance:
+    caption: "Vedligeholdelse"
+  insurance_card:
+    caption: "Forsikringskort"
+  insurance_list:
+    caption: "Forsikringsoversigt"
+  ins_coverage_ledger_entries:
+    caption: "Forsikringsdækningsposter"
+  insurance_types:
+    caption: "Forsikringstyper"
+  main_asset_components:
+    caption: "Hovedaktivkomponenter"
+  insurance_statistics:
+    caption: "Forsikringsstatistik"
+    fields:  # the calculated field (OnAfterGetRecord)
+      over_underinsured: "Over-/underforsikret"

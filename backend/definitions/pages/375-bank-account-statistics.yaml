@@ -1,0 +1,84 @@
+page:
+  id: 375
+  type: Card
+  name: Bank Account Statistics
+  source_table: Bank_Account   # opened from the Bank Account Card and List (F7) on one bank account
+  caption: Bank Account Statistics
+  editable: false
+
+  # The calculated fields are filled by the page's OnAfterGetRecord trigger
+  # (business-logic/pages/bankaccountstatistics.go); their captions are pages.bank_account_statistics.fields.*
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+          - source: name
+          - source: balance
+            drilldown: 372
+            drilldown_filter_field: bank_account_no
+            drilldown_filter_value: "no"
+          - source: balance_lcy
+          - source: min_balance
+          - source: currency_code
+
+      - name: This Period
+        caption: This Period
+        fields:
+          - source: this_period_name
+            calculated: true
+            type: types.Text
+          - source: this_period_net_change
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_net_change_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: This Year
+        caption: This Year
+        fields:
+          - source: this_year_name
+            calculated: true
+            type: types.Text
+          - source: this_year_net_change
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_net_change_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: Last Year
+        caption: Last Year
+        fields:
+          - source: last_year_name
+            calculated: true
+            type: types.Text
+          - source: last_year_net_change
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_net_change_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: To Date
+        caption: To Date
+        fields:
+          - source: to_date_name
+            calculated: true
+            type: types.Text
+          - source: to_date_net_change
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_net_change_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"

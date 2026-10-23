@@ -4894,6 +4894,19 @@ func (t *{{ .StructName }}) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *{{ .StructName }}) flowFieldValue(no int) (any, bool) {
+	switch no {
+{{- range .Table.Fields }}
+{{- if .FlowField }}
+	case {{ .No }}:
+		return t.{{ upperFirst .Name }}, true
+{{- end }}
+{{- end }}
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *{{ .StructName }}) SetFieldValue(no int, value any) bool {
@@ -4971,7 +4984,11 @@ func (t *{{ .StructName }}) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of {{ .Table.Name }}", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of {{ .Table.Name }}", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

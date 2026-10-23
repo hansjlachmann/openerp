@@ -8,6 +8,12 @@ common:
 
   # Common actions
   actions:
+    depreciation_books: "Depreciation Books"
+    maintenance_ledger_entries: "Maintenance Ledger Entries"
+    main_asset_components: "Main Asset Components"
+    maintenance_registration: "Maintenance Registration"
+    coverage_ledger_entries: "Coverage Ledger Entries"
+    check_ledger_entries: "Check Ledger Entries"
     order_addresses: "Order Addresses"
     statistics: "Statistics"
     comments: "Comments"
@@ -58,6 +64,15 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    maintenance: "Maintenance"
+    depreciation_books: "Depreciation Books"
+    amounts: "Amounts"
+    last_fa_posting_date: "Last FA Posting Date"
+    disposal: "Disposal"
+    balancing_account: "Balancing Account"
+    integration: "Integration"
+    duplication: "Duplication"
+    bank: "Bank"
     receiving: "Receiving"
     this_period: "This Period"
     this_year: "This Year"
@@ -94,6 +109,21 @@ common:
 
   # Menu items
   menu:
+    fixed_assets: "Fixed Assets"
+    fa_ledger_entries: "FA Ledger Entries"
+    maintenance_ledger_entries: "Maintenance Ledger Entries"
+    insurance: "Insurance"
+    ins_coverage_ledger_entries: "Ins. Coverage Ledger Entries"
+    fixed_asset_setup: "Fixed Asset Setup"
+    depreciation_books: "Depreciation Books"
+    fa_posting_groups: "FA Posting Groups"
+    fa_classes: "FA Classes"
+    fa_subclasses: "FA Subclasses"
+    fa_locations: "FA Locations"
+    maintenance: "Maintenance"
+    insurance_types: "Insurance Types"
+    bank_account_ledger_entries: "Bank Account Ledger Entries"
+    bank_account_posting_groups: "Bank Account Posting Groups"
     vendors: "Vendors"
     vendor_ledger_entries: "Vendor Ledger Entries"
     purchases_payables_setup: "Purchases & Payables Setup"

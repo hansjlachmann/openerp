@@ -1,0 +1,84 @@
+page:
+  id: 5612
+  type: Card
+  name: FA Posting Group Card
+  source_table: FA_Posting_Group
+  caption: FA Posting Group Card
+  list_page_id: 5613
+  enable_navigation: true
+  focus_field: code
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+          - source: acquisition_cost_account
+          - source: accum_depreciation_account
+          - source: write_down_account
+          - source: appreciation_account
+          - source: custom_1_account
+          - source: custom_2_account
+          - source: maintenance_expense_account
+
+      - name: Disposal
+        caption: Disposal
+        fields:
+          - source: acq_cost_acc_on_disposal
+          - source: accum_depr_acc_on_disposal
+          - source: write_down_acc_on_disposal
+          - source: appreciation_acc_on_disposal
+          - source: custom_1_account_on_disposal
+          - source: custom_2_account_on_disposal
+          - source: gains_acc_on_disposal
+          - source: losses_acc_on_disposal
+          - source: book_value_acc_on_disposal
+          - source: sales_acc_on_disposal
+          - source: write_down_bal_acc_on_disp
+          - source: apprec_bal_acc_on_disp
+          - source: custom_1_bal_acc_on_disposal
+          - source: custom_2_bal_acc_on_disposal
+
+      - name: Balancing Account
+        caption: Balancing Account
+        fields:
+          - source: acquisition_cost_bal_acc
+          - source: depreciation_expense_acc
+          - source: write_down_expense_acc
+          - source: appreciation_bal_account
+          - source: custom_1_expense_acc
+          - source: custom_2_expense_acc
+          - source: sales_bal_acc
+          - source: maintenance_bal_acc
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 5613
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

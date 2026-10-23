@@ -1,0 +1,578 @@
+table:
+  id: 270
+  name: "Bank_Account"
+  caption: Bank Account
+  description: "Bank accounts (table 270)"
+  data_caption_fields: [no, name]
+  auto_key: true   # OnInsert gives a bank account without No. the next number of its series
+  lookup_page_id: 371
+  # Left out: 94 Balance Last Statement asks before a change (no dialog in table triggers yet);
+  # 108/109 Check Report ID/Name (Object table); 10005–10011 (local field series)
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: search_name
+      no: 3
+      type: types.Code
+      db_name: search_name
+      length: 50
+
+    - name: name_2
+      no: 4
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 5
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 6
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 7
+      type: types.Text
+      db_name: city
+      length: 50
+
+    - name: contact
+      no: 8
+      type: types.Text
+      db_name: contact
+      length: 50
+
+    - name: phone_no
+      no: 9
+      type: types.Text
+      db_name: phone_no
+      length: 30
+
+    - name: telex_no
+      no: 10
+      type: types.Text
+      db_name: telex_no
+      length: 20
+
+    - name: bank_account_no
+      no: 13
+      type: types.Text
+      db_name: bank_account_no
+      length: 30
+
+    - name: transit_no
+      no: 14
+      type: types.Text
+      db_name: transit_no
+      length: 20
+
+    - name: territory_code
+      no: 15
+      type: types.Code
+      db_name: territory_code
+      length: 10
+      table_relation:
+        table: Territory
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 16
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 17
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: chain_name
+      no: 18
+      type: types.Code
+      db_name: chain_name
+      length: 10
+
+    - name: min_balance
+      no: 20
+      type: types.Decimal
+      db_name: min_balance
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: bank_acc_posting_group
+      no: 21
+      type: types.Code
+      db_name: bank_acc_posting_group
+      length: 10
+      table_relation:
+        table: Bank_Account_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: g_l_bank_account_no
+            width: 250
+
+    - name: currency_code
+      no: 22
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: language_code
+      no: 24
+      type: types.Code
+      db_name: language_code
+      length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: statistics_group
+      no: 26
+      type: int
+      db_name: statistics_group
+
+    - name: our_contact_code
+      no: 29
+      type: types.Code
+      db_name: our_contact_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: country_code
+      no: 35
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: comment
+      no: 38
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 8
+        - field: no
+          type: field
+          value: no
+
+    - name: blocked
+      no: 39
+      type: bool
+      db_name: blocked
+
+    - name: last_statement_no
+      no: 41
+      type: types.Code
+      db_name: last_statement_no
+      length: 20
+
+    - name: last_date_modified
+      no: 54
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: date_filter
+      no: 55
+      type: types.Date
+      flow_filter: true
+
+    - name: department_filter
+      no: 56
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: project_filter
+      no: 57
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: balance
+      no: 58
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
+    - name: balance_lcy
+      no: 59
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount_lcy
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
+    - name: net_change
+      no: 60
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: net_change_lcy
+      no: 61
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount_lcy
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: fax_no
+      no: 84
+      type: types.Text
+      db_name: fax_no
+      length: 30
+
+    - name: telex_answer_back
+      no: 85
+      type: types.Text
+      db_name: telex_answer_back
+      length: 20
+
+    - name: picture
+      no: 89
+      type: "[]byte"
+      db_name: picture
+
+    - name: post_code
+      no: 91
+      type: types.Code
+      db_name: post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false   # any post code is accepted; a known one gives the city
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: state
+      no: 92
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: last_check_no
+      no: 93
+      type: types.Code
+      db_name: last_check_no
+      length: 20
+
+    - name: balance_last_statement
+      no: 94
+      type: types.Decimal
+      db_name: balance_last_statement
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: balance_at_date
+      no: 95
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+          upper_limit: true
+
+    - name: balance_at_date_lcy
+      no: 96
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: amount_lcy
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+          upper_limit: true
+
+    - name: debit_amount
+      no: 97
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: debit_amount
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: credit_amount
+      no: 98
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: credit_amount
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: debit_amount_lcy
+      no: 99
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: debit_amount_lcy
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: credit_amount_lcy
+      no: 100
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: BankAccountLedgerEntry
+      source_field: credit_amount_lcy
+      flow_filters:
+        - field: bank_account_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: bank_branch_no
+      no: 101
+      type: types.Text
+      db_name: bank_branch_no
+      length: 20
+
+    - name: e_mail
+      no: 102
+      type: types.Text
+      db_name: e_mail
+      length: 80
+
+    - name: home_page
+      no: 103
+      type: types.Text
+      db_name: home_page
+      length: 80
+
+    - name: no_series
+      no: 107
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_name
+      fields: [search_name]
+    - name: bank_acc_posting_group
+      fields: [bank_acc_posting_group]
+    - name: currency_code
+      fields: [currency_code]
+    - name: country_code
+      fields: [country_code]

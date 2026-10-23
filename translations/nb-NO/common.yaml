@@ -8,6 +8,12 @@ common:
 
   # Common actions
   actions:
+    depreciation_books: "Avskrivningsprofiler"
+    maintenance_ledger_entries: "Vedlikeholdsposter"
+    main_asset_components: "Hovedeiendelskomponenter"
+    maintenance_registration: "Vedlikeholdsregistrering"
+    coverage_ledger_entries: "Dekningsposter"
+    check_ledger_entries: "Sjekkposter"
     order_addresses: "Bestillingsadresser"
     statistics: "Statistikk"
     comments: "Merknader"
@@ -58,6 +64,15 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    maintenance: "Vedlikehold"
+    depreciation_books: "Avskrivningsprofiler"
+    amounts: "Beløp"
+    last_fa_posting_date: "Siste anleggsbokføringsdato"
+    disposal: "Avhending"
+    balancing_account: "Motkonto"
+    integration: "Integrasjon"
+    duplication: "Duplisering"
+    bank: "Bank"
     receiving: "Mottak"
     this_period: "Denne perioden"
     this_year: "Dette året"
@@ -94,6 +109,21 @@ common:
 
   # Menu items
   menu:
+    fixed_assets: "Anleggsmidler"
+    fa_ledger_entries: "Anleggsposter"
+    maintenance_ledger_entries: "Vedlikeholdsposter"
+    insurance: "Forsikring"
+    ins_coverage_ledger_entries: "Forsikringsdekningsposter"
+    fixed_asset_setup: "Anleggsoppsett"
+    depreciation_books: "Avskrivningsprofiler"
+    fa_posting_groups: "Anleggsbokføringsgrupper"
+    fa_classes: "Anleggsklasser"
+    fa_subclasses: "Anleggsunderklasser"
+    fa_locations: "Anleggslokasjoner"
+    maintenance: "Vedlikehold"
+    insurance_types: "Forsikringstyper"
+    bank_account_ledger_entries: "Bankkontoposter"
+    bank_account_posting_groups: "Bankkontobokføringsgrupper"
     vendors: "Leverandører"
     vendor_ledger_entries: "Leverandørposter"
     purchases_payables_setup: "Innkjøps- og leverandøroppsett"

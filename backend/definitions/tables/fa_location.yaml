@@ -1,0 +1,25 @@
+table:
+  id: 5609
+  name: "FA_Location"
+  caption: FA Location
+  description: "Fixed asset locations (table 5609)"
+  lookup_page_id: 5617
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

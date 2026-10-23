@@ -1,0 +1,61 @@
+page:
+  id: 5625
+  type: List
+  name: Maintenance Registration
+  source_table: Maintenance_Registration
+  caption: Maintenance Registration
+  auto_split_key: true      # a new line gets Line No. 10000, 20000 … or halfway between its neighbours
+  delayed_insert: true      # inserted when the user leaves the line
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: fa_no
+          width: 100
+          visible: false
+
+        - source: line_no
+          width: 80
+          visible: false
+
+        - source: service_date
+          width: 110
+
+        - source: maintenance_vendor_no
+          width: 150
+
+        - source: comment
+          width: 300
+
+        - source: service_agent_name
+          width: 180
+
+        - source: service_agent_phone_no
+          width: 150
+
+        - source: service_agent_mobile_phone
+          width: 150
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

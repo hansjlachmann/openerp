@@ -224,6 +224,20 @@ table:
       decimal_places: "2:2" # amount in local currency
       validation: {min: 0}
 
+    - name: bank_account_nos
+      no: 63
+      type: types.Code
+      db_name: bank_account_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
   keys:
     - name: Primary
       fields: [primary_key]

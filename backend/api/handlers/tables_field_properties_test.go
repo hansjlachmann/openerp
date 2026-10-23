@@ -269,12 +269,14 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 		t.Fatalf("insert customer: %d %v", status, out["error"])
 	}
 
-	// Bal. Account No.: a G/L account for type G/L Account, a customer for type Customer
+	// Bal. Account No.: a G/L account for type G/L Account, a customer for type Customer, a
+	// vendor for type Vendor; any value for a type whose table does not exist yet (Employee)
 	for body, ok := range map[string]bool{
 		`{"entry_no":1,"gl_account_no":"1000","posting_date":"2026-01-10","amount":"100","bal_account_type":0,"bal_account_no":"2000"}`: true,
 		`{"entry_no":2,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"-100","bal_account_type":1,"bal_account_no":"C1"}`:  true,
 		`{"entry_no":3,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":1,"bal_account_no":"2000"}`:   false,
-		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     true, // vendors: no table yet
+		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     false,
+		`{"entry_no":5,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":5,"bal_account_no":"E9"}`:     true, // employees: no table yet
 	} {
 		status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Entry/insert", body)
 		if (status == 200) != ok {
@@ -282,11 +284,11 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 		}
 	}
 
-	// Lookups: one variant per type
+	// Lookups: one variant per type with a table (G/L Account, Customer, Vendor, Bank Account, Fixed Asset)
 	_, out := getJSON(t, app, "/api/tables/G_L_Entry/list")
 	lookup := out["captions"].(map[string]interface{})["lookups"].(map[string]interface{})["bal_account_no"].(map[string]interface{})
 	variants := lookup["variants"].(map[string]interface{})
-	if lookup["variant_field"] != "bal_account_type" || len(variants) != 2 || variants["1"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
+	if lookup["variant_field"] != "bal_account_type" || len(variants) != 5 || variants["1"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
 		t.Errorf("bal_account_no lookup = %v", lookup)
 	}
 	if status, out := getJSON(t, app, "/api/tables/G_L_Entry/lookup/bal_account_no?variant=1"); status != 200 || out["data"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {

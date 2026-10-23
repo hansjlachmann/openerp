@@ -1,0 +1,267 @@
+table:
+  id: 5629
+  name: "Ins_Coverage_Ledger_Entry"
+  caption: Ins. Coverage Ledger Entry
+  description: "Insurance coverage ledger entries, posted (table 5629)"
+  lookup_page_id: 5647
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: insurance_no
+      no: 2
+      type: types.Code
+      db_name: insurance_no
+      length: 20
+      table_relation:
+        table: Insurance
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: disposed_fa
+      no: 3
+      type: bool
+      db_name: disposed_fa
+
+    - name: fa_no
+      no: 4
+      type: types.Code
+      db_name: fa_no
+      length: 20
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fa_description
+      no: 5
+      type: types.Text
+      db_name: fa_description
+      length: 50
+
+    - name: posting_date
+      no: 6
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 7
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_date
+      no: 8
+      type: types.Date
+      db_name: document_date
+
+    - name: document_no
+      no: 9
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: external_document_no
+      no: 10
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: amount
+      no: 14
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: description
+      no: 16
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: fa_class_code
+      no: 17
+      type: types.Code
+      db_name: fa_class_code
+      length: 10
+      table_relation:
+        table: FA_Class
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_subclass_code
+      no: 18
+      type: types.Code
+      db_name: fa_subclass_code
+      length: 10
+      table_relation:
+        table: FA_Subclass
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_location_code
+      no: 19
+      type: types.Code
+      db_name: fa_location_code
+      length: 10
+      table_relation:
+        table: FA_Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 20
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 21
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: location_code
+      no: 22
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 23
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 100
+          - source: user_name
+            width: 250
+
+    - name: source_code
+      no: 24
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: journal_batch_name
+      no: 25
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: reason_code
+      no: 26
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: index_entry
+      no: 27
+      type: bool
+      db_name: index_entry
+
+    - name: no_series
+      no: 28
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: insurance_date
+      fields: [insurance_no, posting_date]
+      sum_index_fields:
+        - amount
+    - name: insurance_disposed_date
+      fields: [insurance_no, disposed_fa, posting_date]
+      sum_index_fields:
+        - amount
+    - name: fa_insurance
+      fields: [fa_no, insurance_no, disposed_fa, posting_date]
+      sum_index_fields:
+        - amount
+    - name: fa_disposed_date
+      fields: [fa_no, disposed_fa, posting_date]
+    - name: document
+      fields: [document_no, posting_date]

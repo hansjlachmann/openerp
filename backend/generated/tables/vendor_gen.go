@@ -2749,7 +2749,7 @@ func (t *Vendor) renameReferences(field string, oldValue, newValue interface{}) 
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Order_Address", false, "vendor_no", "", 0}, {"Vendor", false, "invoice_disc_code", "", 0}, {"Vendor", false, "pay_to_vendor_no", "", 0}, {"Vendor_Bank_Account", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "buy_from_vendor_no", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 2}},
+		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Comment_Line", false, "no", "table_name", 2}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 2}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Fixed_Asset", false, "vendor_no", "", 0}, {"Fixed_Asset", false, "maintenance_vendor_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 2}, {"G_L_Entry", false, "source_no", "source_type", 2}, {"Insurance", false, "insurance_vendor_no", "", 0}, {"Maintenance_Registration", false, "maintenance_vendor_no", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Order_Address", false, "vendor_no", "", 0}, {"Vendor", false, "invoice_disc_code", "", 0}, {"Vendor", false, "pay_to_vendor_no", "", 0}, {"Vendor_Bank_Account", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "buy_from_vendor_no", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 2}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -10936,6 +10936,63 @@ func (t *Vendor) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *Vendor) flowFieldValue(no int) (any, bool) {
+	switch no {
+	case 38:
+		return t.Comment, true
+	case 58:
+		return t.Balance, true
+	case 59:
+		return t.Balance_lcy, true
+	case 60:
+		return t.Net_change, true
+	case 61:
+		return t.Net_change_lcy, true
+	case 62:
+		return t.Purchases_lcy, true
+	case 64:
+		return t.Inv_discounts_lcy, true
+	case 65:
+		return t.Pmt_discounts_lcy, true
+	case 66:
+		return t.Balance_due, true
+	case 67:
+		return t.Balance_due_lcy, true
+	case 69:
+		return t.Payments, true
+	case 70:
+		return t.Invoice_amounts, true
+	case 71:
+		return t.Cr_memo_amounts, true
+	case 72:
+		return t.Finance_charge_memo_amounts, true
+	case 74:
+		return t.Payments_lcy, true
+	case 75:
+		return t.Inv_amounts_lcy, true
+	case 76:
+		return t.Cr_memo_amounts_lcy, true
+	case 77:
+		return t.Fin_charge_memo_amounts_lcy, true
+	case 97:
+		return t.Debit_amount, true
+	case 98:
+		return t.Credit_amount, true
+	case 99:
+		return t.Debit_amount_lcy, true
+	case 100:
+		return t.Credit_amount_lcy, true
+	case 104:
+		return t.Reminder_amounts, true
+	case 105:
+		return t.Reminder_amounts_lcy, true
+	case 903:
+		return t.No_of_ledger_entries, true
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *Vendor) SetFieldValue(no int, value any) bool {
@@ -11358,7 +11415,11 @@ func (t *Vendor) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Vendor", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Vendor", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {

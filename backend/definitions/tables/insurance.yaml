@@ -1,0 +1,239 @@
+table:
+  id: 5628
+  name: "Insurance"
+  caption: Insurance
+  description: "Insurance policies of fixed assets (table 5628)"
+  data_caption_fields: [no, description]
+  auto_key: true   # OnInsert gives an insurance without No. the next number of its series
+  lookup_page_id: 5645
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: effective_date
+      no: 2
+      type: types.Date
+      db_name: effective_date
+
+    - name: policy_no
+      no: 4
+      type: types.Text
+      db_name: policy_no
+      length: 30
+
+    - name: annual_premium
+      no: 6
+      type: types.Decimal
+      db_name: annual_premium
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: policy_coverage
+      no: 7
+      type: types.Decimal
+      db_name: policy_coverage
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: total_value_insured
+      no: 10
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: InsCoverageLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: insurance_no
+          type: field
+          value: no
+        - field: disposed_fa
+          type: const
+          value: "false"
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: comment
+      no: 11
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 11
+        - field: no
+          type: field
+          value: no
+
+    - name: insurance_type
+      no: 12
+      type: types.Code
+      db_name: insurance_type
+      length: 10
+      table_relation:
+        table: Insurance_Type
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: last_date_modified
+      no: 13
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: insurance_vendor_no
+      no: 14
+      type: types.Code
+      db_name: insurance_vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_class_code
+      no: 15
+      type: types.Code
+      db_name: fa_class_code
+      length: 10
+      table_relation:
+        table: FA_Class
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_subclass_code
+      no: 16
+      type: types.Code
+      db_name: fa_subclass_code
+      length: 10
+      table_relation:
+        table: FA_Subclass
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fa_location_code
+      no: 17
+      type: types.Code
+      db_name: fa_location_code
+      length: 10
+      table_relation:
+        table: FA_Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 18
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 19
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: location_code
+      no: 20
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: blocked
+      no: 32
+      type: bool
+      db_name: blocked
+
+    - name: description
+      no: 33
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: search_description
+      no: 34
+      type: types.Code
+      db_name: search_description
+      length: 50
+
+    - name: date_filter
+      no: 35
+      type: types.Date
+      flow_filter: true
+
+    - name: no_series
+      no: 36
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_description
+      fields: [search_description]

@@ -44,7 +44,11 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
 		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
 		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
-		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{}}
+		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{},
+		&gtables.BankAccount{}, &gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.BankAccountPostingGroup{},
+		&gtables.FixedAsset{}, &gtables.FALedgerEntry{}, &gtables.FASetup{}, &gtables.FAPostingGroup{}, &gtables.FAClass{}, &gtables.FASubclass{},
+		&gtables.FALocation{}, &gtables.DepreciationBook{}, &gtables.FADepreciationBook{}, &gtables.MaintenanceLedgerEntry{}, &gtables.Maintenance{},
+		&gtables.MaintenanceRegistration{}, &gtables.MainAssetComponent{}, &gtables.Insurance{}, &gtables.InsuranceType{}, &gtables.InsCoverageLedgerEntry{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -95,8 +99,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 258 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 258 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 287 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 287 master data records, at least 500 G/L entries", counts)
 	}
 	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
 	// monthly periods and the next year's first, the oldest year closed
@@ -126,6 +130,54 @@ func TestCreateSmall(t *testing.T) {
 	vendSeries.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !vendSeries.GetByPK(types.Code("VEND"), 10000) || vendSeries.Last_no_used != "V00080" {
 		t.Errorf("VEND last no. used %q", vendSeries.Last_no_used)
+	}
+	// Bank: every demo payment has its bank entry; B010 holds the balance of the customer and
+	// vendor payments in kroner, older months reconciled with a statement
+	if counts.BankLedgerEntries == 0 {
+		t.Error("no bank ledger entries")
+	}
+	var bankAcc gtables.BankAccount
+	bankAcc.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !bankAcc.Get(types.Code("B010")) {
+		t.Fatal("bank account B010")
+	}
+	bankAcc.CalcFields("balance")
+	if bankAcc.Balance.IsZero() || bankAcc.Last_statement_no == "" || bankAcc.Balance_last_statement.IsZero() {
+		t.Errorf("B010 balance %s, last statement %q %s", bankAcc.Balance, bankAcc.Last_statement_no, bankAcc.Balance_last_statement)
+	}
+	var bankSeries gtables.NoSeriesLine
+	bankSeries.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !bankSeries.GetByPK(types.Code("BANK"), 10000) || bankSeries.Last_no_used != "B030" {
+		t.Errorf("BANK last no. used %q", bankSeries.Last_no_used)
+	}
+	// Fixed assets: the COMPANY book with the acquisition less the monthly depreciation, a main
+	// asset with its component, the insured assets' coverage; FA series continues after FA0080
+	if counts.FixedAssets != 8 || counts.FALedgerEntries <= 8 {
+		t.Errorf("fixed assets %d, FA ledger entries %d", counts.FixedAssets, counts.FALedgerEntries)
+	}
+	var faBook gtables.FADepreciationBook
+	faBook.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !faBook.GetByPK(types.Code("FA0010"), types.Code("COMPANY")) {
+		t.Fatal("FA0010 COMPANY book")
+	}
+	faBook.CalcFields("acquisition_cost", "depreciation", "book_value")
+	if !faBook.Acquisition_cost.Equal(types.NewDecimal(485000)) || !faBook.Depreciation.IsNegative() ||
+		!faBook.Book_value.Equal(faBook.Acquisition_cost.Add(faBook.Depreciation)) || !faBook.No_of_depreciation_months.Equal(types.NewDecimal(60)) {
+		t.Errorf("FA0010: cost %s, depreciation %s, book value %s, months %s", faBook.Acquisition_cost, faBook.Depreciation, faBook.Book_value, faBook.No_of_depreciation_months)
+	}
+	var mainAsset gtables.FixedAsset
+	mainAsset.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !mainAsset.Get(types.Code("FA0070")) || mainAsset.Main_asset_component != gtables.FixedAsset_Main_asset_component.MainAsset {
+		t.Errorf("FA0070 main asset/component %v", mainAsset.Main_asset_component)
+	}
+	var insurance gtables.Insurance
+	insurance.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !insurance.Get(types.Code("INS010")) {
+		t.Fatal("insurance INS010")
+	}
+	insurance.CalcFields("total_value_insured")
+	if !insurance.Total_value_insured.Equal(types.NewDecimal(485000 + 520000 + 265000 + 212000)) {
+		t.Errorf("total value insured %s", insurance.Total_value_insured)
 	}
 	var closed int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM "` + testCompany + `$Accounting_Period" WHERE closed`).Scan(&closed); err != nil || closed != 12 {
