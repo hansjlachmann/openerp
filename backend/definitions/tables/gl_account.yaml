@@ -528,6 +528,22 @@ table:
       db_name: exchange_rate_adjustment
       options: ["No Adjustment", "Adjust Amount", "Adjust Additional-Currency Amount"]
 
+    # FlowField: whether the record has comments (Comment Line of table name G/L Account)
+    - name: comment
+      no: 12
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 0
+        - field: no
+          type: field
+          value: no
+
   keys:
     - name: Primary
       fields: [no]

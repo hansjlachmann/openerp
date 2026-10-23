@@ -1,0 +1,45 @@
+table:
+  id: 50
+  name: "Accounting_Period"
+  caption: Accounting Period
+  description: "The accounting periods and fiscal years (table 50)"
+  lookup_page_id: 100
+  fields:
+    - name: starting_date
+      no: 1
+      type: types.Date
+      db_name: starting_date
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 10
+
+    - name: new_fiscal_year
+      no: 3
+      type: bool
+      db_name: new_fiscal_year
+
+    - name: closed
+      no: 4
+      type: bool
+      db_name: closed
+      editable: false
+
+    - name: date_locked
+      no: 5
+      type: bool
+      db_name: date_locked
+      editable: false
+
+  keys:
+    - name: Primary
+      fields: [starting_date]
+      clustered: true
+    - name: new_fiscal_year_date_locked
+      fields: [new_fiscal_year, date_locked]
+    - name: closed
+      fields: [closed]

@@ -302,6 +302,12 @@ messages:
   INDENT_COA_CONFIRM: "Denne funksjonen oppdaterer innrykket for alle finanskontoene i kontoplanen. Alle kontoer mellom en Start-total og den tilhørende Slutt-totalen rykkes inn ett nivå. Summeringen for hver Slutt-total oppdateres også.\n\nVil du rykke inn kontoplanen?"
   INDENT_COA_WINDOW: "Rykker inn kontoplanen #1##########"
 
+  # Accounting periods (codeunit 6 Fiscal Year-Close, DateFilter-Calc)
+  FISCAL_YEAR_NAME: "Regnskapsår %1"
+  FISCAL_YEAR_NO_OPEN_PERIOD: "Det finnes ingen åpen regnskapsperiode. Opprett et regnskapsår først."
+  FISCAL_YEAR_CREATE_NEW: "Du må opprette et nytt regnskapsår før du kan avslutte det gamle året."
+  FISCAL_YEAR_CLOSE_CONFIRM: "Denne funksjonen avslutter regnskapsåret fra %1 til %2. Når regnskapsåret er avsluttet, kan det ikke åpnes igjen, og periodene i regnskapsåret kan ikke endres.\n\nVil du avslutte regnskapsåret?"
+
   # Demo data (codeunit 901)
   DEMO_DATA_DONE: "Demodata opprettet: %1 kunder og %2 kundeposter."
   DEMO_DATA_NOT_EMPTY: "Selskapet \"%1\" har allerede kunder. Demodata opprettes bare i et selskap uten kunder."

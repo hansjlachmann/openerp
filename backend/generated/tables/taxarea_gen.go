@@ -836,7 +836,7 @@ func (t *TaxArea) renameReferences(field string, oldValue, newValue interface{})
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "tax_area_code", "", 0}, {"G_L_Account", false, "tax_area_code", "", 0}, {"G_L_Entry", false, "tax_area_code", "", 0}},
+		"code": {{"Customer", false, "tax_area_code", "", 0}, {"G_L_Account", false, "tax_area_code", "", 0}, {"G_L_Entry", false, "tax_area_code", "", 0}, {"Ship_to_Address", false, "tax_area_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2129,7 +2129,8 @@ func (t *TaxArea) Copy(from *TaxArea) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *TaxArea) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -2155,10 +2156,10 @@ func (t *TaxArea) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false

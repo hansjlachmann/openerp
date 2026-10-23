@@ -158,3 +158,62 @@ pages:
     caption: "No. Series Relationships"
   sales_receivables_setup:
     caption: "Sales & Receivables Setup"
+
+  # Customer: accounting periods, comments, ship-to addresses, bank accounts
+  accounting_periods:
+    caption: "Accounting Periods"
+  comment_sheet:
+    caption: "Comment Sheet"
+  ship_to_address:
+    caption: "Ship-to Address"
+  ship_to_address_list:
+    caption: "Ship-to Address List"
+  customer_bank_account_card:
+    caption: "Customer Bank Account Card"
+  customer_bank_account_list:
+    caption: "Customer Bank Account List"
+  customer_statistics:
+    caption: "Customer Statistics"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Total (LCY)"
+      balance_due_to_date_lcy: "Balance Due (LCY)"
+      this_period_name: "Period"
+      this_period_sales_lcy: "Sales (LCY)"
+      this_period_profit_lcy: "Profit (LCY)"
+      this_period_profit_pct: "Profit %"
+      this_period_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      this_period_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      this_period_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      this_period_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      this_period_payments_lcy: "Payments (LCY)"
+      this_period_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      this_year_name: "Period"
+      this_year_sales_lcy: "Sales (LCY)"
+      this_year_profit_lcy: "Profit (LCY)"
+      this_year_profit_pct: "Profit %"
+      this_year_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      this_year_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      this_year_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      this_year_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      this_year_payments_lcy: "Payments (LCY)"
+      this_year_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      last_year_name: "Period"
+      last_year_sales_lcy: "Sales (LCY)"
+      last_year_profit_lcy: "Profit (LCY)"
+      last_year_profit_pct: "Profit %"
+      last_year_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      last_year_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      last_year_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      last_year_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      last_year_payments_lcy: "Payments (LCY)"
+      last_year_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      to_date_name: "Period"
+      to_date_sales_lcy: "Sales (LCY)"
+      to_date_profit_lcy: "Profit (LCY)"
+      to_date_profit_pct: "Profit %"
+      to_date_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      to_date_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      to_date_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      to_date_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      to_date_payments_lcy: "Payments (LCY)"
+      to_date_reminder_amounts_lcy: "Reminder Amounts (LCY)"

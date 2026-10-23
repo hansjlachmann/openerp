@@ -158,3 +158,62 @@ pages:
     caption: "Nummerserierelasjoner"
   sales_receivables_setup:
     caption: "Salgsoppsett"
+
+  # Customer: accounting periods, comments, ship-to addresses, bank accounts
+  accounting_periods:
+    caption: "Regnskapsperioder"
+  comment_sheet:
+    caption: "Merknadsark"
+  ship_to_address:
+    caption: "Leveringsadresse"
+  ship_to_address_list:
+    caption: "Leveringsadresseoversikt"
+  customer_bank_account_card:
+    caption: "Kundebankkontokort"
+  customer_bank_account_list:
+    caption: "Kundebankkontooversikt"
+  customer_statistics:
+    caption: "Kundestatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Totalt (NOK)"
+      balance_due_to_date_lcy: "Forfalt saldo (NOK)"
+      this_period_name: "Periode"
+      this_period_sales_lcy: "Salg (NOK)"
+      this_period_profit_lcy: "Fortjeneste (NOK)"
+      this_period_profit_pct: "Fortjeneste %"
+      this_period_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_period_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_period_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_period_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_period_payments_lcy: "Betalinger (NOK)"
+      this_period_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      this_year_name: "Periode"
+      this_year_sales_lcy: "Salg (NOK)"
+      this_year_profit_lcy: "Fortjeneste (NOK)"
+      this_year_profit_pct: "Fortjeneste %"
+      this_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_year_payments_lcy: "Betalinger (NOK)"
+      this_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      last_year_name: "Periode"
+      last_year_sales_lcy: "Salg (NOK)"
+      last_year_profit_lcy: "Fortjeneste (NOK)"
+      last_year_profit_pct: "Fortjeneste %"
+      last_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      last_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      last_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      last_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      last_year_payments_lcy: "Betalinger (NOK)"
+      last_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      to_date_name: "Periode"
+      to_date_sales_lcy: "Salg (NOK)"
+      to_date_profit_lcy: "Fortjeneste (NOK)"
+      to_date_profit_pct: "Fortjeneste %"
+      to_date_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      to_date_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      to_date_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      to_date_payments_lcy: "Betalinger (NOK)"
+      to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"

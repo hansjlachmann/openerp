@@ -8,6 +8,13 @@ common:
 
   # Common actions
   actions:
+    statistics: "Statistik"
+    comments: "Bemærkninger"
+    bank_accounts: "Bankkonti"
+    ship_to_addresses: "Leveringsadresser"
+    create_year: "Opret år"
+    close_year: "Luk år"
+    back: "Tilbage"
     levels: "Niveauer"
     beginning_text: "Starttekst"
     ending_text: "Sluttekst"
@@ -50,6 +57,10 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    this_period: "Denne periode"
+    this_year: "Dette år"
+    last_year: "Sidste år"
+    to_date: "Til dato"
     payments: "Betalinger"
     shipping: "Levering"
     foreign_trade: "Udenrigshandel"
@@ -81,6 +92,7 @@ common:
 
   # Menu items
   menu:
+    accounting_periods: "Regnskabsperioder"
     customer_posting_groups: "Debitorbogføringsgrupper"
     post_codes: "Postnumre"
     territories: "Distrikter"

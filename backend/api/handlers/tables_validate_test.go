@@ -327,6 +327,13 @@ func TestRenameToExistingKey(t *testing.T) {
 	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
+	for _, related := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.CommentLine{}, &gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}} {
+		if err := related.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := (&gtables.GLEntry{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}

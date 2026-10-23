@@ -29,6 +29,10 @@ menu:
         page_id: 118
         icon: settings
 
+      - name: Accounting Periods
+        page_id: 100
+        icon: calendar
+
       - name: Sales & Receivables Setup
         page_id: 459
         icon: settings

@@ -44,6 +44,9 @@ func (r *Run) OptionDate(name string) types.Date {
 	return d
 }
 
+// SetOption sets an option's value (OnInitReport: a default that depends on the data)
+func (r *Run) SetOption(name, value string) { r.options[name] = value }
+
 // Message sets the message shown when the report is done (filled in with StrSubstNo; pass a
 // translated text — Text gives the report's own)
 func (r *Run) Message(text string, values ...any) {
@@ -84,6 +87,12 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 	run := &Run{ID: id, DB: db, Company: company, DBType: dbType, options: map[string]string{}, filters: map[string][]ftables.FieldFilter{}}
 	for _, o := range def.Options {
 		run.options[o.Name] = o.Default
+	}
+	if def.OnInitReport != nil {
+		err := def.OnInitReport(run)
+		if err != nil {
+			return Result{}, err
+		}
 	}
 	for name, value := range opts.Options {
 		run.options[name] = value
@@ -355,3 +364,9 @@ func sameTable(table string, rec ftables.Table) bool {
 func translate(id int, key string) string {
 	return i18n.GetInstance().Translate(fmt.Sprintf("reports.%d.%s", id, key), fcodeunits.CurrentLanguage())
 }
+
+// GetDB, GetCompany and GetDBType: records a report opens are in its database and company
+// (gtables.NewAccountingPeriod(run))
+func (r *Run) GetDB() database.Executor   { return r.DB }
+func (r *Run) GetCompany() string         { return r.Company }
+func (r *Run) GetDBType() database.DBType { return r.DBType }

@@ -239,6 +239,8 @@ type GLAccount struct {
 	Tax_bus_posting_group      types.Code                        `db:"tax_bus_posting_group"`
 	Tax_prod_posting_group     types.Code                        `db:"tax_prod_posting_group"`
 	Exchange_rate_adjustment   GLAccountExchange_rate_adjustment `db:"exchange_rate_adjustment"`
+	// FlowField: Exist(CommentLine.line_no)
+	Comment bool
 	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
 	Date_filter string
 	// FlowFilter department_filter (types.Code): the filter expression FlowFields apply — not stored
@@ -439,6 +441,7 @@ var GLAccount_FieldNo = struct {
 	Tax_bus_posting_group          int
 	Tax_prod_posting_group         int
 	Exchange_rate_adjustment       int
+	Comment                        int
 	Date_filter                    int
 	Department_filter              int
 	Project_filter                 int
@@ -484,6 +487,7 @@ var GLAccount_FieldNo = struct {
 	Tax_bus_posting_group:          57,
 	Tax_prod_posting_group:         58,
 	Exchange_rate_adjustment:       63,
+	Comment:                        12,
 	Date_filter:                    28,
 	Department_filter:              29,
 	Project_filter:                 30,
@@ -574,6 +578,8 @@ func (t *GLAccount) FieldNo(fieldName string) int {
 		return 58
 	case "exchange_rate_adjustment":
 		return 63
+	case "comment":
+		return 12
 	case "date_filter":
 		return 28
 	case "department_filter":
@@ -669,6 +675,8 @@ func (t *GLAccount) FieldName(fieldNo int) string {
 		return "tax_prod_posting_group"
 	case 63:
 		return "exchange_rate_adjustment"
+	case 12:
+		return "comment"
 	case 28:
 		return "date_filter"
 	case 29:
@@ -1085,7 +1093,8 @@ func GetGLAccountTableSchema() string {
 		tax_group_code TEXT(10),
 		tax_bus_posting_group TEXT(10),
 		tax_prod_posting_group TEXT(10),
-		exchange_rate_adjustment INTEGER CHECK (exchange_rate_adjustment >= 0 AND exchange_rate_adjustment <= 2)
+		exchange_rate_adjustment INTEGER CHECK (exchange_rate_adjustment >= 0 AND exchange_rate_adjustment <= 2),
+		comment INTEGER
 	`
 }
 
@@ -1132,7 +1141,8 @@ func GetGLAccountPostgresTableSchema() string {
 		tax_group_code VARCHAR(10),
 		tax_bus_posting_group VARCHAR(10),
 		tax_prod_posting_group VARCHAR(10),
-		exchange_rate_adjustment INTEGER CHECK (exchange_rate_adjustment >= 0 AND exchange_rate_adjustment <= 2)
+		exchange_rate_adjustment INTEGER CHECK (exchange_rate_adjustment >= 0 AND exchange_rate_adjustment <= 2),
+		comment BOOLEAN
 	`
 }
 
@@ -2185,7 +2195,7 @@ func (t *GLAccount) renameReferences(field string, oldValue, newValue interface{
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}},
+		"no": {{"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2266,6 +2276,7 @@ func (t *GLAccount) CalcFields(fieldNames ...string) {
 		t.calcFlowField_additional_currency_balance()
 		t.calcFlowField_add_currency_debit_amount()
 		t.calcFlowField_add_currency_credit_amount()
+		t.calcFlowField_comment()
 		return
 	}
 
@@ -2292,6 +2303,8 @@ func (t *GLAccount) CalcFields(fieldNames ...string) {
 			t.calcFlowField_add_currency_debit_amount()
 		case "add_currency_credit_amount":
 			t.calcFlowField_add_currency_credit_amount()
+		case "comment":
+			t.calcFlowField_comment()
 		}
 	}
 }
@@ -2356,6 +2369,12 @@ func (t *GLAccount) calcFlowField_add_currency_credit_amount() {
 	t.Add_currency_credit_amount = t.calcSum_add_currency_credit_amount()
 }
 
+// calcFlowField_comment calculates the comment FlowField
+// CalcFormula: Exist(CommentLine.line_no)
+func (t *GLAccount) calcFlowField_comment() {
+	t.Comment = t.calcCount_comment() > 0
+}
+
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
 // one grouped query per FlowField instead of one query per record. records are
 // ToMap() results; each gets its FlowField values under the field name. With no
@@ -2389,6 +2408,8 @@ func (t *GLAccount) CalcFieldsForRecords(records []map[string]interface{}, field
 			t.calcForRecords_add_currency_debit_amount(records)
 		case "add_currency_credit_amount":
 			t.calcForRecords_add_currency_credit_amount(records)
+		case "comment":
+			t.calcForRecords_comment(records)
 		}
 	}
 }
@@ -3509,6 +3530,75 @@ func (t *GLAccount) calcForRecords_add_currency_credit_amount(records []map[stri
 	}
 }
 
+// calcForRecords_comment calculates the comment FlowField for a set of records
+// CalcFormula: Exist(CommentLine.line_no)
+func (t *GLAccount) calcForRecords_comment(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CommentLineTableName), false
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]int, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "table_name = ?")
+		args = append(args, 0)
+		if chunk != nil {
+			whereClauses = append(whereClauses, "no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(`SELECT no, %s FROM "%s" WHERE %s GROUP BY no`, agg, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate comment: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		rec["comment"] = values[fmt.Sprint(rec["no"])] > 0
+	}
+}
+
 // Helper methods for FlowField calculations
 
 func (t *GLAccount) calcSum_balance_at_date() types.Decimal {
@@ -4175,6 +4265,43 @@ func (t *GLAccount) calcSum_add_currency_credit_amount() types.Decimal {
 
 	sum, _ := types.NewDecimalFromString(sumStr)
 	return sum
+}
+
+func (t *GLAccount) calcCount_comment() int {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CommentLineTableName), false
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "table_name = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "no = ?")
+	args = append(args, t.No)
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(`SELECT %s FROM "%s" WHERE %s`, agg, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var count int
+	err := t.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate count for comment: %v\n", err)
+		return 0
+	}
+
+	return count
 }
 
 // ========================================
@@ -5313,6 +5440,7 @@ func (t *GLAccount) copyFromBuffered(record *GLAccount) {
 	t.Tax_bus_posting_group = record.Tax_bus_posting_group
 	t.Tax_prod_posting_group = record.Tax_prod_posting_group
 	t.Exchange_rate_adjustment = record.Exchange_rate_adjustment
+	t.Comment = record.Comment
 	t.StoreOldValues()
 }
 
@@ -6919,7 +7047,8 @@ func (t *GLAccount) Copy(from *GLAccount) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *GLAccount) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -6945,10 +7074,10 @@ func (t *GLAccount) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false
@@ -7239,6 +7368,8 @@ func (t *GLAccount) ToMap() map[string]interface{} {
 		"tax_bus_posting_group":      t.Tax_bus_posting_group.String(),
 		"tax_prod_posting_group":     t.Tax_prod_posting_group.String(),
 		"exchange_rate_adjustment":   int(t.Exchange_rate_adjustment),
+		// FlowField: comment
+		"comment": t.Comment,
 	}
 }
 
@@ -7941,6 +8072,16 @@ func (t *GLAccount) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:         12,
+			Name:       "comment",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  true,
+		},
 	}
 }
 
@@ -7992,6 +8133,7 @@ func (t *GLAccount) GetFlowFields() []string {
 		"additional_currency_balance",
 		"add_currency_debit_amount",
 		"add_currency_credit_amount",
+		"comment",
 	}
 }
 

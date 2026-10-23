@@ -1,0 +1,61 @@
+page:
+  id: 100
+  type: List
+  name: Accounting Periods
+  source_table: Accounting_Period
+  caption: Accounting Periods
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: starting_date
+          width: 130
+
+        - source: name
+          width: 150
+
+        - source: new_fiscal_year
+          width: 120
+
+        - source: closed
+          width: 100
+
+        - source: date_locked
+          width: 110
+
+  actions:
+    - name: Create Year
+      caption: Create Year
+      image: Calendar
+      promoted: true
+      enabled: true
+      run_object: report:93   # processing-only report: request page, then creates the periods
+
+    - name: Close Year
+      caption: Close Year
+      image: Approve
+      promoted: true
+      enabled: true
+      run_object: codeunit:6
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

@@ -330,3 +330,24 @@ master_data:
   - table: Sales_Receivables_Setup   # the single setup record (blank key)
     records:
       - {customer_nos: CUST, quote_nos: S-QUO, blanket_order_nos: S-BLK, order_nos: S-ORD, invoice_nos: S-INV, posted_invoice_nos: S-INV+, credit_memo_nos: S-CR, posted_credit_memo_nos: S-CR+, posted_shipment_nos: S-SHPT, reminder_nos: S-REM, issued_reminder_nos: S-REM+, fin_chrg_memo_nos: S-FIN, issued_fin_chrg_m_nos: S-FIN+, credit_warnings: 0, stockout_warning: true, calc_inv_discount: true}
+
+# Records that belong to the demo customers, inserted after them (with the tables' triggers: a
+# ship-to address gets the customer's name)
+customer_data:
+  - table: Comment_Line   # table_name 1 = Customer
+    records:
+      - {table_name: 1, "no": C00010, line_no: 10000, comment: Key account — quarterly review with the purchasing manager}
+      - {table_name: 1, "no": C00010, line_no: 20000, comment: Prefers delivery before 10:00}
+      - {table_name: 1, "no": C00020, line_no: 10000, comment: Cold storage goods — deliver by truck only}
+      - {table_name: 1, "no": C00050, line_no: 10000, comment: Seasonal customer, most orders in spring}
+  - table: Ship_to_Address
+    records:
+      - {customer_no: C00010, code: LAGER, address: Alnabruveien 12, post_code: "0159", city: Oslo, country_code: "NO", contact: Varemottak, shipment_method_code: TRUCK, shipping_agent_code: OWN, location_code: MAIN}
+      - {customer_no: C00010, code: BUTIKK, address: Karl Johans gate 5, post_code: "0159", city: Oslo, country_code: "NO", shipment_method_code: POST, shipping_agent_code: POSTEN}
+      - {customer_no: C00020, code: KAI, address: Bryggen 7, post_code: "5003", city: Bergen, country_code: "NO", shipment_method_code: TRUCK, shipping_agent_code: OWN}
+      - {customer_no: C00030, code: BYGG, address: Sluppenveien 20, post_code: "7011", city: Trondheim, country_code: "NO", shipment_method_code: TRUCK, shipping_agent_code: DHL}
+  - table: Customer_Bank_Account
+    records:
+      - {customer_no: C00010, code: DNB, name: DNB Bank ASA, bank_branch_no: "1200", bank_account_no: "1200.12.34567", post_code: "0159", city: Oslo, country_code: "NO"}
+      - {customer_no: C00020, code: SPV, name: Sparebanken Vest, bank_branch_no: "3201", bank_account_no: "3201.55.12345", post_code: "5003", city: Bergen, country_code: "NO"}
+      - {customer_no: C00030, code: SMN, name: SpareBank 1 SMN, bank_branch_no: "4200", bank_account_no: "4200.33.98765", post_code: "7011", city: Trondheim, country_code: "NO"}

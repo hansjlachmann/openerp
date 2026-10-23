@@ -1,0 +1,66 @@
+table:
+  id: 97
+  name: "Comment_Line"
+  caption: Comment Line
+  description: "Comments on master records (table 97)"
+  fields:
+    - name: table_name
+      no: 1
+      type: Option
+      db_name: table_name
+      primary_key: true
+      options: ["G/L Account", "Customer", "Vendor", "Item", "Resource", "Job", " ", "Resource Group", "Bank Account", "Campaign", "Fixed Asset", "Insurance"]
+
+    - name: no
+      no: 2
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      # the record of the table: G/L Account, Customer; the other tables come later
+      table_relation:
+        conditions:
+          - when: {field: table_name, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: table_name, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: line_no
+      no: 3
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: date
+      no: 4
+      type: types.Date
+      db_name: date
+
+    - name: code
+      no: 5
+      type: types.Code
+      db_name: code
+      length: 10
+
+    - name: comment
+      no: 6
+      type: types.Text
+      db_name: comment
+      length: 80
+
+  keys:
+    - name: Primary
+      fields: [table_name, no, line_no]
+      clustered: true

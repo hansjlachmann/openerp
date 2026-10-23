@@ -1,0 +1,218 @@
+table:
+  id: 222
+  name: "Ship_to_Address"
+  caption: Ship-to Address
+  description: "Customers' delivery addresses (table 222)"
+  data_caption_fields: [customer_no, name, code]
+  lookup_page_id: 301
+  # Left out: 10004 UPS Zone (local field series)
+  fields:
+    - name: customer_no
+      no: 1
+      type: types.Code
+      db_name: customer_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: code
+      no: 2
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 3
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: name_2
+      no: 4
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 5
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 6
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 7
+      type: types.Text
+      db_name: city
+      length: 50
+
+    - name: contact
+      no: 8
+      type: types.Text
+      db_name: contact
+      length: 50
+
+    - name: phone_no
+      no: 9
+      type: types.Text
+      db_name: phone_no
+      length: 30
+
+    - name: telex_no
+      no: 10
+      type: types.Text
+      db_name: telex_no
+      length: 30
+
+    - name: shipment_method_code
+      no: 30
+      type: types.Code
+      db_name: shipment_method_code
+      length: 10
+      table_relation:
+        table: Shipment_Method
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: shipping_agent_code
+      no: 31
+      type: types.Code
+      db_name: shipping_agent_code
+      length: 10
+      table_relation:
+        table: Shipping_Agent
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: place_of_export
+      no: 32
+      type: types.Code
+      db_name: place_of_export
+      length: 20
+
+    - name: country_code
+      no: 35
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: last_date_modified
+      no: 54
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: location_code
+      no: 83
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: fax_no
+      no: 84
+      type: types.Text
+      db_name: fax_no
+      length: 30
+
+    - name: telex_answer_back
+      no: 85
+      type: types.Text
+      db_name: telex_answer_back
+      length: 20
+
+    - name: post_code
+      no: 91
+      type: types.Code
+      db_name: post_code
+      length: 20
+      # classic ZIP Code; any code is accepted, a known one fills City
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: state
+      no: 92
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: e_mail
+      no: 102
+      type: types.Text
+      db_name: e_mail
+      length: 80
+
+    - name: home_page
+      no: 103
+      type: types.Text
+      db_name: home_page
+      length: 80
+
+    - name: tax_area_code
+      no: 108
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 109
+      type: bool
+      db_name: tax_liable
+
+  keys:
+    - name: Primary
+      fields: [customer_no, code]
+      clustered: true

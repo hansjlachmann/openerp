@@ -1608,7 +1608,7 @@ func (t *Currency) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}},
+		"code": {{"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3976,7 +3976,8 @@ func (t *Currency) Copy(from *Currency) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *Currency) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -4002,10 +4003,10 @@ func (t *Currency) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false

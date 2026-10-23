@@ -1,0 +1,72 @@
+page:
+  id: 300
+  type: Card
+  name: Ship-to Address
+  source_table: Ship_to_Address
+  caption: Ship-to Address
+  list_page_id: 301
+  enable_navigation: true
+  editable: true
+  focus_field: code
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: customer_no
+          - source: code
+          - source: name
+          - source: address
+          - source: address_2
+          - source: post_code
+          - source: city
+          - source: state
+          - source: country_code
+          - source: contact
+          - source: last_date_modified
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: phone_no
+          - source: fax_no
+          - source: e_mail
+          - source: home_page
+
+      - name: Shipping
+        caption: Shipping
+        fields:
+          - source: location_code
+          - source: shipment_method_code
+          - source: shipping_agent_code
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 301
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

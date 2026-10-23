@@ -14,12 +14,15 @@ import (
 
 // tableRegistry holds the factory of every table by name
 var tableRegistry = map[string]tables.TableFactory{
+	"Accounting_Period":          func() tables.Table { return &AccountingPeriod{} },
+	"Comment_Line":               func() tables.Table { return &CommentLine{} },
 	"Company":                    func() tables.Table { return &Company{} },
 	"Country_Region":             func() tables.Table { return &CountryRegion{} },
 	"Currency":                   func() tables.Table { return &Currency{} },
 	"Currency_Exchange_Rate":     func() tables.Table { return &CurrencyExchangeRate{} },
 	"Customer_ledger_entry":      func() tables.Table { return &CustomerLedgerEntry{} },
 	"Customer":                   func() tables.Table { return &Customer{} },
+	"Customer_Bank_Account":      func() tables.Table { return &CustomerBankAccount{} },
 	"Customer_Discount_Group":    func() tables.Table { return &CustomerDiscountGroup{} },
 	"Customer_Posting_Group":     func() tables.Table { return &CustomerPostingGroup{} },
 	"Department":                 func() tables.Table { return &Department{} },
@@ -50,6 +53,7 @@ var tableRegistry = map[string]tables.TableFactory{
 	"Reminder_Text":              func() tables.Table { return &ReminderText{} },
 	"Sales_Receivables_Setup":    func() tables.Table { return &SalesReceivablesSetup{} },
 	"Salesperson_Purchaser":      func() tables.Table { return &SalespersonPurchaser{} },
+	"Ship_to_Address":            func() tables.Table { return &ShipToAddress{} },
 	"Shipment_Method":            func() tables.Table { return &ShipmentMethod{} },
 	"Shipping_Agent":             func() tables.Table { return &ShippingAgent{} },
 	"SMTP_Setup":                 func() tables.Table { return &SMTPSetup{} },
@@ -73,12 +77,15 @@ var tableRegistry = map[string]tables.TableFactory{
 // NewRecords returns a new record of every table by table ID (the object registry)
 func NewRecords() map[int]tables.Table {
 	return map[int]tables.Table{
+		AccountingPeriodTableID:        &AccountingPeriod{},
+		CommentLineTableID:             &CommentLine{},
 		CompanyTableID:                 &Company{},
 		CountryRegionTableID:           &CountryRegion{},
 		CurrencyTableID:                &Currency{},
 		CurrencyExchangeRateTableID:    &CurrencyExchangeRate{},
 		CustomerLedgerEntryTableID:     &CustomerLedgerEntry{},
 		CustomerTableID:                &Customer{},
+		CustomerBankAccountTableID:     &CustomerBankAccount{},
 		CustomerDiscountGroupTableID:   &CustomerDiscountGroup{},
 		CustomerPostingGroupTableID:    &CustomerPostingGroup{},
 		DepartmentTableID:              &Department{},
@@ -109,6 +116,7 @@ func NewRecords() map[int]tables.Table {
 		ReminderTextTableID:            &ReminderText{},
 		SalesReceivablesSetupTableID:   &SalesReceivablesSetup{},
 		SalespersonPurchaserTableID:    &SalespersonPurchaser{},
+		ShipToAddressTableID:           &ShipToAddress{},
 		ShipmentMethodTableID:          &ShipmentMethod{},
 		ShippingAgentTableID:           &ShippingAgent{},
 		SMTPSetupTableID:               &SMTPSetup{},

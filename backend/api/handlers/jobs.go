@@ -90,42 +90,46 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	// Create codeunit instance
 	codeunit := factory(h.db, company, h.dbType)
 
-	// Get the source table name and create a typed record
+	// The source table's record from the request (typed); an object without a source table
+	// (a report without data items) runs without a record
 	tableName := codeunit.SourceTable()
-	tableFactory, ok := gtables.GetTableFactory(tableName)
-	if !ok {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
-	}
-
-	// Create table instance and populate from request
-	table := tableFactory()
-	table.InitWithDBType(h.db, company, h.dbType)
-	table.FromMap(req.Record)
-	// A function works on the stored record (not on what the browser sent) — an AssistEdit
-	// function on the record as the page has it (also a new one), with the stored values as
-	// its old values
-	if req.Function != "" {
-		fn, _ := functions.Lookup(req.Function)
-		key, id := fullPrimaryKey(table)
-		switch {
-		case fn != nil && fn.AssistEdit:
-			stored := tableFactory()
-			stored.InitWithDBType(h.db, company, h.dbType)
-			if stored.Get(key) {
-				stored.UpdateFromMap(req.Record)
-				table = stored
-			}
-		case !table.Get(key):
-			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableName, id).Message(language)))
+	var table ftables.Table
+	if tableName != "" {
+		tableFactory, ok := gtables.GetTableFactory(tableName)
+		if !ok {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
 		}
-	}
-	newTable := func() ftables.Table {
-		t := tableFactory()
-		t.InitWithDBType(h.db, company, h.dbType)
-		return t
-	}
-	if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+
+		// Create table instance and populate from request
+		table = tableFactory()
+		table.InitWithDBType(h.db, company, h.dbType)
+		table.FromMap(req.Record)
+		// A function works on the stored record (not on what the browser sent) — an AssistEdit
+		// function on the record as the page has it (also a new one), with the stored values as
+		// its old values
+		if req.Function != "" {
+			fn, _ := functions.Lookup(req.Function)
+			key, id := fullPrimaryKey(table)
+			switch {
+			case fn != nil && fn.AssistEdit:
+				stored := tableFactory()
+				stored.InitWithDBType(h.db, company, h.dbType)
+				if stored.Get(key) {
+					stored.UpdateFromMap(req.Record)
+					table = stored
+				}
+			case !table.Get(key):
+				return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableName, id).Message(language)))
+			}
+		}
+		newTable := func() ftables.Table {
+			t := tableFactory()
+			t.InitWithDBType(h.db, company, h.dbType)
+			return t
+		}
+		if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
 	}
 
 	// Check if codeunit uses progress - if not, run synchronously

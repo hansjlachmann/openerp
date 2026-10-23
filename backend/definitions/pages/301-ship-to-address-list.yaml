@@ -1,0 +1,98 @@
+page:
+  id: 301
+  type: List
+  name: Ship-to Address List
+  source_table: Ship_to_Address   # opened from the Customer Card (filter customer_no)
+  caption: Ship-to Address List
+  card_page_id: 300
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: customer_no
+          width: 120
+          visible: false
+
+        - source: code
+          width: 100
+
+        - source: name
+          width: 250
+
+        - source: address
+          width: 140
+
+        - source: address_2
+          width: 140
+          visible: false
+
+        - source: post_code
+          width: 140
+
+        - source: city
+          width: 140
+
+        - source: country_code
+          width: 140
+
+        - source: phone_no
+          width: 140
+
+        - source: fax_no
+          width: 140
+          visible: false
+
+        - source: contact
+          width: 140
+
+        - source: location_code
+          width: 140
+          visible: false
+
+        - source: shipment_method_code
+          width: 140
+          visible: false
+
+        - source: shipping_agent_code
+          width: 140
+          visible: false
+
+        - source: state
+          width: 140
+          visible: false
+
+        - source: e_mail
+          width: 140
+          visible: false
+
+        - source: home_page
+          width: 140
+          visible: false
+
+        - source: last_date_modified
+          width: 140
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

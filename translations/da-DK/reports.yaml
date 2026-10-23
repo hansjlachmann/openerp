@@ -11,3 +11,16 @@ reports:
       DAYS_NEGATIVE: "Antal dage kan ikke være negativt."
       WINDOW: "Sletter opgavekøposter...\nOpgavekø          #1##########\nSlettede poster   #2######"
       DONE: "%1 opgavekøposter blev slettet."
+  "93":
+    caption: "Opret regnskabsår"
+    options:
+      starting_date: "Startdato"
+      no_of_periods: "Antal perioder"
+      period_length: "Periodelængde"
+    texts:
+      OPTIONS: "Indstillinger"
+      CLOSE_NEW_YEAR: "Det nye regnskabsår begynder før et eksisterende regnskabsår, så det nye år bliver lukket automatisk.\n\n"
+      CONFIRM_CREATE_AND_CLOSE: "Vil du oprette og lukke regnskabsåret?"
+      CANNOT_CHANGE_START: "Når du har oprettet det nye regnskabsår, kan du ikke ændre startdatoen.\n\n"
+      CONFIRM_CREATE: "Vil du oprette regnskabsåret?"
+      ONLY_BEFORE_OR_AFTER: "Du kan kun oprette nye regnskabsår før eller efter de eksisterende."

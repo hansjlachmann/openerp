@@ -32,6 +32,7 @@ page:
             style: Strong
           - source: blocked
           - source: last_date_modified
+          - source: comment
           - source: automatic_ext_text
 
       - name: Posting
@@ -107,3 +108,12 @@ page:
       run_page: 20
       run_page_filter_field: gl_account_no
       run_page_filter_value: no
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "0"}   # G/L Account
+        - {field: "no", value: "no"}

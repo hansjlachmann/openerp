@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
@@ -55,6 +56,9 @@ func (h *PageTriggersHandler) FieldStates(c *fiber.Ctx) error {
 	rec := factory()
 	rec.InitWithDBType(h.db, sess.GetCompany(), h.dbType)
 	rec.FromMap(record)
+	// the triggers' texts in the user's language (fcodeunits.CurrentLanguage)
+	fcodeunits.SetCurrentContext(sess.GetUserID(), sess.GetUserName(), sess.GetCompany(), language)
+	defer fcodeunits.ClearCurrentContext()
 	control, err := pages.RunAfterGetRecordControl(pageID, rec)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(apitypes.NewErrorResponse(err.Error()))

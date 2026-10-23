@@ -69,26 +69,30 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 	// Create codeunit instance
 	codeunit := factory(h.db, company, h.dbType)
 
-	// Get the source table name and create a typed record
+	// The source table's record from the request (typed); an object without a source table
+	// (a report without data items) runs without a record
 	tableName := codeunit.SourceTable()
-	tableFactory, ok := gtables.GetTableFactory(tableName)
-	if !ok {
-		return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
-	}
+	var table ftables.Table
+	if tableName != "" {
+		tableFactory, ok := gtables.GetTableFactory(tableName)
+		if !ok {
+			return c.Status(500).JSON(apitypes.NewErrorResponse("Source table not found: " + tableName))
+		}
 
-	// Create table instance and populate from request
-	table := tableFactory()
-	table.InitWithDBType(h.db, company, h.dbType)
+		// Create table instance and populate from request
+		table = tableFactory()
+		table.InitWithDBType(h.db, company, h.dbType)
 
-	// Populate table fields from the record map
-	table.FromMap(req.Record)
-	newTable := func() ftables.Table {
-		t := tableFactory()
-		t.InitWithDBType(h.db, company, h.dbType)
-		return t
-	}
-	if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		// Populate table fields from the record map
+		table.FromMap(req.Record)
+		newTable := func() ftables.Table {
+			t := tableFactory()
+			t.InitWithDBType(h.db, company, h.dbType)
+			return t
+		}
+		if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
 	}
 
 	// Run the codeunit with the typed record

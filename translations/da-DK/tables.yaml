@@ -141,6 +141,7 @@ tables:
       tax_bus_posting_group: "Momsvirksomhedsbogf.gruppe"
       reserve: "Reserver"
       no_of_ledger_entries: "Antal poster"
+      comment: "Bemærkning"
 
     # Option field values
     options:
@@ -672,6 +673,7 @@ tables:
   g_l_account:
     caption: "Finanskonto"
     fields:
+      comment: "Bemærkning"
       no: "Nr."
       name: "Navn"
       search_name: "Søgenavn"
@@ -1003,3 +1005,90 @@ tables:
         none: "Ingen"
         emu: "ØMU"
         all: "Alle"
+  # Accounting Period (Table 50)
+  accounting_period:
+    caption: "Regnskabsperiode"
+    fields:
+      starting_date: "Startdato"
+      name: "Navn"
+      new_fiscal_year: "Nyt regnskabsår"
+      closed: "Lukket"
+      date_locked: "Datospærret"
+  # Comment Line (Table 97)
+  comment_line:
+    caption: "Bemærkningslinje"
+    fields:
+      table_name: "Tabelnavn"
+      no: "Nr."
+      line_no: "Linjenr."
+      date: "Dato"
+      code: "Kode"
+      comment: "Bemærkning"
+    options:
+      table_name:
+        g_l_account: "Finanskonto"
+        customer: "Debitor"
+        vendor: "Kreditor"
+        item: "Vare"
+        resource: "Ressource"
+        job: "Sag"
+        " ": " "
+        resource_group: "Ressourcegruppe"
+        bank_account: "Bankkonto"
+        campaign: "Kampagne"
+        fixed_asset: "Anlægsaktiv"
+        insurance: "Forsikring"
+  # Ship-to Address (Table 222)
+  ship_to_address:
+    caption: "Leveringsadresse"
+    fields:
+      customer_no: "Debitornr."
+      code: "Kode"
+      name: "Navn"
+      name_2: "Navn 2"
+      address: "Adresse"
+      address_2: "Adresse 2"
+      city: "By"
+      contact: "Kontakt"
+      phone_no: "Telefonnr."
+      telex_no: "Telexnr."
+      shipment_method_code: "Leveringskode"
+      shipping_agent_code: "Speditørkode"
+      place_of_export: "Udførselssted"
+      country_code: "Landekode"
+      last_date_modified: "Rettet den"
+      location_code: "Lokationskode"
+      fax_no: "Telefaxnr."
+      telex_answer_back: "Telex-svarkode"
+      post_code: "Postnr."
+      state: "Amt"
+      e_mail: "E-mail"
+      home_page: "Hjemmeside"
+      tax_area_code: "Momsområdekode"
+      tax_liable: "Momspligtig"
+  # Customer Bank Account (Table 287)
+  customer_bank_account:
+    caption: "Debitorbankkonto"
+    fields:
+      customer_no: "Debitornr."
+      code: "Kode"
+      name: "Navn"
+      name_2: "Navn 2"
+      address: "Adresse"
+      address_2: "Adresse 2"
+      city: "By"
+      post_code: "Postnr."
+      contact: "Kontakt"
+      phone_no: "Telefonnr."
+      telex_no: "Telexnr."
+      bank_branch_no: "Bankregistreringsnr."
+      bank_account_no: "Bankkontonr."
+      transit_no: "Transitnr."
+      currency_code: "Valutakode"
+      country_code: "Landekode"
+      state: "Amt"
+      fax_no: "Telefaxnr."
+      telex_answer_back: "Telex-svarkode"
+      language_code: "Sprogkode"
+      e_mail: "E-mail"
+      home_page: "Hjemmeside"

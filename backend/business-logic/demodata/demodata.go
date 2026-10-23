@@ -92,9 +92,13 @@ type Counts struct {
 	Countries     int
 	PaymentTerms  int
 	MasterData    int // records of the master data tables (setup.yaml master_data)
+	CustomerData  int // the customers' comments, ship-to addresses, bank accounts (customer_data)
 	Customers     int
 	LedgerEntries int
 	GLEntries     int // demo G/L entries (monthly sales and costs against the bank)
+	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
+	// and the first period of the next year; the oldest year is closed
+	AccountingPeriods int
 }
 
 // ErrCompanyNotEmpty is returned when the company already has customers.
@@ -135,16 +139,22 @@ type setupData struct {
 	} `yaml:"payment_terms"`
 	// MasterData: records of master data tables (API name), field name → value; the
 	// tables' defaults fill the fields not given
-	MasterData []struct {
-		Table   string                   `yaml:"table"`
-		Records []map[string]interface{} `yaml:"records"`
-	} `yaml:"master_data"`
+	MasterData []tableRecords `yaml:"master_data"`
+	// CustomerData: records that belong to the customers (comments, ship-to addresses, bank
+	// accounts), inserted after them
+	CustomerData []tableRecords `yaml:"customer_data"`
 }
 
-// masterDataCount is the number of master data records in the setup data
-func (s setupData) masterDataCount() int {
+// tableRecords are records of a table (API name), field name → value
+type tableRecords struct {
+	Table   string                   `yaml:"table"`
+	Records []map[string]interface{} `yaml:"records"`
+}
+
+// recordCount is the number of records of the tables
+func recordCount(data []tableRecords) int {
 	n := 0
-	for _, t := range s.MasterData {
+	for _, t := range data {
 		n += len(t.Records)
 	}
 	return n
@@ -270,7 +280,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return counts, ErrCompanyNotEmpty
 	}
 
-	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+setup.masterDataCount(), len(customers), len(entries))
+	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+recordCount(setup.MasterData)+recordCount(setup.CustomerData), len(customers), len(entries))
 
 	err = insertSetup(exec, company, dbType, setup, &counts, p)
 	if err != nil {
@@ -278,6 +288,16 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return Counts{}, err
 	}
 	err = insertCustomers(exec, company, dbType, customers, entries, today, &counts, p)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = insertRecords(exec, company, dbType, setup.CustomerData, &counts.CustomerData, p)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = insertAccountingPeriods(exec, company, dbType, today, &counts)
 	if err != nil {
 		rollback()
 		return Counts{}, err
@@ -356,7 +376,18 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 		}
 		p.step()
 	}
-	for _, t := range setup.MasterData {
+	err := insertRecords(exec, company, dbType, setup.MasterData, &counts.MasterData, p)
+	if err != nil {
+		return err
+	}
+	// The chart of accounts as the Indent Chart of Accounts function leaves it
+	return tables.IndentChartOfAccounts(exec, company, dbType, nil)
+}
+
+// insertRecords inserts the records of tables that do not exist yet (a setup record gets the
+// values) and counts them
+func insertRecords(exec database.Executor, company string, dbType database.DBType, data []tableRecords, count *int, p *progress) error {
+	for _, t := range data {
 		factory, ok := gtables.GetTableFactory(t.Table)
 		if !ok {
 			return fmt.Errorf("demo data: table %q does not exist", t.Table)
@@ -374,7 +405,7 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 				if err != nil {
 					return &InsertError{Table: t.Table, Key: rec.GetPrimaryKeyValue(), Err: err}
 				}
-				counts.MasterData++
+				(*count)++
 			case rec.IsSetupTable():
 				// The setup record exists as soon as its page was opened: it gets the values
 				rec.FromMap(record)
@@ -382,13 +413,41 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 				if err != nil {
 					return &InsertError{Table: t.Table, Key: "", Err: err}
 				}
-				counts.MasterData++
+				(*count)++
 			}
 			p.step()
 		}
 	}
-	// The chart of accounts as the Indent Chart of Accounts function leaves it
-	return tables.IndentChartOfAccounts(exec, company, dbType, nil)
+	return nil
+}
+
+// insertAccountingPeriods creates the monthly accounting periods of the fiscal years from two
+// years ago to this year and the first period of the next year, as Create Fiscal Year does,
+// and closes the oldest year as Fiscal Year-Close does
+func insertAccountingPeriods(exec database.Executor, company string, dbType database.DBType, today time.Time, counts *Counts) error {
+	accountingPeriod := gtables.NewAccountingPeriod(ftables.DBSource(exec, company, dbType))
+	if !accountingPeriod.IsEmpty() {
+		return nil
+	}
+	firstYear := today.Year() - 2
+	for i := 0; i <= 3*12; i++ {
+		startingDate := types.NewDate(firstYear+i/12, time.Month(i%12+1), 1)
+		accountingPeriod.Init()
+		err := accountingPeriod.Validate("starting_date", startingDate)
+		if err != nil {
+			return err
+		}
+		accountingPeriod.New_fiscal_year = i%12 == 0
+		// the closed year and the first period of the year after it are date locked
+		accountingPeriod.Closed = i < 12
+		accountingPeriod.Date_locked = i <= 12
+		err = accountingPeriod.InsertOrError(false)
+		if err != nil {
+			return &InsertError{Table: gtables.AccountingPeriodTableName, Key: startingDate.String(), Err: err}
+		}
+		counts.AccountingPeriods++
+	}
+	return nil
 }
 
 func insertCustomers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry, today time.Time, counts *Counts, p *progress) error {

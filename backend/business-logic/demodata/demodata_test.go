@@ -42,7 +42,8 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
 		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
-		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}}
+		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
+		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -95,6 +96,20 @@ func TestCreateSmall(t *testing.T) {
 
 	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 237 || counts.GLEntries < 500 {
 		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 237 master data records, at least 500 G/L entries", counts)
+	}
+	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
+	// monthly periods and the next year's first, the oldest year closed
+	if counts.CustomerData != 11 || counts.AccountingPeriods != 37 {
+		t.Errorf("customer data %d, accounting periods %d, want 11 and 37", counts.CustomerData, counts.AccountingPeriods)
+	}
+	var shipTo gtables.ShipToAddress
+	shipTo.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !shipTo.GetByPK(types.Code("C00010"), types.Code("LAGER")) || shipTo.Name != "Fjordkraft Interiør AS" || shipTo.City != "Oslo" {
+		t.Errorf("ship-to address C00010 LAGER: name %q, city %q", shipTo.Name, shipTo.City)
+	}
+	var closed int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "` + testCompany + `$Accounting_Period" WHERE closed`).Scan(&closed); err != nil || closed != 12 {
+		t.Errorf("%d closed periods, want 12 (%v)", closed, err)
 	}
 	// The number series continue after the demo customers and posted documents
 	for series, prefix := range map[string]string{"CUST": "C00", "S-INV+": "SI0", "S-CR+": "SCM0"} {

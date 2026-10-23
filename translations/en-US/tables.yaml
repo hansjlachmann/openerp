@@ -141,6 +141,7 @@ tables:
       tax_bus_posting_group: "Tax Bus. Posting Group"
       reserve: "Reserve"
       no_of_ledger_entries: "No. of Ledger Entries"
+      comment: "Comment"
 
     # Option field values
     options:
@@ -672,6 +673,7 @@ tables:
   g_l_account:
     caption: "G/L Account"
     fields:
+      comment: "Comment"
       no: "No."
       name: "Name"
       search_name: "Search Name"
@@ -1003,3 +1005,90 @@ tables:
         none: "None"
         emu: "EMU"
         all: "All"
+  # Accounting Period (Table 50)
+  accounting_period:
+    caption: "Accounting Period"
+    fields:
+      starting_date: "Starting Date"
+      name: "Name"
+      new_fiscal_year: "New Fiscal Year"
+      closed: "Closed"
+      date_locked: "Date Locked"
+  # Comment Line (Table 97)
+  comment_line:
+    caption: "Comment Line"
+    fields:
+      table_name: "Table Name"
+      no: "No."
+      line_no: "Line No."
+      date: "Date"
+      code: "Code"
+      comment: "Comment"
+    options:
+      table_name:
+        g_l_account: "G/L Account"
+        customer: "Customer"
+        vendor: "Vendor"
+        item: "Item"
+        resource: "Resource"
+        job: "Job"
+        " ": " "
+        resource_group: "Resource Group"
+        bank_account: "Bank Account"
+        campaign: "Campaign"
+        fixed_asset: "Fixed Asset"
+        insurance: "Insurance"
+  # Ship-to Address (Table 222)
+  ship_to_address:
+    caption: "Ship-to Address"
+    fields:
+      customer_no: "Customer No."
+      code: "Code"
+      name: "Name"
+      name_2: "Name 2"
+      address: "Address"
+      address_2: "Address 2"
+      city: "City"
+      contact: "Contact"
+      phone_no: "Phone No."
+      telex_no: "Telex No."
+      shipment_method_code: "Shipment Method Code"
+      shipping_agent_code: "Shipping Agent Code"
+      place_of_export: "Place of Export"
+      country_code: "Country Code"
+      last_date_modified: "Last Date Modified"
+      location_code: "Location Code"
+      fax_no: "Fax No."
+      telex_answer_back: "Telex Answer Back"
+      post_code: "Post Code"
+      state: "State"
+      e_mail: "E-Mail"
+      home_page: "Home Page"
+      tax_area_code: "Tax Area Code"
+      tax_liable: "Tax Liable"
+  # Customer Bank Account (Table 287)
+  customer_bank_account:
+    caption: "Customer Bank Account"
+    fields:
+      customer_no: "Customer No."
+      code: "Code"
+      name: "Name"
+      name_2: "Name 2"
+      address: "Address"
+      address_2: "Address 2"
+      city: "City"
+      post_code: "Post Code"
+      contact: "Contact"
+      phone_no: "Phone No."
+      telex_no: "Telex No."
+      bank_branch_no: "Bank Branch No."
+      bank_account_no: "Bank Account No."
+      transit_no: "Transit No."
+      currency_code: "Currency Code"
+      country_code: "Country Code"
+      state: "State"
+      fax_no: "Fax No."
+      telex_answer_back: "Telex Answer Back"
+      language_code: "Language Code"
+      e_mail: "E-Mail"
+      home_page: "Home Page"

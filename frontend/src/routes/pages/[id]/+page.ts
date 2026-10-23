@@ -9,6 +9,8 @@ export const load: PageLoad = ({ params, url }) => {
 	// to select when this page is the one returned to
 	const returnUrl = safeReturnUrl(url.searchParams.get('back'));
 	const select = url.searchParams.get('select') || undefined;
+	// Returning to a list whose modal card was open on the selected record: open it again
+	const openCard = url.searchParams.get('card') === '1';
 	// Opened from a lookup's New: the list starts a new record ready to type
 	const startNew = url.searchParams.get('new') === '1';
 
@@ -18,6 +20,7 @@ export const load: PageLoad = ({ params, url }) => {
 		filter,
 		returnUrl,
 		select,
+		openCard,
 		startNew
 	};
 };

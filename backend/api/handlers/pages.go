@@ -130,7 +130,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		for i := range pageDef.Page.Layout.Sections {
 			for j := range pageDef.Page.Layout.Sections[i].Fields {
 				field := &pageDef.Page.Layout.Sections[i].Fields[j]
-				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				fieldCaptions[field.Source] = pageFieldCaption(ts, pageDef.Page.Name, pageDef.Page.SourceTable, field, lang)
 				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
 					fieldTypes[field.Source] = ft
 				}
@@ -154,7 +154,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		if pageDef.Page.Layout.Repeater != nil {
 			for i := range pageDef.Page.Layout.Repeater.Fields {
 				field := &pageDef.Page.Layout.Repeater.Fields[i]
-				fieldCaptions[field.Source] = ts.FieldCaption(pageDef.Page.SourceTable, field.Source, lang)
+				fieldCaptions[field.Source] = pageFieldCaption(ts, pageDef.Page.Name, pageDef.Page.SourceTable, field, lang)
 				if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
 					fieldTypes[field.Source] = ft
 				}
@@ -259,6 +259,17 @@ func optionKeys(values []string) []string {
 // normalizePageName converts "Customer Card" to "customer_card"
 // markCalculated makes a calculated page field (filled by the page's triggers) read-only, gives
 // it its type, and lists it with the computed fields (not searched or sorted on the server)
+// pageFieldCaption is a page field's caption: the page's own (pages.<page>.fields.<source> — a
+// calculated field, or a caption that differs from the table's), else the table field's
+func pageFieldCaption(ts *i18n.TranslationService, pageName, table string, field *pages.Field, lang string) string {
+	key := "pages." + normalizePageName(pageName) + ".fields." + field.Source
+	caption := ts.Translate(key, lang)
+	if caption != key {
+		return caption
+	}
+	return ts.FieldCaption(table, field.Source, lang)
+}
+
 func markCalculated(page *pages.PageMetadata, field *pages.Field, fieldTypes map[string]string) {
 	readOnly := false
 	field.Editable = &readOnly

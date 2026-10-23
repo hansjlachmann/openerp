@@ -771,6 +771,9 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 		if f.ReverseSign && !(f.FlowField && f.CalcFormula == "Sum") {
 			return fmt.Errorf("field %s: reverse_sign is only for Sum FlowFields", f.Name)
 		}
+		if f.FlowField && f.CalcFormula == "Exist" && f.Type != "bool" {
+			return fmt.Errorf("field %s: an Exist FlowField is a bool, not %s", f.Name, f.Type)
+		}
 	}
 	filters := map[string]Field{}
 	for _, f := range def.FlowFilterFields {
@@ -971,7 +974,7 @@ func resolveFlowFieldSIFT(def *TableDef, byStruct map[string]*TableDef) {
 				f.FilterRefs = append(f.FilterRefs, ff)
 			}
 		}
-		if !f.FlowField || (f.CalcFormula != "Sum" && f.CalcFormula != "Count") {
+		if !f.FlowField || (f.CalcFormula != "Sum" && f.CalcFormula != "Count" && f.CalcFormula != "Exist") {
 			continue
 		}
 		source, ok := byStruct[toPascalCase(f.SourceTable)]
@@ -2439,6 +2442,17 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 	if pk, ok := primaryKey.(string); ok {
 		return t.GetByPK(pk)
 	}
+{{- else if eq $pk.Type "types.Date" }}
+	switch pk := primaryKey.(type) {
+	case types.Date:
+		return t.GetByPK(pk)
+	case time.Time:
+		return t.GetByPK(types.NewDate(pk.Year(), pk.Month(), pk.Day()))
+	case string:
+		if d, err := types.NewDateFromString(pk); err == nil {
+			return t.GetByPK(d)
+		}
+	}
 {{- end }}
 {{- else }}
 	// For tables with composite keys, direct value is not supported
@@ -3104,7 +3118,7 @@ func (t *{{ $.StructName }}) calcFlowField_{{ .Name }}() {
 	{{- else if eq .CalcFormula "Lookup" }}
 	t.{{ upperFirst .Name }} = t.calcLookup_{{ .Name }}()
 	{{- else if eq .CalcFormula "Exist" }}
-	t.{{ upperFirst .Name }} = t.calcExist{{ upperFirst .SourceTable }}()
+	t.{{ upperFirst .Name }} = t.calcCount_{{ .Name }}() > 0
 	{{- end }}
 }
 {{- end }}
@@ -3154,8 +3168,8 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 		one.{{ upperFirst .Name }} = t.{{ upperFirst .Name }}
 {{- end }}
 		one.FromMap(rec)
-{{- if eq .CalcFormula "Count" }}
-		rec["{{ .DBName }}"] = one.calcCount_{{ .Name }}()
+{{- if (or (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
+		rec["{{ .DBName }}"] = one.calcCount_{{ .Name }}(){{ if eq .CalcFormula "Exist" }} > 0{{ end }}
 {{- else }}
 		rec["{{ .DBName }}"] = one.calcSum_{{ .Name }}().String()
 {{- end }}
@@ -3165,7 +3179,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 		return
 	}
 {{- end }}
-{{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count")) }}
+{{- if and .BatchKeyField (or (eq .CalcFormula "Sum") (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
 {{- template "flowSource" . }}
 
 	// Distinct key values of the records
@@ -3182,7 +3196,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
 	// list) one grouped query over the whole source table instead: much cheaper than
 	// many IN queries, and it keeps the bind parameters bounded.
-	{{- if eq .CalcFormula "Count" }}
+	{{- if (or (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
 	values := make(map[string]int, len(keys))
 	{{- else }}
 	values := make(map[string]{{ .Type }}, len(keys))
@@ -3212,7 +3226,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 			whereClause = strings.Join(whereClauses, " AND ")
 		}
 
-		{{- if eq .CalcFormula "Count" }}
+		{{- if (or (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
 		agg := "COUNT(*)"
 		if useSIFT {
 			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
@@ -3230,7 +3244,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 		}
 		for rows.Next() {
 			var key string
-			{{- if eq .CalcFormula "Count" }}
+			{{- if (or (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
 			var count int
 			if err := rows.Scan(&key, &count); err == nil {
 				values[key] = count
@@ -3247,8 +3261,8 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 
 	// Records without matching entries get zero
 	for _, rec := range records {
-		{{- if eq .CalcFormula "Count" }}
-		rec["{{ .DBName }}"] = values[fmt.Sprint(rec["{{ .BatchKeyValue }}"])]
+		{{- if (or (eq .CalcFormula "Count") (eq .CalcFormula "Exist")) }}
+		rec["{{ .DBName }}"] = values[fmt.Sprint(rec["{{ .BatchKeyValue }}"])]{{ if eq .CalcFormula "Exist" }} > 0{{ end }}
 		{{- else }}
 		v, ok := values[fmt.Sprint(rec["{{ .BatchKeyValue }}"])]
 		if !ok {
@@ -3330,7 +3344,7 @@ func (t *{{ $.StructName }}) calcSum_{{ .Name }}() {{ .Type }} {
 	return sum
 }
 {{- end }}
-{{- if and .FlowField (eq .CalcFormula "Count") }}
+{{- if and .FlowField ((or (eq .CalcFormula "Count") (eq .CalcFormula "Exist"))) }}
 
 func (t *{{ $.StructName }}) calcCount_{{ .Name }}() int {
 {{- template "flowSource" . }}
@@ -5261,7 +5275,8 @@ func (t *{{ .StructName }}) Copy(from *{{ .StructName }}) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *{{ .StructName }}) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -5287,10 +5302,10 @@ func (t *{{ .StructName }}) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false

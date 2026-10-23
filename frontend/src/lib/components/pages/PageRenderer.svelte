@@ -32,6 +32,7 @@
 		initialFilter?: string | string[]; // ?filter=field=expression (several: one per field)
 		returnUrl?: string; // opened from a drilldown/card action: Esc and close go back here
 		initialSelect?: string; // record key to select (returning from a drilldown)
+		openCard?: boolean; // and open its modal card again (returning from a card's action)
 		startNew?: boolean; // a list opened from a lookup's New: start a new record
 		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
 		// Opened from a codeunit (RunModal) in a modal: no breadcrumb or navigation; the list is
@@ -60,6 +61,7 @@
 		initialFilter,
 		returnUrl,
 		initialSelect,
+		openCard = false,
 		startNew = false,
 		navigationQuery,
 		embedded = false,
@@ -230,17 +232,18 @@
 		}
 
 		// Get record label (primary key value like customer number)
-		const recordLabelValue = getRecordLabel(record) || recordid;
+		const shownRecordId = recordid ?? currentRecordId; // a card opened with a filter: its first record
+		const recordLabelValue = getRecordLabel(record) || shownRecordId;
 
 		breadcrumb.setCardPage(
 			page.page.id,
 			page.page.caption,
-			recordid,
+			shownRecordId,
 			recordLabelValue,
 			page.page.list_page_id,
 			listPageCaption,
 			navigation.home,
-			recordid ? cardTitle(page.page.caption, page.page.data_caption_fields, record, options) : undefined
+			shownRecordId ? cardTitle(page.page.caption, page.page.data_caption_fields, record, options) : undefined
 		);
 	}
 
@@ -249,8 +252,13 @@
 		if (!page) return;
 
 		try {
-			// A setup card opens on the table's single record (blank key)
-			const cardRecordId = recordid || (page.page.setup_table ? '' : undefined);
+			// A setup card opens on the table's single record (blank key); a card opened with a
+			// filter (an action's run_page_filter) on the first record in the filter
+			let cardRecordId = recordid || (page.page.setup_table ? '' : undefined);
+			if (cardRecordId === undefined && currentFilters.length > 0) {
+				const ids = await api.getRecordIDs(page.page.source_table, { filters: currentFilters });
+				cardRecordId = ids[0];
+			}
 			if (cardRecordId !== undefined) {
 				// Load specific record with captions (includes option values and lookups)
 				const result = await api.getRecordWithCaptions(page.page.source_table, cardRecordId);
@@ -686,8 +694,12 @@
 		return () => clearTimeout(timer);
 	});
 
+	// Esc / close on a card page: back to the page that opened it (an action or drilldown of
+	// another card — that card again, on its record), else to the card's list
 	function handleCardClose() {
-		if (page?.page.list_page_id) {
+		if (returnUrl) {
+			goto(returnUrl);
+		} else if (page?.page.list_page_id) {
 			goto(`/pages/${page.page.list_page_id}`);
 		} else {
 			// Fallback: go back in history
@@ -765,6 +777,7 @@
 					{windowOffset}
 					{returnUrl}
 					initialSelectKey={initialSelect}
+					initialOpenCard={openCard}
 					{startNew}
 					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 					pickOnEnter={embedded}
@@ -805,6 +818,7 @@
 				{windowOffset}
 				{returnUrl}
 				initialSelectKey={initialSelect}
+				initialOpenCard={openCard}
 				{startNew}
 				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 				pickOnEnter={embedded}
