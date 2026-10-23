@@ -309,7 +309,7 @@ messages:
   FISCAL_YEAR_CLOSE_CONFIRM: "Denne funksjonen avslutter regnskapsåret fra %1 til %2. Når regnskapsåret er avsluttet, kan det ikke åpnes igjen, og periodene i regnskapsåret kan ikke endres.\n\nVil du avslutte regnskapsåret?"
 
   # Demo data (codeunit 901)
-  DEMO_DATA_DONE: "Demodata opprettet: %1 kunder og %2 kundeposter."
+  DEMO_DATA_DONE: "Demodata opprettet: %1 kunder med %2 kundeposter, %3 leverandører med %4 leverandørposter."
   DEMO_DATA_NOT_EMPTY: "Selskapet \"%1\" har allerede kunder. Demodata opprettes bare i et selskap uten kunder."
   DEMO_DATA_BAD_SIZE: "Ukjent størrelse på demodata \"%1\". Sett parameteren på jobben til SMALL, LARGE eller HEAVY."
   DEMO_DATA_INSERT_FAILED: "Kunne ikke opprette %1 %2: %3. Ingen demodata ble opprettet."

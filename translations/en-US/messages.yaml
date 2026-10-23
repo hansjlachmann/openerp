@@ -309,7 +309,7 @@ messages:
   FISCAL_YEAR_CLOSE_CONFIRM: "This function closes the fiscal year from %1 to %2. Once the fiscal year is closed it cannot be opened again, and the periods in the fiscal year cannot be changed.\n\nDo you want to close the fiscal year?"
 
   # Demo data (codeunit 901)
-  DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."
+  DEMO_DATA_DONE: "Demo data created: %1 customers with %2 customer ledger entries, %3 vendors with %4 vendor ledger entries."
   DEMO_DATA_NOT_EMPTY: "Company \"%1\" already has customers. Demo data is only created in a company without customers."
   DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL, LARGE or HEAVY."
   DEMO_DATA_INSERT_FAILED: "Could not create %1 %2: %3. No demo data was created."

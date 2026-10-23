@@ -36,7 +36,8 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
 		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
-		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}} {
+		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
+		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{}} {
 		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -67,9 +68,9 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		return e.Status
 	}
 
-	// Correct totals: success, the 3 keys checked (customer ledger, G/L entries)
+	// Correct totals: success, the 4 keys checked (customer and vendor ledger, G/L entries)
 	msg, err := run("")
-	if err != nil || !strings.Contains(msg, "3 SIFT keys") {
+	if err != nil || !strings.Contains(msg, "4 SIFT keys") {
 		t.Fatalf("verify on correct totals: %q, %v", msg, err)
 	}
 	if lastEntryStatus() != gtables.JobQueueEntry_Status.Success {

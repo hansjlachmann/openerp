@@ -8,6 +8,7 @@ common:
 
   # Common actions
   actions:
+    order_addresses: "Order Addresses"
     statistics: "Statistics"
     comments: "Comments"
     bank_accounts: "Bank Accounts"
@@ -57,6 +58,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    receiving: "Receiving"
     this_period: "This Period"
     this_year: "This Year"
     last_year: "Last Year"
@@ -92,6 +94,10 @@ common:
 
   # Menu items
   menu:
+    vendors: "Vendors"
+    vendor_ledger_entries: "Vendor Ledger Entries"
+    purchases_payables_setup: "Purchases & Payables Setup"
+    vendor_posting_groups: "Vendor Posting Groups"
     accounting_periods: "Accounting Periods"
     customer_posting_groups: "Customer Posting Groups"
     post_codes: "Post Codes"

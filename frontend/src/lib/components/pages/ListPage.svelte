@@ -1264,8 +1264,20 @@
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
 
+	// Saves still running or queued finish first (at most a few seconds): the page's
+	// OnNewRecord triggers see the line just entered (Comment Sheet: only the first comment
+	// gets the work date)
+	async function waitForSaves(maxMs = 5000) {
+		await new Promise((resolve) => setTimeout(resolve, 0)); // the leaving row's save starts first
+		const start = Date.now();
+		while ((isSaving || pendingSaves.length > 0) && Date.now() - start < maxMs) {
+			await new Promise((resolve) => setTimeout(resolve, 25));
+		}
+	}
+
 	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true) {
 		let defaults: Record<string, any>;
+		if (page.page.has_new_record_triggers) await waitForSaves();
 		try {
 			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below, { ...newRowValues, ...autoSplitKeyValue() }));
 		} catch (err) {

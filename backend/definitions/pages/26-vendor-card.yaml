@@ -1,0 +1,159 @@
+page:
+  id: 26
+  type: Card
+  name: Vendor Card
+  source_table: Vendor
+  caption: Vendor Card
+  list_page_id: 27
+  enable_navigation: true
+  editable: true
+  focus_field: "no"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            assist_edit: "table:Vendor.AssistEdit"   # pick another number series (…, Shift+F2)
+          - source: name
+          - source: address
+          - source: address_2
+          - source: post_code
+          - source: city
+          - source: state
+          - source: phone_no
+          - source: contact
+          - source: search_name
+          - source: balance_lcy
+            drilldown: 29   # Vendor Ledger Entries of this vendor, in a modal
+            drilldown_filter_field: vendor_no
+            drilldown_filter_value: "no"
+            style: Strong
+          - source: purchaser_code
+          - source: blocked
+          - source: last_date_modified
+          - source: comment
+          - source: no_of_ledger_entries
+            drilldown: 29
+            drilldown_filter_field: vendor_no
+            drilldown_filter_value: "no"
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: phone_no
+          - source: fax_no
+          - source: e_mail
+          - source: home_page
+          - source: telex_no
+          - source: telex_answer_back
+
+      - name: Invoicing
+        caption: Invoicing
+        fields:
+          - source: pay_to_vendor_no
+          - source: gen_bus_posting_group
+          - source: tax_bus_posting_group
+          - source: vendor_posting_group
+          - source: invoice_disc_code
+          - source: tax_area_code
+          - source: tax_liable
+          - source: department_code
+          - source: project_code
+
+      - name: Payments
+        caption: Payments
+        fields:
+          - source: application_method
+          - source: payment_terms_code
+          - source: payment_method_code
+          - source: priority
+          - source: our_account_no
+
+      - name: Receiving
+        caption: Receiving
+        fields:
+          - source: shipment_method_code
+          - source: shipping_agent_code
+          - source: reserve
+
+      - name: Foreign Trade
+        caption: Foreign Trade
+        fields:
+          - source: currency_code
+          - source: language_code
+          - source: country_code
+          - source: vat_registration_no
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 27
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 29
+      run_page_filter_field: vendor_no
+      run_page_filter_value: no
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 152
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "2"}   # Vendor
+        - {field: "no", value: "no"}
+
+    - name: Bank Accounts
+      caption: Bank Accounts
+      image: Card
+      promoted: true
+      run_page: 426
+      run_page_filter_field: vendor_no
+      run_page_filter_value: "no"
+
+    - name: Order Addresses
+      caption: Order Addresses
+      image: Navigate
+      promoted: true
+      run_page: 369
+      run_page_filter_field: vendor_no
+      run_page_filter_value: "no"

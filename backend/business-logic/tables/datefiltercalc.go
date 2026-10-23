@@ -42,7 +42,7 @@ func createAccountingDateFilter(from ftables.Source, fiscalYear bool, date types
 		nextStep = nextStep - 1
 	}
 	if nextStep != 0 {
-		if nextAccountingPeriod(accountingPeriod, nextStep) != nextStep {
+		if !accountingPeriod.Next(nextStep) {
 			if nextStep < 0 {
 				return ".." + accountingPeriod.Starting_date.AddDays(-1).String(), "..."
 			}
@@ -56,28 +56,8 @@ func createAccountingDateFilter(from ftables.Source, fiscalYear bool, date types
 	} else {
 		name = accountingPeriod.Name.String()
 	}
-	if nextAccountingPeriod(accountingPeriod, 1) != 0 {
+	if accountingPeriod.Next() {
 		return startDate.String() + ".." + accountingPeriod.Starting_date.AddDays(-1).String(), name
 	}
 	return startDate.String() + ".." + endOfTime.String(), name + "..."
-}
-
-// nextAccountingPeriod moves steps periods forward (or back) within the filters and returns
-// how many it moved (Next(steps))
-func nextAccountingPeriod(accountingPeriod *gtables.AccountingPeriod, steps int) int {
-	moved := 0
-	for moved != steps {
-		if steps > 0 {
-			if !accountingPeriod.Find(">") {
-				return moved
-			}
-			moved++
-		} else {
-			if !accountingPeriod.Find("<") {
-				return moved
-			}
-			moved--
-		}
-	}
-	return moved
 }

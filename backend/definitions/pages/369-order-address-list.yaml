@@ -1,0 +1,86 @@
+page:
+  id: 369
+  type: List
+  name: Order Address List
+  source_table: Order_Address   # opened from the Vendor Card (filter vendor_no)
+  caption: Order Address List
+  card_page_id: 368
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: vendor_no
+          width: 120
+          visible: false
+
+        - source: code
+          width: 100
+
+        - source: name
+          width: 250
+
+        - source: address
+          width: 140
+
+        - source: address_2
+          width: 140
+          visible: false
+
+        - source: post_code
+          width: 140
+
+        - source: city
+          width: 140
+
+        - source: country_code
+          width: 140
+
+        - source: phone_no
+          width: 140
+
+        - source: fax_no
+          width: 140
+          visible: false
+
+        - source: contact
+          width: 140
+
+        - source: state
+          width: 140
+          visible: false
+
+        - source: e_mail
+          width: 140
+          visible: false
+
+        - source: home_page
+          width: 140
+          visible: false
+
+        - source: last_date_modified
+          width: 140
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

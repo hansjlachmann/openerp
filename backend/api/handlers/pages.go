@@ -99,7 +99,9 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 			readOnly := false
 			field.Editable = &readOnly // a page cannot make a read-only table field editable
 		}
-		field.DecimalPlaces = info.DecimalPlaces
+		if field.DecimalPlaces == "" {
+			field.DecimalPlaces = info.DecimalPlaces
+		}
 	}
 	pageDef.Page.DataCaptionFields = tableMeta.GetDataCaptionFields(pageDef.Page.SourceTable)
 	if len(pageDef.Page.DataCaptionFields) == 0 && pageDef.Page.Type == "Card" {

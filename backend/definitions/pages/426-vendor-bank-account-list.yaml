@@ -1,0 +1,73 @@
+page:
+  id: 426
+  type: List
+  name: Vendor Bank Account List
+  source_table: Vendor_Bank_Account   # opened from the Vendor Card (filter vendor_no)
+  caption: Vendor Bank Account List
+  card_page_id: 425
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: vendor_no
+          width: 120
+          visible: false
+
+        - source: code
+          width: 100
+
+        - source: name
+          width: 250
+
+        - source: post_code
+          width: 140
+          visible: false
+
+        - source: country_code
+          width: 140
+          visible: false
+
+        - source: phone_no
+          width: 140
+
+        - source: fax_no
+          width: 140
+          visible: false
+
+        - source: contact
+          width: 140
+
+        - source: bank_account_no
+          width: 140
+
+        - source: currency_code
+          width: 140
+          visible: false
+
+        - source: language_code
+          width: 140
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

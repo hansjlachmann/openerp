@@ -36,6 +36,14 @@ table:
                 width: 100
               - source: name
                 width: 250
+          - when: {field: table_name, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
 
     - name: line_no
       no: 3

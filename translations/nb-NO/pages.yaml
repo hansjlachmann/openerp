@@ -217,3 +217,60 @@ pages:
       to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
       to_date_payments_lcy: "Betalinger (NOK)"
       to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"
+
+  # Vendor pages
+  vendor_card:
+    caption: "Leverandørkort"
+  vendor_list:
+    caption: "Leverandøroversikt"
+  vendor_ledger_entries:
+    caption: "Leverandørposter"
+  vendor_posting_groups:
+    caption: "Leverandørbokføringsgrupper"
+  purchases_payables_setup:
+    caption: "Innkjøps- og leverandøroppsett"
+  order_address:
+    caption: "Bestillingsadresse"
+  order_address_list:
+    caption: "Bestillingsadresseoversikt"
+  vendor_bank_account_card:
+    caption: "Leverandørbankkontokort"
+  vendor_bank_account_list:
+    caption: "Leverandørbankkontooversikt"
+  vendor_statistics:
+    caption: "Leverandørstatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Totalt (NOK)"
+      balance_due_to_date_lcy: "Forfalt saldo (NOK)"
+      this_period_name: "Periode"
+      this_period_purchases_lcy: "Kjøp (NOK)"
+      this_period_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_period_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_period_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_period_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_period_payments_lcy: "Betalinger (NOK)"
+      this_period_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      this_year_name: "Periode"
+      this_year_purchases_lcy: "Kjøp (NOK)"
+      this_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_year_payments_lcy: "Betalinger (NOK)"
+      this_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      last_year_name: "Periode"
+      last_year_purchases_lcy: "Kjøp (NOK)"
+      last_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      last_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      last_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      last_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      last_year_payments_lcy: "Betalinger (NOK)"
+      last_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      to_date_name: "Periode"
+      to_date_purchases_lcy: "Kjøp (NOK)"
+      to_date_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      to_date_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      to_date_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      to_date_payments_lcy: "Betalinger (NOK)"
+      to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"

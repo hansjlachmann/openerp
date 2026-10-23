@@ -217,3 +217,60 @@ pages:
       to_date_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
       to_date_payments_lcy: "Payments (LCY)"
       to_date_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+
+  # Vendor pages
+  vendor_card:
+    caption: "Vendor Card"
+  vendor_list:
+    caption: "Vendor List"
+  vendor_ledger_entries:
+    caption: "Vendor Ledger Entries"
+  vendor_posting_groups:
+    caption: "Vendor Posting Groups"
+  purchases_payables_setup:
+    caption: "Purchases & Payables Setup"
+  order_address:
+    caption: "Order Address"
+  order_address_list:
+    caption: "Order Address List"
+  vendor_bank_account_card:
+    caption: "Vendor Bank Account Card"
+  vendor_bank_account_list:
+    caption: "Vendor Bank Account List"
+  vendor_statistics:
+    caption: "Vendor Statistics"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Total (LCY)"
+      balance_due_to_date_lcy: "Balance Due (LCY)"
+      this_period_name: "Period"
+      this_period_purchases_lcy: "Purchases (LCY)"
+      this_period_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      this_period_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      this_period_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      this_period_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      this_period_payments_lcy: "Payments (LCY)"
+      this_period_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      this_year_name: "Period"
+      this_year_purchases_lcy: "Purchases (LCY)"
+      this_year_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      this_year_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      this_year_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      this_year_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      this_year_payments_lcy: "Payments (LCY)"
+      this_year_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      last_year_name: "Period"
+      last_year_purchases_lcy: "Purchases (LCY)"
+      last_year_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      last_year_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      last_year_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      last_year_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      last_year_payments_lcy: "Payments (LCY)"
+      last_year_reminder_amounts_lcy: "Reminder Amounts (LCY)"
+      to_date_name: "Period"
+      to_date_purchases_lcy: "Purchases (LCY)"
+      to_date_inv_discounts_lcy: "Inv. Discounts (LCY)"
+      to_date_pmt_discounts_lcy: "Pmt. Discounts (LCY)"
+      to_date_fin_charge_memo_amounts_lcy: "Fin. Charge Memo Amounts (LCY)"
+      to_date_cr_memo_amounts_lcy: "Cr. Memo Amounts (LCY)"
+      to_date_payments_lcy: "Payments (LCY)"
+      to_date_reminder_amounts_lcy: "Reminder Amounts (LCY)"

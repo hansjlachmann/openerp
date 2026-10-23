@@ -10,6 +10,14 @@ menu:
         page_id: 25
         icon: list
 
+      - name: Vendors
+        page_id: 27
+        icon: users
+
+      - name: Vendor Ledger Entries
+        page_id: 29
+        icon: list
+
       - name: Chart of Accounts
         page_id: 16
         icon: list
@@ -35,6 +43,10 @@ menu:
 
       - name: Sales & Receivables Setup
         page_id: 459
+        icon: settings
+
+      - name: Purchases & Payables Setup
+        page_id: 460
         icon: settings
 
       - name: No. Series
@@ -95,6 +107,10 @@ menu:
 
       - name: Customer Posting Groups
         page_id: 110
+        icon: tag
+
+      - name: Vendor Posting Groups
+        page_id: 111
         icon: tag
 
       - name: Customer Disc. Groups

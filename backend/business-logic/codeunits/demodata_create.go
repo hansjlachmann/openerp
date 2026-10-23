@@ -75,7 +75,7 @@ func (c *DemoDataCreate) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Message(err.Error()), nil
 	}
 	return fcodeunits.Message(ts.MessageWithParams("DEMO_DATA_DONE", lang,
-		fmt.Sprint(counts.Customers), fmt.Sprint(counts.LedgerEntries))), nil
+		fmt.Sprint(counts.Customers), fmt.Sprint(counts.LedgerEntries), fmt.Sprint(counts.Vendors), fmt.Sprint(counts.VendorLedgerEntries))), nil
 }
 
 func (c *DemoDataCreate) create(jobQueue *gtables.JobQueue, ts *i18n.TranslationService, lang string) (demodata.Counts, error) {

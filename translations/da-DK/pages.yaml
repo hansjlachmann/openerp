@@ -217,3 +217,60 @@ pages:
       to_date_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
       to_date_payments_lcy: "Betalinger (RV)"
       to_date_reminder_amounts_lcy: "Rykkerbeløb (RV)"
+
+  # Vendor pages
+  vendor_card:
+    caption: "Kreditorkort"
+  vendor_list:
+    caption: "Kreditoroversigt"
+  vendor_ledger_entries:
+    caption: "Kreditorposter"
+  vendor_posting_groups:
+    caption: "Kreditorbogføringsgrupper"
+  purchases_payables_setup:
+    caption: "Købsopsætning"
+  order_address:
+    caption: "Bestillingsadresse"
+  order_address_list:
+    caption: "Bestillingsadresseoversigt"
+  vendor_bank_account_card:
+    caption: "Kreditorbankkontokort"
+  vendor_bank_account_list:
+    caption: "Kreditorbankkontooversigt"
+  vendor_statistics:
+    caption: "Kreditorstatistik"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "I alt (RV)"
+      balance_due_to_date_lcy: "Forfalden saldo (RV)"
+      this_period_name: "Periode"
+      this_period_purchases_lcy: "Køb (RV)"
+      this_period_inv_discounts_lcy: "Fakturarabatter (RV)"
+      this_period_pmt_discounts_lcy: "Kontantrabatter (RV)"
+      this_period_fin_charge_memo_amounts_lcy: "Rentenotabeløb (RV)"
+      this_period_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
+      this_period_payments_lcy: "Betalinger (RV)"
+      this_period_reminder_amounts_lcy: "Rykkerbeløb (RV)"
+      this_year_name: "Periode"
+      this_year_purchases_lcy: "Køb (RV)"
+      this_year_inv_discounts_lcy: "Fakturarabatter (RV)"
+      this_year_pmt_discounts_lcy: "Kontantrabatter (RV)"
+      this_year_fin_charge_memo_amounts_lcy: "Rentenotabeløb (RV)"
+      this_year_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
+      this_year_payments_lcy: "Betalinger (RV)"
+      this_year_reminder_amounts_lcy: "Rykkerbeløb (RV)"
+      last_year_name: "Periode"
+      last_year_purchases_lcy: "Køb (RV)"
+      last_year_inv_discounts_lcy: "Fakturarabatter (RV)"
+      last_year_pmt_discounts_lcy: "Kontantrabatter (RV)"
+      last_year_fin_charge_memo_amounts_lcy: "Rentenotabeløb (RV)"
+      last_year_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
+      last_year_payments_lcy: "Betalinger (RV)"
+      last_year_reminder_amounts_lcy: "Rykkerbeløb (RV)"
+      to_date_name: "Periode"
+      to_date_purchases_lcy: "Køb (RV)"
+      to_date_inv_discounts_lcy: "Fakturarabatter (RV)"
+      to_date_pmt_discounts_lcy: "Kontantrabatter (RV)"
+      to_date_fin_charge_memo_amounts_lcy: "Rentenotabeløb (RV)"
+      to_date_cr_memo_amounts_lcy: "Kreditnotabeløb (RV)"
+      to_date_payments_lcy: "Betalinger (RV)"
+      to_date_reminder_amounts_lcy: "Rykkerbeløb (RV)"

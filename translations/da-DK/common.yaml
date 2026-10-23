@@ -8,6 +8,7 @@ common:
 
   # Common actions
   actions:
+    order_addresses: "Bestillingsadresser"
     statistics: "Statistik"
     comments: "Bemærkninger"
     bank_accounts: "Bankkonti"
@@ -57,6 +58,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    receiving: "Modtagelse"
     this_period: "Denne periode"
     this_year: "Dette år"
     last_year: "Sidste år"
@@ -92,6 +94,10 @@ common:
 
   # Menu items
   menu:
+    vendors: "Kreditorer"
+    vendor_ledger_entries: "Kreditorposter"
+    purchases_payables_setup: "Købsopsætning"
+    vendor_posting_groups: "Kreditorbogføringsgrupper"
     accounting_periods: "Regnskabsperioder"
     customer_posting_groups: "Debitorbogføringsgrupper"
     post_codes: "Postnumre"

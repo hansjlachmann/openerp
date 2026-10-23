@@ -71,6 +71,28 @@ table:
           type: filter
           value: date_filter
 
+    - name: vendor_balances_due
+      no: 45
+      type: types.Decimal
+      flow_field: true
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: remaining_amt_lcy
+      flow_filters:
+        - field: open
+          type: const
+          value: "true"
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: due_date
+          type: filter
+          value: date_filter
+
     - name: unrealized_tax
       no: 48
       type: bool

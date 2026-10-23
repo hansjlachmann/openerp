@@ -226,6 +226,10 @@ master_data:
     records:
       - {code: DOMESTIC, receivables_account: "1410", service_charge_acc: "3130", payment_disc_acc: "3150", invoice_rounding_account: "3150", additional_fee_account: "3130", interest_account: "6110", curr_appln_rounding_account: "6140"}
       - {code: FOREIGN, receivables_account: "1420", service_charge_acc: "3130", payment_disc_acc: "3150", invoice_rounding_account: "3150", additional_fee_account: "3130", interest_account: "6110", curr_appln_rounding_account: "6140"}
+  - table: Vendor_Posting_Group   # the payables accounts of the vendors' country
+    records:
+      - {code: DOMESTIC, payables_account: "2310", payment_disc_acc: "3150", invoice_rounding_account: "3150", curr_appln_rounding_account: "6140"}
+      - {code: FOREIGN, payables_account: "2320", payment_disc_acc: "3150", invoice_rounding_account: "3150", curr_appln_rounding_account: "6140"}
   - table: Customer_Discount_Group
     records:
       - {code: RETAIL, description: Retail customers}
@@ -308,6 +312,15 @@ master_data:
       - {code: "S-REM+", description: Issued reminders, default_nos: true, manual_nos: false}
       - {code: "S-FIN", description: Finance charge memos, default_nos: true, manual_nos: true}
       - {code: "S-FIN+", description: Issued finance charge memos, default_nos: true, manual_nos: false}
+      - {code: "VEND", description: Vendors, default_nos: true, manual_nos: true}
+      - {code: "P-QUO", description: Purchase quotes, default_nos: true, manual_nos: true}
+      - {code: "P-BLK", description: Blanket purchase orders, default_nos: true, manual_nos: true}
+      - {code: "P-ORD", description: Purchase orders, default_nos: true, manual_nos: true}
+      - {code: "P-INV", description: Purchase invoices, default_nos: true, manual_nos: true}
+      - {code: "P-INV+", description: Posted purchase invoices, default_nos: true, manual_nos: false}
+      - {code: "P-CR", description: Purchase credit memos, default_nos: true, manual_nos: true}
+      - {code: "P-CR+", description: Posted purchase credit memos, default_nos: true, manual_nos: false}
+      - {code: "P-RCPT", description: Posted purchase receipts, default_nos: true, manual_nos: false}
   - table: No_Series_Line   # starting at the beginning (blank Starting Date)
     records:
       - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
@@ -324,12 +337,25 @@ master_data:
       - {series_code: "S-REM+", line_no: 10000, starting_no: "ISR000001", increment_by_no: 1, open: true}
       - {series_code: "S-FIN", line_no: 10000, starting_no: "SF000001", increment_by_no: 1, open: true}
       - {series_code: "S-FIN+", line_no: 10000, starting_no: "ISF000001", increment_by_no: 1, open: true}
+      - {series_code: "VEND", line_no: 10000, starting_no: "V00001", ending_no: "V99999", warning_no: "V99000", increment_by_no: 1, open: true}
+      - {series_code: "P-QUO", line_no: 10000, starting_no: "PQ000001", increment_by_no: 1, open: true}
+      - {series_code: "P-BLK", line_no: 10000, starting_no: "PB000001", increment_by_no: 1, open: true}
+      - {series_code: "P-ORD", line_no: 10000, starting_no: "PO000001", increment_by_no: 1, open: true}
+      - {series_code: "P-INV", line_no: 10000, starting_no: "PINV000001", increment_by_no: 1, open: true}
+      - {series_code: "P-INV+", line_no: 10000, starting_no: "PI000001", increment_by_no: 1, open: true}
+      - {series_code: "P-CR", line_no: 10000, starting_no: "PCR000001", increment_by_no: 1, open: true}
+      - {series_code: "P-CR+", line_no: 10000, starting_no: "PCM000001", increment_by_no: 1, open: true}
+      - {series_code: "P-RCPT", line_no: 10000, starting_no: "PR000001", increment_by_no: 1, open: true}
   - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
     records:
       - {code: CUST, series_code: CUST-EXP}
   - table: Sales_Receivables_Setup   # the single setup record (blank key)
     records:
       - {customer_nos: CUST, quote_nos: S-QUO, blanket_order_nos: S-BLK, order_nos: S-ORD, invoice_nos: S-INV, posted_invoice_nos: S-INV+, credit_memo_nos: S-CR, posted_credit_memo_nos: S-CR+, posted_shipment_nos: S-SHPT, reminder_nos: S-REM, issued_reminder_nos: S-REM+, fin_chrg_memo_nos: S-FIN, issued_fin_chrg_m_nos: S-FIN+, credit_warnings: 0, stockout_warning: true, calc_inv_discount: true}
+
+  - table: Purchases_Payables_Setup   # the single setup record (blank key)
+    records:
+      - {vendor_nos: VEND, quote_nos: P-QUO, blanket_order_nos: P-BLK, order_nos: P-ORD, invoice_nos: P-INV, posted_invoice_nos: P-INV+, credit_memo_nos: P-CR, posted_credit_memo_nos: P-CR+, posted_receipt_nos: P-RCPT, ext_doc_no_mandatory: true, calc_inv_discount: true}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)
@@ -351,3 +377,20 @@ customer_data:
       - {customer_no: C00010, code: DNB, name: DNB Bank ASA, bank_branch_no: "1200", bank_account_no: "1200.12.34567", post_code: "0159", city: Oslo, country_code: "NO"}
       - {customer_no: C00020, code: SPV, name: Sparebanken Vest, bank_branch_no: "3201", bank_account_no: "3201.55.12345", post_code: "5003", city: Bergen, country_code: "NO"}
       - {customer_no: C00030, code: SMN, name: SpareBank 1 SMN, bank_branch_no: "4200", bank_account_no: "4200.33.98765", post_code: "7011", city: Trondheim, country_code: "NO"}
+
+# Records that belong to the demo vendors, inserted after them (an order address gets the
+# vendor's name)
+vendor_data:
+  - table: Comment_Line   # table_name 2 = Vendor
+    records:
+      - {table_name: 2, "no": V00010, line_no: 10000, comment: Framework agreement on paper, renewed every January}
+      - {table_name: 2, "no": V00080, line_no: 10000, comment: Invoices in GBP — check the exchange rate before paying}
+  - table: Order_Address
+    records:
+      - {vendor_no: V00010, code: SALG, address: Sandakerveien 64, post_code: "0159", city: Oslo, country_code: "NO", contact: Ordrekontoret, e_mail: ordre@example.com}
+      - {vendor_no: V00060, code: ORDRE, address: Nørrebrogade 120, post_code: "2200", city: København N, country_code: DK}
+  - table: Vendor_Bank_Account
+    records:
+      - {vendor_no: V00010, code: DNB, name: DNB Bank ASA, bank_branch_no: "1503", bank_account_no: "1503.20.11223", post_code: "0159", country_code: "NO"}
+      - {vendor_no: V00020, code: SPV, name: Sparebanken Vest, bank_branch_no: "3208", bank_account_no: "3208.40.55667", post_code: "5003", country_code: "NO"}
+      - {vendor_no: V00080, code: HSBC, name: HSBC UK, bank_account_no: "40-11-60 12345678", currency_code: GBP, country_code: GB}

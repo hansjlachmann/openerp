@@ -1,0 +1,44 @@
+page:
+  id: 29
+  type: List
+  name: Vendor Ledger Entries
+  source_table: Vendor_ledger_entry
+  caption: Vendor Ledger Entries
+  # Editable for now (demo data; Vendor No. uses the on-demand vendor lookup). Posted
+  # ledger entries are read-only — make this page read-only once posting exists.
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 110
+
+        - source: document_no
+          width: 110
+
+        - source: vendor_no
+          width: 100
+
+        - source: description
+          width: 220
+
+        - source: amount_lcy
+          width: 110
+
+        - source: remaining_amt_lcy
+          width: 120
+
+        - source: open
+          width: 60
+
+        - source: due_date
+          width: 100
+
+  actions:

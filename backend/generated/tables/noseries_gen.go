@@ -946,7 +946,7 @@ func (t *NoSeries) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}},
+		"code": {{"Customer", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Purchases_Payables_Setup", false, "vendor_nos", "", 0}, {"Purchases_Payables_Setup", false, "quote_nos", "", 0}, {"Purchases_Payables_Setup", false, "order_nos", "", 0}, {"Purchases_Payables_Setup", false, "invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_receipt_nos", "", 0}, {"Purchases_Payables_Setup", false, "blanket_order_nos", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}, {"Vendor", false, "no_series", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1793,13 +1793,13 @@ func (t *NoSeries) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set
-// Must be called after FindSet() or FindSetBuffered()
+// Next advances to the next record: in the result set after FindSet() or FindSetBuffered(),
+// else from the current record in the current key (after Get, Find, FindFirst, FindLast)
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
 //   - Next(5): Skip forward 5 records
-//   - Next(-1): Move backward 1 record (only with FindSetBuffered)
-//   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
+//   - Next(-1): Move backward 1 record (FindSetBuffered, or after Get/Find)
+//   - Next(-3): Skip backward 3 records (FindSetBuffered, or after Get/Find)
 //
 // Returns true if a record was loaded, false if no more records or out of bounds
 func (t *NoSeries) Next(steps ...int) bool {
@@ -1878,8 +1878,26 @@ func (t *NoSeries) Next(steps ...int) bool {
 		return true
 	}
 
-	// No active recordset
-	return false
+	// No record set (after Get, Find, FindFirst, FindLast): the next record in the current key
+	// and direction within the filters, one step at a time (classic NEXT after FIND); a step
+	// that finds none leaves the record on the last one reached
+	if step == 0 {
+		return false
+	}
+	for i := 0; i != step; {
+		if step > 0 {
+			if !t.findInKey(">", false) {
+				return false
+			}
+			i++
+		} else {
+			if !t.findInKey("<", true) {
+				return false
+			}
+			i--
+		}
+	}
+	return true
 }
 
 // FindSetBuffered loads all filtered records into memory for bidirectional navigation

@@ -187,3 +187,25 @@ func TestCustomerDeleteWithPeriodsAndRelatedRecords(t *testing.T) {
 		t.Error("the G/L account's comment is left")
 	}
 }
+
+// Next after Get / FindFirst / FindLast moves from the record in the current key within the
+// filters (classic NEXT after FIND); a step past the end leaves the last record reached
+func TestNextAfterFind(t *testing.T) {
+	db := newTestDB(t)
+	createTables(t, db, &gtables.AccountingPeriod{})
+	addPeriods(t, db, 2025, 1, types.Date{})
+	p := gtables.NewAccountingPeriod(ftables.DBSource(db, "c1", database.DBTypeSQLite))
+	if !p.Get(types.NewDate(2025, 3, 1)) || !p.Next() || p.Name != "April" || !p.Next(-2) || p.Name != "February" {
+		t.Fatalf("Next from March: %s", p.Name)
+	}
+	p.SetRange("new_fiscal_year", true)
+	if !p.FindFirst() || !p.Next() || !p.Starting_date.Equal(types.NewDate(2026, 1, 1)) {
+		t.Fatalf("next fiscal year: %s", p.Starting_date)
+	}
+	if p.Next() || !p.Starting_date.Equal(types.NewDate(2026, 1, 1)) {
+		t.Errorf("past the last one: %s", p.Starting_date)
+	}
+	if p.Next(-3) || !p.Starting_date.Equal(types.NewDate(2025, 1, 1)) {
+		t.Errorf("three back from 2026 (two years): %s", p.Starting_date)
+	}
+}

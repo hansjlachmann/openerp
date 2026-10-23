@@ -1,0 +1,88 @@
+table:
+  id: 93
+  name: "Vendor_Posting_Group"
+  caption: Vendor Posting Group
+  description: "Vendor posting groups, the G/L accounts of payables (table 93)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: payables_account
+      no: 2
+      type: types.Code
+      db_name: payables_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: service_charge_acc
+      no: 7
+      type: types.Code
+      db_name: service_charge_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: payment_disc_acc
+      no: 8
+      type: types.Code
+      db_name: payment_disc_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: invoice_rounding_account
+      no: 9
+      type: types.Code
+      db_name: invoice_rounding_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: curr_appln_rounding_account
+      no: 10
+      type: types.Code
+      db_name: curr_appln_rounding_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

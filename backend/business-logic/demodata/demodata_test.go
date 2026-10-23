@@ -43,7 +43,8 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
 		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
-		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}}
+		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
+		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{}}
 	for _, c := range creators {
 		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
 			t.Fatalf("create table: %v", err)
@@ -94,8 +95,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 237 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 237 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 258 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 258 master data records, at least 500 G/L entries", counts)
 	}
 	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
 	// monthly periods and the next year's first, the oldest year closed
@@ -106,6 +107,25 @@ func TestCreateSmall(t *testing.T) {
 	shipTo.InitWithDBType(db, testCompany, database.DBTypeSQLite)
 	if !shipTo.GetByPK(types.Code("C00010"), types.Code("LAGER")) || shipTo.Name != "Fjordkraft Interiør AS" || shipTo.City != "Oslo" {
 		t.Errorf("ship-to address C00010 LAGER: name %q, city %q", shipTo.Name, shipTo.City)
+	}
+	// Vendors with their ledger entries (Balance (LCY) is what is owed: the open invoices),
+	// comments, order addresses and bank accounts; the VEND series continues after them
+	if counts.Vendors != 8 || counts.VendorLedgerEntries < 8*12 || counts.VendorData != 7 {
+		t.Errorf("vendors %d, vendor ledger entries %d, vendor data %d", counts.Vendors, counts.VendorLedgerEntries, counts.VendorData)
+	}
+	var vend gtables.Vendor
+	vend.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !vend.Get(types.Code("V00010")) || vend.Vendor_posting_group != "DOMESTIC" {
+		t.Fatalf("vendor V00010: %q", vend.Vendor_posting_group)
+	}
+	vend.CalcFields("balance_lcy", "purchases_lcy", "comment")
+	if !vend.Balance_lcy.IsPositive() || !vend.Purchases_lcy.IsPositive() || !vend.Comment {
+		t.Errorf("V00010 balance %s, purchases %s, comment %v", vend.Balance_lcy, vend.Purchases_lcy, vend.Comment)
+	}
+	var vendSeries gtables.NoSeriesLine
+	vendSeries.InitWithDBType(db, testCompany, database.DBTypeSQLite)
+	if !vendSeries.GetByPK(types.Code("VEND"), 10000) || vendSeries.Last_no_used != "V00080" {
+		t.Errorf("VEND last no. used %q", vendSeries.Last_no_used)
 	}
 	var closed int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM "` + testCompany + `$Accounting_Period" WHERE closed`).Scan(&closed); err != nil || closed != 12 {

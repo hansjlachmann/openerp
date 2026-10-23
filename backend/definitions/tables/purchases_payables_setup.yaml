@@ -1,0 +1,195 @@
+table:
+  id: 312
+  name: "Purchases_Payables_Setup"
+  caption: Purchases & Payables Setup
+  description: "Purchases and payables setup (table 312), a single record per company"
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: discount_posting
+      no: 2
+      type: Option
+      db_name: discount_posting
+      options: ["No Discounts", "Invoice Discounts", "Line Discounts", "All Discounts"]
+
+    - name: receipt_on_invoice
+      no: 6
+      type: bool
+      db_name: receipt_on_invoice
+
+    - name: invoice_rounding
+      no: 7
+      type: bool
+      db_name: invoice_rounding
+
+    - name: ext_doc_no_mandatory
+      no: 8
+      type: bool
+      db_name: ext_doc_no_mandatory
+      default: true
+
+    - name: vendor_nos
+      no: 9
+      type: types.Code
+      db_name: vendor_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: quote_nos
+      no: 10
+      type: types.Code
+      db_name: quote_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: order_nos
+      no: 11
+      type: types.Code
+      db_name: order_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: invoice_nos
+      no: 12
+      type: types.Code
+      db_name: invoice_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_invoice_nos
+      no: 13
+      type: types.Code
+      db_name: posted_invoice_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: credit_memo_nos
+      no: 14
+      type: types.Code
+      db_name: credit_memo_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_credit_memo_nos
+      no: 15
+      type: types.Code
+      db_name: posted_credit_memo_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posted_receipt_nos
+      no: 16
+      type: types.Code
+      db_name: posted_receipt_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: blanket_order_nos
+      no: 19
+      type: types.Code
+      db_name: blanket_order_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: calc_inv_discount
+      no: 20
+      type: bool
+      db_name: calc_inv_discount
+
+    - name: appln_between_currencies
+      no: 21
+      type: Option
+      db_name: appln_between_currencies
+      options: ["None", "EMU", "All"]
+
+    - name: copy_comments_blanket_to_order
+      no: 22
+      type: bool
+      db_name: copy_comments_blanket_to_order
+      default: true
+
+    - name: copy_comments_order_to_invoice
+      no: 23
+      type: bool
+      db_name: copy_comments_order_to_invoice
+      default: true
+
+    - name: copy_comments_order_to_receipt
+      no: 24
+      type: bool
+      db_name: copy_comments_order_to_receipt
+      default: true
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

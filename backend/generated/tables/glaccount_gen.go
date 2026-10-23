@@ -2195,7 +2195,7 @@ func (t *GLAccount) renameReferences(field string, oldValue, newValue interface{
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}},
+		"no": {{"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}, {"Vendor_Posting_Group", false, "payables_account", "", 0}, {"Vendor_Posting_Group", false, "service_charge_acc", "", 0}, {"Vendor_Posting_Group", false, "payment_disc_acc", "", 0}, {"Vendor_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Vendor_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -5067,13 +5067,13 @@ func (t *GLAccount) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set
-// Must be called after FindSet() or FindSetBuffered()
+// Next advances to the next record: in the result set after FindSet() or FindSetBuffered(),
+// else from the current record in the current key (after Get, Find, FindFirst, FindLast)
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
 //   - Next(5): Skip forward 5 records
-//   - Next(-1): Move backward 1 record (only with FindSetBuffered)
-//   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
+//   - Next(-1): Move backward 1 record (FindSetBuffered, or after Get/Find)
+//   - Next(-3): Skip backward 3 records (FindSetBuffered, or after Get/Find)
 //
 // Returns true if a record was loaded, false if no more records or out of bounds
 func (t *GLAccount) Next(steps ...int) bool {
@@ -5226,8 +5226,26 @@ func (t *GLAccount) Next(steps ...int) bool {
 		return true
 	}
 
-	// No active recordset
-	return false
+	// No record set (after Get, Find, FindFirst, FindLast): the next record in the current key
+	// and direction within the filters, one step at a time (classic NEXT after FIND); a step
+	// that finds none leaves the record on the last one reached
+	if step == 0 {
+		return false
+	}
+	for i := 0; i != step; {
+		if step > 0 {
+			if !t.findInKey(">", false) {
+				return false
+			}
+			i++
+		} else {
+			if !t.findInKey("<", true) {
+				return false
+			}
+			i--
+		}
+	}
+	return true
 }
 
 // FindSetBuffered loads all filtered records into memory for bidirectional navigation

@@ -22,11 +22,13 @@ page:
           - source: total_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
             style: Strong
           - source: credit_limit_lcy
           - source: balance_due_to_date_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
 
       - name: This Period
         caption: This Period
@@ -37,30 +39,39 @@ page:
           - source: this_period_sales_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_profit_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_profit_pct
             calculated: true
             type: types.Decimal
+            decimal_places: "1:1"
           - source: this_period_inv_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_pmt_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_fin_charge_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_cr_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_payments_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_period_reminder_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
 
       - name: This Year
         caption: This Year
@@ -71,30 +82,39 @@ page:
           - source: this_year_sales_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_profit_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_profit_pct
             calculated: true
             type: types.Decimal
+            decimal_places: "1:1"
           - source: this_year_inv_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_pmt_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_fin_charge_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_cr_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_payments_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: this_year_reminder_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
 
       - name: Last Year
         caption: Last Year
@@ -105,30 +125,39 @@ page:
           - source: last_year_sales_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_profit_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_profit_pct
             calculated: true
             type: types.Decimal
+            decimal_places: "1:1"
           - source: last_year_inv_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_pmt_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_fin_charge_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_cr_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_payments_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: last_year_reminder_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
 
       - name: To Date
         caption: To Date
@@ -139,27 +168,36 @@ page:
           - source: to_date_sales_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_profit_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_profit_pct
             calculated: true
             type: types.Decimal
+            decimal_places: "1:1"
           - source: to_date_inv_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_pmt_discounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_fin_charge_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_cr_memo_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_payments_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"
           - source: to_date_reminder_amounts_lcy
             calculated: true
             type: types.Decimal
+            decimal_places: "2:2"

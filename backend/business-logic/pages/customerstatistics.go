@@ -10,11 +10,12 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
+// statisticsColumns are the period columns of the statistics pages (151, 152)
+var statisticsColumns = []string{"this_period", "this_year", "last_year", "to_date"}
+
 // Page 151 Customer Statistics: the customer's balance and, for this accounting period, this
 // fiscal year, last fiscal year and to date, its sales, profit, discounts and other amounts
 // (OnAfterGetRecord; the periods of the work date, DateFilter-Calc)
-var customerStatisticsColumns = []string{"this_period", "this_year", "last_year", "to_date"}
-
 func init() {
 	pages.OnAfterGetRecord(151, func(rec *gtables.Customer, page *pages.Control) {
 		currentDate := system.WorkDate()
@@ -31,7 +32,7 @@ func init() {
 		page.SetValue("total_lcy", cust.Balance_lcy)
 		page.SetValue("balance_due_to_date_lcy", cust.Balance_due_lcy)
 
-		for i, column := range customerStatisticsColumns {
+		for i, column := range statisticsColumns {
 			page.SetValue(column+"_name", custDateName[i])
 			// without accounting periods only To Date has amounts
 			custPeriod := gtables.NewCustomer(rec)

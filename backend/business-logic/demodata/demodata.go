@@ -89,13 +89,16 @@ type Options struct {
 
 // Counts reports what Create inserted.
 type Counts struct {
-	Countries     int
-	PaymentTerms  int
-	MasterData    int // records of the master data tables (setup.yaml master_data)
-	CustomerData  int // the customers' comments, ship-to addresses, bank accounts (customer_data)
-	Customers     int
-	LedgerEntries int
-	GLEntries     int // demo G/L entries (monthly sales and costs against the bank)
+	Countries           int
+	PaymentTerms        int
+	MasterData          int // records of the master data tables (setup.yaml master_data)
+	CustomerData        int // the customers' comments, ship-to addresses, bank accounts (customer_data)
+	Vendors             int
+	VendorLedgerEntries int
+	VendorData          int // the vendors' comments, order addresses, bank accounts (vendor_data)
+	Customers           int
+	LedgerEntries       int
+	GLEntries           int // demo G/L entries (monthly sales and costs against the bank)
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -143,6 +146,8 @@ type setupData struct {
 	// CustomerData: records that belong to the customers (comments, ship-to addresses, bank
 	// accounts), inserted after them
 	CustomerData []tableRecords `yaml:"customer_data"`
+	// VendorData: the vendors' comments, order addresses and bank accounts, inserted after them
+	VendorData []tableRecords `yaml:"vendor_data"`
 }
 
 // tableRecords are records of a table (API name), field name → value
@@ -233,6 +238,11 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	if err != nil {
 		return counts, err
 	}
+	var vendors vendorsFile
+	err = loadYAML("vendors.yaml", &vendors)
+	if err != nil {
+		return counts, err
+	}
 
 	rng := newRand()
 	customers := small.Customers
@@ -254,6 +264,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		dueDays[strings.ToUpper(pt.Code)] = pt.DueDays
 	}
 	entries := generateEntries(rng, customers, dueDays, today, opts.Size)
+	vendorEntries := generateVendorEntries(vendors.Vendors, dueDays, today)
 
 	// One transaction: a failed run leaves the company as it was
 	exec := db
@@ -280,7 +291,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return counts, ErrCompanyNotEmpty
 	}
 
-	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+recordCount(setup.MasterData)+recordCount(setup.CustomerData), len(customers), len(entries))
+	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+recordCount(setup.MasterData)+recordCount(setup.CustomerData)+recordCount(setup.VendorData), len(customers), len(entries))
 
 	err = insertSetup(exec, company, dbType, setup, &counts, p)
 	if err != nil {
@@ -318,7 +329,22 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
-	err = useSeriesNumbers(exec, company, dbType, customers, entries)
+	err = insertVendors(exec, company, dbType, vendors.Vendors, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = insertVendorEntries(exec, company, dbType, vendorEntries, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = insertRecords(exec, company, dbType, setup.VendorData, &counts.VendorData, p)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = useSeriesNumbers(exec, company, dbType, customers, entries, vendorSeriesUse(vendors.Vendors, vendorEntries))
 	if err != nil {
 		rollback()
 		return Counts{}, err
@@ -808,9 +834,13 @@ func (p *progress) emit(pct int) {
 }
 
 // useSeriesNumbers marks the numbers the demo customers and posted documents have as used in
-// their number series (CUST, S-INV+, S-CR+), so the next number continues after them
-func useSeriesNumbers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry) error {
+// their number series (CUST, S-INV+, S-CR+; more: the vendors' VEND, P-INV+), so the next
+// number continues after them
+func useSeriesNumbers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry, more map[string]ledgerUse) error {
 	last := map[string]ledgerUse{}
+	for series, u := range more {
+		last[series] = u
+	}
 	use := func(series, no string, date time.Time) {
 		u := last[series]
 		if no > u.no {

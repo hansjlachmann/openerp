@@ -41,12 +41,14 @@ var tableRegistry = map[string]tables.TableFactory{
 	"No_Series":                  func() tables.Table { return &NoSeries{} },
 	"No_Series_Line":             func() tables.Table { return &NoSeriesLine{} },
 	"No_Series_Relationship":     func() tables.Table { return &NoSeriesRelationship{} },
+	"Order_Address":              func() tables.Table { return &OrderAddress{} },
 	"Payment_Method":             func() tables.Table { return &PaymentMethod{} },
 	"Payment_terms":              func() tables.Table { return &PaymentTerms{} },
 	"Permission":                 func() tables.Table { return &Permission{} },
 	"Post_Code":                  func() tables.Table { return &PostCode{} },
 	"Price_Group":                func() tables.Table { return &PriceGroup{} },
 	"Project":                    func() tables.Table { return &Project{} },
+	"Purchases_Payables_Setup":   func() tables.Table { return &PurchasesPayablesSetup{} },
 	"Reason_Code":                func() tables.Table { return &ReasonCode{} },
 	"Reminder_Level":             func() tables.Table { return &ReminderLevel{} },
 	"Reminder_Terms":             func() tables.Table { return &ReminderTerms{} },
@@ -72,6 +74,10 @@ var tableRegistry = map[string]tables.TableFactory{
 	"User_Theme":                 func() tables.Table { return &UserTheme{} },
 	"User_Member":                func() tables.Table { return &UserMember{} },
 	"User_Role":                  func() tables.Table { return &UserRole{} },
+	"Vendor":                     func() tables.Table { return &Vendor{} },
+	"Vendor_Bank_Account":        func() tables.Table { return &VendorBankAccount{} },
+	"Vendor_Posting_Group":       func() tables.Table { return &VendorPostingGroup{} },
+	"Vendor_ledger_entry":        func() tables.Table { return &VendorLedgerEntry{} },
 }
 
 // NewRecords returns a new record of every table by table ID (the object registry)
@@ -104,12 +110,14 @@ func NewRecords() map[int]tables.Table {
 		NoSeriesTableID:                &NoSeries{},
 		NoSeriesLineTableID:            &NoSeriesLine{},
 		NoSeriesRelationshipTableID:    &NoSeriesRelationship{},
+		OrderAddressTableID:            &OrderAddress{},
 		PaymentMethodTableID:           &PaymentMethod{},
 		PaymentTermsTableID:            &PaymentTerms{},
 		PermissionTableID:              &Permission{},
 		PostCodeTableID:                &PostCode{},
 		PriceGroupTableID:              &PriceGroup{},
 		ProjectTableID:                 &Project{},
+		PurchasesPayablesSetupTableID:  &PurchasesPayablesSetup{},
 		ReasonCodeTableID:              &ReasonCode{},
 		ReminderLevelTableID:           &ReminderLevel{},
 		ReminderTermsTableID:           &ReminderTerms{},
@@ -135,6 +143,10 @@ func NewRecords() map[int]tables.Table {
 		UserThemeTableID:               &UserTheme{},
 		UserMemberTableID:              &UserMember{},
 		UserRoleTableID:                &UserRole{},
+		VendorTableID:                  &Vendor{},
+		VendorBankAccountTableID:       &VendorBankAccount{},
+		VendorPostingGroupTableID:      &VendorPostingGroup{},
+		VendorLedgerEntryTableID:       &VendorLedgerEntry{},
 	}
 }
 

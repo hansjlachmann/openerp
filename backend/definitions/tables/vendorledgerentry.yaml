@@ -1,0 +1,464 @@
+table:
+  id: 25
+  name: "Vendor Ledger Entry"
+  api_name: Vendor_ledger_entry # the name in the API and in pages (source_table)
+  fields:
+    # Primary Key
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    # Vendor Information
+
+    - name: vendor_no
+      no: 3
+      type: types.Code
+      db_name: vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 90
+          - source: name
+            width: 220
+          - source: city
+            width: 120
+
+    - name: buy_from_vendor_no
+      no: 21
+      type: types.Code
+      db_name: buy_from_vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 90
+          - source: name
+            width: 220
+          - source: city
+            width: 120
+
+    # Document Information
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_date
+      no: 62
+      type: types.Date
+      db_name: document_date
+
+    - name: document_type
+      no: 5
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      no: 6
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: external_document_no
+      no: 63
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 100
+
+    # Currency Information
+
+    - name: currency_code
+      no: 11
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    # Amounts in Foreign Currency
+
+    - name: amount
+      no: 13
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+
+    - name: remaining_amount
+      no: 14
+      type: types.Decimal
+      db_name: remaining_amount
+      precision: 18
+      scale: 2
+
+    - name: closed_by_amount
+      no: 46
+      type: types.Decimal
+      db_name: closed_by_amount
+      precision: 18
+      scale: 2
+
+    # Amounts in Local Currency (LCY)
+
+    - name: original_amount_lcy
+      no: 15
+      type: types.Decimal
+      db_name: original_amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: remaining_amt_lcy
+      no: 16
+      type: types.Decimal
+      db_name: remaining_amt_lcy
+      precision: 18
+      scale: 2
+
+    - name: amount_lcy
+      no: 17
+      type: types.Decimal
+      db_name: amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: closed_by_amount_lcy
+      no: 54
+      type: types.Decimal
+      db_name: closed_by_amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: debit_amount   # the positive Amount
+      no: 58
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount   # the negative Amount, positive
+      no: 59
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: debit_amount_lcy   # the positive Amount (LCY)
+      no: 60
+      type: types.Decimal
+      db_name: debit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount_lcy   # the negative Amount (LCY), positive
+      no: 61
+      type: types.Decimal
+      db_name: credit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    # Purchase Statistics (LCY)
+
+    - name: purchase_lcy
+      no: 18
+      type: types.Decimal
+      db_name: purchase_lcy
+      precision: 18
+      scale: 2
+
+    - name: inv_discount_lcy
+      no: 20
+      type: types.Decimal
+      db_name: inv_discount_lcy
+      precision: 18
+      scale: 2
+
+    # Payment Discount
+
+    - name: pmt_discount_date
+      no: 38
+      type: types.Date
+      db_name: pmt_discount_date
+
+    - name: pmt_disc_possible
+      no: 39
+      type: types.Decimal
+      db_name: pmt_disc_possible
+      precision: 18
+      scale: 2
+
+    - name: pmt_disc_rcd_lcy
+      no: 40
+      type: types.Decimal
+      db_name: pmt_disc_rcd_lcy
+      precision: 18
+      scale: 2
+
+    # Posting Groups and Dimensions (simplified - no TableRelations for now)
+
+    - name: vendor_posting_group
+      no: 22
+      type: types.Code
+      db_name: vendor_posting_group
+      length: 10
+
+      table_relation:
+        table: Vendor_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: payables_account
+            width: 250
+
+    - name: department_code
+      no: 23
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 24
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purchaser_code
+      no: 25
+      type: types.Code
+      db_name: purchaser_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    # System Fields
+
+    - name: user_id
+      no: 27
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: source_code
+      no: 28
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reason_code
+      no: 50
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: journal_batch_name
+      no: 49
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: transaction_no
+      no: 53
+      type: int
+      db_name: transaction_no
+
+    # Application Fields
+
+    - name: applies_to_doc_type
+      no: 34
+      type: Option
+      db_name: applies_to_doc_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: applies_to_doc_no
+      no: 35
+      type: types.Code
+      db_name: applies_to_doc_no
+      length: 20
+
+    - name: applies_to_id
+      no: 47
+      type: types.Code
+      db_name: applies_to_id
+      length: 20
+
+    # Status Fields
+
+    - name: open
+      no: 36
+      type: bool
+      db_name: open
+
+    - name: positive
+      no: 43
+      type: bool
+      db_name: positive
+
+    - name: on_hold
+      no: 33
+      type: types.Code
+      db_name: on_hold
+      length: 3
+
+    - name: due_date
+      no: 37
+      type: types.Date
+      db_name: due_date
+
+    # Closing Information
+
+    - name: closed_by_entry_no
+      no: 44
+      type: int
+      db_name: closed_by_entry_no
+
+    - name: closed_at_date
+      no: 45
+      type: types.Date
+      db_name: closed_at_date
+
+    # Balancing Account
+
+    - name: bal_account_type
+      no: 51
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: bal_account_no
+      no: 52
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      # The balancing account's table depends on Bal. Account Type (bank accounts and fixed
+      # assets come with their tables)
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+  # Keys (Indexes) - style
+  # These indexes optimize FlowField calculations and common queries
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+  keys:
+    # SIFT key (SumIndexFields): the database keeps totals per vendor + open, so
+    # Vendor.Balance_lcy (vendor + open), Purchases_lcy and No_of_ledger_entries (vendor)
+    # read one or two totals rows instead of adding up every entry
+    - name: vendor_open
+      fields:
+        - vendor_no
+        - open
+      sum_index_fields:
+        - remaining_amt_lcy
+        - purchase_lcy
+        - amount_lcy
+
+    # Key for FlowField: Vendor.Purchases_lcy and No_of_ledger_entries (filters by vendor_no)
+    - name: vendor
+      fields:
+        - vendor_no
+
+    # Key for common queries by document type and number
+    - name: document
+      fields:
+        - document_type
+        - document_no
+
+    # Key for posting date queries (useful for date range filtering)
+    - name: posting_date
+      fields:
+        - posting_date
