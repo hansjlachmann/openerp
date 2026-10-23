@@ -21,7 +21,8 @@ import (
 // CheckObjectNumbers returns an error listing every table, page and codeunit whose number is
 // not in the series of one of the installed apps (reports when they exist)
 func CheckObjectNumbers(installed []*fapps.App) error {
-	if err := fapps.CheckOverlap(installed); err != nil {
+	err := fapps.CheckOverlap(installed)
+	if err != nil {
 		return err
 	}
 	allowed := func(objectType string, id int) bool {
@@ -87,7 +88,8 @@ func SyncInstalledApps(db database.Executor, dbType database.DBType, installed [
 		rec.Updated_at = now
 		ok := exists && rec.Modify(true) || !exists && rec.Insert(true)
 		if !ok {
-			if err := rec.TriggerError(); err != nil {
+			err := rec.TriggerError()
+			if err != nil {
 				return fmt.Errorf("installed app %s: %w", a.Name, err)
 			}
 			return fmt.Errorf("installed app %s could not be saved", a.Name)

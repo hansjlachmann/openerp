@@ -53,6 +53,10 @@ errors:
   ERR_NO_SERIES_NUMBER_FORMAT: "The number format in %1 must be the same as the number format in %2."
   ERR_NO_SERIES_TOO_LONG: "The number %1 cannot be extended to more than 20 characters."
 
+  # Deleting records with ledger entries
+  ERR_DELETE_HAS_ENTRIES: "You cannot delete %1 %2 because it has ledger entries in a fiscal year that has not been closed yet."
+  ERR_DELETE_OPEN_ENTRIES: "You cannot delete %1 %2 because there are one or more open ledger entries."
+
   # Session/Auth
   ERR_NO_ACTIVE_SESSION: "No active session"
   ERR_NOT_LOGGED_IN: "No user logged in"

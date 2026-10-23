@@ -24,11 +24,10 @@ func (reminderLevelLogic) OnModify(rec *gtables.ReminderLevel) error {
 
 // OnDelete deletes the level's beginning and ending texts
 func (reminderLevelLogic) OnDelete(rec *gtables.ReminderLevel) error {
-	var text gtables.ReminderText
-	text.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	text.SetRange("reminder_terms_code", rec.Reminder_terms_code)
-	text.SetRange("reminder_level", rec.No)
-	text.DeleteAll()
+	reminderText := gtables.NewReminderText(rec)
+	reminderText.SetRange("reminder_terms_code", rec.Reminder_terms_code)
+	reminderText.SetRange("reminder_level", rec.No)
+	reminderText.DeleteAll()
 	return nil
 }
 
@@ -39,9 +38,8 @@ func (reminderLevelLogic) OnRename(rec *gtables.ReminderLevel) error {
 
 // NewReminderLevel gives a new level the next No. of its reminder terms (NewRecord)
 func NewReminderLevel(rec *gtables.ReminderLevel) {
-	var level gtables.ReminderLevel
-	level.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	level.SetRange("reminder_terms_code", rec.Reminder_terms_code)
-	level.FindLast()
-	rec.No = level.No + 1
+	reminderLevel := gtables.NewReminderLevel(rec)
+	reminderLevel.SetRange("reminder_terms_code", rec.Reminder_terms_code)
+	reminderLevel.FindLast()
+	rec.No = reminderLevel.No + 1
 }

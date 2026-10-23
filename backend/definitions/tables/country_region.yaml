@@ -34,8 +34,8 @@ table:
       no: 8
       type: Option
       db_name: address_format
-      options: ["ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"]
-      default: 1 # City+ZIP Code
+      options: ["Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"]
+      default: 1 # City+Post Code
 
     - name: contact_address_format
       no: 9

@@ -136,3 +136,53 @@ func TestIntegerKeyPartFromURL(t *testing.T) {
 		t.Errorf("starting no = %q, %v", startingNo, err)
 	}
 }
+
+// A customer numbered from a series whose next number is taken: refused with "Customer …
+// already exists", and the series does not move on (the insert is one transaction)
+func TestCustomerNumberTaken(t *testing.T) {
+	db, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.Customer{}, &gtables.SalesReceivablesSetup{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{}, &gtables.NoSeriesRelationship{}} {
+		_ = tbl.CreateTableWithDBType(db, "T", database.DBTypeSQLite)
+	}
+	for _, q := range []string{
+		`INSERT INTO "T$No_Series" (code, default_nos) VALUES ('CUST', 1)`,
+		`INSERT INTO "T$No_Series_Line" (series_code, line_no, starting_no, increment_by_no, open) VALUES ('CUST', 10000, 'C00001', 1, 1)`,
+	} {
+		if _, err := db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var setup gtables.SalesReceivablesSetup
+	setup.InitWithDBType(db, "T", database.DBTypeSQLite)
+	setup.InitRecord()
+	setup.Customer_nos = "CUST"
+	setup.Insert(false)
+	var cust gtables.Customer
+	cust.InitWithDBType(db, "T", database.DBTypeSQLite)
+	cust.InitRecord()
+	cust.No, cust.Name = "C00001", "Existing"
+	cust.Insert(false)
+	h := NewTablesHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "T", Language: "en-US"})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/insert", h.InsertRecord)
+	if status, out := sendJSON(t, app, "POST", "/api/tables/Customer/insert", `{}`); status != 409 || out["error"] != "Customer C00001 already exists" {
+		t.Errorf("taken number: %d %v", status, out)
+	}
+	var name string
+	_ = db.QueryRow(`SELECT name FROM "T$Customer" WHERE no = 'C00001'`).Scan(&name)
+	var last string
+	_ = db.QueryRow(`SELECT last_no_used FROM "T$No_Series_Line"`).Scan(&last)
+	if name != "Existing" || last != "" {
+		t.Errorf("after the refused insert: C00001 %q, Last No. Used %q (want unchanged)", name, last)
+	}
+}

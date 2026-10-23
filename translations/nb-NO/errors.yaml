@@ -53,6 +53,10 @@ errors:
   ERR_NO_SERIES_NUMBER_FORMAT: "Nummerformatet i %1 må være det samme som nummerformatet i %2."
   ERR_NO_SERIES_TOO_LONG: "Nummeret %1 kan ikke utvides til mer enn 20 tegn."
 
+  # Deleting records with ledger entries
+  ERR_DELETE_HAS_ENTRIES: "Du kan ikke slette %1 %2 fordi det finnes poster i et regnskapsår som ikke er avsluttet ennå."
+  ERR_DELETE_OPEN_ENTRIES: "Du kan ikke slette %1 %2 fordi det finnes én eller flere åpne poster."
+
   # Session/Auth
   ERR_NO_ACTIVE_SESSION: "Ingen aktiv sesjon"
   ERR_NOT_LOGGED_IN: "Ingen bruker er logget inn"

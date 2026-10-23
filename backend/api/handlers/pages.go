@@ -85,6 +85,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	tableFields := map[string]ftables.FieldInfo{}
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		pageDef.Page.SetupTable = factory().IsSetupTable()
+		pageDef.Page.AutoKey = pages.GetTableMetadata().IsAutoKey(pageDef.Page.SourceTable)
 		for _, f := range factory().GetFields() {
 			tableFields[f.Name] = f
 		}

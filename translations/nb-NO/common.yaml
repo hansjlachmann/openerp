@@ -32,7 +32,6 @@ common:
     import: "Importer"
     back_to_list: "Tilbake til listen"
     entries: "Poster"
-    generate_ledger_entries: "Generer poster"
     ledger_entries: "Poster"
     line: "Linje"
     run: "Kjør"
@@ -51,6 +50,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    payments: "Betalinger"
+    shipping: "Levering"
+    foreign_trade: "Utenrikshandel"
     numbering: "Nummerering"
     posting: "Postering"
     consolidation: "Konsolidering"

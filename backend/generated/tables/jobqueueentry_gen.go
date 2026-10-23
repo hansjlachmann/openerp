@@ -236,11 +236,63 @@ func (t *JobQueueEntry) GetPostgresTableSchema() string {
 	return GetJobQueueEntryPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *JobQueueEntry) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *JobQueueEntry) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["entry_no"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(JobQueueEntryTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *JobQueueEntry) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(JobQueueEntryTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *JobQueueEntry) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(JobQueueEntryTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *JobQueueEntry) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(JobQueueEntryTableName, key)
 }
 
 // ========================================
@@ -615,6 +667,47 @@ func (t *JobQueueEntry) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *JobQueueEntry) XRec() *JobQueueEntry {
+	x := &JobQueueEntry{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["entry_no"].(int); ok {
+		x.Entry_no = v
+	}
+	if v, ok := t.oldValues["job_queue_no"].(types.Code); ok {
+		x.Job_queue_no = v
+	}
+	if v, ok := t.oldValues["status"].(JobQueueEntryStatus); ok {
+		x.Status = v
+	}
+	if v, ok := t.oldValues["user_id"].(types.Code); ok {
+		x.User_id = v
+	}
+	if v, ok := t.oldValues["description"].(types.Text); ok {
+		x.Description = v
+	}
+	if v, ok := t.oldValues["error_message"].(types.Text); ok {
+		x.Error_message = v
+	}
+	if v, ok := t.oldValues["start_date_time"].(types.DateTime); ok {
+		x.Start_date_time = v
+	}
+	if v, ok := t.oldValues["end_date_time"].(types.DateTime); ok {
+		x.End_date_time = v
+	}
+	return x
+}
+
+// NewJobQueueEntry returns a Job_Queue_Entry record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewJobQueueEntry(from tables.Source) *JobQueueEntry {
+	rec := &JobQueueEntry{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *JobQueueEntry) IsGlobal() bool {
 	return false
@@ -758,15 +851,22 @@ func (t *JobQueueEntry) Insert(runTrigger bool) bool {
 		t.End_date_time,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (entry_no, job_queue_no, status, user_id, description, error_message, start_date_time, end_date_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (entry_no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Job_Queue_Entry: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(JobQueueEntryTableName, key)
 		return false
 	}
 	return true
@@ -1981,6 +2081,10 @@ func (t *JobQueueEntry) ValidateField(fieldName string, value interface{}) error
 			t.Job_queue_no = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field job_queue_no")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "job_queue_no"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

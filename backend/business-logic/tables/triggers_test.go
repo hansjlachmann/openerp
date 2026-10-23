@@ -61,12 +61,9 @@ func TestValidateFieldDispatchesToWrapperOverride(t *testing.T) {
 	var table ftables.Table = factory()
 	table.InitWithDBType(nil, "TEST", database.DBTypeSQLite)
 
-	// Customer.OnValidate_Name rejects names shorter than 3 characters
-	if err := table.ValidateField("name", "ab"); err == nil {
-		t.Error("ValidateField(name, \"ab\") = nil, want Customer.OnValidate_Name error")
-	}
-	if err := table.ValidateField("name", "Abc"); err != nil {
-		t.Errorf("ValidateField(name, \"Abc\") = %v, want nil", err)
+	// Customer.OnValidate_Name: Search Name follows the name
+	if err := table.ValidateField("name", "Abc"); err != nil || table.ToMap()["search_name"] != "ABC" {
+		t.Errorf("ValidateField(name, \"Abc\") = %v, search name %v", err, table.ToMap()["search_name"])
 	}
 }
 
@@ -90,17 +87,18 @@ func TestInsertThroughInterfaceRunsOnInsert(t *testing.T) {
 		t.Fatalf("create table: %v", err)
 	}
 
+	setupCustomerNos(t, db, "TEST", false)
 	factory, _ := gtables.GetTableFactory("Customer")
 	table := factory()
 	table.InitWithDBType(db, "TEST", database.DBTypeSQLite)
-	table.FromMap(map[string]interface{}{"no": "C1", "status": float64(gtables.Customer_Status.Blocked)})
+	table.FromMap(map[string]interface{}{"name": "Acme"})
 	if !table.Insert(true) {
-		t.Fatal("Insert failed")
+		t.Fatalf("Insert failed: %v", table.TriggerError())
 	}
 
-	// Customer.OnInsert forces Status to Open
-	if got := table.ToMap()["status"]; got != int(gtables.Customer_Status.Open) {
-		t.Errorf("status after Insert = %v, want Open (%d)", got, gtables.Customer_Status.Open)
+	// Customer.OnInsert numbers a customer without No. from the Customer Nos. series
+	if got := table.ToMap(); got["no"] != "C00001" || got["no_series"] != "CUST" || got["invoice_disc_code"] != "C00001" {
+		t.Errorf("after Insert: no %v, no series %v, invoice disc code %v", got["no"], got["no_series"], got["invoice_disc_code"])
 	}
 }
 
@@ -111,6 +109,22 @@ func TestModifyRenamesChangedPrimaryKey(t *testing.T) {
 	db := newTestDB(t)
 	if err := (&gtables.UserMember{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
 		t.Fatalf("create table: %v", err)
+	}
+	// the company the membership is moved to (Company relation)
+	if err := (&gtables.Company{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	company := &gtables.Company{}
+	company.InitWithDBType(db, "", database.DBTypeSQLite)
+	company.Name = types.NewText("TEST-COMPANY")
+	if err := (&gtables.UserRole{}).CreateTableWithDBType(db, "", database.DBTypeSQLite); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	role := &gtables.UserRole{}
+	role.InitWithDBType(db, "", database.DBTypeSQLite)
+	role.Code = types.NewCode("WRITER")
+	if !company.Insert(false) || !role.Insert(false) {
+		t.Fatal("insert company and role")
 	}
 
 	m := &gtables.UserMember{}

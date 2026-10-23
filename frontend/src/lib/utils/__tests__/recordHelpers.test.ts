@@ -3,6 +3,7 @@ import {
 	applyServerValues,
 	getRecordId,
 	hasPrimaryKey,
+	canInsertNewRecord,
 	isNewRecord,
 	getRecordKey,
 	deepCopy,
@@ -276,5 +277,16 @@ describe('applyServerValues', () => {
 		expect(form).toEqual({ status: '1', _key: 'J1' });
 		applyServerValues(form, { ...form }, null);
 		expect(form.status).toBe('1');
+	});
+});
+
+describe('canInsertNewRecord', () => {
+	it('waits for the key, or with an auto key for a change', () => {
+		expect(canInsertNewRecord({ no: '', name: 'A' }, {}, ['no'])).toBe(false);
+		expect(canInsertNewRecord({ no: 'C1', name: '' }, {}, ['no'])).toBe(true);
+		expect(canInsertNewRecord({ no: '', name: '' }, {}, ['no'], true)).toBe(false);
+		expect(canInsertNewRecord({ no: '', name: '', blocked: false }, { blocked: false }, ['no'], true)).toBe(false);
+		expect(canInsertNewRecord({ no: '', name: 'A' }, {}, ['no'], true)).toBe(true);
+		expect(canInsertNewRecord({ no: 'E00001', _isNew: true }, { no: '' }, ['no'], true)).toBe(true);
 	});
 });

@@ -11,6 +11,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -43,13 +44,20 @@ type Manager struct {
 	Warning func(err error)
 }
 
-// New returns a Manager working in a company
-func New(db database.Executor, company string, dbType database.DBType) *Manager {
-	m := &Manager{db: db, company: company, dbType: dbType}
-	m.noSeries.InitWithDBType(db, company, dbType)
-	m.lastLine.InitWithDBType(db, company, dbType)
+// New returns a Manager working in the database and company of a record (classic
+// NoSeriesMgt : Codeunit 396): noSeriesMgt := noseries.New(rec)
+func New(from ftables.Source) *Manager {
+	m := &Manager{db: from.GetDB(), company: from.GetCompany(), dbType: from.GetDBType()}
+	m.noSeries.InitWithDBType(m.db, m.company, m.dbType)
+	m.lastLine.InitWithDBType(m.db, m.company, m.dbType)
 	return m
 }
+
+// GetDB, GetCompany and GetDBType: records are opened in the Manager's database and company
+// (gtables.NewNoSeriesLine(m))
+func (m *Manager) GetDB() database.Executor   { return m.db }
+func (m *Manager) GetCompany() string         { return m.company }
+func (m *Manager) GetDBType() database.DBType { return m.dbType }
 
 // getNoSeries reads a series into m.noSeries (Get without IF: an error when it does not exist)
 func (m *Manager) getNoSeries(code types.Code) error {
@@ -62,14 +70,14 @@ func (m *Manager) getNoSeries(code types.Code) error {
 // TestManual returns an error unless numbers of the default series may be entered by hand
 // (Manual Nos.); no default series allows any number
 func (m *Manager) TestManual(defaultNoSeriesCode types.Code) error {
-	if defaultNoSeriesCode == "" {
-		return nil
-	}
-	if err := m.getNoSeries(defaultNoSeriesCode); err != nil {
-		return err
-	}
-	if !m.noSeries.Manual_nos {
-		return apperrors.NoSeriesManual(gtables.NoSeriesTableName, "manual_nos", m.noSeries.Code.String())
+	if defaultNoSeriesCode != "" {
+		err := m.getNoSeries(defaultNoSeriesCode)
+		if err != nil {
+			return err
+		}
+		if !m.noSeries.Manual_nos {
+			return apperrors.NoSeriesManual(gtables.NoSeriesTableName, "manual_nos", m.noSeries.Code.String())
+		}
 	}
 	return nil
 }
@@ -82,7 +90,8 @@ func (m *Manager) InitSeries(defaultNoSeriesCode, oldNoSeriesCode types.Code, ne
 	if *newNo != "" {
 		return m.TestManual(defaultNoSeriesCode)
 	}
-	if err := m.getNoSeries(defaultNoSeriesCode); err != nil {
+	err := m.getNoSeries(defaultNoSeriesCode)
+	if err != nil {
 		return err
 	}
 	if !m.noSeries.Default_nos {
@@ -90,12 +99,14 @@ func (m *Manager) InitSeries(defaultNoSeriesCode, oldNoSeriesCode types.Code, ne
 	}
 	if oldNoSeriesCode != "" {
 		m.noSeriesCode = defaultNoSeriesCode
-		if err := m.filterSeries(); err != nil {
+		err = m.filterSeries()
+		if err != nil {
 			return err
 		}
 		m.noSeries.Code = oldNoSeriesCode
 		if !m.noSeries.Find() {
-			if err := m.getNoSeries(defaultNoSeriesCode); err != nil {
+			err = m.getNoSeries(defaultNoSeriesCode)
+			if err != nil {
 				return err
 			}
 		}
@@ -112,14 +123,14 @@ func (m *Manager) InitSeries(defaultNoSeriesCode, oldNoSeriesCode types.Code, ne
 // SetDefaultSeries sets newNoSeriesCode to a series when it assigns numbers automatically
 // (Default Nos.)
 func (m *Manager) SetDefaultSeries(newNoSeriesCode *types.Code, noSeriesCode types.Code) error {
-	if noSeriesCode == "" {
-		return nil
-	}
-	if err := m.getNoSeries(noSeriesCode); err != nil {
-		return err
-	}
-	if m.noSeries.Default_nos {
-		*newNoSeriesCode = m.noSeries.Code
+	if noSeriesCode != "" {
+		err := m.getNoSeries(noSeriesCode)
+		if err != nil {
+			return err
+		}
+		if m.noSeries.Default_nos {
+			*newNoSeriesCode = m.noSeries.Code
+		}
 	}
 	return nil
 }
@@ -129,7 +140,8 @@ func (m *Manager) SetDefaultSeries(newNoSeriesCode *types.Code, noSeriesCode typ
 // newNoSeriesCode set when the user picked one
 func (m *Manager) SelectSeries(defaultNoSeriesCode, oldNoSeriesCode types.Code, newNoSeriesCode *types.Code) (bool, error) {
 	m.noSeriesCode = defaultNoSeriesCode
-	if err := m.filterSeries(); err != nil {
+	err := m.filterSeries()
+	if err != nil {
 		return false, err
 	}
 	if *newNoSeriesCode == "" {
@@ -154,7 +166,8 @@ func (m *Manager) LookupSeries(defaultNoSeriesCode types.Code, newNoSeriesCode *
 // TestSeries returns an error unless newNoSeriesCode is the default series or related to it
 func (m *Manager) TestSeries(defaultNoSeriesCode, newNoSeriesCode types.Code) error {
 	m.noSeriesCode = defaultNoSeriesCode
-	if err := m.filterSeries(); err != nil {
+	err := m.filterSeries()
+	if err != nil {
 		return err
 	}
 	m.noSeries.Code = newNoSeriesCode
@@ -168,7 +181,8 @@ func (m *Manager) TestSeries(defaultNoSeriesCode, newNoSeriesCode types.Code) er
 // still be the default series or related to it
 func (m *Manager) SetSeries(newNo *types.Code) error {
 	code := m.noSeries.Code
-	if err := m.filterSeries(); err != nil {
+	err := m.filterSeries()
+	if err != nil {
 		return err
 	}
 	m.noSeries.Code = code
@@ -188,23 +202,39 @@ func (m *Manager) SetSeries(newNo *types.Code) error {
 func (m *Manager) filterSeries() error {
 	m.noSeries.Reset()
 	codes := []string{}
-	var rel gtables.NoSeriesRelationship
-	rel.InitWithDBType(m.db, m.company, m.dbType)
+	rel := gtables.NewNoSeriesRelationship(m)
 	rel.SetRange("code", m.noSeriesCode)
-	if rel.FindSet() {
-		for {
-			codes = append(codes, rel.Series_code.String())
-			if !rel.Next() {
-				break
-			}
-		}
+	for found := rel.FindSet(); found; found = rel.Next() {
+		codes = append(codes, rel.Series_code.String())
 	}
-	if err := m.getNoSeries(m.noSeriesCode); err != nil {
+	err := m.getNoSeries(m.noSeriesCode)
+	if err != nil {
 		return err
 	}
 	codes = append(codes, m.noSeriesCode.String())
 	m.noSeries.SetFilter("code", strings.Join(codes, "|"))
 	return nil
+}
+
+// IssuedBy returns the series — the default one or one related to it — whose line issued no
+// last (its Last No. Used): a record saved with the number SelectSeries/SetSeries gave it
+// (AssistEdit) belongs to that series; false when none did
+func (m *Manager) IssuedBy(defaultNoSeriesCode types.Code, no types.Code) (types.Code, bool) {
+	if defaultNoSeriesCode == "" || no == "" {
+		return "", false
+	}
+	m.noSeriesCode = defaultNoSeriesCode
+	err := m.filterSeries()
+	if err != nil {
+		return "", false
+	}
+	line := gtables.NewNoSeriesLine(m)
+	line.SetFilter("series_code", m.noSeries.GetFilter("code"))
+	line.SetRange("last_no_used", no)
+	if !line.FindFirst() {
+		return "", false
+	}
+	return line.Series_code, true
 }
 
 // GetNextNo returns the next number of a series on a date (blank: the work date), from the
@@ -214,16 +244,16 @@ func (m *Manager) GetNextNo(noSeriesCode types.Code, seriesDate types.Date, modi
 	if seriesDate.IsZero() {
 		seriesDate = system.WorkDate()
 	}
-	var line gtables.NoSeriesLine
-	line.InitWithDBType(m.db, m.company, m.dbType)
+	line := gtables.NewNoSeriesLine(m)
 	if modifySeries || !m.hasLastLine {
 		if modifySeries {
 			line.LockTable()
 		}
-		if err := m.getNoSeries(noSeriesCode); err != nil {
+		err := m.getNoSeries(noSeriesCode)
+		if err != nil {
 			return "", err
 		}
-		SetNoSeriesLineFilter(&line, noSeriesCode, seriesDate)
+		SetNoSeriesLineFilter(line, noSeriesCode, seriesDate)
 		if !line.FindFirst() {
 			line.SetRange("starting_date")
 			if line.FindFirst() {
@@ -240,7 +270,8 @@ func (m *Manager) GetNextNo(noSeriesCode types.Code, seriesDate types.Date, modi
 	}
 	line.Last_date_used = seriesDate
 	if line.Last_no_used == "" {
-		if err := line.TestField("starting_no"); err != nil {
+		err := line.TestField("starting_no")
+		if err != nil {
 			return "", err
 		}
 		line.Last_no_used = line.Starting_no
@@ -263,16 +294,18 @@ func (m *Manager) GetNextNo(noSeriesCode types.Code, seriesDate types.Date, modi
 			m.Warning(apperrors.NoSeriesEndingNo(line.Ending_no.String(), noSeriesCode.String()))
 		}
 	}
-	if err := line.Validate("open", line.Open); err != nil {
+	err := line.Validate("open", line.Open)
+	if err != nil {
 		return "", err
 	}
 
 	if modifySeries {
-		if err := modifyLine(&line); err != nil {
+		err := line.ModifyOrError(false)
+		if err != nil {
 			return "", err
 		}
 	} else {
-		m.lastLine.Copy(&line)
+		m.lastLine.Copy(line)
 		m.hasLastLine = true
 	}
 	return line.Last_no_used, nil
@@ -281,7 +314,7 @@ func (m *Manager) GetNextNo(noSeriesCode types.Code, seriesDate types.Date, modi
 // TryGetNextNo returns the next number of a series on a date without using it (the line is
 // not changed), "" when the series cannot give one
 func (m *Manager) TryGetNextNo(noSeriesCode types.Code, seriesDate types.Date) types.Code {
-	try := New(m.db, m.company, m.dbType)
+	try := New(m)
 	try.trying = true
 	no, err := try.GetNextNo(noSeriesCode, seriesDate, false)
 	if err != nil {
@@ -292,16 +325,11 @@ func (m *Manager) TryGetNextNo(noSeriesCode types.Code, seriesDate types.Date) t
 
 // SaveNoSeries stores the line GetNextNo without ModifySeries took numbers from
 func (m *Manager) SaveNoSeries() error {
-	if !m.hasLastLine || m.lastLine.Series_code == "" {
-		return nil
-	}
-	return modifyLine(&m.lastLine)
-}
-
-// modifyLine stores a line (Modify without its trigger)
-func modifyLine(line *gtables.NoSeriesLine) error {
-	if !line.Modify(false) {
-		return apperrors.ModifyFailed(gtables.NoSeriesLineTableName, line.KeyText())
+	if m.hasLastLine && m.lastLine.Series_code != "" {
+		err := m.lastLine.ModifyOrError(false)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -341,28 +369,28 @@ func IncrementNoText(no types.Code, incrementBy int) (types.Code, error) {
 // around the number and the number part's length. newNo must contain a number, and Last No.
 // Used must keep its number (else the formats differ).
 func UpdateNoSeriesLine(line *gtables.NoSeriesLine, newNo types.Code, field string) error {
-	if newNo == "" {
-		return nil
-	}
-	n := newNo.String()
-	if system.IncStr(n) == "" {
-		return apperrors.NoSeriesNoNumber(gtables.NoSeriesLineTableName, field)
-	}
-	oldLastNoUsed := line.Last_no_used
-	length := 0
-	if n != getNoText(n) {
-		length = len(getNoText(n))
-		for _, no := range []types.Code{line.Starting_no, line.Ending_no, line.Last_no_used, line.Warning_no} {
-			updateLength(no.String(), &length)
+	if newNo != "" {
+		n := newNo.String()
+		if system.IncStr(n) == "" {
+			return apperrors.NoSeriesNoNumber(gtables.NoSeriesLineTableName, field)
 		}
-	}
-	for _, no := range []*types.Code{&line.Starting_no, &line.Ending_no, &line.Last_no_used, &line.Warning_no} {
-		if err := updateNo(no, n, length); err != nil {
-			return err
+		noSeriesLine2 := *line // the line before (its Last No. Used)
+		length := 0
+		if n != getNoText(n) {
+			length = len(getNoText(n))
+			for _, no := range []types.Code{line.Starting_no, line.Ending_no, line.Last_no_used, line.Warning_no} {
+				updateLength(no.String(), &length)
+			}
 		}
-	}
-	if field != "last_no_used" && line.Last_no_used != oldLastNoUsed {
-		return apperrors.NoSeriesNumberFormat(gtables.NoSeriesLineTableName, field, "last_no_used")
+		for _, no := range []*types.Code{&line.Starting_no, &line.Ending_no, &line.Last_no_used, &line.Warning_no} {
+			err := updateNo(no, n, length)
+			if err != nil {
+				return err
+			}
+		}
+		if field != "last_no_used" && line.Last_no_used != noSeriesLine2.Last_no_used {
+			return apperrors.NoSeriesNumberFormat(gtables.NoSeriesLineTableName, field, "last_no_used")
+		}
 	}
 	return nil
 }
@@ -372,7 +400,8 @@ func updateLength(no string, maxLength *int) {
 	if no == "" {
 		return
 	}
-	if l := len(strings.TrimLeft(getNoText(no), "0")); l > *maxLength {
+	l := len(strings.TrimLeft(getNoText(no), "0"))
+	if l > *maxLength {
 		*maxLength = l
 	}
 }
@@ -380,20 +409,18 @@ func updateLength(no string, maxLength *int) {
 // updateNo puts no's number (without leading zeros) into newNo's format, its number part
 // length digits long; length 0 leaves only the number
 func updateNo(no *types.Code, newNo string, length int) error {
-	if *no == "" {
-		return nil
+	if *no != "" {
+		number := strings.TrimLeft(getNoText(no.String()), "0")
+		*no = types.Code(number)
+		if length != 0 {
+			start, end := getIntegerPos(newNo)
+			out, err := replaceNoText(newNo, number, length, start, end)
+			if err != nil {
+				return err
+			}
+			*no = types.Code(out)
+		}
 	}
-	number := strings.TrimLeft(getNoText(no.String()), "0")
-	*no = types.Code(number)
-	if length == 0 {
-		return nil
-	}
-	start, end := getIntegerPos(newNo)
-	out, err := replaceNoText(newNo, number, length, start, end)
-	if err != nil {
-		return err
-	}
-	*no = types.Code(out)
 	return nil
 }
 

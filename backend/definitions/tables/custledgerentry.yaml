@@ -85,6 +85,14 @@ table:
       type: types.Code
       db_name: currency_code
       length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
 
     # Amounts in Foreign Currency
     - name: amount
@@ -136,6 +144,38 @@ table:
       db_name: closed_by_amount_lcy
       precision: 18
       scale: 2
+
+    - name: debit_amount   # the positive Amount
+      no: 58
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount   # the negative Amount, positive
+      no: 59
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: debit_amount_lcy   # the positive Amount (LCY)
+      no: 60
+      type: types.Decimal
+      db_name: debit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount_lcy   # the negative Amount (LCY), positive
+      no: 61
+      type: types.Decimal
+      db_name: credit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
 
     # Sales Statistics (LCY)
     - name: sales_lcy
@@ -191,18 +231,42 @@ table:
       type: types.Code
       db_name: department_code
       length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
 
     - name: project_code
       no: 24
       type: types.Code
       db_name: project_code
       length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
 
     - name: salesperson_code
       no: 25
       type: types.Code
       db_name: salesperson_code
       length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
 
     # System Fields
     - name: user_id

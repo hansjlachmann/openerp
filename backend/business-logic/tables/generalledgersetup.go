@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -57,7 +56,8 @@ func (generalLedgerSetupLogic) OnValidate_Adjust_for_payment_disc(rec *gtables.G
 	if !rec.Adjust_for_payment_disc {
 		return nil // the check of the tax setup comes with its tables
 	}
-	if err := rec.TestField("pmt_disc_excl_tax", false); err != nil {
+	err := rec.TestField("pmt_disc_excl_tax", false)
+	if err != nil {
 		return err
 	}
 	return rec.TestField("vat_tolerance_percent", types.ZeroDecimal())
@@ -65,13 +65,17 @@ func (generalLedgerSetupLogic) OnValidate_Adjust_for_payment_disc(rec *gtables.G
 
 // OnValidate_Vat_tolerance_percent: a tolerance needs Pmt. Disc. Excl. Tax and no adjustment
 func (generalLedgerSetupLogic) OnValidate_Vat_tolerance_percent(rec *gtables.GeneralLedgerSetup) error {
-	if rec.Vat_tolerance_percent.IsZero() {
-		return nil
+	if !rec.Vat_tolerance_percent.IsZero() {
+		err := rec.TestField("adjust_for_payment_disc", false)
+		if err != nil {
+			return err
+		}
+		err = rec.TestField("pmt_disc_excl_tax", true)
+		if err != nil {
+			return err
+		}
 	}
-	if err := rec.TestField("adjust_for_payment_disc", false); err != nil {
-		return err
-	}
-	return rec.TestField("pmt_disc_excl_tax", true)
+	return nil
 }
 
 // OnValidate_Inv_rounding_precision_lcy: a multiple of the amount rounding precision
@@ -126,19 +130,4 @@ func CheckDecimalPlacesFormat(table, field string, value *types.Text) error {
 	}
 	*value = types.NewText(system.StrSubstNo("%1:%2", a, b))
 	return nil
-}
-
-// GetGeneralLedgerSetup reads the company's General Ledger Setup (GLSetup.GET) in the database
-// of another record; a company without one gets the defaults (as an empty setup)
-func GetGeneralLedgerSetup(other interface {
-	GetDB() database.Executor
-	GetCompany() string
-	GetDBType() database.DBType
-}) *gtables.GeneralLedgerSetup {
-	var setup gtables.GeneralLedgerSetup
-	setup.InitWithDBType(other.GetDB(), other.GetCompany(), other.GetDBType())
-	if !setup.Get("") {
-		setup.InitRecord()
-	}
-	return &setup
 }

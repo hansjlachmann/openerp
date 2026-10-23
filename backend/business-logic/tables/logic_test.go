@@ -77,11 +77,11 @@ func TestLogicRunsInOrderAndStopsAtFirstError(t *testing.T) {
 		t.Fatalf("create table: %v", err)
 	}
 
+	setupCustomerNos(t, db, "TEST", true)
 	var log []string
 	c := &gtables.Customer{}
 	c.InitWithDBType(db, "TEST", database.DBTypeSQLite)
 	c.SetLogic(customerLogic{}, orderLogic{name: "base", log: &log}, orderLogic{name: "extension", log: &log})
-	c.No, c.Status = types.NewCode("C1"), gtables.Customer_Status.Blocked
 	if err := c.ValidateField("city", "Oslo"); err != nil {
 		t.Fatal(err)
 	}
@@ -91,8 +91,8 @@ func TestLogicRunsInOrderAndStopsAtFirstError(t *testing.T) {
 	if got := strings.Join(log, ","); got != "base:city,extension:city,base,extension" {
 		t.Errorf("triggers ran %q", got)
 	}
-	if c.Status != gtables.Customer_Status.Open {
-		t.Errorf("status %v: the Customer OnInsert did not run", c.Status)
+	if c.No != "C00001" {
+		t.Errorf("no %q: the Customer OnInsert did not number the customer", c.No)
 	}
 
 	log = nil

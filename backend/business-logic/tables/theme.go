@@ -43,7 +43,8 @@ func (themeLogic) OnDelete(rec *gtables.Theme) error {
 
 // checkThemeTokens: the stored tokens must be valid theme tokens
 func checkThemeTokens(rec *gtables.Theme) error {
-	if _, err := themes.ParseTokens(rec.Tokens.String()); err != nil {
+	_, err := themes.ParseTokens(rec.Tokens.String())
+	if err != nil {
 		return apperrors.FieldFormat(gtables.ThemeTableName, "tokens", "JSON")
 	}
 	return nil
@@ -68,17 +69,13 @@ func UserThemes(db database.Executor, dbType database.DBType, userID string) []t
 	links.InitWithDBType(db, "", dbType)
 	links.SetRange("user_id", userID)
 	var codes []string
-	if links.FindSet() {
-		for {
-			codes = append(codes, links.Theme_code.String())
-			if !links.Next() {
-				break
-			}
-		}
+	for found := links.FindSet(); found; found = links.Next() {
+		codes = append(codes, links.Theme_code.String())
 	}
 	var out []themes.Theme
 	for _, code := range codes {
-		if th, ok := ThemeByCode(db, dbType, code); ok && th.Source == "github" {
+		th, ok := ThemeByCode(db, dbType, code)
+		if ok && th.Source == "github" {
 			out = append(out, th)
 		}
 	}
@@ -102,19 +99,14 @@ func AddUserTheme(db database.Executor, dbType database.DBType, userID, code str
 	link.User_id = types.NewCode(userID)
 	link.Theme_code = types.NewCode(code)
 	link.Added_at = types.NewDateTimeFromTime(time.Now())
-	if !link.Insert(true) {
-		if err := link.TriggerError(); err != nil {
-			return err
-		}
-		return apperrors.InsertFailed(gtables.UserThemeTableName)
-	}
-	return nil
+	return link.InsertOrError(true)
 }
 
 // UserThemeByCode finds a theme the user can choose: built-in, or installed and added by
 // the user.
 func UserThemeByCode(db database.Executor, dbType database.DBType, userID, code string) (themes.Theme, bool) {
-	if th, ok := themes.Builtin(code); ok {
+	th, ok := themes.Builtin(code)
+	if ok {
 		return th, true
 	}
 	if db == nil || !UserHasTheme(db, dbType, userID, code) {
@@ -125,7 +117,8 @@ func UserThemeByCode(db database.Executor, dbType database.DBType, userID, code 
 
 // ThemeByCode finds a theme by code: built-in or installed (by any user).
 func ThemeByCode(db database.Executor, dbType database.DBType, code string) (themes.Theme, bool) {
-	if th, ok := themes.Builtin(code); ok {
+	th, ok := themes.Builtin(code)
+	if ok {
 		return th, true
 	}
 	if db == nil || code == "" {

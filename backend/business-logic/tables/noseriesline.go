@@ -44,7 +44,8 @@ func (noSeriesLineLogic) OnValidate_Ending_no(rec *gtables.NoSeriesLine) error {
 	if rec.Ending_no == "" {
 		rec.Warning_no = ""
 	}
-	if err := noseries.UpdateNoSeriesLine(rec, rec.Ending_no, "ending_no"); err != nil {
+	err := noseries.UpdateNoSeriesLine(rec, rec.Ending_no, "ending_no")
+	if err != nil {
 		return err
 	}
 	return rec.Validate("open", rec.Open)
@@ -52,7 +53,8 @@ func (noSeriesLineLogic) OnValidate_Ending_no(rec *gtables.NoSeriesLine) error {
 
 // OnValidate_Warning_no needs an ending number
 func (noSeriesLineLogic) OnValidate_Warning_no(rec *gtables.NoSeriesLine) error {
-	if err := rec.TestField("ending_no"); err != nil {
+	err := rec.TestField("ending_no")
+	if err != nil {
 		return err
 	}
 	return noseries.UpdateNoSeriesLine(rec, rec.Warning_no, "warning_no")
@@ -60,7 +62,8 @@ func (noSeriesLineLogic) OnValidate_Warning_no(rec *gtables.NoSeriesLine) error 
 
 // OnValidate_Last_no_used gives the line's numbers its format and recalculates Open
 func (noSeriesLineLogic) OnValidate_Last_no_used(rec *gtables.NoSeriesLine) error {
-	if err := noseries.UpdateNoSeriesLine(rec, rec.Last_no_used, "last_no_used"); err != nil {
+	err := noseries.UpdateNoSeriesLine(rec, rec.Last_no_used, "last_no_used")
+	if err != nil {
 		return err
 	}
 	return rec.Validate("open", rec.Open)

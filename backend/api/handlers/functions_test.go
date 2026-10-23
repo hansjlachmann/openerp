@@ -46,6 +46,20 @@ func TestPageFunctionsAreRegistered(t *testing.T) {
 	}
 	for id, p := range pages.GetRegistry().GetAllPages() {
 		check(id, p.Page.SourceTable, p.Page.Actions)
+		// A field's AssistEdit: registered as one, on the page's table
+		for _, s := range p.Page.Layout.Sections {
+			for _, f := range s.Fields {
+				if f.AssistEdit == "" {
+					continue
+				}
+				fn, ok := functions.Lookup(f.AssistEdit)
+				if !ok || !fn.AssistEdit {
+					t.Errorf("page %d field %s: %s is not a registered AssistEdit function", id, f.Source, f.AssistEdit)
+				} else if factory, ok := gtables.GetTableFactory(fn.Table); !ok || factory().GetTableName() != tableName(p.Page.SourceTable) {
+					t.Errorf("page %d field %s: %s takes a %s record", id, f.Source, f.AssistEdit, fn.Table)
+				}
+			}
+		}
 	}
 	if found == 0 {
 		t.Error("no page function found (Job Queue Entries: Line → Test Line 1)")

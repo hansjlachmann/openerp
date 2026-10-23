@@ -1,7 +1,6 @@
 package tables
 
 import (
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -11,24 +10,20 @@ type customerLedgerEntryLogic struct{}
 
 func init() { gtables.RegisterCustomerLedgerEntryLogic(customerLedgerEntryLogic{}) }
 
-// OnValidate_Customer_no: the customer must exist
-func (customerLedgerEntryLogic) OnValidate_Customer_no(rec *gtables.CustomerLedgerEntry) error {
-	return checkCustomerExists(rec, "customer_no", rec.Customer_no)
-}
-
-// OnValidate_Sell_to_customer_no: the sell-to customer must exist
-func (customerLedgerEntryLogic) OnValidate_Sell_to_customer_no(rec *gtables.CustomerLedgerEntry) error {
-	return checkCustomerExists(rec, "sell_to_customer_no", rec.Sell_to_customer_no)
-}
-
-func checkCustomerExists(rec *gtables.CustomerLedgerEntry, field string, no types.Code) error {
-	if no.IsEmpty() {
-		return nil
+// SetDebitCredit fills Debit/Credit Amount (and LCY) from Amount and Amount (LCY): a positive
+// amount is a debit, a negative one a credit (shown positive) — as posting does
+func SetDebitCredit(e *gtables.CustomerLedgerEntry) {
+	zero := types.ZeroDecimal()
+	e.Debit_amount, e.Credit_amount = zero, zero
+	e.Debit_amount_lcy, e.Credit_amount_lcy = zero, zero
+	if e.Amount.IsPositive() {
+		e.Debit_amount = e.Amount
+	} else {
+		e.Credit_amount = e.Amount.Abs()
 	}
-	var customer gtables.Customer
-	customer.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	if !customer.Get(no) {
-		return apperrors.RelatedNotFound(gtables.CustomerLedgerEntryTableName, field, no.String())
+	if e.Amount_lcy.IsPositive() {
+		e.Debit_amount_lcy = e.Amount_lcy
+	} else {
+		e.Credit_amount_lcy = e.Amount_lcy.Abs()
 	}
-	return nil
 }

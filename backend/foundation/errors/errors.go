@@ -65,6 +65,10 @@ const (
 	ErrNoSeriesNumberFormat ErrorCode = "ERR_NO_SERIES_NUMBER_FORMAT"
 	ErrNoSeriesTooLong      ErrorCode = "ERR_NO_SERIES_TOO_LONG"
 
+	// Deleting master records with ledger entries (MoveEntries)
+	ErrDeleteHasEntries  ErrorCode = "ERR_DELETE_HAS_ENTRIES"
+	ErrDeleteOpenEntries ErrorCode = "ERR_DELETE_OPEN_ENTRIES"
+
 	// Session/Auth
 	ErrNoActiveSession    ErrorCode = "ERR_NO_ACTIVE_SESSION"
 	ErrNotLoggedIn        ErrorCode = "ERR_NOT_LOGGED_IN"
@@ -312,6 +316,39 @@ func NoSeriesNumberFormat(table, field, lastNoUsedField string) *AppError {
 // NoSeriesTooLong: a number would become longer than 20 characters
 func NoSeriesTooLong(no string) *AppError {
 	return &AppError{Code: ErrNoSeriesTooLong, Params: []string{no}}
+}
+
+// DeleteHasEntries: a record (table, key) cannot be deleted while it has ledger entries in a
+// fiscal year that is not closed
+func DeleteHasEntries(table, key string) *AppError {
+	return &AppError{Code: ErrDeleteHasEntries, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+// DeleteOpenEntries: a record (table, key) cannot be deleted while it has open ledger entries
+func DeleteOpenEntries(table, key string) *AppError {
+	return &AppError{Code: ErrDeleteOpenEntries, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+// TableRecordExists: a record of a table (key: its key values) exists already — the table's
+// caption in the user's language ("Customer C00010 already exists"), e.g. a number a number
+// series gave that is taken
+func TableRecordExists(table, key string) *AppError {
+	return &AppError{Code: ErrDuplicateRecord, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+// TableInsertFailed, TableModifyFailed, TableDeleteFailed: a record could not be written for
+// another reason than a trigger or a taken key (a database error) — the table's caption in the
+// user's language
+func TableInsertFailed(table string) *AppError {
+	return &AppError{Code: ErrInsertFailed, Table: table, WithTableCaption: true}
+}
+
+func TableModifyFailed(table, key string) *AppError {
+	return &AppError{Code: ErrModifyFailed, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+func TableDeleteFailed(table, key string) *AppError {
+	return &AppError{Code: ErrDeleteFailed, Table: table, WithTableCaption: true, Params: []string{key}}
 }
 
 // TableRecordNotFound: a record of a table (key: its key values) does not exist — the

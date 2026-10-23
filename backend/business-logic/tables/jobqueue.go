@@ -36,8 +36,7 @@ func (jobQueueLogic) ShowStatus(rec *gtables.JobQueue) (fcodeunits.Result, error
 // AddTestEntry adds a log entry for the job queue and asks the card to refresh, so the new
 // line shows in its Log Entries subpage at once (a header function that changes the lines)
 func (jobQueueLogic) AddTestEntry(rec *gtables.JobQueue) (fcodeunits.Result, error) {
-	var entry gtables.JobQueueEntry
-	entry.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
+	entry := gtables.NewJobQueueEntry(rec)
 	next := 1
 	if entry.FindLast() {
 		next = entry.Entry_no + 1
@@ -49,11 +48,9 @@ func (jobQueueLogic) AddTestEntry(rec *gtables.JobQueue) (fcodeunits.Result, err
 	entry.Description = types.NewText(i18n.GetInstance().Message("JOBQUEUE_TEST_ENTRY", fcodeunits.CurrentLanguage()))
 	entry.Start_date_time = types.Now()
 	entry.End_date_time = types.Now()
-	if !entry.Insert(true) {
-		if err := entry.TriggerError(); err != nil {
-			return fcodeunits.Result{}, err
-		}
-		return fcodeunits.Result{}, errors.New("the log entry could not be added")
+	err := entry.InsertOrError(true)
+	if err != nil {
+		return fcodeunits.Result{}, err
 	}
 	result := system.Message(i18n.GetInstance().Message("JOBQUEUE_TEST_ENTRY_ADDED", fcodeunits.CurrentLanguage()), next)
 	result.Refresh = true
@@ -76,17 +73,4 @@ func (jobQueueLogic) OnValidate_Notification_email(rec *gtables.JobQueue) error 
 	}
 	rec.Notification_email = types.NewText(mail.JoinAddressList(items))
 	return ftables.CheckMaxLength(gtables.JobQueueTableName, "notification_email", string(rec.Notification_email), 250)
-}
-
-// OnValidate_Notification_language checks that the notification language exists
-func (jobQueueLogic) OnValidate_Notification_language(rec *gtables.JobQueue) error {
-	if rec.Notification_language.IsEmpty() {
-		return nil
-	}
-	var language gtables.Language
-	language.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	if !language.Get(rec.Notification_language) {
-		return apperrors.RelatedNotFound(gtables.JobQueueTableName, "notification_language", rec.Notification_language.String())
-	}
-	return nil
 }

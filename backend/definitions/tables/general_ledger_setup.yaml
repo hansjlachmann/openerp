@@ -90,7 +90,7 @@ table:
       no: 57
       type: Option
       db_name: local_address_format
-      options: ["ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"]
+      options: ["Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"]
 
     - name: inv_rounding_precision_lcy
       no: 58

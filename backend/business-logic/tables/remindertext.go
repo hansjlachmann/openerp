@@ -18,9 +18,8 @@ func init() { gtables.RegisterReminderTextLogic(reminderTextLogic{}) }
 
 // OnInsert: the reminder level must exist
 func (reminderTextLogic) OnInsert(rec *gtables.ReminderText) error {
-	var level gtables.ReminderLevel
-	level.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	if !level.GetByPK(rec.Reminder_terms_code, rec.Reminder_level) {
+	reminderLevel := gtables.NewReminderLevel(rec)
+	if !reminderLevel.GetByPK(rec.Reminder_terms_code, rec.Reminder_level) {
 		return apperrors.TableRecordNotFound(gtables.ReminderLevelTableName, fmt.Sprintf("%s,%d", rec.Reminder_terms_code, rec.Reminder_level))
 	}
 	return nil

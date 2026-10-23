@@ -20,6 +20,14 @@ func newRateDB(t *testing.T) (*gtables.Currency, func(cur, date, exch, rel, relC
 	}
 	var cur gtables.Currency
 	cur.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	// the currencies the rates relate to (Relational Currency Code checks them)
+	for _, code := range []string{"EUR", "USD"} {
+		var c gtables.Currency
+		c.InitWithDBType(db, "c1", database.DBTypeSQLite)
+		c.InitRecord()
+		c.Code = types.Code(code)
+		c.Insert(false)
+	}
 	add := func(code, date, exch, rel, relCur string, fix gtables.CurrencyExchangeRateFix_exchange_rate_amount) {
 		var r gtables.CurrencyExchangeRate
 		r.InitWithDBType(db, "c1", database.DBTypeSQLite)
@@ -133,8 +141,7 @@ func TestCurrencyExchangeRateTriggers(t *testing.T) {
 	}
 
 	// Deleting a currency deletes its rates
-	cur.Code = "EUR"
-	if !cur.Insert(false) || !cur.Get("EUR") || !cur.Delete(true) {
+	if !cur.Get("EUR") || !cur.Delete(true) {
 		t.Fatal("currency insert/delete failed")
 	}
 	var left gtables.CurrencyExchangeRate

@@ -1,7 +1,7 @@
 package tables
 
 import (
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -42,16 +42,29 @@ func (paymentMethodLogic) OnValidate_Bal_account_type(rec *gtables.PaymentMethod
 // OnValidate_Bal_account_no: a G/L account must be a posting account, not blocked, that allows
 // direct posting
 func (paymentMethodLogic) OnValidate_Bal_account_no(rec *gtables.PaymentMethod) error {
-	if rec.Bal_account_type != gtables.PaymentMethod_Bal_account_type.GLAccount || rec.Bal_account_no == "" {
-		return nil
+	if rec.Bal_account_type == gtables.PaymentMethod_Bal_account_type.GLAccount {
+		return checkPaymentMethodGLAcc(rec, rec.Bal_account_no)
 	}
-	var glAcc gtables.GLAccount
-	glAcc.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	if !glAcc.Get(rec.Bal_account_no) {
-		return apperrors.RelatedNotFound(gtables.PaymentMethodTableName, "bal_account_no", rec.Bal_account_no.String())
+	return nil
+}
+
+// checkPaymentMethodGLAcc is the table's CheckGLAcc: the account exists, is a posting account
+// that is not blocked and allows direct posting
+func checkPaymentMethodGLAcc(rec *gtables.PaymentMethod, accNo types.Code) error {
+	if accNo != "" {
+		glAcc := gtables.NewGLAccount(rec)
+		err := glAcc.GetOrError(accNo)
+		if err != nil {
+			return err
+		}
+		err = CheckGLAcc(glAcc)
+		if err != nil {
+			return err
+		}
+		err = glAcc.TestField("direct_posting", true)
+		if err != nil {
+			return err
+		}
 	}
-	if err := CheckGLAcc(&glAcc); err != nil {
-		return err
-	}
-	return glAcc.TestField("direct_posting", true)
+	return nil
 }

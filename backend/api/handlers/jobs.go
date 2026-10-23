@@ -101,10 +101,21 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	table := tableFactory()
 	table.InitWithDBType(h.db, company, h.dbType)
 	table.FromMap(req.Record)
-	// A function works on the stored record (not on what the browser sent)
+	// A function works on the stored record (not on what the browser sent) — an AssistEdit
+	// function on the record as the page has it (also a new one), with the stored values as
+	// its old values
 	if req.Function != "" {
+		fn, _ := functions.Lookup(req.Function)
 		key, id := fullPrimaryKey(table)
-		if !table.Get(key) {
+		switch {
+		case fn != nil && fn.AssistEdit:
+			stored := tableFactory()
+			stored.InitWithDBType(h.db, company, h.dbType)
+			if stored.Get(key) {
+				stored.UpdateFromMap(req.Record)
+				table = stored
+			}
+		case !table.Get(key):
 			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableName, id).Message(language)))
 		}
 	}

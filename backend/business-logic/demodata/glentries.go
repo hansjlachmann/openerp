@@ -371,7 +371,8 @@ func insertGLEntries(exec database.Executor, company string, dbType database.DBT
 	if len(entries) == 0 {
 		return nil
 	}
-	if err := sift.Suspend(exec, dbType, company, gtables.GLEntryTableName); err != nil {
+	err := sift.Suspend(exec, dbType, company, gtables.GLEntryTableName)
+	if err != nil {
 		return err
 	}
 	var last gtables.GLEntry
@@ -386,7 +387,8 @@ func insertGLEntries(exec database.Executor, company string, dbType database.DBT
 	const chunk = 1000
 	for start := 0; start < len(entries); start += chunk {
 		batch := entries[start:min(start+chunk, len(entries))]
-		if err := last.InsertAll(batch, true); err != nil {
+		err := last.InsertAll(batch, true)
+		if err != nil {
 			var batchErr *ftables.BatchInsertError
 			key, cause := "", err
 			if errors.As(err, &batchErr) {

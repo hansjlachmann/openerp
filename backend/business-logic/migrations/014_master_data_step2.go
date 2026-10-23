@@ -46,7 +46,8 @@ func grantReaderRead(ctx *fmigrations.Context, tables []string) error {
 		ON CONFLICT (role_id, table_name) DO NOTHING`
 	}
 	for _, table := range tables {
-		if err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER"); err != nil {
+		err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER")
+		if err != nil {
 			return fmt.Errorf("READER read permission on %s: %w", table, err)
 		}
 	}

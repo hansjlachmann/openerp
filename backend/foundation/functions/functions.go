@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
 // Func is a registered function: it gets the page's current record (a generated record) and
@@ -49,6 +50,23 @@ func ForArgs[T any](fn func(rec T, args Args) (codeunits.Result, error), params 
 		}
 		return fn(r, args)
 	}}
+}
+
+// ForAssistEdit makes a Func of an AssistEdit function (a field's "…" button, classic
+// OnAssistEdit): it changes the page's record and tells whether it did; the page takes the
+// changed record back (the result's Data["record"]). Register it WithAssistEdit.
+func ForAssistEdit[T any](fn func(rec T) (bool, error)) Func {
+	return For(func(rec T) (codeunits.Result, error) {
+		changed, err := fn(rec)
+		if err != nil || !changed {
+			return codeunits.Result{Success: err == nil}, err
+		}
+		result := codeunits.Result{Success: true}
+		if table, ok := any(rec).(ftables.Table); ok {
+			result.Data = map[string]interface{}{"record": ftables.PublicMap(table)}
+		}
+		return result, nil
+	})
 }
 
 // Args are the arguments of a call (checked against the function's Params)
@@ -207,7 +225,10 @@ type Function struct {
 	Table      string // the record's table (for a table function: the table itself)
 	// Dialog: run with a codeunit dialog (Confirm, StrMenu, progress) — async
 	Dialog bool
-	Fn     Func
+	// AssistEdit: a field's "…" function — it gets the record as the page has it (also a new,
+	// unsaved one), and runs with a dialog (it may open a page with RunModal)
+	AssistEdit bool
+	Fn         Func
 }
 
 // Option changes how a function is registered
@@ -219,6 +240,11 @@ func OnTable(table string) Option { return func(f *Function) { f.Table = table }
 // WithDialog runs the function with a codeunit dialog, so it can ask (Confirm, StrMenu) and
 // show progress
 func WithDialog() Option { return func(f *Function) { f.Dialog = true } }
+
+// WithAssistEdit registers a field's AssistEdit function (made with ForAssistEdit)
+func WithAssistEdit() Option {
+	return func(f *Function) { f.AssistEdit, f.Dialog = true, true }
+}
 
 var (
 	mu       sync.RWMutex

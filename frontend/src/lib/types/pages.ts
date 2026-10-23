@@ -27,6 +27,7 @@ export interface PageMetadata {
 	primary_key_fields?: string[];
 	has_record_triggers?: boolean;
 	setup_table?: boolean; // a single record with a blank key (setup): the card opens on it
+	auto_key?: boolean; // the table's OnInsert assigns a blank key (a number series): a new record is saved without one
 	has_new_record_triggers?: boolean; // OnNewRecord: new records get values from their neighbour // OnAfterGetRecord: the card asks for the field states of each record
 	flow_fields?: string[]; // computed fields: not searchable on the server
 	sortable_flow_fields?: string[]; // FlowFields lists can sort on (Sum/Count, by their value)
@@ -75,6 +76,7 @@ export interface Field {
 	decimal_places?: string; // decimals: "min:max" digits after the point (table YAML decimal_places)
 	indent_field?: string; // lists: indent the cell by this field's value (levels)
 	style_expr?: StyleExpr; // lists: a style when the record's field (does not) equal a value
+	assist_edit?: string; // AssistEdit: run_object of the field's "…" function (table:Customer.AssistEdit)
 	calculated?: boolean; // not a table field: the page's triggers fill it per record (read-only)
 }
 

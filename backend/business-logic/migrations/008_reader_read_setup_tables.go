@@ -39,7 +39,8 @@ func (m *Migration008ReaderReadSetupTables) Up(ctx *fmigrations.Context) error {
 	}
 	// Permission keys are uppercase (migration 005, types.Code)
 	for _, table := range []string{"COUNTRY_REGION", "SMTP_SETUP"} {
-		if err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER"); err != nil {
+		err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER")
+		if err != nil {
 			return fmt.Errorf("READER read permission on %s: %w", table, err)
 		}
 	}

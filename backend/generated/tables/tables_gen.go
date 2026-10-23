@@ -41,6 +41,7 @@ var tableRegistry = map[string]tables.TableFactory{
 	"Payment_Method":             func() tables.Table { return &PaymentMethod{} },
 	"Payment_terms":              func() tables.Table { return &PaymentTerms{} },
 	"Permission":                 func() tables.Table { return &Permission{} },
+	"Post_Code":                  func() tables.Table { return &PostCode{} },
 	"Price_Group":                func() tables.Table { return &PriceGroup{} },
 	"Project":                    func() tables.Table { return &Project{} },
 	"Reason_Code":                func() tables.Table { return &ReasonCode{} },
@@ -67,7 +68,6 @@ var tableRegistry = map[string]tables.TableFactory{
 	"User_Theme":                 func() tables.Table { return &UserTheme{} },
 	"User_Member":                func() tables.Table { return &UserMember{} },
 	"User_Role":                  func() tables.Table { return &UserRole{} },
-	"ZIP_Code":                   func() tables.Table { return &ZIPCode{} },
 }
 
 // NewRecords returns a new record of every table by table ID (the object registry)
@@ -100,6 +100,7 @@ func NewRecords() map[int]tables.Table {
 		PaymentMethodTableID:           &PaymentMethod{},
 		PaymentTermsTableID:            &PaymentTerms{},
 		PermissionTableID:              &Permission{},
+		PostCodeTableID:                &PostCode{},
 		PriceGroupTableID:              &PriceGroup{},
 		ProjectTableID:                 &Project{},
 		ReasonCodeTableID:              &ReasonCode{},
@@ -126,7 +127,6 @@ func NewRecords() map[int]tables.Table {
 		UserThemeTableID:               &UserTheme{},
 		UserMemberTableID:              &UserMember{},
 		UserRoleTableID:                &UserRole{},
-		ZIPCodeTableID:                 &ZIPCode{},
 	}
 }
 
@@ -134,6 +134,9 @@ func NewRecords() map[int]tables.Table {
 func RegisterTableFactory(name string, id int, factory tables.TableFactory) {
 	tableRegistry[name] = factory
 }
+
+// The relation check of Validate finds related tables in this registry
+func init() { tables.RegisterRelatedTables(GetTableFactory) }
 
 // GetTableFactory returns a table factory by name
 func GetTableFactory(name string) (tables.TableFactory, bool) {

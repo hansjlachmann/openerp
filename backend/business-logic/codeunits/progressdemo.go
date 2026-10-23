@@ -60,7 +60,8 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 	case 0:
 		return fcodeunits.Message("Progress demo cancelled."), nil
 	case 4:
-		if err := system.Hyperlink("https://github.com/hansjlachmann/openerp"); err != nil {
+		err := system.Hyperlink("https://github.com/hansjlachmann/openerp")
+		if err != nil {
 			return fcodeunits.Result{}, err
 		}
 		return fcodeunits.Message("Project page opened."), nil
@@ -105,7 +106,8 @@ func (c *ProgressDemo) Run(record interface{}) (fcodeunits.Result, error) {
 		time.Sleep(stepTime)
 	}
 
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now()); err != nil {
+	err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now())
+	if err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 

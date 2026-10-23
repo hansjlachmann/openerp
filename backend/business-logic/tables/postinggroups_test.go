@@ -28,19 +28,19 @@ func TestValidateTaxPostingGroups(t *testing.T) {
 
 	var g gtables.GenBusinessPostingGroup
 	g.InitWithDBType(db, "c1", database.DBTypeSQLite)
-	if auto, err := ValidateTaxBusPostingGroup(&g, "EXPORT", "Customer", "name"); err != nil || auto {
+	if auto, err := ValidateTaxBusPostingGroup(&g, "EXPORT"); err != nil || auto {
 		t.Errorf("EXPORT: %v %v, want no auto insert", auto, err)
 	}
-	if auto, err := ValidateTaxBusPostingGroup(&g, "", "Customer", "name"); err != nil || !auto {
+	if auto, err := ValidateTaxBusPostingGroup(&g, ""); err != nil || !auto {
 		t.Errorf("blank: %v %v, want the default (auto insert)", auto, err)
 	}
-	if _, err := ValidateTaxBusPostingGroup(&g, "NONE", "Customer", "name"); err == nil || message(t, err, "en-US") != "Name 'NONE' does not exist" {
+	if _, err := ValidateTaxBusPostingGroup(&g, "NONE"); err == nil || message(t, err, "en-US") != "Gen. Business Posting Group NONE not found" {
 		t.Errorf("unknown group: %v", err)
 	}
 
 	var p gtables.GenProductPostingGroup
 	p.InitWithDBType(db, "c1", database.DBTypeSQLite)
-	if auto, err := ValidateTaxProdPostingGroup(&p, "", "Customer", "name"); err != nil || !auto {
+	if auto, err := ValidateTaxProdPostingGroup(&p, ""); err != nil || !auto {
 		t.Errorf("product blank: %v %v", auto, err)
 	}
 }

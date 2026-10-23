@@ -50,7 +50,7 @@
 		type ListSelection
 	} from '$lib/utils/selection';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, hasPrimaryKey, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, canInsertNewRecord, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -1128,7 +1128,7 @@
 				if (page.page.delayed_insert && !leavingRow) {
 					return;
 				}
-				if (!shouldInsertNewRecord(record, record._pristine ?? {}, pkFields)) {
+				if (!shouldInsertNewRecord(record, record._pristine ?? {}, pkFields, page.page.auto_key)) {
 					return;
 				}
 
@@ -2112,7 +2112,7 @@
 	}
 
 	// Handle save from modal - returns true if save happened, false otherwise
-	async function handleModalSave(savedRecord: Record<string, any>): Promise<boolean> {
+	async function handleModalSave(savedRecord: Record<string, any>, opts?: { leavingKey?: boolean }): Promise<boolean> {
 		if (!modalCardPage || !modalOpen || modalSaving || modalRecordDeleted) {
 			return false; // Prevent saves when modal closed, concurrent saves, or after delete
 		}
@@ -2131,7 +2131,7 @@
 		// A new record is inserted only once its primary key is filled in (Record Entry rule):
 		// until then field changes stay on the form (e.g. a browser filling the password field
 		// of a new User before the User ID is typed must not insert a record without key)
-		if (modalIsNewRecord && !hasPrimaryKey(savedRecord, primaryKeyFieldsList)) {
+		if (modalIsNewRecord && !canInsertNewRecord(savedRecord, modalOriginalRecord, primaryKeyFieldsList, page.page.auto_key) && !(page.page.auto_key && opts?.leavingKey)) {
 			return false;
 		}
 

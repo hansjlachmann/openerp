@@ -43,7 +43,8 @@ func (m *Migration013MasterDataStep1) Up(ctx *fmigrations.Context) error {
 			if err != nil || !exists {
 				return err
 			}
-			if err := ctx.ChangeColumnType(table, "description", "VARCHAR(50)"); err != nil {
+			err = ctx.ChangeColumnType(table, "description", "VARCHAR(50)")
+			if err != nil {
 				return fmt.Errorf("widen Payment Terms description: %w", err)
 			}
 			return nil
@@ -63,7 +64,8 @@ func (m *Migration013MasterDataStep1) Up(ctx *fmigrations.Context) error {
 		ON CONFLICT (role_id, table_name) DO NOTHING`
 	}
 	for _, table := range masterDataTables {
-		if err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER"); err != nil {
+		err := ctx.ExecuteSQL(query, "READER", table, true, false, false, false, "READER")
+		if err != nil {
 			return fmt.Errorf("READER read permission on %s: %w", table, err)
 		}
 	}

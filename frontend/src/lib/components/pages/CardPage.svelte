@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Modal from '../Modal.svelte';
 	import { goto } from '$app/navigation';
 	import type { PageDefinition, Field, FieldState, Action } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
@@ -11,7 +12,7 @@
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
-	import { cardTitle, lookupFor, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { lookupFor, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
 	import { runPagePath, type RunPageAction } from '$lib/utils/runPage';
@@ -36,7 +37,8 @@
 		options?: Record<string, Record<string, string>>; // Option field values (enum lookups)
 		lookups?: Record<string, LookupData>; // Table relation lookup values
 		onaction?: (actionName: string) => void;
-		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
+		// leavingKey: the user left the blank key field of a new auto_key record (insert it now)
+		onsave?: (record: Record<string, any>, opts?: { leavingKey?: boolean }) => Promise<boolean> | boolean | void;
 		onclose?: () => void; // Callback when closing the card
 		// A card opened over its list (modal card): going back to the list closes it
 		onbacktolist?: () => void;
@@ -205,7 +207,7 @@
 	});
 
 	// Auto-save with debouncing
-	function autoSave() {
+	function autoSave(opts?: { leavingKey?: boolean }) {
 		// Skip if already saving or blocked due to error
 		if (saveState === 'saving' || saveBlocked) {
 			return;
@@ -229,7 +231,7 @@
 			saveState = 'saving';
 			try {
 				// onsave returns true if a save actually happened
-				const didSave = await onsave?.(record);
+				const didSave = await onsave?.(record, opts);
 
 				if (didSave) {
 					// Update lastSavedRecord after successful save
@@ -266,8 +268,21 @@
 	}
 
 	// Handle field blur (when user leaves a field)
-	function handleFieldBlur() {
-		autoSave();
+	function handleFieldBlur(field?: { source: string }, event?: FocusEvent) {
+		// A new record of an auto-numbered table (auto_key: a number series) is inserted as soon
+		// as the user leaves its blank No. field (Enter/Tab, classic) — it gets the next number;
+		// only when the focus moves on to another field of the card — not to the field's "…"
+		// (AssistEdit picks the series first) and not when the card is closed (Esc)
+		const target = event?.relatedTarget as HTMLElement | null;
+		const toNextField = !!target?.closest('.sections-container') && !target.classList.contains('assist-edit');
+		const leavingKey =
+			!!page.page.auto_key &&
+			!!field &&
+			checkIsNewRecord() &&
+			getPrimaryKeyFields(page).includes(field.source) &&
+			String(record?.[field.source] ?? '').trim() === '' &&
+			toNextField;
+		autoSave(leavingKey ? { leavingKey } : undefined);
 	}
 
 	// Handle action clicks
@@ -284,6 +299,34 @@
 
 		// Pass all other actions to parent (including Delete)
 		onaction?.(actionName);
+	}
+
+	// DrillDown on a card field (No. of Ledger Entries, Balance): the page behind the value opens
+	// in a modal over the card, filtered to this record (drilldown_filter_field = this record's
+	// drilldown_filter_value); Esc or the close button returns to the card
+	let drilldown = $state<{ pageId: number; filters: import('$lib/types/api').TableFilter[] } | null>(null);
+	function openDrilldown(field: import('$lib/types/pages').Field) {
+		const filters: import('$lib/types/api').TableFilter[] = [];
+		if (field.drilldown_filter_field && field.drilldown_filter_value) {
+			const value = record?.[field.drilldown_filter_value];
+			if (value === undefined || value === null || value === '') return;
+			filters.push({ field: field.drilldown_filter_field, expression: String(value) });
+		}
+		drilldown = { pageId: field.drilldown!, filters };
+	}
+
+	// AssistEdit (a field's "…", Shift+F2): its function works on the card's record — also a new
+	// one — and may open a page to choose from; the record it returns is taken over and saved
+	// like a field change
+	async function handleAssistEdit(runObject: string) {
+		if (!record) return;
+		const data = await runner?.run(runObject, stripInternalFields($state.snapshot(record)), { quiet: true });
+		const changed = data?.record as Record<string, unknown> | undefined;
+		if (!changed) return;
+		for (const [key, value] of Object.entries(changed)) {
+			record[key] = value;
+		}
+		autoSave();
 	}
 
 	// Handle run_object actions (codeunits)
@@ -565,7 +608,8 @@
 		/>
 	{/if}
 
-	<PageHeader title={cardTitle(page.page.caption, page.page.data_caption_fields, record, options)} {onclose}>
+	<!-- No title here: the modal's title bar or the breadcrumb shows the card title -->
+	<PageHeader title="" {onclose}>
 		{#snippet leftActions()}
 			<!-- Save state indicator - fixed width container to prevent layout shift -->
 			<div class="save-state-container">
@@ -702,7 +746,9 @@
 								lookups={lookupFor(lookups, field.source, record)}
 								fieldCaptions={captions}
 								tabindex={fieldTabIndex}
-								onblur={handleFieldBlur}
+								onblur={(e) => handleFieldBlur(field, e)}
+								onassistedit={field.assist_edit && fieldEditable ? () => handleAssistEdit(field.assist_edit!) : undefined}
+								ondrilldown={field.drilldown && !fieldEditable && !checkIsNewRecord() ? () => openDrilldown(field) : undefined}
 							/>
 						{/each}
 					</div>
@@ -712,6 +758,16 @@
 		{/if}
 	</div>
 </div>
+
+<!-- A field's drilldown: the entries behind the value, over the card -->
+{#if drilldown}
+	{@const d = drilldown}
+	<Modal open={true} size="expanded" onclose={() => (drilldown = null)}>
+		<div class="drilldown-page">
+			<PageRenderer pageid={d.pageId} embedded={true} initialFilters={d.filters} onclose={() => (drilldown = null)} />
+		</div>
+	</Modal>
+{/if}
 
 <!-- The card's page objects: progress, questions, input, message boxes -->
 <ObjectRunner bind:this={runner} ondone={handleRunDone} />
@@ -729,6 +785,10 @@
 {/if}
 
 <style>
+	.drilldown-page {
+		height: 75vh;
+	}
+
 	.card-page {
 		@apply flex flex-col flex-1 min-h-0;
 		@apply relative;

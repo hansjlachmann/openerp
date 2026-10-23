@@ -16,12 +16,12 @@ import (
 func TestTransferFields(t *testing.T) {
 	from := &gtables.Customer{}
 	from.No, from.Name, from.City = types.NewCode("C1"), types.NewText("Acme"), types.NewText("Oslo")
-	from.Status = gtables.Customer_Status.Blocked
+	from.Blocked = true
 
 	to := &gtables.Customer{}
 	to.No = types.NewCode("C2")
 	to.TransferFields(from, false) // keep the key
-	if to.No != "C2" || to.Name != "Acme" || to.City != "Oslo" || to.Status != gtables.Customer_Status.Blocked {
+	if to.No != "C2" || to.Name != "Acme" || to.City != "Oslo" || !to.Blocked {
 		t.Errorf("same table: %+v", to.ToMap())
 	}
 	to.TransferFields(from)
@@ -52,15 +52,19 @@ func TestTestFieldAndFieldError(t *testing.T) {
 	if err := c.TestField("Name"); err != nil {
 		t.Errorf("name with a value: %v", err)
 	}
-	c.Status = gtables.Customer_Status.Open
-	if err := c.TestField("status", gtables.Customer_Status.Open); err != nil {
-		t.Errorf("status Open: %v", err)
+	c.Application_method = gtables.Customer_Application_method.Manual
+	if err := c.TestField("application_method", gtables.Customer_Application_method.Manual); err != nil {
+		t.Errorf("application method Manual: %v", err)
 	}
-	err = c.TestField("status", gtables.Customer_Status.Blocked)
-	if !asAppError(err, &appErr) || appErr.Code != apperrors.ErrFieldMustBe || appErr.Message("en-US") != "Status must be Blocked" {
-		t.Errorf("status Blocked: %v", err)
+	err = c.TestField("application_method", gtables.Customer_Application_method.ApplyToOldest)
+	if !asAppError(err, &appErr) || appErr.Code != apperrors.ErrFieldMustBe || appErr.Message("en-US") != "Application Method must be Apply to Oldest" {
+		t.Errorf("application method Apply to Oldest: %v", err)
 	}
-	if err := c.TestField("credit_limit", types.NewDecimal(0)); err != nil {
+	err = c.TestField("blocked", true)
+	if !asAppError(err, &appErr) || appErr.Message("en-US") != "Blocked must be Yes" {
+		t.Errorf("blocked: %v", err)
+	}
+	if err := c.TestField("credit_limit_lcy", types.NewDecimal(0)); err != nil {
 		t.Errorf("decimal 0: %v", err)
 	}
 	if err := c.TestField("bogus"); err == nil {
@@ -138,8 +142,8 @@ func TestCaptionsAndValidate(t *testing.T) {
 	if c.TableCaption() != "Customer" || c.FieldCaption("name") != "Name" || !strings.Contains(c.TableCaption("nb-NO"), "Kunde") {
 		t.Errorf("captions %q %q %q", c.TableCaption(), c.FieldCaption("name"), c.TableCaption("nb-NO"))
 	}
-	if err := c.Validate("name", "ab"); err == nil {
-		t.Error("Validate must run OnValidate_Name")
+	if err := c.Validate("name", "Acme"); err != nil || c.Search_name != "ACME" {
+		t.Errorf("Validate must run OnValidate_Name (Search Name follows): %v, %q", err, c.Search_name)
 	}
 }
 
@@ -202,7 +206,7 @@ func TestMoreRecordFunctions(t *testing.T) {
 	}
 	var c gtables.Customer
 	c.InitWithDBType(db, "c1", database.DBTypeSQLite)
-	if c.MaxStrLen("name") != 50 || c.MaxStrLen("credit_limit") != 0 {
+	if c.MaxStrLen("name") != 50 || c.MaxStrLen("credit_limit_lcy") != 0 {
 		t.Errorf("MaxStrLen %d", c.MaxStrLen("name"))
 	}
 

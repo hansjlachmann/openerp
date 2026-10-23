@@ -62,29 +62,36 @@ func (userPersonalizationLogic) OnValidate_Dark_theme(rec *gtables.UserPersonali
 
 // checkAppearance checks the whole record: both themes and the limits of the settings
 func checkAppearance(rec *gtables.UserPersonalization) error {
-	if err := checkThemeSlot(rec, "light_theme", rec.Light_theme.String(), "light"); err != nil {
+	err := checkThemeSlot(rec, "light_theme", rec.Light_theme.String(), "light")
+	if err != nil {
 		return err
 	}
-	if err := checkThemeSlot(rec, "dark_theme", rec.Dark_theme.String(), "dark"); err != nil {
+	err = checkThemeSlot(rec, "dark_theme", rec.Dark_theme.String(), "dark")
+	if err != nil {
 		return err
 	}
 	table := gtables.UserPersonalizationTableName
-	if err := ftables.CheckRange(table, "wallpaper_opacity", rec.Wallpaper_opacity, 0, WallpaperOpacityMax); err != nil {
+	err = ftables.CheckRange(table, "wallpaper_opacity", rec.Wallpaper_opacity, 0, WallpaperOpacityMax)
+	if err != nil {
 		return err
 	}
-	if err := ftables.CheckRange(table, "wallpaper_blur", rec.Wallpaper_blur, 0, WallpaperBlurMax); err != nil {
+	err = ftables.CheckRange(table, "wallpaper_blur", rec.Wallpaper_blur, 0, WallpaperBlurMax)
+	if err != nil {
 		return err
 	}
-	if err := ftables.CheckRange(table, "panel_opacity", rec.Panel_opacity, PanelOpacityMin, 100); err != nil {
+	err = ftables.CheckRange(table, "panel_opacity", rec.Panel_opacity, PanelOpacityMin, 100)
+	if err != nil {
 		return err
 	}
 	if rec.Font_size != 0 {
-		if err := ftables.CheckRange(table, "font_size", rec.Font_size, FontSizeMin, FontSizeMax); err != nil {
+		err := ftables.CheckRange(table, "font_size", rec.Font_size, FontSizeMin, FontSizeMax)
+		if err != nil {
 			return err
 		}
 	}
 	// Wallpaper: blank (none) or one of the active theme's wallpapers bg-1 … bg-5
-	if w := rec.Wallpaper.String(); w != "" && !wallpaperName.MatchString(w) {
+	w := rec.Wallpaper.String()
+	if w != "" && !wallpaperName.MatchString(w) {
 		return apperrors.FieldFormat(table, "wallpaper", "bg-1 … bg-5")
 	}
 	if !rec.Mode.IsValid() {

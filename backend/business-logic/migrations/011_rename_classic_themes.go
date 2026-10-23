@@ -41,7 +41,8 @@ func (m *Migration011RenameClassicThemes) Up(ctx *fmigrations.Context) error {
 	for old, code := range RenamedThemes {
 		for _, column := range []string{"light_theme", "dark_theme"} {
 			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = '%s' WHERE %s = '%s'`, table, column, code, column, old)
-			if err := ctx.ExecuteSQL(stmt); err != nil {
+			err := ctx.ExecuteSQL(stmt)
+			if err != nil {
 				return fmt.Errorf("%s.%s: %w", table, column, err)
 			}
 		}

@@ -254,9 +254,12 @@ export function hasUserEdits(record: Record<string, any>, pristine: Record<strin
 export function shouldInsertNewRecord(
 	record: Record<string, any>,
 	pristine: Record<string, any>,
-	primaryKeyFields: Array<{ source: string; required?: boolean }>
+	primaryKeyFields: Array<{ source: string; required?: boolean }>,
+	autoKey = false
 ): boolean {
 	if (record._isNew !== true || !hasUserEdits(record, pristine)) return false;
+	// auto_key: the table's OnInsert assigns a blank key (the next number of a series)
+	if (autoKey) return true;
 	return primaryKeyFields.every(pk =>
 		pk.required ? !sameFieldValue(record[pk.source], '') : record[pk.source] !== undefined
 	);
@@ -271,6 +274,24 @@ export function shouldInsertNewRecord(
 export function hasPrimaryKey(record: Record<string, any>, primaryKeyFields: string[]): boolean {
 	// No key metadata: leave the decision to the backend (it rejects an empty key)
 	return primaryKeyFields.every(f => String(record[f] ?? '').trim() !== '');
+}
+
+/**
+ * Whether a new card record (modal or page) may be INSERTed: once every primary key field has
+ * a value — or, when the table's OnInsert assigns a blank key (page `auto_key`, a number
+ * series), once the user changed something against the values the record started with
+ * (pristine): leaving the empty No. field must not insert a blank record and use a number.
+ */
+export function canInsertNewRecord(
+	record: Record<string, any>,
+	pristine: Record<string, any>,
+	primaryKeyFields: string[],
+	autoKey = false
+): boolean {
+	if (!autoKey) return hasPrimaryKey(record, primaryKeyFields);
+	return Object.keys(record).some(
+		(key) => !key.startsWith('_') && !sameFieldValue(record[key], pristine[key]) && !(record[key] === false && pristine[key] === undefined)
+	);
 }
 
 /**

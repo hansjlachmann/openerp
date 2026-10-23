@@ -42,9 +42,15 @@
 
 	/**
 	 * Run a run_object: "codeunit:455", "report:675", a function "table:X.F(0)" — with the
-	 * record (a card's record)
+	 * record (a card's record). quiet (AssistEdit): no progress window and no "completed"
+	 * message, only the pages it opens and its errors. Returns the result's data (an AssistEdit
+	 * function's changed record is data.record).
 	 */
-	export async function run(runObject: string, record: Record<string, unknown>) {
+	export async function run(
+		runObject: string,
+		record: Record<string, unknown>,
+		opts: { quiet?: boolean } = {}
+	): Promise<Record<string, unknown> | undefined> {
 		const [objectType, rest] = runObject.split(':');
 		const isFunction = /^[a-z]+:[^.(]+\.[A-Za-z_]\w*(\(.*\))?$/.test(runObject);
 		const isReport = objectType === 'report';
@@ -54,7 +60,9 @@
 			return;
 		}
 
-		progressOpen = true;
+		const quiet = opts.quiet === true;
+		let resultData: Record<string, unknown> | undefined;
+		progressOpen = !quiet;
 		progressTitle = t(MSG.PROCESSING);
 		progressValue = 0;
 		progressMessage = '';
@@ -79,6 +87,7 @@
 						progressValue = 100;
 						if (event.message) progressMessage = event.message;
 						if (event.data?.refresh) refresh = true;
+						resultData = event.data as Record<string, unknown> | undefined;
 					},
 					onError: (err) => {
 						confirmMode = false;
@@ -118,7 +127,10 @@
 					onSyncResult: (syncResult) => {
 						progressOpen = false;
 						refresh = !!syncResult.refresh;
-						if (syncResult.success) {
+						resultData = syncResult.data;
+						if (syncResult.success && quiet) {
+							// quiet: no message for a plain success
+						} else if (syncResult.success) {
 							if (syncResult.dialog) dialog = syncResult.dialog;
 							else toast.success(syncResult.message || t(MSG.CODEUNIT_SUCCESS));
 						} else {
@@ -131,12 +143,15 @@
 				isFunction ? runObject : undefined
 			);
 			if (result && 'job_id' in result) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
+				if (!quiet) {
+					await new Promise((resolve) => setTimeout(resolve, 500));
+					if (!progressError) toast.success(t(MSG.JOB_COMPLETED));
+					refresh = true; // an async job may have changed anything
+				}
 				progressOpen = false;
-				if (!progressError) toast.success(t(MSG.JOB_COMPLETED));
-				refresh = true; // an async job may have changed anything
 			}
-			ondone?.(refresh);
+			if (!quiet) ondone?.(refresh);
+			return resultData;
 		} catch (err) {
 			progressOpen = false;
 			toast.error(err instanceof Error ? err.message : t(ERR.CODEUNIT_FAILED));
@@ -172,8 +187,10 @@
 				initialSelect={request.select}
 				lookupMode={request.lookupMode}
 				onclose={(action, key) => {
+					// respond first: {@const request} follows runPage, which is cleared next
+					const respond = request.respond;
+					respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 					runPage = null;
-					request.respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 				}}
 			/>
 		</div>

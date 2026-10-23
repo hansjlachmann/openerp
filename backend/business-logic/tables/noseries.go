@@ -25,17 +25,15 @@ func (noSeriesLogic) OnModify(rec *gtables.NoSeries) error {
 // OnDelete deletes the series' lines and its relationships (both as the series and as a
 // related series)
 func (noSeriesLogic) OnDelete(rec *gtables.NoSeries) error {
-	var line gtables.NoSeriesLine
-	line.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	line.SetRange("series_code", rec.Code)
-	line.DeleteAll()
-	var rel gtables.NoSeriesRelationship
-	rel.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	rel.SetRange("code", rec.Code)
-	rel.DeleteAll()
-	rel.SetRange("code")
-	rel.SetRange("series_code", rec.Code)
-	rel.DeleteAll()
+	noSeriesLine := gtables.NewNoSeriesLine(rec)
+	noSeriesLine.SetRange("series_code", rec.Code)
+	noSeriesLine.DeleteAll()
+	noSeriesRelationship := gtables.NewNoSeriesRelationship(rec)
+	noSeriesRelationship.SetRange("code", rec.Code)
+	noSeriesRelationship.DeleteAll()
+	noSeriesRelationship.SetRange("code")
+	noSeriesRelationship.SetRange("series_code", rec.Code)
+	noSeriesRelationship.DeleteAll()
 	return nil
 }
 

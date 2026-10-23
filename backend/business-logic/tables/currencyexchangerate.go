@@ -54,20 +54,19 @@ func checkNotSameCurrency(rec *gtables.CurrencyExchangeRate) error {
 // OnValidate_Starting_date: a new starting date takes the amounts of the rate before it (the
 // rate is entered as a change of the previous one)
 func (currencyExchangeRateLogic) OnValidate_Starting_date(rec *gtables.CurrencyExchangeRate) error {
-	if old, ok := rec.OldValue("starting_date").(types.Date); ok && old.Equal(rec.Starting_date) {
-		return nil
-	}
-	var prev gtables.CurrencyExchangeRate
-	prev.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	prev.SetRange("currency_code", rec.Currency_code)
-	prev.SetRange("starting_date", types.Date{}, rec.Starting_date.AddDays(-1))
-	if prev.FindLast() {
-		rec.Exchange_rate_amount = prev.Exchange_rate_amount
-		rec.Adjustment_exch_rate_amount = prev.Adjustment_exch_rate_amount
-		rec.Relational_currency_code = prev.Relational_currency_code
-		rec.Relational_exch_rate_amount = prev.Relational_exch_rate_amount
-		rec.Fix_exchange_rate_amount = prev.Fix_exchange_rate_amount
-		rec.Relational_adjmt_exch_rate_amt = prev.Relational_adjmt_exch_rate_amt
+	xRec := rec.XRec()
+	if !xRec.Starting_date.Equal(rec.Starting_date) {
+		currExchRate := gtables.NewCurrencyExchangeRate(rec)
+		currExchRate.SetRange("currency_code", rec.Currency_code)
+		currExchRate.SetRange("starting_date", types.Date{}, rec.Starting_date.AddDays(-1))
+		if currExchRate.FindLast() {
+			rec.Exchange_rate_amount = currExchRate.Exchange_rate_amount
+			rec.Adjustment_exch_rate_amount = currExchRate.Adjustment_exch_rate_amount
+			rec.Relational_currency_code = currExchRate.Relational_currency_code
+			rec.Relational_exch_rate_amount = currExchRate.Relational_exch_rate_amount
+			rec.Fix_exchange_rate_amount = currExchRate.Fix_exchange_rate_amount
+			rec.Relational_adjmt_exch_rate_amt = currExchRate.Relational_adjmt_exch_rate_amt
+		}
 	}
 	return nil
 }

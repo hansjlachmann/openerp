@@ -45,7 +45,8 @@ function createBreadcrumbStore() {
 			recordLabel: string | undefined,
 			listPageId?: number,
 			listPageCaption?: string,
-			homeLabel?: string
+			homeLabel?: string,
+			cardTitle?: string // the card's full title ("Customer Card – C00010 · Name")
 		) {
 			update(state => {
 				const home = homeLabel || state.homeLabel;
@@ -61,7 +62,7 @@ function createBreadcrumbStore() {
 				}
 
 				// Add card page
-				const cardLabel = recordLabel ? `${pageCaption} (${recordLabel})` : pageCaption;
+				const cardLabel = cardTitle || (recordLabel ? `${pageCaption} (${recordLabel})` : pageCaption);
 				items.push({
 					label: cardLabel,
 					href: recordId ? `/pages/${pageId}/${recordId}` : `/pages/${pageId}`,

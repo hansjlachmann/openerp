@@ -42,7 +42,7 @@ type CountryRegionAddress_format int
 
 // String returns the text representation of CountryRegionAddress_format
 func (o CountryRegionAddress_format) String() string {
-	options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+	options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 	if o >= 0 && int(o) < len(options) {
 		return options[o]
 	}
@@ -146,15 +146,15 @@ const CountryRegionTableName = "Country_Region"
 
 // CountryRegion_Address_format provides named constants for the address_format option field (FieldName.OptionValue syntax)
 var CountryRegion_Address_format = struct {
-	ZIPCodeCity          CountryRegionAddress_format
-	CityZIPCode          CountryRegionAddress_format
-	CityStateZIPCode     CountryRegionAddress_format
-	BlankLineZIPCodeCity CountryRegionAddress_format
+	PostCodeCity          CountryRegionAddress_format
+	CityPostCode          CountryRegionAddress_format
+	CityStatePostCode     CountryRegionAddress_format
+	BlankLinePostCodeCity CountryRegionAddress_format
 }{
-	ZIPCodeCity:          0,
-	CityZIPCode:          1,
-	CityStateZIPCode:     2,
-	BlankLineZIPCodeCity: 3,
+	PostCodeCity:          0,
+	CityPostCode:          1,
+	CityStatePostCode:     2,
+	BlankLinePostCodeCity: 3,
 }
 
 // CountryRegion_Contact_address_format provides named constants for the contact_address_format option field (FieldName.OptionValue syntax)
@@ -248,11 +248,63 @@ func (t *CountryRegion) GetPostgresTableSchema() string {
 	return GetCountryRegionPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *CountryRegion) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *CountryRegion) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["code"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(CountryRegionTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *CountryRegion) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(CountryRegionTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *CountryRegion) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(CountryRegionTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *CountryRegion) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(CountryRegionTableName, key)
 }
 
 // ========================================
@@ -622,6 +674,41 @@ func (t *CountryRegion) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *CountryRegion) XRec() *CountryRegion {
+	x := &CountryRegion{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["code"].(types.Code); ok {
+		x.Code = v
+	}
+	if v, ok := t.oldValues["name"].(types.Text); ok {
+		x.Name = v
+	}
+	if v, ok := t.oldValues["eu_country_code"].(types.Code); ok {
+		x.Eu_country_code = v
+	}
+	if v, ok := t.oldValues["intrastat_code"].(types.Code); ok {
+		x.Intrastat_code = v
+	}
+	if v, ok := t.oldValues["address_format"].(CountryRegionAddress_format); ok {
+		x.Address_format = v
+	}
+	if v, ok := t.oldValues["contact_address_format"].(CountryRegionContact_address_format); ok {
+		x.Contact_address_format = v
+	}
+	return x
+}
+
+// NewCountryRegion returns a Country_Region record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewCountryRegion(from tables.Source) *CountryRegion {
+	rec := &CountryRegion{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *CountryRegion) IsGlobal() bool {
 	return false
@@ -747,15 +834,22 @@ func (t *CountryRegion) Insert(runTrigger bool) bool {
 		t.Contact_address_format,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name, eu_country_code, intrastat_code, address_format, contact_address_format) VALUES (?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, name, eu_country_code, intrastat_code, address_format, contact_address_format) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Country_Region: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(CountryRegionTableName, key)
 		return false
 	}
 	return true
@@ -982,7 +1076,7 @@ func (t *CountryRegion) renameReferences(field string, oldValue, newValue interf
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "country_region_code", "", 0}},
+		"code": {{"Customer", false, "country_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2048,7 +2142,7 @@ func (t *CountryRegion) ValidateField(fieldName string, value interface{}) error
 				// Empty string defaults to first option (behavior)
 				t.Address_format = 0
 			} else {
-				options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+				options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 				found := false
 				for i, opt := range options {
 					if opt == v {
@@ -2738,7 +2832,7 @@ func (t *CountryRegion) FromMap(data map[string]interface{}) {
 			t.Address_format = CountryRegionAddress_format(val)
 		case string:
 			// Lookup string value in options
-			options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+			options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 			for i, opt := range options {
 				if opt == val {
 					t.Address_format = CountryRegionAddress_format(i)
@@ -2869,7 +2963,7 @@ func (t *CountryRegion) GetFlowFields() []string {
 // GetOptionFields returns Option field names mapped to their option values
 func (t *CountryRegion) GetOptionFields() map[string][]string {
 	return map[string][]string{
-		"address_format":         {"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"},
+		"address_format":         {"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"},
 		"contact_address_format": {"First", "After Company Name", "Last"},
 	}
 }

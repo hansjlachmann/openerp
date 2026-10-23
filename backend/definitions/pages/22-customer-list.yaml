@@ -12,7 +12,7 @@ page:
     repeater:
       fields:
         - source: no
-          width: 120
+          width: 100
 
         - source: name
           width: 250
@@ -20,27 +20,98 @@ page:
         - source: city
           width: 150
 
-        - source: country_region_code
+        - source: post_code
           width: 100
+          visible: false
 
-        - source: phonenumber
-          caption: Phone No.
+        - source: country_code
+          width: 100
+          visible: false
+
+        - source: phone_no
           width: 150
 
-        - source: balance_lcy
+        - source: fax_no
+          width: 150
+          visible: false
+
+        - source: contact
+          width: 180
+
+        - source: salesperson_code
+          width: 130
+          visible: false
+
+        - source: customer_posting_group
+          width: 170
+          visible: false
+
+        - source: gen_bus_posting_group
+          width: 170
+          visible: false
+
+        - source: tax_bus_posting_group
+          width: 170
+          visible: false
+
+        - source: department_code
+          width: 130
+          visible: false
+
+        - source: project_code
+          width: 130
+          visible: false
+
+        - source: location_code
           width: 120
+
+        - source: price_group_code
+          width: 130
+          visible: false
+
+        - source: payment_terms_code
+          width: 150
+          visible: false
+
+        - source: reminder_terms_code
+          width: 150
+          visible: false
+
+        - source: fin_charge_terms_code
+          width: 150
+          visible: false
+
+        - source: currency_code
+          width: 110
+          visible: false
+
+        - source: language_code
+          width: 110
+          visible: false
+
+        - source: search_name
+          width: 200
+
+        - source: balance_lcy
+          width: 140
+          drilldown: 25
+          drilldown_filter_field: customer_no
+          drilldown_filter_value: no
+
+        - source: balance_due_lcy
+          width: 150
           drilldown: 25
           drilldown_filter_field: customer_no
           drilldown_filter_value: no
 
         - source: sales_lcy
-          width: 120
+          width: 130
           drilldown: 25
           drilldown_filter_field: customer_no
           drilldown_filter_value: no
 
-        - source: status
-          width: 100
+        - source: blocked
+          width: 90
 
   actions:
     - name: New

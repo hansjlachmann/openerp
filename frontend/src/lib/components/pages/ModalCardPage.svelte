@@ -25,7 +25,7 @@
 		saveBlockedMessage?: string;
 		onclose?: () => void;
 		onaction?: (actionName: string) => void;
-		onsave?: (record: Record<string, any>) => Promise<boolean> | boolean | void;
+		onsave?: (record: Record<string, any>, opts?: { leavingKey?: boolean }) => Promise<boolean> | boolean | void;
 		onclearerror?: () => void;
 		// The list's filters, search and sort: record navigation follows the list
 		navigationQuery?: NavigationQuery;

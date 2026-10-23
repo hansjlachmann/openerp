@@ -326,11 +326,63 @@ func (t *UserPersonalization) GetPostgresTableSchema() string {
 	return GetUserPersonalizationPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *UserPersonalization) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *UserPersonalization) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["user_id"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(UserPersonalizationTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *UserPersonalization) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(UserPersonalizationTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *UserPersonalization) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(UserPersonalizationTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *UserPersonalization) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(UserPersonalizationTableName, key)
 }
 
 // ========================================
@@ -734,6 +786,59 @@ func (t *UserPersonalization) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *UserPersonalization) XRec() *UserPersonalization {
+	x := &UserPersonalization{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["user_id"].(types.Code); ok {
+		x.User_id = v
+	}
+	if v, ok := t.oldValues["light_theme"].(types.Code); ok {
+		x.Light_theme = v
+	}
+	if v, ok := t.oldValues["dark_theme"].(types.Code); ok {
+		x.Dark_theme = v
+	}
+	if v, ok := t.oldValues["mode"].(UserPersonalizationMode); ok {
+		x.Mode = v
+	}
+	if v, ok := t.oldValues["wallpaper"].(types.Text); ok {
+		x.Wallpaper = v
+	}
+	if v, ok := t.oldValues["wallpaper_opacity"].(int); ok {
+		x.Wallpaper_opacity = v
+	}
+	if v, ok := t.oldValues["wallpaper_blur"].(int); ok {
+		x.Wallpaper_blur = v
+	}
+	if v, ok := t.oldValues["panel_opacity"].(int); ok {
+		x.Panel_opacity = v
+	}
+	if v, ok := t.oldValues["font"].(UserPersonalizationFont); ok {
+		x.Font = v
+	}
+	if v, ok := t.oldValues["font_size"].(int); ok {
+		x.Font_size = v
+	}
+	if v, ok := t.oldValues["density"].(UserPersonalizationDensity); ok {
+		x.Density = v
+	}
+	if v, ok := t.oldValues["updated_at"].(types.DateTime); ok {
+		x.Updated_at = v
+	}
+	return x
+}
+
+// NewUserPersonalization returns a User_Personalization record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewUserPersonalization(from tables.Source) *UserPersonalization {
+	rec := &UserPersonalization{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *UserPersonalization) IsGlobal() bool {
 	return true
@@ -883,15 +988,22 @@ func (t *UserPersonalization) Insert(runTrigger bool) bool {
 		t.Updated_at,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert User_Personalization: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(UserPersonalizationTableName, key)
 		return false
 	}
 	return true
@@ -2162,6 +2274,10 @@ func (t *UserPersonalization) ValidateField(fieldName string, value interface{})
 			t.User_id = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field user_id")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "user_id"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

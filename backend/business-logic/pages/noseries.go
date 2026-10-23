@@ -11,9 +11,8 @@ import (
 // starting date on or before the work date (UpdateLine; blank when there is none)
 func init() {
 	pages.OnAfterGetRecord(456, func(rec *gtables.NoSeries, page *pages.Control) {
-		var line gtables.NoSeriesLine
-		line.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-		noseries.SetNoSeriesLineFilter(&line, rec.Code, types.Date{})
+		line := gtables.NewNoSeriesLine(rec)
+		noseries.SetNoSeriesLineFilter(line, rec.Code, types.Date{})
 		if !line.FindFirst() {
 			line.InitRecord()
 		}

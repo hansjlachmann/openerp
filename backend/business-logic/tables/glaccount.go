@@ -44,8 +44,8 @@ func (gLAccountLogic) OnRename(rec *gtables.GLAccount) error {
 
 // OnValidate_Name: Search Name follows the name while it was blank or the old name
 func (gLAccountLogic) OnValidate_Name(rec *gtables.GLAccount) error {
-	oldName, _ := rec.OldValue("name").(types.Text)
-	if rec.Search_name == "" || string(rec.Search_name) == system.UpperCase(oldName.String()) {
+	xRec := rec.XRec()
+	if rec.Search_name == "" || string(rec.Search_name) == system.UpperCase(xRec.Name.String()) {
 		rec.Search_name = types.NewCode(system.CopyStr(rec.Name.String(), 1, 30))
 	}
 	return nil
@@ -55,8 +55,9 @@ func (gLAccountLogic) OnValidate_Name(rec *gtables.GLAccount) error {
 // types do not
 func (gLAccountLogic) OnValidate_Account_type(rec *gtables.GLAccount) error {
 	rec.Totaling = ""
+	xRec := rec.XRec()
 	if rec.Account_type == gtables.GLAccount_Account_type.Posting {
-		if old, ok := rec.OldValue("account_type").(gtables.GLAccountAccount_type); !ok || old != rec.Account_type {
+		if rec.Account_type != xRec.Account_type {
 			rec.Direct_posting = true
 		}
 	} else {
@@ -76,30 +77,40 @@ func (gLAccountLogic) OnValidate_Totaling(rec *gtables.GLAccount) error {
 
 // OnValidate_Gen_bus_posting_group fills in the group's default Tax Bus. Posting Group
 func (gLAccountLogic) OnValidate_Gen_bus_posting_group(rec *gtables.GLAccount) error {
-	if old, ok := rec.OldValue("gen_bus_posting_group").(types.Code); ok && old == rec.Gen_bus_posting_group {
-		return nil
+	xRec := rec.XRec()
+	if xRec.Gen_bus_posting_group != rec.Gen_bus_posting_group {
+		genBusPostingGroup := gtables.NewGenBusinessPostingGroup(rec)
+		autoInsert, err := ValidateTaxBusPostingGroup(genBusPostingGroup, rec.Gen_bus_posting_group)
+		if err != nil {
+			return err
+		}
+		if autoInsert {
+			err = rec.Validate("tax_bus_posting_group", genBusPostingGroup.Def_tax_bus_posting_group)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	var group gtables.GenBusinessPostingGroup
-	group.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	auto, err := ValidateTaxBusPostingGroup(&group, rec.Gen_bus_posting_group, gtables.GLAccountTableName, "gen_bus_posting_group")
-	if err != nil || !auto {
-		return err
-	}
-	return rec.Validate("tax_bus_posting_group", group.Def_tax_bus_posting_group)
+	return nil
 }
 
 // OnValidate_Gen_prod_posting_group fills in the group's default Tax Prod. Posting Group
 func (gLAccountLogic) OnValidate_Gen_prod_posting_group(rec *gtables.GLAccount) error {
-	if old, ok := rec.OldValue("gen_prod_posting_group").(types.Code); ok && old == rec.Gen_prod_posting_group {
-		return nil
+	xRec := rec.XRec()
+	if xRec.Gen_prod_posting_group != rec.Gen_prod_posting_group {
+		genProdPostingGroup := gtables.NewGenProductPostingGroup(rec)
+		autoInsert, err := ValidateTaxProdPostingGroup(genProdPostingGroup, rec.Gen_prod_posting_group)
+		if err != nil {
+			return err
+		}
+		if autoInsert {
+			err = rec.Validate("tax_prod_posting_group", genProdPostingGroup.Def_tax_prod_posting_group)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	var group gtables.GenProductPostingGroup
-	group.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	auto, err := ValidateTaxProdPostingGroup(&group, rec.Gen_prod_posting_group, gtables.GLAccountTableName, "gen_prod_posting_group")
-	if err != nil || !auto {
-		return err
-	}
-	return rec.Validate("tax_prod_posting_group", group.Def_tax_prod_posting_group)
+	return nil
 }
 
 // SetupNewGLAcc gives a new account the Income/Balance of the account above it: xRec when the
@@ -107,13 +118,12 @@ func (gLAccountLogic) OnValidate_Gen_prod_posting_group(rec *gtables.GLAccount) 
 func SetupNewGLAcc(rec, xRec *gtables.GLAccount, belowXRec bool) {
 	above := xRec
 	if !belowXRec {
-		var prev gtables.GLAccount
-		prev.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-		prev.No = xRec.No
-		if xRec.No == "" || !prev.Find("<") {
-			prev.InitRecord()
+		glAcc := gtables.NewGLAccount(rec)
+		glAcc.No = xRec.No
+		if xRec.No == "" || !glAcc.Find("<") {
+			glAcc.InitRecord()
 		}
-		above = &prev
+		above = glAcc
 	}
 	rec.Income_balance = above.Income_balance
 }
@@ -121,7 +131,7 @@ func SetupNewGLAcc(rec, xRec *gtables.GLAccount, belowXRec bool) {
 // GetCurrencyCode is the currency of the account's additional-currency amounts: the General
 // Ledger Setup's Additional Reporting Currency
 func GetCurrencyCode(rec *gtables.GLAccount) types.Code {
-	return GetGeneralLedgerSetup(rec).Additional_reporting_currency
+	return gtables.GetGeneralLedgerSetup(rec).Additional_reporting_currency
 }
 
 // IndentChartOfAccounts indents every account between a Begin-Total and its End-Total one
@@ -132,13 +142,8 @@ func IndentChartOfAccounts(db database.Executor, company string, dbType database
 	all.InitWithDBType(db, company, dbType)
 	all.SetCurrentKey("no")
 	var accounts []types.Code
-	if all.FindSet() {
-		for {
-			accounts = append(accounts, all.No)
-			if !all.Next() {
-				break
-			}
-		}
+	for found := all.FindSet(); found; found = all.Next() {
+		accounts = append(accounts, all.No)
 	}
 	var begins []types.Code
 	for _, no := range accounts {
@@ -158,8 +163,9 @@ func IndentChartOfAccounts(db database.Executor, company string, dbType database
 			begins = begins[:len(begins)-1]
 		}
 		acc.Indentation = len(begins)
-		if !acc.Modify(false) {
-			return apperrors.ModifyFailed(gtables.GLAccountTableName, no.String())
+		err := acc.ModifyOrError(false)
+		if err != nil {
+			return err
 		}
 		if acc.Account_type == gtables.GLAccount_Account_type.BeginTotal {
 			begins = append(begins, no)
@@ -170,7 +176,8 @@ func IndentChartOfAccounts(db database.Executor, company string, dbType database
 
 // CheckGLAcc returns an error unless the account is a posting account that is not blocked
 func CheckGLAcc(rec *gtables.GLAccount) error {
-	if err := rec.TestField("account_type", gtables.GLAccount_Account_type.Posting); err != nil {
+	err := rec.TestField("account_type", gtables.GLAccount_Account_type.Posting)
+	if err != nil {
 		return err
 	}
 	return rec.TestField("blocked", false)

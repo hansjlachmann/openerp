@@ -58,9 +58,9 @@ func TestCopyAndPasteRecords(t *testing.T) {
 		t.Errorf("duplicate paste = %q, list %s (want nothing pasted)", msg, nos())
 	}
 
-	// A field check (OnValidate: names need 3 characters) fails: nothing is pasted
+	// A field check (OnValidate: the Gen. Bus. Posting Group must exist) fails: nothing is pasted
 	out = postJSON(t, app, "/api/tables/Customer/insert-many",
-		`{"records":[{"no":"C14","name":"Fine"},{"no":"C15","name":"ab"}]}`)
+		`{"records":[{"no":"C14","name":"Fine"},{"no":"C15","name":"ab","gen_bus_posting_group":"NONE"}]}`)
 	if out["success"] != false || nos() != "[C01 C02 C03 C11 C12]" {
 		t.Errorf("invalid paste = %v, list %s", out, nos())
 	}
