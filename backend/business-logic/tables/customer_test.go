@@ -217,8 +217,9 @@ func TestGeneratedRecordErrors(t *testing.T) {
 	if d.Insert(false) || msg(d.TriggerError()) != "Customer C1 already exists" {
 		t.Errorf("taken key: %v", d.TriggerError())
 	}
-	if c.GetOrError(types.Code("C1")); c.Name != "" {
-		t.Errorf("the stored customer was changed: %q", c.Name)
+	err := c.GetOrError(types.Code("C1"))
+	if err != nil || c.Name != "" {
+		t.Errorf("the stored customer was changed: %q, %v", c.Name, err)
 	}
 	if got := msg(d.GetOrError(types.Code("NONE"))); got != "Customer NONE not found" {
 		t.Errorf("GetOrError: %q", got)
