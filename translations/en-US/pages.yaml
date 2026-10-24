@@ -403,3 +403,15 @@ pages:
     caption: "Source Code Setup"
   user_setup:
     caption: "User Setup"
+  apply_customer_entries:
+    caption: "Apply Customer Entries"
+    fields:  # the totals under the list (calculated)
+      appln_amount: "Amount"
+      applied_amount: "Applied Amount"
+      appln_balance: "Balance"
+  apply_vendor_entries:
+    caption: "Apply Vendor Entries"
+    fields:  # the totals under the list (calculated)
+      appln_amount: "Amount"
+      applied_amount: "Applied Amount"
+      appln_balance: "Balance"

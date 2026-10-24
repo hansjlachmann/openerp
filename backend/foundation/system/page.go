@@ -44,6 +44,7 @@ type Page struct {
 	lookupMode bool
 	pickedKey  string
 	picked     bool
+	params     map[string]string
 }
 
 // NewPage returns a page variable for a page (by its number)
@@ -63,6 +64,20 @@ func (p *Page) SetRecord(rec PageRecord) {
 
 // LookupMode switches lookup mode on or off (LookupMode): in lookup mode the page has OK and
 // Cancel buttons and RunModal returns ActionLookupOK or ActionLookupCancel
+// SetParam gives the page a parameter its functions and triggers read with PageParam (classic
+// SetGenJnlLine on a page: Apply Customer Entries gets the journal line's Applies-to ID)
+func (p *Page) SetParam(name, value string) {
+	if p.params == nil {
+		p.params = map[string]string{}
+	}
+	p.params[name] = value
+}
+
+// PageParam returns a parameter of the page the running code was started from ("" when none)
+func PageParam(name string) string {
+	return codeunits.CurrentPageParam(name)
+}
+
 func (p *Page) LookupMode(on bool) {
 	p.lookupMode = on
 }
@@ -74,7 +89,7 @@ func (p *Page) LookupMode(on bool) {
 // a codeunit run from a card) it returns ActionLookupCancel / ActionCancel.
 func (p *Page) RunModal() Action {
 	p.picked, p.pickedKey = false, ""
-	answer := codeunits.RunPage(p.id, p.filters, p.selectKey, p.lookupMode)
+	answer := codeunits.RunPage(p.id, p.filters, p.selectKey, p.lookupMode, p.params)
 	switch {
 	case p.lookupMode && answer["action"] == "LookupOK":
 		p.picked, p.pickedKey = true, answer["key"]

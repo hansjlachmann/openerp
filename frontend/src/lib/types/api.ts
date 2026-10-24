@@ -82,6 +82,7 @@ export interface ListOptions {
 	flow_filters?: TableFilter[]; // FlowFilter fields (e.g. Date Filter) the FlowFields apply, ISO dates
 	fields?: string[]; // Only load these fields (useful to skip expensive FlowFields)
 	page_id?: number; // the page showing the list: its triggers fill its calculated fields
+	page_params?: Record<string, string>; // the page's parameters (a page opened from code), read by its triggers
 }
 
 // Dialog result from codeunit

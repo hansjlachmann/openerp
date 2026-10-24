@@ -1088,7 +1088,7 @@ func ClearCustVendApplID(rec *gtables.GenJournalLine) error {
 			custLedgEntry.SetRange("customer_no", accNo)
 			custLedgEntry.SetRange("open", true)
 			custLedgEntry.SetRange("applies_to_id", rec.Applies_to_id)
-			for found := custLedgEntry.FindSet(); found; found = custLedgEntry.Next() {
+			for found := custLedgEntry.FindSetBuffered(); found; found = custLedgEntry.Next() { // modified in the loop: read all first
 				custLedgEntry.Applies_to_id = ""
 				err := custLedgEntry.ModifyOrError(false)
 				if err != nil {
@@ -1103,7 +1103,7 @@ func ClearCustVendApplID(rec *gtables.GenJournalLine) error {
 			vendLedgEntry.SetRange("vendor_no", accNo)
 			vendLedgEntry.SetRange("open", true)
 			vendLedgEntry.SetRange("applies_to_id", rec.Applies_to_id)
-			for found := vendLedgEntry.FindSet(); found; found = vendLedgEntry.Next() {
+			for found := vendLedgEntry.FindSetBuffered(); found; found = vendLedgEntry.Next() { // modified in the loop: read all first
 				vendLedgEntry.Applies_to_id = ""
 				err := vendLedgEntry.ModifyOrError(false)
 				if err != nil {

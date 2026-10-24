@@ -373,3 +373,4 @@ messages:
   GEN_JNL_POSTED: "Kladdelinjerne er bogført."
   GEN_JNL_POSTED_NEW_BATCH: "Kladdelinjerne er bogført. Du er nu i kladden %1."
   GEN_JNL_POST_WINDOW: "Kladdenavn #1##########\nKontrollerer linjer #2######\nKontrollerer saldo #3###### @4@@@@@@@@@@@@@\nBogfører linjer #5###### @6@@@@@@@@@@@@@"
+  GEN_JNL_APPLY_CHANGE_CURRENCY: "%1 i %2 ændres fra %3 til %4.\nVil du fortsætte?"

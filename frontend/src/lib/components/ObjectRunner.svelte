@@ -36,6 +36,7 @@
 		filters: import('$lib/types/api').TableFilter[];
 		select?: string;
 		lookupMode: boolean;
+		params?: Record<string, string>; // the page's parameters (Page.SetParam)
 		respond: (values: Record<string, string> | null) => void;
 	} | null>(null);
 	let dialog = $state<DialogResult | null>(null);
@@ -109,6 +110,7 @@
 							filters: (data.filters as import('$lib/types/api').TableFilter[]) ?? [],
 							select: (data.select as string) || undefined,
 							lookupMode: data.lookup_mode === true,
+							params: (data.params as Record<string, string>) ?? undefined,
 							respond
 						};
 					},
@@ -189,6 +191,7 @@
 				initialFilters={request.filters}
 				initialSelect={request.select}
 				lookupMode={request.lookupMode}
+				openParams={request.params}
 				onclose={(action, key) => {
 					// respond first: {@const request} follows runPage, which is cleared next
 					const respond = request.respond;

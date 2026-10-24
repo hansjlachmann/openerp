@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    apply_entries: "Udlign poster"
+    set_applies_to_id: "Angiv udlignings-id"
     account: "Konto"
     card: "Kort"
     register: "Journal"

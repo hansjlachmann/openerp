@@ -1,0 +1,80 @@
+page:
+  id: 232
+  type: List
+  name: Apply Customer Entries
+  source_table: Customer_ledger_entry
+  caption: Apply Customer Entries
+  editable: false   # opened from a journal line (Apply Entries): its open entries, OK applies the line
+
+  # Under the list: the journal line's amount, the marked entries' amount and the balance
+  # (OnAfterGetRecord with the page's parameters, business-logic/genjnl/apply.go)
+  footer:
+    - source: appln_amount
+      calculated: true
+      type: types.Decimal
+      decimal_places: "2:2"
+    - source: applied_amount
+      calculated: true
+      type: types.Decimal
+      decimal_places: "2:2"
+    - source: appln_balance
+      calculated: true
+      type: types.Decimal
+      decimal_places: "2:2"
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 130
+
+        - source: document_no
+          width: 110
+
+        - source: customer_no
+          width: 110
+
+        - source: description
+          width: 250
+
+        - source: currency_code
+          width: 110
+
+        - source: amount
+          width: 120
+
+        - source: remaining_amount
+          width: 120
+
+        - source: due_date
+          width: 100
+
+        - source: pmt_discount_date
+          width: 100
+
+        - source: pmt_disc_possible
+          width: 120
+
+        - source: applies_to_id
+          width: 110
+
+        - source: open
+          width: 80
+          visible: false
+
+        - source: positive
+          width: 80
+          visible: false
+
+
+  actions:
+    # Mark the selected entries with the journal line's Applies-to ID, or take the mark off
+    - name: Set Applies-to ID
+      caption: Set Applies-to ID
+      image: Approve
+      shortcut: F9
+      promoted: true
+      run_object: table:Customer_ledger_entry.SetAppliesToID

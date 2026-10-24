@@ -67,6 +67,9 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// user's in group 0), so the codeunit works on what the list shows (a journal's batch)
 		FixedFilters []fixedFilterParam `json:"fixed_filters"`
 		Filters      []filterParam      `json:"filters"`
+		// The page's parameters (a page opened from code with parameters): its functions read
+		// them with system.PageParam
+		PageParams map[string]string `json:"page_params"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
@@ -153,6 +156,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// Set context for sync execution (same goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
 		fcodeunits.SetCurrentAccess(sess)
+		fcodeunits.SetCurrentPageParams(req.PageParams)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Run synchronously and return result directly
@@ -193,6 +197,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// Set context for async execution (new goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
 		fcodeunits.SetCurrentAccess(sess)
+		fcodeunits.SetCurrentPageParams(req.PageParams)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Set dialog in context for the codeunit to use

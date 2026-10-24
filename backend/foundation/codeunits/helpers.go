@@ -22,6 +22,9 @@ type goroutineContext struct {
 	Language string
 	// Access: the user's permissions (nil: no user — internal code, tests — is not checked)
 	Access *session.Session
+	// PageParams: the parameters of the page the code runs for (a page opened from code with
+	// parameters, e.g. Apply Customer Entries with the journal line's Applies-to ID)
+	PageParams map[string]string
 }
 
 // currentContexts holds the context for each goroutine
@@ -224,12 +227,12 @@ func Hyperlink(url string) {
 // RunPage opens a page from a codeunit and waits until the user closes it (see
 // Dialog.RunPage); nil without a dialog (a scheduled run).
 // Note: This only works in async codeunits (UsesProgress() = true)
-func RunPage(pageID int, filters interface{}, selectKey string, lookupMode bool) map[string]string {
+func RunPage(pageID int, filters interface{}, selectKey string, lookupMode bool, params map[string]string) map[string]string {
 	dialog := GetCurrentDialog()
 	if dialog == nil {
 		return nil
 	}
-	return dialog.RunPage(pageID, filters, selectKey, lookupMode)
+	return dialog.RunPage(pageID, filters, selectKey, lookupMode, params)
 }
 
 // RequestPage shows a report's request page (options and the data items' filters) and waits
@@ -240,4 +243,24 @@ func RequestPage(title string, fields []InputField, dataItems []RequestDataItem,
 		return nil
 	}
 	return dialog.RequestPage(title, fields, dataItems, optionsCaption)
+}
+
+// SetCurrentPageParams sets the parameters of the page the current goroutine's code runs for
+// (its functions and triggers read them with system.PageParam)
+func SetCurrentPageParams(params map[string]string) {
+	ctx := GetCurrentContext()
+	if ctx == nil {
+		ctx = &goroutineContext{}
+		currentContexts.Store(getGoroutineID(), ctx)
+	}
+	ctx.PageParams = params
+}
+
+// CurrentPageParam returns a parameter of the page the code runs for ("" when none)
+func CurrentPageParam(name string) string {
+	ctx := GetCurrentContext()
+	if ctx == nil {
+		return ""
+	}
+	return ctx.PageParams[name]
 }

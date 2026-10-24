@@ -37,6 +37,13 @@ type lineSpec struct {
 	balNo      string
 	bankPmt    gtables.GenJournalLineBank_payment_type
 	postingDay int
+	// customers and vendors
+	docType        gtables.GenJournalLineDocument_type
+	appliesDocType gtables.GenJournalLineApplies_to_doc_type
+	appliesDocNo   string
+	appliesID      string
+	pmtDiscPercent string
+	pmtDiscDay     int
 }
 
 func addLine(t *testing.T, src ftables.Source, template, batch string, l lineSpec) *gtables.GenJournalLine {
@@ -51,6 +58,7 @@ func addLine(t *testing.T, src ftables.Source, template, batch string, l lineSpe
 	genJnlTemplate := gtables.NewGenJournalTemplate(src)
 	must(t, genJnlTemplate.GetOrError(types.Code(template)))
 	line.Source_code = genJnlTemplate.Source_code // as SetUpNewLine gives it
+	must(t, line.Validate("document_type", l.docType))
 	must(t, line.Validate("account_type", l.accType))
 	must(t, line.Validate("account_no", l.accNo))
 	must(t, line.Validate("bal_account_type", l.balType))
@@ -58,6 +66,13 @@ func addLine(t *testing.T, src ftables.Source, template, batch string, l lineSpe
 	must(t, line.Validate("amount", dec(l.amount)))
 	if l.bankPmt != 0 {
 		must(t, line.Validate("bank_payment_type", l.bankPmt))
+	}
+	line.Applies_to_doc_type = l.appliesDocType
+	line.Applies_to_doc_no = types.Code(l.appliesDocNo)
+	line.Applies_to_id = types.Code(l.appliesID)
+	if l.pmtDiscPercent != "" {
+		line.Payment_discount_percent = dec(l.pmtDiscPercent)
+		line.Pmt_discount_date = date(t, l.pmtDiscDay, 10, 2026)
 	}
 	must(t, line.InsertOrError(true))
 	return line

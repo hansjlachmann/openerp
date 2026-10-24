@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/company"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -698,8 +699,14 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 		table.CalcFieldsForRecords(records, calc...)
 	}
 
-	// The calculated fields of the page showing the list (page_id: its OnAfterGetRecord triggers)
+	// The calculated fields of the page showing the list (page_id: its OnAfterGetRecord triggers;
+	// page_params: the page's parameters, which its triggers read with system.PageParam)
 	if pageID := c.QueryInt("page_id", 0); pageID > 0 {
+		var pageParams map[string]string
+		if raw := c.Query("page_params", ""); raw != "" {
+			_ = json.Unmarshal([]byte(raw), &pageParams)
+		}
+		fcodeunits.SetCurrentPageParams(pageParams)
 		if err := calculatedValues(pageID, tableName, records, func() ftables.Table {
 			rec, _ := h.getTable(tableName, company)
 			return rec

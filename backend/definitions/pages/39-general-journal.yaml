@@ -237,6 +237,14 @@ page:
           shortcut: Ctrl+F5
           run_object: table:Gen_Journal_Line.ShowEntries
 
+    # Apply the line to the open entries of its customer or vendor (codeunit 225)
+    - name: Apply Entries
+      caption: Apply Entries
+      image: Navigate
+      shortcut: Shift+F9
+      promoted: true
+      run_object: table:Gen_Journal_Line.ApplyEntries
+
     # Posting: the batch (codeunit 231 Gen. Jnl.-Post, after asking; the list's filters say which batch)
     - name: Post
       caption: Post

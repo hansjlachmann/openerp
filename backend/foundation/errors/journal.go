@@ -95,7 +95,6 @@ const (
 	ErrJnlDateOutOfBalanceCurr ErrorCode = "ERR_JNL_DATE_OUT_OF_BALANCE_CURRENCY"
 	ErrJnlTaxMultipleCustVend  ErrorCode = "ERR_JNL_TAX_MULTIPLE_CUST_VEND"
 	ErrJnlMaxPostingNoSeries   ErrorCode = "ERR_JNL_MAX_POSTING_NO_SERIES"
-	ErrJnlCustVendNotYet       ErrorCode = "ERR_JNL_CUST_VEND_NOT_YET"
 )
 
 // JnlClosingDateGLOnly: a closing date is only allowed for G/L entries
@@ -210,7 +209,60 @@ func JnlMaxPostingNoSeries(max int) *AppError {
 	return &AppError{Code: ErrJnlMaxPostingNoSeries, Params: []string{fmt.Sprint(max)}}
 }
 
-// JnlCustVendNotYet: customer and vendor lines cannot be posted yet
-func JnlCustVendNotYet(table, field string, value any) *AppError {
-	return &AppError{Code: ErrJnlCustVendNotYet, Table: table, Field: field, Value: value}
+// Customer and vendor entries and their application
+const (
+	ErrJnlSalesDocExists          ErrorCode = "ERR_JNL_SALES_DOC_EXISTS"
+	ErrJnlPurchDocExists          ErrorCode = "ERR_JNL_PURCH_DOC_EXISTS"
+	ErrJnlPurchDocExistsForVendor ErrorCode = "ERR_JNL_PURCH_DOC_EXISTS_FOR_VENDOR"
+	ErrJnlAppliesToNotFound       ErrorCode = "ERR_JNL_APPLIES_TO_NOT_FOUND"
+	ErrJnlApplnSameCurrency       ErrorCode = "ERR_JNL_APPLN_SAME_CURRENCY"
+	ErrJnlCustPurchaseType        ErrorCode = "ERR_JNL_CUST_PURCHASE_TYPE"
+	ErrJnlVendSalesType           ErrorCode = "ERR_JNL_VEND_SALES_TYPE"
+	ErrJnlSpecifyOne              ErrorCode = "ERR_JNL_SPECIFY_ONE"
+	ErrJnlCustOrVend              ErrorCode = "ERR_JNL_CUST_OR_VEND"
+	ErrJnlUpdateInterrupted       ErrorCode = "ERR_JNL_UPDATE_INTERRUPTED"
+)
+
+// JnlSalesDocExists: a customer's invoice, credit memo, finance charge memo or reminder number
+// is already posted
+func JnlSalesDocExists(docType any, docNo string) *AppError {
+	return &AppError{Code: ErrJnlSalesDocExists, Table: "Customer_ledger_entry", Field: "document_type", Params: []string{docNo}, Value: docType}
 }
+
+// JnlPurchDocExists: a vendor document number is already posted
+func JnlPurchDocExists(docType any, docNo string) *AppError {
+	return &AppError{Code: ErrJnlPurchDocExists, Table: "Vendor_ledger_entry", Field: "document_type", Params: []string{docNo}, Value: docType}
+}
+
+// JnlPurchDocExistsForVendor: the vendor's external document number is already posted
+func JnlPurchDocExistsForVendor(docType any, externalDocNo string) *AppError {
+	return &AppError{Code: ErrJnlPurchDocExistsForVendor, Table: "Vendor_ledger_entry", Field: "document_type", Params: []string{externalDocNo}, Value: docType}
+}
+
+// JnlAppliesToNotFound: no open entry has the line's Applies-to Doc. Type and No.
+func JnlAppliesToNotFound(table string, docType any, docNo string) *AppError {
+	return &AppError{Code: ErrJnlAppliesToNotFound, Table: table, Field: "document_type", Params: []string{docNo}, Value: docType}
+}
+
+// JnlApplnSameCurrency: all entries of one application must be in one currency
+func JnlApplnSameCurrency() *AppError {
+	return &AppError{Code: ErrJnlApplnSameCurrency}
+}
+
+// JnlCustPurchaseType / JnlVendSalesType: a customer line cannot post a purchase, a vendor
+// line not a sale
+func JnlCustPurchaseType() *AppError { return &AppError{Code: ErrJnlCustPurchaseType} }
+func JnlVendSalesType() *AppError    { return &AppError{Code: ErrJnlVendSalesType} }
+
+// JnlSpecifyOne: one of two fields must be filled in (Document No. or Applies-to ID)
+func JnlSpecifyOne(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrJnlSpecifyOne, Table: table, Field: field, Field2: field2}
+}
+
+// JnlCustOrVend: Apply Entries needs a customer or vendor on the line
+func JnlCustOrVend(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrJnlCustOrVend, Table: table, Field: field, Field2: field2}
+}
+
+// JnlUpdateInterrupted: the user did not confirm a change
+func JnlUpdateInterrupted() *AppError { return &AppError{Code: ErrJnlUpdateInterrupted} }

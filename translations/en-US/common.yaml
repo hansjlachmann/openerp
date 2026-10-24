@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    apply_entries: "Apply Entries"
+    set_applies_to_id: "Set Applies-to ID"
     account: "Account"
     card: "Card"
     register: "Register"

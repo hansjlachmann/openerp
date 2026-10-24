@@ -409,6 +409,9 @@
 		if (listFixedFilters.length > 0) {
 			query.fixed_filters = listFixedFilters; // a subpage's link to its card, a journal's batch
 		}
+		if (Object.keys(pageParams).length > 0) {
+			query.page_params = pageParams; // the page's parameters, read by its triggers
+		}
 		const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
 		if (flowFilters.length > 0) {
 			query.flow_filters = flowFilters;
@@ -875,6 +878,7 @@
 					{subpage}
 					fixedFilters={listFixedFilters}
 					newRecordDefaults={listNewRecordDefaults}
+					{pageParams}
 					oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 					onwindow={handleListWindow}
 					onaction={handleListAction}
@@ -947,6 +951,7 @@
 				{subpage}
 				fixedFilters={listFixedFilters}
 				newRecordDefaults={listNewRecordDefaults}
+				{pageParams}
 				oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 				onwindow={handleListWindow}
 				onaction={handleListAction}

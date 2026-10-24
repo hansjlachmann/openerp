@@ -86,6 +86,8 @@
 		// change them; new records get their values (newRecordDefaults)
 		fixedFilters?: FixedFilter[];
 		newRecordDefaults?: Record<string, any>;
+		// The page's parameters (a page opened from code): its functions read them
+		pageParams?: Record<string, string>;
 		// The record the cursor is on (RunModal lookup: OK picks it)
 		oncurrent?: (record: Record<string, any> | undefined) => void;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
@@ -121,6 +123,7 @@
 		subpage = false,
 		fixedFilters = [],
 		newRecordDefaults = {},
+		pageParams = {},
 		oncurrent,
 		onaction,
 		onrowclick,
@@ -212,6 +215,7 @@
 		filters: import('$lib/types/api').TableFilter[];
 		select?: string;
 		lookupMode: boolean;
+		params?: Record<string, string>; // the page's parameters (Page.SetParam)
 		respond: (values: Record<string, string> | null) => void;
 	} | null>(null);
 	let progressTitle = $state(t(MSG.PROCESSING));
@@ -702,6 +706,7 @@
 						filters: (data.filters as import('$lib/types/api').TableFilter[]) ?? [],
 						select: (data.select as string) || undefined,
 						lookupMode: data.lookup_mode === true,
+						params: (data.params as Record<string, string>) ?? undefined,
 						respond
 					};
 				},
@@ -736,7 +741,8 @@
 				}
 			}, jobSelection, isFunction ? 'function' : isReport ? 'report' : 'codeunit', isFunction ? runObject : undefined, {
 				filters: cardNavigationQuery?.filters,
-				fixed_filters: cardNavigationQuery?.fixed_filters
+				fixed_filters: cardNavigationQuery?.fixed_filters,
+				page_params: pageParams
 			});
 
 			// For async jobs, keep modal open briefly to show 100%
@@ -3600,9 +3606,12 @@
 				initialFilters={request.filters}
 				initialSelect={request.select}
 				lookupMode={request.lookupMode}
+				openParams={request.params}
 				onclose={(action, key) => {
+					// respond first: {@const request} follows runPage, which is cleared next
+					const respond = request.respond;
+					respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 					runPage = null;
-					request.respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 				}}
 			/>
 		</div>

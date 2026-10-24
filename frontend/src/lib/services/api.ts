@@ -61,6 +61,9 @@ export function buildQueryString(options?: ListOptions): string {
 		params.append('fields', JSON.stringify(options.fields));
 	}
 	if (options.page_id) params.append('page_id', options.page_id.toString());
+	if (options.page_params && Object.keys(options.page_params).length > 0) {
+		params.append('page_params', JSON.stringify(options.page_params));
+	}
 
 	return params.toString();
 }

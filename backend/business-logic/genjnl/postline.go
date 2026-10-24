@@ -44,6 +44,24 @@ type GenJnlPostLine struct {
 	fiscalYearStartDate types.Date
 	balanceCheckAmount  decimal.Decimal
 	balanceCheckAmount2 decimal.Decimal
+
+	// Customer and vendor application of the current line
+	custPosting           bool
+	vendPosting           bool
+	salesPostingType      bool
+	purchPostingType      bool
+	totalPmtDiscLCY       types.Decimal
+	totalApplnRoundingLCY types.Decimal
+	realExchRateGains     types.Decimal
+	realExchRateLosses    types.Decimal
+	unrealExchRateGains   types.Decimal
+	unrealExchRateLosses  types.Decimal
+	gainsLossesBuffer     map[types.Code]*gainsLosses
+	gainsLossesOrder      []types.Code
+
+	// Tax entries
+	nextTaxEntryNo     int
+	firstNewTaxEntryNo int
 }
 
 // NewGenJnlPostLine opens the posting codeunit in the posting's database (its transaction)

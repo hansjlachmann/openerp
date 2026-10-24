@@ -116,7 +116,7 @@ func modifyGenJnlBatchLines(rec *gtables.GenJournalBatch, field string) error {
 	genJnlLine.LockTable()
 	genJnlLine.SetRange("journal_template_name", rec.Journal_template_name)
 	genJnlLine.SetRange("journal_batch_name", rec.Name)
-	for found := genJnlLine.FindSet(); found; found = genJnlLine.Next() {
+	for found := genJnlLine.FindSetBuffered(); found; found = genJnlLine.Next() { // modified in the loop: read all first
 		var err error
 		switch field {
 		case "reason_code":
