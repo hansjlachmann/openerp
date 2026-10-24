@@ -1074,8 +1074,10 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	}
 
 	// Check for empty primary key — unless the table's OnInsert assigns it (auto_key: the next
-	// number of a series; the key's required check after OnInsert still applies)
-	if table.GetPrimaryKeyValue() == "" && !pages.GetTableMetadata().IsAutoKey(tableName) {
+	// number of a series; the key's required check after OnInsert still applies). A composite
+	// key may have blank fields, as classic (a posting setup for a blank business group)
+	metadata := pages.GetTableMetadata()
+	if table.GetPrimaryKeyValue() == "" && !metadata.IsAutoKey(tableName) && len(metadata.GetPrimaryKeyFields(tableName)) <= 1 {
 		return nil, 400, apperrors.EmptyPrimaryKey(tableCaption).Message(language)
 	}
 

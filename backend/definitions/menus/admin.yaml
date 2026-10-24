@@ -28,6 +28,8 @@ menu:
         page_id: 20
       - name: "Bank Account Ledger Entries"
         page_id: 372
+      - name: "Tax Entries"
+        page_id: 315
       - name: "Navigate"
         page_id: 344
       - separator: true

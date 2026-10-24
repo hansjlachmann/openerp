@@ -1,0 +1,65 @@
+table:
+  id: 319
+  name: "Tax_Area_Line"
+  caption: Tax Area Line
+  description: "Tax area lines (table 319): the jurisdictions of a tax area, in calculation order"
+  fields:
+    - name: tax_area
+      no: 1
+      type: types.Code
+      db_name: tax_area
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_jurisdiction_code
+      no: 2
+      type: types.Code
+      db_name: tax_jurisdiction_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Tax_Jurisdiction
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: jurisdiction_description
+      no: 3
+      type: types.Text
+      db_name: jurisdiction_description
+      length: 30
+      flow_field: true
+      calc_formula: Lookup
+      source_table: TaxJurisdiction
+      source_field: description
+      flow_filters:
+        - field: code
+          type: field
+          value: tax_jurisdiction_code
+
+    - name: calculation_order
+      no: 4
+      type: int
+      db_name: calculation_order
+
+  keys:
+    - name: Primary
+      fields: [tax_area, tax_jurisdiction_code]
+      clustered: true
+    - name: jurisdiction
+      fields: [tax_jurisdiction_code]
+    - name: calculation_order
+      fields: [tax_area, calculation_order]

@@ -266,3 +266,37 @@ func JnlCustOrVend(table, field, field2 string) *AppError {
 
 // JnlUpdateInterrupted: the user did not confirm a change
 func JnlUpdateInterrupted() *AppError { return &AppError{Code: ErrJnlUpdateInterrupted} }
+
+// Sales tax
+const (
+	ErrSalesTaxCalculationOrder ErrorCode = "ERR_SALES_TAX_CALCULATION_ORDER"
+	ErrSalesTaxAmountIncorrect  ErrorCode = "ERR_SALES_TAX_AMOUNT_INCORRECT"
+	ErrTaxNotForSalesTax        ErrorCode = "ERR_TAX_NOT_FOR_SALES_TAX"
+	ErrJnlUnrealizedTaxNotYet   ErrorCode = "ERR_JNL_UNREALIZED_TAX_NOT_YET"
+)
+
+// SalesTaxCalculationOrder: the jurisdictions of a tax area with tax on tax need unique
+// calculation orders
+func SalesTaxCalculationOrder(taxArea string) *AppError {
+	return &AppError{Code: ErrSalesTaxCalculationOrder, Table: "Tax_Area_Line", Field: "calculation_order", Params: []string{taxArea}}
+}
+
+// SalesTaxAmountIncorrect: the line's tax amount is not the tax of its area and group
+func SalesTaxAmountIncorrect(taxArea, taxGroup string) *AppError {
+	return &AppError{Code: ErrSalesTaxAmountIncorrect, Params: []string{taxArea, taxGroup}}
+}
+
+// TaxNotForSalesTax: a VAT field of a tax posting setup with Tax Calculation Type Sales Tax
+func TaxNotForSalesTax(table, field string, value any) *AppError {
+	return &AppError{Code: ErrTaxNotForSalesTax, Table: table, Field: "tax_calculation_type", Field2: field, Value: value}
+}
+
+// JnlUnrealizedTaxNotYet: unrealized tax cannot be posted yet
+func JnlUnrealizedTaxNotYet() *AppError { return &AppError{Code: ErrJnlUnrealizedTaxNotYet} }
+
+// JnlTaxBaseFullVAT: a tax base cannot be entered with Full VAT
+func JnlTaxBaseFullVAT(table, field string, value any) *AppError {
+	return &AppError{Code: ErrJnlTaxBaseFullVAT, Table: table, Field: "tax_calculation_type", Field2: field, Value: value}
+}
+
+const ErrJnlTaxBaseFullVAT ErrorCode = "ERR_JNL_TAX_BASE_FULL_VAT"

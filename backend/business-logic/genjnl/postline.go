@@ -5,6 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/hansjlachmann/openerp/backend/business-logic/salestax"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
@@ -62,6 +63,10 @@ type GenJnlPostLine struct {
 	// Tax entries
 	nextTaxEntryNo     int
 	firstNewTaxEntryNo int
+	nextConnectionNo   int
+	taxPostingSetup    *gtables.TaxPostingSetup
+	salesTaxCalculate  *salestax.SalesTaxCalculate
+	glEntryTmpTax      []*gtables.GLEntry
 }
 
 // NewGenJnlPostLine opens the posting codeunit in the posting's database (its transaction)

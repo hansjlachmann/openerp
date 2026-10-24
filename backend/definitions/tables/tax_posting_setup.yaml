@@ -1,0 +1,153 @@
+table:
+  id: 325
+  name: "Tax_Posting_Setup"
+  caption: Tax Posting Setup
+  description: "Tax posting setup (table 325): the tax calculation of each combination of tax business and product posting group"
+  lookup_page_id: 472
+  fields:
+    - name: tax_bus_posting_group
+      no: 1
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 2
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_calculation_type
+      no: 3
+      type: Option
+      db_name: tax_calculation_type
+      options: ["Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"]
+
+    - name: vat_percent
+      no: 4
+      type: types.Decimal
+      db_name: vat_percent
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+    - name: unrealized_tax_type
+      no: 5
+      type: Option
+      db_name: unrealized_tax_type
+      options: [" ", "Percentage", "First", "Last", "First (Fully Paid)", "Last (Fully Paid)"]
+
+    - name: adjust_for_payment_discount
+      no: 6
+      type: bool
+      db_name: adjust_for_payment_discount
+
+    - name: sales_vat_account
+      no: 7
+      type: types.Code
+      db_name: sales_vat_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_vat_unreal_account
+      no: 8
+      type: types.Code
+      db_name: sales_vat_unreal_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purchase_vat_account
+      no: 9
+      type: types.Code
+      db_name: purchase_vat_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_vat_unreal_account
+      no: 10
+      type: types.Code
+      db_name: purch_vat_unreal_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: reverse_chrg_vat_acc
+      no: 11
+      type: types.Code
+      db_name: reverse_chrg_vat_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: reverse_chrg_vat_unreal_acc
+      no: 12
+      type: types.Code
+      db_name: reverse_chrg_vat_unreal_acc
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [tax_bus_posting_group, tax_prod_posting_group]
+      clustered: true
+    - name: product
+      fields: [tax_prod_posting_group, tax_bus_posting_group]

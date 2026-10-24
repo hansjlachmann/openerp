@@ -415,3 +415,17 @@ pages:
       appln_amount: "Beløp"
       applied_amount: "Utlignet beløp"
       appln_balance: "Saldo"
+
+  # Sales tax
+  general_posting_setup:
+    caption: "Bokføringsoppsett"
+  tax_entries:
+    caption: "Mva.-poster"
+  tax_area_lines:
+    caption: "Mva.-områdelinjer"
+  tax_jurisdictions:
+    caption: "Mva.-jurisdiksjoner"
+  tax_details:
+    caption: "Mva.-detaljer"
+  tax_posting_setup:
+    caption: "Mva.-bokføringsoppsett"

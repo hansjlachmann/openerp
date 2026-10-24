@@ -1663,7 +1663,7 @@ func (t *OrderAddress) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
 				args = append(args, filter.maxValue)
 			} else if filter.blankDate {
-				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
@@ -1746,11 +1746,35 @@ func (t *OrderAddress) FilterGroup(group ...int) int {
 	return t.filterGroup
 }
 
+// isKeyDateColumn: a Date column of the primary key (a blank date is types.BlankKeyDate)
+func (t *OrderAddress) isKeyDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
+// isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
+func (t *OrderAddress) isDateColumn(column string) bool {
+	switch column {
+	case "last_date_modified":
+		return true
+	}
+	return false
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *OrderAddress) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
+	// Blank dates are stored as NULL and come before every date
+	isDate := t.isDateColumn(fieldName)
+	orBlankDate := func(condition string) string {
+		if isDate {
+			return fmt.Sprintf("(%s OR %s IS NULL)", condition, fieldName)
+		}
+		return condition
+	}
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -1768,7 +1792,7 @@ func (t *OrderAddress) parseFilterExpression(fieldName, expr string) (string, []
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
 					args = append(args, max)
 				case max == "":
 					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
@@ -1778,9 +1802,21 @@ func (t *OrderAddress) parseFilterExpression(fieldName, expr string) (string, []
 					args = append(args, min, max)
 				}
 			}
+		} else if part == "''" {
+			// '' is the blank value
+			if isDate {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+				args = append(args, "")
+			}
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
-			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			if op == "<" || op == "<=" {
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
@@ -1790,8 +1826,15 @@ func (t *OrderAddress) parseFilterExpression(fieldName, expr string) (string, []
 		} else if strings.HasPrefix(part, "<>") {
 			// Not equal
 			value := strings.TrimSpace(strings.TrimPrefix(part, "<>"))
-			conditions = append(conditions, fmt.Sprintf("%s <> ?", fieldName))
-			args = append(args, value)
+			if isDate && (value == "''" || value == "") {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NOT NULL AND %s <> '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				if value == "''" {
+					value = ""
+				}
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				args = append(args, value)
+			}
 		} else {
 			// Exact match
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
@@ -3446,6 +3489,9 @@ func (t *OrderAddress) findInKey(seek string, reverse bool) bool {
 			if !ok {
 				fmt.Printf("Error: Find(%q) on Order_Address needs a key of stored fields\n", seek)
 				return false
+			}
+			if t.isKeyDateColumn(column) {
+				v = types.KeyDate(v)
 			}
 			columns = append(columns, column)
 			values = append(values, v)

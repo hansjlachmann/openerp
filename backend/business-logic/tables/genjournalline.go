@@ -2,6 +2,7 @@ package tables
 
 import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/noseries"
+	"github.com/hansjlachmann/openerp/backend/business-logic/salestax"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -1137,10 +1138,47 @@ func checkGenJnlLineFixedCurrency(rec *gtables.GenJournalLine) bool {
 	return false
 }
 
-// validateGenJnlLineTaxPercent / validateGenJnlLineBalTaxPercent: the tax of the line's account
-// and balancing account (VALIDATE("Tax %")) — Tax Base Amount and the (LCY) amounts; the sales
-// tax calculation comes with sales tax posting
+// validateGenJnlLineTaxPercent / validateGenJnlLineBalTaxPercent: VALIDATE("Tax %") and
+// VALIDATE("Bal. Tax %") — the tax of the line's account and balancing account
 func validateGenJnlLineTaxPercent(rec *gtables.GenJournalLine) error {
+	return rec.Validate("tax_percent", rec.Tax_percent)
+}
+
+func validateGenJnlLineBalTaxPercent(rec *gtables.GenJournalLine) error {
+	return rec.Validate("bal_tax_percent", rec.Bal_tax_percent)
+}
+
+// OnValidate_Tax_percent: the tax in the amount of the account side — by the tax calculation
+// type of its tax posting setup (sales tax: the amount includes the tax, except use tax of a
+// purchase), the base and the (LCY) amounts
+func (genJournalLineLogic) OnValidate_Tax_percent(rec *gtables.GenJournalLine) error {
+	currency, err := getGenJnlLineCurrency(rec)
+	if err != nil {
+		return err
+	}
+	switch rec.Tax_calculation_type {
+	case gtables.GenJournalLine_Tax_calculation_type.NormalVAT, gtables.GenJournalLine_Tax_calculation_type.ReverseChargeVAT:
+		rec.Tax_amount = rec.Amount.Sub(system.Round(rec.Amount.Div(hundredPercent(rec.Tax_percent)), currency.Amount_rounding_precision))
+	case gtables.GenJournalLine_Tax_calculation_type.FullVAT:
+		rec.Tax_amount = rec.Amount
+	case gtables.GenJournalLine_Tax_calculation_type.SalesTax:
+		if rec.Gen_posting_type == gtables.GenJournalLine_Gen_posting_type.Purchase && rec.Use_tax {
+			rec.Tax_amount = types.Decimal{}
+			rec.Tax_percent = types.Decimal{}
+		} else {
+			amountExclTax, err := salestax.New(rec).ReverseCalculateTax(rec.Tax_area_code, rec.Tax_group_code, rec.Tax_liable,
+				rec.Posting_date, rec.Amount, rec.Quantity, rec.Currency_factor)
+			if err != nil {
+				return err
+			}
+			rec.Tax_amount = rec.Amount.Sub(amountExclTax)
+			if !rec.Amount.Sub(rec.Tax_amount).IsZero() {
+				rec.Tax_percent = system.Round(types.NewDecimalFromInt(100).Mul(rec.Tax_amount).Div(rec.Amount.Sub(rec.Tax_amount)), types.MustDecimal("0.00001"))
+			} else {
+				rec.Tax_percent = types.Decimal{}
+			}
+		}
+	}
 	rec.Tax_base_amount = rec.Amount.Sub(rec.Tax_amount)
 	if rec.Currency_code == "" {
 		rec.Tax_amount_lcy = rec.Tax_amount
@@ -1155,7 +1193,35 @@ func validateGenJnlLineTaxPercent(rec *gtables.GenJournalLine) error {
 	return nil
 }
 
-func validateGenJnlLineBalTaxPercent(rec *gtables.GenJournalLine) error {
+// OnValidate_Bal_tax_percent: the tax of the balancing account side (the opposite sign)
+func (genJournalLineLogic) OnValidate_Bal_tax_percent(rec *gtables.GenJournalLine) error {
+	currency, err := getGenJnlLineCurrency(rec)
+	if err != nil {
+		return err
+	}
+	switch rec.Bal_tax_calculation_type {
+	case gtables.GenJournalLine_Bal_tax_calculation_type.NormalVAT, gtables.GenJournalLine_Bal_tax_calculation_type.ReverseChargeVAT:
+		rec.Bal_tax_amount = rec.Amount.Sub(system.Round(rec.Amount.Div(hundredPercent(rec.Bal_tax_percent)), currency.Amount_rounding_precision)).Neg()
+	case gtables.GenJournalLine_Bal_tax_calculation_type.FullVAT:
+		rec.Bal_tax_amount = rec.Amount.Neg()
+	case gtables.GenJournalLine_Bal_tax_calculation_type.SalesTax:
+		if rec.Bal_gen_posting_type == gtables.GenJournalLine_Bal_gen_posting_type.Purchase && rec.Bal_use_tax {
+			rec.Bal_tax_amount = types.Decimal{}
+			rec.Bal_tax_percent = types.Decimal{}
+		} else {
+			amountExclTax, err := salestax.New(rec).ReverseCalculateTax(rec.Bal_tax_area_code, rec.Bal_tax_group_code, rec.Bal_tax_liable,
+				rec.Posting_date, rec.Amount, rec.Quantity, rec.Currency_factor)
+			if err != nil {
+				return err
+			}
+			rec.Bal_tax_amount = rec.Amount.Sub(amountExclTax).Neg()
+			if !rec.Amount.Add(rec.Bal_tax_amount).IsZero() {
+				rec.Bal_tax_percent = system.Round(types.NewDecimalFromInt(100).Mul(rec.Bal_tax_amount.Neg()).Div(rec.Amount.Add(rec.Bal_tax_amount)), types.MustDecimal("0.00001"))
+			} else {
+				rec.Bal_tax_percent = types.Decimal{}
+			}
+		}
+	}
 	rec.Bal_tax_base_amount = rec.Amount.Add(rec.Bal_tax_amount).Neg()
 	if rec.Currency_code == "" {
 		rec.Bal_tax_amount_lcy = rec.Bal_tax_amount
@@ -1168,6 +1234,210 @@ func validateGenJnlLineBalTaxPercent(rec *gtables.GenJournalLine) error {
 	}
 	rec.Bal_tax_base_amount_lcy = rec.Amount_lcy.Add(rec.Bal_tax_amount_lcy).Neg()
 	return nil
+}
+
+// hundredPercent is 1 + percent / 100
+func hundredPercent(percent types.Decimal) types.Decimal {
+	return types.NewDecimalFromInt(1).Add(percent.Div(types.NewDecimalFromInt(100)))
+}
+
+// OnValidate_Tax_base_amount: the amount from the base (the tax on top)
+func (genJournalLineLogic) OnValidate_Tax_base_amount(rec *gtables.GenJournalLine) error {
+	currency, err := getGenJnlLineCurrency(rec)
+	if err != nil {
+		return err
+	}
+	rec.Tax_base_amount = system.Round(rec.Tax_base_amount, currency.Amount_rounding_precision)
+	switch rec.Tax_calculation_type {
+	case gtables.GenJournalLine_Tax_calculation_type.NormalVAT, gtables.GenJournalLine_Tax_calculation_type.ReverseChargeVAT:
+		rec.Amount = system.Round(rec.Tax_base_amount.Mul(hundredPercent(rec.Tax_percent)), currency.Amount_rounding_precision)
+	case gtables.GenJournalLine_Tax_calculation_type.FullVAT:
+		if !rec.Tax_base_amount.IsZero() {
+			return apperrors.JnlTaxBaseFullVAT(genJnlLineTable, "tax_base_amount", rec.Tax_calculation_type)
+		}
+	case gtables.GenJournalLine_Tax_calculation_type.SalesTax:
+		if rec.Gen_posting_type == gtables.GenJournalLine_Gen_posting_type.Purchase && rec.Use_tax {
+			rec.Tax_amount = types.Decimal{}
+			rec.Tax_percent = types.Decimal{}
+			rec.Amount = rec.Tax_base_amount.Add(rec.Tax_amount)
+		} else {
+			rec.Tax_amount, err = salestax.New(rec).CalculateTax(rec.Tax_area_code, rec.Tax_group_code, rec.Tax_liable,
+				rec.Posting_date, rec.Tax_base_amount, rec.Quantity, rec.Currency_factor)
+			if err != nil {
+				return err
+			}
+			if !rec.Tax_base_amount.IsZero() {
+				rec.Tax_percent = system.Round(types.NewDecimalFromInt(100).Mul(rec.Tax_amount).Div(rec.Tax_base_amount), types.MustDecimal("0.00001"))
+			} else {
+				rec.Tax_percent = types.Decimal{}
+			}
+			rec.Amount = rec.Tax_base_amount.Add(rec.Tax_amount)
+		}
+	}
+	return rec.Validate("amount", rec.Amount)
+}
+
+// OnValidate_Bal_tax_base_amount: the amount from the balancing account's base
+func (genJournalLineLogic) OnValidate_Bal_tax_base_amount(rec *gtables.GenJournalLine) error {
+	currency, err := getGenJnlLineCurrency(rec)
+	if err != nil {
+		return err
+	}
+	rec.Bal_tax_base_amount = system.Round(rec.Bal_tax_base_amount, currency.Amount_rounding_precision)
+	switch rec.Bal_tax_calculation_type {
+	case gtables.GenJournalLine_Bal_tax_calculation_type.NormalVAT, gtables.GenJournalLine_Bal_tax_calculation_type.ReverseChargeVAT:
+		rec.Amount = system.Round(rec.Bal_tax_base_amount.Neg().Mul(hundredPercent(rec.Bal_tax_percent)), currency.Amount_rounding_precision)
+	case gtables.GenJournalLine_Bal_tax_calculation_type.FullVAT:
+		if !rec.Bal_tax_base_amount.IsZero() {
+			return apperrors.JnlTaxBaseFullVAT(genJnlLineTable, "bal_tax_base_amount", rec.Bal_tax_calculation_type)
+		}
+	case gtables.GenJournalLine_Bal_tax_calculation_type.SalesTax:
+		if rec.Bal_gen_posting_type == gtables.GenJournalLine_Bal_gen_posting_type.Purchase && rec.Bal_use_tax {
+			rec.Bal_tax_amount = types.Decimal{}
+			rec.Bal_tax_percent = types.Decimal{}
+			rec.Amount = rec.Bal_tax_base_amount.Neg().Sub(rec.Bal_tax_amount)
+		} else {
+			rec.Bal_tax_amount, err = salestax.New(rec).CalculateTax(rec.Bal_tax_area_code, rec.Bal_tax_group_code, rec.Bal_tax_liable,
+				rec.Posting_date, rec.Bal_tax_base_amount, rec.Quantity, rec.Currency_factor)
+			if err != nil {
+				return err
+			}
+			if !rec.Bal_tax_base_amount.IsZero() {
+				rec.Bal_tax_percent = system.Round(types.NewDecimalFromInt(100).Mul(rec.Bal_tax_amount).Div(rec.Bal_tax_base_amount), types.MustDecimal("0.00001"))
+			} else {
+				rec.Bal_tax_percent = types.Decimal{}
+			}
+			rec.Amount = rec.Bal_tax_base_amount.Neg().Sub(rec.Bal_tax_amount)
+		}
+	}
+	return rec.Validate("amount", rec.Amount)
+}
+
+// The tax fields of the account side: the tax again
+func (genJournalLineLogic) OnValidate_Tax_area_code(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineTaxPercent(rec)
+}
+func (genJournalLineLogic) OnValidate_Tax_liable(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineTaxPercent(rec)
+}
+func (genJournalLineLogic) OnValidate_Tax_group_code(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineTaxPercent(rec)
+}
+
+// OnValidate_Use_tax: only purchases pay use tax
+func (genJournalLineLogic) OnValidate_Use_tax(rec *gtables.GenJournalLine) error {
+	err := rec.TestField("gen_posting_type", gtables.GenJournalLine_Gen_posting_type.Purchase)
+	if err != nil {
+		return err
+	}
+	return validateGenJnlLineTaxPercent(rec)
+}
+
+// The tax fields of the balancing account side: its tax again
+func (genJournalLineLogic) OnValidate_Bal_tax_area_code(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineBalTaxPercent(rec)
+}
+func (genJournalLineLogic) OnValidate_Bal_tax_liable(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineBalTaxPercent(rec)
+}
+func (genJournalLineLogic) OnValidate_Bal_tax_group_code(rec *gtables.GenJournalLine) error {
+	return validateGenJnlLineBalTaxPercent(rec)
+}
+func (genJournalLineLogic) OnValidate_Bal_use_tax(rec *gtables.GenJournalLine) error {
+	err := rec.TestField("bal_gen_posting_type", gtables.GenJournalLine_Bal_gen_posting_type.Purchase)
+	if err != nil {
+		return err
+	}
+	return validateGenJnlLineBalTaxPercent(rec)
+}
+
+// OnValidate_Tax_bus_posting_group: the tax calculation follows
+func (genJournalLineLogic) OnValidate_Tax_bus_posting_group(rec *gtables.GenJournalLine) error {
+	return rec.Validate("tax_prod_posting_group", rec.Tax_prod_posting_group)
+}
+
+// OnValidate_Tax_prod_posting_group: a line with a general posting type takes the tax
+// calculation type (and VAT %) of its tax posting setup
+func (genJournalLineLogic) OnValidate_Tax_prod_posting_group(rec *gtables.GenJournalLine) error {
+	rec.Tax_percent = types.Decimal{}
+	rec.Tax_calculation_type = gtables.GenJournalLine_Tax_calculation_type.NormalVAT
+	if rec.Gen_posting_type != gtables.GenJournalLine_Gen_posting_type.Blank {
+		taxPostingSetup := gtables.NewTaxPostingSetup(rec)
+		if !taxPostingSetup.Get(map[string]interface{}{"tax_bus_posting_group": rec.Tax_bus_posting_group, "tax_prod_posting_group": rec.Tax_prod_posting_group}) {
+			taxPostingSetup.Init()
+		}
+		rec.Tax_calculation_type = gtables.GenJournalLineTax_calculation_type(taxPostingSetup.Tax_calculation_type)
+		switch rec.Tax_calculation_type {
+		case gtables.GenJournalLine_Tax_calculation_type.NormalVAT:
+			rec.Tax_percent = taxPostingSetup.Vat_percent
+		case gtables.GenJournalLine_Tax_calculation_type.FullVAT:
+			switch rec.Gen_posting_type {
+			case gtables.GenJournalLine_Gen_posting_type.Sale:
+				err := taxPostingSetup.TestField("sales_vat_account")
+				if err != nil {
+					return err
+				}
+				err = rec.TestField("account_no", taxPostingSetup.Sales_vat_account)
+				if err != nil {
+					return err
+				}
+			case gtables.GenJournalLine_Gen_posting_type.Purchase:
+				err := taxPostingSetup.TestField("purchase_vat_account")
+				if err != nil {
+					return err
+				}
+				err = rec.TestField("account_no", taxPostingSetup.Purchase_vat_account)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return validateGenJnlLineTaxPercent(rec)
+}
+
+// OnValidate_Bal_tax_bus_posting_group: the balancing account's tax calculation follows
+func (genJournalLineLogic) OnValidate_Bal_tax_bus_posting_group(rec *gtables.GenJournalLine) error {
+	return rec.Validate("bal_tax_prod_posting_group", rec.Bal_tax_prod_posting_group)
+}
+
+// OnValidate_Bal_tax_prod_posting_group: the balancing account's tax calculation type
+func (genJournalLineLogic) OnValidate_Bal_tax_prod_posting_group(rec *gtables.GenJournalLine) error {
+	rec.Bal_tax_percent = types.Decimal{}
+	rec.Bal_tax_calculation_type = gtables.GenJournalLine_Bal_tax_calculation_type.NormalVAT
+	if rec.Bal_gen_posting_type != gtables.GenJournalLine_Bal_gen_posting_type.Blank {
+		taxPostingSetup := gtables.NewTaxPostingSetup(rec)
+		if !taxPostingSetup.Get(map[string]interface{}{"tax_bus_posting_group": rec.Bal_tax_bus_posting_group, "tax_prod_posting_group": rec.Bal_tax_prod_posting_group}) {
+			taxPostingSetup.Init()
+		}
+		rec.Bal_tax_calculation_type = gtables.GenJournalLineBal_tax_calculation_type(taxPostingSetup.Tax_calculation_type)
+		switch rec.Bal_tax_calculation_type {
+		case gtables.GenJournalLine_Bal_tax_calculation_type.NormalVAT:
+			rec.Bal_tax_percent = taxPostingSetup.Vat_percent
+		case gtables.GenJournalLine_Bal_tax_calculation_type.FullVAT:
+			switch rec.Bal_gen_posting_type {
+			case gtables.GenJournalLine_Bal_gen_posting_type.Sale:
+				err := taxPostingSetup.TestField("sales_vat_account")
+				if err != nil {
+					return err
+				}
+				err = rec.TestField("bal_account_no", taxPostingSetup.Sales_vat_account)
+				if err != nil {
+					return err
+				}
+			case gtables.GenJournalLine_Bal_gen_posting_type.Purchase:
+				err := taxPostingSetup.TestField("purchase_vat_account")
+				if err != nil {
+					return err
+				}
+				err = rec.TestField("bal_account_no", taxPostingSetup.Purchase_vat_account)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return validateGenJnlLineBalTaxPercent(rec)
 }
 
 // CalcDateFormula calculates a date from a date formula field: an empty field (no formula set

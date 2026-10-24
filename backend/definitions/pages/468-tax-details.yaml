@@ -1,0 +1,59 @@
+page:
+  id: 468
+  type: List
+  name: Tax Details
+  source_table: Tax_Detail
+  caption: Tax Details
+  editable: true
+  delayed_insert: true
+  # The rates of a jurisdiction per tax group from an effective date (codeunit 398 takes the
+  # latest in effect on the posting date)
+
+  layout:
+    repeater:
+      fields:
+        - source: tax_jurisdiction_code
+          width: 120
+
+        - source: tax_group_code
+          width: 110
+
+        - source: tax_type
+          width: 110
+
+        - source: effective_date
+          width: 100
+
+        - source: tax_below_maximum
+          width: 120
+
+        - source: maximum_amount_qty
+          width: 120
+
+        - source: tax_above_maximum
+          width: 120
+
+        - source: calculate_tax_on_tax
+          width: 90
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

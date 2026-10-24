@@ -948,7 +948,7 @@ func (t *NoSeries) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "no_series", "", 0}, {"Customer Ledger Entry", false, "no_series", "", 0}, {"Customer", false, "no_series", "", 0}, {"FA_Setup", false, "fixed_asset_nos", "", 0}, {"FA_Setup", false, "insurance_nos", "", 0}, {"FA_Ledger_Entry", false, "no_series", "", 0}, {"Fixed_Asset", false, "no_series", "", 0}, {"Gen_Journal_Batch", false, "no_series", "", 0}, {"Gen_Journal_Batch", false, "posting_no_series", "", 0}, {"Gen_Journal_Line", false, "posting_no_series", "", 0}, {"Gen_Journal_Template", false, "no_series", "", 0}, {"Gen_Journal_Template", false, "posting_no_series", "", 0}, {"General_Ledger_Setup", false, "bank_account_nos", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "no_series", "", 0}, {"Insurance", false, "no_series", "", 0}, {"Maintenance_Ledger_Entry", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Purchases_Payables_Setup", false, "vendor_nos", "", 0}, {"Purchases_Payables_Setup", false, "quote_nos", "", 0}, {"Purchases_Payables_Setup", false, "order_nos", "", 0}, {"Purchases_Payables_Setup", false, "invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_receipt_nos", "", 0}, {"Purchases_Payables_Setup", false, "blanket_order_nos", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}, {"Vendor", false, "no_series", "", 0}, {"Vendor Ledger Entry", false, "no_series", "", 0}},
+		"code": {{"Bank_Account", false, "no_series", "", 0}, {"Customer Ledger Entry", false, "no_series", "", 0}, {"Customer", false, "no_series", "", 0}, {"FA_Setup", false, "fixed_asset_nos", "", 0}, {"FA_Setup", false, "insurance_nos", "", 0}, {"FA_Ledger_Entry", false, "no_series", "", 0}, {"Fixed_Asset", false, "no_series", "", 0}, {"Gen_Journal_Batch", false, "no_series", "", 0}, {"Gen_Journal_Batch", false, "posting_no_series", "", 0}, {"Gen_Journal_Line", false, "posting_no_series", "", 0}, {"Gen_Journal_Template", false, "no_series", "", 0}, {"Gen_Journal_Template", false, "posting_no_series", "", 0}, {"General_Ledger_Setup", false, "bank_account_nos", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "no_series", "", 0}, {"Insurance", false, "no_series", "", 0}, {"Maintenance_Ledger_Entry", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Purchases_Payables_Setup", false, "vendor_nos", "", 0}, {"Purchases_Payables_Setup", false, "quote_nos", "", 0}, {"Purchases_Payables_Setup", false, "order_nos", "", 0}, {"Purchases_Payables_Setup", false, "invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_invoice_nos", "", 0}, {"Purchases_Payables_Setup", false, "credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Purchases_Payables_Setup", false, "posted_receipt_nos", "", 0}, {"Purchases_Payables_Setup", false, "blanket_order_nos", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}, {"Tax_Entry", false, "no_series", "", 0}, {"Vendor", false, "no_series", "", 0}, {"Vendor Ledger Entry", false, "no_series", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1443,7 +1443,7 @@ func (t *NoSeries) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
 				args = append(args, filter.maxValue)
 			} else if filter.blankDate {
-				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
@@ -1526,11 +1526,33 @@ func (t *NoSeries) FilterGroup(group ...int) int {
 	return t.filterGroup
 }
 
+// isKeyDateColumn: a Date column of the primary key (a blank date is types.BlankKeyDate)
+func (t *NoSeries) isKeyDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
+// isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
+func (t *NoSeries) isDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *NoSeries) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
+	// Blank dates are stored as NULL and come before every date
+	isDate := t.isDateColumn(fieldName)
+	orBlankDate := func(condition string) string {
+		if isDate {
+			return fmt.Sprintf("(%s OR %s IS NULL)", condition, fieldName)
+		}
+		return condition
+	}
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -1548,7 +1570,7 @@ func (t *NoSeries) parseFilterExpression(fieldName, expr string) (string, []inte
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
 					args = append(args, max)
 				case max == "":
 					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
@@ -1558,9 +1580,21 @@ func (t *NoSeries) parseFilterExpression(fieldName, expr string) (string, []inte
 					args = append(args, min, max)
 				}
 			}
+		} else if part == "''" {
+			// '' is the blank value
+			if isDate {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+				args = append(args, "")
+			}
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
-			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			if op == "<" || op == "<=" {
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
@@ -1570,8 +1604,15 @@ func (t *NoSeries) parseFilterExpression(fieldName, expr string) (string, []inte
 		} else if strings.HasPrefix(part, "<>") {
 			// Not equal
 			value := strings.TrimSpace(strings.TrimPrefix(part, "<>"))
-			conditions = append(conditions, fmt.Sprintf("%s <> ?", fieldName))
-			args = append(args, value)
+			if isDate && (value == "''" || value == "") {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NOT NULL AND %s <> '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				if value == "''" {
+					value = ""
+				}
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				args = append(args, value)
+			}
 		} else {
 			// Exact match
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
@@ -2668,6 +2709,9 @@ func (t *NoSeries) findInKey(seek string, reverse bool) bool {
 			if !ok {
 				fmt.Printf("Error: Find(%q) on No_Series needs a key of stored fields\n", seek)
 				return false
+			}
+			if t.isKeyDateColumn(column) {
+				v = types.KeyDate(v)
 			}
 			columns = append(columns, column)
 			values = append(values, v)

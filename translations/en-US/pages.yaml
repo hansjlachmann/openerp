@@ -415,3 +415,17 @@ pages:
       appln_amount: "Amount"
       applied_amount: "Applied Amount"
       appln_balance: "Balance"
+
+  # Sales tax
+  general_posting_setup:
+    caption: "General Posting Setup"
+  tax_entries:
+    caption: "Tax Entries"
+  tax_area_lines:
+    caption: "Tax Area Lines"
+  tax_jurisdictions:
+    caption: "Tax Jurisdictions"
+  tax_details:
+    caption: "Tax Details"
+  tax_posting_setup:
+    caption: "Tax Posting Setup"

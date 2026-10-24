@@ -1,0 +1,348 @@
+table:
+  id: 254
+  name: "Tax_Entry"
+  caption: Tax Entry
+  description: "Tax entries (table 254): the sales tax of every posting, per jurisdiction"
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: gen_bus_posting_group
+      no: 2
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 3
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_no
+      no: 5
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: document_type
+      no: 6
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: type
+      no: 7
+      type: Option
+      db_name: type
+      options: [" ", "Purchase", "Sale", "Settlement"]
+
+    - name: base
+      no: 8
+      type: types.Decimal
+      db_name: base
+      precision: 18
+      scale: 2
+
+    - name: amount
+      no: 9
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+
+    - name: tax_calculation_type
+      no: 10
+      type: Option
+      db_name: tax_calculation_type
+      options: ["Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"]
+
+    - name: sell_to_buy_from_no
+      no: 12
+      type: types.Code
+      db_name: sell_to_buy_from_no
+      length: 20
+
+    - name: eu_3_party_trade
+      no: 13
+      type: bool
+      db_name: eu_3_party_trade
+
+    - name: user_id
+      no: 14
+      type: types.Code
+      db_name: user_id
+      length: 50
+      table_relation:
+        table: User
+        field: user_id
+        validate: false
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: source_code
+      no: 15
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reason_code
+      no: 16
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: closed_by_entry_no
+      no: 17
+      type: int
+      db_name: closed_by_entry_no
+
+    - name: closed
+      no: 18
+      type: bool
+      db_name: closed
+
+    - name: country_code
+      no: 19
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: internal_ref_no
+      no: 20
+      type: types.Text
+      db_name: internal_ref_no
+      length: 30
+
+    - name: transaction_no
+      no: 21
+      type: int
+      db_name: transaction_no
+
+    - name: unrealized_amount
+      no: 22
+      type: types.Decimal
+      db_name: unrealized_amount
+      precision: 18
+      scale: 2
+
+    - name: unrealized_base
+      no: 23
+      type: types.Decimal
+      db_name: unrealized_base
+      precision: 18
+      scale: 2
+
+    - name: remaining_unrealized_amount
+      no: 24
+      type: types.Decimal
+      db_name: remaining_unrealized_amount
+      precision: 18
+      scale: 2
+
+    - name: remaining_unrealized_base
+      no: 25
+      type: types.Decimal
+      db_name: remaining_unrealized_base
+      precision: 18
+      scale: 2
+
+    - name: external_document_no
+      no: 26
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: no_series
+      no: 28
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 29
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 30
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 31
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: use_tax
+      no: 32
+      type: bool
+      db_name: use_tax
+
+    - name: tax_jurisdiction_code
+      no: 33
+      type: types.Code
+      db_name: tax_jurisdiction_code
+      length: 10
+      table_relation:
+        table: Tax_Jurisdiction
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_group_used
+      no: 34
+      type: types.Code
+      db_name: tax_group_used
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_type
+      no: 35
+      type: Option
+      db_name: tax_type
+      options: ["Sales Tax", "Excise Tax"]
+
+    - name: tax_on_tax
+      no: 36
+      type: bool
+      db_name: tax_on_tax
+
+    - name: sales_tax_connection_no
+      no: 37
+      type: int
+      db_name: sales_tax_connection_no
+
+    - name: unrealized_tax_entry_no
+      no: 38
+      type: int
+      db_name: unrealized_tax_entry_no
+
+    - name: tax_bus_posting_group
+      no: 39
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 40
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: type_closed
+      fields: [type, closed, tax_bus_posting_group, tax_prod_posting_group, tax_jurisdiction_code, use_tax, posting_date]
+    - name: document
+      fields: [document_no, posting_date]
+    - name: transaction
+      fields: [transaction_no]
+    - name: jurisdiction
+      fields: [tax_jurisdiction_code, tax_group_used, tax_type, use_tax, posting_date]

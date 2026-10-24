@@ -66,3 +66,8 @@ page:
           run_page: 372
           run_page_filters:
             - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Tax Register
+          caption: Tax Register
+          run_page: 315
+          run_page_filters:
+            - {field: entry_no, from: from_tax_entry_no, to: to_tax_entry_no}
