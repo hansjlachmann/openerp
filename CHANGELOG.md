@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.111](https://github.com/hansjlachmann/openerp/compare/v0.1.110...v0.1.111) (2026-10-24)
+
+
+### Features
+
+* execute permission for codeunits and reports; Job Queue runs as its user ([#146](https://github.com/hansjlachmann/openerp/issues/146)) ([33312b7](https://github.com/hansjlachmann/openerp/commit/33312b7384a9f99745ce805dfe286d633b7ccc94))
+
 ## [0.1.110](https://github.com/hansjlachmann/openerp/compare/v0.1.109...v0.1.110) (2026-10-24)
 
 
