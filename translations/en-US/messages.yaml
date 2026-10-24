@@ -106,6 +106,12 @@ messages:
   HOME_SHORTCUTS_TITLE: "Work faster with the keyboard"
   HOME_SHORTCUTS_TEXT: "We encourage you to learn the keyboard shortcuts: they optimize your workflow and make you more effective in your daily work."
   HOME_SHORTCUTS_LINK: "Show the keyboard shortcuts"
+  HELP_MENU_SEARCH: "Search the menu"
+  HOME_MENU_NOT_AVAILABLE: "Not available yet"
+  HOME_MENU_NO_RESULTS: "No menu entries found"
+  HOME_MENU_SEARCH_RESULTS: "Search results"
+  HOME_MENU_SEARCH: "Search the menu… (Ctrl+F)"
+  HOME_MENU_MODULES: "Modules"
 
   # MenuBar
   MENU_HOME: "Home"
@@ -175,7 +181,7 @@ messages:
   HELP_SWITCH_COMPANY: "Switch company"
   HELP_ESCAPE: "Cancel, close a dialog or go back"
   HELP_SEC_MENU: "Main menu"
-  HELP_MENU_ARROWS: "Move between menu items"
+  HELP_MENU_ARROWS: "Up/Down move; Right into the module's menu or open a sub-menu; Left close it or back to the modules"
   HELP_MENU_HOME_END: "First / last menu item"
   HELP_MENU_OPEN: "Open the selected item"
   HELP_SEC_LIST: "List page"

@@ -132,19 +132,6 @@ func (r *Registry) LoadMenu() error {
 		return fmt.Errorf("failed to parse menu YAML: %w", err)
 	}
 
-	// Set default Enabled to true for menu items
-	for i := range menuDef.Menu {
-		for j := range menuDef.Menu[i].Items {
-			if menuDef.Menu[i].Items[j].PageID > 0 && !menuDef.Menu[i].Items[j].Separator {
-				// If Enabled is not explicitly set to false, default to true
-				if !menuDef.Menu[i].Items[j].Enabled {
-					// Check if it was explicitly set in YAML
-					// If not set, default to true
-					menuDef.Menu[i].Items[j].Enabled = true
-				}
-			}
-		}
-	}
 
 	r.menu = &menuDef
 
@@ -212,16 +199,6 @@ func (r *Registry) GetMenuByName(menuName string) *MenuDefinition {
 		return r.GetMenu()
 	}
 
-	// Set default Enabled to true for menu items
-	for i := range menuDef.Menu {
-		for j := range menuDef.Menu[i].Items {
-			if menuDef.Menu[i].Items[j].PageID > 0 && !menuDef.Menu[i].Items[j].Separator {
-				if !menuDef.Menu[i].Items[j].Enabled {
-					menuDef.Menu[i].Items[j].Enabled = true
-				}
-			}
-		}
-	}
 
 	return &menuDef
 }

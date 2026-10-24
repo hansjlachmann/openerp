@@ -117,10 +117,12 @@ export interface MenuGroup {
 export interface MenuItem {
 	name?: string;
 	page_id?: number;
+	run_object?: string; // runs a report or codeunit ("report:93", "codeunit:6")
+	items?: MenuItem[]; // a sub-menu (Setup, Activities …)
 	icon?: string;
 	description?: string;
 	separator?: boolean;
-	enabled?: boolean;
+	enabled?: boolean; // false: its object is not built yet (shown greyed out)
 }
 
 export interface PageResponse {

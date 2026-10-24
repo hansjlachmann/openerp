@@ -106,6 +106,12 @@ messages:
   HOME_SHORTCUTS_TITLE: "Arbejd hurtigere med tastaturet"
   HOME_SHORTCUTS_TEXT: "Vi opfordrer dig til at lære genvejstasterne: de optimerer dit arbejdsflow og gør dig mere effektiv i det daglige arbejde."
   HOME_SHORTCUTS_LINK: "Vis genvejstasterne"
+  HELP_MENU_SEARCH: "Søg i menuen"
+  HOME_MENU_NOT_AVAILABLE: "Ikke tilgængelig endnu"
+  HOME_MENU_NO_RESULTS: "Ingen menupunkter fundet"
+  HOME_MENU_SEARCH_RESULTS: "Søgeresultater"
+  HOME_MENU_SEARCH: "Søg i menuen… (Ctrl+F)"
+  HOME_MENU_MODULES: "Moduler"
 
   # MenuBar
   MENU_HOME: "Hjem"
@@ -175,7 +181,7 @@ messages:
   HELP_SWITCH_COMPANY: "Skift virksomhed"
   HELP_ESCAPE: "Annuller, luk en dialog eller gå tilbage"
   HELP_SEC_MENU: "Hovedmenu"
-  HELP_MENU_ARROWS: "Flyt mellem menupunkter"
+  HELP_MENU_ARROWS: "Op/ned flyt; højre ind i modulets menu eller åbn en undermenu; venstre luk den eller tilbage til modulerne"
   HELP_MENU_HOME_END: "Første / sidste menupunkt"
   HELP_MENU_OPEN: "Åbn det valgte punkt"
   HELP_SEC_LIST: "Listeside"

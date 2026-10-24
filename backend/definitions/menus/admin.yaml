@@ -1,269 +1,696 @@
+# The main menu (Main Menu, classic forms 330–337 and the Fixed Assets menu): one module per
+# entry, each with the classic menu of its form — the records, journals and documents, then
+# reports, history, Setup and Activities. An entry opens a page (page_id) or runs a report or
+# codeunit (run_object) or holds a sub-menu (items); entries whose object does not exist yet are
+# shown greyed out ("not available yet") and become available when it is built. Captions:
+# common.menu.<key> (i18n.Key of the name). Not in the classic menus: the ledger entry lists
+# next to the registers, Create Year / Close Year, and the Administration module.
 menu:
-  - name: General
-    icon: home
+  - name: "General Ledger"
+    icon: book
     items:
-      - name: Customers
-        page_id: 22
-        icon: users
-
-      - name: Customer Ledger Entries
-        page_id: 25
-        icon: list
-
-      - name: Vendors
-        page_id: 27
-        icon: users
-
-      - name: Vendor Ledger Entries
-        page_id: 29
-        icon: list
-
-      - name: Bank Accounts
+      - name: "Chart of Accounts"
+        page_id: 16
+      - name: "Bank Accounts"
         page_id: 371
-        icon: landmark
-
-      - name: Bank Account Ledger Entries
+      - name: "Account Schedules"
+        page_id: 104
+      - name: "Budgets"
+        page_id: 113
+      - separator: true
+      - name: "General Journals"
+      - separator: true
+      - name: "Reports"
+      - name: "Registers"
+        page_id: 116
+      - name: "General Ledger Entries"
+        page_id: 20
+      - name: "Bank Account Ledger Entries"
         page_id: 372
-        icon: list
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Setup Checklist"
+            page_id: 531
+          - name: "Company Information"
+            page_id: 1
+          - name: "Accounting Periods"
+            page_id: 100
+          - separator: true
+          - name: "General Ledger Setup"
+            page_id: 118
+          - name: "No. Series"
+            page_id: 456
+          - name: "General Posting Groups"
+            items:
+              - name: "Business Posting Groups"
+                page_id: 312
+              - name: "Product Posting Groups"
+                page_id: 313
+              - name: "General Posting Setup"
+                page_id: 314
+          - name: "Tax Posting Group"
+            items:
+              - name: "Business Posting Groups"
+                page_id: 470
+              - name: "Product Posting Groups"
+                page_id: 471
+              - name: "Tax Posting Setup"
+                page_id: 472
+          - name: "Sales Tax"
+            items:
+              - name: "Groups"
+                page_id: 467
+              - name: "Jurisdictions"
+                page_id: 466
+              - name: "Area"
+                page_id: 469
+              - name: "Details"
+                page_id: 468
+              - separator: true
+              - name: "Copy Tax Setup"
+                page_id: 476
+          - name: "Trail Codes"
+            items:
+              - name: "Source Codes"
+                page_id: 257
+              - name: "Source Code Setup"
+                page_id: 279
+              - name: "Reason Codes"
+                page_id: 259
+          - separator: true
+          - name: "Bank Accounts"
+            items:
+              - name: "Posting Groups"
+                page_id: 373
+              - name: "Report Selections"
+                page_id: 385
+          - name: "Intrastat"
+            items:
+              - name: "Tariff Numbers"
+                page_id: 310
+              - name: "Transaction Types"
+                page_id: 308
+              - name: "Transaction Specifications"
+                page_id: 406
+              - name: "Transport Methods"
+                page_id: 309
+              - name: "Entry/Exit Points"
+                page_id: 394
+              - name: "Areas"
+                page_id: 405
+              - separator: true
+              - name: "Intrastat Journal Templates"
+                page_id: 325
+          - name: "General"
+            items:
+              - name: "Standard Text Codes"
+                page_id: 8
+              - name: "Departments"
+                page_id: 12
+              - name: "Projects"
+                page_id: 13
+              - name: "Post Codes"
+                page_id: 367
+              - name: "Territories"
+                page_id: 429
+              - name: "Languages"
+                page_id: 9
+              - name: "Countries"
+                page_id: 10
+              - name: "Currencies"
+                page_id: 5
+          - separator: true
+          - name: "Journal Templates"
+            page_id: 101
+          - name: "Tax Statement Templates"
+            page_id: 318
+          - separator: true
+          - name: "Users"
+            items:
+              - name: "User Setup"
+                page_id: 119
+              - name: "User Time Registers"
+                page_id: 71
+          - separator: true
+          - name: "Printer Selections"
+            page_id: 64
+      - name: "Activities"
+        items:
+          - name: "Recurring Journals"
+          - separator: true
+          - name: "Bank Account Reconciliations"
+            page_id: 379
+          - name: "Tax"
+            items:
+              - name: "Calc. and Post Tax Settlement"
+                run_object: "report:20"
+              - name: "Tax Statements"
+              - name: "VIES Declaration Disk"
+                run_object: "report:88"
+          - name: "Intrastat Journals"
+          - name: "Currency"
+            items:
+              - name: "Currencies"
+                page_id: 5
+              - name: "Adjust Exchange Rates"
+                run_object: "report:595"
+              - name: "Exch. Rate Adjmt. Registers"
+                page_id: 106
+          - name: "Fiscal Year"
+            items:
+              - name: "Accounting Periods"
+                page_id: 100
+              - name: "Create Year"
+                run_object: "report:93"
+              - name: "Close Year"
+                run_object: "codeunit:6"
+              - name: "Close Income Statement"
+                run_object: "report:94"
+          - name: "Consolidation"
+            items:
+              - name: "Export Consolidation"
+                run_object: "report:91"
+              - name: "Business Units"
+                page_id: 240
+          - name: "XBRL"
+            items:
+              - name: "Import Taxonomy"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "General Ledger"
+                run_object: "report:98"
+              - name: "Tax Entries"
+                run_object: "report:95"
+              - name: "Bank Account Ledger"
+                run_object: "report:1498"
+              - name: "G/L Budget Entries"
+                run_object: "report:97"
+              - name: "Delete Check Ledger"
+                run_object: "report:1495"
+              - separator: true
+              - name: "Delete Empty G/L Registers"
+                run_object: "report:99"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
 
-  - name: Fixed Assets
+  - name: "Sales & Receivables"
+    icon: users
+    items:
+      - name: "Customers"
+        page_id: 22
+      - separator: true
+      - name: "Sales Journals"
+      - name: "Cash Receipt Journals"
+      - separator: true
+      - name: "Quotes"
+        page_id: 41
+      - name: "Blanket Orders"
+        page_id: 507
+      - name: "Orders"
+        page_id: 42
+      - name: "Invoices"
+        page_id: 43
+      - name: "Credit Memos"
+        page_id: 44
+      - separator: true
+      - name: "Reports"
+      - name: "Documents"
+      - name: "Posted Shipments"
+        page_id: 130
+      - name: "Posted Invoices"
+        page_id: 132
+      - name: "Posted Credit Memos"
+        page_id: 134
+      - name: "Registers"
+        page_id: 116
+      - name: "Customer Ledger Entries"
+        page_id: 25
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Sales & Receivables Setup"
+            page_id: 459
+          - name: "Customer Posting Groups"
+            page_id: 110
+          - separator: true
+          - name: "Payment Terms"
+            page_id: 4
+          - name: "Payment Methods"
+            page_id: 427
+          - name: "Reminder Terms"
+            page_id: 431
+          - name: "Finance Charge Terms"
+            page_id: 6
+          - separator: true
+          - name: "Salespeople"
+            page_id: 14
+          - name: "Shipment Methods"
+            page_id: 11
+          - name: "Shipping Agents"
+            page_id: 428
+          - name: "Customer Discount Groups"
+            page_id: 512
+          - separator: true
+          - name: "Report Selections Sales"
+            page_id: 306
+          - name: "Report Selections Reminder and Fin. Charge"
+            page_id: 524
+      - name: "Activities"
+        items:
+          - name: "Recurring Journals"
+          - separator: true
+          - name: "Combine Shipments"
+            run_object: "report:295"
+          - name: "Delete Invoiced Sales Orders"
+            run_object: "report:299"
+          - name: "Delete Invoiced Blanket Sales Orders"
+            run_object: "report:291"
+          - separator: true
+          - name: "Reminders"
+            page_id: 434
+          - name: "Issued Reminders"
+            page_id: 438
+          - separator: true
+          - name: "Finance Charge Memos"
+            page_id: 446
+          - name: "Issued Finance Charge Memos"
+            page_id: 450
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "Customer Ledger"
+                run_object: "report:198"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
+
+  - name: "Purchases & Payables"
+    icon: truck
+    items:
+      - name: "Vendors"
+        page_id: 27
+      - separator: true
+      - name: "Purchase Journals"
+      - name: "Payment Journals"
+      - separator: true
+      - name: "Requisition Worksheets"
+      - name: "Quotes"
+        page_id: 49
+      - name: "Blanket Orders"
+        page_id: 509
+      - name: "Orders"
+        page_id: 50
+      - name: "Invoices"
+        page_id: 51
+      - name: "Credit Memos"
+        page_id: 52
+      - separator: true
+      - name: "Reports"
+      - name: "Documents"
+      - name: "Posted Receipts"
+        page_id: 136
+      - name: "Posted Invoices"
+        page_id: 138
+      - name: "Posted Credit Memos"
+        page_id: 140
+      - name: "Registers"
+        page_id: 116
+      - name: "Vendor Ledger Entries"
+        page_id: 29
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Purchases & Payables Setup"
+            page_id: 460
+          - name: "Vendor Posting Groups"
+            page_id: 111
+          - separator: true
+          - name: "Payment Terms"
+            page_id: 4
+          - name: "Payment Methods"
+            page_id: 427
+          - name: "Purchasers"
+            page_id: 14
+          - name: "Shipment Methods"
+            page_id: 11
+          - separator: true
+          - name: "Report Selections"
+            page_id: 347
+          - name: "Req. Worksheet Templates"
+            page_id: 293
+      - name: "Activities"
+        items:
+          - name: "Recurring Journals"
+          - name: "Recurring Req. Worksheets"
+          - separator: true
+          - name: "Delete Invoiced Purch. Orders"
+            run_object: "report:499"
+          - name: "Delete Invoiced Blanket Purchase Orders"
+            run_object: "report:491"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "Vendor Ledger"
+                run_object: "report:398"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
+
+  - name: "Inventory"
     icon: package
     items:
-      - name: Fixed Assets
+      - name: "Items"
+        page_id: 30
+      - separator: true
+      - name: "Item Journals"
+      - name: "Item Transfer Journals"
+      - name: "Phys. Inventory Journals"
+      - name: "BOM Journals"
+      - separator: true
+      - name: "Item Reports"
+      - name: "BOM Reports"
+      - name: "Item Registers"
+        page_id: 117
+      - name: "BOM Registers"
+        page_id: 267
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Inventory Setup"
+            page_id: 461
+          - name: "Inventory Posting Groups"
+            page_id: 112
+          - name: "Reservation Setup"
+            page_id: 496
+          - separator: true
+          - name: "Units of Measure"
+            page_id: 209
+          - separator: true
+          - name: "Locations"
+            page_id: 15
+          - name: "Price Groups"
+            page_id: 7
+          - name: "Rounding Methods"
+            page_id: 65
+          - name: "Item Discount Groups"
+            page_id: 513
+          - separator: true
+          - name: "Item Journal Templates"
+            page_id: 102
+          - name: "BOM Journal Templates"
+            page_id: 108
+      - name: "Activities"
+        items:
+          - name: "Recurring Item Journals"
+          - name: "Recurring BOM Journals"
+          - separator: true
+          - name: "Adjust Cost - Item Entries"
+            run_object: "report:795"
+          - name: "Post Inventory Cost to G/L"
+            run_object: "report:1002"
+          - name: "Change Reservation Status"
+            run_object: "report:788"
+          - separator: true
+          - name: "Adjust Item Costs/Prices"
+            run_object: "report:794"
+          - name: "Item Price Chg. (from Items)"
+            run_object: "report:791"
+          - name: "Item Price Chg. (from Prices)"
+            run_object: "report:792"
+          - name: "Item Price Changes"
+            page_id: 57
+          - name: "Implement Item Price Change"
+            run_object: "report:793"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "Item Ledger"
+                run_object: "report:798"
+              - name: "BOM Ledger"
+                run_object: "report:898"
+              - name: "Delete Phys. Inventory Ledger"
+                run_object: "report:789"
+              - name: "Delete Reservation Entries"
+                run_object: "report:787"
+              - separator: true
+              - name: "Delete Empty Item Registers"
+                run_object: "report:799"
+              - name: "Delete Empty BOM Registers"
+                run_object: "report:899"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
+
+  - name: "Resources"
+    icon: user
+    items:
+      - name: "Resources"
+        page_id: 76
+      - name: "Resource Groups"
+        page_id: 72
+      - name: "Resource Capacity"
+        page_id: 213
+      - name: "Res. Group Capacity"
+        page_id: 214
+      - separator: true
+      - name: "Resource Journals"
+      - separator: true
+      - name: "Reports"
+      - name: "Registers"
+        page_id: 274
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Resources Setup"
+            page_id: 462
+          - separator: true
+          - name: "Work Types"
+            page_id: 208
+          - name: "Units of Measure"
+            page_id: 209
+          - separator: true
+          - name: "Costs"
+            page_id: 203
+          - name: "Prices"
+            page_id: 204
+          - separator: true
+          - name: "Journal Templates"
+            page_id: 206
+      - name: "Activities"
+        items:
+          - name: "Recurring Journals"
+          - separator: true
+          - name: "Adjust Resource Costs/Prices"
+            run_object: "report:1195"
+          - name: "Resource Price Chg. (from Res.)"
+            run_object: "report:1191"
+          - name: "Resource Price Chg. (from Prices)"
+            run_object: "report:1192"
+          - name: "Resource Price Changes"
+            page_id: 493
+          - name: "Implement Res. Price Change"
+            run_object: "report:1193"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "Resource Ledger"
+                run_object: "report:1198"
+              - separator: true
+              - name: "Delete Empty Res. Registers"
+                run_object: "report:1199"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
+
+  - name: "Jobs"
+    icon: briefcase
+    items:
+      - name: "Jobs"
+        page_id: 88
+      - name: "Budgets"
+        page_id: 212
+      - separator: true
+      - name: "Job Journals"
+      - separator: true
+      - name: "Reports"
+      - name: "Registers"
+        page_id: 278
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "Jobs Setup"
+            page_id: 463
+          - name: "Job Posting Groups"
+            page_id: 211
+          - separator: true
+          - name: "Phases"
+            page_id: 82
+          - name: "Tasks"
+            page_id: 83
+          - name: "Steps"
+            page_id: 84
+          - separator: true
+          - name: "Journal Templates"
+            page_id: 200
+      - name: "Activities"
+        items:
+          - name: "Recurring Journals"
+          - separator: true
+          - name: "Calculate Job WIP Value"
+            run_object: "report:1295"
+          - name: "Post WIP Value to G/L"
+            run_object: "report:1214"
+          - separator: true
+          - name: "Calculate Job Recognition"
+            run_object: "report:1294"
+          - name: "Post Job Recognition to G/L"
+            run_object: "report:1213"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "Job Ledger"
+                run_object: "report:1298"
+              - name: "Job Budget Entries"
+                run_object: "report:1297"
+              - separator: true
+              - name: "Delete Empty Job Registers"
+                run_object: "report:1299"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
+
+  - name: "Fixed Assets"
+    icon: building
+    items:
+      - name: "Fixed Assets"
         page_id: 5601
-        icon: package
-
-      - name: FA Ledger Entries
-        page_id: 5604
-        icon: list
-
-      - name: Maintenance Ledger Entries
-        page_id: 5641
-        icon: list
-
-      - name: Insurance
+      - name: "Insurance"
         page_id: 5645
-        icon: shield
-
-      - name: Ins. Coverage Ledger Entries
+      - separator: true
+      - name: "FA G/L Journals"
+      - name: "FA Journals"
+      - name: "FA Reclass. Journals"
+      - name: "Insurance Journals"
+      - separator: true
+      - name: "Reports"
+      - name: "FA Registers"
+        page_id: 5627
+      - name: "FA Ledger Entries"
+        page_id: 5604
+      - name: "Maintenance Ledger Entries"
+        page_id: 5641
+      - name: "Ins. Coverage Ledger Entries"
         page_id: 5647
-        icon: list
+      - name: "Insurance Registers"
+        page_id: 5656
+      - name: "Navigate"
+        page_id: 344
+      - separator: true
+      - name: "Setup"
+        items:
+          - name: "FA Setup"
+            page_id: 5607
+          - name: "FA Posting Groups"
+            page_id: 5613
+          - separator: true
+          - name: "FA Classes"
+            page_id: 5615
+          - name: "FA Subclasses"
+            page_id: 5616
+          - name: "FA Locations"
+            page_id: 5617
+          - separator: true
+          - name: "Insurance Types"
+            page_id: 5648
+          - name: "Maintenance"
+            page_id: 5642
+          - separator: true
+          - name: "Depreciation Books"
+            page_id: 5611
+          - name: "Depreciation Tables"
+            page_id: 5659
+          - separator: true
+          - name: "FA Journal Templates"
+            page_id: 5630
+          - name: "FA Reclass. Journal Templates"
+            page_id: 5637
+          - name: "Insurance Journal Templates"
+            page_id: 5652
+      - name: "Activities"
+        items:
+          - name: "Recurring General Journals"
+          - name: "Recurring Fixed Asset Journals"
+          - separator: true
+          - name: "Calculate Depreciation"
+            run_object: "report:5692"
+          - separator: true
+          - name: "Index"
+            items:
+              - name: "Fixed Assets"
+                run_object: "report:5690"
+              - name: "Insurance"
+                run_object: "report:5691"
+          - separator: true
+          - name: "Date Compression"
+            items:
+              - name: "FA Ledger"
+                run_object: "report:5696"
+              - name: "Maintenance Ledger"
+                run_object: "report:5698"
+              - name: "Insurance Ledger"
+                run_object: "report:5697"
+              - separator: true
+              - name: "Delete Empty FA Registers"
+                run_object: "report:5693"
+              - name: "Delete Empty Insurance Registers"
+                run_object: "report:5695"
+              - separator: true
+              - name: "Date Compression Registers"
+                page_id: 107
 
-      - name: Chart of Accounts
-        page_id: 16
-        icon: list
-
-  - name: Settings
+  - name: "Administration"
     icon: settings
     items:
-      - name: Users
-        page_id: 59
-        icon: user
-
-      - name: Languages
-        page_id: 9
-        icon: globe
-
-      - name: General Ledger Setup
-        page_id: 118
-        icon: settings
-
-      - name: Accounting Periods
-        page_id: 100
-        icon: calendar
-
-      - name: Sales & Receivables Setup
-        page_id: 459
-        icon: settings
-
-      - name: Purchases & Payables Setup
-        page_id: 460
-        icon: settings
-
-      - name: No. Series
-        page_id: 456
-        icon: list
-
-      - name: Payment Terms
-        page_id: 4
-        icon: calendar
-
-      - name: Countries Regions
-        page_id: 10
-        icon: globe
-
-      - name: Currencies
-        page_id: 5
-        icon: dollar-sign
-
-      - name: Finance Charge Terms
-        page_id: 6
-        icon: percent
-
-      - name: Price Groups
-        page_id: 7
-        icon: tag
-
-      - name: Standard Text Codes
-        page_id: 8
-        icon: file-text
-
-      - name: Shipment Methods
-        page_id: 11
-        icon: truck
-
-      - name: Departments
-        page_id: 12
-        icon: building
-
-      - name: Projects
-        page_id: 13
-        icon: briefcase
-
-      - name: Salespeople Purchasers
-        page_id: 14
-        icon: user
-
-      - name: Locations
-        page_id: 15
-        icon: map-pin
-
-      - name: Gen. Business Posting Groups
-        page_id: 312
-        icon: tag
-
-      - name: Gen. Product Posting Groups
-        page_id: 313
-        icon: tag
-
-      - name: Customer Posting Groups
-        page_id: 110
-        icon: tag
-
-      - name: Vendor Posting Groups
-        page_id: 111
-        icon: tag
-
-      - name: Bank Account Posting Groups
-        page_id: 373
-        icon: tag
-
-      - name: Fixed Asset Setup
-        page_id: 5607
-        icon: settings
-
-      - name: Depreciation Books
-        page_id: 5611
-        icon: list
-
-      - name: FA Posting Groups
-        page_id: 5613
-        icon: tag
-
-      - name: FA Classes
-        page_id: 5615
-        icon: list
-
-      - name: FA Subclasses
-        page_id: 5616
-        icon: list
-
-      - name: FA Locations
-        page_id: 5617
-        icon: map-pin
-
-      - name: Maintenance
-        page_id: 5642
-        icon: list
-
-      - name: Insurance Types
-        page_id: 5648
-        icon: list
-
-      - name: Customer Disc. Groups
-        page_id: 512
-        icon: tag
-
-      - name: Payment Methods
-        page_id: 427
-        icon: credit-card
-
-      - name: Shipping Agents
-        page_id: 428
-        icon: truck
-
-      - name: Territories
-        page_id: 429
-        icon: map-pin
-
-      - name: Post Codes
-        page_id: 367
-        icon: map-pin
-
-      - name: Reminder Terms
-        page_id: 431
-        icon: bell
-
-      - name: Tax Area List
-        page_id: 469
-        icon: map-pin
-
-      - name: Source Codes
-        page_id: 257
-        icon: tag
-
-      - name: Reason Codes
-        page_id: 259
-        icon: tag
-
-      - name: Tax Groups
-        page_id: 467
-        icon: percent
-
-      - name: Tax Business Posting Groups
-        page_id: 470
-        icon: percent
-
-      - name: Tax Product Posting Groups
-        page_id: 471
-        icon: percent
-
-      - name: SMTP Setup
-        page_id: 409
-        icon: mail
-
-      - name: Companies
+      - name: "Companies"
         page_id: 357
-        icon: building
-
-      - name: Menus
-        page_id: 900
-        icon: menu
-
-      - name: Job Queue
-        page_id: 672
-        icon: clock
-
-      - name: Job Queue Entries
-        page_id: 673
-        icon: list
-
-      - name: User Roles
+      - name: "Users"
+        page_id: 59
+      - name: "User Roles"
         page_id: 902
-        icon: shield
-
-      - name: User Members
+      - name: "User Members"
         page_id: 903
-        icon: users
-
-      - name: Permissions
+      - name: "Permissions"
         page_id: 905
-        icon: lock
-
-      - name: Themes
+      - separator: true
+      - name: "Job Queue"
+        page_id: 672
+      - name: "Job Queue Entries"
+        page_id: 673
+      - name: "Delete Job Queue Log Entries"
+        run_object: "report:675"
+      - separator: true
+      - name: "SMTP Setup"
+        page_id: 409
+      - name: "Languages"
+        page_id: 9
+      - name: "Themes"
         page_id: 906
-        icon: palette
-
-      - name: Installed Apps
+      - name: "Menus"
+        page_id: 900
+      - name: "Installed Apps"
         page_id: 907
-        icon: package

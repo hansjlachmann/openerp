@@ -45,7 +45,8 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 		items: [
 			{ keys: ['↑', '↓', '←', '→'], description: 'HELP_MENU_ARROWS' },
 			{ keys: ['Home', 'End'], description: 'HELP_MENU_HOME_END' },
-			{ keys: ['Enter'], description: 'HELP_MENU_OPEN' }
+			{ keys: ['Enter'], description: 'HELP_MENU_OPEN' },
+			{ keys: ['Ctrl+F'], description: 'HELP_MENU_SEARCH' }
 		]
 	},
 	{

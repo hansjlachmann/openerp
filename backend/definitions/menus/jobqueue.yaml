@@ -1,5 +1,5 @@
 menu:
-  - name: Jobs
+  - name: Job Queue
     icon: clock
     items:
       - name: Job Queue
