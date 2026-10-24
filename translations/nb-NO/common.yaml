@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    account: "Konto"
+    card: "Kort"
     register: "Journal"
     general_ledger: "Finans"
     customer_ledger: "Kundeposter"

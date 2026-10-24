@@ -1,5 +1,7 @@
 package errors
 
+import "fmt"
+
 // Journal and posting errors (general journal lines, templates, batches, posting codeunits)
 const (
 	ErrJnlAccountTypes        ErrorCode = "ERR_JNL_ACCOUNT_TYPES"
@@ -66,4 +68,149 @@ func JnlTaxNotYet(table, field string, value any) *AppError {
 // Accrual)
 func JnlTemplateTypeNoPage(table, field string, value any) *AppError {
 	return &AppError{Code: ErrJnlTemplateTypeNoPage, Table: table, Field: field, Value: value}
+}
+
+// Checking and posting journal lines (Gen. Jnl.-Check Line, Post Line, Post Batch)
+const (
+	ErrJnlClosingDateGLOnly    ErrorCode = "ERR_JNL_CLOSING_DATE_GL_ONLY"
+	ErrJnlDateNotAllowed       ErrorCode = "ERR_JNL_DATE_NOT_ALLOWED"
+	ErrJnlSameSign             ErrorCode = "ERR_JNL_SAME_SIGN"
+	ErrJnlDifferentSign        ErrorCode = "ERR_JNL_DIFFERENT_SIGN"
+	ErrJnlMustBePositive       ErrorCode = "ERR_JNL_MUST_BE_POSITIVE"
+	ErrJnlMustBeNegative       ErrorCode = "ERR_JNL_MUST_BE_NEGATIVE"
+	ErrJnlTaxSum               ErrorCode = "ERR_JNL_TAX_SUM"
+	ErrJnlNeedsRounding        ErrorCode = "ERR_JNL_NEEDS_ROUNDING"
+	ErrJnlPostingCodeMandatory ErrorCode = "ERR_JNL_POSTING_CODE_MANDATORY"
+	ErrJnlPostingCodeSame      ErrorCode = "ERR_JNL_POSTING_CODE_SAME"
+	ErrJnlPostingCodeBlank     ErrorCode = "ERR_JNL_POSTING_CODE_BLANK"
+	ErrJnlBankPmtCurrency      ErrorCode = "ERR_JNL_BANK_PMT_CURRENCY"
+	ErrJnlRequiredWhen         ErrorCode = "ERR_JNL_REQUIRED_WHEN"
+	ErrJnlCheckExists          ErrorCode = "ERR_JNL_CHECK_EXISTS"
+	ErrJnlCheckPrintingNotYet  ErrorCode = "ERR_JNL_CHECK_PRINTING_NOT_YET"
+	ErrJnlNameTooLong          ErrorCode = "ERR_JNL_NAME_TOO_LONG"
+	ErrJnlCorrectionSame       ErrorCode = "ERR_JNL_CORRECTION_SAME"
+	ErrJnlDocOutOfBalance      ErrorCode = "ERR_JNL_DOC_OUT_OF_BALANCE"
+	ErrJnlDateOutOfBalance     ErrorCode = "ERR_JNL_DATE_OUT_OF_BALANCE"
+	ErrJnlDocOutOfBalanceCurr  ErrorCode = "ERR_JNL_DOC_OUT_OF_BALANCE_CURRENCY"
+	ErrJnlDateOutOfBalanceCurr ErrorCode = "ERR_JNL_DATE_OUT_OF_BALANCE_CURRENCY"
+	ErrJnlTaxMultipleCustVend  ErrorCode = "ERR_JNL_TAX_MULTIPLE_CUST_VEND"
+	ErrJnlMaxPostingNoSeries   ErrorCode = "ERR_JNL_MAX_POSTING_NO_SERIES"
+	ErrJnlCustVendNotYet       ErrorCode = "ERR_JNL_CUST_VEND_NOT_YET"
+)
+
+// JnlClosingDateGLOnly: a closing date is only allowed for G/L entries
+func JnlClosingDateGLOnly(table, field string) *AppError {
+	return &AppError{Code: ErrJnlClosingDateGLOnly, Table: table, Field: field}
+}
+
+// JnlDateNotAllowed: the posting date is outside the user's allowed posting dates
+func JnlDateNotAllowed(table, field string) *AppError {
+	return &AppError{Code: ErrJnlDateNotAllowed, Table: table, Field: field}
+}
+
+// JnlSameSign: a field must have the same sign as another (Amount (LCY) and Amount)
+func JnlSameSign(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrJnlSameSign, Table: table, Field: field, Field2: field2}
+}
+
+// JnlDifferentSign: a field must have a different sign than another
+func JnlDifferentSign(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrJnlDifferentSign, Table: table, Field: field, Field2: field2}
+}
+
+// JnlMustBePositive / JnlMustBeNegative: the sign an amount must have for its document type
+func JnlMustBePositive(table, field string) *AppError {
+	return &AppError{Code: ErrJnlMustBePositive, Table: table, Field: field}
+}
+
+func JnlMustBeNegative(table, field string) *AppError {
+	return &AppError{Code: ErrJnlMustBeNegative, Table: table, Field: field}
+}
+
+// JnlTaxSum: Tax Amount + Tax Base Amount must be the amount
+func JnlTaxSum(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrJnlTaxSum, Table: table, Field: field, Field2: field2}
+}
+
+// JnlNeedsRounding: an amount is not rounded to the currency's precision
+func JnlNeedsRounding(table, field, value string) *AppError {
+	return &AppError{Code: ErrJnlNeedsRounding, Table: table, Field: field, Params: []string{value}}
+}
+
+// JnlPostingCodeMandatory / Same / Blank: the G/L account's Department/Project Posting rule
+func JnlPostingCodeMandatory(table, field, glAccNo string) *AppError {
+	return &AppError{Code: ErrJnlPostingCodeMandatory, Table: table, Field: field, Params: []string{glAccNo}}
+}
+
+func JnlPostingCodeSame(table, field, code, glAccNo string) *AppError {
+	return &AppError{Code: ErrJnlPostingCodeSame, Table: table, Field: field, Params: []string{code, glAccNo}}
+}
+
+func JnlPostingCodeBlank(table, field, glAccNo string) *AppError {
+	return &AppError{Code: ErrJnlPostingCodeBlank, Table: table, Field: field, Params: []string{glAccNo}}
+}
+
+// JnlBankPmtCurrency: a bank payment type needs the bank account's currency on the line
+func JnlBankPmtCurrency(table, field, bankAccNo string) *AppError {
+	return &AppError{Code: ErrJnlBankPmtCurrency, Table: table, Field: field, Params: []string{bankAccNo}}
+}
+
+// JnlRequiredWhen: a field must be filled in when another has a value ("Document No. must be
+// entered when Bank Payment Type is Manual Check")
+func JnlRequiredWhen(table, whenField, field string, value any) *AppError {
+	return &AppError{Code: ErrJnlRequiredWhen, Table: table, Field: whenField, Field2: field, Value: value}
+}
+
+// JnlCheckExists: a manual check number is already used for the bank account
+func JnlCheckExists(checkNo string) *AppError {
+	return &AppError{Code: ErrJnlCheckExists, Params: []string{checkNo}}
+}
+
+// JnlCheckPrintingNotYet: computer checks and electronic payments come with check printing
+func JnlCheckPrintingNotYet(table, field string, value any) *AppError {
+	return &AppError{Code: ErrJnlCheckPrintingNotYet, Table: table, Field: field, Value: value}
+}
+
+// JnlNameTooLong: the batch name cannot be incremented within its length
+func JnlNameTooLong(table, field string, length int) *AppError {
+	return &AppError{Code: ErrJnlNameTooLong, Table: table, Field: field, Params: []string{fmt.Sprint(length)}}
+}
+
+// JnlCorrectionSame: Correction must be the same on all lines of a document
+func JnlCorrectionSame(table, field string) *AppError {
+	return &AppError{Code: ErrJnlCorrectionSame, Table: table, Field: field}
+}
+
+// JnlDocOutOfBalance: a document of the journal does not balance
+func JnlDocOutOfBalance(table, docNo, amount string) *AppError {
+	return &AppError{Code: ErrJnlDocOutOfBalance, Table: table, Field: "document_no", Field2: "posting_date", Params: []string{docNo, amount}}
+}
+
+// JnlDateOutOfBalance: the lines of a posting date do not balance
+func JnlDateOutOfBalance(table, date, amount string) *AppError {
+	return &AppError{Code: ErrJnlDateOutOfBalance, Table: table, Field: "posting_date", Field2: "amount", Params: []string{date, amount}}
+}
+
+// JnlDocOutOfBalanceCurrency / JnlDateOutOfBalanceCurrency: the same in the lines' currency
+func JnlDocOutOfBalanceCurrency(table, docNo, amount, currency string) *AppError {
+	return &AppError{Code: ErrJnlDocOutOfBalanceCurr, Table: table, Field: "document_no", Field2: "posting_date", Params: []string{docNo, amount, currency}}
+}
+
+func JnlDateOutOfBalanceCurrency(table, date, amount, currency string) *AppError {
+	return &AppError{Code: ErrJnlDateOutOfBalanceCurr, Table: table, Field: "posting_date", Field2: "amount", Params: []string{date, amount, currency}}
+}
+
+// JnlTaxMultipleCustVend: a document with tax has more than one customer or vendor
+func JnlTaxMultipleCustVend(table, docNo, date string) *AppError {
+	return &AppError{Code: ErrJnlTaxMultipleCustVend, Table: table, Field: "document_no", Params: []string{docNo, date}}
+}
+
+// JnlMaxPostingNoSeries: too many posting number series in one journal
+func JnlMaxPostingNoSeries(max int) *AppError {
+	return &AppError{Code: ErrJnlMaxPostingNoSeries, Params: []string{fmt.Sprint(max)}}
+}
+
+// JnlCustVendNotYet: customer and vendor lines cannot be posted yet
+func JnlCustVendNotYet(table, field string, value any) *AppError {
+	return &AppError{Code: ErrJnlCustVendNotYet, Table: table, Field: field, Value: value}
 }

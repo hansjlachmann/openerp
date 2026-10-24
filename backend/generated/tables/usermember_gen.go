@@ -1426,9 +1426,11 @@ func (t *UserMember) Count() int {
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *UserMember) FindSet() bool {
-	// A temporary record reads all at once: its in-memory database has one connection, which
-	// an open result set would block (Modify while looping)
-	if t.temp != nil {
+	// A temporary record, and a record in a transaction, reads all at once: its in-memory
+	// database or the transaction has one connection, which an open result set would block for
+	// the statements of the loop (Modify while looping; on PostgreSQL a query while the rows are
+	// read breaks the connection — "unexpected Parse response")
+	if _, inTx := t.db.(*sql.Tx); t.temp != nil || inTx {
 		return t.FindSetBuffered()
 	}
 	// Close any existing result set

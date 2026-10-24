@@ -743,7 +743,12 @@
 			if (result && 'job_id' in result) {
 				await new Promise((resolve) => setTimeout(resolve, 500));
 				progressModalOpen = false;
-				if (!progressError) {
+				// The codeunit's closing message box (Message), else a plain notice
+				const finalDialog = (result as { data?: Record<string, unknown> }).data?.dialog as DialogResult | undefined;
+				if (!progressError && finalDialog) {
+					dialogData = finalDialog;
+					dialogOpen = true;
+				} else if (!progressError) {
 					toast.success(t(MSG.JOB_COMPLETED));
 				}
 				// Refresh list data to reflect changes (e.g. new entries, status updates)

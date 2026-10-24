@@ -368,3 +368,8 @@ messages:
   BTN_NO: "No"
   GEN_JNL_TEMPLATE_DESCRIPTION: "%1 Journal"
   GEN_JNL_DEFAULT_BATCH: "Default Journal"
+  GEN_JNL_POST_CONFIRM: "Do you want to post the journal lines?"
+  GEN_JNL_NOTHING_TO_POST: "There is nothing to post."
+  GEN_JNL_POSTED: "The journal lines were successfully posted."
+  GEN_JNL_POSTED_NEW_BATCH: "The journal lines were successfully posted. You are now in the %1 journal."
+  GEN_JNL_POST_WINDOW: "Journal Batch Name #1##########\nChecking lines #2######\nChecking balance #3###### @4@@@@@@@@@@@@@\nPosting lines #5###### @6@@@@@@@@@@@@@"

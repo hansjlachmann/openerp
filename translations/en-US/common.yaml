@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    account: "Account"
+    card: "Card"
     register: "Register"
     general_ledger: "General Ledger"
     customer_ledger: "Customer Ledger"

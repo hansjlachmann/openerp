@@ -229,8 +229,8 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 			}
 			dialog.CloseWithData(result.Data, message)
 		} else if result.Dialog != nil {
-			dialog.UpdateWithMessage(0, 100, result.Dialog.Message)
-			dialog.Close()
+			// The codeunit's closing message box (Message): the page shows it
+			dialog.CloseWithData(map[string]interface{}{"dialog": result.Dialog}, result.Dialog.Message)
 		} else {
 			dialog.Close()
 		}
