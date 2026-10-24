@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.110](https://github.com/hansjlachmann/openerp/compare/v0.1.109...v0.1.110) (2026-10-24)
+
+
+### Features
+
+* main menu as the classic Main Menu — modules, Setup and Activities, menu search ([#144](https://github.com/hansjlachmann/openerp/issues/144)) ([59d731c](https://github.com/hansjlachmann/openerp/commit/59d731ce03c0af99cf9a146d4690cd1b046940bf))
+
 ## [0.1.109](https://github.com/hansjlachmann/openerp/compare/v0.1.108...v0.1.109) (2026-10-24)
 
 
