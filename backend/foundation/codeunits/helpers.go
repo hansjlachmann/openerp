@@ -20,6 +20,8 @@ type goroutineContext struct {
 	UserName string
 	Company  string
 	Language string
+	// Access: the user's permissions (nil: no user — internal code, tests — is not checked)
+	Access *session.Session
 }
 
 // currentContexts holds the context for each goroutine
@@ -35,6 +37,27 @@ func SetCurrentContext(userID, userName, company, language string) {
 		Language: language,
 	}
 	currentContexts.Store(getGoroutineID(), ctx)
+}
+
+// SetCurrentAccess sets the permissions of the current goroutine's user (after
+// SetCurrentContext): CanExecute checks them
+func SetCurrentAccess(access *session.Session) {
+	ctx := GetCurrentContext()
+	if ctx == nil {
+		ctx = &goroutineContext{}
+		currentContexts.Store(getGoroutineID(), ctx)
+	}
+	ctx.Access = access
+}
+
+// CanExecute reports whether the current user may run a codeunit or report (session
+// CanExecute); without a user (internal code, a run without permissions loaded) it is allowed
+func CanExecute(objectType string, id int) bool {
+	ctx := GetCurrentContext()
+	if ctx == nil || ctx.Access == nil {
+		return true
+	}
+	return ctx.Access.CanExecute(objectType, id)
 }
 
 // GetCurrentContext returns the context for the current goroutine

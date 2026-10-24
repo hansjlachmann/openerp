@@ -111,7 +111,8 @@ func (s *Server) Setup() {
 	api.Get("/session", sessionHandler.GetSession)
 
 	// Table routes
-	tables := api.Group("/tables/:table", middleware.PermissionCheck())
+	// UserContext: table triggers see the user (USERID, execute permissions)
+	tables := api.Group("/tables/:table", middleware.PermissionCheck(), middleware.UserContext())
 	tables.Get("/ids", tablesHandler.GetRecordIDs)         // Lightweight IDs-only endpoint
 	tables.Get("/options", tablesHandler.GetOptions)       // Fast options metadata only
 	tables.Get("/lookup/:field", tablesHandler.LookupRows) // On-demand dropdown rows (large related tables)

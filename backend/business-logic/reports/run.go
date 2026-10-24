@@ -360,6 +360,17 @@ func sameTable(table string, rec ftables.Table) bool {
 	return ok && factory().GetTableName() == rec.GetTableName()
 }
 
+// Caption returns the report's caption in the language (reports.<id>.caption), else its
+// registered name
+func Caption(id int, language string) string {
+	key := fmt.Sprintf("reports.%d.caption", id)
+	caption := i18n.GetInstance().Translate(key, language)
+	if caption == key {
+		return List()[id]
+	}
+	return caption
+}
+
 // translate returns reports.<id>.<key> in the user's language
 func translate(id int, key string) string {
 	return i18n.GetInstance().Translate(fmt.Sprintf("reports.%d.%s", id, key), fcodeunits.CurrentLanguage())

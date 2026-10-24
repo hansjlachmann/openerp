@@ -8,6 +8,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/functions"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -25,6 +26,31 @@ func init() {
 	// Functions of the Job Queue Card's "Job Queue" menu (examples of card page functions)
 	functions.Register("table", gtables.JobQueueTableName, "ShowStatus", functions.For(jobQueueLogic{}.ShowStatus))
 	functions.Register("table", gtables.JobQueueTableName, "AddTestEntry", functions.For(jobQueueLogic{}.AddTestEntry))
+}
+
+// OnInsert: the job runs as the user who sets it up (setJobQueueUser)
+func (jobQueueLogic) OnInsert(rec *gtables.JobQueue) error {
+	return setJobQueueUser(rec)
+}
+
+// OnModify: the job runs as the user who saves it (setJobQueueUser)
+func (jobQueueLogic) OnModify(rec *gtables.JobQueue) error {
+	return setJobQueueUser(rec)
+}
+
+// setJobQueueUser: a user who saves a job must be allowed to run its codeunit (Execute
+// permission), and the job runs as that user. The scheduler's own changes (status, next start)
+// have no user and leave the job's user as it is.
+func setJobQueueUser(rec *gtables.JobQueue) error {
+	userID := system.UserId()
+	if userID == "" || userID == "SCHEDULER" {
+		return nil
+	}
+	if rec.Object_id_to_run != 0 && !fcodeunits.CanExecute(session.ObjectCodeunit, rec.Object_id_to_run) {
+		return apperrors.JobNoPermission(userID, rec.Object_id_to_run)
+	}
+	rec.User_id = types.NewCode(userID)
+	return nil
 }
 
 // ShowStatus shows the job queue's status in a message (a card page function)

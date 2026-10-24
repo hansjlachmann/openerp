@@ -50,6 +50,9 @@ page:
         - source: notification_language
           width: 110
 
+        - source: user_id
+          width: 110
+
         - source: number_of_entries
           width: 120
           drilldown: 673
