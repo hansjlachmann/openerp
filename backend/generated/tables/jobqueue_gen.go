@@ -23,6 +23,7 @@
 //	OnValidate_Notification_email(rec *gtables.JobQueue) error
 //	OnValidate_Notify_on(rec *gtables.JobQueue) error
 //	OnValidate_Notification_language(rec *gtables.JobQueue) error
+//	OnValidate_User_id(rec *gtables.JobQueue) error
 
 package tables
 
@@ -117,6 +118,7 @@ type JobQueue struct {
 	Notification_language types.Code         `db:"notification_language"`
 	// FlowField: Count(Job_Queue_Entry.entry_no)
 	Number_of_entries int
+	User_id           types.Code `db:"user_id"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -240,6 +242,7 @@ var JobQueue_FieldNo = struct {
 	Notify_on             int
 	Notification_language int
 	Number_of_entries     int
+	User_id               int
 }{
 	No:                    1,
 	Description:           2,
@@ -255,6 +258,7 @@ var JobQueue_FieldNo = struct {
 	Notify_on:             12,
 	Notification_language: 13,
 	Number_of_entries:     14,
+	User_id:               15,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -288,6 +292,8 @@ func (t *JobQueue) FieldNo(fieldName string) int {
 		return 13
 	case "number_of_entries":
 		return 14
+	case "user_id":
+		return 15
 	}
 	return 0
 }
@@ -323,6 +329,8 @@ func (t *JobQueue) FieldName(fieldNo int) string {
 		return "notification_language"
 	case 14:
 		return "number_of_entries"
+	case 15:
+		return "user_id"
 	}
 	return ""
 }
@@ -429,6 +437,7 @@ type (
 	JobQueueOnValidate_Notification_email    interface{ OnValidate_Notification_email(rec *JobQueue) error }
 	JobQueueOnValidate_Notify_on             interface{ OnValidate_Notify_on(rec *JobQueue) error }
 	JobQueueOnValidate_Notification_language interface{ OnValidate_Notification_language(rec *JobQueue) error }
+	JobQueueOnValidate_User_id               interface{ OnValidate_User_id(rec *JobQueue) error }
 )
 
 // jobQueueLogic is the registered business logic of Job_Queue, in
@@ -484,6 +493,8 @@ func jobQueueTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(JobQueueOnValidate_Notify_on)
 	case "OnValidate_Notification_language":
 		_, ok = logic.(JobQueueOnValidate_Notification_language)
+	case "OnValidate_User_id":
+		_, ok = logic.(JobQueueOnValidate_User_id)
 	default:
 		return false, false
 	}
@@ -579,6 +590,9 @@ func (t *JobQueue) CheckFields() error {
 	if err := tables.CheckMaxLength(JobQueueTableName, "notification_language", string(t.Notification_language), 10); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(JobQueueTableName, "user_id", string(t.User_id), 50); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -619,7 +633,8 @@ func GetJobQueueTableSchema() string {
 		notification_email TEXT(250),
 		notify_on INTEGER CHECK (notify_on >= 0 AND notify_on <= 2),
 		notification_language TEXT(10),
-		number_of_entries INTEGER
+		number_of_entries INTEGER,
+		user_id TEXT(50)
 	`
 }
 
@@ -639,7 +654,8 @@ func GetJobQueuePostgresTableSchema() string {
 		notification_email VARCHAR(250),
 		notify_on INTEGER CHECK (notify_on >= 0 AND notify_on <= 2),
 		notification_language VARCHAR(10),
-		number_of_entries INTEGER
+		number_of_entries INTEGER,
+		user_id VARCHAR(50)
 	`
 }
 
@@ -776,6 +792,7 @@ func (t *JobQueue) StoreOldValues() {
 	t.oldValues["notification_email"] = t.Notification_email
 	t.oldValues["notify_on"] = t.Notify_on
 	t.oldValues["notification_language"] = t.Notification_language
+	t.oldValues["user_id"] = t.User_id
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -828,6 +845,9 @@ func (t *JobQueue) XRec() *JobQueue {
 	}
 	if v, ok := t.oldValues["notification_language"].(types.Code); ok {
 		x.Notification_language = v
+	}
+	if v, ok := t.oldValues["user_id"].(types.Code); ok {
+		x.User_id = v
 	}
 	return x
 }
@@ -903,6 +923,7 @@ func (t *JobQueue) GetByPK(no types.Code) bool {
 	var notification_emailNull sql.NullString
 	var notify_onInt int
 	var notification_languageNull sql.NullString
+	var user_idNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -910,7 +931,7 @@ func (t *JobQueue) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -930,6 +951,7 @@ func (t *JobQueue) GetByPK(no types.Code) bool {
 		&notification_emailNull,
 		&notify_onInt,
 		&notification_languageNull,
+		&user_idNull,
 	)
 
 	if err != nil {
@@ -956,6 +978,7 @@ func (t *JobQueue) GetByPK(no types.Code) bool {
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
 	t.Notification_language = types.NewCode(notification_languageNull.String)
+	t.User_id = types.NewCode(user_idNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -991,11 +1014,12 @@ func (t *JobQueue) Insert(runTrigger bool) bool {
 		t.Notification_email,
 		t.Notify_on,
 		t.Notification_language,
+		t.User_id,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1044,10 +1068,11 @@ func (t *JobQueue) InsertAll(records []*JobQueue, runTrigger bool) error {
 			r.Notification_email,
 			r.Notify_on,
 			r.Notification_language,
+			r.User_id,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
-	columns := []string{"no", "description", "description_2", "status", "object_id_to_run", "parameter", "next_start", "minutes_between_run", "recurring_job", "recurrence", "notification_email", "notify_on", "notification_language"}
+	columns := []string{"no", "description", "description_2", "status", "object_id_to_run", "parameter", "next_start", "minutes_between_run", "recurring_job", "recurrence", "notification_email", "notify_on", "notification_language", "user_id"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -1139,6 +1164,10 @@ func (t *JobQueue) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "notification_language = ?")
 			values = append(values, t.Notification_language)
 		}
+		if t.hasFieldChanged("user_id") {
+			setClauses = append(setClauses, "user_id = ?")
+			values = append(values, t.User_id)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -1170,6 +1199,8 @@ func (t *JobQueue) Modify(runTrigger bool) bool {
 		values = append(values, t.Notify_on)
 		setClauses = append(setClauses, "notification_language = ?")
 		values = append(values, t.Notification_language)
+		setClauses = append(setClauses, "user_id = ?")
+		values = append(values, t.User_id)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1290,6 +1321,10 @@ func (t *JobQueue) hasFieldChanged(fieldName string) bool {
 	case "notification_language":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Notification_language.Equal(old)
+		}
+	case "user_id":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.User_id.Equal(old)
 		}
 	}
 
@@ -1754,6 +1789,8 @@ func (t *JobQueue) columnName(fieldName string) (string, bool) {
 		return "notify_on", true
 	case strings.ToLower("notification_language"):
 		return "notification_language", true
+	case strings.ToLower("user_id"):
+		return "user_id", true
 	}
 	return "", false
 }
@@ -2032,7 +2069,7 @@ func (t *JobQueue) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2048,6 +2085,7 @@ func (t *JobQueue) FindFirst() bool {
 	var notification_emailNull sql.NullString
 	var notify_onInt int
 	var notification_languageNull sql.NullString
+	var user_idNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&noNull,
@@ -2063,6 +2101,7 @@ func (t *JobQueue) FindFirst() bool {
 		&notification_emailNull,
 		&notify_onInt,
 		&notification_languageNull,
+		&user_idNull,
 	)
 
 	if err != nil {
@@ -2085,6 +2124,7 @@ func (t *JobQueue) FindFirst() bool {
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
 	t.Notification_language = types.NewCode(notification_languageNull.String)
+	t.User_id = types.NewCode(user_idNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2099,7 +2139,7 @@ func (t *JobQueue) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2115,6 +2155,7 @@ func (t *JobQueue) FindLast() bool {
 	var notification_emailNull sql.NullString
 	var notify_onInt int
 	var notification_languageNull sql.NullString
+	var user_idNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&noNull,
@@ -2130,6 +2171,7 @@ func (t *JobQueue) FindLast() bool {
 		&notification_emailNull,
 		&notify_onInt,
 		&notification_languageNull,
+		&user_idNull,
 	)
 
 	if err != nil {
@@ -2152,6 +2194,7 @@ func (t *JobQueue) FindLast() bool {
 	t.Notification_email = types.NewText(notification_emailNull.String)
 	t.Notify_on = JobQueueNotify_on(notify_onInt)
 	t.Notification_language = types.NewCode(notification_languageNull.String)
+	t.User_id = types.NewCode(user_idNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2200,7 +2243,7 @@ func (t *JobQueue) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2280,6 +2323,7 @@ func (t *JobQueue) Next(steps ...int) bool {
 		var notification_emailNull sql.NullString
 		var notify_onInt int
 		var notification_languageNull sql.NullString
+		var user_idNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&noNull,
@@ -2295,6 +2339,7 @@ func (t *JobQueue) Next(steps ...int) bool {
 			&notification_emailNull,
 			&notify_onInt,
 			&notification_languageNull,
+			&user_idNull,
 		)
 
 		if err != nil {
@@ -2316,6 +2361,7 @@ func (t *JobQueue) Next(steps ...int) bool {
 		t.Notification_email = types.NewText(notification_emailNull.String)
 		t.Notify_on = JobQueueNotify_on(notify_onInt)
 		t.Notification_language = types.NewCode(notification_languageNull.String)
+		t.User_id = types.NewCode(user_idNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -2365,7 +2411,7 @@ func (t *JobQueue) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2398,6 +2444,7 @@ func (t *JobQueue) FindSetBuffered() bool {
 		var notification_emailNull sql.NullString
 		var notify_onInt int
 		var notification_languageNull sql.NullString
+		var user_idNull sql.NullString
 
 		err := rows.Scan(
 			&noNull,
@@ -2413,6 +2460,7 @@ func (t *JobQueue) FindSetBuffered() bool {
 			&notification_emailNull,
 			&notify_onInt,
 			&notification_languageNull,
+			&user_idNull,
 		)
 
 		if err != nil {
@@ -2432,6 +2480,7 @@ func (t *JobQueue) FindSetBuffered() bool {
 		record.Notification_email = types.NewText(notification_emailNull.String)
 		record.Notify_on = JobQueueNotify_on(notify_onInt)
 		record.Notification_language = types.NewCode(notification_languageNull.String)
+		record.User_id = types.NewCode(user_idNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2474,6 +2523,7 @@ func (t *JobQueue) copyFromBuffered(record *JobQueue) {
 	t.Notify_on = record.Notify_on
 	t.Notification_language = record.Notification_language
 	t.Number_of_entries = record.Number_of_entries
+	t.User_id = record.User_id
 	t.StoreOldValues()
 }
 
@@ -2964,6 +3014,28 @@ func (t *JobQueue) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "user_id":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.User_id = v
+		} else if v, ok := value.(string); ok {
+			t.User_id = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field user_id")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "user_id"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(JobQueueOnValidate_User_id); ok {
+				if err := trg.OnValidate_User_id(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -3002,6 +3074,8 @@ func (t *JobQueue) FieldValue(no int) (any, bool) {
 		return t.Notify_on, true
 	case 13:
 		return t.Notification_language, true
+	case 15:
+		return t.User_id, true
 	}
 	return nil, false
 }
@@ -3106,6 +3180,15 @@ func (t *JobQueue) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Notification_language = types.NewCode(v)
+			return true
+		}
+	case 15:
+		if v, ok := value.(types.Code); ok {
+			t.User_id = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.User_id = types.NewCode(v)
 			return true
 		}
 	}
@@ -3565,6 +3648,8 @@ func (t *JobQueue) columnValue(column string) (interface{}, bool) {
 		return int(t.Notify_on), true
 	case "notification_language":
 		return t.Notification_language, true
+	case "user_id":
+		return t.User_id, true
 	}
 	return nil, false
 }
@@ -3631,6 +3716,7 @@ func (t *JobQueue) Init() {
 	t.Notification_email = *new(types.Text)
 	t.Notify_on = 0
 	t.Notification_language = *new(types.Code)
+	t.User_id = *new(types.Code)
 	t.applyDefaults()
 }
 
@@ -3680,6 +3766,7 @@ func (t *JobQueue) ToMap() map[string]interface{} {
 		"notification_language": t.Notification_language.String(),
 		// FlowField: number_of_entries
 		"number_of_entries": t.Number_of_entries,
+		"user_id":           t.User_id.String(),
 	}
 }
 
@@ -3800,6 +3887,11 @@ func (t *JobQueue) FromMap(data map[string]interface{}) {
 	if v, ok := data["notification_language"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Notification_language = types.NewCode(s)
+		}
+	}
+	if v, ok := data["user_id"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.User_id = types.NewCode(s)
 		}
 	}
 }
@@ -3963,6 +4055,17 @@ func (t *JobQueue) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  true,
 		},
+		{
+			No:         15,
+			Name:       "user_id",
+			Type:       tables.FieldTypeCode,
+			Length:     50,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+			ReadOnly:   true,
+		},
 	}
 }
 
@@ -4007,6 +4110,17 @@ func (t *JobQueue) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 200},
 			},
 			SearchTimeout: 0,
+		},
+		"user_id": {
+			Table:        "User",
+			Field:        "user_id",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "user_id", Width: 120},
+				{Source: "user_name", Width: 200},
+			},
+			SearchTimeout: 0,
+			NoValidate:    true,
 		},
 	}
 }

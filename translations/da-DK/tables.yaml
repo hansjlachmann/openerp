@@ -287,11 +287,19 @@ tables:
     caption: "Tilladelse"
     fields:
       role_id: "Rolle-id"
-      table_name: "Tabelnavn"
+      object_type: "Objekttype"
+      object_id: "Objekt-id"
+      table_name: "Objektnavn"
       can_read: "Læs"
       can_insert: "Indsæt"
       can_modify: "Rediger"
       can_delete: "Slet"
+      can_execute: "Udfør"
+    options:
+      object_type:
+        table_data: "Tabeldata"
+        report: "Rapport"
+        codeunit: "Codeunit"
 
   # Job Queue (Table 472)
   job_queue:
@@ -311,6 +319,7 @@ tables:
       notify_on: "Underret ved"
       notification_language: "Notifikationssprog"
       number_of_entries: "Antal poster"
+      user_id: "Bruger-id"
 
     # Option field values
     options:

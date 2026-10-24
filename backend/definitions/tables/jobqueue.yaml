@@ -100,3 +100,21 @@ table:
         - field: job_queue_no
           type: field
           value: no
+
+    # The user the job runs as: who set it up (stamped when a user saves it); a scheduled run
+    # checks this user's permission to run the codeunit
+    - name: user_id
+      no: 15
+      type: types.Code
+      db_name: user_id
+      length: 50
+      editable: false
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # a removed user stays on the entry; its run then fails
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200

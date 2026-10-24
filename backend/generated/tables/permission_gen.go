@@ -16,6 +16,9 @@
 //	OnValidate_Can_insert(rec *gtables.Permission) error
 //	OnValidate_Can_modify(rec *gtables.Permission) error
 //	OnValidate_Can_delete(rec *gtables.Permission) error
+//	OnValidate_Object_type(rec *gtables.Permission) error
+//	OnValidate_Object_id(rec *gtables.Permission) error
+//	OnValidate_Can_execute(rec *gtables.Permission) error
 
 package tables
 
@@ -23,6 +26,7 @@ import (
 	"database/sql"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -33,16 +37,40 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
 
+// ========================================
+// Option Field Type Definitions
+// ========================================
+
+// PermissionObject_type represents the object_type option field
+type PermissionObject_type int
+
+// String returns the text representation of PermissionObject_type
+func (o PermissionObject_type) String() string {
+	options := []string{"Table Data", "Report", "Codeunit"}
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the PermissionObject_type value is within valid range
+func (o PermissionObject_type) IsValid() bool {
+	return o >= 0 && o < 3
+}
+
 // Permission represents Table 2000000005: Permission
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterPermissionLogic.
 type Permission struct {
-	Role_id    types.Code `db:"role_id,pk"`
-	Table_name types.Code `db:"table_name,pk"`
-	Can_read   bool       `db:"can_read"`
-	Can_insert bool       `db:"can_insert"`
-	Can_modify bool       `db:"can_modify"`
-	Can_delete bool       `db:"can_delete"`
+	Role_id     types.Code            `db:"role_id,pk"`
+	Table_name  types.Code            `db:"table_name,pk"`
+	Can_read    bool                  `db:"can_read"`
+	Can_insert  bool                  `db:"can_insert"`
+	Can_modify  bool                  `db:"can_modify"`
+	Can_delete  bool                  `db:"can_delete"`
+	Object_type PermissionObject_type `db:"object_type"`
+	Object_id   int                   `db:"object_id"`
+	Can_execute bool                  `db:"can_execute"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -103,25 +131,46 @@ const PermissionTableID = 2000000005
 const PermissionTableName = "Permission"
 
 // ========================================
+// Option Field Namespaces
+// ========================================
+
+// Permission_Object_type provides named constants for the object_type option field (FieldName.OptionValue syntax)
+var Permission_Object_type = struct {
+	TableData PermissionObject_type
+	Report    PermissionObject_type
+	Codeunit  PermissionObject_type
+}{
+	TableData: 0,
+	Report:    1,
+	Codeunit:  2,
+}
+
+// ========================================
 // Field numbers (field IDs)
 // ========================================
 
 // Permission_FieldNo holds the field numbers of Permission (FieldNo):
 // Permission_FieldNo.Role_id is 1
 var Permission_FieldNo = struct {
-	Role_id    int
-	Table_name int
-	Can_read   int
-	Can_insert int
-	Can_modify int
-	Can_delete int
+	Role_id     int
+	Table_name  int
+	Can_read    int
+	Can_insert  int
+	Can_modify  int
+	Can_delete  int
+	Object_type int
+	Object_id   int
+	Can_execute int
 }{
-	Role_id:    1,
-	Table_name: 2,
-	Can_read:   3,
-	Can_insert: 4,
-	Can_modify: 5,
-	Can_delete: 6,
+	Role_id:     1,
+	Table_name:  2,
+	Can_read:    3,
+	Can_insert:  4,
+	Can_modify:  5,
+	Can_delete:  6,
+	Object_type: 7,
+	Object_id:   8,
+	Can_execute: 9,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -139,6 +188,12 @@ func (t *Permission) FieldNo(fieldName string) int {
 		return 5
 	case "can_delete":
 		return 6
+	case "object_type":
+		return 7
+	case "object_id":
+		return 8
+	case "can_execute":
+		return 9
 	}
 	return 0
 }
@@ -158,6 +213,12 @@ func (t *Permission) FieldName(fieldNo int) string {
 		return "can_modify"
 	case 6:
 		return "can_delete"
+	case 7:
+		return "object_type"
+	case 8:
+		return "object_id"
+	case 9:
+		return "can_execute"
 	}
 	return ""
 }
@@ -247,16 +308,19 @@ func (t *Permission) DeleteOrError(runTrigger bool) error {
 
 // Triggers of Permission: a business logic type implements the ones it needs
 type (
-	PermissionOnInsert              interface{ OnInsert(rec *Permission) error }
-	PermissionOnModify              interface{ OnModify(rec *Permission) error }
-	PermissionOnDelete              interface{ OnDelete(rec *Permission) error }
-	PermissionOnRename              interface{ OnRename(rec *Permission) error }
-	PermissionOnValidate_Role_id    interface{ OnValidate_Role_id(rec *Permission) error }
-	PermissionOnValidate_Table_name interface{ OnValidate_Table_name(rec *Permission) error }
-	PermissionOnValidate_Can_read   interface{ OnValidate_Can_read(rec *Permission) error }
-	PermissionOnValidate_Can_insert interface{ OnValidate_Can_insert(rec *Permission) error }
-	PermissionOnValidate_Can_modify interface{ OnValidate_Can_modify(rec *Permission) error }
-	PermissionOnValidate_Can_delete interface{ OnValidate_Can_delete(rec *Permission) error }
+	PermissionOnInsert               interface{ OnInsert(rec *Permission) error }
+	PermissionOnModify               interface{ OnModify(rec *Permission) error }
+	PermissionOnDelete               interface{ OnDelete(rec *Permission) error }
+	PermissionOnRename               interface{ OnRename(rec *Permission) error }
+	PermissionOnValidate_Role_id     interface{ OnValidate_Role_id(rec *Permission) error }
+	PermissionOnValidate_Table_name  interface{ OnValidate_Table_name(rec *Permission) error }
+	PermissionOnValidate_Can_read    interface{ OnValidate_Can_read(rec *Permission) error }
+	PermissionOnValidate_Can_insert  interface{ OnValidate_Can_insert(rec *Permission) error }
+	PermissionOnValidate_Can_modify  interface{ OnValidate_Can_modify(rec *Permission) error }
+	PermissionOnValidate_Can_delete  interface{ OnValidate_Can_delete(rec *Permission) error }
+	PermissionOnValidate_Object_type interface{ OnValidate_Object_type(rec *Permission) error }
+	PermissionOnValidate_Object_id   interface{ OnValidate_Object_id(rec *Permission) error }
+	PermissionOnValidate_Can_execute interface{ OnValidate_Can_execute(rec *Permission) error }
 )
 
 // permissionLogic is the registered business logic of Permission, in
@@ -298,6 +362,12 @@ func permissionTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(PermissionOnValidate_Can_modify)
 	case "OnValidate_Can_delete":
 		_, ok = logic.(PermissionOnValidate_Can_delete)
+	case "OnValidate_Object_type":
+		_, ok = logic.(PermissionOnValidate_Object_type)
+	case "OnValidate_Object_id":
+		_, ok = logic.(PermissionOnValidate_Object_id)
+	case "OnValidate_Can_execute":
+		_, ok = logic.(PermissionOnValidate_Can_execute)
 	default:
 		return false, false
 	}
@@ -417,6 +487,9 @@ func GetPermissionTableSchema() string {
 		can_insert INTEGER,
 		can_modify INTEGER,
 		can_delete INTEGER,
+		object_type INTEGER CHECK (object_type >= 0 AND object_type <= 2),
+		object_id INTEGER,
+		can_execute INTEGER,
 		PRIMARY KEY (role_id, table_name)
 	`
 }
@@ -430,6 +503,9 @@ func GetPermissionPostgresTableSchema() string {
 		can_insert BOOLEAN,
 		can_modify BOOLEAN,
 		can_delete BOOLEAN,
+		object_type INTEGER CHECK (object_type >= 0 AND object_type <= 2),
+		object_id INTEGER,
+		can_execute BOOLEAN,
 		PRIMARY KEY (role_id, table_name)
 	`
 }
@@ -448,6 +524,12 @@ func (t *Permission) GetCaption(language string) string {
 func (t *Permission) GetFieldCaption(fieldName, language string) string {
 	ts := i18n.GetInstance()
 	return ts.FieldCaption("Permission", fieldName, language)
+}
+
+// GetOptionCaption returns the option field value caption in the specified language
+func (t *Permission) GetOptionCaption(fieldName, optionValue, language string) string {
+	ts := i18n.GetInstance()
+	return ts.OptionCaption("Permission", fieldName, optionValue, language)
 }
 
 // CreateTable creates the Permission table for the specified company (SQLite)
@@ -559,6 +641,9 @@ func (t *Permission) StoreOldValues() {
 	t.oldValues["can_insert"] = t.Can_insert
 	t.oldValues["can_modify"] = t.Can_modify
 	t.oldValues["can_delete"] = t.Can_delete
+	t.oldValues["object_type"] = t.Object_type
+	t.oldValues["object_id"] = t.Object_id
+	t.oldValues["can_execute"] = t.Can_execute
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -590,6 +675,15 @@ func (t *Permission) XRec() *Permission {
 	}
 	if v, ok := t.oldValues["can_delete"].(bool); ok {
 		x.Can_delete = v
+	}
+	if v, ok := t.oldValues["object_type"].(PermissionObject_type); ok {
+		x.Object_type = v
+	}
+	if v, ok := t.oldValues["object_id"].(int); ok {
+		x.Object_id = v
+	}
+	if v, ok := t.oldValues["can_execute"].(bool); ok {
+		x.Can_execute = v
 	}
 	return x
 }
@@ -662,6 +756,9 @@ func (t *Permission) GetByPK(role_id types.Code, table_name types.Code) bool {
 	var can_insertBool sql.NullBool
 	var can_modifyBool sql.NullBool
 	var can_deleteBool sql.NullBool
+	var object_typeInt int
+	var object_idVal int
+	var can_executeBool sql.NullBool
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -670,7 +767,7 @@ func (t *Permission) GetByPK(role_id types.Code, table_name types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE 1=1 AND role_id = ? AND table_name = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE 1=1 AND role_id = ? AND table_name = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -683,6 +780,9 @@ func (t *Permission) GetByPK(role_id types.Code, table_name types.Code) bool {
 		&can_insertBool,
 		&can_modifyBool,
 		&can_deleteBool,
+		&object_typeInt,
+		&object_idVal,
+		&can_executeBool,
 	)
 
 	if err != nil {
@@ -702,6 +802,9 @@ func (t *Permission) GetByPK(role_id types.Code, table_name types.Code) bool {
 	t.Can_insert = can_insertBool.Bool
 	t.Can_modify = can_modifyBool.Bool
 	t.Can_delete = can_deleteBool.Bool
+	t.Object_type = PermissionObject_type(object_typeInt)
+	t.Object_id = object_idVal
+	t.Can_execute = can_executeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -730,11 +833,14 @@ func (t *Permission) Insert(runTrigger bool) bool {
 		t.Can_insert,
 		t.Can_modify,
 		t.Can_delete,
+		t.Object_type,
+		t.Object_id,
+		t.Can_execute,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (role_id, table_name, can_read, can_insert, can_modify, can_delete) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (role_id, table_name) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (role_id, table_name) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -776,10 +882,13 @@ func (t *Permission) InsertAll(records []*Permission, runTrigger bool) error {
 			r.Can_insert,
 			r.Can_modify,
 			r.Can_delete,
+			r.Object_type,
+			r.Object_id,
+			r.Can_execute,
 		})
 	}
 	tableName := PermissionTableName
-	columns := []string{"role_id", "table_name", "can_read", "can_insert", "can_modify", "can_delete"}
+	columns := []string{"role_id", "table_name", "can_read", "can_insert", "can_modify", "can_delete", "object_type", "object_id", "can_execute"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -846,6 +955,18 @@ func (t *Permission) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "can_delete = ?")
 			values = append(values, t.Can_delete)
 		}
+		if t.hasFieldChanged("object_type") {
+			setClauses = append(setClauses, "object_type = ?")
+			values = append(values, t.Object_type)
+		}
+		if t.hasFieldChanged("object_id") {
+			setClauses = append(setClauses, "object_id = ?")
+			values = append(values, t.Object_id)
+		}
+		if t.hasFieldChanged("can_execute") {
+			setClauses = append(setClauses, "can_execute = ?")
+			values = append(values, t.Can_execute)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -861,6 +982,12 @@ func (t *Permission) Modify(runTrigger bool) bool {
 		values = append(values, t.Can_modify)
 		setClauses = append(setClauses, "can_delete = ?")
 		values = append(values, t.Can_delete)
+		setClauses = append(setClauses, "object_type = ?")
+		values = append(values, t.Object_type)
+		setClauses = append(setClauses, "object_id = ?")
+		values = append(values, t.Object_id)
+		setClauses = append(setClauses, "can_execute = ?")
+		values = append(values, t.Can_execute)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -936,6 +1063,20 @@ func (t *Permission) hasFieldChanged(fieldName string) bool {
 	case "can_delete":
 		if old, ok := oldValue.(bool); ok {
 			return t.Can_delete != old
+		}
+		return true // Type mismatch, assume changed
+	case "object_type":
+		if old, ok := oldValue.(PermissionObject_type); ok {
+			return t.Object_type != old
+		}
+	case "object_id":
+		if old, ok := oldValue.(int); ok {
+			return t.Object_id != old
+		}
+		return true // Type mismatch, assume changed
+	case "can_execute":
+		if old, ok := oldValue.(bool); ok {
+			return t.Can_execute != old
 		}
 		return true // Type mismatch, assume changed
 	}
@@ -1151,6 +1292,12 @@ func (t *Permission) columnName(fieldName string) (string, bool) {
 		return "can_modify", true
 	case strings.ToLower("can_delete"):
 		return "can_delete", true
+	case strings.ToLower("object_type"):
+		return "object_type", true
+	case strings.ToLower("object_id"):
+		return "object_id", true
+	case strings.ToLower("can_execute"):
+		return "can_execute", true
 	}
 	return "", false
 }
@@ -1411,7 +1558,7 @@ func (t *Permission) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY role_id, table_name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY role_id, table_name ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1422,6 +1569,8 @@ func (t *Permission) FindFirst() bool {
 	var can_insertBool sql.NullBool
 	var can_modifyBool sql.NullBool
 	var can_deleteBool sql.NullBool
+	var object_typeInt int
+	var can_executeBool sql.NullBool
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&role_idNull,
@@ -1430,6 +1579,9 @@ func (t *Permission) FindFirst() bool {
 		&can_insertBool,
 		&can_modifyBool,
 		&can_deleteBool,
+		&object_typeInt,
+		&t.Object_id,
+		&can_executeBool,
 	)
 
 	if err != nil {
@@ -1447,6 +1599,8 @@ func (t *Permission) FindFirst() bool {
 	t.Can_insert = can_insertBool.Bool
 	t.Can_modify = can_modifyBool.Bool
 	t.Can_delete = can_deleteBool.Bool
+	t.Object_type = PermissionObject_type(object_typeInt)
+	t.Can_execute = can_executeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1461,7 +1615,7 @@ func (t *Permission) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY role_id, table_name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY role_id, table_name DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1472,6 +1626,8 @@ func (t *Permission) FindLast() bool {
 	var can_insertBool sql.NullBool
 	var can_modifyBool sql.NullBool
 	var can_deleteBool sql.NullBool
+	var object_typeInt int
+	var can_executeBool sql.NullBool
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&role_idNull,
@@ -1480,6 +1636,9 @@ func (t *Permission) FindLast() bool {
 		&can_insertBool,
 		&can_modifyBool,
 		&can_deleteBool,
+		&object_typeInt,
+		&t.Object_id,
+		&can_executeBool,
 	)
 
 	if err != nil {
@@ -1497,6 +1656,8 @@ func (t *Permission) FindLast() bool {
 	t.Can_insert = can_insertBool.Bool
 	t.Can_modify = can_modifyBool.Bool
 	t.Can_delete = can_deleteBool.Bool
+	t.Object_type = PermissionObject_type(object_typeInt)
+	t.Can_execute = can_executeBool.Bool
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1545,7 +1706,7 @@ func (t *Permission) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1620,6 +1781,8 @@ func (t *Permission) Next(steps ...int) bool {
 		var can_insertBool sql.NullBool
 		var can_modifyBool sql.NullBool
 		var can_deleteBool sql.NullBool
+		var object_typeInt int
+		var can_executeBool sql.NullBool
 
 		err := t.currentRows.Scan(
 			&role_idNull,
@@ -1628,6 +1791,9 @@ func (t *Permission) Next(steps ...int) bool {
 			&can_insertBool,
 			&can_modifyBool,
 			&can_deleteBool,
+			&object_typeInt,
+			&t.Object_id,
+			&can_executeBool,
 		)
 
 		if err != nil {
@@ -1644,6 +1810,8 @@ func (t *Permission) Next(steps ...int) bool {
 		t.Can_insert = can_insertBool.Bool
 		t.Can_modify = can_modifyBool.Bool
 		t.Can_delete = can_deleteBool.Bool
+		t.Object_type = PermissionObject_type(object_typeInt)
+		t.Can_execute = can_executeBool.Bool
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -1693,7 +1861,7 @@ func (t *Permission) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1721,6 +1889,8 @@ func (t *Permission) FindSetBuffered() bool {
 		var can_insertBool sql.NullBool
 		var can_modifyBool sql.NullBool
 		var can_deleteBool sql.NullBool
+		var object_typeInt int
+		var can_executeBool sql.NullBool
 
 		err := rows.Scan(
 			&role_idNull,
@@ -1729,6 +1899,9 @@ func (t *Permission) FindSetBuffered() bool {
 			&can_insertBool,
 			&can_modifyBool,
 			&can_deleteBool,
+			&object_typeInt,
+			&record.Object_id,
+			&can_executeBool,
 		)
 
 		if err != nil {
@@ -1743,6 +1916,8 @@ func (t *Permission) FindSetBuffered() bool {
 		record.Can_insert = can_insertBool.Bool
 		record.Can_modify = can_modifyBool.Bool
 		record.Can_delete = can_deleteBool.Bool
+		record.Object_type = PermissionObject_type(object_typeInt)
+		record.Can_execute = can_executeBool.Bool
 
 		// Store old values
 		record.StoreOldValues()
@@ -1777,6 +1952,9 @@ func (t *Permission) copyFromBuffered(record *Permission) {
 	t.Can_insert = record.Can_insert
 	t.Can_modify = record.Can_modify
 	t.Can_delete = record.Can_delete
+	t.Object_type = record.Object_type
+	t.Object_id = record.Object_id
+	t.Can_execute = record.Can_execute
 	t.StoreOldValues()
 }
 
@@ -2027,6 +2205,101 @@ func (t *Permission) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "object_type":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(PermissionObject_type); ok {
+			t.Object_type = v
+			// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 3 {
+				return fmt.Errorf("invalid option value %d for field object_type (valid range: 0-%d)", v, 3-1)
+			}
+			t.Object_type = PermissionObject_type(v)
+			// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 3 {
+				return fmt.Errorf("invalid option value %d for field object_type (valid range: 0-%d)", intVal, 3-1)
+			}
+			t.Object_type = PermissionObject_type(intVal)
+			// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			if v == "" {
+				// Empty string defaults to first option (behavior)
+				t.Object_type = 0
+			} else {
+				options := []string{"Table Data", "Report", "Codeunit"}
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Object_type = PermissionObject_type(i)
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field object_type (valid options: %v)", v, options)
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid type for field object_type (expected PermissionObject_type, int, or string)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(PermissionOnValidate_Object_type); ok {
+				if err := trg.OnValidate_Object_type(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "object_id":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Object_id = v
+		case float64:
+			t.Object_id = int(v)
+		case string:
+			if v == "" {
+				t.Object_id = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Object_id = i
+			} else {
+				return fmt.Errorf("invalid integer value for field object_id: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field object_id")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(PermissionOnValidate_Object_id); ok {
+				if err := trg.OnValidate_Object_id(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "can_execute":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Can_execute = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Can_execute = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field can_execute")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(PermissionOnValidate_Can_execute); ok {
+				if err := trg.OnValidate_Can_execute(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2051,6 +2324,12 @@ func (t *Permission) FieldValue(no int) (any, bool) {
 		return t.Can_modify, true
 	case 6:
 		return t.Can_delete, true
+	case 7:
+		return t.Object_type, true
+	case 8:
+		return t.Object_id, true
+	case 9:
+		return t.Can_execute, true
 	}
 	return nil, false
 }
@@ -2102,6 +2381,21 @@ func (t *Permission) SetFieldValue(no int, value any) bool {
 	case 6:
 		if v, ok := value.(bool); ok {
 			t.Can_delete = v
+			return true
+		}
+	case 7:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 3 {
+			t.Object_type = PermissionObject_type(i)
+			return true
+		}
+	case 8:
+		if v, ok := value.(int); ok {
+			t.Object_id = v
+			return true
+		}
+	case 9:
+		if v, ok := value.(bool); ok {
+			t.Can_execute = v
 			return true
 		}
 	}
@@ -2172,8 +2466,29 @@ func (t *Permission) FieldError(fieldName string, text string) error {
 // CalcSums sets each of the decimal or integer fields to its total over the records matching
 // the current filters (CalcSums)
 func (t *Permission) CalcSums(fieldNames ...string) error {
-	if len(fieldNames) > 0 {
-		return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Permission", fieldNames[0])
+	tableName := PermissionTableName
+	where, args := t.buildWhereClause()
+	for _, name := range fieldNames {
+		var column string
+		switch strings.ToLower(name) {
+		case "object_id":
+			column = "object_id"
+		default:
+			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Permission", name)
+		}
+		query := t.convertPlaceholders(fmt.Sprintf(`SELECT CAST(COALESCE(SUM(%s), 0) AS TEXT) FROM "%s" WHERE %s`, column, tableName, where), len(args))
+		var total string
+		if err := t.exec().QueryRow(query, args...).Scan(&total); err != nil {
+			return fmt.Errorf("CalcSums Permission.%s: %w", column, err)
+		}
+		switch column {
+		case "object_id":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Permission.%s: %w", column, err)
+			}
+			t.Object_id = int(f)
+		}
 	}
 	return nil
 }
@@ -2516,6 +2831,12 @@ func (t *Permission) columnValue(column string) (interface{}, bool) {
 		return t.Can_modify, true
 	case "can_delete":
 		return t.Can_delete, true
+	case "object_type":
+		return int(t.Object_type), true
+	case "object_id":
+		return t.Object_id, true
+	case "can_execute":
+		return t.Can_execute, true
 	}
 	return nil, false
 }
@@ -2578,6 +2899,9 @@ func (t *Permission) Init() {
 	t.Can_insert = *new(bool)
 	t.Can_modify = *new(bool)
 	t.Can_delete = *new(bool)
+	t.Object_type = 0
+	t.Object_id = *new(int)
+	t.Can_execute = *new(bool)
 	t.applyDefaults()
 }
 
@@ -2612,12 +2936,15 @@ func (t *Permission) ClearFilters() {
 // ToMap converts the current record to a map for JSON serialization
 func (t *Permission) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"role_id":    t.Role_id.String(),
-		"table_name": t.Table_name.String(),
-		"can_read":   t.Can_read,
-		"can_insert": t.Can_insert,
-		"can_modify": t.Can_modify,
-		"can_delete": t.Can_delete,
+		"role_id":     t.Role_id.String(),
+		"table_name":  t.Table_name.String(),
+		"can_read":    t.Can_read,
+		"can_insert":  t.Can_insert,
+		"can_modify":  t.Can_modify,
+		"can_delete":  t.Can_delete,
+		"object_type": int(t.Object_type),
+		"object_id":   t.Object_id,
+		"can_execute": t.Can_execute,
 	}
 }
 
@@ -2651,6 +2978,41 @@ func (t *Permission) FromMap(data map[string]interface{}) {
 	if v, ok := data["can_delete"]; ok && v != nil {
 		if b, ok := v.(bool); ok {
 			t.Can_delete = b
+		}
+	}
+	if v, ok := data["object_type"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Object_type = PermissionObject_type(int(val))
+		case int:
+			t.Object_type = PermissionObject_type(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"Table Data", "Report", "Codeunit"}
+			for i, opt := range options {
+				if opt == val {
+					t.Object_type = PermissionObject_type(i)
+					break
+				}
+			}
+		}
+	}
+	if v, ok := data["object_id"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Object_id = int(val)
+		case int:
+			t.Object_id = val
+		case string:
+			// a record key from a URL or a list selection
+			if n, err := strconv.Atoi(val); err == nil {
+				t.Object_id = n
+			}
+		}
+	}
+	if v, ok := data["can_execute"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Can_execute = b
 		}
 	}
 }
@@ -2734,6 +3096,36 @@ func (t *Permission) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:         7,
+			Name:       "object_type",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         8,
+			Name:       "object_id",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         9,
+			Name:       "can_execute",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -2757,7 +3149,9 @@ func (t *Permission) GetFlowFields() []string {
 
 // GetOptionFields returns Option field names mapped to their option values
 func (t *Permission) GetOptionFields() map[string][]string {
-	return map[string][]string{}
+	return map[string][]string{
+		"object_type": {"Table Data", "Report", "Codeunit"},
+	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)

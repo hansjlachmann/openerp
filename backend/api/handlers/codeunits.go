@@ -10,6 +10,7 @@ import (
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
@@ -43,6 +44,7 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 
 	// Set goroutine context for sync codeunit execution
 	fcodeunits.SetCurrentContext(sess.GetUserID(), sess.GetUserName(), company, language)
+	fcodeunits.SetCurrentAccess(sess)
 	defer fcodeunits.ClearCurrentContext()
 
 	// Parse request body
@@ -64,6 +66,11 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 	factory, ok := codeunits.Get(req.CodeunitID)
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
+	}
+	// Execute permission on the codeunit (classic object permissions)
+	if !sess.CanExecute(session.ObjectCodeunit, req.CodeunitID) {
+		return c.Status(fiber.StatusForbidden).JSON(apitypes.NewErrorResponse(
+			apperrors.NoPermissionCodeunit(req.CodeunitID, codeunits.List()[req.CodeunitID]).Message(language)))
 	}
 
 	// Create codeunit instance

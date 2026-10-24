@@ -19,12 +19,25 @@ const (
 	PermDelete PermissionOperation = "delete"
 )
 
-// TablePermission represents the effective permissions for a single table
+// TablePermission represents the effective permissions for a single object: a table (Read,
+// Insert, Modify, Delete) or a codeunit or report (Execute; key ObjectKey)
 type TablePermission struct {
-	Read   bool
-	Insert bool
-	Modify bool
-	Delete bool
+	Read    bool
+	Insert  bool
+	Modify  bool
+	Delete  bool
+	Execute bool
+}
+
+// Object types of execute permissions (Permission.object_type Report, Codeunit)
+const (
+	ObjectReport   = "REPORT"
+	ObjectCodeunit = "CODEUNIT"
+)
+
+// ObjectKey is the Permission key of a codeunit or report: "CODEUNIT 6", "REPORT 93"
+func ObjectKey(objectType string, id int) string {
+	return fmt.Sprintf("%s %d", strings.ToUpper(objectType), id)
 }
 
 // Session represents a user session (similar to SESSION variable)
@@ -158,6 +171,16 @@ func (s *Session) HasPermission(tableName string, op PermissionOperation) bool {
 	return false
 }
 
+// CanExecute reports whether the user may run a codeunit or report (Execute permission on it,
+// classic object permissions). SUPER may run everything, and so may a user without roles
+// (permission system not configured for the user).
+func (s *Session) CanExecute(objectType string, id int) bool {
+	if s.IsSuper || !s.HasRoles {
+		return true
+	}
+	return s.Permissions[ObjectKey(objectType, id)].Execute
+}
+
 // ========================================
 // Global Session Management
 // ========================================
@@ -253,11 +276,12 @@ func (s *Session) GetExecutor() database.Executor {
 // This is the recommended way to use transactions - ensures cleanup even on errors
 //
 // Example:
-//   err := sess.WithTransaction(func() error {
-//       customer.Insert(false)
-//       ledgerEntry.Insert(false)
-//       return nil  // Commits on success
-//   })
+//
+//	err := sess.WithTransaction(func() error {
+//	    customer.Insert(false)
+//	    ledgerEntry.Insert(false)
+//	    return nil  // Commits on success
+//	})
 func (s *Session) WithTransaction(fn func() error) error {
 	// Begin transaction
 	if err := s.BeginTransaction(); err != nil {

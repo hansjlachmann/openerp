@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Modal from '../Modal.svelte';
 	import { goto } from '$app/navigation';
 	import type { PageDefinition, Field, FieldState, Action } from '$lib/types/pages';
@@ -258,6 +259,7 @@
 				if (didSave) {
 					// Update lastSavedRecord after successful save
 					lastSavedRecord = deepCopy(record);
+					savedRecord = deepCopy($state.snapshot(record));
 					// The header changed: the subpages reload their lines (the server may have
 					// changed them, e.g. a new discount)
 					linesRefresh++;
@@ -470,16 +472,28 @@
 	// ---- Subpages: list pages in the card, tied to its record (section.subpage.link) ----
 	const hasSubpages = $derived((page.page.layout.sections ?? []).some((s) => !!s.subpage));
 
-	// The link of a subpage for the current record: subpage field → the card field's value
+	// The record as it is in the database (loaded, navigated to, inserted or saved): the
+	// subpages link to it, not to the values being typed — typing a new record's No. would
+	// otherwise show lines of a record that does not exist and reload them per keystroke
+	let savedRecord = $state<Record<string, any> | null>(null);
+	$effect.pre(() => {
+		// Only a new record object from the parent (typing changes fields of the same object)
+		const current = record;
+		untrack(() => {
+			savedRecord = checkIsNewRecord() ? null : deepCopy($state.snapshot(current));
+		});
+	});
+
+	// The link of a subpage for the saved record: subpage field → the card field's value
 	function linkValues(sub: Subpage): Record<string, any> {
-		return Object.fromEntries(Object.entries(sub.link).map(([field, cardField]) => [field, record?.[cardField]]));
+		return Object.fromEntries(Object.entries(sub.link).map(([field, cardField]) => [field, savedRecord?.[cardField]]));
 	}
 	function linkFilters(sub: Subpage): FixedFilter[] {
 		return Object.entries(linkValues(sub)).map(([field, value]) => ({ field, value }));
 	}
 	// Lines need a saved card record with its key
 	function canShowLines(sub: Subpage): boolean {
-		return !checkIsNewRecord() && Object.values(linkValues(sub)).every((v) => v !== undefined && v !== null && v !== '');
+		return !!savedRecord && Object.values(linkValues(sub)).every((v) => v !== undefined && v !== null && v !== '');
 	}
 
 	// Parts of the card: its fields, then each subpage. F6 / Shift+F6 and (cards with subpages)
