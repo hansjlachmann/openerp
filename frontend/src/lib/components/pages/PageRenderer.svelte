@@ -44,6 +44,9 @@
 		embedded?: boolean;
 		initialFilters?: import('$lib/types/api').TableFilter[];
 		lookupMode?: boolean;
+		// Embedded but editable: a page's own lookup (a journal's template or batch list), where
+		// the user may also add and change records, as on the page itself
+		editableLookup?: boolean;
 		onclose?: (action: 'OK' | 'LookupOK' | 'Cancel', key?: string, record?: Record<string, any>) => void; // key: the picked record's id
 		// A subpage in a card: a list page tied to the card's record — fixed filters (the link),
 		// new records get the link values; Esc in navigation mode goes back to the card (onexit);
@@ -73,6 +76,7 @@
 		embedded = false,
 		initialFilters,
 		lookupMode = false,
+		editableLookup = false,
 		onclose,
 		subpage = false,
 		fixedFilters = [],
@@ -133,6 +137,17 @@
 		const params = { ...pageParams, [param]: value };
 		if (embedded || subpage) return;
 		goto(pageUrlWith(params), { replaceState: true });
+	}
+
+	// The first header field has the focus when the page opens (a journal: Batch Name, so
+	// Alt+↓ opens the batches at once); the list never takes it from there
+	function focusOnOpen(node: HTMLInputElement, first: boolean) {
+		if (!first) return;
+		requestAnimationFrame(() => {
+			if (pickRequest) return;
+			node.focus();
+			node.select();
+		});
 	}
 
 	// A header field's lookup: its page filtered to the list's values of lookup_filters
@@ -267,7 +282,7 @@
 
 			page = result.data;
 			// Opened from a codeunit: a read-only list (the codeunit waits for the user)
-			if (embedded && page) page = { ...page, page: { ...page.page, editable: false } };
+			if (embedded && !editableLookup && page) page = { ...page, page: { ...page.page, editable: false } };
 			captions = result.captions?.fields || {};
 			fieldTypes = result.captions?.field_types || {};
 			navigation = result.navigation || {};
@@ -910,6 +925,7 @@
 								<input
 									class="header-input"
 									data-header-param={header.param}
+									use:focusOnOpen={header === page.page.header_fields[0]}
 									value={pageParams[header.param] ?? ''}
 									autocomplete="off"
 									onchange={(e) => handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value)}
@@ -982,6 +998,7 @@
 				embedded={true}
 				initialFilters={request.filters}
 				lookupMode={true}
+				editableLookup={true}
 				onclose={(action, _key, picked) => handlePick(action, picked)}
 			/>
 		</div>
