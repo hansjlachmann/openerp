@@ -22,7 +22,9 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/jobqueue"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/mail"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 
@@ -191,14 +193,32 @@ func isDue(nextStart, now types.DateTime) bool {
 
 // runJob executes one job's codeunit and applies the outcome (reschedule + notify).
 func (s *Scheduler) runJob(company string, job *gtables.JobQueue) {
-	// Codeunits read the ambient context for company/user; a scheduled run has no
-	// user, so we identify it as SCHEDULER (stamped onto Job_Queue_Entry.user_id).
-	fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
+	// A job runs as the user who set it up (Job Queue User ID), with that user's permissions:
+	// without Execute permission on the codeunit the run fails (the job goes to Error). A job
+	// saved before jobs had a user runs as SCHEDULER, unchecked.
+	start := time.Now()
+	var runErr error
+	userID := job.User_id.String()
+	if userID == "" {
+		fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
+	} else {
+		access := &session.Session{UserID: userID, Company: company}
+		access.SetPermissions(session.LoadPermissions(s.db, s.dbType, userID, company))
+		fcodeunits.SetCurrentContext(userID, userID, company, "en-US")
+		fcodeunits.SetCurrentAccess(access)
+		if !access.CanExecute(session.ObjectCodeunit, job.Object_id_to_run) {
+			runErr = errors.New(apperrors.JobNoPermission(userID, job.Object_id_to_run).Message("en-US"))
+		}
+	}
 	defer fcodeunits.ClearCurrentContext()
 
-	start := time.Now()
-	runErr := s.execute(company, job)
+	if runErr == nil {
+		runErr = s.execute(company, job)
+	}
 	end := time.Now()
+	// Rescheduling is the scheduler's own work: saving the job must not check the job user's
+	// permissions again (a user without Execute could otherwise not get the job set to Error)
+	fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
 
 	s.finish(company, job.No.String(), runErr)
 	// The notification reports the job as saved after the run (status, next start)

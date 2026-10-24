@@ -34,6 +34,9 @@ page:
           - source: status
             editable: true
 
+          - source: user_id
+            editable: false
+
       - name: Recurrence
         caption: Recurrence
         fields:

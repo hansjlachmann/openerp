@@ -1,33 +1,42 @@
 package tables
 
 import (
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// permissionLogic is the business logic of table 2000000005 Permission.
-// Add a trigger when it is needed: the available triggers are listed at the
-// top of generated/tables/permission_gen.go. The field rules of the definition
-// (required, length, range) are checked after OnInsert and OnModify.
+// permissionLogic is the business logic of table 2000000005 Permission: a row gives a role
+// rights on table data (Read, Insert, Modify, Delete) or Execute on a report or codeunit. The
+// key of a report or codeunit row is "REPORT 93" / "CODEUNIT 6" (session.ObjectKey), filled
+// from Object Type and Object ID.
 type permissionLogic struct{}
 
 func init() { gtables.RegisterPermissionLogic(permissionLogic{}) }
 
-// OnInsert runs before a new record is inserted
+// OnInsert fills the key of a report or codeunit row
 func (permissionLogic) OnInsert(rec *gtables.Permission) error {
+	setPermissionObjectKey(rec)
 	return nil
 }
 
-// OnModify runs before a record is modified
-func (permissionLogic) OnModify(rec *gtables.Permission) error {
+// OnValidate_Object_type: a report or codeunit row is keyed by its object
+func (permissionLogic) OnValidate_Object_type(rec *gtables.Permission) error {
+	setPermissionObjectKey(rec)
 	return nil
 }
 
-// OnDelete runs before a record is deleted
-func (permissionLogic) OnDelete(rec *gtables.Permission) error {
+// OnValidate_Object_id: a report or codeunit row is keyed by its object
+func (permissionLogic) OnValidate_Object_id(rec *gtables.Permission) error {
+	setPermissionObjectKey(rec)
 	return nil
 }
 
-// OnRename runs before a primary key field is changed (rec.OldValue has the old value)
-func (permissionLogic) OnRename(rec *gtables.Permission) error {
-	return nil
+func setPermissionObjectKey(rec *gtables.Permission) {
+	switch rec.Object_type {
+	case gtables.Permission_Object_type.Report:
+		rec.Table_name = types.NewCode(session.ObjectKey(session.ObjectReport, rec.Object_id))
+	case gtables.Permission_Object_type.Codeunit:
+		rec.Table_name = types.NewCode(session.ObjectKey(session.ObjectCodeunit, rec.Object_id))
+	}
 }

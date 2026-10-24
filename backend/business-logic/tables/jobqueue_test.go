@@ -1,11 +1,14 @@
 package tables
 
 import (
-	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
+	"strings"
 	"testing"
 
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
+	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
 func TestJobQueueNotificationEmail(t *testing.T) {
@@ -53,5 +56,75 @@ func TestJobQueueNotificationLanguage(t *testing.T) {
 	}
 	if err := jq.ValidateField("notification_language", "XX-XX"); err == nil {
 		t.Error("unknown language accepted")
+	}
+}
+
+// A Job Queue entry runs as the user who saved it: saving stamps the user and needs Execute
+// permission on its codeunit; without a user context (scheduler, startup) nothing is stamped
+func TestJobQueueUser(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&gtables.JobQueue{}).CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	newJob := func(no string, codeunit int) *gtables.JobQueue {
+		jq := &gtables.JobQueue{}
+		jq.InitWithDBType(db, "TEST", database.DBTypeSQLite)
+		jq.No = types.NewCode(no)
+		jq.Object_id_to_run = codeunit
+		return jq
+	}
+
+	if jq := newJob("J0", 6); !jq.Insert(true) || jq.User_id != "" {
+		t.Fatalf("without a user context: inserted with user %q (%v)", jq.User_id, jq.TriggerError())
+	}
+
+	reader := &session.Session{UserID: "READER1", Company: "TEST"}
+	reader.SetPermissions(true, false, map[string]session.TablePermission{"CODEUNIT 6": {Execute: true}})
+	fcodeunits.SetCurrentContext("READER1", "READER1", "TEST", "en-US")
+	fcodeunits.SetCurrentAccess(reader)
+	t.Cleanup(fcodeunits.ClearCurrentContext)
+
+	jq := newJob("J1", 6)
+	if !jq.Insert(true) {
+		t.Fatalf("insert with Execute: %v", jq.TriggerError())
+	}
+	if jq.User_id != "READER1" {
+		t.Errorf("User ID = %q, want READER1", jq.User_id)
+	}
+	if denied := newJob("J2", 7); denied.Insert(true) {
+		t.Error("insert without Execute on codeunit 7 was allowed")
+	} else if msg := denied.TriggerError().Error(); !strings.Contains(msg, "READER1") || !strings.Contains(msg, "codeunit 7") {
+		t.Errorf("refusal message %q", msg)
+	}
+	jq.Object_id_to_run = 7
+	if jq.Modify(true) {
+		t.Error("changing the codeunit to one without Execute was allowed")
+	}
+}
+
+// A report or codeunit Permission row is keyed by its object
+func TestPermissionObjectKey(t *testing.T) {
+	var perm gtables.Permission
+	perm.InitWithDBType(nil, "", database.DBTypeSQLite)
+	if err := perm.ValidateField("object_type", gtables.Permission_Object_type.Codeunit); err != nil {
+		t.Fatal(err)
+	}
+	if err := perm.ValidateField("object_id", 6); err != nil {
+		t.Fatal(err)
+	}
+	if perm.Table_name != "CODEUNIT 6" {
+		t.Errorf("codeunit row key = %q", perm.Table_name)
+	}
+	if err := perm.ValidateField("object_type", gtables.Permission_Object_type.Report); err != nil {
+		t.Fatal(err)
+	}
+	if perm.Table_name != "REPORT 6" {
+		t.Errorf("report row key = %q", perm.Table_name)
+	}
+	var data gtables.Permission
+	data.InitWithDBType(nil, "", database.DBTypeSQLite)
+	data.Table_name = types.NewCode("CUSTOMER")
+	if err := data.ValidateField("object_id", 0); err != nil || data.Table_name != "CUSTOMER" {
+		t.Errorf("table data row key changed to %q (%v)", data.Table_name, err)
 	}
 }

@@ -14,6 +14,12 @@ page:
           width: 150
           table_relation: User_Role
 
+        - source: object_type
+          width: 120
+
+        - source: object_id
+          width: 100
+
         - source: table_name
           width: 200
 
@@ -27,6 +33,9 @@ page:
           width: 80
 
         - source: can_delete
+          width: 80
+
+        - source: can_execute
           width: 80
 
   actions:

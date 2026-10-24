@@ -1072,7 +1072,7 @@ func (t *User) renameReferences(field string, oldValue, newValue interface{}) er
 		condValue  int
 	}
 	references := map[string][]reference{
-		"user_id": {{"Bank_Account_Ledger_Entry", false, "user_id", "", 0}, {"Check_Ledger_Entry", false, "user_id", "", 0}, {"Customer Ledger Entry", false, "user_id", "", 0}, {"FA_Ledger_Entry", false, "user_id", "", 0}, {"G_L_Entry", false, "user_id", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "user_id", "", 0}, {"Maintenance_Ledger_Entry", false, "user_id", "", 0}, {"User_Personalization", true, "user_id", "", 0}, {"User_Theme", true, "user_id", "", 0}, {"User_Member", true, "user_id", "", 0}, {"Vendor Ledger Entry", false, "user_id", "", 0}},
+		"user_id": {{"Bank_Account_Ledger_Entry", false, "user_id", "", 0}, {"Check_Ledger_Entry", false, "user_id", "", 0}, {"Customer Ledger Entry", false, "user_id", "", 0}, {"FA_Ledger_Entry", false, "user_id", "", 0}, {"G_L_Entry", false, "user_id", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "user_id", "", 0}, {"Job_Queue", false, "user_id", "", 0}, {"Maintenance_Ledger_Entry", false, "user_id", "", 0}, {"User_Personalization", true, "user_id", "", 0}, {"User_Theme", true, "user_id", "", 0}, {"User_Member", true, "user_id", "", 0}, {"Vendor Ledger Entry", false, "user_id", "", 0}},
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 )
@@ -79,5 +80,21 @@ func mapRouteToOperation(c *fiber.Ctx) session.PermissionOperation {
 		return session.PermDelete
 	default:
 		return ""
+	}
+}
+
+// UserContext gives the request's code the user: table triggers and codeunits read the user
+// (system.UserId), the company, the language and the user's permissions (CanExecute) from the
+// goroutine context while the request runs
+func UserContext() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		sess := getSessionFromLocals(c)
+		if sess == nil {
+			return c.Next()
+		}
+		fcodeunits.SetCurrentContext(sess.GetUserID(), sess.GetUserName(), sess.GetCompany(), sess.GetLanguage())
+		fcodeunits.SetCurrentAccess(sess)
+		defer fcodeunits.ClearCurrentContext()
+		return c.Next()
 	}
 }

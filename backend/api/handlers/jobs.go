@@ -7,6 +7,7 @@ import (
 	"fmt"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +18,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/functions"
+	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
@@ -86,6 +88,10 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(404).JSON(apitypes.NewErrorResponse("Codeunit not found"))
 	}
+	// Permission to run it: Execute on the codeunit or report, Modify on a function's table
+	if denied := runPermissionError(sess, req.CodeunitID, req.ReportID, req.Function, language); denied != nil {
+		return c.Status(fiber.StatusForbidden).JSON(apitypes.NewErrorResponse(denied.Message(language)))
+	}
 
 	// Create codeunit instance
 	codeunit := factory(h.db, company, h.dbType)
@@ -136,6 +142,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 	if !codeunit.UsesProgress() {
 		// Set context for sync execution (same goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
+		fcodeunits.SetCurrentAccess(sess)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Run synchronously and return result directly
@@ -175,6 +182,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 
 		// Set context for async execution (new goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
+		fcodeunits.SetCurrentAccess(sess)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Set dialog in context for the codeunit to use
@@ -384,4 +392,36 @@ func (h *JobsHandler) CancelJob(c *fiber.Ctx) error {
 	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{
 		"cancelled": true,
 	}))
+}
+
+// runPermissionError is the reason the session's user may not start an object (nil when it may):
+// Execute permission on a codeunit or report (classic object permissions); a page function
+// ("table:Customer.AssistEdit") needs Modify on its table, a codeunit function
+// ("codeunit:900.PostLine") Execute on the codeunit
+func runPermissionError(sess *session.Session, codeunitID, reportID int, function, language string) *apperrors.AppError {
+	switch {
+	case function != "":
+		kind, rest, _ := strings.Cut(function, ":")
+		object, _, _ := strings.Cut(rest, ".")
+		switch kind {
+		case "table":
+			if !sess.HasPermission(object, session.PermModify) {
+				return apperrors.PermissionDenied(string(session.PermModify), object)
+			}
+		case "codeunit":
+			id, err := strconv.Atoi(object)
+			if err == nil && !sess.CanExecute(session.ObjectCodeunit, id) {
+				return apperrors.NoPermissionCodeunit(id, codeunits.List()[id])
+			}
+		}
+	case reportID != 0:
+		if !sess.CanExecute(session.ObjectReport, reportID) {
+			return apperrors.NoPermissionReport(reportID, reports.Caption(reportID, language))
+		}
+	default:
+		if !sess.CanExecute(session.ObjectCodeunit, codeunitID) {
+			return apperrors.NoPermissionCodeunit(codeunitID, codeunits.List()[codeunitID])
+		}
+	}
+	return nil
 }
