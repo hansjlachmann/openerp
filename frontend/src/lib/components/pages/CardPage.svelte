@@ -20,7 +20,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
-	import { handleFieldEnterKey } from '$lib/utils/fieldNavigation';
+	import { handleFieldEnterKey, getFieldControls } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionButton from '../ActionButton.svelte';
@@ -116,6 +116,18 @@
 	// Customization state
 	let customizeModalOpen = $state(false);
 	let fieldCustomizations = $state<Record<string, ItemCustomization>>({});
+
+	// Tab while the frame itself has the focus (no field yet): to the first field, Shift+Tab to
+	// the last one, in the card's field order (as Enter moves)
+	function handleFrameTab(event: KeyboardEvent) {
+		if (event.key !== 'Tab' || event.target !== cardPageElement || !cardPageElement) return;
+		const fields = getFieldControls(cardPageElement);
+		const target = event.shiftKey ? fields.at(-1) : fields[0];
+		if (target) {
+			event.preventDefault();
+			target.focus();
+		}
+	}
 
 	// Reference to the card page element for focus management
 	let cardPageElement = $state<HTMLDivElement | null>(null);
@@ -607,7 +619,9 @@
 	}
 </script>
 
-<div class="card-page" use:shortcuts={shortcutMap()} tabindex="0" bind:this={cardPageElement}>
+<!-- The card's frame takes the focus from code only (its shortcuts work while no field has the
+	focus): not a Tab stop, never outlined -->
+<div class="card-page" role="group" use:shortcuts={shortcutMap()} tabindex="-1" bind:this={cardPageElement} onkeydown={handleFrameTab}>
 
 	<!-- Edge Navigation Buttons (classic ERP style) -->
 	{#if navigationEnabled}
@@ -816,6 +830,7 @@
 
 	.card-page {
 		@apply flex flex-col flex-1 min-h-0;
+		outline: none;
 		@apply relative;
 		@apply bg-surface;
 		/* The sections scroll inside the window (as the list page) */

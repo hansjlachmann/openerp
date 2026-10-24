@@ -67,8 +67,10 @@
 			{/if}
 
 			{#if onclose}
+				<!-- not a Tab stop: Esc closes -->
 				<button
 					class="close-button"
+					tabindex="-1"
 					onclick={onclose}
 					title={t(HELP.CLOSE)}
 					aria-label={t(MODAL.CLOSE)}
