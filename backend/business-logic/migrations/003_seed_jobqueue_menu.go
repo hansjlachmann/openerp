@@ -35,7 +35,8 @@ func (m *Migration003SeedJobQueueMenu) Up(ctx *fmigrations.Context) error {
 		filename VARCHAR(50) NOT NULL DEFAULT '',
 		PRIMARY KEY (code)
 	)`
-	if err := ctx.ExecuteSQL(menuSQL); err != nil {
+	err := ctx.ExecuteSQL(menuSQL)
+	if err != nil {
 		return fmt.Errorf("failed to ensure Menu table: %w", err)
 	}
 

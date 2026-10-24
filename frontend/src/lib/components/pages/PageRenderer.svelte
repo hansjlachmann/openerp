@@ -10,6 +10,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
+	import { cardTitle } from '$lib/utils/fieldHelpers';
 	import { t, MSG, ERR, DLG, BTN, PAGE_ERR } from '$lib/services/i18n.svelte';
 	import Button from '../Button.svelte';
 	import CardPage from './CardPage.svelte';
@@ -17,7 +18,7 @@
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, hasPrimaryKey, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
@@ -238,7 +239,8 @@
 			recordLabelValue,
 			page.page.list_page_id,
 			listPageCaption,
-			navigation.home
+			navigation.home,
+			recordid ? cardTitle(page.page.caption, page.page.data_caption_fields, record, options) : undefined
 		);
 	}
 
@@ -480,7 +482,7 @@
 	}
 
 	// Handle save from card page
-	async function handleCardSave(savedRecord: Record<string, any>): Promise<boolean> {
+	async function handleCardSave(savedRecord: Record<string, any>, opts?: { leavingKey?: boolean }): Promise<boolean> {
 		if (!page) return false;
 
 		try {
@@ -501,7 +503,7 @@
 			} else {
 				// Insert a new record only once its primary key is filled in (Record Entry
 				// rule); until then field changes stay on the form
-				if (!hasPrimaryKey(savedRecord, primaryKeyFieldsList)) {
+				if (!canInsertNewRecord(savedRecord, {}, primaryKeyFieldsList, page.page.auto_key) && !(page.page.auto_key && opts?.leavingKey)) {
 					return false;
 				}
 				const sentRecord = deepCopy(savedRecord);

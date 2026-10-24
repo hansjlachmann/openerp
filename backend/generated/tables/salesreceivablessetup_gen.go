@@ -464,11 +464,63 @@ func (t *SalesReceivablesSetup) GetPostgresTableSchema() string {
 	return GetSalesReceivablesSetupPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *SalesReceivablesSetup) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *SalesReceivablesSetup) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["primary_key"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(SalesReceivablesSetupTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *SalesReceivablesSetup) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(SalesReceivablesSetupTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *SalesReceivablesSetup) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(SalesReceivablesSetupTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *SalesReceivablesSetup) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(SalesReceivablesSetupTableName, key)
 }
 
 // ========================================
@@ -788,6 +840,18 @@ func (t *SalesReceivablesSetup) IsSetupTable() bool {
 	return true
 }
 
+// GetSalesReceivablesSetup reads the single Sales_Receivables_Setup record (classic SETUP.GET) in the database
+// and company of another record (from, e.g. the record a trigger works on) — a blank one, with
+// the definition's defaults, when it does not exist yet
+func GetSalesReceivablesSetup(from tables.Source) *SalesReceivablesSetup {
+	setup := &SalesReceivablesSetup{}
+	setup.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	if !setup.Get("") {
+		setup.InitRecord()
+	}
+	return setup
+}
+
 // GetSalesReceivablesSetupTableSchema returns the SQLite schema
 func GetSalesReceivablesSetupTableSchema() string {
 	return `
@@ -1015,6 +1079,101 @@ func (t *SalesReceivablesSetup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *SalesReceivablesSetup) XRec() *SalesReceivablesSetup {
+	x := &SalesReceivablesSetup{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["primary_key"].(types.Code); ok {
+		x.Primary_key = v
+	}
+	if v, ok := t.oldValues["discount_posting"].(SalesReceivablesSetupDiscount_posting); ok {
+		x.Discount_posting = v
+	}
+	if v, ok := t.oldValues["line_discount_calculation"].(SalesReceivablesSetupLine_discount_calculation); ok {
+		x.Line_discount_calculation = v
+	}
+	if v, ok := t.oldValues["credit_warnings"].(SalesReceivablesSetupCredit_warnings); ok {
+		x.Credit_warnings = v
+	}
+	if v, ok := t.oldValues["stockout_warning"].(bool); ok {
+		x.Stockout_warning = v
+	}
+	if v, ok := t.oldValues["shipment_on_invoice"].(bool); ok {
+		x.Shipment_on_invoice = v
+	}
+	if v, ok := t.oldValues["invoice_rounding"].(bool); ok {
+		x.Invoice_rounding = v
+	}
+	if v, ok := t.oldValues["ext_doc_no_mandatory"].(bool); ok {
+		x.Ext_doc_no_mandatory = v
+	}
+	if v, ok := t.oldValues["customer_nos"].(types.Code); ok {
+		x.Customer_nos = v
+	}
+	if v, ok := t.oldValues["quote_nos"].(types.Code); ok {
+		x.Quote_nos = v
+	}
+	if v, ok := t.oldValues["order_nos"].(types.Code); ok {
+		x.Order_nos = v
+	}
+	if v, ok := t.oldValues["invoice_nos"].(types.Code); ok {
+		x.Invoice_nos = v
+	}
+	if v, ok := t.oldValues["posted_invoice_nos"].(types.Code); ok {
+		x.Posted_invoice_nos = v
+	}
+	if v, ok := t.oldValues["credit_memo_nos"].(types.Code); ok {
+		x.Credit_memo_nos = v
+	}
+	if v, ok := t.oldValues["posted_credit_memo_nos"].(types.Code); ok {
+		x.Posted_credit_memo_nos = v
+	}
+	if v, ok := t.oldValues["posted_shipment_nos"].(types.Code); ok {
+		x.Posted_shipment_nos = v
+	}
+	if v, ok := t.oldValues["reminder_nos"].(types.Code); ok {
+		x.Reminder_nos = v
+	}
+	if v, ok := t.oldValues["issued_reminder_nos"].(types.Code); ok {
+		x.Issued_reminder_nos = v
+	}
+	if v, ok := t.oldValues["fin_chrg_memo_nos"].(types.Code); ok {
+		x.Fin_chrg_memo_nos = v
+	}
+	if v, ok := t.oldValues["issued_fin_chrg_m_nos"].(types.Code); ok {
+		x.Issued_fin_chrg_m_nos = v
+	}
+	if v, ok := t.oldValues["blanket_order_nos"].(types.Code); ok {
+		x.Blanket_order_nos = v
+	}
+	if v, ok := t.oldValues["calc_inv_discount"].(bool); ok {
+		x.Calc_inv_discount = v
+	}
+	if v, ok := t.oldValues["appln_between_currencies"].(SalesReceivablesSetupAppln_between_currencies); ok {
+		x.Appln_between_currencies = v
+	}
+	if v, ok := t.oldValues["copy_comments_blanket_to_order"].(bool); ok {
+		x.Copy_comments_blanket_to_order = v
+	}
+	if v, ok := t.oldValues["copy_comments_order_to_invoice"].(bool); ok {
+		x.Copy_comments_order_to_invoice = v
+	}
+	if v, ok := t.oldValues["copy_comments_order_to_shpt"].(bool); ok {
+		x.Copy_comments_order_to_shpt = v
+	}
+	return x
+}
+
+// NewSalesReceivablesSetup returns a Sales_Receivables_Setup record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewSalesReceivablesSetup(from tables.Source) *SalesReceivablesSetup {
+	rec := &SalesReceivablesSetup{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *SalesReceivablesSetup) IsGlobal() bool {
 	return false
@@ -1220,15 +1379,22 @@ func (t *SalesReceivablesSetup) Insert(runTrigger bool) bool {
 		t.Copy_comments_order_to_shpt,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Sales_Receivables_Setup: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(SalesReceivablesSetupTableName, key)
 		return false
 	}
 	return true
@@ -3141,6 +3307,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field customer_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "customer_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Customer_nos); ok {
@@ -3158,6 +3328,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Quote_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field quote_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "quote_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3177,6 +3351,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field order_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "order_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Order_nos); ok {
@@ -3194,6 +3372,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Invoice_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field invoice_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "invoice_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3213,6 +3395,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field posted_invoice_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "posted_invoice_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Posted_invoice_nos); ok {
@@ -3230,6 +3416,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Credit_memo_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field credit_memo_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "credit_memo_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3249,6 +3439,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field posted_credit_memo_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "posted_credit_memo_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Posted_credit_memo_nos); ok {
@@ -3266,6 +3460,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Posted_shipment_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field posted_shipment_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "posted_shipment_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3285,6 +3483,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field reminder_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "reminder_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Reminder_nos); ok {
@@ -3302,6 +3504,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Issued_reminder_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field issued_reminder_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "issued_reminder_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3321,6 +3527,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field fin_chrg_memo_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "fin_chrg_memo_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Fin_chrg_memo_nos); ok {
@@ -3339,6 +3549,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 		} else {
 			return fmt.Errorf("invalid type for field issued_fin_chrg_m_nos")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "issued_fin_chrg_m_nos"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesReceivablesSetupOnValidate_Issued_fin_chrg_m_nos); ok {
@@ -3356,6 +3570,10 @@ func (t *SalesReceivablesSetup) ValidateField(fieldName string, value interface{
 			t.Blanket_order_nos = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field blanket_order_nos")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "blanket_order_nos"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

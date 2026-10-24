@@ -355,11 +355,63 @@ func (t *Currency) GetPostgresTableSchema() string {
 	return GetCurrencyPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *Currency) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *Currency) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["code"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(CurrencyTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *Currency) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(CurrencyTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *Currency) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(CurrencyTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *Currency) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(CurrencyTableName, key)
 }
 
 // ========================================
@@ -847,6 +899,92 @@ func (t *Currency) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *Currency) XRec() *Currency {
+	x := &Currency{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["code"].(types.Code); ok {
+		x.Code = v
+	}
+	if v, ok := t.oldValues["last_date_modified"].(types.Date); ok {
+		x.Last_date_modified = v
+	}
+	if v, ok := t.oldValues["last_date_adjusted"].(types.Date); ok {
+		x.Last_date_adjusted = v
+	}
+	if v, ok := t.oldValues["unrealized_gains_acc"].(types.Code); ok {
+		x.Unrealized_gains_acc = v
+	}
+	if v, ok := t.oldValues["realized_gains_acc"].(types.Code); ok {
+		x.Realized_gains_acc = v
+	}
+	if v, ok := t.oldValues["unrealized_losses_acc"].(types.Code); ok {
+		x.Unrealized_losses_acc = v
+	}
+	if v, ok := t.oldValues["realized_losses_acc"].(types.Code); ok {
+		x.Realized_losses_acc = v
+	}
+	if v, ok := t.oldValues["invoice_rounding_precision"].(types.Decimal); ok {
+		x.Invoice_rounding_precision = v
+	}
+	if v, ok := t.oldValues["invoice_rounding_type"].(CurrencyInvoice_rounding_type); ok {
+		x.Invoice_rounding_type = v
+	}
+	if v, ok := t.oldValues["amount_rounding_precision"].(types.Decimal); ok {
+		x.Amount_rounding_precision = v
+	}
+	if v, ok := t.oldValues["unit_amount_rounding_precision"].(types.Decimal); ok {
+		x.Unit_amount_rounding_precision = v
+	}
+	if v, ok := t.oldValues["description"].(types.Text); ok {
+		x.Description = v
+	}
+	if v, ok := t.oldValues["amount_decimal_places"].(types.Text); ok {
+		x.Amount_decimal_places = v
+	}
+	if v, ok := t.oldValues["unit_amount_decimal_places"].(types.Text); ok {
+		x.Unit_amount_decimal_places = v
+	}
+	if v, ok := t.oldValues["appln_rounding_precision"].(types.Decimal); ok {
+		x.Appln_rounding_precision = v
+	}
+	if v, ok := t.oldValues["emu_currency"].(bool); ok {
+		x.Emu_currency = v
+	}
+	if v, ok := t.oldValues["currency_factor"].(types.Decimal); ok {
+		x.Currency_factor = v
+	}
+	if v, ok := t.oldValues["realized_gl_gains_account"].(types.Code); ok {
+		x.Realized_gl_gains_account = v
+	}
+	if v, ok := t.oldValues["realized_gl_losses_account"].(types.Code); ok {
+		x.Realized_gl_losses_account = v
+	}
+	if v, ok := t.oldValues["residual_gains_account"].(types.Code); ok {
+		x.Residual_gains_account = v
+	}
+	if v, ok := t.oldValues["residual_losses_account"].(types.Code); ok {
+		x.Residual_losses_account = v
+	}
+	if v, ok := t.oldValues["conv_lcy_rndg_debit_acc"].(types.Code); ok {
+		x.Conv_lcy_rndg_debit_acc = v
+	}
+	if v, ok := t.oldValues["conv_lcy_rndg_credit_acc"].(types.Code); ok {
+		x.Conv_lcy_rndg_credit_acc = v
+	}
+	return x
+}
+
+// NewCurrency returns a Currency record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewCurrency(from tables.Source) *Currency {
+	rec := &Currency{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *Currency) IsGlobal() bool {
 	return false
@@ -1040,15 +1178,22 @@ func (t *Currency) Insert(runTrigger bool) bool {
 		t.Conv_lcy_rndg_credit_acc,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Currency: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(CurrencyTableName, key)
 		return false
 	}
 	return true
@@ -1463,7 +1608,7 @@ func (t *Currency) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}},
+		"code": {{"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2763,6 +2908,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field unrealized_gains_acc")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "unrealized_gains_acc"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Unrealized_gains_acc); ok {
@@ -2780,6 +2929,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			t.Realized_gains_acc = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field realized_gains_acc")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "realized_gains_acc"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -2799,6 +2952,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field unrealized_losses_acc")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "unrealized_losses_acc"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Unrealized_losses_acc); ok {
@@ -2816,6 +2973,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			t.Realized_losses_acc = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field realized_losses_acc")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "realized_losses_acc"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3097,6 +3258,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field realized_gl_gains_account")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "realized_gl_gains_account"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Realized_gl_gains_account); ok {
@@ -3114,6 +3279,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			t.Realized_gl_losses_account = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field realized_gl_losses_account")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "realized_gl_losses_account"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3133,6 +3302,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field residual_gains_account")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "residual_gains_account"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Residual_gains_account); ok {
@@ -3150,6 +3323,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			t.Residual_losses_account = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field residual_losses_account")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "residual_losses_account"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -3169,6 +3346,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field conv_lcy_rndg_debit_acc")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "conv_lcy_rndg_debit_acc"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CurrencyOnValidate_Conv_lcy_rndg_debit_acc); ok {
@@ -3186,6 +3367,10 @@ func (t *Currency) ValidateField(fieldName string, value interface{}) error {
 			t.Conv_lcy_rndg_credit_acc = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field conv_lcy_rndg_credit_acc")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "conv_lcy_rndg_credit_acc"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

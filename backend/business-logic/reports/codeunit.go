@@ -12,7 +12,8 @@ import (
 // through the job API with a dialog: the request page, then the report; its message is shown
 // at the end
 func CodeunitFactory(id int) (fcodeunits.Factory, bool) {
-	if _, ok := Get(id); !ok {
+	_, ok := Get(id)
+	if !ok {
 		return nil, false
 	}
 	return func(db database.Executor, company string, dbType database.DBType) fcodeunits.Codeunit {
@@ -34,7 +35,8 @@ func (c *reportCodeunit) UsesProgress() bool { return true }
 // SourceTable: the table of the first data item (the API makes a record of it)
 func (c *reportCodeunit) SourceTable() string {
 	factory, _ := Get(c.id)
-	if def := factory().Definition(); len(def.DataItems) > 0 {
+	def := factory().Definition()
+	if len(def.DataItems) > 0 {
 		return def.DataItems[0].Table
 	}
 	return ""

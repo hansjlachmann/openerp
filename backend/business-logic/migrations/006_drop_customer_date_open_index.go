@@ -30,7 +30,8 @@ func (m *Migration006DropCustomerDateOpenIndex) Description() string {
 
 func (m *Migration006DropCustomerDateOpenIndex) Up(ctx *fmigrations.Context) error {
 	for _, company := range ctx.Companies {
-		if err := ctx.DropIndex(fmt.Sprintf("%s$Customer Ledger Entry$customer_date_open", company)); err != nil {
+		err := ctx.DropIndex(fmt.Sprintf("%s$Customer Ledger Entry$customer_date_open", company))
+		if err != nil {
 			return fmt.Errorf("company %s: %w", company, err)
 		}
 	}

@@ -70,7 +70,8 @@ func Run(id int, record interface {
 		return fcodeunits.Result{}, fmt.Errorf("codeunit %d does not exist", id)
 	}
 	cu := factory(record.GetDB(), record.GetCompany(), record.GetDBType())
-	if source := cu.SourceTable(); source != "" {
+	source := cu.SourceTable()
+	if source != "" {
 		newRecord, ok := gtables.GetTableFactory(source)
 		if !ok || newRecord().GetTableName() != record.GetTableName() {
 			return fcodeunits.Result{}, fmt.Errorf("codeunit %d %s runs on %s, not on %s", id, cu.Name(), source, record.GetTableName())

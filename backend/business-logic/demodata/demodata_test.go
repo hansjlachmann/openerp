@@ -40,7 +40,7 @@ func newTestDB(t *testing.T) *sql.DB {
 		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
 		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{},
 		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
-		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.ZIPCode{}, &gtables.ReminderTerms{},
+		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
 		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
 		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}}
 	for _, c := range creators {
@@ -122,7 +122,7 @@ func TestCreateSmall(t *testing.T) {
 	}
 	var dk gtables.CountryRegion
 	dk.InitWithDBType(db, testCompany, database.DBTypeSQLite)
-	if !dk.Get("DK") || dk.Eu_country_code != "DK" || dk.Address_format != gtables.CountryRegion_Address_format.CityZIPCode {
+	if !dk.Get("DK") || dk.Eu_country_code != "DK" || dk.Address_format != gtables.CountryRegion_Address_format.CityPostCode {
 		t.Errorf("DK = %+v", dk.ToMap())
 	}
 	// The setup record (already created by opening its page) and the exchange rates
@@ -189,17 +189,19 @@ func TestCreateSmall(t *testing.T) {
 	if !cust.Get("C00080") {
 		t.Fatal("customer C00080 not found")
 	}
-	if cust.Country_region_code.String() != "DK" || cust.Name.String() != "Nørrebro Møbler ApS" {
-		t.Errorf("C00080 = %s / %s", cust.Country_region_code, cust.Name)
+	if cust.Country_code.String() != "DK" || cust.Name.String() != "Nørrebro Møbler ApS" || cust.Search_name != "NØRREBRO MØBLER APS" {
+		t.Errorf("C00080 = %s / %s / %s", cust.Country_code, cust.Name, cust.Search_name)
 	}
-	if cust.Last_order_date.IsZero() {
-		t.Error("C00080 has no last order date")
+	// A customer abroad: foreign posting groups and reminder terms, Nordic territory
+	if cust.Customer_posting_group != "FOREIGN" || cust.Gen_bus_posting_group != "EXPORT" || cust.Tax_bus_posting_group != "EXPORT" ||
+		cust.Reminder_terms_code != "FOREIGN" || cust.Territory_code != "NORDIC" || cust.Invoice_disc_code != "C00080" || cust.Blocked {
+		t.Errorf("C00080 = %+v", cust.ToMap())
 	}
-	if cust.Status != gtables.Customer_Status.Open {
-		t.Errorf("C00080 status = %v, want Open", cust.Status)
+	if !cust.Get("C00010") || cust.Customer_posting_group != "DOMESTIC" || cust.Territory_code != "EAST" || cust.Salesperson_code == "" {
+		t.Errorf("C00010 = %+v", cust.ToMap())
 	}
-	if !cust.Get("C00070") || cust.Status != gtables.Customer_Status.Blocked {
-		t.Errorf("C00070 status = %v, want Blocked", cust.Status)
+	if !cust.Get("C00070") || !cust.Blocked {
+		t.Errorf("C00070 blocked = %v, want Yes", cust.Blocked)
 	}
 
 	// Balance = open invoice amounts; every closed invoice is settled by a payment
@@ -437,10 +439,10 @@ func TestFlowFieldsFromSIFTMatchEntries(t *testing.T) {
 				t.Fatalf("customer %s not found", no)
 			}
 			cust.CalcFields()
-			got := [3]float64{cust.Balance_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
+			got := [3]float64{cust.Balance_due_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
 			for i := range got {
 				if math.Abs(got[i]-w[i]) > 0.005 {
-					t.Fatalf("%s: %s FlowFields (balance, sales, count) = %v, want %v", label, no, got, w)
+					t.Fatalf("%s: %s FlowFields (balance due, sales, count) = %v, want %v", label, no, got, w)
 				}
 			}
 		}
@@ -493,7 +495,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 		t.Helper()
 		var balance, sales, count float64
 		q := `SELECT
-			(SELECT COALESCE(SUM(CAST(remaining_amt_lcy AS REAL)), 0) FROM ` + entries + ` WHERE customer_no = ? AND open = 1 AND ` + cond + `),
+			(SELECT COALESCE(SUM(CAST(amount_lcy AS REAL)), 0) FROM ` + entries + ` WHERE customer_no = ? AND ` + cond + `),
 			(SELECT COALESCE(SUM(CAST(sales_lcy AS REAL)), 0) FROM ` + entries + ` WHERE customer_no = ? AND ` + cond + `),
 			(SELECT COUNT(*) FROM ` + entries + ` WHERE customer_no = ? AND ` + cond + `)`
 		all := append(append(append([]interface{}{no}, args...), append([]interface{}{no}, args...)...), append([]interface{}{no}, args...)...)
@@ -506,7 +508,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 		t.Helper()
 		for i := range got {
 			if math.Abs(got[i]-want[i]) > 0.005 {
-				t.Errorf("%s: (balance, sales, count) = %v, want %v", label, got, want)
+				t.Errorf("%s: (net change, sales, count) = %v, want %v", label, got, want)
 				return
 			}
 		}
@@ -535,7 +537,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 				t.Fatalf("SetFlowFilter(%q): %v", tc.filter, err)
 			}
 			cust.CalcFields()
-			got := [3]float64{cust.Balance_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
+			got := [3]float64{cust.Net_change_lcy.Float64(), cust.Sales_lcy.Float64(), float64(cust.No_of_ledger_entries)}
 			same("card "+no+" filter "+tc.filter, got, expected(no, tc.cond, tc.args...))
 		}
 
@@ -556,7 +558,7 @@ func TestDateFilterFlowFields(t *testing.T) {
 		for _, rec := range records {
 			no := rec["no"].(string)
 			var got [3]float64
-			for i, field := range []string{"balance_lcy", "sales_lcy", "no_of_ledger_entries"} {
+			for i, field := range []string{"net_change_lcy", "sales_lcy", "no_of_ledger_entries"} {
 				if _, err := fmt.Sscan(fmt.Sprint(rec[field]), &got[i]); err != nil {
 					t.Fatalf("%s %s = %v: %v", no, field, rec[field], err)
 				}

@@ -34,15 +34,15 @@ func TestTemporaryRecord(t *testing.T) {
 	for _, c := range []struct{ no, name, city string }{{"T1", "Anna", "Oslo"}, {"T2", "Bjørn", "Bergen"}, {"T3", "Carl", "Oslo"}} {
 		temp.Init()
 		temp.No, temp.Name, temp.City = types.NewCode(c.no), types.NewText(c.name), types.NewText(c.city)
-		if !temp.Insert(true) { // triggers run (OnInsert sets the status)
+		if !temp.Insert(true) { // triggers run
 			t.Fatalf("insert %s: %v", c.no, temp.TriggerError())
 		}
 	}
 	if temp.Count() != 3 || real.Count() != 1 {
 		t.Errorf("temporary %d, real %d", temp.Count(), real.Count())
 	}
-	if !temp.Get("T2") || temp.Status != gtables.Customer_Status.Open || real.Get("T2") {
-		t.Errorf("Get T2: status %v", temp.Status)
+	if !temp.Get("T2") || temp.Name != "Bjørn" || real.Get("T2") {
+		t.Errorf("Get T2: %+v", temp.ToMap())
 	}
 
 	// Modify while looping (the in-memory database has one connection)

@@ -60,7 +60,8 @@ func Language(db database.Executor, dbType database.DBType, company string, job 
 
 // NormalizeLanguage turns a language code into a translation key: "NB-NO" → "nb-NO"
 func NormalizeLanguage(code string) string {
-	if lang, region, ok := strings.Cut(code, "-"); ok {
+	lang, region, ok := strings.Cut(code, "-")
+	if ok {
 		return strings.ToLower(lang) + "-" + strings.ToUpper(region)
 	}
 	return strings.ToLower(code)
@@ -132,7 +133,8 @@ func TestMessage(job *gtables.JobQueue, companyName string, lang string) Message
 
 // jobTitle names a job in a subject: "JOB01 Daily invoices", or only its No.
 func jobTitle(job *gtables.JobQueue) string {
-	if desc := strings.TrimSpace(job.Description.String()); desc != "" {
+	desc := strings.TrimSpace(job.Description.String())
+	if desc != "" {
 		return job.No.String() + " " + desc
 	}
 	return job.No.String()
@@ -168,11 +170,13 @@ func (b *body) field(job *gtables.JobQueue, field, value string) {
 // job writes the job's No., Description, codeunit and parameter
 func (b *body) job(job *gtables.JobQueue) {
 	b.field(job, "no", job.No.String())
-	if desc := job.Description.String(); desc != "" {
+	desc := job.Description.String()
+	if desc != "" {
 		b.field(job, "description", desc)
 	}
 	b.field(job, "object_id_to_run", strconv.Itoa(job.Object_id_to_run))
-	if param := job.Parameter.String(); param != "" {
+	param := job.Parameter.String()
+	if param != "" {
 		b.field(job, "parameter", param)
 	}
 }

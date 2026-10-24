@@ -43,7 +43,8 @@ func (m *Migration007DropCompanyIndexesOnGlobalTables) Up(ctx *fmigrations.Conte
 	var drop []string
 	for rows.Next() {
 		var table, index string
-		if err := rows.Scan(&table, &index); err != nil {
+		err = rows.Scan(&table, &index)
+		if err != nil {
 			_ = rows.Close()
 			return err
 		}
@@ -52,14 +53,16 @@ func (m *Migration007DropCompanyIndexesOnGlobalTables) Up(ctx *fmigrations.Conte
 			drop = append(drop, index)
 		}
 	}
-	if err := rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		_ = rows.Close()
 		return err
 	}
 	_ = rows.Close()
 
 	for _, index := range drop {
-		if err := ctx.DropIndex(index); err != nil {
+		err := ctx.DropIndex(index)
+		if err != nil {
 			return fmt.Errorf("drop index %s: %w", index, err)
 		}
 	}

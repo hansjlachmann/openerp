@@ -15,66 +15,86 @@ page:
         caption: General
         fields:
           - source: no
-            editable: true
-            importance: Promoted
-
+            assist_edit: "table:Customer.AssistEdit"   # pick another number series (…, Shift+F2)
           - source: name
-            editable: true
-            importance: Promoted
-
           - source: address
-            editable: true
-
+          - source: address_2
           - source: post_code
-            editable: true
-
           - source: city
-            editable: true
-
-          - source: country_region_code
-            editable: true
-            table_relation: Country_Region
+          - source: state
+          - source: contact
+          - source: search_name
+          - source: territory_code
+          - source: balance_lcy
+            drilldown: 25   # Customer Ledger Entries of this customer, in a modal
+            drilldown_filter_field: customer_no
+            drilldown_filter_value: no
+            style: Strong
+          - source: credit_limit_lcy
+          - source: salesperson_code
+          - source: blocked
+          - source: last_date_modified
+          - source: no_of_ledger_entries
+            drilldown: 25   # Customer Ledger Entries of this customer, in a modal
+            drilldown_filter_field: customer_no
+            drilldown_filter_value: no
 
       - name: Communication
         caption: Communication
         fields:
-          - source: phonenumber
-            caption: Phone No.
-            editable: true
+          - source: phone_no
+          - source: fax_no
+          - source: e_mail
+          - source: home_page
+          - source: telex_no
+          - source: telex_answer_back
 
       - name: Invoicing
         caption: Invoicing
         fields:
-          - source: payment_terms_code
-            editable: true
-            table_relation: Payment_terms
+          - source: bill_to_customer_no
+          - source: invoice_copies
+          - source: gen_bus_posting_group
+          - source: tax_bus_posting_group
+          - source: customer_posting_group
+          - source: price_group_code
+          - source: invoice_disc_code
+          - source: cust_item_disc_gr
+          - source: allow_quantity_disc
+          - source: prices_including_tax
+          - source: tax_liable
+          - source: tax_area_code
+          - source: department_code
+          - source: project_code
 
-          - source: credit_limit
-            editable: true
-            visible: true
-
-          - source: balance_lcy
-            editable: false
-            style: Strong
-
-          - source: sales_lcy
-            editable: false
-            style: Strong
-
-      - name: Statistics
-        caption: Statistics
+      - name: Payments
+        caption: Payments
         fields:
-          - source: no_of_ledger_entries
-            editable: false
+          - source: application_method
+          - source: payment_terms_code
+          - source: payment_method_code
+          - source: reminder_terms_code
+          - source: fin_charge_terms_code
+          - source: print_statements
+          - source: last_statement_no
 
-          - source: last_order_date
-            editable: false
+      - name: Shipping
+        caption: Shipping
+        fields:
+          - source: combine_shipments
+          - source: location_code
+          - source: shipment_method_code
+          - source: shipping_agent_code
+          - source: reserve
 
-          - source: created_at
-            editable: false
-
-          - source: status
-            editable: true
+      - name: Foreign Trade
+        caption: Foreign Trade
+        fields:
+          - source: currency_code
+          - source: language_code
+          - source: country_code
+          - source: vat_registration_no
+          - source: place_of_export
 
   actions:
     - name: Back to List
@@ -113,10 +133,3 @@ page:
       run_page: 25
       run_page_filter_field: customer_no
       run_page_filter_value: no
-
-    - name: Generate Ledger Entries
-      caption: Generate Ledger Entries
-      image: Calculate
-      promoted: true
-      enabled: true
-      run_object: codeunit:900

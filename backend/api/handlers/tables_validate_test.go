@@ -114,8 +114,8 @@ func TestValidateFieldReturnsRecordWithSiblingsFilled(t *testing.T) {
 func TestValidateFieldReportsTriggerError(t *testing.T) {
 	app := newTablesTestApp(t)
 
-	// Customer.OnValidate_Name rejects names shorter than 3 characters
-	out := postJSON(t, app, "/api/tables/Customer/validate", `{"field":"name","value":"ab","record":{}}`)
+	// Customer.OnValidate_Gen_bus_posting_group rejects a group that does not exist
+	out := postJSON(t, app, "/api/tables/Customer/validate", `{"field":"gen_bus_posting_group","value":"NONE","record":{}}`)
 	if out["success"] != false || out["error"] == "" {
 		t.Errorf("got success=%v error=%v, want a validation error", out["success"], out["error"])
 	}
@@ -419,8 +419,8 @@ func TestValidateMessageInSessionLanguage(t *testing.T) {
 	})
 	app.Post("/api/tables/:table/validate", h.ValidateField)
 
-	for language, want := range map[string]string{"en-US": "Name must be at least 3 characters", "nb-NO": "Navn må ha minst 3 tegn"} {
-		req := httptest.NewRequest("POST", "/api/tables/Customer/validate", strings.NewReader(`{"field":"name","value":"AB","record":{"no":"C1"}}`))
+	for language, want := range map[string]string{"en-US": "Gen. Bus. Posting Group 'NONE' does not exist", "nb-NO": "Bedriftsbokføringsgruppe 'NONE' finnes ikke"} {
+		req := httptest.NewRequest("POST", "/api/tables/Customer/validate", strings.NewReader(`{"field":"gen_bus_posting_group","value":"NONE","record":{"no":"C1"}}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Language", language)
 		resp, err := app.Test(req, -1)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/sift"
+	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -189,7 +190,8 @@ func loadYAML(name string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err := yaml.Unmarshal(raw, out); err != nil {
+	err = yaml.Unmarshal(raw, out)
+	if err != nil {
 		return fmt.Errorf("demo data %s: %w", name, err)
 	}
 	return nil
@@ -213,10 +215,12 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 
 	var setup setupData
 	var small customersFile
-	if err := loadYAML("setup.yaml", &setup); err != nil {
+	err := loadYAML("setup.yaml", &setup)
+	if err != nil {
 		return counts, err
 	}
-	if err := loadYAML("customers.yaml", &small); err != nil {
+	err = loadYAML("customers.yaml", &small)
+	if err != nil {
 		return counts, err
 	}
 
@@ -224,7 +228,8 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	customers := small.Customers
 	if opts.Size == Large || opts.Size == Heavy {
 		var gen generatorFile
-		if err := loadYAML("generator.yaml", &gen); err != nil {
+		err = loadYAML("generator.yaml", &gen)
+		if err != nil {
 			return counts, err
 		}
 		total := largeCustomerCount
@@ -243,9 +248,11 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	// One transaction: a failed run leaves the company as it was
 	exec := db
 	var tx *sql.Tx
-	if sqlDB, ok := db.(*sql.DB); ok {
+	sqlDB, ok := db.(*sql.DB)
+	if ok {
 		var err error
-		if tx, err = sqlDB.Begin(); err != nil {
+		tx, err = sqlDB.Begin()
+		if err != nil {
 			return counts, err
 		}
 		exec = tx
@@ -265,42 +272,50 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 
 	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+setup.masterDataCount(), len(customers), len(entries))
 
-	if err := insertSetup(exec, company, dbType, setup, &counts, p); err != nil {
+	err = insertSetup(exec, company, dbType, setup, &counts, p)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
-	if err := insertCustomers(exec, company, dbType, customers, entries, today, &counts, p); err != nil {
+	err = insertCustomers(exec, company, dbType, customers, entries, today, &counts, p)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
 	// The entries' SIFT totals are built once after the load instead of updated per entry
-	if err := sift.Suspend(exec, dbType, company, gtables.CustomerLedgerEntryTableName); err != nil {
+	err = sift.Suspend(exec, dbType, company, gtables.CustomerLedgerEntryTableName)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
-	if err := insertEntries(exec, company, dbType, entries, &counts, p); err != nil {
+	err = insertEntries(exec, company, dbType, entries, &counts, p)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
-	if err := (&gtables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType); err != nil {
+	err = (&gtables.CustomerLedgerEntry{}).SyncKeys(exec, company, dbType)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
-	if err := useSeriesNumbers(exec, company, dbType, customers, entries); err != nil {
+	err = useSeriesNumbers(exec, company, dbType, customers, entries)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
-	if err := insertGLEntries(exec, company, dbType, generateGLEntries(today, opts.Size, customerNos(customers), func() *gtables.GLEntry {
+	err = insertGLEntries(exec, company, dbType, generateGLEntries(today, opts.Size, customerNos(customers), func() *gtables.GLEntry {
 		e := &gtables.GLEntry{}
 		e.InitWithDBType(exec, company, dbType)
 		return e
-	}), &counts); err != nil {
+	}), &counts)
+	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
 
 	if tx != nil {
-		if err := tx.Commit(); err != nil {
+		err := tx.Commit()
+		if err != nil {
 			return Counts{}, err
 		}
 	}
@@ -317,8 +332,9 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			rec.Code = types.NewCode(c.Code)
 			rec.Name = types.NewText(c.Name)
 			rec.Eu_country_code = types.NewCode(c.EUCountryCode)
-			if !rec.Insert(true) {
-				return &InsertError{Table: gtables.CountryRegionTableName, Key: c.Code, Err: insertErr(rec.TriggerError())}
+			err := rec.InsertOrError(true)
+			if err != nil {
+				return &InsertError{Table: gtables.CountryRegionTableName, Key: c.Code, Err: err}
 			}
 			counts.Countries++
 		}
@@ -332,8 +348,9 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			rec.Description = types.NewText(pt.Description)
 			rec.Due_date_calculation = types.NewCode(fmt.Sprintf("%dD", pt.DueDays))
 			rec.Active = true
-			if !rec.Insert(true) {
-				return &InsertError{Table: gtables.PaymentTermsTableName, Key: pt.Code, Err: insertErr(rec.TriggerError())}
+			err := rec.InsertOrError(true)
+			if err != nil {
+				return &InsertError{Table: gtables.PaymentTermsTableName, Key: pt.Code, Err: err}
 			}
 			counts.PaymentTerms++
 		}
@@ -353,15 +370,17 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 			case !rec.Get(key):
 				rec.InitWithDBType(exec, company, dbType)
 				rec.FromMap(record)
-				if !rec.Insert(true) {
-					return &InsertError{Table: t.Table, Key: rec.GetPrimaryKeyValue(), Err: insertErr(rec.TriggerError())}
+				err := rec.InsertOrError(true)
+				if err != nil {
+					return &InsertError{Table: t.Table, Key: rec.GetPrimaryKeyValue(), Err: err}
 				}
 				counts.MasterData++
 			case rec.IsSetupTable():
 				// The setup record exists as soon as its page was opened: it gets the values
 				rec.FromMap(record)
-				if !rec.Modify(true) {
-					return &InsertError{Table: t.Table, Key: "", Err: insertErr(rec.TriggerError())}
+				err := rec.ModifyOrError(true)
+				if err != nil {
+					return &InsertError{Table: t.Table, Key: "", Err: err}
 				}
 				counts.MasterData++
 			}
@@ -374,38 +393,55 @@ func insertSetup(exec database.Executor, company string, dbType database.DBType,
 
 func insertCustomers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry, today time.Time, counts *Counts, p *progress) error {
 	p.phase(PhaseCustomers)
-	lastOrder := make(map[string]time.Time)
-	for _, e := range entries {
-		if e.docType == gtables.CustomerLedgerEntry_Document_type.Invoice && e.date.After(lastOrder[e.customerNo]) {
-			lastOrder[e.customerNo] = e.date
-		}
-	}
-	created := types.NewDateTimeFromTime(today.Add(-366 * 24 * time.Hour))
-	for _, c := range customers {
+	salespeople := []string{"AH", "JB", "PL"}
+	for i, c := range customers {
 		var rec gtables.Customer
 		rec.InitWithDBType(exec, company, dbType)
+		rec.InitRecord()
 		rec.No = types.NewCode(c.No)
 		rec.Name = types.NewText(c.Name)
+		rec.Search_name = types.NewCode(system.CopyStr(c.Name, 1, 50))
 		rec.Address = types.NewText(c.Address)
 		rec.Post_code = types.NewCode(c.PostCode)
 		rec.City = types.NewText(c.City)
-		rec.Country_region_code = types.NewCode(c.Country)
-		rec.Phonenumber = types.NewText(c.Phone)
+		rec.Country_code = types.NewCode(c.Country)
+		rec.Phone_no = types.NewText(c.Phone)
 		rec.Payment_terms_code = types.NewCode(c.PaymentTerms)
-		rec.Credit_limit = types.NewDecimal(c.CreditLimit)
-		rec.Created_at = created
-		if d, ok := lastOrder[c.No]; ok {
-			rec.Last_order_date = types.NewDateFromTime(d)
+		rec.Credit_limit_lcy = types.NewDecimal(c.CreditLimit)
+		rec.Blocked = c.Blocked
+		rec.Invoice_disc_code = rec.No
+		rec.Salesperson_code = types.NewCode(salespeople[i%len(salespeople)])
+		rec.Payment_method_code = "BANK"
+		rec.Fin_charge_terms_code = "STD"
+		rec.Price_group_code = "RETAIL"
+		rec.Print_statements = true
+		switch {
+		case c.CreditLimit >= 250000:
+			rec.Cust_item_disc_gr = "LARGE"
+		case c.CreditLimit >= 100000:
+			rec.Cust_item_disc_gr = "WHOLESALE"
+		default:
+			rec.Cust_item_disc_gr = "RETAIL"
 		}
-		if !rec.Insert(true) {
-			return &InsertError{Table: gtables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
-		}
-		// OnInsert sets every new customer to Open; block afterwards, as a user would
-		if c.Blocked {
-			rec.Status = gtables.Customer_Status.Blocked
-			if !rec.Modify(true) {
-				return &InsertError{Table: gtables.CustomerTableName, Key: c.No, Err: insertErr(rec.TriggerError())}
+		// Posting groups, tax, reminders and shipping by country: domestic (Norway) or abroad
+		if c.Country == "NO" {
+			rec.Customer_posting_group, rec.Gen_bus_posting_group, rec.Tax_bus_posting_group = "DOMESTIC", "DOMESTIC", "DOMESTIC"
+			rec.Tax_area_code, rec.Reminder_terms_code = "DOMESTIC", "DOMESTIC"
+			rec.Shipping_agent_code, rec.Shipment_method_code, rec.Location_code = "POSTEN", "POST", "MAIN"
+			rec.Territory_code = types.NewCode(norwegianTerritory(c.PostCode))
+			rec.Tax_liable = true
+		} else {
+			rec.Customer_posting_group, rec.Gen_bus_posting_group, rec.Tax_bus_posting_group = "FOREIGN", "EXPORT", "EXPORT"
+			rec.Tax_area_code, rec.Reminder_terms_code = "ABROAD", "FOREIGN"
+			rec.Shipping_agent_code, rec.Shipment_method_code, rec.Location_code = "DHL", "TRUCK", "MAIN"
+			rec.Territory_code = "NORDIC"
+			if c.Country == "GB" {
+				rec.Territory_code = "UK"
 			}
+		}
+		err := rec.InsertOrError(true)
+		if err != nil {
+			return &InsertError{Table: gtables.CustomerTableName, Key: c.No, Err: err}
 		}
 		counts.Customers++
 		p.step()
@@ -429,7 +465,8 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 	const chunk = 1000
 	batch := make([]*gtables.CustomerLedgerEntry, 0, chunk)
 	flush := func(first int) error {
-		if err := last.InsertAll(batch, true); err != nil {
+		err := last.InsertAll(batch, true)
+		if err != nil {
 			var batchErr *ftables.BatchInsertError
 			key, cause := "", err
 			if errors.As(err, &batchErr) {
@@ -458,6 +495,7 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		rec.Amount = types.NewDecimal(e.amount)
 		rec.Amount_lcy = types.NewDecimal(e.amount)
 		rec.Original_amount_lcy = types.NewDecimal(e.amount)
+		tables.SetDebitCredit(rec)
 		rec.Remaining_amount = types.NewDecimal(e.remaining)
 		rec.Remaining_amt_lcy = types.NewDecimal(e.remaining)
 		rec.Sales_lcy = types.NewDecimal(e.sales)
@@ -475,7 +513,8 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 		}
 		batch = append(batch, rec)
 		if len(batch) == chunk {
-			if err := flush(i + 1 - chunk); err != nil {
+			err := flush(i + 1 - chunk)
+			if err != nil {
 				return err
 			}
 		}
@@ -486,18 +525,23 @@ func insertEntries(exec database.Executor, company string, dbType database.DBTyp
 	return nil
 }
 
-// insertErr gives a failed Insert a cause: the trigger error, or a database error
-// (the generated Insert logs those and only returns false).
-func insertErr(triggerErr error) error {
-	if triggerErr != nil {
-		return triggerErr
-	}
-	return errors.New("database insert failed")
-}
-
 // ---------------------------------------------------------------------------
 // Generation
 // ---------------------------------------------------------------------------
+
+// norwegianTerritory is the demo territory of a Norwegian post code: east (0–3), west (4–6),
+// north (7–9)
+func norwegianTerritory(postCode string) string {
+	switch {
+	case postCode == "":
+		return ""
+	case postCode[0] <= '3':
+		return "EAST"
+	case postCode[0] <= '6':
+		return "WEST"
+	}
+	return "NORTH"
+}
 
 // generateCustomers builds n customers from the generator building blocks, cycling
 // through the countries. Numbers continue after the SMALL set (C00201, C00202, ...).
@@ -709,7 +753,8 @@ func (p *progress) emit(pct int) {
 func useSeriesNumbers(exec database.Executor, company string, dbType database.DBType, customers []customerData, entries []*ledgerEntry) error {
 	last := map[string]ledgerUse{}
 	use := func(series, no string, date time.Time) {
-		if u := last[series]; no > u.no {
+		u := last[series]
+		if no > u.no {
 			last[series] = ledgerUse{no, date}
 		}
 	}
@@ -734,8 +779,9 @@ func useSeriesNumbers(exec database.Executor, company string, dbType database.DB
 		if !u.date.IsZero() {
 			line.Last_date_used = types.NewDateFromTime(u.date)
 		}
-		if !line.Modify(false) {
-			return &InsertError{Table: gtables.NoSeriesLineTableName, Key: series, Err: insertErr(line.TriggerError())}
+		err := line.ModifyOrError(false)
+		if err != nil {
+			return &InsertError{Table: gtables.NoSeriesLineTableName, Key: series, Err: err}
 		}
 	}
 	return nil

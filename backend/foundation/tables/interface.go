@@ -34,6 +34,13 @@ type Table interface {
 	// TriggerError returns the trigger error that made the last Insert/Modify/Delete
 	// fail (a business-rule message for the user), or nil
 	TriggerError() error
+	// GetOrError / InsertOrError / ModifyOrError / DeleteOrError: Get, Insert, Modify and Delete
+	// that fail like the classic GET/INSERT/MODIFY/DELETE without IF — the trigger's error or the
+	// standard message ("<Table> <key> not found", "… already exists")
+	GetOrError(primaryKey interface{}) error
+	InsertOrError(runTrigger bool) error
+	ModifyOrError(runTrigger bool) error
+	DeleteOrError(runTrigger bool) error
 
 	// Query operations
 	// FindSet prepares iteration over filtered records
@@ -215,3 +222,28 @@ const (
 
 // TableFactory is a function that creates a new instance of a table
 type TableFactory func() Table
+
+// Source is anything that knows a database, company and database type — a record (every
+// generated record) whose database and company another record is opened in:
+// gtables.NewGLAccount(rec), gtables.GetGeneralLedgerSetup(rec), noseries.New(rec)
+type Source interface {
+	GetDB() database.Executor
+	GetCompany() string
+	GetDBType() database.DBType
+}
+
+// DBSource is a Source for code without a record at hand (a codeunit, a test):
+// gtables.NewGLAccount(tables.DBSource(db, company, dbType))
+func DBSource(db database.Executor, company string, dbType database.DBType) Source {
+	return dbSource{db, company, dbType}
+}
+
+type dbSource struct {
+	db      database.Executor
+	company string
+	dbType  database.DBType
+}
+
+func (s dbSource) GetDB() database.Executor   { return s.db }
+func (s dbSource) GetCompany() string         { return s.company }
+func (s dbSource) GetDBType() database.DBType { return s.dbType }

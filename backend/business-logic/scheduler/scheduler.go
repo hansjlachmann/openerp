@@ -57,15 +57,18 @@ func New(db database.Executor, dbType database.DBType, companies func() ([]strin
 	enabled := !strings.EqualFold(os.Getenv("JOB_QUEUE_ENABLED"), "false")
 
 	interval := 60 * time.Second
-	if v := os.Getenv("JOB_QUEUE_POLL_INTERVAL"); v != "" {
-		if secs, err := strconv.Atoi(v); err == nil && secs >= 5 {
+	v := os.Getenv("JOB_QUEUE_POLL_INTERVAL")
+	if v != "" {
+		secs, err := strconv.Atoi(v)
+		if err == nil && secs >= 5 {
 			interval = time.Duration(secs) * time.Second
 		}
 	}
 
 	podID := os.Getenv("HOSTNAME")
 	if podID == "" {
-		if h, err := os.Hostname(); err == nil {
+		h, err := os.Hostname()
+		if err == nil {
 			podID = h
 		} else {
 			podID = "scheduler"
@@ -91,7 +94,8 @@ func (s *Scheduler) Start() {
 		log.Println("Job Queue scheduler disabled (JOB_QUEUE_ENABLED=false)")
 		return
 	}
-	if err := s.ensureLockTable(); err != nil {
+	err := s.ensureLockTable()
+	if err != nil {
 		log.Printf("Job Queue scheduler: failed to create lock table, not starting: %v", err)
 		return
 	}
@@ -129,7 +133,8 @@ func (s *Scheduler) loop() {
 // tick runs one scheduling pass: acquire the lock, then process every company.
 func (s *Scheduler) tick() {
 	defer func() {
-		if r := recover(); r != nil {
+		r := recover()
+		if r != nil {
 			log.Printf("Job Queue scheduler: recovered from panic in tick: %v", r)
 		}
 	}()
@@ -161,14 +166,9 @@ func (s *Scheduler) processCompany(company string) {
 
 	now := types.Now()
 	var dueNos []string
-	if jq.FindSet() {
-		for {
-			if jq.Status == gtables.JobQueue_Status.Ready && isDue(jq.Next_start, now) {
-				dueNos = append(dueNos, jq.No.String())
-			}
-			if !jq.Next() {
-				break
-			}
+	for found := jq.FindSet(); found; found = jq.Next() {
+		if jq.Status == gtables.JobQueue_Status.Ready && isDue(jq.Next_start, now) {
+			dueNos = append(dueNos, jq.No.String())
 		}
 	}
 
@@ -247,7 +247,8 @@ func (s *Scheduler) finish(company, jobNo string, runErr error) {
 
 	if runErr != nil {
 		job.Status = gtables.JobQueue_Status.Error
-		if err := modify(&job); err != nil {
+		err := modify(&job)
+		if err != nil {
 			log.Printf("Job Queue scheduler: failed to set Error status on %s/%s: %v", company, jobNo, err)
 		}
 		return
@@ -276,7 +277,8 @@ func (s *Scheduler) finish(company, jobNo string, runErr error) {
 		job.Status = gtables.JobQueue_Status.OnHold
 	}
 
-	if err := modify(&job); err != nil {
+	err := modify(&job)
+	if err != nil {
 		log.Printf("Job Queue scheduler: failed to reschedule %s/%s: %v", company, jobNo, err)
 	}
 }
@@ -290,15 +292,13 @@ func (s *Scheduler) notify(company string, job *gtables.JobQueue, run jobqueue.R
 	}
 	lang := jobqueue.Language(s.db, s.dbType, company, job)
 	msg := jobqueue.RunMessage(job, jobqueue.CompanyName(s.db, s.dbType, company), run, lang)
-	if err := s.currentMailer().Send(jobqueue.Recipients(job), msg.Subject, msg.Body); err != nil {
+	err := s.currentMailer().Send(jobqueue.Recipients(job), msg.Subject, msg.Body)
+	if err != nil {
 		log.Printf("Job Queue scheduler: notification e-mail of %s/%s: %v", company, job.No.String(), err)
 	}
 }
 
 // modify persists changes to a job, returning an error if the write fails.
 func modify(job *gtables.JobQueue) error {
-	if !job.Modify(true) {
-		return errors.New("Modify returned false")
-	}
-	return nil
+	return job.ModifyOrError(true)
 }

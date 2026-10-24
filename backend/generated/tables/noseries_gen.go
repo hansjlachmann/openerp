@@ -183,11 +183,63 @@ func (t *NoSeries) GetPostgresTableSchema() string {
 	return GetNoSeriesPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *NoSeries) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *NoSeries) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["code"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(NoSeriesTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *NoSeries) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(NoSeriesTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *NoSeries) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(NoSeriesTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *NoSeries) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(NoSeriesTableName, key)
 }
 
 // ========================================
@@ -507,6 +559,38 @@ func (t *NoSeries) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *NoSeries) XRec() *NoSeries {
+	x := &NoSeries{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["code"].(types.Code); ok {
+		x.Code = v
+	}
+	if v, ok := t.oldValues["description"].(types.Text); ok {
+		x.Description = v
+	}
+	if v, ok := t.oldValues["default_nos"].(bool); ok {
+		x.Default_nos = v
+	}
+	if v, ok := t.oldValues["manual_nos"].(bool); ok {
+		x.Manual_nos = v
+	}
+	if v, ok := t.oldValues["date_order"].(bool); ok {
+		x.Date_order = v
+	}
+	return x
+}
+
+// NewNoSeries returns a No_Series record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewNoSeries(from tables.Source) *NoSeries {
+	rec := &NoSeries{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *NoSeries) IsGlobal() bool {
 	return false
@@ -628,15 +712,22 @@ func (t *NoSeries) Insert(runTrigger bool) bool {
 		t.Date_order,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, default_nos, manual_nos, date_order) VALUES (?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, default_nos, manual_nos, date_order) VALUES (?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert No_Series: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(NoSeriesTableName, key)
 		return false
 	}
 	return true
@@ -855,7 +946,7 @@ func (t *NoSeries) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}},
+		"code": {{"Customer", false, "no_series", "", 0}, {"No_Series_Line", false, "series_code", "", 0}, {"No_Series_Relationship", false, "code", "", 0}, {"No_Series_Relationship", false, "series_code", "", 0}, {"Sales_Receivables_Setup", false, "customer_nos", "", 0}, {"Sales_Receivables_Setup", false, "quote_nos", "", 0}, {"Sales_Receivables_Setup", false, "order_nos", "", 0}, {"Sales_Receivables_Setup", false, "invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_invoice_nos", "", 0}, {"Sales_Receivables_Setup", false, "credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_credit_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "posted_shipment_nos", "", 0}, {"Sales_Receivables_Setup", false, "reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_reminder_nos", "", 0}, {"Sales_Receivables_Setup", false, "fin_chrg_memo_nos", "", 0}, {"Sales_Receivables_Setup", false, "issued_fin_chrg_m_nos", "", 0}, {"Sales_Receivables_Setup", false, "blanket_order_nos", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

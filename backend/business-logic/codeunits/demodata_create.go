@@ -61,7 +61,8 @@ func (c *DemoDataCreate) Run(record interface{}) (fcodeunits.Result, error) {
 	counts, err := c.create(jobQueue, ts, lang)
 	if err != nil {
 		msg := c.errorMessage(err, ts, lang)
-		if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, msg, start); logErr != nil {
+		logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, msg, start)
+		if logErr != nil {
 			msg += " (" + logErr.Error() + ")"
 		}
 		// An error fails the run: the scheduler sets the job to Error and the
@@ -69,7 +70,8 @@ func (c *DemoDataCreate) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New(msg)
 	}
 
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", start); err != nil {
+	err = CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", start)
+	if err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 	return fcodeunits.Message(ts.MessageWithParams("DEMO_DATA_DONE", lang,

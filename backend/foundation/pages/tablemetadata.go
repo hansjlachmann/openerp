@@ -18,6 +18,7 @@ type TableMetadata struct {
 	fieldTypes     map[string]map[string]string // table name -> field name -> type (e.g., "bool", "code", "text")
 	captionFields  map[string][]string          // table name -> data_caption_fields (the card title)
 	lookupPages    map[string]int               // table name -> lookup_page_id (the lookup's "New" opens it)
+	autoKeys       map[string]bool              // table name -> auto_key (OnInsert assigns a blank key)
 	mu             sync.RWMutex
 }
 
@@ -28,6 +29,7 @@ type tableDefYAML struct {
 		Fields            []tableFieldDef `yaml:"fields"`
 		DataCaptionFields []string        `yaml:"data_caption_fields"`
 		LookupPageID      int             `yaml:"lookup_page_id"`
+		AutoKey           bool            `yaml:"auto_key"`
 	} `yaml:"table"`
 }
 
@@ -55,6 +57,7 @@ func GetTableMetadata() *TableMetadata {
 			fieldTypes:     make(map[string]map[string]string),
 			captionFields:  make(map[string][]string),
 			lookupPages:    make(map[string]int),
+			autoKeys:       make(map[string]bool),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -133,6 +136,9 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 	if len(fTypes) > 0 {
 		tm.fieldTypes[metadataKey(tableDef.Table.Name)] = fTypes
 	}
+	if tableDef.Table.AutoKey {
+		tm.autoKeys[metadataKey(tableDef.Table.Name)] = true
+	}
 	if len(tableDef.Table.DataCaptionFields) > 0 {
 		if tm.captionFields == nil {
 			tm.captionFields = make(map[string][]string)
@@ -196,6 +202,15 @@ func (tm *TableMetadata) GetDataCaptionFields(tableName string) []string {
 
 // GetLookupPageID returns a table's lookup page (YAML lookup_page_id, classic LookupFormID), 0
 // when the table names none
+// IsAutoKey reports whether a table's OnInsert assigns the key when it is blank (auto_key:
+// true — the next number of a number series); such records are inserted without a key
+func (tm *TableMetadata) IsAutoKey(tableName string) bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.autoKeys[metadataKey(tableName)]
+}
+
+// GetLookupPageID returns a table's lookup_page_id (0 when it has none)
 func (tm *TableMetadata) GetLookupPageID(tableName string) int {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()

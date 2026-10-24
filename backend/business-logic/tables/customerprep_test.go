@@ -246,3 +246,30 @@ func TestFindKeepsKeyFiltersAndBlankDateRanges(t *testing.T) {
 		t.Errorf("SetRange(blank date) = %d lines, want 1", n)
 	}
 }
+
+// setupCustomerNos creates the Sales & Receivables Setup with Customer Nos. CUST (C00001 …,
+// manual numbers allowed when manual)
+func setupCustomerNos(t *testing.T, db *sql.DB, company string, manual bool) {
+	t.Helper()
+	for _, tbl := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.SalesReceivablesSetup{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{}, &gtables.NoSeriesRelationship{}} {
+		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var s gtables.NoSeries
+	s.InitWithDBType(db, company, database.DBTypeSQLite)
+	s.Code, s.Default_nos, s.Manual_nos = "CUST", true, manual
+	var l gtables.NoSeriesLine
+	l.InitWithDBType(db, company, database.DBTypeSQLite)
+	l.InitRecord()
+	l.Series_code, l.Line_no, l.Starting_no = "CUST", 10000, "C00001"
+	var setup gtables.SalesReceivablesSetup
+	setup.InitWithDBType(db, company, database.DBTypeSQLite)
+	setup.InitRecord()
+	setup.Customer_nos = "CUST"
+	if !s.Insert(false) || !l.Insert(false) || !setup.Insert(false) {
+		t.Fatal("insert customer number setup")
+	}
+}

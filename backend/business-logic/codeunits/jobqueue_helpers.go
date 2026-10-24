@@ -1,7 +1,6 @@
 package codeunits
 
 import (
-	"fmt"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -32,22 +31,17 @@ func CreateJobQueueEntry(db database.Executor, company string, dbType database.D
 		entry.Error_message = types.NewText(errorMsg)
 	}
 
-	if !entry.Insert(true) {
-		return fmt.Errorf("failed to insert job queue entry")
-	}
-	return nil
+	return entry.InsertOrError(true)
 }
 
 // SetJobQueueStatus updates the status of a Job Queue record.
 func SetJobQueueStatus(db database.Executor, company string, dbType database.DBType, jobQueueNo types.Code, status gtables.JobQueueStatus) error {
 	var jq gtables.JobQueue
 	jq.InitWithDBType(db, company, dbType)
-	if !jq.Get(jobQueueNo.String()) {
-		return fmt.Errorf("job queue %s not found", jobQueueNo)
+	err := jq.GetOrError(jobQueueNo.String())
+	if err != nil {
+		return err
 	}
 	jq.Status = status
-	if !jq.Modify(true) {
-		return fmt.Errorf("failed to update job queue status")
-	}
-	return nil
+	return jq.ModifyOrError(true)
 }

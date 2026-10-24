@@ -42,6 +42,7 @@ messages:
   MSG_NO_MENU_ITEMS: "No menu items available"
   MSG_CODEUNIT_SUCCESS: "Operation completed successfully"
   MSG_JOB_COMPLETED: "Job completed successfully"
+  MSG_ASSIST_EDIT: "Choose (Shift+F2)"
 
   # Error Messages
   ERR_FAILED_DELETE: "Failed to delete record"
@@ -214,6 +215,7 @@ messages:
   HELP_CARD_PREV_NEXT_RECORD: "Previous / next record"
   HELP_CARD_FIRST_LAST_RECORD: "First / last record"
   HELP_CARD_FULLSCREEN: "Full screen on / off (card opened over a list)"
+  HELP_CARD_ASSIST_EDIT: "Choose a value with the field's … (e.g. another number series)"
   HELP_CARD_ESCAPE: "Close the card"
   HELP_SEC_LOOKUP: "Lookup and option fields"
   HELP_LOOKUP_OPEN: "Open the list (F4 opens / closes it)"

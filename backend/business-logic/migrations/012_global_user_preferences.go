@@ -44,7 +44,8 @@ func (m *Migration012GlobalUserPreferences) Up(ctx *fmigrations.Context) error {
 		if err != nil || !exists {
 			return err
 		}
-		if err := ctx.ExecuteSQL(`CREATE TABLE IF NOT EXISTS "User_Preferences" (` + userPreferencesColumns + `)`); err != nil {
+		err = ctx.ExecuteSQL(`CREATE TABLE IF NOT EXISTS "User_Preferences" (` + userPreferencesColumns + `)`)
+		if err != nil {
 			return fmt.Errorf("create User_Preferences: %w", err)
 		}
 		columns := "user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at"
@@ -52,7 +53,8 @@ func (m *Migration012GlobalUserPreferences) Up(ctx *fmigrations.Context) error {
 		if ctx.DBType != database.DBTypePostgres {
 			copyRows = fmt.Sprintf(`INSERT OR IGNORE INTO "User_Preferences" (%s) SELECT %s FROM "%s"`, columns, columns, table)
 		}
-		if err := ctx.ExecuteSQL(copyRows); err != nil {
+		err = ctx.ExecuteSQL(copyRows)
+		if err != nil {
 			return fmt.Errorf("copy %s: %w", table, err)
 		}
 		return ctx.ExecuteSQL(fmt.Sprintf(`DROP TABLE "%s"`, table))

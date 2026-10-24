@@ -12,17 +12,65 @@
 //	OnRename(rec *gtables.Customer) error  — a primary key field changed (rec.OldValue: xRec)
 //	OnValidate_No(rec *gtables.Customer) error
 //	OnValidate_Name(rec *gtables.Customer) error
+//	OnValidate_Search_name(rec *gtables.Customer) error
+//	OnValidate_Name_2(rec *gtables.Customer) error
 //	OnValidate_Address(rec *gtables.Customer) error
-//	OnValidate_Post_code(rec *gtables.Customer) error
+//	OnValidate_Address_2(rec *gtables.Customer) error
 //	OnValidate_City(rec *gtables.Customer) error
-//	OnValidate_Country_region_code(rec *gtables.Customer) error
-//	OnValidate_Phonenumber(rec *gtables.Customer) error
+//	OnValidate_Contact(rec *gtables.Customer) error
+//	OnValidate_Phone_no(rec *gtables.Customer) error
+//	OnValidate_Telex_no(rec *gtables.Customer) error
+//	OnValidate_Our_account_no(rec *gtables.Customer) error
+//	OnValidate_Territory_code(rec *gtables.Customer) error
+//	OnValidate_Department_code(rec *gtables.Customer) error
+//	OnValidate_Project_code(rec *gtables.Customer) error
+//	OnValidate_Chain_name(rec *gtables.Customer) error
+//	OnValidate_Budgeted_amount(rec *gtables.Customer) error
+//	OnValidate_Credit_limit_lcy(rec *gtables.Customer) error
+//	OnValidate_Customer_posting_group(rec *gtables.Customer) error
+//	OnValidate_Currency_code(rec *gtables.Customer) error
+//	OnValidate_Price_group_code(rec *gtables.Customer) error
+//	OnValidate_Language_code(rec *gtables.Customer) error
+//	OnValidate_Statistics_group(rec *gtables.Customer) error
 //	OnValidate_Payment_terms_code(rec *gtables.Customer) error
-//	OnValidate_Status(rec *gtables.Customer) error
-//	OnValidate_Credit_limit(rec *gtables.Customer) error
-//	OnValidate_Last_order_date(rec *gtables.Customer) error
-//	OnValidate_Created_at(rec *gtables.Customer) error
-//	OnValidate_Profile_photo(rec *gtables.Customer) error
+//	OnValidate_Fin_charge_terms_code(rec *gtables.Customer) error
+//	OnValidate_Salesperson_code(rec *gtables.Customer) error
+//	OnValidate_Shipment_method_code(rec *gtables.Customer) error
+//	OnValidate_Shipping_agent_code(rec *gtables.Customer) error
+//	OnValidate_Place_of_export(rec *gtables.Customer) error
+//	OnValidate_Invoice_disc_code(rec *gtables.Customer) error
+//	OnValidate_Cust_item_disc_gr(rec *gtables.Customer) error
+//	OnValidate_Country_code(rec *gtables.Customer) error
+//	OnValidate_Collection_method(rec *gtables.Customer) error
+//	OnValidate_Amount(rec *gtables.Customer) error
+//	OnValidate_Blocked(rec *gtables.Customer) error
+//	OnValidate_Invoice_copies(rec *gtables.Customer) error
+//	OnValidate_Last_statement_no(rec *gtables.Customer) error
+//	OnValidate_Print_statements(rec *gtables.Customer) error
+//	OnValidate_Bill_to_customer_no(rec *gtables.Customer) error
+//	OnValidate_Priority(rec *gtables.Customer) error
+//	OnValidate_Payment_method_code(rec *gtables.Customer) error
+//	OnValidate_Last_date_modified(rec *gtables.Customer) error
+//	OnValidate_Application_method(rec *gtables.Customer) error
+//	OnValidate_Allow_quantity_disc(rec *gtables.Customer) error
+//	OnValidate_Prices_including_tax(rec *gtables.Customer) error
+//	OnValidate_Location_code(rec *gtables.Customer) error
+//	OnValidate_Fax_no(rec *gtables.Customer) error
+//	OnValidate_Telex_answer_back(rec *gtables.Customer) error
+//	OnValidate_Vat_registration_no(rec *gtables.Customer) error
+//	OnValidate_Combine_shipments(rec *gtables.Customer) error
+//	OnValidate_Gen_bus_posting_group(rec *gtables.Customer) error
+//	OnValidate_Picture(rec *gtables.Customer) error
+//	OnValidate_Post_code(rec *gtables.Customer) error
+//	OnValidate_State(rec *gtables.Customer) error
+//	OnValidate_E_mail(rec *gtables.Customer) error
+//	OnValidate_Home_page(rec *gtables.Customer) error
+//	OnValidate_Reminder_terms_code(rec *gtables.Customer) error
+//	OnValidate_No_series(rec *gtables.Customer) error
+//	OnValidate_Tax_area_code(rec *gtables.Customer) error
+//	OnValidate_Tax_liable(rec *gtables.Customer) error
+//	OnValidate_Tax_bus_posting_group(rec *gtables.Customer) error
+//	OnValidate_Reserve(rec *gtables.Customer) error
 
 package tables
 
@@ -31,6 +79,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,48 +96,163 @@ import (
 // Option Field Type Definitions
 // ========================================
 
-// CustomerStatus represents the status option field
-type CustomerStatus int
+// CustomerApplication_method represents the application_method option field
+type CustomerApplication_method int
 
-// String returns the text representation of CustomerStatus
-func (o CustomerStatus) String() string {
-	options := []string{" ", "Open", "Released", "Posted", "Blocked"}
+// String returns the text representation of CustomerApplication_method
+func (o CustomerApplication_method) String() string {
+	options := []string{"Manual", "Apply to Oldest"}
 	if o >= 0 && int(o) < len(options) {
 		return options[o]
 	}
 	return ""
 }
 
-// IsValid checks if the CustomerStatus value is within valid range
-func (o CustomerStatus) IsValid() bool {
-	return o >= 0 && o < 5
+// IsValid checks if the CustomerApplication_method value is within valid range
+func (o CustomerApplication_method) IsValid() bool {
+	return o >= 0 && o < 2
+}
+
+// CustomerReserve represents the reserve option field
+type CustomerReserve int
+
+// String returns the text representation of CustomerReserve
+func (o CustomerReserve) String() string {
+	options := []string{"Never", "Optional", "Always"}
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the CustomerReserve value is within valid range
+func (o CustomerReserve) IsValid() bool {
+	return o >= 0 && o < 3
 }
 
 // Customer represents Table 18: Customer
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterCustomerLogic.
 type Customer struct {
-	No                  types.Code     `db:"no,pk"`
-	Name                types.Text     `db:"name"`
-	Address             types.Text     `db:"address"`
-	Post_code           types.Code     `db:"post_code"`
-	City                types.Text     `db:"city"`
-	Country_region_code types.Code     `db:"country_region_code"`
-	Phonenumber         types.Text     `db:"phonenumber"`
-	Payment_terms_code  types.Code     `db:"payment_terms_code"`
-	Status              CustomerStatus `db:"status"`
-	Credit_limit        types.Decimal  `db:"credit_limit"`
-	Last_order_date     types.Date     `db:"last_order_date"`
-	Created_at          types.DateTime `db:"created_at"`
-	Profile_photo       []byte         `db:"profile_photo"`
-	// FlowField: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+	No                     types.Code                 `db:"no,pk"`
+	Name                   types.Text                 `db:"name"`
+	Search_name            types.Code                 `db:"search_name"`
+	Name_2                 types.Text                 `db:"name_2"`
+	Address                types.Text                 `db:"address"`
+	Address_2              types.Text                 `db:"address_2"`
+	City                   types.Text                 `db:"city"`
+	Contact                types.Text                 `db:"contact"`
+	Phone_no               types.Text                 `db:"phone_no"`
+	Telex_no               types.Text                 `db:"telex_no"`
+	Our_account_no         types.Text                 `db:"our_account_no"`
+	Territory_code         types.Code                 `db:"territory_code"`
+	Department_code        types.Code                 `db:"department_code"`
+	Project_code           types.Code                 `db:"project_code"`
+	Chain_name             types.Code                 `db:"chain_name"`
+	Budgeted_amount        types.Decimal              `db:"budgeted_amount"`
+	Credit_limit_lcy       types.Decimal              `db:"credit_limit_lcy"`
+	Customer_posting_group types.Code                 `db:"customer_posting_group"`
+	Currency_code          types.Code                 `db:"currency_code"`
+	Price_group_code       types.Code                 `db:"price_group_code"`
+	Language_code          types.Code                 `db:"language_code"`
+	Statistics_group       int                        `db:"statistics_group"`
+	Payment_terms_code     types.Code                 `db:"payment_terms_code"`
+	Fin_charge_terms_code  types.Code                 `db:"fin_charge_terms_code"`
+	Salesperson_code       types.Code                 `db:"salesperson_code"`
+	Shipment_method_code   types.Code                 `db:"shipment_method_code"`
+	Shipping_agent_code    types.Code                 `db:"shipping_agent_code"`
+	Place_of_export        types.Code                 `db:"place_of_export"`
+	Invoice_disc_code      types.Code                 `db:"invoice_disc_code"`
+	Cust_item_disc_gr      types.Code                 `db:"cust_item_disc_gr"`
+	Country_code           types.Code                 `db:"country_code"`
+	Collection_method      types.Code                 `db:"collection_method"`
+	Amount                 types.Decimal              `db:"amount"`
+	Blocked                bool                       `db:"blocked"`
+	Invoice_copies         int                        `db:"invoice_copies"`
+	Last_statement_no      int                        `db:"last_statement_no"`
+	Print_statements       bool                       `db:"print_statements"`
+	Bill_to_customer_no    types.Code                 `db:"bill_to_customer_no"`
+	Priority               int                        `db:"priority"`
+	Payment_method_code    types.Code                 `db:"payment_method_code"`
+	Last_date_modified     types.Date                 `db:"last_date_modified"`
+	Application_method     CustomerApplication_method `db:"application_method"`
+	Allow_quantity_disc    bool                       `db:"allow_quantity_disc"`
+	Prices_including_tax   bool                       `db:"prices_including_tax"`
+	Location_code          types.Code                 `db:"location_code"`
+	Fax_no                 types.Text                 `db:"fax_no"`
+	Telex_answer_back      types.Text                 `db:"telex_answer_back"`
+	Vat_registration_no    types.Text                 `db:"vat_registration_no"`
+	Combine_shipments      bool                       `db:"combine_shipments"`
+	Gen_bus_posting_group  types.Code                 `db:"gen_bus_posting_group"`
+	Picture                []byte                     `db:"picture"`
+	Post_code              types.Code                 `db:"post_code"`
+	State                  types.Text                 `db:"state"`
+	E_mail                 types.Text                 `db:"e_mail"`
+	Home_page              types.Text                 `db:"home_page"`
+	Reminder_terms_code    types.Code                 `db:"reminder_terms_code"`
+	No_series              types.Code                 `db:"no_series"`
+	Tax_area_code          types.Code                 `db:"tax_area_code"`
+	Tax_liable             bool                       `db:"tax_liable"`
+	Tax_bus_posting_group  types.Code                 `db:"tax_bus_posting_group"`
+	Reserve                CustomerReserve            `db:"reserve"`
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Balance types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount_lcy)
 	Balance_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Net_change types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount_lcy)
+	Net_change_lcy types.Decimal
 	// FlowField: Sum(CustomerLedgerEntry.sales_lcy)
 	Sales_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.profit_lcy)
+	Profit_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.inv_discount_lcy)
+	Inv_discounts_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.pmt_disc_given_lcy)
+	Pmt_discounts_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.remaining_amount)
+	Balance_due types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+	Balance_due_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Payments types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Invoice_amounts types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Cr_memo_amounts types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Finance_charge_memo_amounts types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
+	Payments_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
+	Inv_amounts_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
+	Cr_memo_amounts_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
+	Fin_charge_memo_amounts_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.debit_amount)
+	Debit_amount types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.credit_amount)
+	Credit_amount types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.debit_amount_lcy)
+	Debit_amount_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.credit_amount_lcy)
+	Credit_amount_lcy types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.amount)
+	Reminder_amounts types.Decimal
+	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
+	Reminder_amounts_lcy types.Decimal
 	// FlowField: Count(CustomerLedgerEntry.entry_no)
 	No_of_ledger_entries int
 	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
 	Date_filter string
+	// FlowFilter department_filter (types.Code): the filter expression FlowFields apply — not stored
+	Department_filter string
+	// FlowFilter project_filter (types.Code): the filter expression FlowFields apply — not stored
+	Project_filter string
+	// FlowFilter currency_filter (types.Code): the filter expression FlowFields apply — not stored
+	Currency_filter string
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -152,19 +316,24 @@ const CustomerTableName = "Customer"
 // Option Field Namespaces
 // ========================================
 
-// Customer_Status provides named constants for the status option field (FieldName.OptionValue syntax)
-var Customer_Status = struct {
-	Blank    CustomerStatus
-	Open     CustomerStatus
-	Released CustomerStatus
-	Posted   CustomerStatus
-	Blocked  CustomerStatus
+// Customer_Application_method provides named constants for the application_method option field (FieldName.OptionValue syntax)
+var Customer_Application_method = struct {
+	Manual        CustomerApplication_method
+	ApplyToOldest CustomerApplication_method
 }{
-	Blank:    0,
-	Open:     1,
-	Released: 2,
-	Posted:   3,
-	Blocked:  4,
+	Manual:        0,
+	ApplyToOldest: 1,
+}
+
+// Customer_Reserve provides named constants for the reserve option field (FieldName.OptionValue syntax)
+var Customer_Reserve = struct {
+	Never    CustomerReserve
+	Optional CustomerReserve
+	Always   CustomerReserve
+}{
+	Never:    0,
+	Optional: 1,
+	Always:   2,
 }
 
 // ========================================
@@ -174,41 +343,187 @@ var Customer_Status = struct {
 // Customer_FieldNo holds the field numbers of Customer (FieldNo):
 // Customer_FieldNo.No is 1
 var Customer_FieldNo = struct {
-	No                   int
-	Name                 int
-	Address              int
-	Post_code            int
-	City                 int
-	Country_region_code  int
-	Phonenumber          int
-	Payment_terms_code   int
-	Status               int
-	Credit_limit         int
-	Last_order_date      int
-	Created_at           int
-	Profile_photo        int
-	Balance_lcy          int
-	Sales_lcy            int
-	No_of_ledger_entries int
-	Date_filter          int
+	No                          int
+	Name                        int
+	Search_name                 int
+	Name_2                      int
+	Address                     int
+	Address_2                   int
+	City                        int
+	Contact                     int
+	Phone_no                    int
+	Telex_no                    int
+	Our_account_no              int
+	Territory_code              int
+	Department_code             int
+	Project_code                int
+	Chain_name                  int
+	Budgeted_amount             int
+	Credit_limit_lcy            int
+	Customer_posting_group      int
+	Currency_code               int
+	Price_group_code            int
+	Language_code               int
+	Statistics_group            int
+	Payment_terms_code          int
+	Fin_charge_terms_code       int
+	Salesperson_code            int
+	Shipment_method_code        int
+	Shipping_agent_code         int
+	Place_of_export             int
+	Invoice_disc_code           int
+	Cust_item_disc_gr           int
+	Country_code                int
+	Collection_method           int
+	Amount                      int
+	Blocked                     int
+	Invoice_copies              int
+	Last_statement_no           int
+	Print_statements            int
+	Bill_to_customer_no         int
+	Priority                    int
+	Payment_method_code         int
+	Last_date_modified          int
+	Application_method          int
+	Allow_quantity_disc         int
+	Prices_including_tax        int
+	Location_code               int
+	Fax_no                      int
+	Telex_answer_back           int
+	Vat_registration_no         int
+	Combine_shipments           int
+	Gen_bus_posting_group       int
+	Picture                     int
+	Post_code                   int
+	State                       int
+	E_mail                      int
+	Home_page                   int
+	Reminder_terms_code         int
+	No_series                   int
+	Tax_area_code               int
+	Tax_liable                  int
+	Tax_bus_posting_group       int
+	Reserve                     int
+	Balance                     int
+	Balance_lcy                 int
+	Net_change                  int
+	Net_change_lcy              int
+	Sales_lcy                   int
+	Profit_lcy                  int
+	Inv_discounts_lcy           int
+	Pmt_discounts_lcy           int
+	Balance_due                 int
+	Balance_due_lcy             int
+	Payments                    int
+	Invoice_amounts             int
+	Cr_memo_amounts             int
+	Finance_charge_memo_amounts int
+	Payments_lcy                int
+	Inv_amounts_lcy             int
+	Cr_memo_amounts_lcy         int
+	Fin_charge_memo_amounts_lcy int
+	Debit_amount                int
+	Credit_amount               int
+	Debit_amount_lcy            int
+	Credit_amount_lcy           int
+	Reminder_amounts            int
+	Reminder_amounts_lcy        int
+	No_of_ledger_entries        int
+	Date_filter                 int
+	Department_filter           int
+	Project_filter              int
+	Currency_filter             int
 }{
-	No:                   1,
-	Name:                 2,
-	Address:              5,
-	Post_code:            91,
-	City:                 7,
-	Country_region_code:  35,
-	Phonenumber:          9,
-	Payment_terms_code:   27,
-	Status:               900,
-	Credit_limit:         20,
-	Last_order_date:      901,
-	Created_at:           902,
-	Profile_photo:        89,
-	Balance_lcy:          59,
-	Sales_lcy:            62,
-	No_of_ledger_entries: 903,
-	Date_filter:          55,
+	No:                          1,
+	Name:                        2,
+	Search_name:                 3,
+	Name_2:                      4,
+	Address:                     5,
+	Address_2:                   6,
+	City:                        7,
+	Contact:                     8,
+	Phone_no:                    9,
+	Telex_no:                    10,
+	Our_account_no:              14,
+	Territory_code:              15,
+	Department_code:             16,
+	Project_code:                17,
+	Chain_name:                  18,
+	Budgeted_amount:             19,
+	Credit_limit_lcy:            20,
+	Customer_posting_group:      21,
+	Currency_code:               22,
+	Price_group_code:            23,
+	Language_code:               24,
+	Statistics_group:            26,
+	Payment_terms_code:          27,
+	Fin_charge_terms_code:       28,
+	Salesperson_code:            29,
+	Shipment_method_code:        30,
+	Shipping_agent_code:         31,
+	Place_of_export:             32,
+	Invoice_disc_code:           33,
+	Cust_item_disc_gr:           34,
+	Country_code:                35,
+	Collection_method:           36,
+	Amount:                      37,
+	Blocked:                     39,
+	Invoice_copies:              40,
+	Last_statement_no:           41,
+	Print_statements:            42,
+	Bill_to_customer_no:         45,
+	Priority:                    46,
+	Payment_method_code:         47,
+	Last_date_modified:          54,
+	Application_method:          80,
+	Allow_quantity_disc:         81,
+	Prices_including_tax:        82,
+	Location_code:               83,
+	Fax_no:                      84,
+	Telex_answer_back:           85,
+	Vat_registration_no:         86,
+	Combine_shipments:           87,
+	Gen_bus_posting_group:       88,
+	Picture:                     89,
+	Post_code:                   91,
+	State:                       92,
+	E_mail:                      102,
+	Home_page:                   103,
+	Reminder_terms_code:         104,
+	No_series:                   107,
+	Tax_area_code:               108,
+	Tax_liable:                  109,
+	Tax_bus_posting_group:       110,
+	Reserve:                     115,
+	Balance:                     58,
+	Balance_lcy:                 59,
+	Net_change:                  60,
+	Net_change_lcy:              61,
+	Sales_lcy:                   62,
+	Profit_lcy:                  63,
+	Inv_discounts_lcy:           64,
+	Pmt_discounts_lcy:           65,
+	Balance_due:                 66,
+	Balance_due_lcy:             67,
+	Payments:                    69,
+	Invoice_amounts:             70,
+	Cr_memo_amounts:             71,
+	Finance_charge_memo_amounts: 72,
+	Payments_lcy:                74,
+	Inv_amounts_lcy:             75,
+	Cr_memo_amounts_lcy:         76,
+	Fin_charge_memo_amounts_lcy: 77,
+	Debit_amount:                97,
+	Credit_amount:               98,
+	Debit_amount_lcy:            99,
+	Credit_amount_lcy:           100,
+	Reminder_amounts:            105,
+	Reminder_amounts_lcy:        106,
+	No_of_ledger_entries:        903,
+	Date_filter:                 55,
+	Department_filter:           56,
+	Project_filter:              57,
+	Currency_filter:             111,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -218,36 +533,182 @@ func (t *Customer) FieldNo(fieldName string) int {
 		return 1
 	case "name":
 		return 2
+	case "search_name":
+		return 3
+	case "name_2":
+		return 4
 	case "address":
 		return 5
-	case "post_code":
-		return 91
+	case "address_2":
+		return 6
 	case "city":
 		return 7
-	case "country_region_code":
-		return 35
-	case "phonenumber":
+	case "contact":
+		return 8
+	case "phone_no":
 		return 9
+	case "telex_no":
+		return 10
+	case "our_account_no":
+		return 14
+	case "territory_code":
+		return 15
+	case "department_code":
+		return 16
+	case "project_code":
+		return 17
+	case "chain_name":
+		return 18
+	case "budgeted_amount":
+		return 19
+	case "credit_limit_lcy":
+		return 20
+	case "customer_posting_group":
+		return 21
+	case "currency_code":
+		return 22
+	case "price_group_code":
+		return 23
+	case "language_code":
+		return 24
+	case "statistics_group":
+		return 26
 	case "payment_terms_code":
 		return 27
-	case "status":
-		return 900
-	case "credit_limit":
-		return 20
-	case "last_order_date":
-		return 901
-	case "created_at":
-		return 902
-	case "profile_photo":
+	case "fin_charge_terms_code":
+		return 28
+	case "salesperson_code":
+		return 29
+	case "shipment_method_code":
+		return 30
+	case "shipping_agent_code":
+		return 31
+	case "place_of_export":
+		return 32
+	case "invoice_disc_code":
+		return 33
+	case "cust_item_disc_gr":
+		return 34
+	case "country_code":
+		return 35
+	case "collection_method":
+		return 36
+	case "amount":
+		return 37
+	case "blocked":
+		return 39
+	case "invoice_copies":
+		return 40
+	case "last_statement_no":
+		return 41
+	case "print_statements":
+		return 42
+	case "bill_to_customer_no":
+		return 45
+	case "priority":
+		return 46
+	case "payment_method_code":
+		return 47
+	case "last_date_modified":
+		return 54
+	case "application_method":
+		return 80
+	case "allow_quantity_disc":
+		return 81
+	case "prices_including_tax":
+		return 82
+	case "location_code":
+		return 83
+	case "fax_no":
+		return 84
+	case "telex_answer_back":
+		return 85
+	case "vat_registration_no":
+		return 86
+	case "combine_shipments":
+		return 87
+	case "gen_bus_posting_group":
+		return 88
+	case "picture":
 		return 89
+	case "post_code":
+		return 91
+	case "state":
+		return 92
+	case "e_mail":
+		return 102
+	case "home_page":
+		return 103
+	case "reminder_terms_code":
+		return 104
+	case "no_series":
+		return 107
+	case "tax_area_code":
+		return 108
+	case "tax_liable":
+		return 109
+	case "tax_bus_posting_group":
+		return 110
+	case "reserve":
+		return 115
+	case "balance":
+		return 58
 	case "balance_lcy":
 		return 59
+	case "net_change":
+		return 60
+	case "net_change_lcy":
+		return 61
 	case "sales_lcy":
 		return 62
+	case "profit_lcy":
+		return 63
+	case "inv_discounts_lcy":
+		return 64
+	case "pmt_discounts_lcy":
+		return 65
+	case "balance_due":
+		return 66
+	case "balance_due_lcy":
+		return 67
+	case "payments":
+		return 69
+	case "invoice_amounts":
+		return 70
+	case "cr_memo_amounts":
+		return 71
+	case "finance_charge_memo_amounts":
+		return 72
+	case "payments_lcy":
+		return 74
+	case "inv_amounts_lcy":
+		return 75
+	case "cr_memo_amounts_lcy":
+		return 76
+	case "fin_charge_memo_amounts_lcy":
+		return 77
+	case "debit_amount":
+		return 97
+	case "credit_amount":
+		return 98
+	case "debit_amount_lcy":
+		return 99
+	case "credit_amount_lcy":
+		return 100
+	case "reminder_amounts":
+		return 105
+	case "reminder_amounts_lcy":
+		return 106
 	case "no_of_ledger_entries":
 		return 903
 	case "date_filter":
 		return 55
+	case "department_filter":
+		return 56
+	case "project_filter":
+		return 57
+	case "currency_filter":
+		return 111
 	}
 	return 0
 }
@@ -259,36 +720,182 @@ func (t *Customer) FieldName(fieldNo int) string {
 		return "no"
 	case 2:
 		return "name"
+	case 3:
+		return "search_name"
+	case 4:
+		return "name_2"
 	case 5:
 		return "address"
-	case 91:
-		return "post_code"
+	case 6:
+		return "address_2"
 	case 7:
 		return "city"
-	case 35:
-		return "country_region_code"
+	case 8:
+		return "contact"
 	case 9:
-		return "phonenumber"
+		return "phone_no"
+	case 10:
+		return "telex_no"
+	case 14:
+		return "our_account_no"
+	case 15:
+		return "territory_code"
+	case 16:
+		return "department_code"
+	case 17:
+		return "project_code"
+	case 18:
+		return "chain_name"
+	case 19:
+		return "budgeted_amount"
+	case 20:
+		return "credit_limit_lcy"
+	case 21:
+		return "customer_posting_group"
+	case 22:
+		return "currency_code"
+	case 23:
+		return "price_group_code"
+	case 24:
+		return "language_code"
+	case 26:
+		return "statistics_group"
 	case 27:
 		return "payment_terms_code"
-	case 900:
-		return "status"
-	case 20:
-		return "credit_limit"
-	case 901:
-		return "last_order_date"
-	case 902:
-		return "created_at"
+	case 28:
+		return "fin_charge_terms_code"
+	case 29:
+		return "salesperson_code"
+	case 30:
+		return "shipment_method_code"
+	case 31:
+		return "shipping_agent_code"
+	case 32:
+		return "place_of_export"
+	case 33:
+		return "invoice_disc_code"
+	case 34:
+		return "cust_item_disc_gr"
+	case 35:
+		return "country_code"
+	case 36:
+		return "collection_method"
+	case 37:
+		return "amount"
+	case 39:
+		return "blocked"
+	case 40:
+		return "invoice_copies"
+	case 41:
+		return "last_statement_no"
+	case 42:
+		return "print_statements"
+	case 45:
+		return "bill_to_customer_no"
+	case 46:
+		return "priority"
+	case 47:
+		return "payment_method_code"
+	case 54:
+		return "last_date_modified"
+	case 80:
+		return "application_method"
+	case 81:
+		return "allow_quantity_disc"
+	case 82:
+		return "prices_including_tax"
+	case 83:
+		return "location_code"
+	case 84:
+		return "fax_no"
+	case 85:
+		return "telex_answer_back"
+	case 86:
+		return "vat_registration_no"
+	case 87:
+		return "combine_shipments"
+	case 88:
+		return "gen_bus_posting_group"
 	case 89:
-		return "profile_photo"
+		return "picture"
+	case 91:
+		return "post_code"
+	case 92:
+		return "state"
+	case 102:
+		return "e_mail"
+	case 103:
+		return "home_page"
+	case 104:
+		return "reminder_terms_code"
+	case 107:
+		return "no_series"
+	case 108:
+		return "tax_area_code"
+	case 109:
+		return "tax_liable"
+	case 110:
+		return "tax_bus_posting_group"
+	case 115:
+		return "reserve"
+	case 58:
+		return "balance"
 	case 59:
 		return "balance_lcy"
+	case 60:
+		return "net_change"
+	case 61:
+		return "net_change_lcy"
 	case 62:
 		return "sales_lcy"
+	case 63:
+		return "profit_lcy"
+	case 64:
+		return "inv_discounts_lcy"
+	case 65:
+		return "pmt_discounts_lcy"
+	case 66:
+		return "balance_due"
+	case 67:
+		return "balance_due_lcy"
+	case 69:
+		return "payments"
+	case 70:
+		return "invoice_amounts"
+	case 71:
+		return "cr_memo_amounts"
+	case 72:
+		return "finance_charge_memo_amounts"
+	case 74:
+		return "payments_lcy"
+	case 75:
+		return "inv_amounts_lcy"
+	case 76:
+		return "cr_memo_amounts_lcy"
+	case 77:
+		return "fin_charge_memo_amounts_lcy"
+	case 97:
+		return "debit_amount"
+	case 98:
+		return "credit_amount"
+	case 99:
+		return "debit_amount_lcy"
+	case 100:
+		return "credit_amount_lcy"
+	case 105:
+		return "reminder_amounts"
+	case 106:
+		return "reminder_amounts_lcy"
 	case 903:
 		return "no_of_ledger_entries"
 	case 55:
 		return "date_filter"
+	case 56:
+		return "department_filter"
+	case 57:
+		return "project_filter"
+	case 111:
+		return "currency_filter"
 	}
 	return ""
 }
@@ -313,11 +920,63 @@ func (t *Customer) GetPostgresTableSchema() string {
 	return GetCustomerPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *Customer) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *Customer) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["no"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(CustomerTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *Customer) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(CustomerTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *Customer) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(CustomerTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *Customer) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(CustomerTableName, key)
 }
 
 // ========================================
@@ -326,23 +985,71 @@ func (t *Customer) TriggerError() error {
 
 // Triggers of Customer: a business logic type implements the ones it needs
 type (
-	CustomerOnInsert                       interface{ OnInsert(rec *Customer) error }
-	CustomerOnModify                       interface{ OnModify(rec *Customer) error }
-	CustomerOnDelete                       interface{ OnDelete(rec *Customer) error }
-	CustomerOnRename                       interface{ OnRename(rec *Customer) error }
-	CustomerOnValidate_No                  interface{ OnValidate_No(rec *Customer) error }
-	CustomerOnValidate_Name                interface{ OnValidate_Name(rec *Customer) error }
-	CustomerOnValidate_Address             interface{ OnValidate_Address(rec *Customer) error }
-	CustomerOnValidate_Post_code           interface{ OnValidate_Post_code(rec *Customer) error }
-	CustomerOnValidate_City                interface{ OnValidate_City(rec *Customer) error }
-	CustomerOnValidate_Country_region_code interface{ OnValidate_Country_region_code(rec *Customer) error }
-	CustomerOnValidate_Phonenumber         interface{ OnValidate_Phonenumber(rec *Customer) error }
-	CustomerOnValidate_Payment_terms_code  interface{ OnValidate_Payment_terms_code(rec *Customer) error }
-	CustomerOnValidate_Status              interface{ OnValidate_Status(rec *Customer) error }
-	CustomerOnValidate_Credit_limit        interface{ OnValidate_Credit_limit(rec *Customer) error }
-	CustomerOnValidate_Last_order_date     interface{ OnValidate_Last_order_date(rec *Customer) error }
-	CustomerOnValidate_Created_at          interface{ OnValidate_Created_at(rec *Customer) error }
-	CustomerOnValidate_Profile_photo       interface{ OnValidate_Profile_photo(rec *Customer) error }
+	CustomerOnInsert                          interface{ OnInsert(rec *Customer) error }
+	CustomerOnModify                          interface{ OnModify(rec *Customer) error }
+	CustomerOnDelete                          interface{ OnDelete(rec *Customer) error }
+	CustomerOnRename                          interface{ OnRename(rec *Customer) error }
+	CustomerOnValidate_No                     interface{ OnValidate_No(rec *Customer) error }
+	CustomerOnValidate_Name                   interface{ OnValidate_Name(rec *Customer) error }
+	CustomerOnValidate_Search_name            interface{ OnValidate_Search_name(rec *Customer) error }
+	CustomerOnValidate_Name_2                 interface{ OnValidate_Name_2(rec *Customer) error }
+	CustomerOnValidate_Address                interface{ OnValidate_Address(rec *Customer) error }
+	CustomerOnValidate_Address_2              interface{ OnValidate_Address_2(rec *Customer) error }
+	CustomerOnValidate_City                   interface{ OnValidate_City(rec *Customer) error }
+	CustomerOnValidate_Contact                interface{ OnValidate_Contact(rec *Customer) error }
+	CustomerOnValidate_Phone_no               interface{ OnValidate_Phone_no(rec *Customer) error }
+	CustomerOnValidate_Telex_no               interface{ OnValidate_Telex_no(rec *Customer) error }
+	CustomerOnValidate_Our_account_no         interface{ OnValidate_Our_account_no(rec *Customer) error }
+	CustomerOnValidate_Territory_code         interface{ OnValidate_Territory_code(rec *Customer) error }
+	CustomerOnValidate_Department_code        interface{ OnValidate_Department_code(rec *Customer) error }
+	CustomerOnValidate_Project_code           interface{ OnValidate_Project_code(rec *Customer) error }
+	CustomerOnValidate_Chain_name             interface{ OnValidate_Chain_name(rec *Customer) error }
+	CustomerOnValidate_Budgeted_amount        interface{ OnValidate_Budgeted_amount(rec *Customer) error }
+	CustomerOnValidate_Credit_limit_lcy       interface{ OnValidate_Credit_limit_lcy(rec *Customer) error }
+	CustomerOnValidate_Customer_posting_group interface{ OnValidate_Customer_posting_group(rec *Customer) error }
+	CustomerOnValidate_Currency_code          interface{ OnValidate_Currency_code(rec *Customer) error }
+	CustomerOnValidate_Price_group_code       interface{ OnValidate_Price_group_code(rec *Customer) error }
+	CustomerOnValidate_Language_code          interface{ OnValidate_Language_code(rec *Customer) error }
+	CustomerOnValidate_Statistics_group       interface{ OnValidate_Statistics_group(rec *Customer) error }
+	CustomerOnValidate_Payment_terms_code     interface{ OnValidate_Payment_terms_code(rec *Customer) error }
+	CustomerOnValidate_Fin_charge_terms_code  interface{ OnValidate_Fin_charge_terms_code(rec *Customer) error }
+	CustomerOnValidate_Salesperson_code       interface{ OnValidate_Salesperson_code(rec *Customer) error }
+	CustomerOnValidate_Shipment_method_code   interface{ OnValidate_Shipment_method_code(rec *Customer) error }
+	CustomerOnValidate_Shipping_agent_code    interface{ OnValidate_Shipping_agent_code(rec *Customer) error }
+	CustomerOnValidate_Place_of_export        interface{ OnValidate_Place_of_export(rec *Customer) error }
+	CustomerOnValidate_Invoice_disc_code      interface{ OnValidate_Invoice_disc_code(rec *Customer) error }
+	CustomerOnValidate_Cust_item_disc_gr      interface{ OnValidate_Cust_item_disc_gr(rec *Customer) error }
+	CustomerOnValidate_Country_code           interface{ OnValidate_Country_code(rec *Customer) error }
+	CustomerOnValidate_Collection_method      interface{ OnValidate_Collection_method(rec *Customer) error }
+	CustomerOnValidate_Amount                 interface{ OnValidate_Amount(rec *Customer) error }
+	CustomerOnValidate_Blocked                interface{ OnValidate_Blocked(rec *Customer) error }
+	CustomerOnValidate_Invoice_copies         interface{ OnValidate_Invoice_copies(rec *Customer) error }
+	CustomerOnValidate_Last_statement_no      interface{ OnValidate_Last_statement_no(rec *Customer) error }
+	CustomerOnValidate_Print_statements       interface{ OnValidate_Print_statements(rec *Customer) error }
+	CustomerOnValidate_Bill_to_customer_no    interface{ OnValidate_Bill_to_customer_no(rec *Customer) error }
+	CustomerOnValidate_Priority               interface{ OnValidate_Priority(rec *Customer) error }
+	CustomerOnValidate_Payment_method_code    interface{ OnValidate_Payment_method_code(rec *Customer) error }
+	CustomerOnValidate_Last_date_modified     interface{ OnValidate_Last_date_modified(rec *Customer) error }
+	CustomerOnValidate_Application_method     interface{ OnValidate_Application_method(rec *Customer) error }
+	CustomerOnValidate_Allow_quantity_disc    interface{ OnValidate_Allow_quantity_disc(rec *Customer) error }
+	CustomerOnValidate_Prices_including_tax   interface{ OnValidate_Prices_including_tax(rec *Customer) error }
+	CustomerOnValidate_Location_code          interface{ OnValidate_Location_code(rec *Customer) error }
+	CustomerOnValidate_Fax_no                 interface{ OnValidate_Fax_no(rec *Customer) error }
+	CustomerOnValidate_Telex_answer_back      interface{ OnValidate_Telex_answer_back(rec *Customer) error }
+	CustomerOnValidate_Vat_registration_no    interface{ OnValidate_Vat_registration_no(rec *Customer) error }
+	CustomerOnValidate_Combine_shipments      interface{ OnValidate_Combine_shipments(rec *Customer) error }
+	CustomerOnValidate_Gen_bus_posting_group  interface{ OnValidate_Gen_bus_posting_group(rec *Customer) error }
+	CustomerOnValidate_Picture                interface{ OnValidate_Picture(rec *Customer) error }
+	CustomerOnValidate_Post_code              interface{ OnValidate_Post_code(rec *Customer) error }
+	CustomerOnValidate_State                  interface{ OnValidate_State(rec *Customer) error }
+	CustomerOnValidate_E_mail                 interface{ OnValidate_E_mail(rec *Customer) error }
+	CustomerOnValidate_Home_page              interface{ OnValidate_Home_page(rec *Customer) error }
+	CustomerOnValidate_Reminder_terms_code    interface{ OnValidate_Reminder_terms_code(rec *Customer) error }
+	CustomerOnValidate_No_series              interface{ OnValidate_No_series(rec *Customer) error }
+	CustomerOnValidate_Tax_area_code          interface{ OnValidate_Tax_area_code(rec *Customer) error }
+	CustomerOnValidate_Tax_liable             interface{ OnValidate_Tax_liable(rec *Customer) error }
+	CustomerOnValidate_Tax_bus_posting_group  interface{ OnValidate_Tax_bus_posting_group(rec *Customer) error }
+	CustomerOnValidate_Reserve                interface{ OnValidate_Reserve(rec *Customer) error }
 )
 
 // customerLogic is the registered business logic of Customer, in
@@ -376,28 +1083,124 @@ func customerTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(CustomerOnValidate_No)
 	case "OnValidate_Name":
 		_, ok = logic.(CustomerOnValidate_Name)
+	case "OnValidate_Search_name":
+		_, ok = logic.(CustomerOnValidate_Search_name)
+	case "OnValidate_Name_2":
+		_, ok = logic.(CustomerOnValidate_Name_2)
 	case "OnValidate_Address":
 		_, ok = logic.(CustomerOnValidate_Address)
-	case "OnValidate_Post_code":
-		_, ok = logic.(CustomerOnValidate_Post_code)
+	case "OnValidate_Address_2":
+		_, ok = logic.(CustomerOnValidate_Address_2)
 	case "OnValidate_City":
 		_, ok = logic.(CustomerOnValidate_City)
-	case "OnValidate_Country_region_code":
-		_, ok = logic.(CustomerOnValidate_Country_region_code)
-	case "OnValidate_Phonenumber":
-		_, ok = logic.(CustomerOnValidate_Phonenumber)
+	case "OnValidate_Contact":
+		_, ok = logic.(CustomerOnValidate_Contact)
+	case "OnValidate_Phone_no":
+		_, ok = logic.(CustomerOnValidate_Phone_no)
+	case "OnValidate_Telex_no":
+		_, ok = logic.(CustomerOnValidate_Telex_no)
+	case "OnValidate_Our_account_no":
+		_, ok = logic.(CustomerOnValidate_Our_account_no)
+	case "OnValidate_Territory_code":
+		_, ok = logic.(CustomerOnValidate_Territory_code)
+	case "OnValidate_Department_code":
+		_, ok = logic.(CustomerOnValidate_Department_code)
+	case "OnValidate_Project_code":
+		_, ok = logic.(CustomerOnValidate_Project_code)
+	case "OnValidate_Chain_name":
+		_, ok = logic.(CustomerOnValidate_Chain_name)
+	case "OnValidate_Budgeted_amount":
+		_, ok = logic.(CustomerOnValidate_Budgeted_amount)
+	case "OnValidate_Credit_limit_lcy":
+		_, ok = logic.(CustomerOnValidate_Credit_limit_lcy)
+	case "OnValidate_Customer_posting_group":
+		_, ok = logic.(CustomerOnValidate_Customer_posting_group)
+	case "OnValidate_Currency_code":
+		_, ok = logic.(CustomerOnValidate_Currency_code)
+	case "OnValidate_Price_group_code":
+		_, ok = logic.(CustomerOnValidate_Price_group_code)
+	case "OnValidate_Language_code":
+		_, ok = logic.(CustomerOnValidate_Language_code)
+	case "OnValidate_Statistics_group":
+		_, ok = logic.(CustomerOnValidate_Statistics_group)
 	case "OnValidate_Payment_terms_code":
 		_, ok = logic.(CustomerOnValidate_Payment_terms_code)
-	case "OnValidate_Status":
-		_, ok = logic.(CustomerOnValidate_Status)
-	case "OnValidate_Credit_limit":
-		_, ok = logic.(CustomerOnValidate_Credit_limit)
-	case "OnValidate_Last_order_date":
-		_, ok = logic.(CustomerOnValidate_Last_order_date)
-	case "OnValidate_Created_at":
-		_, ok = logic.(CustomerOnValidate_Created_at)
-	case "OnValidate_Profile_photo":
-		_, ok = logic.(CustomerOnValidate_Profile_photo)
+	case "OnValidate_Fin_charge_terms_code":
+		_, ok = logic.(CustomerOnValidate_Fin_charge_terms_code)
+	case "OnValidate_Salesperson_code":
+		_, ok = logic.(CustomerOnValidate_Salesperson_code)
+	case "OnValidate_Shipment_method_code":
+		_, ok = logic.(CustomerOnValidate_Shipment_method_code)
+	case "OnValidate_Shipping_agent_code":
+		_, ok = logic.(CustomerOnValidate_Shipping_agent_code)
+	case "OnValidate_Place_of_export":
+		_, ok = logic.(CustomerOnValidate_Place_of_export)
+	case "OnValidate_Invoice_disc_code":
+		_, ok = logic.(CustomerOnValidate_Invoice_disc_code)
+	case "OnValidate_Cust_item_disc_gr":
+		_, ok = logic.(CustomerOnValidate_Cust_item_disc_gr)
+	case "OnValidate_Country_code":
+		_, ok = logic.(CustomerOnValidate_Country_code)
+	case "OnValidate_Collection_method":
+		_, ok = logic.(CustomerOnValidate_Collection_method)
+	case "OnValidate_Amount":
+		_, ok = logic.(CustomerOnValidate_Amount)
+	case "OnValidate_Blocked":
+		_, ok = logic.(CustomerOnValidate_Blocked)
+	case "OnValidate_Invoice_copies":
+		_, ok = logic.(CustomerOnValidate_Invoice_copies)
+	case "OnValidate_Last_statement_no":
+		_, ok = logic.(CustomerOnValidate_Last_statement_no)
+	case "OnValidate_Print_statements":
+		_, ok = logic.(CustomerOnValidate_Print_statements)
+	case "OnValidate_Bill_to_customer_no":
+		_, ok = logic.(CustomerOnValidate_Bill_to_customer_no)
+	case "OnValidate_Priority":
+		_, ok = logic.(CustomerOnValidate_Priority)
+	case "OnValidate_Payment_method_code":
+		_, ok = logic.(CustomerOnValidate_Payment_method_code)
+	case "OnValidate_Last_date_modified":
+		_, ok = logic.(CustomerOnValidate_Last_date_modified)
+	case "OnValidate_Application_method":
+		_, ok = logic.(CustomerOnValidate_Application_method)
+	case "OnValidate_Allow_quantity_disc":
+		_, ok = logic.(CustomerOnValidate_Allow_quantity_disc)
+	case "OnValidate_Prices_including_tax":
+		_, ok = logic.(CustomerOnValidate_Prices_including_tax)
+	case "OnValidate_Location_code":
+		_, ok = logic.(CustomerOnValidate_Location_code)
+	case "OnValidate_Fax_no":
+		_, ok = logic.(CustomerOnValidate_Fax_no)
+	case "OnValidate_Telex_answer_back":
+		_, ok = logic.(CustomerOnValidate_Telex_answer_back)
+	case "OnValidate_Vat_registration_no":
+		_, ok = logic.(CustomerOnValidate_Vat_registration_no)
+	case "OnValidate_Combine_shipments":
+		_, ok = logic.(CustomerOnValidate_Combine_shipments)
+	case "OnValidate_Gen_bus_posting_group":
+		_, ok = logic.(CustomerOnValidate_Gen_bus_posting_group)
+	case "OnValidate_Picture":
+		_, ok = logic.(CustomerOnValidate_Picture)
+	case "OnValidate_Post_code":
+		_, ok = logic.(CustomerOnValidate_Post_code)
+	case "OnValidate_State":
+		_, ok = logic.(CustomerOnValidate_State)
+	case "OnValidate_E_mail":
+		_, ok = logic.(CustomerOnValidate_E_mail)
+	case "OnValidate_Home_page":
+		_, ok = logic.(CustomerOnValidate_Home_page)
+	case "OnValidate_Reminder_terms_code":
+		_, ok = logic.(CustomerOnValidate_Reminder_terms_code)
+	case "OnValidate_No_series":
+		_, ok = logic.(CustomerOnValidate_No_series)
+	case "OnValidate_Tax_area_code":
+		_, ok = logic.(CustomerOnValidate_Tax_area_code)
+	case "OnValidate_Tax_liable":
+		_, ok = logic.(CustomerOnValidate_Tax_liable)
+	case "OnValidate_Tax_bus_posting_group":
+		_, ok = logic.(CustomerOnValidate_Tax_bus_posting_group)
+	case "OnValidate_Reserve":
+		_, ok = logic.(CustomerOnValidate_Reserve)
 	default:
 		return false, false
 	}
@@ -481,22 +1284,130 @@ func (t *Customer) CheckFields() error {
 	if err := tables.CheckMaxLength(CustomerTableName, "name", string(t.Name), 50); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(CustomerTableName, "search_name", string(t.Search_name), 50); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "name_2", string(t.Name_2), 50); err != nil {
+		return err
+	}
 	if err := tables.CheckMaxLength(CustomerTableName, "address", string(t.Address), 50); err != nil {
 		return err
 	}
-	if err := tables.CheckMaxLength(CustomerTableName, "post_code", string(t.Post_code), 20); err != nil {
+	if err := tables.CheckMaxLength(CustomerTableName, "address_2", string(t.Address_2), 50); err != nil {
 		return err
 	}
 	if err := tables.CheckMaxLength(CustomerTableName, "city", string(t.City), 50); err != nil {
 		return err
 	}
-	if err := tables.CheckMaxLength(CustomerTableName, "country_region_code", string(t.Country_region_code), 10); err != nil {
+	if err := tables.CheckMaxLength(CustomerTableName, "contact", string(t.Contact), 50); err != nil {
 		return err
 	}
-	if err := tables.CheckMaxLength(CustomerTableName, "phonenumber", string(t.Phonenumber), 30); err != nil {
+	if err := tables.CheckMaxLength(CustomerTableName, "phone_no", string(t.Phone_no), 30); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "telex_no", string(t.Telex_no), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "our_account_no", string(t.Our_account_no), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "territory_code", string(t.Territory_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "department_code", string(t.Department_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "project_code", string(t.Project_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "chain_name", string(t.Chain_name), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "customer_posting_group", string(t.Customer_posting_group), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "currency_code", string(t.Currency_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "price_group_code", string(t.Price_group_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "language_code", string(t.Language_code), 10); err != nil {
 		return err
 	}
 	if err := tables.CheckMaxLength(CustomerTableName, "payment_terms_code", string(t.Payment_terms_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "fin_charge_terms_code", string(t.Fin_charge_terms_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "salesperson_code", string(t.Salesperson_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "shipment_method_code", string(t.Shipment_method_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "shipping_agent_code", string(t.Shipping_agent_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "place_of_export", string(t.Place_of_export), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "invoice_disc_code", string(t.Invoice_disc_code), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "cust_item_disc_gr", string(t.Cust_item_disc_gr), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "country_code", string(t.Country_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "collection_method", string(t.Collection_method), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "bill_to_customer_no", string(t.Bill_to_customer_no), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "payment_method_code", string(t.Payment_method_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "location_code", string(t.Location_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "fax_no", string(t.Fax_no), 30); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "telex_answer_back", string(t.Telex_answer_back), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "vat_registration_no", string(t.Vat_registration_no), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "gen_bus_posting_group", string(t.Gen_bus_posting_group), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "post_code", string(t.Post_code), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "state", string(t.State), 30); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "e_mail", string(t.E_mail), 80); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "home_page", string(t.Home_page), 80); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "reminder_terms_code", string(t.Reminder_terms_code), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "no_series", string(t.No_series), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "tax_area_code", string(t.Tax_area_code), 20); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(CustomerTableName, "tax_bus_posting_group", string(t.Tax_bus_posting_group), 10); err != nil {
 		return err
 	}
 	return nil
@@ -528,19 +1439,89 @@ func GetCustomerTableSchema() string {
 	return `
 		no TEXT(20) PRIMARY KEY,
 		name TEXT(50),
+		search_name TEXT(50),
+		name_2 TEXT(50),
 		address TEXT(50),
-		post_code TEXT(20),
+		address_2 TEXT(50),
 		city TEXT(50),
-		country_region_code TEXT(10),
-		phonenumber TEXT(30),
+		contact TEXT(50),
+		phone_no TEXT(30),
+		telex_no TEXT(20),
+		our_account_no TEXT(20),
+		territory_code TEXT(10),
+		department_code TEXT(10),
+		project_code TEXT(10),
+		chain_name TEXT(10),
+		budgeted_amount TEXT,
+		credit_limit_lcy TEXT,
+		customer_posting_group TEXT(10),
+		currency_code TEXT(10),
+		price_group_code TEXT(10),
+		language_code TEXT(10),
+		statistics_group INTEGER,
 		payment_terms_code TEXT(10),
-		status INTEGER CHECK (status >= 0 AND status <= 4),
-		credit_limit TEXT,
-		last_order_date TEXT,
-		created_at TEXT,
-		profile_photo BLOB,
+		fin_charge_terms_code TEXT(10),
+		salesperson_code TEXT(10),
+		shipment_method_code TEXT(10),
+		shipping_agent_code TEXT(10),
+		place_of_export TEXT(20),
+		invoice_disc_code TEXT(20),
+		cust_item_disc_gr TEXT(10),
+		country_code TEXT(10),
+		collection_method TEXT(20),
+		amount TEXT,
+		blocked INTEGER,
+		invoice_copies INTEGER,
+		last_statement_no INTEGER,
+		print_statements INTEGER,
+		bill_to_customer_no TEXT(20),
+		priority INTEGER,
+		payment_method_code TEXT(10),
+		last_date_modified TEXT,
+		application_method INTEGER CHECK (application_method >= 0 AND application_method <= 1),
+		allow_quantity_disc INTEGER DEFAULT true,
+		prices_including_tax INTEGER,
+		location_code TEXT(10),
+		fax_no TEXT(30),
+		telex_answer_back TEXT(20),
+		vat_registration_no TEXT(20),
+		combine_shipments INTEGER,
+		gen_bus_posting_group TEXT(10),
+		picture BLOB,
+		post_code TEXT(20),
+		state TEXT(30),
+		e_mail TEXT(80),
+		home_page TEXT(80),
+		reminder_terms_code TEXT(10),
+		no_series TEXT(10),
+		tax_area_code TEXT(20),
+		tax_liable INTEGER,
+		tax_bus_posting_group TEXT(10),
+		reserve INTEGER CHECK (reserve >= 0 AND reserve <= 2) DEFAULT 1,
+		balance TEXT,
 		balance_lcy TEXT,
+		net_change TEXT,
+		net_change_lcy TEXT,
 		sales_lcy TEXT,
+		profit_lcy TEXT,
+		inv_discounts_lcy TEXT,
+		pmt_discounts_lcy TEXT,
+		balance_due TEXT,
+		balance_due_lcy TEXT,
+		payments TEXT,
+		invoice_amounts TEXT,
+		cr_memo_amounts TEXT,
+		finance_charge_memo_amounts TEXT,
+		payments_lcy TEXT,
+		inv_amounts_lcy TEXT,
+		cr_memo_amounts_lcy TEXT,
+		fin_charge_memo_amounts_lcy TEXT,
+		debit_amount TEXT,
+		credit_amount TEXT,
+		debit_amount_lcy TEXT,
+		credit_amount_lcy TEXT,
+		reminder_amounts TEXT,
+		reminder_amounts_lcy TEXT,
 		no_of_ledger_entries INTEGER
 	`
 }
@@ -550,19 +1531,89 @@ func GetCustomerPostgresTableSchema() string {
 	return `
 		no VARCHAR(20) PRIMARY KEY,
 		name VARCHAR(50),
+		search_name VARCHAR(50),
+		name_2 VARCHAR(50),
 		address VARCHAR(50),
-		post_code VARCHAR(20),
+		address_2 VARCHAR(50),
 		city VARCHAR(50),
-		country_region_code VARCHAR(10),
-		phonenumber VARCHAR(30),
+		contact VARCHAR(50),
+		phone_no VARCHAR(30),
+		telex_no VARCHAR(20),
+		our_account_no VARCHAR(20),
+		territory_code VARCHAR(10),
+		department_code VARCHAR(10),
+		project_code VARCHAR(10),
+		chain_name VARCHAR(10),
+		budgeted_amount NUMERIC,
+		credit_limit_lcy NUMERIC,
+		customer_posting_group VARCHAR(10),
+		currency_code VARCHAR(10),
+		price_group_code VARCHAR(10),
+		language_code VARCHAR(10),
+		statistics_group INTEGER,
 		payment_terms_code VARCHAR(10),
-		status INTEGER CHECK (status >= 0 AND status <= 4),
-		credit_limit NUMERIC,
-		last_order_date DATE,
-		created_at TIMESTAMP,
-		profile_photo BYTEA,
+		fin_charge_terms_code VARCHAR(10),
+		salesperson_code VARCHAR(10),
+		shipment_method_code VARCHAR(10),
+		shipping_agent_code VARCHAR(10),
+		place_of_export VARCHAR(20),
+		invoice_disc_code VARCHAR(20),
+		cust_item_disc_gr VARCHAR(10),
+		country_code VARCHAR(10),
+		collection_method VARCHAR(20),
+		amount NUMERIC,
+		blocked BOOLEAN,
+		invoice_copies INTEGER,
+		last_statement_no INTEGER,
+		print_statements BOOLEAN,
+		bill_to_customer_no VARCHAR(20),
+		priority INTEGER,
+		payment_method_code VARCHAR(10),
+		last_date_modified DATE,
+		application_method INTEGER CHECK (application_method >= 0 AND application_method <= 1),
+		allow_quantity_disc BOOLEAN DEFAULT true,
+		prices_including_tax BOOLEAN,
+		location_code VARCHAR(10),
+		fax_no VARCHAR(30),
+		telex_answer_back VARCHAR(20),
+		vat_registration_no VARCHAR(20),
+		combine_shipments BOOLEAN,
+		gen_bus_posting_group VARCHAR(10),
+		picture BYTEA,
+		post_code VARCHAR(20),
+		state VARCHAR(30),
+		e_mail VARCHAR(80),
+		home_page VARCHAR(80),
+		reminder_terms_code VARCHAR(10),
+		no_series VARCHAR(10),
+		tax_area_code VARCHAR(20),
+		tax_liable BOOLEAN,
+		tax_bus_posting_group VARCHAR(10),
+		reserve INTEGER CHECK (reserve >= 0 AND reserve <= 2) DEFAULT 1,
+		balance NUMERIC,
 		balance_lcy NUMERIC,
+		net_change NUMERIC,
+		net_change_lcy NUMERIC,
 		sales_lcy NUMERIC,
+		profit_lcy NUMERIC,
+		inv_discounts_lcy NUMERIC,
+		pmt_discounts_lcy NUMERIC,
+		balance_due NUMERIC,
+		balance_due_lcy NUMERIC,
+		payments NUMERIC,
+		invoice_amounts NUMERIC,
+		cr_memo_amounts NUMERIC,
+		finance_charge_memo_amounts NUMERIC,
+		payments_lcy NUMERIC,
+		inv_amounts_lcy NUMERIC,
+		cr_memo_amounts_lcy NUMERIC,
+		fin_charge_memo_amounts_lcy NUMERIC,
+		debit_amount NUMERIC,
+		credit_amount NUMERIC,
+		debit_amount_lcy NUMERIC,
+		credit_amount_lcy NUMERIC,
+		reminder_amounts NUMERIC,
+		reminder_amounts_lcy NUMERIC,
 		no_of_ledger_entries INTEGER
 	`
 }
@@ -622,7 +1673,48 @@ func (t *Customer) CreateTableWithDBType(db database.Executor, company string, d
 func (t *Customer) SyncKeys(db database.Executor, company string, dbType database.DBType) error {
 	tableName := fmt.Sprintf("%s$%s", company, CustomerTableName)
 	siftCompany := company
-	_ = tableName // no keys: nothing to index
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (no)`,
+		fmt.Sprintf("%s$Customer$Primary", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index Primary: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (search_name)`,
+		fmt.Sprintf("%s$Customer$search_name", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index search_name: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (customer_posting_group)`,
+		fmt.Sprintf("%s$Customer$customer_posting_group", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index customer_posting_group: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (currency_code)`,
+		fmt.Sprintf("%s$Customer$currency_code", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index currency_code: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (country_code)`,
+		fmt.Sprintf("%s$Customer$country_code", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index country_code: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (gen_bus_posting_group)`,
+		fmt.Sprintf("%s$Customer$gen_bus_posting_group", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index gen_bus_posting_group: %w", err)
+	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (salesperson_code)`,
+		fmt.Sprintf("%s$Customer$salesperson_code", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index salesperson_code: %w", err)
+	}
 	var keys []sift.Key
 	for _, spec := range customerSIFTSpecs() {
 		keys = append(keys, sift.BuildKey(dbType, siftCompany, CustomerTableName, tableName, spec))
@@ -681,6 +1773,8 @@ func (t *Customer) InitRecord() {
 
 // applyDefaults assigns the YAML default values and auto timestamps
 func (t *Customer) applyDefaults() {
+	t.Allow_quantity_disc = true
+	t.Reserve = 1
 }
 
 // StoreOldValues stores current field values for change detection
@@ -689,23 +1783,271 @@ func (t *Customer) StoreOldValues() {
 	t.oldValues = make(map[string]interface{})
 	t.oldValues["no"] = t.No
 	t.oldValues["name"] = t.Name
+	t.oldValues["search_name"] = t.Search_name
+	t.oldValues["name_2"] = t.Name_2
 	t.oldValues["address"] = t.Address
-	t.oldValues["post_code"] = t.Post_code
+	t.oldValues["address_2"] = t.Address_2
 	t.oldValues["city"] = t.City
-	t.oldValues["country_region_code"] = t.Country_region_code
-	t.oldValues["phonenumber"] = t.Phonenumber
+	t.oldValues["contact"] = t.Contact
+	t.oldValues["phone_no"] = t.Phone_no
+	t.oldValues["telex_no"] = t.Telex_no
+	t.oldValues["our_account_no"] = t.Our_account_no
+	t.oldValues["territory_code"] = t.Territory_code
+	t.oldValues["department_code"] = t.Department_code
+	t.oldValues["project_code"] = t.Project_code
+	t.oldValues["chain_name"] = t.Chain_name
+	t.oldValues["budgeted_amount"] = t.Budgeted_amount
+	t.oldValues["credit_limit_lcy"] = t.Credit_limit_lcy
+	t.oldValues["customer_posting_group"] = t.Customer_posting_group
+	t.oldValues["currency_code"] = t.Currency_code
+	t.oldValues["price_group_code"] = t.Price_group_code
+	t.oldValues["language_code"] = t.Language_code
+	t.oldValues["statistics_group"] = t.Statistics_group
 	t.oldValues["payment_terms_code"] = t.Payment_terms_code
-	t.oldValues["status"] = t.Status
-	t.oldValues["credit_limit"] = t.Credit_limit
-	t.oldValues["last_order_date"] = t.Last_order_date
-	t.oldValues["created_at"] = t.Created_at
-	t.oldValues["profile_photo"] = t.Profile_photo
+	t.oldValues["fin_charge_terms_code"] = t.Fin_charge_terms_code
+	t.oldValues["salesperson_code"] = t.Salesperson_code
+	t.oldValues["shipment_method_code"] = t.Shipment_method_code
+	t.oldValues["shipping_agent_code"] = t.Shipping_agent_code
+	t.oldValues["place_of_export"] = t.Place_of_export
+	t.oldValues["invoice_disc_code"] = t.Invoice_disc_code
+	t.oldValues["cust_item_disc_gr"] = t.Cust_item_disc_gr
+	t.oldValues["country_code"] = t.Country_code
+	t.oldValues["collection_method"] = t.Collection_method
+	t.oldValues["amount"] = t.Amount
+	t.oldValues["blocked"] = t.Blocked
+	t.oldValues["invoice_copies"] = t.Invoice_copies
+	t.oldValues["last_statement_no"] = t.Last_statement_no
+	t.oldValues["print_statements"] = t.Print_statements
+	t.oldValues["bill_to_customer_no"] = t.Bill_to_customer_no
+	t.oldValues["priority"] = t.Priority
+	t.oldValues["payment_method_code"] = t.Payment_method_code
+	t.oldValues["last_date_modified"] = t.Last_date_modified
+	t.oldValues["application_method"] = t.Application_method
+	t.oldValues["allow_quantity_disc"] = t.Allow_quantity_disc
+	t.oldValues["prices_including_tax"] = t.Prices_including_tax
+	t.oldValues["location_code"] = t.Location_code
+	t.oldValues["fax_no"] = t.Fax_no
+	t.oldValues["telex_answer_back"] = t.Telex_answer_back
+	t.oldValues["vat_registration_no"] = t.Vat_registration_no
+	t.oldValues["combine_shipments"] = t.Combine_shipments
+	t.oldValues["gen_bus_posting_group"] = t.Gen_bus_posting_group
+	t.oldValues["picture"] = t.Picture
+	t.oldValues["post_code"] = t.Post_code
+	t.oldValues["state"] = t.State
+	t.oldValues["e_mail"] = t.E_mail
+	t.oldValues["home_page"] = t.Home_page
+	t.oldValues["reminder_terms_code"] = t.Reminder_terms_code
+	t.oldValues["no_series"] = t.No_series
+	t.oldValues["tax_area_code"] = t.Tax_area_code
+	t.oldValues["tax_liable"] = t.Tax_liable
+	t.oldValues["tax_bus_posting_group"] = t.Tax_bus_posting_group
+	t.oldValues["reserve"] = t.Reserve
 }
 
 // OldValue returns a field's value as last read from or written to the database (
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *Customer) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
+}
+
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *Customer) XRec() *Customer {
+	x := &Customer{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["no"].(types.Code); ok {
+		x.No = v
+	}
+	if v, ok := t.oldValues["name"].(types.Text); ok {
+		x.Name = v
+	}
+	if v, ok := t.oldValues["search_name"].(types.Code); ok {
+		x.Search_name = v
+	}
+	if v, ok := t.oldValues["name_2"].(types.Text); ok {
+		x.Name_2 = v
+	}
+	if v, ok := t.oldValues["address"].(types.Text); ok {
+		x.Address = v
+	}
+	if v, ok := t.oldValues["address_2"].(types.Text); ok {
+		x.Address_2 = v
+	}
+	if v, ok := t.oldValues["city"].(types.Text); ok {
+		x.City = v
+	}
+	if v, ok := t.oldValues["contact"].(types.Text); ok {
+		x.Contact = v
+	}
+	if v, ok := t.oldValues["phone_no"].(types.Text); ok {
+		x.Phone_no = v
+	}
+	if v, ok := t.oldValues["telex_no"].(types.Text); ok {
+		x.Telex_no = v
+	}
+	if v, ok := t.oldValues["our_account_no"].(types.Text); ok {
+		x.Our_account_no = v
+	}
+	if v, ok := t.oldValues["territory_code"].(types.Code); ok {
+		x.Territory_code = v
+	}
+	if v, ok := t.oldValues["department_code"].(types.Code); ok {
+		x.Department_code = v
+	}
+	if v, ok := t.oldValues["project_code"].(types.Code); ok {
+		x.Project_code = v
+	}
+	if v, ok := t.oldValues["chain_name"].(types.Code); ok {
+		x.Chain_name = v
+	}
+	if v, ok := t.oldValues["budgeted_amount"].(types.Decimal); ok {
+		x.Budgeted_amount = v
+	}
+	if v, ok := t.oldValues["credit_limit_lcy"].(types.Decimal); ok {
+		x.Credit_limit_lcy = v
+	}
+	if v, ok := t.oldValues["customer_posting_group"].(types.Code); ok {
+		x.Customer_posting_group = v
+	}
+	if v, ok := t.oldValues["currency_code"].(types.Code); ok {
+		x.Currency_code = v
+	}
+	if v, ok := t.oldValues["price_group_code"].(types.Code); ok {
+		x.Price_group_code = v
+	}
+	if v, ok := t.oldValues["language_code"].(types.Code); ok {
+		x.Language_code = v
+	}
+	if v, ok := t.oldValues["statistics_group"].(int); ok {
+		x.Statistics_group = v
+	}
+	if v, ok := t.oldValues["payment_terms_code"].(types.Code); ok {
+		x.Payment_terms_code = v
+	}
+	if v, ok := t.oldValues["fin_charge_terms_code"].(types.Code); ok {
+		x.Fin_charge_terms_code = v
+	}
+	if v, ok := t.oldValues["salesperson_code"].(types.Code); ok {
+		x.Salesperson_code = v
+	}
+	if v, ok := t.oldValues["shipment_method_code"].(types.Code); ok {
+		x.Shipment_method_code = v
+	}
+	if v, ok := t.oldValues["shipping_agent_code"].(types.Code); ok {
+		x.Shipping_agent_code = v
+	}
+	if v, ok := t.oldValues["place_of_export"].(types.Code); ok {
+		x.Place_of_export = v
+	}
+	if v, ok := t.oldValues["invoice_disc_code"].(types.Code); ok {
+		x.Invoice_disc_code = v
+	}
+	if v, ok := t.oldValues["cust_item_disc_gr"].(types.Code); ok {
+		x.Cust_item_disc_gr = v
+	}
+	if v, ok := t.oldValues["country_code"].(types.Code); ok {
+		x.Country_code = v
+	}
+	if v, ok := t.oldValues["collection_method"].(types.Code); ok {
+		x.Collection_method = v
+	}
+	if v, ok := t.oldValues["amount"].(types.Decimal); ok {
+		x.Amount = v
+	}
+	if v, ok := t.oldValues["blocked"].(bool); ok {
+		x.Blocked = v
+	}
+	if v, ok := t.oldValues["invoice_copies"].(int); ok {
+		x.Invoice_copies = v
+	}
+	if v, ok := t.oldValues["last_statement_no"].(int); ok {
+		x.Last_statement_no = v
+	}
+	if v, ok := t.oldValues["print_statements"].(bool); ok {
+		x.Print_statements = v
+	}
+	if v, ok := t.oldValues["bill_to_customer_no"].(types.Code); ok {
+		x.Bill_to_customer_no = v
+	}
+	if v, ok := t.oldValues["priority"].(int); ok {
+		x.Priority = v
+	}
+	if v, ok := t.oldValues["payment_method_code"].(types.Code); ok {
+		x.Payment_method_code = v
+	}
+	if v, ok := t.oldValues["last_date_modified"].(types.Date); ok {
+		x.Last_date_modified = v
+	}
+	if v, ok := t.oldValues["application_method"].(CustomerApplication_method); ok {
+		x.Application_method = v
+	}
+	if v, ok := t.oldValues["allow_quantity_disc"].(bool); ok {
+		x.Allow_quantity_disc = v
+	}
+	if v, ok := t.oldValues["prices_including_tax"].(bool); ok {
+		x.Prices_including_tax = v
+	}
+	if v, ok := t.oldValues["location_code"].(types.Code); ok {
+		x.Location_code = v
+	}
+	if v, ok := t.oldValues["fax_no"].(types.Text); ok {
+		x.Fax_no = v
+	}
+	if v, ok := t.oldValues["telex_answer_back"].(types.Text); ok {
+		x.Telex_answer_back = v
+	}
+	if v, ok := t.oldValues["vat_registration_no"].(types.Text); ok {
+		x.Vat_registration_no = v
+	}
+	if v, ok := t.oldValues["combine_shipments"].(bool); ok {
+		x.Combine_shipments = v
+	}
+	if v, ok := t.oldValues["gen_bus_posting_group"].(types.Code); ok {
+		x.Gen_bus_posting_group = v
+	}
+	if v, ok := t.oldValues["picture"].([]byte); ok {
+		x.Picture = v
+	}
+	if v, ok := t.oldValues["post_code"].(types.Code); ok {
+		x.Post_code = v
+	}
+	if v, ok := t.oldValues["state"].(types.Text); ok {
+		x.State = v
+	}
+	if v, ok := t.oldValues["e_mail"].(types.Text); ok {
+		x.E_mail = v
+	}
+	if v, ok := t.oldValues["home_page"].(types.Text); ok {
+		x.Home_page = v
+	}
+	if v, ok := t.oldValues["reminder_terms_code"].(types.Code); ok {
+		x.Reminder_terms_code = v
+	}
+	if v, ok := t.oldValues["no_series"].(types.Code); ok {
+		x.No_series = v
+	}
+	if v, ok := t.oldValues["tax_area_code"].(types.Code); ok {
+		x.Tax_area_code = v
+	}
+	if v, ok := t.oldValues["tax_liable"].(bool); ok {
+		x.Tax_liable = v
+	}
+	if v, ok := t.oldValues["tax_bus_posting_group"].(types.Code); ok {
+		x.Tax_bus_posting_group = v
+	}
+	if v, ok := t.oldValues["reserve"].(CustomerReserve); ok {
+		x.Reserve = v
+	}
+	return x
+}
+
+// NewCustomer returns a Customer record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewCustomer(from tables.Source) *Customer {
+	rec := &Customer{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
 }
 
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
@@ -760,17 +2102,65 @@ func (t *Customer) GetByPK(no types.Code) bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	var noNull sql.NullString
 	var nameNull sql.NullString
+	var search_nameNull sql.NullString
+	var name_2Null sql.NullString
 	var addressNull sql.NullString
-	var post_codeNull sql.NullString
+	var address_2Null sql.NullString
 	var cityNull sql.NullString
-	var country_region_codeNull sql.NullString
-	var phonenumberNull sql.NullString
+	var contactNull sql.NullString
+	var phone_noNull sql.NullString
+	var telex_noNull sql.NullString
+	var our_account_noNull sql.NullString
+	var territory_codeNull sql.NullString
+	var department_codeNull sql.NullString
+	var project_codeNull sql.NullString
+	var chain_nameNull sql.NullString
+	var budgeted_amountNull sql.NullString
+	var credit_limit_lcyNull sql.NullString
+	var customer_posting_groupNull sql.NullString
+	var currency_codeNull sql.NullString
+	var price_group_codeNull sql.NullString
+	var language_codeNull sql.NullString
+	var statistics_groupVal int
 	var payment_terms_codeNull sql.NullString
-	var statusInt int
-	var credit_limitNull sql.NullString
-	var last_order_dateNull sql.NullString
-	var created_atNull sql.NullString
-	var profile_photoVal []byte
+	var fin_charge_terms_codeNull sql.NullString
+	var salesperson_codeNull sql.NullString
+	var shipment_method_codeNull sql.NullString
+	var shipping_agent_codeNull sql.NullString
+	var place_of_exportNull sql.NullString
+	var invoice_disc_codeNull sql.NullString
+	var cust_item_disc_grNull sql.NullString
+	var country_codeNull sql.NullString
+	var collection_methodNull sql.NullString
+	var amountNull sql.NullString
+	var blockedBool sql.NullBool
+	var invoice_copiesVal int
+	var last_statement_noVal int
+	var print_statementsBool sql.NullBool
+	var bill_to_customer_noNull sql.NullString
+	var priorityVal int
+	var payment_method_codeNull sql.NullString
+	var last_date_modifiedNull sql.NullString
+	var application_methodInt int
+	var allow_quantity_discBool sql.NullBool
+	var prices_including_taxBool sql.NullBool
+	var location_codeNull sql.NullString
+	var fax_noNull sql.NullString
+	var telex_answer_backNull sql.NullString
+	var vat_registration_noNull sql.NullString
+	var combine_shipmentsBool sql.NullBool
+	var gen_bus_posting_groupNull sql.NullString
+	var pictureVal []byte
+	var post_codeNull sql.NullString
+	var stateNull sql.NullString
+	var e_mailNull sql.NullString
+	var home_pageNull sql.NullString
+	var reminder_terms_codeNull sql.NullString
+	var no_seriesNull sql.NullString
+	var tax_area_codeNull sql.NullString
+	var tax_liableBool sql.NullBool
+	var tax_bus_posting_groupNull sql.NullString
+	var reserveInt int
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -778,7 +2168,7 @@ func (t *Customer) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -787,17 +2177,65 @@ func (t *Customer) GetByPK(no types.Code) bool {
 	err := t.exec().QueryRow(sqlStr, args...).Scan(
 		&noNull,
 		&nameNull,
+		&search_nameNull,
+		&name_2Null,
 		&addressNull,
-		&post_codeNull,
+		&address_2Null,
 		&cityNull,
-		&country_region_codeNull,
-		&phonenumberNull,
+		&contactNull,
+		&phone_noNull,
+		&telex_noNull,
+		&our_account_noNull,
+		&territory_codeNull,
+		&department_codeNull,
+		&project_codeNull,
+		&chain_nameNull,
+		&budgeted_amountNull,
+		&credit_limit_lcyNull,
+		&customer_posting_groupNull,
+		&currency_codeNull,
+		&price_group_codeNull,
+		&language_codeNull,
+		&statistics_groupVal,
 		&payment_terms_codeNull,
-		&statusInt,
-		&credit_limitNull,
-		&last_order_dateNull,
-		&created_atNull,
-		&profile_photoVal,
+		&fin_charge_terms_codeNull,
+		&salesperson_codeNull,
+		&shipment_method_codeNull,
+		&shipping_agent_codeNull,
+		&place_of_exportNull,
+		&invoice_disc_codeNull,
+		&cust_item_disc_grNull,
+		&country_codeNull,
+		&collection_methodNull,
+		&amountNull,
+		&blockedBool,
+		&invoice_copiesVal,
+		&last_statement_noVal,
+		&print_statementsBool,
+		&bill_to_customer_noNull,
+		&priorityVal,
+		&payment_method_codeNull,
+		&last_date_modifiedNull,
+		&application_methodInt,
+		&allow_quantity_discBool,
+		&prices_including_taxBool,
+		&location_codeNull,
+		&fax_noNull,
+		&telex_answer_backNull,
+		&vat_registration_noNull,
+		&combine_shipmentsBool,
+		&gen_bus_posting_groupNull,
+		&pictureVal,
+		&post_codeNull,
+		&stateNull,
+		&e_mailNull,
+		&home_pageNull,
+		&reminder_terms_codeNull,
+		&no_seriesNull,
+		&tax_area_codeNull,
+		&tax_liableBool,
+		&tax_bus_posting_groupNull,
+		&reserveInt,
 	)
 
 	if err != nil {
@@ -813,17 +2251,65 @@ func (t *Customer) GetByPK(no types.Code) bool {
 	// Populate fields
 	t.No = types.NewCode(noNull.String)
 	t.Name = types.NewText(nameNull.String)
+	t.Search_name = types.NewCode(search_nameNull.String)
+	t.Name_2 = types.NewText(name_2Null.String)
 	t.Address = types.NewText(addressNull.String)
-	t.Post_code = types.NewCode(post_codeNull.String)
+	t.Address_2 = types.NewText(address_2Null.String)
 	t.City = types.NewText(cityNull.String)
-	t.Country_region_code = types.NewCode(country_region_codeNull.String)
-	t.Phonenumber = types.NewText(phonenumberNull.String)
+	t.Contact = types.NewText(contactNull.String)
+	t.Phone_no = types.NewText(phone_noNull.String)
+	t.Telex_no = types.NewText(telex_noNull.String)
+	t.Our_account_no = types.NewText(our_account_noNull.String)
+	t.Territory_code = types.NewCode(territory_codeNull.String)
+	t.Department_code = types.NewCode(department_codeNull.String)
+	t.Project_code = types.NewCode(project_codeNull.String)
+	t.Chain_name = types.NewCode(chain_nameNull.String)
+	t.Budgeted_amount, _ = types.NewDecimalFromString(budgeted_amountNull.String)
+	t.Credit_limit_lcy, _ = types.NewDecimalFromString(credit_limit_lcyNull.String)
+	t.Customer_posting_group = types.NewCode(customer_posting_groupNull.String)
+	t.Currency_code = types.NewCode(currency_codeNull.String)
+	t.Price_group_code = types.NewCode(price_group_codeNull.String)
+	t.Language_code = types.NewCode(language_codeNull.String)
+	t.Statistics_group = statistics_groupVal
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
-	t.Status = CustomerStatus(statusInt)
-	t.Credit_limit, _ = types.NewDecimalFromString(credit_limitNull.String)
-	t.Last_order_date, _ = types.NewDateFromString(last_order_dateNull.String)
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
-	t.Profile_photo = profile_photoVal
+	t.Fin_charge_terms_code = types.NewCode(fin_charge_terms_codeNull.String)
+	t.Salesperson_code = types.NewCode(salesperson_codeNull.String)
+	t.Shipment_method_code = types.NewCode(shipment_method_codeNull.String)
+	t.Shipping_agent_code = types.NewCode(shipping_agent_codeNull.String)
+	t.Place_of_export = types.NewCode(place_of_exportNull.String)
+	t.Invoice_disc_code = types.NewCode(invoice_disc_codeNull.String)
+	t.Cust_item_disc_gr = types.NewCode(cust_item_disc_grNull.String)
+	t.Country_code = types.NewCode(country_codeNull.String)
+	t.Collection_method = types.NewCode(collection_methodNull.String)
+	t.Amount, _ = types.NewDecimalFromString(amountNull.String)
+	t.Blocked = blockedBool.Bool
+	t.Invoice_copies = invoice_copiesVal
+	t.Last_statement_no = last_statement_noVal
+	t.Print_statements = print_statementsBool.Bool
+	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
+	t.Priority = priorityVal
+	t.Payment_method_code = types.NewCode(payment_method_codeNull.String)
+	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
+	t.Application_method = CustomerApplication_method(application_methodInt)
+	t.Allow_quantity_disc = allow_quantity_discBool.Bool
+	t.Prices_including_tax = prices_including_taxBool.Bool
+	t.Location_code = types.NewCode(location_codeNull.String)
+	t.Fax_no = types.NewText(fax_noNull.String)
+	t.Telex_answer_back = types.NewText(telex_answer_backNull.String)
+	t.Vat_registration_no = types.NewText(vat_registration_noNull.String)
+	t.Combine_shipments = combine_shipmentsBool.Bool
+	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
+	t.Picture = pictureVal
+	t.Post_code = types.NewCode(post_codeNull.String)
+	t.State = types.NewText(stateNull.String)
+	t.E_mail = types.NewText(e_mailNull.String)
+	t.Home_page = types.NewText(home_pageNull.String)
+	t.Reminder_terms_code = types.NewCode(reminder_terms_codeNull.String)
+	t.No_series = types.NewCode(no_seriesNull.String)
+	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
+	t.Tax_liable = tax_liableBool.Bool
+	t.Tax_bus_posting_group = types.NewCode(tax_bus_posting_groupNull.String)
+	t.Reserve = CustomerReserve(reserveInt)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -848,28 +2334,83 @@ func (t *Customer) Insert(runTrigger bool) bool {
 	args := []interface{}{
 		t.No,
 		t.Name,
+		t.Search_name,
+		t.Name_2,
 		t.Address,
-		t.Post_code,
+		t.Address_2,
 		t.City,
-		t.Country_region_code,
-		t.Phonenumber,
+		t.Contact,
+		t.Phone_no,
+		t.Telex_no,
+		t.Our_account_no,
+		t.Territory_code,
+		t.Department_code,
+		t.Project_code,
+		t.Chain_name,
+		t.Budgeted_amount,
+		t.Credit_limit_lcy,
+		t.Customer_posting_group,
+		t.Currency_code,
+		t.Price_group_code,
+		t.Language_code,
+		t.Statistics_group,
 		t.Payment_terms_code,
-		t.Status,
-		t.Credit_limit,
-		t.Last_order_date,
-		t.Created_at,
-		t.Profile_photo,
+		t.Fin_charge_terms_code,
+		t.Salesperson_code,
+		t.Shipment_method_code,
+		t.Shipping_agent_code,
+		t.Place_of_export,
+		t.Invoice_disc_code,
+		t.Cust_item_disc_gr,
+		t.Country_code,
+		t.Collection_method,
+		t.Amount,
+		t.Blocked,
+		t.Invoice_copies,
+		t.Last_statement_no,
+		t.Print_statements,
+		t.Bill_to_customer_no,
+		t.Priority,
+		t.Payment_method_code,
+		t.Last_date_modified,
+		t.Application_method,
+		t.Allow_quantity_disc,
+		t.Prices_including_tax,
+		t.Location_code,
+		t.Fax_no,
+		t.Telex_answer_back,
+		t.Vat_registration_no,
+		t.Combine_shipments,
+		t.Gen_bus_posting_group,
+		t.Picture,
+		t.Post_code,
+		t.State,
+		t.E_mail,
+		t.Home_page,
+		t.Reminder_terms_code,
+		t.No_series,
+		t.Tax_area_code,
+		t.Tax_liable,
+		t.Tax_bus_posting_group,
+		t.Reserve,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Customer: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(CustomerTableName, key)
 		return false
 	}
 	return true
@@ -894,21 +2435,69 @@ func (t *Customer) InsertAll(records []*Customer, runTrigger bool) error {
 		rows = append(rows, []interface{}{
 			r.No,
 			r.Name,
+			r.Search_name,
+			r.Name_2,
 			r.Address,
-			r.Post_code,
+			r.Address_2,
 			r.City,
-			r.Country_region_code,
-			r.Phonenumber,
+			r.Contact,
+			r.Phone_no,
+			r.Telex_no,
+			r.Our_account_no,
+			r.Territory_code,
+			r.Department_code,
+			r.Project_code,
+			r.Chain_name,
+			r.Budgeted_amount,
+			r.Credit_limit_lcy,
+			r.Customer_posting_group,
+			r.Currency_code,
+			r.Price_group_code,
+			r.Language_code,
+			r.Statistics_group,
 			r.Payment_terms_code,
-			r.Status,
-			r.Credit_limit,
-			r.Last_order_date,
-			r.Created_at,
-			r.Profile_photo,
+			r.Fin_charge_terms_code,
+			r.Salesperson_code,
+			r.Shipment_method_code,
+			r.Shipping_agent_code,
+			r.Place_of_export,
+			r.Invoice_disc_code,
+			r.Cust_item_disc_gr,
+			r.Country_code,
+			r.Collection_method,
+			r.Amount,
+			r.Blocked,
+			r.Invoice_copies,
+			r.Last_statement_no,
+			r.Print_statements,
+			r.Bill_to_customer_no,
+			r.Priority,
+			r.Payment_method_code,
+			r.Last_date_modified,
+			r.Application_method,
+			r.Allow_quantity_disc,
+			r.Prices_including_tax,
+			r.Location_code,
+			r.Fax_no,
+			r.Telex_answer_back,
+			r.Vat_registration_no,
+			r.Combine_shipments,
+			r.Gen_bus_posting_group,
+			r.Picture,
+			r.Post_code,
+			r.State,
+			r.E_mail,
+			r.Home_page,
+			r.Reminder_terms_code,
+			r.No_series,
+			r.Tax_area_code,
+			r.Tax_liable,
+			r.Tax_bus_posting_group,
+			r.Reserve,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
-	columns := []string{"no", "name", "address", "post_code", "city", "country_region_code", "phonenumber", "payment_terms_code", "status", "credit_limit", "last_order_date", "created_at", "profile_photo"}
+	columns := []string{"no", "name", "search_name", "name_2", "address", "address_2", "city", "contact", "phone_no", "telex_no", "our_account_no", "territory_code", "department_code", "project_code", "chain_name", "budgeted_amount", "credit_limit_lcy", "customer_posting_group", "currency_code", "price_group_code", "language_code", "statistics_group", "payment_terms_code", "fin_charge_terms_code", "salesperson_code", "shipment_method_code", "shipping_agent_code", "place_of_export", "invoice_disc_code", "cust_item_disc_gr", "country_code", "collection_method", "amount", "blocked", "invoice_copies", "last_statement_no", "print_statements", "bill_to_customer_no", "priority", "payment_method_code", "last_date_modified", "application_method", "allow_quantity_disc", "prices_including_tax", "location_code", "fax_no", "telex_answer_back", "vat_registration_no", "combine_shipments", "gen_bus_posting_group", "picture", "post_code", "state", "e_mail", "home_page", "reminder_terms_code", "no_series", "tax_area_code", "tax_liable", "tax_bus_posting_group", "reserve"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -956,49 +2545,241 @@ func (t *Customer) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "name = ?")
 			values = append(values, t.Name)
 		}
+		if t.hasFieldChanged("search_name") {
+			setClauses = append(setClauses, "search_name = ?")
+			values = append(values, t.Search_name)
+		}
+		if t.hasFieldChanged("name_2") {
+			setClauses = append(setClauses, "name_2 = ?")
+			values = append(values, t.Name_2)
+		}
 		if t.hasFieldChanged("address") {
 			setClauses = append(setClauses, "address = ?")
 			values = append(values, t.Address)
 		}
-		if t.hasFieldChanged("post_code") {
-			setClauses = append(setClauses, "post_code = ?")
-			values = append(values, t.Post_code)
+		if t.hasFieldChanged("address_2") {
+			setClauses = append(setClauses, "address_2 = ?")
+			values = append(values, t.Address_2)
 		}
 		if t.hasFieldChanged("city") {
 			setClauses = append(setClauses, "city = ?")
 			values = append(values, t.City)
 		}
-		if t.hasFieldChanged("country_region_code") {
-			setClauses = append(setClauses, "country_region_code = ?")
-			values = append(values, t.Country_region_code)
+		if t.hasFieldChanged("contact") {
+			setClauses = append(setClauses, "contact = ?")
+			values = append(values, t.Contact)
 		}
-		if t.hasFieldChanged("phonenumber") {
-			setClauses = append(setClauses, "phonenumber = ?")
-			values = append(values, t.Phonenumber)
+		if t.hasFieldChanged("phone_no") {
+			setClauses = append(setClauses, "phone_no = ?")
+			values = append(values, t.Phone_no)
+		}
+		if t.hasFieldChanged("telex_no") {
+			setClauses = append(setClauses, "telex_no = ?")
+			values = append(values, t.Telex_no)
+		}
+		if t.hasFieldChanged("our_account_no") {
+			setClauses = append(setClauses, "our_account_no = ?")
+			values = append(values, t.Our_account_no)
+		}
+		if t.hasFieldChanged("territory_code") {
+			setClauses = append(setClauses, "territory_code = ?")
+			values = append(values, t.Territory_code)
+		}
+		if t.hasFieldChanged("department_code") {
+			setClauses = append(setClauses, "department_code = ?")
+			values = append(values, t.Department_code)
+		}
+		if t.hasFieldChanged("project_code") {
+			setClauses = append(setClauses, "project_code = ?")
+			values = append(values, t.Project_code)
+		}
+		if t.hasFieldChanged("chain_name") {
+			setClauses = append(setClauses, "chain_name = ?")
+			values = append(values, t.Chain_name)
+		}
+		if t.hasFieldChanged("budgeted_amount") {
+			setClauses = append(setClauses, "budgeted_amount = ?")
+			values = append(values, t.Budgeted_amount)
+		}
+		if t.hasFieldChanged("credit_limit_lcy") {
+			setClauses = append(setClauses, "credit_limit_lcy = ?")
+			values = append(values, t.Credit_limit_lcy)
+		}
+		if t.hasFieldChanged("customer_posting_group") {
+			setClauses = append(setClauses, "customer_posting_group = ?")
+			values = append(values, t.Customer_posting_group)
+		}
+		if t.hasFieldChanged("currency_code") {
+			setClauses = append(setClauses, "currency_code = ?")
+			values = append(values, t.Currency_code)
+		}
+		if t.hasFieldChanged("price_group_code") {
+			setClauses = append(setClauses, "price_group_code = ?")
+			values = append(values, t.Price_group_code)
+		}
+		if t.hasFieldChanged("language_code") {
+			setClauses = append(setClauses, "language_code = ?")
+			values = append(values, t.Language_code)
+		}
+		if t.hasFieldChanged("statistics_group") {
+			setClauses = append(setClauses, "statistics_group = ?")
+			values = append(values, t.Statistics_group)
 		}
 		if t.hasFieldChanged("payment_terms_code") {
 			setClauses = append(setClauses, "payment_terms_code = ?")
 			values = append(values, t.Payment_terms_code)
 		}
-		if t.hasFieldChanged("status") {
-			setClauses = append(setClauses, "status = ?")
-			values = append(values, t.Status)
+		if t.hasFieldChanged("fin_charge_terms_code") {
+			setClauses = append(setClauses, "fin_charge_terms_code = ?")
+			values = append(values, t.Fin_charge_terms_code)
 		}
-		if t.hasFieldChanged("credit_limit") {
-			setClauses = append(setClauses, "credit_limit = ?")
-			values = append(values, t.Credit_limit)
+		if t.hasFieldChanged("salesperson_code") {
+			setClauses = append(setClauses, "salesperson_code = ?")
+			values = append(values, t.Salesperson_code)
 		}
-		if t.hasFieldChanged("last_order_date") {
-			setClauses = append(setClauses, "last_order_date = ?")
-			values = append(values, t.Last_order_date)
+		if t.hasFieldChanged("shipment_method_code") {
+			setClauses = append(setClauses, "shipment_method_code = ?")
+			values = append(values, t.Shipment_method_code)
 		}
-		if t.hasFieldChanged("created_at") {
-			setClauses = append(setClauses, "created_at = ?")
-			values = append(values, t.Created_at)
+		if t.hasFieldChanged("shipping_agent_code") {
+			setClauses = append(setClauses, "shipping_agent_code = ?")
+			values = append(values, t.Shipping_agent_code)
 		}
-		if t.hasFieldChanged("profile_photo") {
-			setClauses = append(setClauses, "profile_photo = ?")
-			values = append(values, t.Profile_photo)
+		if t.hasFieldChanged("place_of_export") {
+			setClauses = append(setClauses, "place_of_export = ?")
+			values = append(values, t.Place_of_export)
+		}
+		if t.hasFieldChanged("invoice_disc_code") {
+			setClauses = append(setClauses, "invoice_disc_code = ?")
+			values = append(values, t.Invoice_disc_code)
+		}
+		if t.hasFieldChanged("cust_item_disc_gr") {
+			setClauses = append(setClauses, "cust_item_disc_gr = ?")
+			values = append(values, t.Cust_item_disc_gr)
+		}
+		if t.hasFieldChanged("country_code") {
+			setClauses = append(setClauses, "country_code = ?")
+			values = append(values, t.Country_code)
+		}
+		if t.hasFieldChanged("collection_method") {
+			setClauses = append(setClauses, "collection_method = ?")
+			values = append(values, t.Collection_method)
+		}
+		if t.hasFieldChanged("amount") {
+			setClauses = append(setClauses, "amount = ?")
+			values = append(values, t.Amount)
+		}
+		if t.hasFieldChanged("blocked") {
+			setClauses = append(setClauses, "blocked = ?")
+			values = append(values, t.Blocked)
+		}
+		if t.hasFieldChanged("invoice_copies") {
+			setClauses = append(setClauses, "invoice_copies = ?")
+			values = append(values, t.Invoice_copies)
+		}
+		if t.hasFieldChanged("last_statement_no") {
+			setClauses = append(setClauses, "last_statement_no = ?")
+			values = append(values, t.Last_statement_no)
+		}
+		if t.hasFieldChanged("print_statements") {
+			setClauses = append(setClauses, "print_statements = ?")
+			values = append(values, t.Print_statements)
+		}
+		if t.hasFieldChanged("bill_to_customer_no") {
+			setClauses = append(setClauses, "bill_to_customer_no = ?")
+			values = append(values, t.Bill_to_customer_no)
+		}
+		if t.hasFieldChanged("priority") {
+			setClauses = append(setClauses, "priority = ?")
+			values = append(values, t.Priority)
+		}
+		if t.hasFieldChanged("payment_method_code") {
+			setClauses = append(setClauses, "payment_method_code = ?")
+			values = append(values, t.Payment_method_code)
+		}
+		if t.hasFieldChanged("last_date_modified") {
+			setClauses = append(setClauses, "last_date_modified = ?")
+			values = append(values, t.Last_date_modified)
+		}
+		if t.hasFieldChanged("application_method") {
+			setClauses = append(setClauses, "application_method = ?")
+			values = append(values, t.Application_method)
+		}
+		if t.hasFieldChanged("allow_quantity_disc") {
+			setClauses = append(setClauses, "allow_quantity_disc = ?")
+			values = append(values, t.Allow_quantity_disc)
+		}
+		if t.hasFieldChanged("prices_including_tax") {
+			setClauses = append(setClauses, "prices_including_tax = ?")
+			values = append(values, t.Prices_including_tax)
+		}
+		if t.hasFieldChanged("location_code") {
+			setClauses = append(setClauses, "location_code = ?")
+			values = append(values, t.Location_code)
+		}
+		if t.hasFieldChanged("fax_no") {
+			setClauses = append(setClauses, "fax_no = ?")
+			values = append(values, t.Fax_no)
+		}
+		if t.hasFieldChanged("telex_answer_back") {
+			setClauses = append(setClauses, "telex_answer_back = ?")
+			values = append(values, t.Telex_answer_back)
+		}
+		if t.hasFieldChanged("vat_registration_no") {
+			setClauses = append(setClauses, "vat_registration_no = ?")
+			values = append(values, t.Vat_registration_no)
+		}
+		if t.hasFieldChanged("combine_shipments") {
+			setClauses = append(setClauses, "combine_shipments = ?")
+			values = append(values, t.Combine_shipments)
+		}
+		if t.hasFieldChanged("gen_bus_posting_group") {
+			setClauses = append(setClauses, "gen_bus_posting_group = ?")
+			values = append(values, t.Gen_bus_posting_group)
+		}
+		if t.hasFieldChanged("picture") {
+			setClauses = append(setClauses, "picture = ?")
+			values = append(values, t.Picture)
+		}
+		if t.hasFieldChanged("post_code") {
+			setClauses = append(setClauses, "post_code = ?")
+			values = append(values, t.Post_code)
+		}
+		if t.hasFieldChanged("state") {
+			setClauses = append(setClauses, "state = ?")
+			values = append(values, t.State)
+		}
+		if t.hasFieldChanged("e_mail") {
+			setClauses = append(setClauses, "e_mail = ?")
+			values = append(values, t.E_mail)
+		}
+		if t.hasFieldChanged("home_page") {
+			setClauses = append(setClauses, "home_page = ?")
+			values = append(values, t.Home_page)
+		}
+		if t.hasFieldChanged("reminder_terms_code") {
+			setClauses = append(setClauses, "reminder_terms_code = ?")
+			values = append(values, t.Reminder_terms_code)
+		}
+		if t.hasFieldChanged("no_series") {
+			setClauses = append(setClauses, "no_series = ?")
+			values = append(values, t.No_series)
+		}
+		if t.hasFieldChanged("tax_area_code") {
+			setClauses = append(setClauses, "tax_area_code = ?")
+			values = append(values, t.Tax_area_code)
+		}
+		if t.hasFieldChanged("tax_liable") {
+			setClauses = append(setClauses, "tax_liable = ?")
+			values = append(values, t.Tax_liable)
+		}
+		if t.hasFieldChanged("tax_bus_posting_group") {
+			setClauses = append(setClauses, "tax_bus_posting_group = ?")
+			values = append(values, t.Tax_bus_posting_group)
+		}
+		if t.hasFieldChanged("reserve") {
+			setClauses = append(setClauses, "reserve = ?")
+			values = append(values, t.Reserve)
 		}
 
 		// If nothing changed, skip update
@@ -1009,28 +2790,124 @@ func (t *Customer) Modify(runTrigger bool) bool {
 		// No old values (fresh record), update all fields
 		setClauses = append(setClauses, "name = ?")
 		values = append(values, t.Name)
+		setClauses = append(setClauses, "search_name = ?")
+		values = append(values, t.Search_name)
+		setClauses = append(setClauses, "name_2 = ?")
+		values = append(values, t.Name_2)
 		setClauses = append(setClauses, "address = ?")
 		values = append(values, t.Address)
-		setClauses = append(setClauses, "post_code = ?")
-		values = append(values, t.Post_code)
+		setClauses = append(setClauses, "address_2 = ?")
+		values = append(values, t.Address_2)
 		setClauses = append(setClauses, "city = ?")
 		values = append(values, t.City)
-		setClauses = append(setClauses, "country_region_code = ?")
-		values = append(values, t.Country_region_code)
-		setClauses = append(setClauses, "phonenumber = ?")
-		values = append(values, t.Phonenumber)
+		setClauses = append(setClauses, "contact = ?")
+		values = append(values, t.Contact)
+		setClauses = append(setClauses, "phone_no = ?")
+		values = append(values, t.Phone_no)
+		setClauses = append(setClauses, "telex_no = ?")
+		values = append(values, t.Telex_no)
+		setClauses = append(setClauses, "our_account_no = ?")
+		values = append(values, t.Our_account_no)
+		setClauses = append(setClauses, "territory_code = ?")
+		values = append(values, t.Territory_code)
+		setClauses = append(setClauses, "department_code = ?")
+		values = append(values, t.Department_code)
+		setClauses = append(setClauses, "project_code = ?")
+		values = append(values, t.Project_code)
+		setClauses = append(setClauses, "chain_name = ?")
+		values = append(values, t.Chain_name)
+		setClauses = append(setClauses, "budgeted_amount = ?")
+		values = append(values, t.Budgeted_amount)
+		setClauses = append(setClauses, "credit_limit_lcy = ?")
+		values = append(values, t.Credit_limit_lcy)
+		setClauses = append(setClauses, "customer_posting_group = ?")
+		values = append(values, t.Customer_posting_group)
+		setClauses = append(setClauses, "currency_code = ?")
+		values = append(values, t.Currency_code)
+		setClauses = append(setClauses, "price_group_code = ?")
+		values = append(values, t.Price_group_code)
+		setClauses = append(setClauses, "language_code = ?")
+		values = append(values, t.Language_code)
+		setClauses = append(setClauses, "statistics_group = ?")
+		values = append(values, t.Statistics_group)
 		setClauses = append(setClauses, "payment_terms_code = ?")
 		values = append(values, t.Payment_terms_code)
-		setClauses = append(setClauses, "status = ?")
-		values = append(values, t.Status)
-		setClauses = append(setClauses, "credit_limit = ?")
-		values = append(values, t.Credit_limit)
-		setClauses = append(setClauses, "last_order_date = ?")
-		values = append(values, t.Last_order_date)
-		setClauses = append(setClauses, "created_at = ?")
-		values = append(values, t.Created_at)
-		setClauses = append(setClauses, "profile_photo = ?")
-		values = append(values, t.Profile_photo)
+		setClauses = append(setClauses, "fin_charge_terms_code = ?")
+		values = append(values, t.Fin_charge_terms_code)
+		setClauses = append(setClauses, "salesperson_code = ?")
+		values = append(values, t.Salesperson_code)
+		setClauses = append(setClauses, "shipment_method_code = ?")
+		values = append(values, t.Shipment_method_code)
+		setClauses = append(setClauses, "shipping_agent_code = ?")
+		values = append(values, t.Shipping_agent_code)
+		setClauses = append(setClauses, "place_of_export = ?")
+		values = append(values, t.Place_of_export)
+		setClauses = append(setClauses, "invoice_disc_code = ?")
+		values = append(values, t.Invoice_disc_code)
+		setClauses = append(setClauses, "cust_item_disc_gr = ?")
+		values = append(values, t.Cust_item_disc_gr)
+		setClauses = append(setClauses, "country_code = ?")
+		values = append(values, t.Country_code)
+		setClauses = append(setClauses, "collection_method = ?")
+		values = append(values, t.Collection_method)
+		setClauses = append(setClauses, "amount = ?")
+		values = append(values, t.Amount)
+		setClauses = append(setClauses, "blocked = ?")
+		values = append(values, t.Blocked)
+		setClauses = append(setClauses, "invoice_copies = ?")
+		values = append(values, t.Invoice_copies)
+		setClauses = append(setClauses, "last_statement_no = ?")
+		values = append(values, t.Last_statement_no)
+		setClauses = append(setClauses, "print_statements = ?")
+		values = append(values, t.Print_statements)
+		setClauses = append(setClauses, "bill_to_customer_no = ?")
+		values = append(values, t.Bill_to_customer_no)
+		setClauses = append(setClauses, "priority = ?")
+		values = append(values, t.Priority)
+		setClauses = append(setClauses, "payment_method_code = ?")
+		values = append(values, t.Payment_method_code)
+		setClauses = append(setClauses, "last_date_modified = ?")
+		values = append(values, t.Last_date_modified)
+		setClauses = append(setClauses, "application_method = ?")
+		values = append(values, t.Application_method)
+		setClauses = append(setClauses, "allow_quantity_disc = ?")
+		values = append(values, t.Allow_quantity_disc)
+		setClauses = append(setClauses, "prices_including_tax = ?")
+		values = append(values, t.Prices_including_tax)
+		setClauses = append(setClauses, "location_code = ?")
+		values = append(values, t.Location_code)
+		setClauses = append(setClauses, "fax_no = ?")
+		values = append(values, t.Fax_no)
+		setClauses = append(setClauses, "telex_answer_back = ?")
+		values = append(values, t.Telex_answer_back)
+		setClauses = append(setClauses, "vat_registration_no = ?")
+		values = append(values, t.Vat_registration_no)
+		setClauses = append(setClauses, "combine_shipments = ?")
+		values = append(values, t.Combine_shipments)
+		setClauses = append(setClauses, "gen_bus_posting_group = ?")
+		values = append(values, t.Gen_bus_posting_group)
+		setClauses = append(setClauses, "picture = ?")
+		values = append(values, t.Picture)
+		setClauses = append(setClauses, "post_code = ?")
+		values = append(values, t.Post_code)
+		setClauses = append(setClauses, "state = ?")
+		values = append(values, t.State)
+		setClauses = append(setClauses, "e_mail = ?")
+		values = append(values, t.E_mail)
+		setClauses = append(setClauses, "home_page = ?")
+		values = append(values, t.Home_page)
+		setClauses = append(setClauses, "reminder_terms_code = ?")
+		values = append(values, t.Reminder_terms_code)
+		setClauses = append(setClauses, "no_series = ?")
+		values = append(values, t.No_series)
+		setClauses = append(setClauses, "tax_area_code = ?")
+		values = append(values, t.Tax_area_code)
+		setClauses = append(setClauses, "tax_liable = ?")
+		values = append(values, t.Tax_liable)
+		setClauses = append(setClauses, "tax_bus_posting_group = ?")
+		values = append(values, t.Tax_bus_posting_group)
+		setClauses = append(setClauses, "reserve = ?")
+		values = append(values, t.Reserve)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1105,49 +2982,251 @@ func (t *Customer) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Name.Equal(old)
 		}
+	case "search_name":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Search_name.Equal(old)
+		}
+	case "name_2":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Name_2.Equal(old)
+		}
 	case "address":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Address.Equal(old)
 		}
-	case "post_code":
-		if old, ok := oldValue.(types.Code); ok {
-			return !t.Post_code.Equal(old)
+	case "address_2":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Address_2.Equal(old)
 		}
 	case "city":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.City.Equal(old)
 		}
-	case "country_region_code":
-		if old, ok := oldValue.(types.Code); ok {
-			return !t.Country_region_code.Equal(old)
-		}
-	case "phonenumber":
+	case "contact":
 		if old, ok := oldValue.(types.Text); ok {
-			return !t.Phonenumber.Equal(old)
+			return !t.Contact.Equal(old)
 		}
+	case "phone_no":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Phone_no.Equal(old)
+		}
+	case "telex_no":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Telex_no.Equal(old)
+		}
+	case "our_account_no":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Our_account_no.Equal(old)
+		}
+	case "territory_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Territory_code.Equal(old)
+		}
+	case "department_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Department_code.Equal(old)
+		}
+	case "project_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Project_code.Equal(old)
+		}
+	case "chain_name":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Chain_name.Equal(old)
+		}
+	case "budgeted_amount":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Budgeted_amount.Equal(old)
+		}
+	case "credit_limit_lcy":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Credit_limit_lcy.Equal(old)
+		}
+	case "customer_posting_group":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Customer_posting_group.Equal(old)
+		}
+	case "currency_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Currency_code.Equal(old)
+		}
+	case "price_group_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Price_group_code.Equal(old)
+		}
+	case "language_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Language_code.Equal(old)
+		}
+	case "statistics_group":
+		if old, ok := oldValue.(int); ok {
+			return t.Statistics_group != old
+		}
+		return true // Type mismatch, assume changed
 	case "payment_terms_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Payment_terms_code.Equal(old)
 		}
-	case "status":
-		if old, ok := oldValue.(CustomerStatus); ok {
-			return t.Status != old
+	case "fin_charge_terms_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Fin_charge_terms_code.Equal(old)
 		}
-	case "credit_limit":
+	case "salesperson_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Salesperson_code.Equal(old)
+		}
+	case "shipment_method_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Shipment_method_code.Equal(old)
+		}
+	case "shipping_agent_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Shipping_agent_code.Equal(old)
+		}
+	case "place_of_export":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Place_of_export.Equal(old)
+		}
+	case "invoice_disc_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Invoice_disc_code.Equal(old)
+		}
+	case "cust_item_disc_gr":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Cust_item_disc_gr.Equal(old)
+		}
+	case "country_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Country_code.Equal(old)
+		}
+	case "collection_method":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Collection_method.Equal(old)
+		}
+	case "amount":
 		if old, ok := oldValue.(types.Decimal); ok {
-			return !t.Credit_limit.Equal(old)
+			return !t.Amount.Equal(old)
 		}
-	case "last_order_date":
+	case "blocked":
+		if old, ok := oldValue.(bool); ok {
+			return t.Blocked != old
+		}
+		return true // Type mismatch, assume changed
+	case "invoice_copies":
+		if old, ok := oldValue.(int); ok {
+			return t.Invoice_copies != old
+		}
+		return true // Type mismatch, assume changed
+	case "last_statement_no":
+		if old, ok := oldValue.(int); ok {
+			return t.Last_statement_no != old
+		}
+		return true // Type mismatch, assume changed
+	case "print_statements":
+		if old, ok := oldValue.(bool); ok {
+			return t.Print_statements != old
+		}
+		return true // Type mismatch, assume changed
+	case "bill_to_customer_no":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Bill_to_customer_no.Equal(old)
+		}
+	case "priority":
+		if old, ok := oldValue.(int); ok {
+			return t.Priority != old
+		}
+		return true // Type mismatch, assume changed
+	case "payment_method_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Payment_method_code.Equal(old)
+		}
+	case "last_date_modified":
 		if old, ok := oldValue.(types.Date); ok {
-			return !t.Last_order_date.Equal(old)
+			return !t.Last_date_modified.Equal(old)
 		}
-	case "created_at":
-		if old, ok := oldValue.(types.DateTime); ok {
-			return !t.Created_at.Equal(old)
+	case "application_method":
+		if old, ok := oldValue.(CustomerApplication_method); ok {
+			return t.Application_method != old
 		}
-	case "profile_photo":
+	case "allow_quantity_disc":
+		if old, ok := oldValue.(bool); ok {
+			return t.Allow_quantity_disc != old
+		}
+		return true // Type mismatch, assume changed
+	case "prices_including_tax":
+		if old, ok := oldValue.(bool); ok {
+			return t.Prices_including_tax != old
+		}
+		return true // Type mismatch, assume changed
+	case "location_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Location_code.Equal(old)
+		}
+	case "fax_no":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Fax_no.Equal(old)
+		}
+	case "telex_answer_back":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Telex_answer_back.Equal(old)
+		}
+	case "vat_registration_no":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Vat_registration_no.Equal(old)
+		}
+	case "combine_shipments":
+		if old, ok := oldValue.(bool); ok {
+			return t.Combine_shipments != old
+		}
+		return true // Type mismatch, assume changed
+	case "gen_bus_posting_group":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Gen_bus_posting_group.Equal(old)
+		}
+	case "picture":
 		// Skip comparison for BLOB fields (too large, use always modified)
 		return true
+	case "post_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Post_code.Equal(old)
+		}
+	case "state":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.State.Equal(old)
+		}
+	case "e_mail":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.E_mail.Equal(old)
+		}
+	case "home_page":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.Home_page.Equal(old)
+		}
+	case "reminder_terms_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Reminder_terms_code.Equal(old)
+		}
+	case "no_series":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.No_series.Equal(old)
+		}
+	case "tax_area_code":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Tax_area_code.Equal(old)
+		}
+	case "tax_liable":
+		if old, ok := oldValue.(bool); ok {
+			return t.Tax_liable != old
+		}
+		return true // Type mismatch, assume changed
+	case "tax_bus_posting_group":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Tax_bus_posting_group.Equal(old)
+		}
+	case "reserve":
+		if old, ok := oldValue.(CustomerReserve); ok {
+			return t.Reserve != old
+		}
 	}
 
 	return false
@@ -1172,7 +3251,7 @@ func (t *Customer) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Customer Ledger Entry", false, "customer_no", "", 0}, {"Customer Ledger Entry", false, "sell_to_customer_no", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "source_no", "source_type", 1}},
+		"no": {{"Customer Ledger Entry", false, "customer_no", "", 0}, {"Customer Ledger Entry", false, "sell_to_customer_no", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"Customer", false, "invoice_disc_code", "", 0}, {"Customer", false, "bill_to_customer_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "source_no", "source_type", 1}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1243,8 +3322,30 @@ func (t *Customer) Delete(runTrigger bool) bool {
 func (t *Customer) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
+		t.calcFlowField_balance()
 		t.calcFlowField_balance_lcy()
+		t.calcFlowField_net_change()
+		t.calcFlowField_net_change_lcy()
 		t.calcFlowField_sales_lcy()
+		t.calcFlowField_profit_lcy()
+		t.calcFlowField_inv_discounts_lcy()
+		t.calcFlowField_pmt_discounts_lcy()
+		t.calcFlowField_balance_due()
+		t.calcFlowField_balance_due_lcy()
+		t.calcFlowField_payments()
+		t.calcFlowField_invoice_amounts()
+		t.calcFlowField_cr_memo_amounts()
+		t.calcFlowField_finance_charge_memo_amounts()
+		t.calcFlowField_payments_lcy()
+		t.calcFlowField_inv_amounts_lcy()
+		t.calcFlowField_cr_memo_amounts_lcy()
+		t.calcFlowField_fin_charge_memo_amounts_lcy()
+		t.calcFlowField_debit_amount()
+		t.calcFlowField_credit_amount()
+		t.calcFlowField_debit_amount_lcy()
+		t.calcFlowField_credit_amount_lcy()
+		t.calcFlowField_reminder_amounts()
+		t.calcFlowField_reminder_amounts_lcy()
 		t.calcFlowField_no_of_ledger_entries()
 		return
 	}
@@ -1252,26 +3353,202 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 	// Calculate only specified fields
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "balance":
+			t.calcFlowField_balance()
 		case "balance_lcy":
 			t.calcFlowField_balance_lcy()
+		case "net_change":
+			t.calcFlowField_net_change()
+		case "net_change_lcy":
+			t.calcFlowField_net_change_lcy()
 		case "sales_lcy":
 			t.calcFlowField_sales_lcy()
+		case "profit_lcy":
+			t.calcFlowField_profit_lcy()
+		case "inv_discounts_lcy":
+			t.calcFlowField_inv_discounts_lcy()
+		case "pmt_discounts_lcy":
+			t.calcFlowField_pmt_discounts_lcy()
+		case "balance_due":
+			t.calcFlowField_balance_due()
+		case "balance_due_lcy":
+			t.calcFlowField_balance_due_lcy()
+		case "payments":
+			t.calcFlowField_payments()
+		case "invoice_amounts":
+			t.calcFlowField_invoice_amounts()
+		case "cr_memo_amounts":
+			t.calcFlowField_cr_memo_amounts()
+		case "finance_charge_memo_amounts":
+			t.calcFlowField_finance_charge_memo_amounts()
+		case "payments_lcy":
+			t.calcFlowField_payments_lcy()
+		case "inv_amounts_lcy":
+			t.calcFlowField_inv_amounts_lcy()
+		case "cr_memo_amounts_lcy":
+			t.calcFlowField_cr_memo_amounts_lcy()
+		case "fin_charge_memo_amounts_lcy":
+			t.calcFlowField_fin_charge_memo_amounts_lcy()
+		case "debit_amount":
+			t.calcFlowField_debit_amount()
+		case "credit_amount":
+			t.calcFlowField_credit_amount()
+		case "debit_amount_lcy":
+			t.calcFlowField_debit_amount_lcy()
+		case "credit_amount_lcy":
+			t.calcFlowField_credit_amount_lcy()
+		case "reminder_amounts":
+			t.calcFlowField_reminder_amounts()
+		case "reminder_amounts_lcy":
+			t.calcFlowField_reminder_amounts_lcy()
 		case "no_of_ledger_entries":
 			t.calcFlowField_no_of_ledger_entries()
 		}
 	}
 }
 
+// calcFlowField_balance calculates the balance FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_balance() {
+	t.Balance = t.calcSum_balance()
+}
+
 // calcFlowField_balance_lcy calculates the balance_lcy FlowField
-// CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+// CalcFormula: Sum(CustomerLedgerEntry.amount_lcy)
 func (t *Customer) calcFlowField_balance_lcy() {
 	t.Balance_lcy = t.calcSum_balance_lcy()
+}
+
+// calcFlowField_net_change calculates the net_change FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_net_change() {
+	t.Net_change = t.calcSum_net_change()
+}
+
+// calcFlowField_net_change_lcy calculates the net_change_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount_lcy)
+func (t *Customer) calcFlowField_net_change_lcy() {
+	t.Net_change_lcy = t.calcSum_net_change_lcy()
 }
 
 // calcFlowField_sales_lcy calculates the sales_lcy FlowField
 // CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
 func (t *Customer) calcFlowField_sales_lcy() {
 	t.Sales_lcy = t.calcSum_sales_lcy()
+}
+
+// calcFlowField_profit_lcy calculates the profit_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.profit_lcy)
+func (t *Customer) calcFlowField_profit_lcy() {
+	t.Profit_lcy = t.calcSum_profit_lcy()
+}
+
+// calcFlowField_inv_discounts_lcy calculates the inv_discounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.inv_discount_lcy)
+func (t *Customer) calcFlowField_inv_discounts_lcy() {
+	t.Inv_discounts_lcy = t.calcSum_inv_discounts_lcy()
+}
+
+// calcFlowField_pmt_discounts_lcy calculates the pmt_discounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.pmt_disc_given_lcy)
+func (t *Customer) calcFlowField_pmt_discounts_lcy() {
+	t.Pmt_discounts_lcy = t.calcSum_pmt_discounts_lcy()
+}
+
+// calcFlowField_balance_due calculates the balance_due FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.remaining_amount)
+func (t *Customer) calcFlowField_balance_due() {
+	t.Balance_due = t.calcSum_balance_due()
+}
+
+// calcFlowField_balance_due_lcy calculates the balance_due_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+func (t *Customer) calcFlowField_balance_due_lcy() {
+	t.Balance_due_lcy = t.calcSum_balance_due_lcy()
+}
+
+// calcFlowField_payments calculates the payments FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_payments() {
+	t.Payments = t.calcSum_payments()
+}
+
+// calcFlowField_invoice_amounts calculates the invoice_amounts FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_invoice_amounts() {
+	t.Invoice_amounts = t.calcSum_invoice_amounts()
+}
+
+// calcFlowField_cr_memo_amounts calculates the cr_memo_amounts FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_cr_memo_amounts() {
+	t.Cr_memo_amounts = t.calcSum_cr_memo_amounts()
+}
+
+// calcFlowField_finance_charge_memo_amounts calculates the finance_charge_memo_amounts FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_finance_charge_memo_amounts() {
+	t.Finance_charge_memo_amounts = t.calcSum_finance_charge_memo_amounts()
+}
+
+// calcFlowField_payments_lcy calculates the payments_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcFlowField_payments_lcy() {
+	t.Payments_lcy = t.calcSum_payments_lcy()
+}
+
+// calcFlowField_inv_amounts_lcy calculates the inv_amounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcFlowField_inv_amounts_lcy() {
+	t.Inv_amounts_lcy = t.calcSum_inv_amounts_lcy()
+}
+
+// calcFlowField_cr_memo_amounts_lcy calculates the cr_memo_amounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcFlowField_cr_memo_amounts_lcy() {
+	t.Cr_memo_amounts_lcy = t.calcSum_cr_memo_amounts_lcy()
+}
+
+// calcFlowField_fin_charge_memo_amounts_lcy calculates the fin_charge_memo_amounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcFlowField_fin_charge_memo_amounts_lcy() {
+	t.Fin_charge_memo_amounts_lcy = t.calcSum_fin_charge_memo_amounts_lcy()
+}
+
+// calcFlowField_debit_amount calculates the debit_amount FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.debit_amount)
+func (t *Customer) calcFlowField_debit_amount() {
+	t.Debit_amount = t.calcSum_debit_amount()
+}
+
+// calcFlowField_credit_amount calculates the credit_amount FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.credit_amount)
+func (t *Customer) calcFlowField_credit_amount() {
+	t.Credit_amount = t.calcSum_credit_amount()
+}
+
+// calcFlowField_debit_amount_lcy calculates the debit_amount_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.debit_amount_lcy)
+func (t *Customer) calcFlowField_debit_amount_lcy() {
+	t.Debit_amount_lcy = t.calcSum_debit_amount_lcy()
+}
+
+// calcFlowField_credit_amount_lcy calculates the credit_amount_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.credit_amount_lcy)
+func (t *Customer) calcFlowField_credit_amount_lcy() {
+	t.Credit_amount_lcy = t.calcSum_credit_amount_lcy()
+}
+
+// calcFlowField_reminder_amounts calculates the reminder_amounts FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcFlowField_reminder_amounts() {
+	t.Reminder_amounts = t.calcSum_reminder_amounts()
+}
+
+// calcFlowField_reminder_amounts_lcy calculates the reminder_amounts_lcy FlowField
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcFlowField_reminder_amounts_lcy() {
+	t.Reminder_amounts_lcy = t.calcSum_reminder_amounts_lcy()
 }
 
 // calcFlowField_no_of_ledger_entries calculates the no_of_ledger_entries FlowField
@@ -1293,23 +3570,66 @@ func (t *Customer) CalcFieldsForRecords(records []map[string]interface{}, fieldN
 	}
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "balance":
+			t.calcForRecords_balance(records)
 		case "balance_lcy":
 			t.calcForRecords_balance_lcy(records)
+		case "net_change":
+			t.calcForRecords_net_change(records)
+		case "net_change_lcy":
+			t.calcForRecords_net_change_lcy(records)
 		case "sales_lcy":
 			t.calcForRecords_sales_lcy(records)
+		case "profit_lcy":
+			t.calcForRecords_profit_lcy(records)
+		case "inv_discounts_lcy":
+			t.calcForRecords_inv_discounts_lcy(records)
+		case "pmt_discounts_lcy":
+			t.calcForRecords_pmt_discounts_lcy(records)
+		case "balance_due":
+			t.calcForRecords_balance_due(records)
+		case "balance_due_lcy":
+			t.calcForRecords_balance_due_lcy(records)
+		case "payments":
+			t.calcForRecords_payments(records)
+		case "invoice_amounts":
+			t.calcForRecords_invoice_amounts(records)
+		case "cr_memo_amounts":
+			t.calcForRecords_cr_memo_amounts(records)
+		case "finance_charge_memo_amounts":
+			t.calcForRecords_finance_charge_memo_amounts(records)
+		case "payments_lcy":
+			t.calcForRecords_payments_lcy(records)
+		case "inv_amounts_lcy":
+			t.calcForRecords_inv_amounts_lcy(records)
+		case "cr_memo_amounts_lcy":
+			t.calcForRecords_cr_memo_amounts_lcy(records)
+		case "fin_charge_memo_amounts_lcy":
+			t.calcForRecords_fin_charge_memo_amounts_lcy(records)
+		case "debit_amount":
+			t.calcForRecords_debit_amount(records)
+		case "credit_amount":
+			t.calcForRecords_credit_amount(records)
+		case "debit_amount_lcy":
+			t.calcForRecords_debit_amount_lcy(records)
+		case "credit_amount_lcy":
+			t.calcForRecords_credit_amount_lcy(records)
+		case "reminder_amounts":
+			t.calcForRecords_reminder_amounts(records)
+		case "reminder_amounts_lcy":
+			t.calcForRecords_reminder_amounts_lcy(records)
 		case "no_of_ledger_entries":
 			t.calcForRecords_no_of_ledger_entries(records)
 		}
 	}
 }
 
-// calcForRecords_balance_lcy calculates the balance_lcy FlowField for a set of records
-// CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
-func (t *Customer) calcForRecords_balance_lcy(records []map[string]interface{}) {
+// calcForRecords_balance calculates the balance FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_balance(records []map[string]interface{}) {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
-	if t.Date_filter != "" {
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
 		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
@@ -1339,11 +3659,23 @@ func (t *Customer) calcForRecords_balance_lcy(records []map[string]interface{}) 
 
 		var whereClauses []string
 		var args []interface{}
-		whereClauses = append(whereClauses, "open = ?")
-		args = append(args, true)
-		if t.Date_filter != "" {
-			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
-			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
 				whereClauses = append(whereClauses, clause)
 				args = append(args, filterArgs...)
 			}
@@ -1356,7 +3688,100 @@ func (t *Customer) calcForRecords_balance_lcy(records []map[string]interface{}) 
 		if len(whereClauses) > 0 {
 			whereClause = strings.Join(whereClauses, " AND ")
 		}
-		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate balance: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["balance"] = v.String()
+	}
+}
+
+// calcForRecords_balance_lcy calculates the balance_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount_lcy)
+func (t *Customer) calcForRecords_balance_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
 		query = t.convertPlaceholders(query, len(args))
 
 		rows, err := t.db.Query(query, args...)
@@ -1384,13 +3809,12 @@ func (t *Customer) calcForRecords_balance_lcy(records []map[string]interface{}) 
 	}
 }
 
-// calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
-// CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
-func (t *Customer) calcForRecords_sales_lcy(records []map[string]interface{}) {
+// calcForRecords_net_change calculates the net_change FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_net_change(records []map[string]interface{}) {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
-	if t.Date_filter != "" {
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
 		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
@@ -1420,9 +3844,230 @@ func (t *Customer) calcForRecords_sales_lcy(records []map[string]interface{}) {
 
 		var whereClauses []string
 		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
 		if t.Date_filter != "" {
 			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
 			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate net_change: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["net_change"] = v.String()
+	}
+}
+
+// calcForRecords_net_change_lcy calculates the net_change_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount_lcy)
+func (t *Customer) calcForRecords_net_change_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate net_change_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["net_change_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.sales_lcy)
+func (t *Customer) calcForRecords_sales_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
 				whereClauses = append(whereClauses, clause)
 				args = append(args, filterArgs...)
 			}
@@ -1460,6 +4105,1905 @@ func (t *Customer) calcForRecords_sales_lcy(records []map[string]interface{}) {
 			v = types.ZeroDecimal()
 		}
 		rec["sales_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_profit_lcy calculates the profit_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.profit_lcy)
+func (t *Customer) calcForRecords_profit_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(profit_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate profit_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["profit_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_inv_discounts_lcy calculates the inv_discounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.inv_discount_lcy)
+func (t *Customer) calcForRecords_inv_discounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(inv_discount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate inv_discounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["inv_discounts_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_pmt_discounts_lcy calculates the pmt_discounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.pmt_disc_given_lcy)
+func (t *Customer) calcForRecords_pmt_discounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(pmt_disc_given_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate pmt_discounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["pmt_discounts_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_balance_due calculates the balance_due FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.remaining_amount)
+func (t *Customer) calcForRecords_balance_due(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(remaining_amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate balance_due: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["balance_due"] = v.String()
+	}
+}
+
+// calcForRecords_balance_due_lcy calculates the balance_due_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.remaining_amt_lcy)
+func (t *Customer) calcForRecords_balance_due_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate balance_due_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["balance_due_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_payments calculates the payments FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_payments(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate payments: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["payments"] = v.String()
+	}
+}
+
+// calcForRecords_invoice_amounts calculates the invoice_amounts FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_invoice_amounts(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 2)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate invoice_amounts: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["invoice_amounts"] = v.String()
+	}
+}
+
+// calcForRecords_cr_memo_amounts calculates the cr_memo_amounts FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_cr_memo_amounts(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 3)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate cr_memo_amounts: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["cr_memo_amounts"] = v.String()
+	}
+}
+
+// calcForRecords_finance_charge_memo_amounts calculates the finance_charge_memo_amounts FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_finance_charge_memo_amounts(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 4)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate finance_charge_memo_amounts: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["finance_charge_memo_amounts"] = v.String()
+	}
+}
+
+// calcForRecords_payments_lcy calculates the payments_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcForRecords_payments_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, -COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate payments_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["payments_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_inv_amounts_lcy calculates the inv_amounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcForRecords_inv_amounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 2)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate inv_amounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["inv_amounts_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_cr_memo_amounts_lcy calculates the cr_memo_amounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcForRecords_cr_memo_amounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 3)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, -COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate cr_memo_amounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["cr_memo_amounts_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_fin_charge_memo_amounts_lcy calculates the fin_charge_memo_amounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcForRecords_fin_charge_memo_amounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 4)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate fin_charge_memo_amounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["fin_charge_memo_amounts_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_debit_amount calculates the debit_amount FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.debit_amount)
+func (t *Customer) calcForRecords_debit_amount(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(debit_amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate debit_amount: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["debit_amount"] = v.String()
+	}
+}
+
+// calcForRecords_credit_amount calculates the credit_amount FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.credit_amount)
+func (t *Customer) calcForRecords_credit_amount(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(credit_amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate credit_amount: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["credit_amount"] = v.String()
+	}
+}
+
+// calcForRecords_debit_amount_lcy calculates the debit_amount_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.debit_amount_lcy)
+func (t *Customer) calcForRecords_debit_amount_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(debit_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate debit_amount_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["debit_amount_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_credit_amount_lcy calculates the credit_amount_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.credit_amount_lcy)
+func (t *Customer) calcForRecords_credit_amount_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(credit_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate credit_amount_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["credit_amount_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_reminder_amounts calculates the reminder_amounts FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.amount)
+func (t *Customer) calcForRecords_reminder_amounts(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 5)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate reminder_amounts: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["reminder_amounts"] = v.String()
+	}
+}
+
+// calcForRecords_reminder_amounts_lcy calculates the reminder_amounts_lcy FlowField for a set of records
+// CalcFormula: Sum(CustomerLedgerEntry.original_amount_lcy)
+func (t *Customer) calcForRecords_reminder_amounts_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 5)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT customer_no, COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate reminder_amounts_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["reminder_amounts_lcy"] = v.String()
 	}
 }
 
@@ -1544,11 +6088,10 @@ func (t *Customer) calcForRecords_no_of_ledger_entries(records []map[string]inte
 
 // Helper methods for FlowField calculations
 
-func (t *Customer) calcSum_balance_lcy() types.Decimal {
+func (t *Customer) calcSum_balance() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
-	if t.Date_filter != "" {
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
 		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
@@ -1559,11 +6102,23 @@ func (t *Customer) calcSum_balance_lcy() types.Decimal {
 	var args []interface{}
 	whereClauses = append(whereClauses, "customer_no = ?")
 	args = append(args, t.No)
-	whereClauses = append(whereClauses, "open = ?")
-	args = append(args, true)
-	if t.Date_filter != "" {
-		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
-		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
 			whereClauses = append(whereClauses, clause)
 			args = append(args, filterArgs...)
 		}
@@ -1574,7 +6129,65 @@ func (t *Customer) calcSum_balance_lcy() types.Decimal {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
 
-	query := fmt.Sprintf(`SELECT COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for balance: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_balance_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1590,11 +6203,10 @@ func (t *Customer) calcSum_balance_lcy() types.Decimal {
 	return sum
 }
 
-func (t *Customer) calcSum_sales_lcy() types.Decimal {
+func (t *Customer) calcSum_net_change() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
-	if t.Date_filter != "" {
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
 		// A FlowFilter is set: the key must contain the filtered fields too
 		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 	}
@@ -1605,9 +6217,160 @@ func (t *Customer) calcSum_sales_lcy() types.Decimal {
 	var args []interface{}
 	whereClauses = append(whereClauses, "customer_no = ?")
 	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
 	if t.Date_filter != "" {
 		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
 		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for net_change: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_net_change_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for net_change_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_sales_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
 			whereClauses = append(whereClauses, clause)
 			args = append(args, filterArgs...)
 		}
@@ -1627,6 +6390,1240 @@ func (t *Customer) calcSum_sales_lcy() types.Decimal {
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
 		fmt.Printf("Error: Failed to calculate sum for sales_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_profit_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(profit_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for profit_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_inv_discounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(inv_discount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for inv_discounts_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_pmt_discounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(pmt_disc_given_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for pmt_discounts_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_balance_due() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "open = ?")
+	args = append(args, true)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(remaining_amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for balance_due: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_balance_due_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "open = ?")
+	args = append(args, true)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(remaining_amt_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for balance_due_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_payments() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for payments: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_invoice_amounts() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 2)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for invoice_amounts: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_cr_memo_amounts() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 3)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for cr_memo_amounts: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_finance_charge_memo_amounts() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 4)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for finance_charge_memo_amounts: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_payments_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for payments_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_inv_amounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 2)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for inv_amounts_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_cr_memo_amounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 3)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for cr_memo_amounts_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_fin_charge_memo_amounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 4)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for fin_charge_memo_amounts_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_debit_amount() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(debit_amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for debit_amount: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_credit_amount() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(credit_amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for credit_amount: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_debit_amount_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(debit_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for debit_amount_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_credit_amount_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(credit_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for credit_amount_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_reminder_amounts() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 5)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for reminder_amounts: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_reminder_amounts_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 5)
+	whereClauses = append(whereClauses, "customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(original_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for reminder_amounts_lcy: %v\n", err)
 		return types.ZeroDecimal()
 	}
 
@@ -1795,9 +7792,53 @@ func (t *Customer) SetFilter(fieldName, filterExpr string) {
 // Count FlowFields: SETFILTER on a FlowField) and the kind of its values.
 func (t *Customer) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	switch strings.ToLower(field) {
+	case "balance":
+		return flowfilter.KindDecimal, true
 	case "balance_lcy":
 		return flowfilter.KindDecimal, true
+	case "net_change":
+		return flowfilter.KindDecimal, true
+	case "net_change_lcy":
+		return flowfilter.KindDecimal, true
 	case "sales_lcy":
+		return flowfilter.KindDecimal, true
+	case "profit_lcy":
+		return flowfilter.KindDecimal, true
+	case "inv_discounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "pmt_discounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "balance_due":
+		return flowfilter.KindDecimal, true
+	case "balance_due_lcy":
+		return flowfilter.KindDecimal, true
+	case "payments":
+		return flowfilter.KindDecimal, true
+	case "invoice_amounts":
+		return flowfilter.KindDecimal, true
+	case "cr_memo_amounts":
+		return flowfilter.KindDecimal, true
+	case "finance_charge_memo_amounts":
+		return flowfilter.KindDecimal, true
+	case "payments_lcy":
+		return flowfilter.KindDecimal, true
+	case "inv_amounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "cr_memo_amounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "fin_charge_memo_amounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "debit_amount":
+		return flowfilter.KindDecimal, true
+	case "credit_amount":
+		return flowfilter.KindDecimal, true
+	case "debit_amount_lcy":
+		return flowfilter.KindDecimal, true
+	case "credit_amount_lcy":
+		return flowfilter.KindDecimal, true
+	case "reminder_amounts":
+		return flowfilter.KindDecimal, true
+	case "reminder_amounts_lcy":
 		return flowfilter.KindDecimal, true
 	case "no_of_ledger_entries":
 		return flowfilter.KindInt, true
@@ -1812,11 +7853,10 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 	outer := "\"" + fmt.Sprintf("%s$%s", t.company, CustomerTableName) + "\""
 	_ = outer
 	switch strings.ToLower(field) {
-	case "balance_lcy":
+	case "balance":
 		// Source: the SIFT totals table of a key covering the filters, else the entries
 		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
-		if t.Date_filter != "" {
+		if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
 			// A FlowFilter is set: the key must contain the filtered fields too
 			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 		}
@@ -1824,11 +7864,429 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 		var whereClauses []string
 		var args []interface{}
 		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
-		whereClauses = append(whereClauses, "open = ?")
-		args = append(args, true)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "balance_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "net_change":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
 		if t.Date_filter != "" {
 			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
 			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "net_change_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(sales_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "profit_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(profit_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "inv_discounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(inv_discount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "pmt_discounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(pmt_disc_given_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "balance_due":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(remaining_amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "balance_due_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "open = ?")
+		args = append(args, true)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to due_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("due_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
 				whereClauses = append(whereClauses, clause)
 				args = append(args, filterArgs...)
 			}
@@ -1839,11 +8297,386 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 		}
 		agg := "COALESCE(SUM(remaining_amt_lcy), 0)"
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
-	case "sales_lcy":
+	case "payments":
 		// Source: the SIFT totals table of a key covering the filters, else the entries
 		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
-		tableName, useSIFT = sift.TableName(t.company, CustomerLedgerEntryTableName, "customer_open"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
 		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "invoice_amounts":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 2)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "cr_memo_amounts":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 3)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "finance_charge_memo_amounts":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 4)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "payments_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(original_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "inv_amounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 2)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(original_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "cr_memo_amounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 3)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(original_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "fin_charge_memo_amounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 4)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(original_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "debit_amount":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
 			// A FlowFilter is set: the key must contain the filtered fields too
 			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
 		}
@@ -1851,6 +8684,202 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 		var whereClauses []string
 		var args []interface{}
 		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(debit_amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "credit_amount":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(credit_amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "debit_amount_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(debit_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "credit_amount_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(credit_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "reminder_amounts":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 5)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
 		if t.Date_filter != "" {
 			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
 			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
@@ -1862,7 +8891,54 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 		if len(whereClauses) > 0 {
 			where = strings.Join(whereClauses, " AND ")
 		}
-		agg := "COALESCE(SUM(sales_lcy), 0)"
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "reminder_amounts_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Date_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 5)
+		whereClauses = append(whereClauses, "customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(original_amount_lcy), 0)"
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
 	case "no_of_ledger_entries":
 		// Source: the SIFT totals table of a key covering the filters, else the entries
@@ -1953,28 +9029,124 @@ func (t *Customer) columnName(fieldName string) (string, bool) {
 		return "no", true
 	case strings.ToLower("name"):
 		return "name", true
+	case strings.ToLower("search_name"):
+		return "search_name", true
+	case strings.ToLower("name_2"):
+		return "name_2", true
 	case strings.ToLower("address"):
 		return "address", true
-	case strings.ToLower("post_code"):
-		return "post_code", true
+	case strings.ToLower("address_2"):
+		return "address_2", true
 	case strings.ToLower("city"):
 		return "city", true
-	case strings.ToLower("country_region_code"):
-		return "country_region_code", true
-	case strings.ToLower("phonenumber"):
-		return "phonenumber", true
+	case strings.ToLower("contact"):
+		return "contact", true
+	case strings.ToLower("phone_no"):
+		return "phone_no", true
+	case strings.ToLower("telex_no"):
+		return "telex_no", true
+	case strings.ToLower("our_account_no"):
+		return "our_account_no", true
+	case strings.ToLower("territory_code"):
+		return "territory_code", true
+	case strings.ToLower("department_code"):
+		return "department_code", true
+	case strings.ToLower("project_code"):
+		return "project_code", true
+	case strings.ToLower("chain_name"):
+		return "chain_name", true
+	case strings.ToLower("budgeted_amount"):
+		return "budgeted_amount", true
+	case strings.ToLower("credit_limit_lcy"):
+		return "credit_limit_lcy", true
+	case strings.ToLower("customer_posting_group"):
+		return "customer_posting_group", true
+	case strings.ToLower("currency_code"):
+		return "currency_code", true
+	case strings.ToLower("price_group_code"):
+		return "price_group_code", true
+	case strings.ToLower("language_code"):
+		return "language_code", true
+	case strings.ToLower("statistics_group"):
+		return "statistics_group", true
 	case strings.ToLower("payment_terms_code"):
 		return "payment_terms_code", true
-	case strings.ToLower("status"):
-		return "status", true
-	case strings.ToLower("credit_limit"):
-		return "credit_limit", true
-	case strings.ToLower("last_order_date"):
-		return "last_order_date", true
-	case strings.ToLower("created_at"):
-		return "created_at", true
-	case strings.ToLower("profile_photo"):
-		return "profile_photo", true
+	case strings.ToLower("fin_charge_terms_code"):
+		return "fin_charge_terms_code", true
+	case strings.ToLower("salesperson_code"):
+		return "salesperson_code", true
+	case strings.ToLower("shipment_method_code"):
+		return "shipment_method_code", true
+	case strings.ToLower("shipping_agent_code"):
+		return "shipping_agent_code", true
+	case strings.ToLower("place_of_export"):
+		return "place_of_export", true
+	case strings.ToLower("invoice_disc_code"):
+		return "invoice_disc_code", true
+	case strings.ToLower("cust_item_disc_gr"):
+		return "cust_item_disc_gr", true
+	case strings.ToLower("country_code"):
+		return "country_code", true
+	case strings.ToLower("collection_method"):
+		return "collection_method", true
+	case strings.ToLower("amount"):
+		return "amount", true
+	case strings.ToLower("blocked"):
+		return "blocked", true
+	case strings.ToLower("invoice_copies"):
+		return "invoice_copies", true
+	case strings.ToLower("last_statement_no"):
+		return "last_statement_no", true
+	case strings.ToLower("print_statements"):
+		return "print_statements", true
+	case strings.ToLower("bill_to_customer_no"):
+		return "bill_to_customer_no", true
+	case strings.ToLower("priority"):
+		return "priority", true
+	case strings.ToLower("payment_method_code"):
+		return "payment_method_code", true
+	case strings.ToLower("last_date_modified"):
+		return "last_date_modified", true
+	case strings.ToLower("application_method"):
+		return "application_method", true
+	case strings.ToLower("allow_quantity_disc"):
+		return "allow_quantity_disc", true
+	case strings.ToLower("prices_including_tax"):
+		return "prices_including_tax", true
+	case strings.ToLower("location_code"):
+		return "location_code", true
+	case strings.ToLower("fax_no"):
+		return "fax_no", true
+	case strings.ToLower("telex_answer_back"):
+		return "telex_answer_back", true
+	case strings.ToLower("vat_registration_no"):
+		return "vat_registration_no", true
+	case strings.ToLower("combine_shipments"):
+		return "combine_shipments", true
+	case strings.ToLower("gen_bus_posting_group"):
+		return "gen_bus_posting_group", true
+	case strings.ToLower("picture"):
+		return "picture", true
+	case strings.ToLower("post_code"):
+		return "post_code", true
+	case strings.ToLower("state"):
+		return "state", true
+	case strings.ToLower("e_mail"):
+		return "e_mail", true
+	case strings.ToLower("home_page"):
+		return "home_page", true
+	case strings.ToLower("reminder_terms_code"):
+		return "reminder_terms_code", true
+	case strings.ToLower("no_series"):
+		return "no_series", true
+	case strings.ToLower("tax_area_code"):
+		return "tax_area_code", true
+	case strings.ToLower("tax_liable"):
+		return "tax_liable", true
+	case strings.ToLower("tax_bus_posting_group"):
+		return "tax_bus_posting_group", true
+	case strings.ToLower("reserve"):
+		return "reserve", true
 	}
 	return "", false
 }
@@ -2253,38 +9425,130 @@ func (t *Customer) FindFirst() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 	query += t.forUpdate()
 	var noNull sql.NullString
 	var nameNull sql.NullString
+	var search_nameNull sql.NullString
+	var name_2Null sql.NullString
 	var addressNull sql.NullString
-	var post_codeNull sql.NullString
+	var address_2Null sql.NullString
 	var cityNull sql.NullString
-	var country_region_codeNull sql.NullString
-	var phonenumberNull sql.NullString
+	var contactNull sql.NullString
+	var phone_noNull sql.NullString
+	var telex_noNull sql.NullString
+	var our_account_noNull sql.NullString
+	var territory_codeNull sql.NullString
+	var department_codeNull sql.NullString
+	var project_codeNull sql.NullString
+	var chain_nameNull sql.NullString
+	var budgeted_amountNull sql.NullString
+	var credit_limit_lcyNull sql.NullString
+	var customer_posting_groupNull sql.NullString
+	var currency_codeNull sql.NullString
+	var price_group_codeNull sql.NullString
+	var language_codeNull sql.NullString
 	var payment_terms_codeNull sql.NullString
-	var statusInt int
-	var credit_limitNull sql.NullString
-	var last_order_dateNull sql.NullString
-	var created_atNull sql.NullString
+	var fin_charge_terms_codeNull sql.NullString
+	var salesperson_codeNull sql.NullString
+	var shipment_method_codeNull sql.NullString
+	var shipping_agent_codeNull sql.NullString
+	var place_of_exportNull sql.NullString
+	var invoice_disc_codeNull sql.NullString
+	var cust_item_disc_grNull sql.NullString
+	var country_codeNull sql.NullString
+	var collection_methodNull sql.NullString
+	var amountNull sql.NullString
+	var blockedBool sql.NullBool
+	var print_statementsBool sql.NullBool
+	var bill_to_customer_noNull sql.NullString
+	var payment_method_codeNull sql.NullString
+	var last_date_modifiedNull sql.NullString
+	var application_methodInt int
+	var allow_quantity_discBool sql.NullBool
+	var prices_including_taxBool sql.NullBool
+	var location_codeNull sql.NullString
+	var fax_noNull sql.NullString
+	var telex_answer_backNull sql.NullString
+	var vat_registration_noNull sql.NullString
+	var combine_shipmentsBool sql.NullBool
+	var gen_bus_posting_groupNull sql.NullString
+	var post_codeNull sql.NullString
+	var stateNull sql.NullString
+	var e_mailNull sql.NullString
+	var home_pageNull sql.NullString
+	var reminder_terms_codeNull sql.NullString
+	var no_seriesNull sql.NullString
+	var tax_area_codeNull sql.NullString
+	var tax_liableBool sql.NullBool
+	var tax_bus_posting_groupNull sql.NullString
+	var reserveInt int
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&noNull,
 		&nameNull,
+		&search_nameNull,
+		&name_2Null,
 		&addressNull,
-		&post_codeNull,
+		&address_2Null,
 		&cityNull,
-		&country_region_codeNull,
-		&phonenumberNull,
+		&contactNull,
+		&phone_noNull,
+		&telex_noNull,
+		&our_account_noNull,
+		&territory_codeNull,
+		&department_codeNull,
+		&project_codeNull,
+		&chain_nameNull,
+		&budgeted_amountNull,
+		&credit_limit_lcyNull,
+		&customer_posting_groupNull,
+		&currency_codeNull,
+		&price_group_codeNull,
+		&language_codeNull,
+		&t.Statistics_group,
 		&payment_terms_codeNull,
-		&statusInt,
-		&credit_limitNull,
-		&last_order_dateNull,
-		&created_atNull,
-		&t.Profile_photo,
+		&fin_charge_terms_codeNull,
+		&salesperson_codeNull,
+		&shipment_method_codeNull,
+		&shipping_agent_codeNull,
+		&place_of_exportNull,
+		&invoice_disc_codeNull,
+		&cust_item_disc_grNull,
+		&country_codeNull,
+		&collection_methodNull,
+		&amountNull,
+		&blockedBool,
+		&t.Invoice_copies,
+		&t.Last_statement_no,
+		&print_statementsBool,
+		&bill_to_customer_noNull,
+		&t.Priority,
+		&payment_method_codeNull,
+		&last_date_modifiedNull,
+		&application_methodInt,
+		&allow_quantity_discBool,
+		&prices_including_taxBool,
+		&location_codeNull,
+		&fax_noNull,
+		&telex_answer_backNull,
+		&vat_registration_noNull,
+		&combine_shipmentsBool,
+		&gen_bus_posting_groupNull,
+		&t.Picture,
+		&post_codeNull,
+		&stateNull,
+		&e_mailNull,
+		&home_pageNull,
+		&reminder_terms_codeNull,
+		&no_seriesNull,
+		&tax_area_codeNull,
+		&tax_liableBool,
+		&tax_bus_posting_groupNull,
+		&reserveInt,
 	)
 
 	if err != nil {
@@ -2298,16 +9562,60 @@ func (t *Customer) FindFirst() bool {
 	// Populate fields
 	t.No = types.NewCode(noNull.String)
 	t.Name = types.NewText(nameNull.String)
+	t.Search_name = types.NewCode(search_nameNull.String)
+	t.Name_2 = types.NewText(name_2Null.String)
 	t.Address = types.NewText(addressNull.String)
-	t.Post_code = types.NewCode(post_codeNull.String)
+	t.Address_2 = types.NewText(address_2Null.String)
 	t.City = types.NewText(cityNull.String)
-	t.Country_region_code = types.NewCode(country_region_codeNull.String)
-	t.Phonenumber = types.NewText(phonenumberNull.String)
+	t.Contact = types.NewText(contactNull.String)
+	t.Phone_no = types.NewText(phone_noNull.String)
+	t.Telex_no = types.NewText(telex_noNull.String)
+	t.Our_account_no = types.NewText(our_account_noNull.String)
+	t.Territory_code = types.NewCode(territory_codeNull.String)
+	t.Department_code = types.NewCode(department_codeNull.String)
+	t.Project_code = types.NewCode(project_codeNull.String)
+	t.Chain_name = types.NewCode(chain_nameNull.String)
+	t.Budgeted_amount, _ = types.NewDecimalFromString(budgeted_amountNull.String)
+	t.Credit_limit_lcy, _ = types.NewDecimalFromString(credit_limit_lcyNull.String)
+	t.Customer_posting_group = types.NewCode(customer_posting_groupNull.String)
+	t.Currency_code = types.NewCode(currency_codeNull.String)
+	t.Price_group_code = types.NewCode(price_group_codeNull.String)
+	t.Language_code = types.NewCode(language_codeNull.String)
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
-	t.Status = CustomerStatus(statusInt)
-	t.Credit_limit, _ = types.NewDecimalFromString(credit_limitNull.String)
-	t.Last_order_date, _ = types.NewDateFromString(last_order_dateNull.String)
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
+	t.Fin_charge_terms_code = types.NewCode(fin_charge_terms_codeNull.String)
+	t.Salesperson_code = types.NewCode(salesperson_codeNull.String)
+	t.Shipment_method_code = types.NewCode(shipment_method_codeNull.String)
+	t.Shipping_agent_code = types.NewCode(shipping_agent_codeNull.String)
+	t.Place_of_export = types.NewCode(place_of_exportNull.String)
+	t.Invoice_disc_code = types.NewCode(invoice_disc_codeNull.String)
+	t.Cust_item_disc_gr = types.NewCode(cust_item_disc_grNull.String)
+	t.Country_code = types.NewCode(country_codeNull.String)
+	t.Collection_method = types.NewCode(collection_methodNull.String)
+	t.Amount, _ = types.NewDecimalFromString(amountNull.String)
+	t.Blocked = blockedBool.Bool
+	t.Print_statements = print_statementsBool.Bool
+	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
+	t.Payment_method_code = types.NewCode(payment_method_codeNull.String)
+	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
+	t.Application_method = CustomerApplication_method(application_methodInt)
+	t.Allow_quantity_disc = allow_quantity_discBool.Bool
+	t.Prices_including_tax = prices_including_taxBool.Bool
+	t.Location_code = types.NewCode(location_codeNull.String)
+	t.Fax_no = types.NewText(fax_noNull.String)
+	t.Telex_answer_back = types.NewText(telex_answer_backNull.String)
+	t.Vat_registration_no = types.NewText(vat_registration_noNull.String)
+	t.Combine_shipments = combine_shipmentsBool.Bool
+	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
+	t.Post_code = types.NewCode(post_codeNull.String)
+	t.State = types.NewText(stateNull.String)
+	t.E_mail = types.NewText(e_mailNull.String)
+	t.Home_page = types.NewText(home_pageNull.String)
+	t.Reminder_terms_code = types.NewCode(reminder_terms_codeNull.String)
+	t.No_series = types.NewCode(no_seriesNull.String)
+	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
+	t.Tax_liable = tax_liableBool.Bool
+	t.Tax_bus_posting_group = types.NewCode(tax_bus_posting_groupNull.String)
+	t.Reserve = CustomerReserve(reserveInt)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2322,38 +9630,130 @@ func (t *Customer) FindLast() bool {
 	where, args := t.buildWhereClause()
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
 	query += t.forUpdate()
 	var noNull sql.NullString
 	var nameNull sql.NullString
+	var search_nameNull sql.NullString
+	var name_2Null sql.NullString
 	var addressNull sql.NullString
-	var post_codeNull sql.NullString
+	var address_2Null sql.NullString
 	var cityNull sql.NullString
-	var country_region_codeNull sql.NullString
-	var phonenumberNull sql.NullString
+	var contactNull sql.NullString
+	var phone_noNull sql.NullString
+	var telex_noNull sql.NullString
+	var our_account_noNull sql.NullString
+	var territory_codeNull sql.NullString
+	var department_codeNull sql.NullString
+	var project_codeNull sql.NullString
+	var chain_nameNull sql.NullString
+	var budgeted_amountNull sql.NullString
+	var credit_limit_lcyNull sql.NullString
+	var customer_posting_groupNull sql.NullString
+	var currency_codeNull sql.NullString
+	var price_group_codeNull sql.NullString
+	var language_codeNull sql.NullString
 	var payment_terms_codeNull sql.NullString
-	var statusInt int
-	var credit_limitNull sql.NullString
-	var last_order_dateNull sql.NullString
-	var created_atNull sql.NullString
+	var fin_charge_terms_codeNull sql.NullString
+	var salesperson_codeNull sql.NullString
+	var shipment_method_codeNull sql.NullString
+	var shipping_agent_codeNull sql.NullString
+	var place_of_exportNull sql.NullString
+	var invoice_disc_codeNull sql.NullString
+	var cust_item_disc_grNull sql.NullString
+	var country_codeNull sql.NullString
+	var collection_methodNull sql.NullString
+	var amountNull sql.NullString
+	var blockedBool sql.NullBool
+	var print_statementsBool sql.NullBool
+	var bill_to_customer_noNull sql.NullString
+	var payment_method_codeNull sql.NullString
+	var last_date_modifiedNull sql.NullString
+	var application_methodInt int
+	var allow_quantity_discBool sql.NullBool
+	var prices_including_taxBool sql.NullBool
+	var location_codeNull sql.NullString
+	var fax_noNull sql.NullString
+	var telex_answer_backNull sql.NullString
+	var vat_registration_noNull sql.NullString
+	var combine_shipmentsBool sql.NullBool
+	var gen_bus_posting_groupNull sql.NullString
+	var post_codeNull sql.NullString
+	var stateNull sql.NullString
+	var e_mailNull sql.NullString
+	var home_pageNull sql.NullString
+	var reminder_terms_codeNull sql.NullString
+	var no_seriesNull sql.NullString
+	var tax_area_codeNull sql.NullString
+	var tax_liableBool sql.NullBool
+	var tax_bus_posting_groupNull sql.NullString
+	var reserveInt int
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&noNull,
 		&nameNull,
+		&search_nameNull,
+		&name_2Null,
 		&addressNull,
-		&post_codeNull,
+		&address_2Null,
 		&cityNull,
-		&country_region_codeNull,
-		&phonenumberNull,
+		&contactNull,
+		&phone_noNull,
+		&telex_noNull,
+		&our_account_noNull,
+		&territory_codeNull,
+		&department_codeNull,
+		&project_codeNull,
+		&chain_nameNull,
+		&budgeted_amountNull,
+		&credit_limit_lcyNull,
+		&customer_posting_groupNull,
+		&currency_codeNull,
+		&price_group_codeNull,
+		&language_codeNull,
+		&t.Statistics_group,
 		&payment_terms_codeNull,
-		&statusInt,
-		&credit_limitNull,
-		&last_order_dateNull,
-		&created_atNull,
-		&t.Profile_photo,
+		&fin_charge_terms_codeNull,
+		&salesperson_codeNull,
+		&shipment_method_codeNull,
+		&shipping_agent_codeNull,
+		&place_of_exportNull,
+		&invoice_disc_codeNull,
+		&cust_item_disc_grNull,
+		&country_codeNull,
+		&collection_methodNull,
+		&amountNull,
+		&blockedBool,
+		&t.Invoice_copies,
+		&t.Last_statement_no,
+		&print_statementsBool,
+		&bill_to_customer_noNull,
+		&t.Priority,
+		&payment_method_codeNull,
+		&last_date_modifiedNull,
+		&application_methodInt,
+		&allow_quantity_discBool,
+		&prices_including_taxBool,
+		&location_codeNull,
+		&fax_noNull,
+		&telex_answer_backNull,
+		&vat_registration_noNull,
+		&combine_shipmentsBool,
+		&gen_bus_posting_groupNull,
+		&t.Picture,
+		&post_codeNull,
+		&stateNull,
+		&e_mailNull,
+		&home_pageNull,
+		&reminder_terms_codeNull,
+		&no_seriesNull,
+		&tax_area_codeNull,
+		&tax_liableBool,
+		&tax_bus_posting_groupNull,
+		&reserveInt,
 	)
 
 	if err != nil {
@@ -2367,16 +9767,60 @@ func (t *Customer) FindLast() bool {
 	// Populate fields
 	t.No = types.NewCode(noNull.String)
 	t.Name = types.NewText(nameNull.String)
+	t.Search_name = types.NewCode(search_nameNull.String)
+	t.Name_2 = types.NewText(name_2Null.String)
 	t.Address = types.NewText(addressNull.String)
-	t.Post_code = types.NewCode(post_codeNull.String)
+	t.Address_2 = types.NewText(address_2Null.String)
 	t.City = types.NewText(cityNull.String)
-	t.Country_region_code = types.NewCode(country_region_codeNull.String)
-	t.Phonenumber = types.NewText(phonenumberNull.String)
+	t.Contact = types.NewText(contactNull.String)
+	t.Phone_no = types.NewText(phone_noNull.String)
+	t.Telex_no = types.NewText(telex_noNull.String)
+	t.Our_account_no = types.NewText(our_account_noNull.String)
+	t.Territory_code = types.NewCode(territory_codeNull.String)
+	t.Department_code = types.NewCode(department_codeNull.String)
+	t.Project_code = types.NewCode(project_codeNull.String)
+	t.Chain_name = types.NewCode(chain_nameNull.String)
+	t.Budgeted_amount, _ = types.NewDecimalFromString(budgeted_amountNull.String)
+	t.Credit_limit_lcy, _ = types.NewDecimalFromString(credit_limit_lcyNull.String)
+	t.Customer_posting_group = types.NewCode(customer_posting_groupNull.String)
+	t.Currency_code = types.NewCode(currency_codeNull.String)
+	t.Price_group_code = types.NewCode(price_group_codeNull.String)
+	t.Language_code = types.NewCode(language_codeNull.String)
 	t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
-	t.Status = CustomerStatus(statusInt)
-	t.Credit_limit, _ = types.NewDecimalFromString(credit_limitNull.String)
-	t.Last_order_date, _ = types.NewDateFromString(last_order_dateNull.String)
-	t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
+	t.Fin_charge_terms_code = types.NewCode(fin_charge_terms_codeNull.String)
+	t.Salesperson_code = types.NewCode(salesperson_codeNull.String)
+	t.Shipment_method_code = types.NewCode(shipment_method_codeNull.String)
+	t.Shipping_agent_code = types.NewCode(shipping_agent_codeNull.String)
+	t.Place_of_export = types.NewCode(place_of_exportNull.String)
+	t.Invoice_disc_code = types.NewCode(invoice_disc_codeNull.String)
+	t.Cust_item_disc_gr = types.NewCode(cust_item_disc_grNull.String)
+	t.Country_code = types.NewCode(country_codeNull.String)
+	t.Collection_method = types.NewCode(collection_methodNull.String)
+	t.Amount, _ = types.NewDecimalFromString(amountNull.String)
+	t.Blocked = blockedBool.Bool
+	t.Print_statements = print_statementsBool.Bool
+	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
+	t.Payment_method_code = types.NewCode(payment_method_codeNull.String)
+	t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
+	t.Application_method = CustomerApplication_method(application_methodInt)
+	t.Allow_quantity_disc = allow_quantity_discBool.Bool
+	t.Prices_including_tax = prices_including_taxBool.Bool
+	t.Location_code = types.NewCode(location_codeNull.String)
+	t.Fax_no = types.NewText(fax_noNull.String)
+	t.Telex_answer_back = types.NewText(telex_answer_backNull.String)
+	t.Vat_registration_no = types.NewText(vat_registration_noNull.String)
+	t.Combine_shipments = combine_shipmentsBool.Bool
+	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
+	t.Post_code = types.NewCode(post_codeNull.String)
+	t.State = types.NewText(stateNull.String)
+	t.E_mail = types.NewText(e_mailNull.String)
+	t.Home_page = types.NewText(home_pageNull.String)
+	t.Reminder_terms_code = types.NewCode(reminder_terms_codeNull.String)
+	t.No_series = types.NewCode(no_seriesNull.String)
+	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
+	t.Tax_liable = tax_liableBool.Bool
+	t.Tax_bus_posting_group = types.NewCode(tax_bus_posting_groupNull.String)
+	t.Reserve = CustomerReserve(reserveInt)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2425,7 +9869,7 @@ func (t *Customer) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2496,31 +9940,123 @@ func (t *Customer) Next(steps ...int) bool {
 		// Scan the row
 		var noNull sql.NullString
 		var nameNull sql.NullString
+		var search_nameNull sql.NullString
+		var name_2Null sql.NullString
 		var addressNull sql.NullString
-		var post_codeNull sql.NullString
+		var address_2Null sql.NullString
 		var cityNull sql.NullString
-		var country_region_codeNull sql.NullString
-		var phonenumberNull sql.NullString
+		var contactNull sql.NullString
+		var phone_noNull sql.NullString
+		var telex_noNull sql.NullString
+		var our_account_noNull sql.NullString
+		var territory_codeNull sql.NullString
+		var department_codeNull sql.NullString
+		var project_codeNull sql.NullString
+		var chain_nameNull sql.NullString
+		var budgeted_amountNull sql.NullString
+		var credit_limit_lcyNull sql.NullString
+		var customer_posting_groupNull sql.NullString
+		var currency_codeNull sql.NullString
+		var price_group_codeNull sql.NullString
+		var language_codeNull sql.NullString
 		var payment_terms_codeNull sql.NullString
-		var statusInt int
-		var credit_limitNull sql.NullString
-		var last_order_dateNull sql.NullString
-		var created_atNull sql.NullString
+		var fin_charge_terms_codeNull sql.NullString
+		var salesperson_codeNull sql.NullString
+		var shipment_method_codeNull sql.NullString
+		var shipping_agent_codeNull sql.NullString
+		var place_of_exportNull sql.NullString
+		var invoice_disc_codeNull sql.NullString
+		var cust_item_disc_grNull sql.NullString
+		var country_codeNull sql.NullString
+		var collection_methodNull sql.NullString
+		var amountNull sql.NullString
+		var blockedBool sql.NullBool
+		var print_statementsBool sql.NullBool
+		var bill_to_customer_noNull sql.NullString
+		var payment_method_codeNull sql.NullString
+		var last_date_modifiedNull sql.NullString
+		var application_methodInt int
+		var allow_quantity_discBool sql.NullBool
+		var prices_including_taxBool sql.NullBool
+		var location_codeNull sql.NullString
+		var fax_noNull sql.NullString
+		var telex_answer_backNull sql.NullString
+		var vat_registration_noNull sql.NullString
+		var combine_shipmentsBool sql.NullBool
+		var gen_bus_posting_groupNull sql.NullString
+		var post_codeNull sql.NullString
+		var stateNull sql.NullString
+		var e_mailNull sql.NullString
+		var home_pageNull sql.NullString
+		var reminder_terms_codeNull sql.NullString
+		var no_seriesNull sql.NullString
+		var tax_area_codeNull sql.NullString
+		var tax_liableBool sql.NullBool
+		var tax_bus_posting_groupNull sql.NullString
+		var reserveInt int
 
 		err := t.currentRows.Scan(
 			&noNull,
 			&nameNull,
+			&search_nameNull,
+			&name_2Null,
 			&addressNull,
-			&post_codeNull,
+			&address_2Null,
 			&cityNull,
-			&country_region_codeNull,
-			&phonenumberNull,
+			&contactNull,
+			&phone_noNull,
+			&telex_noNull,
+			&our_account_noNull,
+			&territory_codeNull,
+			&department_codeNull,
+			&project_codeNull,
+			&chain_nameNull,
+			&budgeted_amountNull,
+			&credit_limit_lcyNull,
+			&customer_posting_groupNull,
+			&currency_codeNull,
+			&price_group_codeNull,
+			&language_codeNull,
+			&t.Statistics_group,
 			&payment_terms_codeNull,
-			&statusInt,
-			&credit_limitNull,
-			&last_order_dateNull,
-			&created_atNull,
-			&t.Profile_photo,
+			&fin_charge_terms_codeNull,
+			&salesperson_codeNull,
+			&shipment_method_codeNull,
+			&shipping_agent_codeNull,
+			&place_of_exportNull,
+			&invoice_disc_codeNull,
+			&cust_item_disc_grNull,
+			&country_codeNull,
+			&collection_methodNull,
+			&amountNull,
+			&blockedBool,
+			&t.Invoice_copies,
+			&t.Last_statement_no,
+			&print_statementsBool,
+			&bill_to_customer_noNull,
+			&t.Priority,
+			&payment_method_codeNull,
+			&last_date_modifiedNull,
+			&application_methodInt,
+			&allow_quantity_discBool,
+			&prices_including_taxBool,
+			&location_codeNull,
+			&fax_noNull,
+			&telex_answer_backNull,
+			&vat_registration_noNull,
+			&combine_shipmentsBool,
+			&gen_bus_posting_groupNull,
+			&t.Picture,
+			&post_codeNull,
+			&stateNull,
+			&e_mailNull,
+			&home_pageNull,
+			&reminder_terms_codeNull,
+			&no_seriesNull,
+			&tax_area_codeNull,
+			&tax_liableBool,
+			&tax_bus_posting_groupNull,
+			&reserveInt,
 		)
 
 		if err != nil {
@@ -2533,16 +10069,60 @@ func (t *Customer) Next(steps ...int) bool {
 		// Populate fields
 		t.No = types.NewCode(noNull.String)
 		t.Name = types.NewText(nameNull.String)
+		t.Search_name = types.NewCode(search_nameNull.String)
+		t.Name_2 = types.NewText(name_2Null.String)
 		t.Address = types.NewText(addressNull.String)
-		t.Post_code = types.NewCode(post_codeNull.String)
+		t.Address_2 = types.NewText(address_2Null.String)
 		t.City = types.NewText(cityNull.String)
-		t.Country_region_code = types.NewCode(country_region_codeNull.String)
-		t.Phonenumber = types.NewText(phonenumberNull.String)
+		t.Contact = types.NewText(contactNull.String)
+		t.Phone_no = types.NewText(phone_noNull.String)
+		t.Telex_no = types.NewText(telex_noNull.String)
+		t.Our_account_no = types.NewText(our_account_noNull.String)
+		t.Territory_code = types.NewCode(territory_codeNull.String)
+		t.Department_code = types.NewCode(department_codeNull.String)
+		t.Project_code = types.NewCode(project_codeNull.String)
+		t.Chain_name = types.NewCode(chain_nameNull.String)
+		t.Budgeted_amount, _ = types.NewDecimalFromString(budgeted_amountNull.String)
+		t.Credit_limit_lcy, _ = types.NewDecimalFromString(credit_limit_lcyNull.String)
+		t.Customer_posting_group = types.NewCode(customer_posting_groupNull.String)
+		t.Currency_code = types.NewCode(currency_codeNull.String)
+		t.Price_group_code = types.NewCode(price_group_codeNull.String)
+		t.Language_code = types.NewCode(language_codeNull.String)
 		t.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
-		t.Status = CustomerStatus(statusInt)
-		t.Credit_limit, _ = types.NewDecimalFromString(credit_limitNull.String)
-		t.Last_order_date, _ = types.NewDateFromString(last_order_dateNull.String)
-		t.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
+		t.Fin_charge_terms_code = types.NewCode(fin_charge_terms_codeNull.String)
+		t.Salesperson_code = types.NewCode(salesperson_codeNull.String)
+		t.Shipment_method_code = types.NewCode(shipment_method_codeNull.String)
+		t.Shipping_agent_code = types.NewCode(shipping_agent_codeNull.String)
+		t.Place_of_export = types.NewCode(place_of_exportNull.String)
+		t.Invoice_disc_code = types.NewCode(invoice_disc_codeNull.String)
+		t.Cust_item_disc_gr = types.NewCode(cust_item_disc_grNull.String)
+		t.Country_code = types.NewCode(country_codeNull.String)
+		t.Collection_method = types.NewCode(collection_methodNull.String)
+		t.Amount, _ = types.NewDecimalFromString(amountNull.String)
+		t.Blocked = blockedBool.Bool
+		t.Print_statements = print_statementsBool.Bool
+		t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
+		t.Payment_method_code = types.NewCode(payment_method_codeNull.String)
+		t.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
+		t.Application_method = CustomerApplication_method(application_methodInt)
+		t.Allow_quantity_disc = allow_quantity_discBool.Bool
+		t.Prices_including_tax = prices_including_taxBool.Bool
+		t.Location_code = types.NewCode(location_codeNull.String)
+		t.Fax_no = types.NewText(fax_noNull.String)
+		t.Telex_answer_back = types.NewText(telex_answer_backNull.String)
+		t.Vat_registration_no = types.NewText(vat_registration_noNull.String)
+		t.Combine_shipments = combine_shipmentsBool.Bool
+		t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
+		t.Post_code = types.NewCode(post_codeNull.String)
+		t.State = types.NewText(stateNull.String)
+		t.E_mail = types.NewText(e_mailNull.String)
+		t.Home_page = types.NewText(home_pageNull.String)
+		t.Reminder_terms_code = types.NewCode(reminder_terms_codeNull.String)
+		t.No_series = types.NewCode(no_seriesNull.String)
+		t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
+		t.Tax_liable = tax_liableBool.Bool
+		t.Tax_bus_posting_group = types.NewCode(tax_bus_posting_groupNull.String)
+		t.Reserve = CustomerReserve(reserveInt)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -2574,7 +10154,7 @@ func (t *Customer) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, address, post_code, city, country_region_code, phonenumber, payment_terms_code, status, credit_limit, last_order_date, created_at, profile_photo FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2598,31 +10178,123 @@ func (t *Customer) FindSetBuffered() bool {
 		// Scan the row
 		var noNull sql.NullString
 		var nameNull sql.NullString
+		var search_nameNull sql.NullString
+		var name_2Null sql.NullString
 		var addressNull sql.NullString
-		var post_codeNull sql.NullString
+		var address_2Null sql.NullString
 		var cityNull sql.NullString
-		var country_region_codeNull sql.NullString
-		var phonenumberNull sql.NullString
+		var contactNull sql.NullString
+		var phone_noNull sql.NullString
+		var telex_noNull sql.NullString
+		var our_account_noNull sql.NullString
+		var territory_codeNull sql.NullString
+		var department_codeNull sql.NullString
+		var project_codeNull sql.NullString
+		var chain_nameNull sql.NullString
+		var budgeted_amountNull sql.NullString
+		var credit_limit_lcyNull sql.NullString
+		var customer_posting_groupNull sql.NullString
+		var currency_codeNull sql.NullString
+		var price_group_codeNull sql.NullString
+		var language_codeNull sql.NullString
 		var payment_terms_codeNull sql.NullString
-		var statusInt int
-		var credit_limitNull sql.NullString
-		var last_order_dateNull sql.NullString
-		var created_atNull sql.NullString
+		var fin_charge_terms_codeNull sql.NullString
+		var salesperson_codeNull sql.NullString
+		var shipment_method_codeNull sql.NullString
+		var shipping_agent_codeNull sql.NullString
+		var place_of_exportNull sql.NullString
+		var invoice_disc_codeNull sql.NullString
+		var cust_item_disc_grNull sql.NullString
+		var country_codeNull sql.NullString
+		var collection_methodNull sql.NullString
+		var amountNull sql.NullString
+		var blockedBool sql.NullBool
+		var print_statementsBool sql.NullBool
+		var bill_to_customer_noNull sql.NullString
+		var payment_method_codeNull sql.NullString
+		var last_date_modifiedNull sql.NullString
+		var application_methodInt int
+		var allow_quantity_discBool sql.NullBool
+		var prices_including_taxBool sql.NullBool
+		var location_codeNull sql.NullString
+		var fax_noNull sql.NullString
+		var telex_answer_backNull sql.NullString
+		var vat_registration_noNull sql.NullString
+		var combine_shipmentsBool sql.NullBool
+		var gen_bus_posting_groupNull sql.NullString
+		var post_codeNull sql.NullString
+		var stateNull sql.NullString
+		var e_mailNull sql.NullString
+		var home_pageNull sql.NullString
+		var reminder_terms_codeNull sql.NullString
+		var no_seriesNull sql.NullString
+		var tax_area_codeNull sql.NullString
+		var tax_liableBool sql.NullBool
+		var tax_bus_posting_groupNull sql.NullString
+		var reserveInt int
 
 		err := rows.Scan(
 			&noNull,
 			&nameNull,
+			&search_nameNull,
+			&name_2Null,
 			&addressNull,
-			&post_codeNull,
+			&address_2Null,
 			&cityNull,
-			&country_region_codeNull,
-			&phonenumberNull,
+			&contactNull,
+			&phone_noNull,
+			&telex_noNull,
+			&our_account_noNull,
+			&territory_codeNull,
+			&department_codeNull,
+			&project_codeNull,
+			&chain_nameNull,
+			&budgeted_amountNull,
+			&credit_limit_lcyNull,
+			&customer_posting_groupNull,
+			&currency_codeNull,
+			&price_group_codeNull,
+			&language_codeNull,
+			&record.Statistics_group,
 			&payment_terms_codeNull,
-			&statusInt,
-			&credit_limitNull,
-			&last_order_dateNull,
-			&created_atNull,
-			&record.Profile_photo,
+			&fin_charge_terms_codeNull,
+			&salesperson_codeNull,
+			&shipment_method_codeNull,
+			&shipping_agent_codeNull,
+			&place_of_exportNull,
+			&invoice_disc_codeNull,
+			&cust_item_disc_grNull,
+			&country_codeNull,
+			&collection_methodNull,
+			&amountNull,
+			&blockedBool,
+			&record.Invoice_copies,
+			&record.Last_statement_no,
+			&print_statementsBool,
+			&bill_to_customer_noNull,
+			&record.Priority,
+			&payment_method_codeNull,
+			&last_date_modifiedNull,
+			&application_methodInt,
+			&allow_quantity_discBool,
+			&prices_including_taxBool,
+			&location_codeNull,
+			&fax_noNull,
+			&telex_answer_backNull,
+			&vat_registration_noNull,
+			&combine_shipmentsBool,
+			&gen_bus_posting_groupNull,
+			&record.Picture,
+			&post_codeNull,
+			&stateNull,
+			&e_mailNull,
+			&home_pageNull,
+			&reminder_terms_codeNull,
+			&no_seriesNull,
+			&tax_area_codeNull,
+			&tax_liableBool,
+			&tax_bus_posting_groupNull,
+			&reserveInt,
 		)
 
 		if err != nil {
@@ -2633,16 +10305,60 @@ func (t *Customer) FindSetBuffered() bool {
 		// Populate special type fields
 		record.No = types.NewCode(noNull.String)
 		record.Name = types.NewText(nameNull.String)
+		record.Search_name = types.NewCode(search_nameNull.String)
+		record.Name_2 = types.NewText(name_2Null.String)
 		record.Address = types.NewText(addressNull.String)
-		record.Post_code = types.NewCode(post_codeNull.String)
+		record.Address_2 = types.NewText(address_2Null.String)
 		record.City = types.NewText(cityNull.String)
-		record.Country_region_code = types.NewCode(country_region_codeNull.String)
-		record.Phonenumber = types.NewText(phonenumberNull.String)
+		record.Contact = types.NewText(contactNull.String)
+		record.Phone_no = types.NewText(phone_noNull.String)
+		record.Telex_no = types.NewText(telex_noNull.String)
+		record.Our_account_no = types.NewText(our_account_noNull.String)
+		record.Territory_code = types.NewCode(territory_codeNull.String)
+		record.Department_code = types.NewCode(department_codeNull.String)
+		record.Project_code = types.NewCode(project_codeNull.String)
+		record.Chain_name = types.NewCode(chain_nameNull.String)
+		record.Budgeted_amount, _ = types.NewDecimalFromString(budgeted_amountNull.String)
+		record.Credit_limit_lcy, _ = types.NewDecimalFromString(credit_limit_lcyNull.String)
+		record.Customer_posting_group = types.NewCode(customer_posting_groupNull.String)
+		record.Currency_code = types.NewCode(currency_codeNull.String)
+		record.Price_group_code = types.NewCode(price_group_codeNull.String)
+		record.Language_code = types.NewCode(language_codeNull.String)
 		record.Payment_terms_code = types.NewCode(payment_terms_codeNull.String)
-		record.Status = CustomerStatus(statusInt)
-		record.Credit_limit, _ = types.NewDecimalFromString(credit_limitNull.String)
-		record.Last_order_date, _ = types.NewDateFromString(last_order_dateNull.String)
-		record.Created_at, _ = types.NewDateTimeFromString(created_atNull.String)
+		record.Fin_charge_terms_code = types.NewCode(fin_charge_terms_codeNull.String)
+		record.Salesperson_code = types.NewCode(salesperson_codeNull.String)
+		record.Shipment_method_code = types.NewCode(shipment_method_codeNull.String)
+		record.Shipping_agent_code = types.NewCode(shipping_agent_codeNull.String)
+		record.Place_of_export = types.NewCode(place_of_exportNull.String)
+		record.Invoice_disc_code = types.NewCode(invoice_disc_codeNull.String)
+		record.Cust_item_disc_gr = types.NewCode(cust_item_disc_grNull.String)
+		record.Country_code = types.NewCode(country_codeNull.String)
+		record.Collection_method = types.NewCode(collection_methodNull.String)
+		record.Amount, _ = types.NewDecimalFromString(amountNull.String)
+		record.Blocked = blockedBool.Bool
+		record.Print_statements = print_statementsBool.Bool
+		record.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
+		record.Payment_method_code = types.NewCode(payment_method_codeNull.String)
+		record.Last_date_modified, _ = types.NewDateFromString(last_date_modifiedNull.String)
+		record.Application_method = CustomerApplication_method(application_methodInt)
+		record.Allow_quantity_disc = allow_quantity_discBool.Bool
+		record.Prices_including_tax = prices_including_taxBool.Bool
+		record.Location_code = types.NewCode(location_codeNull.String)
+		record.Fax_no = types.NewText(fax_noNull.String)
+		record.Telex_answer_back = types.NewText(telex_answer_backNull.String)
+		record.Vat_registration_no = types.NewText(vat_registration_noNull.String)
+		record.Combine_shipments = combine_shipmentsBool.Bool
+		record.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
+		record.Post_code = types.NewCode(post_codeNull.String)
+		record.State = types.NewText(stateNull.String)
+		record.E_mail = types.NewText(e_mailNull.String)
+		record.Home_page = types.NewText(home_pageNull.String)
+		record.Reminder_terms_code = types.NewCode(reminder_terms_codeNull.String)
+		record.No_series = types.NewCode(no_seriesNull.String)
+		record.Tax_area_code = types.NewCode(tax_area_codeNull.String)
+		record.Tax_liable = tax_liableBool.Bool
+		record.Tax_bus_posting_group = types.NewCode(tax_bus_posting_groupNull.String)
+		record.Reserve = CustomerReserve(reserveInt)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2673,19 +10389,89 @@ func (t *Customer) FindSetBuffered() bool {
 func (t *Customer) copyFromBuffered(record *Customer) {
 	t.No = record.No
 	t.Name = record.Name
+	t.Search_name = record.Search_name
+	t.Name_2 = record.Name_2
 	t.Address = record.Address
-	t.Post_code = record.Post_code
+	t.Address_2 = record.Address_2
 	t.City = record.City
-	t.Country_region_code = record.Country_region_code
-	t.Phonenumber = record.Phonenumber
+	t.Contact = record.Contact
+	t.Phone_no = record.Phone_no
+	t.Telex_no = record.Telex_no
+	t.Our_account_no = record.Our_account_no
+	t.Territory_code = record.Territory_code
+	t.Department_code = record.Department_code
+	t.Project_code = record.Project_code
+	t.Chain_name = record.Chain_name
+	t.Budgeted_amount = record.Budgeted_amount
+	t.Credit_limit_lcy = record.Credit_limit_lcy
+	t.Customer_posting_group = record.Customer_posting_group
+	t.Currency_code = record.Currency_code
+	t.Price_group_code = record.Price_group_code
+	t.Language_code = record.Language_code
+	t.Statistics_group = record.Statistics_group
 	t.Payment_terms_code = record.Payment_terms_code
-	t.Status = record.Status
-	t.Credit_limit = record.Credit_limit
-	t.Last_order_date = record.Last_order_date
-	t.Created_at = record.Created_at
-	t.Profile_photo = record.Profile_photo
+	t.Fin_charge_terms_code = record.Fin_charge_terms_code
+	t.Salesperson_code = record.Salesperson_code
+	t.Shipment_method_code = record.Shipment_method_code
+	t.Shipping_agent_code = record.Shipping_agent_code
+	t.Place_of_export = record.Place_of_export
+	t.Invoice_disc_code = record.Invoice_disc_code
+	t.Cust_item_disc_gr = record.Cust_item_disc_gr
+	t.Country_code = record.Country_code
+	t.Collection_method = record.Collection_method
+	t.Amount = record.Amount
+	t.Blocked = record.Blocked
+	t.Invoice_copies = record.Invoice_copies
+	t.Last_statement_no = record.Last_statement_no
+	t.Print_statements = record.Print_statements
+	t.Bill_to_customer_no = record.Bill_to_customer_no
+	t.Priority = record.Priority
+	t.Payment_method_code = record.Payment_method_code
+	t.Last_date_modified = record.Last_date_modified
+	t.Application_method = record.Application_method
+	t.Allow_quantity_disc = record.Allow_quantity_disc
+	t.Prices_including_tax = record.Prices_including_tax
+	t.Location_code = record.Location_code
+	t.Fax_no = record.Fax_no
+	t.Telex_answer_back = record.Telex_answer_back
+	t.Vat_registration_no = record.Vat_registration_no
+	t.Combine_shipments = record.Combine_shipments
+	t.Gen_bus_posting_group = record.Gen_bus_posting_group
+	t.Picture = record.Picture
+	t.Post_code = record.Post_code
+	t.State = record.State
+	t.E_mail = record.E_mail
+	t.Home_page = record.Home_page
+	t.Reminder_terms_code = record.Reminder_terms_code
+	t.No_series = record.No_series
+	t.Tax_area_code = record.Tax_area_code
+	t.Tax_liable = record.Tax_liable
+	t.Tax_bus_posting_group = record.Tax_bus_posting_group
+	t.Reserve = record.Reserve
+	t.Balance = record.Balance
 	t.Balance_lcy = record.Balance_lcy
+	t.Net_change = record.Net_change
+	t.Net_change_lcy = record.Net_change_lcy
 	t.Sales_lcy = record.Sales_lcy
+	t.Profit_lcy = record.Profit_lcy
+	t.Inv_discounts_lcy = record.Inv_discounts_lcy
+	t.Pmt_discounts_lcy = record.Pmt_discounts_lcy
+	t.Balance_due = record.Balance_due
+	t.Balance_due_lcy = record.Balance_due_lcy
+	t.Payments = record.Payments
+	t.Invoice_amounts = record.Invoice_amounts
+	t.Cr_memo_amounts = record.Cr_memo_amounts
+	t.Finance_charge_memo_amounts = record.Finance_charge_memo_amounts
+	t.Payments_lcy = record.Payments_lcy
+	t.Inv_amounts_lcy = record.Inv_amounts_lcy
+	t.Cr_memo_amounts_lcy = record.Cr_memo_amounts_lcy
+	t.Fin_charge_memo_amounts_lcy = record.Fin_charge_memo_amounts_lcy
+	t.Debit_amount = record.Debit_amount
+	t.Credit_amount = record.Credit_amount
+	t.Debit_amount_lcy = record.Debit_amount_lcy
+	t.Credit_amount_lcy = record.Credit_amount_lcy
+	t.Reminder_amounts = record.Reminder_amounts
+	t.Reminder_amounts_lcy = record.Reminder_amounts_lcy
 	t.No_of_ledger_entries = record.No_of_ledger_entries
 	t.StoreOldValues()
 }
@@ -2857,6 +10643,42 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "search_name":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Search_name = v
+		} else if v, ok := value.(string); ok {
+			t.Search_name = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field search_name")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Search_name); ok {
+				if err := trg.OnValidate_Search_name(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "name_2":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Name_2 = v
+		} else if v, ok := value.(string); ok {
+			t.Name_2 = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field name_2")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Name_2); ok {
+				if err := trg.OnValidate_Name_2(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "address":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
@@ -2875,19 +10697,19 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
-	case "post_code":
+	case "address_2":
 		// Set field value
-		if v, ok := value.(types.Code); ok {
-			t.Post_code = v
+		if v, ok := value.(types.Text); ok {
+			t.Address_2 = v
 		} else if v, ok := value.(string); ok {
-			t.Post_code = types.NewCode(v)
+			t.Address_2 = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field post_code")
+			return fmt.Errorf("invalid type for field address_2")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Post_code); ok {
-				if err := trg.OnValidate_Post_code(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Address_2); ok {
+				if err := trg.OnValidate_Address_2(t); err != nil {
 					return err
 				}
 			}
@@ -2911,37 +10733,328 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
-	case "country_region_code":
+	case "contact":
 		// Set field value
-		if v, ok := value.(types.Code); ok {
-			t.Country_region_code = v
+		if v, ok := value.(types.Text); ok {
+			t.Contact = v
 		} else if v, ok := value.(string); ok {
-			t.Country_region_code = types.NewCode(v)
+			t.Contact = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field country_region_code")
+			return fmt.Errorf("invalid type for field contact")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Country_region_code); ok {
-				if err := trg.OnValidate_Country_region_code(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Contact); ok {
+				if err := trg.OnValidate_Contact(t); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	case "phonenumber":
+	case "phone_no":
 		// Set field value
 		if v, ok := value.(types.Text); ok {
-			t.Phonenumber = v
+			t.Phone_no = v
 		} else if v, ok := value.(string); ok {
-			t.Phonenumber = types.NewText(v)
+			t.Phone_no = types.NewText(v)
 		} else {
-			return fmt.Errorf("invalid type for field phonenumber")
+			return fmt.Errorf("invalid type for field phone_no")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Phonenumber); ok {
-				if err := trg.OnValidate_Phonenumber(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Phone_no); ok {
+				if err := trg.OnValidate_Phone_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "telex_no":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Telex_no = v
+		} else if v, ok := value.(string); ok {
+			t.Telex_no = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field telex_no")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Telex_no); ok {
+				if err := trg.OnValidate_Telex_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "our_account_no":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Our_account_no = v
+		} else if v, ok := value.(string); ok {
+			t.Our_account_no = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field our_account_no")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Our_account_no); ok {
+				if err := trg.OnValidate_Our_account_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "territory_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Territory_code = v
+		} else if v, ok := value.(string); ok {
+			t.Territory_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field territory_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "territory_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Territory_code); ok {
+				if err := trg.OnValidate_Territory_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "department_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Department_code = v
+		} else if v, ok := value.(string); ok {
+			t.Department_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field department_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "department_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Department_code); ok {
+				if err := trg.OnValidate_Department_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "project_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Project_code = v
+		} else if v, ok := value.(string); ok {
+			t.Project_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field project_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "project_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Project_code); ok {
+				if err := trg.OnValidate_Project_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "chain_name":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Chain_name = v
+		} else if v, ok := value.(string); ok {
+			t.Chain_name = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field chain_name")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Chain_name); ok {
+				if err := trg.OnValidate_Chain_name(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "budgeted_amount":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Budgeted_amount = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Budgeted_amount, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field budgeted_amount: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Budgeted_amount = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Budgeted_amount = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Budgeted_amount = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field budgeted_amount (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Budgeted_amount); ok {
+				if err := trg.OnValidate_Budgeted_amount(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "credit_limit_lcy":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Credit_limit_lcy = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Credit_limit_lcy, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field credit_limit_lcy: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Credit_limit_lcy = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Credit_limit_lcy = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Credit_limit_lcy = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field credit_limit_lcy (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Credit_limit_lcy); ok {
+				if err := trg.OnValidate_Credit_limit_lcy(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "customer_posting_group":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Customer_posting_group = v
+		} else if v, ok := value.(string); ok {
+			t.Customer_posting_group = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field customer_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "customer_posting_group"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Customer_posting_group); ok {
+				if err := trg.OnValidate_Customer_posting_group(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "currency_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Currency_code = v
+		} else if v, ok := value.(string); ok {
+			t.Currency_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field currency_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "currency_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Currency_code); ok {
+				if err := trg.OnValidate_Currency_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "price_group_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Price_group_code = v
+		} else if v, ok := value.(string); ok {
+			t.Price_group_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field price_group_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "price_group_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Price_group_code); ok {
+				if err := trg.OnValidate_Price_group_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "language_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Language_code = v
+		} else if v, ok := value.(string); ok {
+			t.Language_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field language_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "language_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Language_code); ok {
+				if err := trg.OnValidate_Language_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "statistics_group":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Statistics_group = v
+		case float64:
+			t.Statistics_group = int(v)
+		case string:
+			if v == "" {
+				t.Statistics_group = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Statistics_group = i
+			} else {
+				return fmt.Errorf("invalid integer value for field statistics_group: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field statistics_group")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Statistics_group); ok {
+				if err := trg.OnValidate_Statistics_group(t); err != nil {
 					return err
 				}
 			}
@@ -2956,6 +11069,10 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field payment_terms_code")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "payment_terms_code"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerOnValidate_Payment_terms_code); ok {
@@ -2965,156 +11082,872 @@ func (t *Customer) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
-	case "status":
+	case "fin_charge_terms_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Fin_charge_terms_code = v
+		} else if v, ok := value.(string); ok {
+			t.Fin_charge_terms_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field fin_charge_terms_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "fin_charge_terms_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Fin_charge_terms_code); ok {
+				if err := trg.OnValidate_Fin_charge_terms_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "salesperson_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Salesperson_code = v
+		} else if v, ok := value.(string); ok {
+			t.Salesperson_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field salesperson_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "salesperson_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Salesperson_code); ok {
+				if err := trg.OnValidate_Salesperson_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "shipment_method_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Shipment_method_code = v
+		} else if v, ok := value.(string); ok {
+			t.Shipment_method_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field shipment_method_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "shipment_method_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Shipment_method_code); ok {
+				if err := trg.OnValidate_Shipment_method_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "shipping_agent_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Shipping_agent_code = v
+		} else if v, ok := value.(string); ok {
+			t.Shipping_agent_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field shipping_agent_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "shipping_agent_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Shipping_agent_code); ok {
+				if err := trg.OnValidate_Shipping_agent_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "place_of_export":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Place_of_export = v
+		} else if v, ok := value.(string); ok {
+			t.Place_of_export = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field place_of_export")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Place_of_export); ok {
+				if err := trg.OnValidate_Place_of_export(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "invoice_disc_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Invoice_disc_code = v
+		} else if v, ok := value.(string); ok {
+			t.Invoice_disc_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field invoice_disc_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "invoice_disc_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Invoice_disc_code); ok {
+				if err := trg.OnValidate_Invoice_disc_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "cust_item_disc_gr":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Cust_item_disc_gr = v
+		} else if v, ok := value.(string); ok {
+			t.Cust_item_disc_gr = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field cust_item_disc_gr")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "cust_item_disc_gr"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Cust_item_disc_gr); ok {
+				if err := trg.OnValidate_Cust_item_disc_gr(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "country_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Country_code = v
+		} else if v, ok := value.(string); ok {
+			t.Country_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field country_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "country_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Country_code); ok {
+				if err := trg.OnValidate_Country_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "collection_method":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Collection_method = v
+		} else if v, ok := value.(string); ok {
+			t.Collection_method = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field collection_method")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Collection_method); ok {
+				if err := trg.OnValidate_Collection_method(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "amount":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Amount = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Amount, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field amount: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Amount = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Amount = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Amount = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field amount (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Amount); ok {
+				if err := trg.OnValidate_Amount(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "blocked":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Blocked = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Blocked = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field blocked")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Blocked); ok {
+				if err := trg.OnValidate_Blocked(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "invoice_copies":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Invoice_copies = v
+		case float64:
+			t.Invoice_copies = int(v)
+		case string:
+			if v == "" {
+				t.Invoice_copies = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Invoice_copies = i
+			} else {
+				return fmt.Errorf("invalid integer value for field invoice_copies: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field invoice_copies")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Invoice_copies); ok {
+				if err := trg.OnValidate_Invoice_copies(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "last_statement_no":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Last_statement_no = v
+		case float64:
+			t.Last_statement_no = int(v)
+		case string:
+			if v == "" {
+				t.Last_statement_no = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Last_statement_no = i
+			} else {
+				return fmt.Errorf("invalid integer value for field last_statement_no: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field last_statement_no")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Last_statement_no); ok {
+				if err := trg.OnValidate_Last_statement_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "print_statements":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Print_statements = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Print_statements = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field print_statements")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Print_statements); ok {
+				if err := trg.OnValidate_Print_statements(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "bill_to_customer_no":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Bill_to_customer_no = v
+		} else if v, ok := value.(string); ok {
+			t.Bill_to_customer_no = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field bill_to_customer_no")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "bill_to_customer_no"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Bill_to_customer_no); ok {
+				if err := trg.OnValidate_Bill_to_customer_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "priority":
+		// Set field value
+		switch v := value.(type) {
+		case int:
+			t.Priority = v
+		case float64:
+			t.Priority = int(v)
+		case string:
+			if v == "" {
+				t.Priority = 0
+			} else if i, err := strconv.Atoi(v); err == nil {
+				t.Priority = i
+			} else {
+				return fmt.Errorf("invalid integer value for field priority: %s", v)
+			}
+		default:
+			return fmt.Errorf("invalid type for field priority")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Priority); ok {
+				if err := trg.OnValidate_Priority(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "payment_method_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Payment_method_code = v
+		} else if v, ok := value.(string); ok {
+			t.Payment_method_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field payment_method_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "payment_method_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Payment_method_code); ok {
+				if err := trg.OnValidate_Payment_method_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "last_date_modified":
+		// Set field value
+		if v, ok := value.(types.Date); ok {
+			t.Last_date_modified = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Last_date_modified, err = types.NewDateFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid date value for field last_date_modified: %w", err)
+			}
+		} else if v, ok := value.(time.Time); ok {
+			t.Last_date_modified = types.NewDateFromTime(v)
+		} else {
+			return fmt.Errorf("invalid type for field last_date_modified (expected Date, string, or time.Time)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Last_date_modified); ok {
+				if err := trg.OnValidate_Last_date_modified(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "application_method":
 		// Set field value
 		// Accept enum type directly
-		if v, ok := value.(CustomerStatus); ok {
-			t.Status = v
+		if v, ok := value.(CustomerApplication_method); ok {
+			t.Application_method = v
 			// Accept int (convert to enum)
 		} else if v, ok := value.(int); ok {
-			if v < 0 || v >= 5 {
-				return fmt.Errorf("invalid option value %d for field status (valid range: 0-%d)", v, 5-1)
+			if v < 0 || v >= 2 {
+				return fmt.Errorf("invalid option value %d for field application_method (valid range: 0-%d)", v, 2-1)
 			}
-			t.Status = CustomerStatus(v)
+			t.Application_method = CustomerApplication_method(v)
 			// Accept float64 (JSON numbers decode as float64)
 		} else if v, ok := value.(float64); ok {
 			intVal := int(v)
-			if intVal < 0 || intVal >= 5 {
-				return fmt.Errorf("invalid option value %d for field status (valid range: 0-%d)", intVal, 5-1)
+			if intVal < 0 || intVal >= 2 {
+				return fmt.Errorf("invalid option value %d for field application_method (valid range: 0-%d)", intVal, 2-1)
 			}
-			t.Status = CustomerStatus(intVal)
+			t.Application_method = CustomerApplication_method(intVal)
 			// Accept string (lookup in options and convert)
 		} else if v, ok := value.(string); ok {
 			if v == "" {
 				// Empty string defaults to first option (behavior)
-				t.Status = 0
+				t.Application_method = 0
 			} else {
-				options := []string{" ", "Open", "Released", "Posted", "Blocked"}
+				options := []string{"Manual", "Apply to Oldest"}
 				found := false
 				for i, opt := range options {
 					if opt == v {
-						t.Status = CustomerStatus(i)
+						t.Application_method = CustomerApplication_method(i)
 						found = true
 						break
 					}
 				}
 				if !found {
-					return fmt.Errorf("invalid option '%s' for field status (valid options: %v)", v, options)
+					return fmt.Errorf("invalid option '%s' for field application_method (valid options: %v)", v, options)
 				}
 			}
 		} else {
-			return fmt.Errorf("invalid type for field status (expected CustomerStatus, int, or string)")
+			return fmt.Errorf("invalid type for field application_method (expected CustomerApplication_method, int, or string)")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Status); ok {
-				if err := trg.OnValidate_Status(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Application_method); ok {
+				if err := trg.OnValidate_Application_method(t); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	case "credit_limit":
+	case "allow_quantity_disc":
 		// Set field value
-		if v, ok := value.(types.Decimal); ok {
-			t.Credit_limit = v
+		if v, ok := value.(bool); ok {
+			t.Allow_quantity_disc = v
 		} else if v, ok := value.(string); ok {
-			var err error
-			t.Credit_limit, err = types.NewDecimalFromString(v)
-			if err != nil {
-				return fmt.Errorf("invalid decimal value for field credit_limit: %w", err)
-			}
-		} else if v, ok := value.(float64); ok {
-			t.Credit_limit = types.NewDecimal(v)
-		} else if v, ok := value.(int); ok {
-			t.Credit_limit = types.NewDecimalFromInt(int64(v))
-		} else if v, ok := value.(int64); ok {
-			t.Credit_limit = types.NewDecimalFromInt(v)
+			// Handle string boolean values from JSON/frontend
+			t.Allow_quantity_disc = v == "true" || v == "1"
 		} else {
-			return fmt.Errorf("invalid type for field credit_limit (expected Decimal, string, float64, int, or int64)")
+			return fmt.Errorf("invalid type for field allow_quantity_disc")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Credit_limit); ok {
-				if err := trg.OnValidate_Credit_limit(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Allow_quantity_disc); ok {
+				if err := trg.OnValidate_Allow_quantity_disc(t); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	case "last_order_date":
+	case "prices_including_tax":
 		// Set field value
-		if v, ok := value.(types.Date); ok {
-			t.Last_order_date = v
+		if v, ok := value.(bool); ok {
+			t.Prices_including_tax = v
 		} else if v, ok := value.(string); ok {
-			var err error
-			t.Last_order_date, err = types.NewDateFromString(v)
-			if err != nil {
-				return fmt.Errorf("invalid date value for field last_order_date: %w", err)
-			}
-		} else if v, ok := value.(time.Time); ok {
-			t.Last_order_date = types.NewDateFromTime(v)
+			// Handle string boolean values from JSON/frontend
+			t.Prices_including_tax = v == "true" || v == "1"
 		} else {
-			return fmt.Errorf("invalid type for field last_order_date (expected Date, string, or time.Time)")
+			return fmt.Errorf("invalid type for field prices_including_tax")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Last_order_date); ok {
-				if err := trg.OnValidate_Last_order_date(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Prices_including_tax); ok {
+				if err := trg.OnValidate_Prices_including_tax(t); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	case "created_at":
+	case "location_code":
 		// Set field value
-		if v, ok := value.(types.DateTime); ok {
-			t.Created_at = v
+		if v, ok := value.(types.Code); ok {
+			t.Location_code = v
 		} else if v, ok := value.(string); ok {
-			var err error
-			t.Created_at, err = types.NewDateTimeFromString(v)
-			if err != nil {
-				return fmt.Errorf("invalid datetime value for field created_at: %w", err)
-			}
-		} else if v, ok := value.(time.Time); ok {
-			t.Created_at = types.NewDateTimeFromTime(v)
+			t.Location_code = types.NewCode(v)
 		} else {
-			return fmt.Errorf("invalid type for field created_at (expected DateTime, string, or time.Time)")
+			return fmt.Errorf("invalid type for field location_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "location_code"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Created_at); ok {
-				if err := trg.OnValidate_Created_at(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Location_code); ok {
+				if err := trg.OnValidate_Location_code(t); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	case "profile_photo":
+	case "fax_no":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Fax_no = v
+		} else if v, ok := value.(string); ok {
+			t.Fax_no = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field fax_no")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Fax_no); ok {
+				if err := trg.OnValidate_Fax_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "telex_answer_back":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Telex_answer_back = v
+		} else if v, ok := value.(string); ok {
+			t.Telex_answer_back = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field telex_answer_back")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Telex_answer_back); ok {
+				if err := trg.OnValidate_Telex_answer_back(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "vat_registration_no":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Vat_registration_no = v
+		} else if v, ok := value.(string); ok {
+			t.Vat_registration_no = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field vat_registration_no")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Vat_registration_no); ok {
+				if err := trg.OnValidate_Vat_registration_no(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "combine_shipments":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Combine_shipments = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Combine_shipments = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field combine_shipments")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Combine_shipments); ok {
+				if err := trg.OnValidate_Combine_shipments(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "gen_bus_posting_group":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Gen_bus_posting_group = v
+		} else if v, ok := value.(string); ok {
+			t.Gen_bus_posting_group = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field gen_bus_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "gen_bus_posting_group"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Gen_bus_posting_group); ok {
+				if err := trg.OnValidate_Gen_bus_posting_group(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "picture":
 		// Set field value
 		// Accept nil, []byte, or base64-encoded string
 		if value == nil {
-			t.Profile_photo = nil
+			t.Picture = nil
 		} else if v, ok := value.([]byte); ok {
-			t.Profile_photo = v
+			t.Picture = v
 		} else if s, ok := value.(string); ok {
 			if s == "" {
-				t.Profile_photo = nil
+				t.Picture = nil
 			} else {
 				// Try base64 decode
 				decoded, err := base64.StdEncoding.DecodeString(s)
 				if err != nil {
-					return fmt.Errorf("invalid base64 value for field profile_photo: %w", err)
+					return fmt.Errorf("invalid base64 value for field picture: %w", err)
 				}
-				t.Profile_photo = decoded
+				t.Picture = decoded
 			}
 		} else {
-			return fmt.Errorf("invalid type for field profile_photo (expected []byte, string, or nil)")
+			return fmt.Errorf("invalid type for field picture (expected []byte, string, or nil)")
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
-			if trg, ok := l.(CustomerOnValidate_Profile_photo); ok {
-				if err := trg.OnValidate_Profile_photo(t); err != nil {
+			if trg, ok := l.(CustomerOnValidate_Picture); ok {
+				if err := trg.OnValidate_Picture(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "post_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Post_code = v
+		} else if v, ok := value.(string); ok {
+			t.Post_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field post_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "post_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Post_code); ok {
+				if err := trg.OnValidate_Post_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "state":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.State = v
+		} else if v, ok := value.(string); ok {
+			t.State = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field state")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_State); ok {
+				if err := trg.OnValidate_State(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "e_mail":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.E_mail = v
+		} else if v, ok := value.(string); ok {
+			t.E_mail = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field e_mail")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_E_mail); ok {
+				if err := trg.OnValidate_E_mail(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "home_page":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.Home_page = v
+		} else if v, ok := value.(string); ok {
+			t.Home_page = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field home_page")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Home_page); ok {
+				if err := trg.OnValidate_Home_page(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "reminder_terms_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Reminder_terms_code = v
+		} else if v, ok := value.(string); ok {
+			t.Reminder_terms_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field reminder_terms_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "reminder_terms_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Reminder_terms_code); ok {
+				if err := trg.OnValidate_Reminder_terms_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "no_series":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.No_series = v
+		} else if v, ok := value.(string); ok {
+			t.No_series = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field no_series")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "no_series"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_No_series); ok {
+				if err := trg.OnValidate_No_series(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "tax_area_code":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Tax_area_code = v
+		} else if v, ok := value.(string); ok {
+			t.Tax_area_code = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field tax_area_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_area_code"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Tax_area_code); ok {
+				if err := trg.OnValidate_Tax_area_code(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "tax_liable":
+		// Set field value
+		if v, ok := value.(bool); ok {
+			t.Tax_liable = v
+		} else if v, ok := value.(string); ok {
+			// Handle string boolean values from JSON/frontend
+			t.Tax_liable = v == "true" || v == "1"
+		} else {
+			return fmt.Errorf("invalid type for field tax_liable")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Tax_liable); ok {
+				if err := trg.OnValidate_Tax_liable(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "tax_bus_posting_group":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Tax_bus_posting_group = v
+		} else if v, ok := value.(string); ok {
+			t.Tax_bus_posting_group = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field tax_bus_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_bus_posting_group"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Tax_bus_posting_group); ok {
+				if err := trg.OnValidate_Tax_bus_posting_group(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "reserve":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(CustomerReserve); ok {
+			t.Reserve = v
+			// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 3 {
+				return fmt.Errorf("invalid option value %d for field reserve (valid range: 0-%d)", v, 3-1)
+			}
+			t.Reserve = CustomerReserve(v)
+			// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 3 {
+				return fmt.Errorf("invalid option value %d for field reserve (valid range: 0-%d)", intVal, 3-1)
+			}
+			t.Reserve = CustomerReserve(intVal)
+			// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			if v == "" {
+				// Empty string defaults to first option (behavior)
+				t.Reserve = 0
+			} else {
+				options := []string{"Never", "Optional", "Always"}
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Reserve = CustomerReserve(i)
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field reserve (valid options: %v)", v, options)
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid type for field reserve (expected CustomerReserve, int, or string)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(CustomerOnValidate_Reserve); ok {
+				if err := trg.OnValidate_Reserve(t); err != nil {
 					return err
 				}
 			}
@@ -3136,28 +11969,124 @@ func (t *Customer) FieldValue(no int) (any, bool) {
 		return t.No, true
 	case 2:
 		return t.Name, true
+	case 3:
+		return t.Search_name, true
+	case 4:
+		return t.Name_2, true
 	case 5:
 		return t.Address, true
-	case 91:
-		return t.Post_code, true
+	case 6:
+		return t.Address_2, true
 	case 7:
 		return t.City, true
-	case 35:
-		return t.Country_region_code, true
+	case 8:
+		return t.Contact, true
 	case 9:
-		return t.Phonenumber, true
+		return t.Phone_no, true
+	case 10:
+		return t.Telex_no, true
+	case 14:
+		return t.Our_account_no, true
+	case 15:
+		return t.Territory_code, true
+	case 16:
+		return t.Department_code, true
+	case 17:
+		return t.Project_code, true
+	case 18:
+		return t.Chain_name, true
+	case 19:
+		return t.Budgeted_amount, true
+	case 20:
+		return t.Credit_limit_lcy, true
+	case 21:
+		return t.Customer_posting_group, true
+	case 22:
+		return t.Currency_code, true
+	case 23:
+		return t.Price_group_code, true
+	case 24:
+		return t.Language_code, true
+	case 26:
+		return t.Statistics_group, true
 	case 27:
 		return t.Payment_terms_code, true
-	case 900:
-		return t.Status, true
-	case 20:
-		return t.Credit_limit, true
-	case 901:
-		return t.Last_order_date, true
-	case 902:
-		return t.Created_at, true
+	case 28:
+		return t.Fin_charge_terms_code, true
+	case 29:
+		return t.Salesperson_code, true
+	case 30:
+		return t.Shipment_method_code, true
+	case 31:
+		return t.Shipping_agent_code, true
+	case 32:
+		return t.Place_of_export, true
+	case 33:
+		return t.Invoice_disc_code, true
+	case 34:
+		return t.Cust_item_disc_gr, true
+	case 35:
+		return t.Country_code, true
+	case 36:
+		return t.Collection_method, true
+	case 37:
+		return t.Amount, true
+	case 39:
+		return t.Blocked, true
+	case 40:
+		return t.Invoice_copies, true
+	case 41:
+		return t.Last_statement_no, true
+	case 42:
+		return t.Print_statements, true
+	case 45:
+		return t.Bill_to_customer_no, true
+	case 46:
+		return t.Priority, true
+	case 47:
+		return t.Payment_method_code, true
+	case 54:
+		return t.Last_date_modified, true
+	case 80:
+		return t.Application_method, true
+	case 81:
+		return t.Allow_quantity_disc, true
+	case 82:
+		return t.Prices_including_tax, true
+	case 83:
+		return t.Location_code, true
+	case 84:
+		return t.Fax_no, true
+	case 85:
+		return t.Telex_answer_back, true
+	case 86:
+		return t.Vat_registration_no, true
+	case 87:
+		return t.Combine_shipments, true
+	case 88:
+		return t.Gen_bus_posting_group, true
 	case 89:
-		return t.Profile_photo, true
+		return t.Picture, true
+	case 91:
+		return t.Post_code, true
+	case 92:
+		return t.State, true
+	case 102:
+		return t.E_mail, true
+	case 103:
+		return t.Home_page, true
+	case 104:
+		return t.Reminder_terms_code, true
+	case 107:
+		return t.No_series, true
+	case 108:
+		return t.Tax_area_code, true
+	case 109:
+		return t.Tax_liable, true
+	case 110:
+		return t.Tax_bus_posting_group, true
+	case 115:
+		return t.Reserve, true
 	}
 	return nil, false
 }
@@ -3184,6 +12113,24 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.Name = types.NewText(v)
 			return true
 		}
+	case 3:
+		if v, ok := value.(types.Code); ok {
+			t.Search_name = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Search_name = types.NewCode(v)
+			return true
+		}
+	case 4:
+		if v, ok := value.(types.Text); ok {
+			t.Name_2 = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Name_2 = types.NewText(v)
+			return true
+		}
 	case 5:
 		if v, ok := value.(types.Text); ok {
 			t.Address = v
@@ -3193,13 +12140,13 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.Address = types.NewText(v)
 			return true
 		}
-	case 91:
-		if v, ok := value.(types.Code); ok {
-			t.Post_code = v
+	case 6:
+		if v, ok := value.(types.Text); ok {
+			t.Address_2 = v
 			return true
 		}
 		if v, ok := value.(string); ok {
-			t.Post_code = types.NewCode(v)
+			t.Address_2 = types.NewText(v)
 			return true
 		}
 	case 7:
@@ -3211,22 +12158,127 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.City = types.NewText(v)
 			return true
 		}
-	case 35:
-		if v, ok := value.(types.Code); ok {
-			t.Country_region_code = v
+	case 8:
+		if v, ok := value.(types.Text); ok {
+			t.Contact = v
 			return true
 		}
 		if v, ok := value.(string); ok {
-			t.Country_region_code = types.NewCode(v)
+			t.Contact = types.NewText(v)
 			return true
 		}
 	case 9:
 		if v, ok := value.(types.Text); ok {
-			t.Phonenumber = v
+			t.Phone_no = v
 			return true
 		}
 		if v, ok := value.(string); ok {
-			t.Phonenumber = types.NewText(v)
+			t.Phone_no = types.NewText(v)
+			return true
+		}
+	case 10:
+		if v, ok := value.(types.Text); ok {
+			t.Telex_no = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Telex_no = types.NewText(v)
+			return true
+		}
+	case 14:
+		if v, ok := value.(types.Text); ok {
+			t.Our_account_no = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Our_account_no = types.NewText(v)
+			return true
+		}
+	case 15:
+		if v, ok := value.(types.Code); ok {
+			t.Territory_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Territory_code = types.NewCode(v)
+			return true
+		}
+	case 16:
+		if v, ok := value.(types.Code); ok {
+			t.Department_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Department_code = types.NewCode(v)
+			return true
+		}
+	case 17:
+		if v, ok := value.(types.Code); ok {
+			t.Project_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Project_code = types.NewCode(v)
+			return true
+		}
+	case 18:
+		if v, ok := value.(types.Code); ok {
+			t.Chain_name = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Chain_name = types.NewCode(v)
+			return true
+		}
+	case 19:
+		if v, ok := value.(types.Decimal); ok {
+			t.Budgeted_amount = v
+			return true
+		}
+	case 20:
+		if v, ok := value.(types.Decimal); ok {
+			t.Credit_limit_lcy = v
+			return true
+		}
+	case 21:
+		if v, ok := value.(types.Code); ok {
+			t.Customer_posting_group = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Customer_posting_group = types.NewCode(v)
+			return true
+		}
+	case 22:
+		if v, ok := value.(types.Code); ok {
+			t.Currency_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Currency_code = types.NewCode(v)
+			return true
+		}
+	case 23:
+		if v, ok := value.(types.Code); ok {
+			t.Price_group_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Price_group_code = types.NewCode(v)
+			return true
+		}
+	case 24:
+		if v, ok := value.(types.Code); ok {
+			t.Language_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Language_code = types.NewCode(v)
+			return true
+		}
+	case 26:
+		if v, ok := value.(int); ok {
+			t.Statistics_group = v
 			return true
 		}
 	case 27:
@@ -3238,29 +12290,290 @@ func (t *Customer) SetFieldValue(no int, value any) bool {
 			t.Payment_terms_code = types.NewCode(v)
 			return true
 		}
-	case 900:
-		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 5 {
-			t.Status = CustomerStatus(i)
+	case 28:
+		if v, ok := value.(types.Code); ok {
+			t.Fin_charge_terms_code = v
 			return true
 		}
-	case 20:
+		if v, ok := value.(string); ok {
+			t.Fin_charge_terms_code = types.NewCode(v)
+			return true
+		}
+	case 29:
+		if v, ok := value.(types.Code); ok {
+			t.Salesperson_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Salesperson_code = types.NewCode(v)
+			return true
+		}
+	case 30:
+		if v, ok := value.(types.Code); ok {
+			t.Shipment_method_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Shipment_method_code = types.NewCode(v)
+			return true
+		}
+	case 31:
+		if v, ok := value.(types.Code); ok {
+			t.Shipping_agent_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Shipping_agent_code = types.NewCode(v)
+			return true
+		}
+	case 32:
+		if v, ok := value.(types.Code); ok {
+			t.Place_of_export = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Place_of_export = types.NewCode(v)
+			return true
+		}
+	case 33:
+		if v, ok := value.(types.Code); ok {
+			t.Invoice_disc_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Invoice_disc_code = types.NewCode(v)
+			return true
+		}
+	case 34:
+		if v, ok := value.(types.Code); ok {
+			t.Cust_item_disc_gr = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Cust_item_disc_gr = types.NewCode(v)
+			return true
+		}
+	case 35:
+		if v, ok := value.(types.Code); ok {
+			t.Country_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Country_code = types.NewCode(v)
+			return true
+		}
+	case 36:
+		if v, ok := value.(types.Code); ok {
+			t.Collection_method = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Collection_method = types.NewCode(v)
+			return true
+		}
+	case 37:
 		if v, ok := value.(types.Decimal); ok {
-			t.Credit_limit = v
+			t.Amount = v
 			return true
 		}
-	case 901:
+	case 39:
+		if v, ok := value.(bool); ok {
+			t.Blocked = v
+			return true
+		}
+	case 40:
+		if v, ok := value.(int); ok {
+			t.Invoice_copies = v
+			return true
+		}
+	case 41:
+		if v, ok := value.(int); ok {
+			t.Last_statement_no = v
+			return true
+		}
+	case 42:
+		if v, ok := value.(bool); ok {
+			t.Print_statements = v
+			return true
+		}
+	case 45:
+		if v, ok := value.(types.Code); ok {
+			t.Bill_to_customer_no = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Bill_to_customer_no = types.NewCode(v)
+			return true
+		}
+	case 46:
+		if v, ok := value.(int); ok {
+			t.Priority = v
+			return true
+		}
+	case 47:
+		if v, ok := value.(types.Code); ok {
+			t.Payment_method_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Payment_method_code = types.NewCode(v)
+			return true
+		}
+	case 54:
 		if v, ok := value.(types.Date); ok {
-			t.Last_order_date = v
+			t.Last_date_modified = v
 			return true
 		}
-	case 902:
-		if v, ok := value.(types.DateTime); ok {
-			t.Created_at = v
+	case 80:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 2 {
+			t.Application_method = CustomerApplication_method(i)
+			return true
+		}
+	case 81:
+		if v, ok := value.(bool); ok {
+			t.Allow_quantity_disc = v
+			return true
+		}
+	case 82:
+		if v, ok := value.(bool); ok {
+			t.Prices_including_tax = v
+			return true
+		}
+	case 83:
+		if v, ok := value.(types.Code); ok {
+			t.Location_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Location_code = types.NewCode(v)
+			return true
+		}
+	case 84:
+		if v, ok := value.(types.Text); ok {
+			t.Fax_no = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Fax_no = types.NewText(v)
+			return true
+		}
+	case 85:
+		if v, ok := value.(types.Text); ok {
+			t.Telex_answer_back = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Telex_answer_back = types.NewText(v)
+			return true
+		}
+	case 86:
+		if v, ok := value.(types.Text); ok {
+			t.Vat_registration_no = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Vat_registration_no = types.NewText(v)
+			return true
+		}
+	case 87:
+		if v, ok := value.(bool); ok {
+			t.Combine_shipments = v
+			return true
+		}
+	case 88:
+		if v, ok := value.(types.Code); ok {
+			t.Gen_bus_posting_group = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Gen_bus_posting_group = types.NewCode(v)
 			return true
 		}
 	case 89:
 		if v, ok := value.([]byte); ok {
-			t.Profile_photo = v
+			t.Picture = v
+			return true
+		}
+	case 91:
+		if v, ok := value.(types.Code); ok {
+			t.Post_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Post_code = types.NewCode(v)
+			return true
+		}
+	case 92:
+		if v, ok := value.(types.Text); ok {
+			t.State = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.State = types.NewText(v)
+			return true
+		}
+	case 102:
+		if v, ok := value.(types.Text); ok {
+			t.E_mail = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.E_mail = types.NewText(v)
+			return true
+		}
+	case 103:
+		if v, ok := value.(types.Text); ok {
+			t.Home_page = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Home_page = types.NewText(v)
+			return true
+		}
+	case 104:
+		if v, ok := value.(types.Code); ok {
+			t.Reminder_terms_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Reminder_terms_code = types.NewCode(v)
+			return true
+		}
+	case 107:
+		if v, ok := value.(types.Code); ok {
+			t.No_series = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.No_series = types.NewCode(v)
+			return true
+		}
+	case 108:
+		if v, ok := value.(types.Code); ok {
+			t.Tax_area_code = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Tax_area_code = types.NewCode(v)
+			return true
+		}
+	case 109:
+		if v, ok := value.(bool); ok {
+			t.Tax_liable = v
+			return true
+		}
+	case 110:
+		if v, ok := value.(types.Code); ok {
+			t.Tax_bus_posting_group = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Tax_bus_posting_group = types.NewCode(v)
+			return true
+		}
+	case 115:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 3 {
+			t.Reserve = CustomerReserve(i)
 			return true
 		}
 	}
@@ -3332,8 +12645,20 @@ func (t *Customer) CalcSums(fieldNames ...string) error {
 	for _, name := range fieldNames {
 		var column string
 		switch strings.ToLower(name) {
-		case "credit_limit":
-			column = "credit_limit"
+		case "budgeted_amount":
+			column = "budgeted_amount"
+		case "credit_limit_lcy":
+			column = "credit_limit_lcy"
+		case "statistics_group":
+			column = "statistics_group"
+		case "amount":
+			column = "amount"
+		case "invoice_copies":
+			column = "invoice_copies"
+		case "last_statement_no":
+			column = "last_statement_no"
+		case "priority":
+			column = "priority"
 		default:
 			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Customer", name)
 		}
@@ -3343,12 +12668,48 @@ func (t *Customer) CalcSums(fieldNames ...string) error {
 			return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
 		}
 		switch column {
-		case "credit_limit":
+		case "budgeted_amount":
 			d, err := types.NewDecimalFromString(total)
 			if err != nil {
 				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
 			}
-			t.Credit_limit = d
+			t.Budgeted_amount = d
+		case "credit_limit_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Credit_limit_lcy = d
+		case "statistics_group":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Statistics_group = int(f)
+		case "amount":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Amount = d
+		case "invoice_copies":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Invoice_copies = int(f)
+		case "last_statement_no":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Last_statement_no = int(f)
+		case "priority":
+			f, err := strconv.ParseFloat(total, 64)
+			if err != nil {
+				return fmt.Errorf("CalcSums Customer.%s: %w", column, err)
+			}
+			t.Priority = int(f)
 		}
 	}
 	return nil
@@ -3685,28 +13046,124 @@ func (t *Customer) columnValue(column string) (interface{}, bool) {
 		return t.No, true
 	case "name":
 		return t.Name, true
+	case "search_name":
+		return t.Search_name, true
+	case "name_2":
+		return t.Name_2, true
 	case "address":
 		return t.Address, true
-	case "post_code":
-		return t.Post_code, true
+	case "address_2":
+		return t.Address_2, true
 	case "city":
 		return t.City, true
-	case "country_region_code":
-		return t.Country_region_code, true
-	case "phonenumber":
-		return t.Phonenumber, true
+	case "contact":
+		return t.Contact, true
+	case "phone_no":
+		return t.Phone_no, true
+	case "telex_no":
+		return t.Telex_no, true
+	case "our_account_no":
+		return t.Our_account_no, true
+	case "territory_code":
+		return t.Territory_code, true
+	case "department_code":
+		return t.Department_code, true
+	case "project_code":
+		return t.Project_code, true
+	case "chain_name":
+		return t.Chain_name, true
+	case "budgeted_amount":
+		return t.Budgeted_amount, true
+	case "credit_limit_lcy":
+		return t.Credit_limit_lcy, true
+	case "customer_posting_group":
+		return t.Customer_posting_group, true
+	case "currency_code":
+		return t.Currency_code, true
+	case "price_group_code":
+		return t.Price_group_code, true
+	case "language_code":
+		return t.Language_code, true
+	case "statistics_group":
+		return t.Statistics_group, true
 	case "payment_terms_code":
 		return t.Payment_terms_code, true
-	case "status":
-		return int(t.Status), true
-	case "credit_limit":
-		return t.Credit_limit, true
-	case "last_order_date":
-		return t.Last_order_date, true
-	case "created_at":
-		return t.Created_at, true
-	case "profile_photo":
-		return t.Profile_photo, true
+	case "fin_charge_terms_code":
+		return t.Fin_charge_terms_code, true
+	case "salesperson_code":
+		return t.Salesperson_code, true
+	case "shipment_method_code":
+		return t.Shipment_method_code, true
+	case "shipping_agent_code":
+		return t.Shipping_agent_code, true
+	case "place_of_export":
+		return t.Place_of_export, true
+	case "invoice_disc_code":
+		return t.Invoice_disc_code, true
+	case "cust_item_disc_gr":
+		return t.Cust_item_disc_gr, true
+	case "country_code":
+		return t.Country_code, true
+	case "collection_method":
+		return t.Collection_method, true
+	case "amount":
+		return t.Amount, true
+	case "blocked":
+		return t.Blocked, true
+	case "invoice_copies":
+		return t.Invoice_copies, true
+	case "last_statement_no":
+		return t.Last_statement_no, true
+	case "print_statements":
+		return t.Print_statements, true
+	case "bill_to_customer_no":
+		return t.Bill_to_customer_no, true
+	case "priority":
+		return t.Priority, true
+	case "payment_method_code":
+		return t.Payment_method_code, true
+	case "last_date_modified":
+		return t.Last_date_modified, true
+	case "application_method":
+		return int(t.Application_method), true
+	case "allow_quantity_disc":
+		return t.Allow_quantity_disc, true
+	case "prices_including_tax":
+		return t.Prices_including_tax, true
+	case "location_code":
+		return t.Location_code, true
+	case "fax_no":
+		return t.Fax_no, true
+	case "telex_answer_back":
+		return t.Telex_answer_back, true
+	case "vat_registration_no":
+		return t.Vat_registration_no, true
+	case "combine_shipments":
+		return t.Combine_shipments, true
+	case "gen_bus_posting_group":
+		return t.Gen_bus_posting_group, true
+	case "picture":
+		return t.Picture, true
+	case "post_code":
+		return t.Post_code, true
+	case "state":
+		return t.State, true
+	case "e_mail":
+		return t.E_mail, true
+	case "home_page":
+		return t.Home_page, true
+	case "reminder_terms_code":
+		return t.Reminder_terms_code, true
+	case "no_series":
+		return t.No_series, true
+	case "tax_area_code":
+		return t.Tax_area_code, true
+	case "tax_liable":
+		return t.Tax_liable, true
+	case "tax_bus_posting_group":
+		return t.Tax_bus_posting_group, true
+	case "reserve":
+		return int(t.Reserve), true
 	}
 	return nil, false
 }
@@ -3762,17 +13219,65 @@ func (t *Customer) setKeyValues(values []interface{}) {
 // from the definition (Init); the primary key keeps its values
 func (t *Customer) Init() {
 	t.Name = *new(types.Text)
+	t.Search_name = *new(types.Code)
+	t.Name_2 = *new(types.Text)
 	t.Address = *new(types.Text)
-	t.Post_code = *new(types.Code)
+	t.Address_2 = *new(types.Text)
 	t.City = *new(types.Text)
-	t.Country_region_code = *new(types.Code)
-	t.Phonenumber = *new(types.Text)
+	t.Contact = *new(types.Text)
+	t.Phone_no = *new(types.Text)
+	t.Telex_no = *new(types.Text)
+	t.Our_account_no = *new(types.Text)
+	t.Territory_code = *new(types.Code)
+	t.Department_code = *new(types.Code)
+	t.Project_code = *new(types.Code)
+	t.Chain_name = *new(types.Code)
+	t.Budgeted_amount = *new(types.Decimal)
+	t.Credit_limit_lcy = *new(types.Decimal)
+	t.Customer_posting_group = *new(types.Code)
+	t.Currency_code = *new(types.Code)
+	t.Price_group_code = *new(types.Code)
+	t.Language_code = *new(types.Code)
+	t.Statistics_group = *new(int)
 	t.Payment_terms_code = *new(types.Code)
-	t.Status = 0
-	t.Credit_limit = *new(types.Decimal)
-	t.Last_order_date = *new(types.Date)
-	t.Created_at = *new(types.DateTime)
-	t.Profile_photo = *new([]byte)
+	t.Fin_charge_terms_code = *new(types.Code)
+	t.Salesperson_code = *new(types.Code)
+	t.Shipment_method_code = *new(types.Code)
+	t.Shipping_agent_code = *new(types.Code)
+	t.Place_of_export = *new(types.Code)
+	t.Invoice_disc_code = *new(types.Code)
+	t.Cust_item_disc_gr = *new(types.Code)
+	t.Country_code = *new(types.Code)
+	t.Collection_method = *new(types.Code)
+	t.Amount = *new(types.Decimal)
+	t.Blocked = *new(bool)
+	t.Invoice_copies = *new(int)
+	t.Last_statement_no = *new(int)
+	t.Print_statements = *new(bool)
+	t.Bill_to_customer_no = *new(types.Code)
+	t.Priority = *new(int)
+	t.Payment_method_code = *new(types.Code)
+	t.Last_date_modified = *new(types.Date)
+	t.Application_method = 0
+	t.Allow_quantity_disc = *new(bool)
+	t.Prices_including_tax = *new(bool)
+	t.Location_code = *new(types.Code)
+	t.Fax_no = *new(types.Text)
+	t.Telex_answer_back = *new(types.Text)
+	t.Vat_registration_no = *new(types.Text)
+	t.Combine_shipments = *new(bool)
+	t.Gen_bus_posting_group = *new(types.Code)
+	t.Picture = *new([]byte)
+	t.Post_code = *new(types.Code)
+	t.State = *new(types.Text)
+	t.E_mail = *new(types.Text)
+	t.Home_page = *new(types.Text)
+	t.Reminder_terms_code = *new(types.Code)
+	t.No_series = *new(types.Code)
+	t.Tax_area_code = *new(types.Code)
+	t.Tax_liable = *new(bool)
+	t.Tax_bus_posting_group = *new(types.Code)
+	t.Reserve = 0
 	t.applyDefaults()
 }
 
@@ -3807,23 +13312,115 @@ func (t *Customer) ClearFilters() {
 // ToMap converts the current record to a map for JSON serialization
 func (t *Customer) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"no":                  t.No.String(),
-		"name":                t.Name.String(),
-		"address":             t.Address.String(),
-		"post_code":           t.Post_code.String(),
-		"city":                t.City.String(),
-		"country_region_code": t.Country_region_code.String(),
-		"phonenumber":         t.Phonenumber.String(),
-		"payment_terms_code":  t.Payment_terms_code.String(),
-		"status":              int(t.Status),
-		"credit_limit":        t.Credit_limit.String(),
-		"last_order_date":     t.Last_order_date.String(),
-		"created_at":          t.Created_at.String(),
-		"profile_photo":       t.Profile_photo,
+		"no":                     t.No.String(),
+		"name":                   t.Name.String(),
+		"search_name":            t.Search_name.String(),
+		"name_2":                 t.Name_2.String(),
+		"address":                t.Address.String(),
+		"address_2":              t.Address_2.String(),
+		"city":                   t.City.String(),
+		"contact":                t.Contact.String(),
+		"phone_no":               t.Phone_no.String(),
+		"telex_no":               t.Telex_no.String(),
+		"our_account_no":         t.Our_account_no.String(),
+		"territory_code":         t.Territory_code.String(),
+		"department_code":        t.Department_code.String(),
+		"project_code":           t.Project_code.String(),
+		"chain_name":             t.Chain_name.String(),
+		"budgeted_amount":        t.Budgeted_amount.String(),
+		"credit_limit_lcy":       t.Credit_limit_lcy.String(),
+		"customer_posting_group": t.Customer_posting_group.String(),
+		"currency_code":          t.Currency_code.String(),
+		"price_group_code":       t.Price_group_code.String(),
+		"language_code":          t.Language_code.String(),
+		"statistics_group":       t.Statistics_group,
+		"payment_terms_code":     t.Payment_terms_code.String(),
+		"fin_charge_terms_code":  t.Fin_charge_terms_code.String(),
+		"salesperson_code":       t.Salesperson_code.String(),
+		"shipment_method_code":   t.Shipment_method_code.String(),
+		"shipping_agent_code":    t.Shipping_agent_code.String(),
+		"place_of_export":        t.Place_of_export.String(),
+		"invoice_disc_code":      t.Invoice_disc_code.String(),
+		"cust_item_disc_gr":      t.Cust_item_disc_gr.String(),
+		"country_code":           t.Country_code.String(),
+		"collection_method":      t.Collection_method.String(),
+		"amount":                 t.Amount.String(),
+		"blocked":                t.Blocked,
+		"invoice_copies":         t.Invoice_copies,
+		"last_statement_no":      t.Last_statement_no,
+		"print_statements":       t.Print_statements,
+		"bill_to_customer_no":    t.Bill_to_customer_no.String(),
+		"priority":               t.Priority,
+		"payment_method_code":    t.Payment_method_code.String(),
+		"last_date_modified":     t.Last_date_modified.String(),
+		"application_method":     int(t.Application_method),
+		"allow_quantity_disc":    t.Allow_quantity_disc,
+		"prices_including_tax":   t.Prices_including_tax,
+		"location_code":          t.Location_code.String(),
+		"fax_no":                 t.Fax_no.String(),
+		"telex_answer_back":      t.Telex_answer_back.String(),
+		"vat_registration_no":    t.Vat_registration_no.String(),
+		"combine_shipments":      t.Combine_shipments,
+		"gen_bus_posting_group":  t.Gen_bus_posting_group.String(),
+		"picture":                t.Picture,
+		"post_code":              t.Post_code.String(),
+		"state":                  t.State.String(),
+		"e_mail":                 t.E_mail.String(),
+		"home_page":              t.Home_page.String(),
+		"reminder_terms_code":    t.Reminder_terms_code.String(),
+		"no_series":              t.No_series.String(),
+		"tax_area_code":          t.Tax_area_code.String(),
+		"tax_liable":             t.Tax_liable,
+		"tax_bus_posting_group":  t.Tax_bus_posting_group.String(),
+		"reserve":                int(t.Reserve),
+		// FlowField: balance
+		"balance": t.Balance.String(),
 		// FlowField: balance_lcy
 		"balance_lcy": t.Balance_lcy.String(),
+		// FlowField: net_change
+		"net_change": t.Net_change.String(),
+		// FlowField: net_change_lcy
+		"net_change_lcy": t.Net_change_lcy.String(),
 		// FlowField: sales_lcy
 		"sales_lcy": t.Sales_lcy.String(),
+		// FlowField: profit_lcy
+		"profit_lcy": t.Profit_lcy.String(),
+		// FlowField: inv_discounts_lcy
+		"inv_discounts_lcy": t.Inv_discounts_lcy.String(),
+		// FlowField: pmt_discounts_lcy
+		"pmt_discounts_lcy": t.Pmt_discounts_lcy.String(),
+		// FlowField: balance_due
+		"balance_due": t.Balance_due.String(),
+		// FlowField: balance_due_lcy
+		"balance_due_lcy": t.Balance_due_lcy.String(),
+		// FlowField: payments
+		"payments": t.Payments.String(),
+		// FlowField: invoice_amounts
+		"invoice_amounts": t.Invoice_amounts.String(),
+		// FlowField: cr_memo_amounts
+		"cr_memo_amounts": t.Cr_memo_amounts.String(),
+		// FlowField: finance_charge_memo_amounts
+		"finance_charge_memo_amounts": t.Finance_charge_memo_amounts.String(),
+		// FlowField: payments_lcy
+		"payments_lcy": t.Payments_lcy.String(),
+		// FlowField: inv_amounts_lcy
+		"inv_amounts_lcy": t.Inv_amounts_lcy.String(),
+		// FlowField: cr_memo_amounts_lcy
+		"cr_memo_amounts_lcy": t.Cr_memo_amounts_lcy.String(),
+		// FlowField: fin_charge_memo_amounts_lcy
+		"fin_charge_memo_amounts_lcy": t.Fin_charge_memo_amounts_lcy.String(),
+		// FlowField: debit_amount
+		"debit_amount": t.Debit_amount.String(),
+		// FlowField: credit_amount
+		"credit_amount": t.Credit_amount.String(),
+		// FlowField: debit_amount_lcy
+		"debit_amount_lcy": t.Debit_amount_lcy.String(),
+		// FlowField: credit_amount_lcy
+		"credit_amount_lcy": t.Credit_amount_lcy.String(),
+		// FlowField: reminder_amounts
+		"reminder_amounts": t.Reminder_amounts.String(),
+		// FlowField: reminder_amounts_lcy
+		"reminder_amounts_lcy": t.Reminder_amounts_lcy.String(),
 		// FlowField: no_of_ledger_entries
 		"no_of_ledger_entries": t.No_of_ledger_entries,
 	}
@@ -3841,14 +13438,24 @@ func (t *Customer) FromMap(data map[string]interface{}) {
 			t.Name = types.NewText(s)
 		}
 	}
+	if v, ok := data["search_name"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Search_name = types.NewCode(s)
+		}
+	}
+	if v, ok := data["name_2"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Name_2 = types.NewText(s)
+		}
+	}
 	if v, ok := data["address"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Address = types.NewText(s)
 		}
 	}
-	if v, ok := data["post_code"]; ok && v != nil {
+	if v, ok := data["address_2"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Post_code = types.NewCode(s)
+			t.Address_2 = types.NewText(s)
 		}
 	}
 	if v, ok := data["city"]; ok && v != nil {
@@ -3856,14 +13463,101 @@ func (t *Customer) FromMap(data map[string]interface{}) {
 			t.City = types.NewText(s)
 		}
 	}
-	if v, ok := data["country_region_code"]; ok && v != nil {
+	if v, ok := data["contact"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Country_region_code = types.NewCode(s)
+			t.Contact = types.NewText(s)
 		}
 	}
-	if v, ok := data["phonenumber"]; ok && v != nil {
+	if v, ok := data["phone_no"]; ok && v != nil {
 		if s, ok := v.(string); ok {
-			t.Phonenumber = types.NewText(s)
+			t.Phone_no = types.NewText(s)
+		}
+	}
+	if v, ok := data["telex_no"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Telex_no = types.NewText(s)
+		}
+	}
+	if v, ok := data["our_account_no"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Our_account_no = types.NewText(s)
+		}
+	}
+	if v, ok := data["territory_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Territory_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["department_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Department_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["project_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Project_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["chain_name"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Chain_name = types.NewCode(s)
+		}
+	}
+	if v, ok := data["budgeted_amount"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Budgeted_amount, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Budgeted_amount = types.NewDecimal(val)
+		case int:
+			t.Budgeted_amount = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Budgeted_amount = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["credit_limit_lcy"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Credit_limit_lcy, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Credit_limit_lcy = types.NewDecimal(val)
+		case int:
+			t.Credit_limit_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Credit_limit_lcy = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["customer_posting_group"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Customer_posting_group = types.NewCode(s)
+		}
+	}
+	if v, ok := data["currency_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Currency_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["price_group_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Price_group_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["language_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Language_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["statistics_group"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Statistics_group = int(val)
+		case int:
+			t.Statistics_group = val
+		case string:
+			// a record key from a URL or a list selection
+			if n, err := strconv.Atoi(val); err == nil {
+				t.Statistics_group = n
+			}
 		}
 	}
 	if v, ok := data["payment_terms_code"]; ok && v != nil {
@@ -3871,46 +13565,247 @@ func (t *Customer) FromMap(data map[string]interface{}) {
 			t.Payment_terms_code = types.NewCode(s)
 		}
 	}
-	if v, ok := data["status"]; ok && v != nil {
+	if v, ok := data["fin_charge_terms_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Fin_charge_terms_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["salesperson_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Salesperson_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["shipment_method_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Shipment_method_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["shipping_agent_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Shipping_agent_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["place_of_export"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Place_of_export = types.NewCode(s)
+		}
+	}
+	if v, ok := data["invoice_disc_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Invoice_disc_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["cust_item_disc_gr"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Cust_item_disc_gr = types.NewCode(s)
+		}
+	}
+	if v, ok := data["country_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Country_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["collection_method"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Collection_method = types.NewCode(s)
+		}
+	}
+	if v, ok := data["amount"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Amount, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Amount = types.NewDecimal(val)
+		case int:
+			t.Amount = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Amount = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["blocked"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Blocked = b
+		}
+	}
+	if v, ok := data["invoice_copies"]; ok && v != nil {
 		switch val := v.(type) {
 		case float64:
-			t.Status = CustomerStatus(int(val))
+			t.Invoice_copies = int(val)
 		case int:
-			t.Status = CustomerStatus(val)
+			t.Invoice_copies = val
+		case string:
+			// a record key from a URL or a list selection
+			if n, err := strconv.Atoi(val); err == nil {
+				t.Invoice_copies = n
+			}
+		}
+	}
+	if v, ok := data["last_statement_no"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Last_statement_no = int(val)
+		case int:
+			t.Last_statement_no = val
+		case string:
+			// a record key from a URL or a list selection
+			if n, err := strconv.Atoi(val); err == nil {
+				t.Last_statement_no = n
+			}
+		}
+	}
+	if v, ok := data["print_statements"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Print_statements = b
+		}
+	}
+	if v, ok := data["bill_to_customer_no"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Bill_to_customer_no = types.NewCode(s)
+		}
+	}
+	if v, ok := data["priority"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Priority = int(val)
+		case int:
+			t.Priority = val
+		case string:
+			// a record key from a URL or a list selection
+			if n, err := strconv.Atoi(val); err == nil {
+				t.Priority = n
+			}
+		}
+	}
+	if v, ok := data["payment_method_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Payment_method_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["last_date_modified"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Last_date_modified, _ = types.NewDateFromString(s)
+		}
+	}
+	if v, ok := data["application_method"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Application_method = CustomerApplication_method(int(val))
+		case int:
+			t.Application_method = CustomerApplication_method(val)
 		case string:
 			// Lookup string value in options
-			options := []string{" ", "Open", "Released", "Posted", "Blocked"}
+			options := []string{"Manual", "Apply to Oldest"}
 			for i, opt := range options {
 				if opt == val {
-					t.Status = CustomerStatus(i)
+					t.Application_method = CustomerApplication_method(i)
 					break
 				}
 			}
 		}
 	}
-	if v, ok := data["credit_limit"]; ok && v != nil {
+	if v, ok := data["allow_quantity_disc"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Allow_quantity_disc = b
+		}
+	}
+	if v, ok := data["prices_including_tax"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Prices_including_tax = b
+		}
+	}
+	if v, ok := data["location_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Location_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["fax_no"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Fax_no = types.NewText(s)
+		}
+	}
+	if v, ok := data["telex_answer_back"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Telex_answer_back = types.NewText(s)
+		}
+	}
+	if v, ok := data["vat_registration_no"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Vat_registration_no = types.NewText(s)
+		}
+	}
+	if v, ok := data["combine_shipments"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Combine_shipments = b
+		}
+	}
+	if v, ok := data["gen_bus_posting_group"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Gen_bus_posting_group = types.NewCode(s)
+		}
+	}
+	if v, ok := data["picture"]; ok && v != nil {
+	}
+	if v, ok := data["post_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Post_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["state"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.State = types.NewText(s)
+		}
+	}
+	if v, ok := data["e_mail"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.E_mail = types.NewText(s)
+		}
+	}
+	if v, ok := data["home_page"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Home_page = types.NewText(s)
+		}
+	}
+	if v, ok := data["reminder_terms_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Reminder_terms_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["no_series"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.No_series = types.NewCode(s)
+		}
+	}
+	if v, ok := data["tax_area_code"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Tax_area_code = types.NewCode(s)
+		}
+	}
+	if v, ok := data["tax_liable"]; ok && v != nil {
+		if b, ok := v.(bool); ok {
+			t.Tax_liable = b
+		}
+	}
+	if v, ok := data["tax_bus_posting_group"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Tax_bus_posting_group = types.NewCode(s)
+		}
+	}
+	if v, ok := data["reserve"]; ok && v != nil {
 		switch val := v.(type) {
-		case string:
-			t.Credit_limit, _ = types.NewDecimalFromString(val)
 		case float64:
-			t.Credit_limit = types.NewDecimal(val)
+			t.Reserve = CustomerReserve(int(val))
 		case int:
-			t.Credit_limit = types.NewDecimalFromInt(int64(val))
-		case int64:
-			t.Credit_limit = types.NewDecimalFromInt(val)
+			t.Reserve = CustomerReserve(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"Never", "Optional", "Always"}
+			for i, opt := range options {
+				if opt == val {
+					t.Reserve = CustomerReserve(i)
+					break
+				}
+			}
 		}
-	}
-	if v, ok := data["last_order_date"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Last_order_date, _ = types.NewDateFromString(s)
-		}
-	}
-	if v, ok := data["created_at"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			t.Created_at, _ = types.NewDateTimeFromString(s)
-		}
-	}
-	if v, ok := data["profile_photo"]; ok && v != nil {
 	}
 }
 
@@ -3954,6 +13849,26 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         3,
+			Name:       "search_name",
+			Type:       tables.FieldTypeCode,
+			Length:     50,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         4,
+			Name:       "name_2",
+			Type:       tables.FieldTypeText,
+			Length:     50,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
 			No:         5,
 			Name:       "address",
 			Type:       tables.FieldTypeText,
@@ -3964,10 +13879,10 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         91,
-			Name:       "post_code",
-			Type:       tables.FieldTypeCode,
-			Length:     20,
+			No:         6,
+			Name:       "address_2",
+			Type:       tables.FieldTypeText,
+			Length:     50,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -3984,8 +13899,48 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         35,
-			Name:       "country_region_code",
+			No:         8,
+			Name:       "contact",
+			Type:       tables.FieldTypeText,
+			Length:     50,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         9,
+			Name:       "phone_no",
+			Type:       tables.FieldTypeText,
+			Length:     30,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         10,
+			Name:       "telex_no",
+			Type:       tables.FieldTypeText,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         14,
+			Name:       "our_account_no",
+			Type:       tables.FieldTypeText,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         15,
+			Name:       "territory_code",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
 			Required:   false,
@@ -3994,10 +13949,102 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         9,
-			Name:       "phonenumber",
-			Type:       tables.FieldTypeText,
-			Length:     30,
+			No:         16,
+			Name:       "department_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         17,
+			Name:       "project_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         18,
+			Name:       "chain_name",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:            19,
+			Name:          "budgeted_amount",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            20,
+			Name:          "credit_limit_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:         21,
+			Name:       "customer_posting_group",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         22,
+			Name:       "currency_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         23,
+			Name:       "price_group_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         24,
+			Name:       "language_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         26,
+			Name:       "statistics_group",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -4014,8 +14061,190 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         900,
-			Name:       "status",
+			No:         28,
+			Name:       "fin_charge_terms_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         29,
+			Name:       "salesperson_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         30,
+			Name:       "shipment_method_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         31,
+			Name:       "shipping_agent_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         32,
+			Name:       "place_of_export",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         33,
+			Name:       "invoice_disc_code",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         34,
+			Name:       "cust_item_disc_gr",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         35,
+			Name:       "country_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         36,
+			Name:       "collection_method",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:            37,
+			Name:          "amount",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:         39,
+			Name:       "blocked",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         40,
+			Name:       "invoice_copies",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         41,
+			Name:       "last_statement_no",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         42,
+			Name:       "print_statements",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         45,
+			Name:       "bill_to_customer_no",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         46,
+			Name:       "priority",
+			Type:       tables.FieldTypeInteger,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         47,
+			Name:       "payment_method_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         54,
+			Name:       "last_date_modified",
+			Type:       tables.FieldTypeDate,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+			ReadOnly:   true,
+		},
+		{
+			No:         80,
+			Name:       "application_method",
 			Type:       tables.FieldTypeOption,
 			Length:     0,
 			Required:   false,
@@ -4024,9 +14253,9 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         20,
-			Name:       "credit_limit",
-			Type:       tables.FieldTypeDecimal,
+			No:         81,
+			Name:       "allow_quantity_disc",
+			Type:       tables.FieldTypeBoolean,
 			Length:     0,
 			Required:   false,
 			Editable:   true,
@@ -4034,9 +14263,9 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         901,
-			Name:       "last_order_date",
-			Type:       tables.FieldTypeDate,
+			No:         82,
+			Name:       "prices_including_tax",
+			Type:       tables.FieldTypeBoolean,
 			Length:     0,
 			Required:   false,
 			Editable:   true,
@@ -4044,10 +14273,60 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         902,
-			Name:       "created_at",
-			Type:       tables.FieldTypeDateTime,
+			No:         83,
+			Name:       "location_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         84,
+			Name:       "fax_no",
+			Type:       tables.FieldTypeText,
+			Length:     30,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         85,
+			Name:       "telex_answer_back",
+			Type:       tables.FieldTypeText,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         86,
+			Name:       "vat_registration_no",
+			Type:       tables.FieldTypeText,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         87,
+			Name:       "combine_shipments",
+			Type:       tables.FieldTypeBoolean,
 			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         88,
+			Name:       "gen_bus_posting_group",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
@@ -4055,7 +14334,7 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 		},
 		{
 			No:         89,
-			Name:       "profile_photo",
+			Name:       "picture",
 			Type:       tables.FieldTypeBlob,
 			Length:     0,
 			Required:   false,
@@ -4064,24 +14343,369 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
-			No:         59,
-			Name:       "balance_lcy",
-			Type:       tables.FieldTypeDecimal,
-			Length:     0,
+			No:         91,
+			Name:       "post_code",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
-			FlowField:  true,
+			FlowField:  false,
 		},
 		{
-			No:         62,
-			Name:       "sales_lcy",
-			Type:       tables.FieldTypeDecimal,
+			No:         92,
+			Name:       "state",
+			Type:       tables.FieldTypeText,
+			Length:     30,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         102,
+			Name:       "e_mail",
+			Type:       tables.FieldTypeText,
+			Length:     80,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         103,
+			Name:       "home_page",
+			Type:       tables.FieldTypeText,
+			Length:     80,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         104,
+			Name:       "reminder_terms_code",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         107,
+			Name:       "no_series",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+			ReadOnly:   true,
+		},
+		{
+			No:         108,
+			Name:       "tax_area_code",
+			Type:       tables.FieldTypeCode,
+			Length:     20,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         109,
+			Name:       "tax_liable",
+			Type:       tables.FieldTypeBoolean,
 			Length:     0,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,
-			FlowField:  true,
+			FlowField:  false,
+		},
+		{
+			No:         110,
+			Name:       "tax_bus_posting_group",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         115,
+			Name:       "reserve",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:            58,
+			Name:          "balance",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            59,
+			Name:          "balance_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            60,
+			Name:          "net_change",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            61,
+			Name:          "net_change_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            62,
+			Name:          "sales_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            63,
+			Name:          "profit_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            64,
+			Name:          "inv_discounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            65,
+			Name:          "pmt_discounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            66,
+			Name:          "balance_due",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            67,
+			Name:          "balance_due_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            69,
+			Name:          "payments",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            70,
+			Name:          "invoice_amounts",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            71,
+			Name:          "cr_memo_amounts",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            72,
+			Name:          "finance_charge_memo_amounts",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            74,
+			Name:          "payments_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            75,
+			Name:          "inv_amounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            76,
+			Name:          "cr_memo_amounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            77,
+			Name:          "fin_charge_memo_amounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            97,
+			Name:          "debit_amount",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            98,
+			Name:          "credit_amount",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            99,
+			Name:          "debit_amount_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            100,
+			Name:          "credit_amount_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            105,
+			Name:          "reminder_amounts",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            106,
+			Name:          "reminder_amounts_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
 		},
 		{
 			No:         903,
@@ -4106,6 +14730,24 @@ func (t *Customer) SetFlowFilter(field, expr string) error {
 		}
 		t.Date_filter = expr
 		return nil
+	case "department_filter":
+		if err := flowfilter.Validate(flowfilter.KindCode, expr); err != nil {
+			return err
+		}
+		t.Department_filter = expr
+		return nil
+	case "project_filter":
+		if err := flowfilter.Validate(flowfilter.KindCode, expr); err != nil {
+			return err
+		}
+		t.Project_filter = expr
+		return nil
+	case "currency_filter":
+		if err := flowfilter.Validate(flowfilter.KindCode, expr); err != nil {
+			return err
+		}
+		t.Currency_filter = expr
+		return nil
 	}
 	return fmt.Errorf("%q is not a FlowFilter field of Customer", field)
 }
@@ -4114,14 +14756,39 @@ func (t *Customer) SetFlowFilter(field, expr string) error {
 func (t *Customer) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 	return []tables.FlowFilterFieldInfo{
 		{Name: "date_filter", Kind: string(flowfilter.KindDate)},
+		{Name: "department_filter", Kind: string(flowfilter.KindCode)},
+		{Name: "project_filter", Kind: string(flowfilter.KindCode)},
+		{Name: "currency_filter", Kind: string(flowfilter.KindCode)},
 	}
 }
 
 // GetFlowFields returns names of FlowFields that need CalcFields
 func (t *Customer) GetFlowFields() []string {
 	return []string{
+		"balance",
 		"balance_lcy",
+		"net_change",
+		"net_change_lcy",
 		"sales_lcy",
+		"profit_lcy",
+		"inv_discounts_lcy",
+		"pmt_discounts_lcy",
+		"balance_due",
+		"balance_due_lcy",
+		"payments",
+		"invoice_amounts",
+		"cr_memo_amounts",
+		"finance_charge_memo_amounts",
+		"payments_lcy",
+		"inv_amounts_lcy",
+		"cr_memo_amounts_lcy",
+		"fin_charge_memo_amounts_lcy",
+		"debit_amount",
+		"credit_amount",
+		"debit_amount_lcy",
+		"credit_amount_lcy",
+		"reminder_amounts",
+		"reminder_amounts_lcy",
 		"no_of_ledger_entries",
 	}
 }
@@ -4129,20 +14796,80 @@ func (t *Customer) GetFlowFields() []string {
 // GetOptionFields returns Option field names mapped to their option values
 func (t *Customer) GetOptionFields() map[string][]string {
 	return map[string][]string{
-		"status": {" ", "Open", "Released", "Posted", "Blocked"},
+		"application_method": {"Manual", "Apply to Oldest"},
+		"reserve":            {"Never", "Optional", "Always"},
 	}
 }
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
 func (t *Customer) GetTableRelationFields() map[string]tables.TableRelationInfo {
 	return map[string]tables.TableRelationInfo{
-		"country_region_code": {
-			Table:        "Country_Region",
+		"territory_code": {
+			Table:        "Territory",
 			Field:        "code",
 			DisplayField: "",
 			LookupColumns: []tables.LookupColumnInfo{
-				{Source: "code", Width: 80},
-				{Source: "name", Width: 200},
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"department_code": {
+			Table:        "Department",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"project_code": {
+			Table:        "Project",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"customer_posting_group": {
+			Table:        "Customer_Posting_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "receivables_account", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"currency_code": {
+			Table:        "Currency",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"price_group_code": {
+			Table:        "Price_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+			},
+			SearchTimeout: 0,
+		},
+		"language_code": {
+			Table:        "Language",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
 		},
@@ -4151,11 +14878,172 @@ func (t *Customer) GetTableRelationFields() map[string]tables.TableRelationInfo 
 			Field:        "code",
 			DisplayField: "",
 			LookupColumns: []tables.LookupColumnInfo{
-				{Source: "code", Width: 80},
-				{Source: "description", Width: 200},
-				{Source: "active", Width: 60},
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
 			},
-			SearchTimeout: 2000,
+			SearchTimeout: 0,
+		},
+		"fin_charge_terms_code": {
+			Table:        "Finance_Charge_Terms",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"salesperson_code": {
+			Table:        "Salesperson_Purchaser",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"shipment_method_code": {
+			Table:        "Shipment_Method",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"shipping_agent_code": {
+			Table:        "Shipping_Agent",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"invoice_disc_code": {
+			Table:        "Customer",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+			NoValidate:    true,
+		},
+		"cust_item_disc_gr": {
+			Table:        "Customer_Discount_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"country_code": {
+			Table:        "Country_Region",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"bill_to_customer_no": {
+			Table:        "Customer",
+			Field:        "no",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "no", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"payment_method_code": {
+			Table:        "Payment_Method",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"location_code": {
+			Table:        "Location",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "name", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"gen_bus_posting_group": {
+			Table:        "Gen_Business_Posting_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"post_code": {
+			Table:        "Post_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "city", Width: 250},
+			},
+			SearchTimeout: 0,
+			NoValidate:    true,
+		},
+		"reminder_terms_code": {
+			Table:        "Reminder_Terms",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"no_series": {
+			Table:        "No_Series",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"tax_area_code": {
+			Table:        "Tax_Area",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"tax_bus_posting_group": {
+			Table:        "Tax_Business_Posting_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
 		},
 	}
 }

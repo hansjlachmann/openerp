@@ -166,11 +166,63 @@ func (t *GenProductPostingGroup) GetPostgresTableSchema() string {
 	return GetGenProductPostingGroupPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *GenProductPostingGroup) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *GenProductPostingGroup) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["code"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(GenProductPostingGroupTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *GenProductPostingGroup) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(GenProductPostingGroupTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *GenProductPostingGroup) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(GenProductPostingGroupTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *GenProductPostingGroup) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(GenProductPostingGroupTableName, key)
 }
 
 // ========================================
@@ -502,6 +554,35 @@ func (t *GenProductPostingGroup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *GenProductPostingGroup) XRec() *GenProductPostingGroup {
+	x := &GenProductPostingGroup{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["code"].(types.Code); ok {
+		x.Code = v
+	}
+	if v, ok := t.oldValues["description"].(types.Text); ok {
+		x.Description = v
+	}
+	if v, ok := t.oldValues["def_tax_prod_posting_group"].(types.Code); ok {
+		x.Def_tax_prod_posting_group = v
+	}
+	if v, ok := t.oldValues["auto_insert_default"].(bool); ok {
+		x.Auto_insert_default = v
+	}
+	return x
+}
+
+// NewGenProductPostingGroup returns a Gen_Product_Posting_Group record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewGenProductPostingGroup(from tables.Source) *GenProductPostingGroup {
+	rec := &GenProductPostingGroup{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *GenProductPostingGroup) IsGlobal() bool {
 	return false
@@ -619,15 +700,22 @@ func (t *GenProductPostingGroup) Insert(runTrigger bool) bool {
 		t.Auto_insert_default,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, def_tax_prod_posting_group, auto_insert_default) VALUES (?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, description, def_tax_prod_posting_group, auto_insert_default) VALUES (?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Gen_Product_Posting_Group: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(GenProductPostingGroupTableName, key)
 		return false
 	}
 	return true
@@ -1817,6 +1905,10 @@ func (t *GenProductPostingGroup) ValidateField(fieldName string, value interface
 			t.Def_tax_prod_posting_group = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field def_tax_prod_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "def_tax_prod_posting_group"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

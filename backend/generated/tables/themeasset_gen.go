@@ -200,11 +200,63 @@ func (t *ThemeAsset) GetPostgresTableSchema() string {
 	return GetThemeAssetPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *ThemeAsset) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *ThemeAsset) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["theme_code"]), fmt.Sprint(m["name"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(ThemeAssetTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *ThemeAsset) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(ThemeAssetTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *ThemeAsset) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(ThemeAssetTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *ThemeAsset) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(ThemeAssetTableName, key)
 }
 
 // ========================================
@@ -545,6 +597,47 @@ func (t *ThemeAsset) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *ThemeAsset) XRec() *ThemeAsset {
+	x := &ThemeAsset{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["theme_code"].(types.Code); ok {
+		x.Theme_code = v
+	}
+	if v, ok := t.oldValues["name"].(types.Code); ok {
+		x.Name = v
+	}
+	if v, ok := t.oldValues["content_type"].(types.Text); ok {
+		x.Content_type = v
+	}
+	if v, ok := t.oldValues["size"].(int); ok {
+		x.Size = v
+	}
+	if v, ok := t.oldValues["width"].(int); ok {
+		x.Width = v
+	}
+	if v, ok := t.oldValues["height"].(int); ok {
+		x.Height = v
+	}
+	if v, ok := t.oldValues["sha256"].(types.Text); ok {
+		x.Sha256 = v
+	}
+	if v, ok := t.oldValues["data"].([]byte); ok {
+		x.Data = v
+	}
+	return x
+}
+
+// NewThemeAsset returns a Theme_Asset record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewThemeAsset(from tables.Source) *ThemeAsset {
+	rec := &ThemeAsset{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *ThemeAsset) IsGlobal() bool {
 	return true
@@ -683,15 +776,22 @@ func (t *ThemeAsset) Insert(runTrigger bool) bool {
 		t.Data,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (theme_code, name, content_type, size, width, height, sha256, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (theme_code, name, content_type, size, width, height, sha256, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (theme_code, name) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Theme_Asset: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(ThemeAssetTableName, key)
 		return false
 	}
 	return true
@@ -1863,6 +1963,10 @@ func (t *ThemeAsset) ValidateField(fieldName string, value interface{}) error {
 			t.Theme_code = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field theme_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "theme_code"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

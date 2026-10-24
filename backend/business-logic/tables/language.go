@@ -28,7 +28,8 @@ func checkTranslationKey(rec *gtables.Language) error {
 	if rec.Translation_key.IsEmpty() {
 		return nil
 	}
-	if key := rec.Translation_key.String(); len(key) != 5 || key[2] != '-' {
+	key := rec.Translation_key.String()
+	if len(key) != 5 || key[2] != '-' {
 		return apperrors.FieldFormat(gtables.LanguageTableName, "translation_key", "xx-XX")
 	}
 	return nil

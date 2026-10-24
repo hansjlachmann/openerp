@@ -91,6 +91,9 @@ type Field struct {
 	SourceTable       string         `yaml:"source_table"` // Table to calculate from
 	SourceField       string         `yaml:"source_field"` // Field to aggregate
 	FlowFilters       []FlowFilter   `yaml:"flow_filters"` // Filter conditions
+	// ReverseSign (Sum FlowFields): the total with the opposite sign (classic CalcFormula=-Sum,
+	// e.g. Customer Payments)
+	ReverseSign bool `yaml:"reverse_sign"`
 	// FlowFilter (FieldClass FlowFilter): not stored; holds a filter expression the
 	// user sets (e.g. Date Filter), applied by FlowFields with a flow filter of type "filter"
 	FlowFilter bool `yaml:"flow_filter"`
@@ -765,6 +768,9 @@ func validateFlowFilters(def *TableDef, byStruct map[string]*TableDef) error {
 		if f.FlowField && f.CalcFormula == "Lookup" && f.Type != "types.Text" && f.Type != "types.Code" {
 			return fmt.Errorf("Lookup FlowField %s must be types.Text or types.Code, not %s", f.Name, f.Type)
 		}
+		if f.ReverseSign && !(f.FlowField && f.CalcFormula == "Sum") {
+			return fmt.Errorf("field %s: reverse_sign is only for Sum FlowFields", f.Name)
+		}
 	}
 	filters := map[string]Field{}
 	for _, f := range def.FlowFilterFields {
@@ -1324,9 +1330,9 @@ func toPascalCase(s string) string {
 }
 
 func sanitizeIdentifier(s string) string {
-	// Convert option values like "Credit Memo", "G/L Account", "ZIP Code+City" into valid Go
+	// Convert option values like "Credit Memo", "G/L Account", "Post Code+City" into valid Go
 	// identifiers: every character that is not a letter or digit separates words
-	// ("G/L Account" -> "GLAccount", "ZIP Code+City" -> "ZIPCodeCity")
+	// ("G/L Account" -> "GLAccount", "Post Code+City" -> "PostCodeCity")
 	words := strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
 	for i, word := range words {
 		words[i] = upperFirst(word)
@@ -1967,11 +1973,63 @@ func (t *{{ .StructName }}) GetPostgresTableSchema() string {
 }
 
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *{{ .StructName }}) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *{{ .StructName }}) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{ {{- range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}fmt.Sprint(m["{{ $f.DBName }}"]){{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end -}} }, ",")
+	}
+	return apperrors.TableRecordNotFound({{ .StructName }}TableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *{{ .StructName }}) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed({{ .StructName }}TableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *{{ .StructName }}) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed({{ .StructName }}TableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *{{ .StructName }}) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed({{ .StructName }}TableName, key)
 }
 
 {{ template "logic" . }}
@@ -1996,6 +2054,20 @@ func (t *{{ .StructName }}) GetDBType() database.DBType {
 func (t *{{ .StructName }}) IsSetupTable() bool {
 	return {{ .Table.SetupTable }}
 }
+{{- if .Table.SetupTable }}
+
+// Get{{ .StructName }} reads the single {{ .Table.Name }} record (classic SETUP.GET) in the database
+// and company of another record (from, e.g. the record a trigger works on) — a blank one, with
+// the definition's defaults, when it does not exist yet
+func Get{{ .StructName }}(from tables.Source) *{{ .StructName }} {
+	setup := &{{ .StructName }}{}
+	setup.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	if !setup.Get("") {
+		setup.InitRecord()
+	}
+	return setup
+}
+{{- end }}
 
 // Get{{ .StructName }}TableSchema returns the SQLite schema
 func Get{{ .StructName }}TableSchema() string {
@@ -2196,6 +2268,30 @@ func (t *{{ .StructName }}) StoreOldValues() {
 // xRec), e.g. the old key in OnRename; nil when the record was not loaded.
 func (t *{{ .StructName }}) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
+}
+
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *{{ .StructName }}) XRec() *{{ .StructName }} {
+	x := &{{ .StructName }}{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+{{- range .Table.Fields }}
+{{- if not .FlowField }}
+	if v, ok := t.oldValues["{{ .DBName }}"].({{ fieldGoType $.StructName . }}); ok {
+		x.{{ upperFirst .Name }} = v
+	}
+{{- end }}
+{{- end }}
+	return x
+}
+
+// New{{ .StructName }} returns a {{ .Table.Name }} record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func New{{ .StructName }}(from tables.Source) *{{ .StructName }} {
+	rec := &{{ .StructName }}{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
 }
 
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
@@ -2494,15 +2590,22 @@ func (t *{{ .StructName }}) Insert(runTrigger bool) bool {
 {{- end }}
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(` + "`INSERT INTO \"%s\" ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) VALUES ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}?{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }})`" + `, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(` + "`INSERT INTO \"%s\" ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) VALUES ({{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}?{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) ON CONFLICT ({{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }}) DO NOTHING`" + `, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert {{ .Table.Name }}: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists({{ .StructName }}TableName, key)
 		return false
 	}
 	return true
@@ -3116,7 +3219,7 @@ func (t *{{ $.StructName }}) calcForRecords_{{ .Name }}(records []map[string]int
 		}
 		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, %s FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, agg, tableName, whereClause)
 		{{- else }}
-		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
+		query := fmt.Sprintf(` + "`SELECT {{ .BatchKeyField }}, {{ if .ReverseSign }}-{{ end }}COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s GROUP BY {{ .BatchKeyField }}`" + `, tableName, whereClause)
 		{{- end }}
 		query = t.convertPlaceholders(query, len(args))
 
@@ -3211,7 +3314,7 @@ func (t *{{ $.StructName }}) calcSum_{{ .Name }}() {{ .Type }} {
 		whereClause = strings.Join(whereClauses, " AND ")
 	}
 
-	query := fmt.Sprintf(` + "`SELECT COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
+	query := fmt.Sprintf(` + "`SELECT {{ if .ReverseSign }}-{{ end }}COALESCE(SUM({{ .SourceField }}), 0) FROM \"%s\" WHERE %s`" + `, tableName, whereClause)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3504,7 +3607,7 @@ func (t *{{ .StructName }}) flowFieldExpr(field string) (string, []interface{}) 
 			agg = "COALESCE(SUM(cnt), 0)"
 		}
 		{{- else }}
-		agg := "COALESCE(SUM({{ .SourceField }}), 0)"
+		agg := "{{ if .ReverseSign }}-{{ end }}COALESCE(SUM({{ .SourceField }}), 0)"
 		{{- end }}
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
 {{- end }}
@@ -4719,6 +4822,12 @@ func (t *{{ .StructName }}) ValidateField(fieldName string, value interface{}) e
 			return fmt.Errorf("invalid type for field {{ .Name }}")
 		}
 {{- end }}
+{{- if .TableRelation }}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "{{ .DBName }}"); err != nil {
+			return err
+		}
+{{- end }}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.({{ $.StructName }}OnValidate_{{ upperFirst .Name }}); ok {
@@ -5729,6 +5838,9 @@ func NewRecords() map[int]tables.Table {
 func RegisterTableFactory(name string, id int, factory tables.TableFactory) {
 	tableRegistry[name] = factory
 }
+
+// The relation check of Validate finds related tables in this registry
+func init() { tables.RegisterRelatedTables(GetTableFactory) }
 
 // GetTableFactory returns a table factory by name
 func GetTableFactory(name string) (tables.TableFactory, bool) {

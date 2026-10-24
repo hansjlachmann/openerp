@@ -4,6 +4,7 @@
 	import { cn } from '$lib/utils/cn';
 	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
+	import { t, MSG } from '$lib/services/i18n.svelte';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 
@@ -20,7 +21,11 @@
 		fieldCaptions?: Record<string, string>; // Field captions for lookup column headers
 		tabindex?: number;
 		onchange?: (value: any) => void;
-		onblur?: () => void;
+		onblur?: (event?: FocusEvent) => void;
+		// AssistEdit: the field's "…" button (also Shift+F2 in the field)
+		onassistedit?: () => void;
+		// DrillDown: the read-only value is a link (e.g. No. of Ledger Entries → the entries)
+		ondrilldown?: () => void;
 	}
 
 	let {
@@ -36,7 +41,9 @@
 		fieldCaptions = {},
 		tabindex,
 		onchange,
-		onblur
+		onblur,
+		onassistedit,
+		ondrilldown
 	}: Props = $props();
 
 	// Determine if field is editable
@@ -221,14 +228,30 @@
 					id={field.source}
 					type={inputType()}
 					autocomplete={field.masked ? 'new-password' : 'off'}
-					class={cn('input', fieldStyle, error ? 'input-error' : '')}
+					class={cn('input', fieldStyle, error ? 'input-error' : '', onassistedit ? 'with-assist' : '')}
 					value={isDateTimeField ? toDateTimeInput(value) : (value ?? '')}
 					{tabindex}
 					oninput={handleChange}
-					onblur={() => onblur?.()}
+					onblur={(e) => onblur?.(e)}
+					onkeydown={(e) => {
+						if (onassistedit && e.key === 'F2' && e.shiftKey) {
+							e.preventDefault();
+							onassistedit();
+						}
+					}}
 					aria-invalid={!!error}
 					aria-describedby={error ? `${field.source}-error` : undefined}
 				/>
+				{#if onassistedit}
+					<button
+						type="button"
+						class="assist-edit"
+						tabindex="-1"
+						title={t(MSG.ASSIST_EDIT)}
+						aria-label={t(MSG.ASSIST_EDIT)}
+						onclick={() => onassistedit()}>…</button
+					>
+				{/if}
 			{/if}
 		</div>
 		{#if error}
@@ -288,7 +311,11 @@
 			</div>
 		{:else}
 			<div class={cn('field-value', fieldStyle)}>
-				{#if isOptionField}
+				{#if ondrilldown}
+					<button type="button" class="drilldown-link" {tabindex} onclick={() => ondrilldown()}>
+						{formatDecimal(value, field.decimal_places)}
+					</button>
+				{:else if isOptionField}
 					{optionDisplayValue()}
 				{:else if isDateField}
 					{formatDate(String(value ?? ''), locale)}
@@ -303,6 +330,41 @@
 {/if}
 
 <style>
+	/* DrillDown: the value opens the entries behind it */
+	.drilldown-link {
+		color: rgb(var(--accent-600));
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	:global(.dark) .drilldown-link {
+		color: rgb(var(--accent-400));
+	}
+
+	/* AssistEdit "…" at the right end of the field */
+	.input-wrapper:has(.assist-edit) {
+		position: relative;
+	}
+	:global(.input.with-assist) {
+		padding-right: 2rem;
+	}
+	.assist-edit {
+		position: absolute;
+		right: 0.25rem;
+		top: 50%;
+		transform: translateY(-50%);
+		padding: 0 0.4rem;
+		line-height: 1.4;
+		border-radius: 0.25rem;
+		color: rgb(var(--gray-600));
+	}
+	.assist-edit:hover {
+		background: rgb(var(--gray-200));
+		color: rgb(var(--fg));
+	}
+	:global(.dark) .assist-edit:hover {
+		background: rgb(var(--gray-700));
+	}
+
 	.field-group {
 		@apply flex flex-col gap-1;
 	}

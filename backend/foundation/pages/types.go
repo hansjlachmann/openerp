@@ -44,6 +44,9 @@ type PageMetadata struct {
 	// SetupTable (populated at request time): the source table holds a single record with a
 	// blank key (setup); its card page opens on that record
 	SetupTable bool `yaml:"-" json:"setup_table,omitempty"`
+	// AutoKey (populated at request time): the source table's OnInsert assigns a blank key (the
+	// next number of a series) — a new record is saved without one
+	AutoKey bool `yaml:"-" json:"auto_key,omitempty"`
 	// PrimaryKeyFields is populated at request time from table metadata so the
 	// frontend knows the record key even when the PK is not shown (e.g. setup tables).
 	PrimaryKeyFields []string `yaml:"-" json:"primary_key_fields,omitempty"`
@@ -126,7 +129,10 @@ type Field struct {
 	// Calculated: not a table field — the page's OnAfterGetRecord trigger fills it per record
 	// (page.SetValue; classic page variables shown in a column); read-only, not searchable or
 	// sortable. Type (e.g. types.Date) formats it; its caption is tables.<table>.fields.<source>.
-	Calculated bool   `yaml:"calculated,omitempty" json:"calculated,omitempty"`
+	Calculated bool `yaml:"calculated,omitempty" json:"calculated,omitempty"`
+	// AssistEdit: the field's "…" (classic OnAssistEdit) runs this registered function
+	// (run_object "table:Customer.AssistEdit", registered WithAssistEdit) with the card's record
+	AssistEdit string `yaml:"assist_edit,omitempty" json:"assist_edit,omitempty"`
 	Type       string `yaml:"type,omitempty" json:"-"`
 }
 

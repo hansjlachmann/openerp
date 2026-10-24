@@ -39,7 +39,8 @@ func (m *Migration009WidenJobQueueNotificationEmail) Up(ctx *fmigrations.Context
 		if err != nil || !exists {
 			return err
 		}
-		if err := ctx.ChangeColumnType(table, "notification_email", "VARCHAR(250)"); err != nil {
+		err = ctx.ChangeColumnType(table, "notification_email", "VARCHAR(250)")
+		if err != nil {
 			return fmt.Errorf("widen notification_email: %w", err)
 		}
 		return nil

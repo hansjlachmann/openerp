@@ -1,8 +1,8 @@
 table:
   id: 225
-  name: "ZIP_Code"
+  name: "Post_Code"
   caption: Post Code
-  description: "Post codes and their cities (table 225)"
+  description: "Post codes and their cities (table 225; classic name ZIP Code)"
   fields:
     - name: code
       no: 1

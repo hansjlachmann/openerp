@@ -87,11 +87,13 @@ func renumber(ctx *fmigrations.Context, table, column string, numbers map[int]in
 		cases[i] = fmt.Sprintf("WHEN %d THEN %d", old+parked, numbers[old])
 	}
 	park := fmt.Sprintf(`UPDATE "%s" SET %s = %s + %d WHERE %s IN (%s)`, table, column, column, parked, column, strings.Join(in, ", "))
-	if err := ctx.ExecuteSQL(park); err != nil {
+	err = ctx.ExecuteSQL(park)
+	if err != nil {
 		return fmt.Errorf("%s.%s: %w", table, column, err)
 	}
 	move := fmt.Sprintf(`UPDATE "%s" SET %s = CASE %s %s END WHERE %s >= %d`, table, column, column, strings.Join(cases, " "), column, parked)
-	if err := ctx.ExecuteSQL(move); err != nil {
+	err = ctx.ExecuteSQL(move)
+	if err != nil {
 		return fmt.Errorf("%s.%s: %w", table, column, err)
 	}
 	return nil

@@ -66,7 +66,8 @@ func (c *SIFTVerify) Run(record interface{}) (fcodeunits.Result, error) {
 	start := types.Now()
 
 	fail := func(msg string) (fcodeunits.Result, error) {
-		if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, msg, start); err != nil {
+		err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, msg, start)
+		if err != nil {
 			msg += " (" + err.Error() + ")"
 		}
 		return fcodeunits.Result{}, errors.New(msg)
@@ -103,7 +104,8 @@ func (c *SIFTVerify) Run(record interface{}) (fcodeunits.Result, error) {
 	if len(rebuilt) > 0 {
 		msg = ts.MessageWithParams("SIFT_VERIFY_REPAIRED", lang, fmt.Sprint(len(rebuilt)), strings.Join(rebuilt, ", "))
 	}
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", start); err != nil {
+	err = CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", start)
+	if err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 	return fcodeunits.Message(msg), nil

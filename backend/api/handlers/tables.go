@@ -809,9 +809,22 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
 	}
 
-	table, status, msg := h.insertOne(h.db, tableName, company, language, data)
+	// One transaction: what the triggers wrote (e.g. the number series' Last No. Used) is
+	// undone when the insert fails
+	tx, err := h.db.Begin()
+	if err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableName).Message(language)))
+	}
+	table, status, msg := h.insertOne(tx, tableName, company, language, data)
 	if msg != "" {
+		_ = tx.Rollback()
 		return c.Status(status).JSON(apitypes.NewErrorResponse(msg))
+	}
+	if err := tx.Commit(); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableName).Message(language)))
+	}
+	if setter, ok := table.(interface{ SetDB(database.Executor) }); ok {
+		setter.SetDB(h.db) // the transaction is over
 	}
 
 	// Initialize company-scoped tables when a new Company is created
@@ -869,11 +882,6 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	ftables.DropMaskedPlaceholders(table, data)
 	ftables.DropReadOnlyFields(table, data, false) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
-		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
-	}
-
-	// A changed table relation field must point to an existing record
-	if err := h.checkRelations(h.db, table, company, language, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 
@@ -999,11 +1007,6 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 		return nil, 400, err.Error()
 	}
 
-	// A changed table relation field must point to an existing record
-	if err := h.checkRelations(exec, table, company, language, data); err != nil {
-		return nil, 400, err.Error()
-	}
-
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
 	if err := validateChangedFields(table, tableName, data); err != nil {
 		return nil, 400, errorMessage(err, language)
@@ -1020,22 +1023,20 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 		}
 	}
 
-	// Check for empty primary key
-	if table.GetPrimaryKeyValue() == "" {
+	// Check for empty primary key — unless the table's OnInsert assigns it (auto_key: the next
+	// number of a series; the key's required check after OnInsert still applies)
+	if table.GetPrimaryKeyValue() == "" && !pages.GetTableMetadata().IsAutoKey(tableName) {
 		return nil, 400, apperrors.EmptyPrimaryKey(tableCaption).Message(language)
 	}
 
-	// Check if record already exists (all primary key fields, for composite keys too)
-	pkLookup, pkDisplay := fullPrimaryKey(table)
-	existingTable, _ := h.getTableOn(exec, tableName, company)
-	if existingTable.Get(pkLookup) {
-		return nil, 409, apperrors.DuplicateRecord(tableCaption, pkDisplay).Message(language)
-	}
-
-	// Insert record
+	// Insert record: a taken key (also one OnInsert assigned) is refused by Insert itself
 	if !table.Insert(true) {
-		// A failed OnInsert trigger is a business rule the user broke: show its message
+		// A failed OnInsert trigger is a business rule the user broke, a taken key "<Table>
+		// <key> already exists": show its message
 		if trigErr := table.TriggerError(); trigErr != nil {
+			if appErr, ok := trigErr.(*apperrors.AppError); ok && appErr.Code == apperrors.ErrDuplicateRecord {
+				return nil, 409, errorMessage(trigErr, language)
+			}
 			return nil, 400, errorMessage(trigErr, language)
 		}
 		return nil, 500, apperrors.InsertFailed(tableCaption).Message(language)
@@ -1324,10 +1325,20 @@ func validateChangedFields(table ftables.Table, tableName string, data map[strin
 		skip["password"] = true // virtual field, handled separately by the caller
 	}
 
+	// The type field of a conditional relation goes first (Bal. Account Type before Bal.
+	// Account No.): Validate checks a relation against the table of the record's type
 	ordered := make([]string, 0, len(data))
 	seen := make(map[string]bool, len(data))
+	for _, rel := range table.GetTableRelationFields() {
+		for _, cond := range rel.Conditions {
+			if _, ok := data[cond.Field]; ok && !seen[cond.Field] {
+				ordered = append(ordered, cond.Field)
+				seen[cond.Field] = true
+			}
+		}
+	}
 	for _, f := range table.GetFields() {
-		if _, ok := data[f.Name]; ok {
+		if _, ok := data[f.Name]; ok && !seen[f.Name] {
 			ordered = append(ordered, f.Name)
 			seen[f.Name] = true
 		}
@@ -1473,11 +1484,6 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		})
 	}
 
-	// Check table relation: verify the value exists in the related table
-	if err := h.checkRelation(h.db, table, company, language, req.Field, req.Value, table.ToMap()); err != nil {
-		return c.JSON(apitypes.APIResponse{Success: false, Error: err.Error()})
-	}
-
 	return c.JSON(apitypes.NewSuccessResponse(ftables.PublicMap(table)))
 }
 
@@ -1539,94 +1545,6 @@ func errorMessage(err error, language string) string {
 		return appErr.Message(language)
 	}
 	return err.Error()
-}
-
-// checkRelation returns an error when value (a non-empty key) does not exist in the
-// table related to field. Fields without a table relation always pass.
-// record holds the record's values (a conditional relation picks its table by them).
-func (h *TablesHandler) checkRelation(exec database.Executor, table ftables.Table, company, language, field string, value interface{}, record map[string]interface{}) error {
-	var valueStr string
-	switch v := value.(type) {
-	case string:
-		valueStr = v
-	case float64, int, int64:
-		if valueStr = fmt.Sprint(v); valueStr == "0" {
-			valueStr = "" // a blank integer relation
-		}
-	}
-	if valueStr == "" {
-		return nil
-	}
-	relInfo, hasRelation := table.GetTableRelationFields()[field]
-	if !hasRelation {
-		return nil
-	}
-	relInfo, hasRelation = relInfo.For(record)
-	if !hasRelation || relInfo.NoValidate {
-		return nil // no relation for this record, or the lookup only (validate: false)
-	}
-	relTable, err := h.getTableOn(exec, relInfo.Table, company)
-	if err != nil {
-		return nil // related table not registered: nothing to check against
-	}
-	found := false
-	if len(relInfo.Filters) > 0 {
-		// A relation to part of a composite key: the related record with this value among
-		// those matching the relation's filters (e.g. a level of the record's reminder terms)
-		relTable.SetFilter(relInfo.Field, valueStr)
-		for _, f := range relInfo.Filters {
-			relTable.SetFilter(f.Column, relationFilterValue(f, record))
-		}
-		found = relTable.Count() > 0
-	} else {
-		found = relTable.Get(valueStr)
-	}
-	if !found {
-		relCaption := i18n.GetInstance().TableCaption(relInfo.Table, language)
-		return fmt.Errorf("%s '%s' does not exist", relCaption, valueStr)
-	}
-	return nil
-}
-
-// relationFilterValue is the value a relation filter compares with: the record's field, or the
-// filter's constant
-func relationFilterValue(f ftables.RelationFilterInfo, record map[string]interface{}) string {
-	if f.Field == "" {
-		return f.Const
-	}
-	if v := record[f.Field]; v != nil {
-		return fmt.Sprint(v)
-	}
-	return ""
-}
-
-// checkRelations checks every table relation field in data whose value differs from the
-// record's current value (insert/modify). The page's dropdowns are not the only guard:
-// on-demand dropdowns (large related tables) accept a typed key and rely on this check.
-func (h *TablesHandler) checkRelations(exec database.Executor, table ftables.Table, company, language string, data map[string]interface{}) error {
-	current := table.ToMap()
-	record := make(map[string]interface{}, len(current))
-	for k, v := range current {
-		record[k] = v
-	}
-	for k, v := range data {
-		record[k] = v
-	}
-	for field, relInfo := range table.GetTableRelationFields() {
-		value, ok := data[field]
-		// Unchanged values pass — unless the type of a conditional relation changed
-		typeChanged := len(relInfo.Conditions) > 0 && fmt.Sprint(current[relInfo.Conditions[0].Field]) != fmt.Sprint(record[relInfo.Conditions[0].Field])
-		if !ok && typeChanged {
-			value, ok = current[field], true
-		}
-		if !ok || (fmt.Sprint(current[field]) == fmt.Sprint(value) && !typeChanged) {
-			continue
-		}
-		if err := h.checkRelation(exec, table, company, language, field, value, record); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // applyFlowFilters sets the FlowFilter fields (FieldClass FlowFilter, e.g. Date Filter)

@@ -198,11 +198,63 @@ func (t *CustomerPostingGroup) GetPostgresTableSchema() string {
 	return GetCustomerPostingGroupPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *CustomerPostingGroup) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *CustomerPostingGroup) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["code"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(CustomerPostingGroupTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *CustomerPostingGroup) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(CustomerPostingGroupTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *CustomerPostingGroup) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(CustomerPostingGroupTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *CustomerPostingGroup) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(CustomerPostingGroupTableName, key)
 }
 
 // ========================================
@@ -580,6 +632,47 @@ func (t *CustomerPostingGroup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *CustomerPostingGroup) XRec() *CustomerPostingGroup {
+	x := &CustomerPostingGroup{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["code"].(types.Code); ok {
+		x.Code = v
+	}
+	if v, ok := t.oldValues["receivables_account"].(types.Code); ok {
+		x.Receivables_account = v
+	}
+	if v, ok := t.oldValues["service_charge_acc"].(types.Code); ok {
+		x.Service_charge_acc = v
+	}
+	if v, ok := t.oldValues["payment_disc_acc"].(types.Code); ok {
+		x.Payment_disc_acc = v
+	}
+	if v, ok := t.oldValues["invoice_rounding_account"].(types.Code); ok {
+		x.Invoice_rounding_account = v
+	}
+	if v, ok := t.oldValues["additional_fee_account"].(types.Code); ok {
+		x.Additional_fee_account = v
+	}
+	if v, ok := t.oldValues["interest_account"].(types.Code); ok {
+		x.Interest_account = v
+	}
+	if v, ok := t.oldValues["curr_appln_rounding_account"].(types.Code); ok {
+		x.Curr_appln_rounding_account = v
+	}
+	return x
+}
+
+// NewCustomerPostingGroup returns a Customer_Posting_Group record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewCustomerPostingGroup(from tables.Source) *CustomerPostingGroup {
+	rec := &CustomerPostingGroup{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *CustomerPostingGroup) IsGlobal() bool {
 	return false
@@ -713,15 +806,22 @@ func (t *CustomerPostingGroup) Insert(runTrigger bool) bool {
 		t.Curr_appln_rounding_account,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, receivables_account, service_charge_acc, payment_disc_acc, invoice_rounding_account, additional_fee_account, interest_account, curr_appln_rounding_account) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, receivables_account, service_charge_acc, payment_disc_acc, invoice_rounding_account, additional_fee_account, interest_account, curr_appln_rounding_account) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert Customer_Posting_Group: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(CustomerPostingGroupTableName, key)
 		return false
 	}
 	return true
@@ -856,6 +956,17 @@ func (t *CustomerPostingGroup) Modify(runTrigger bool) bool {
 	} else {
 		values = append(values, t.Code)
 	}
+	// Renamed key fields that other tables refer to (Rename): carried over below
+	type renamedKey struct {
+		field    string
+		old, new interface{}
+	}
+	var renamed []renamedKey
+	if t.oldValues != nil {
+		if t.hasFieldChanged("code") {
+			renamed = append(renamed, renamedKey{"code", t.oldValues["code"], t.Code})
+		}
+	}
 
 	// Build and execute SQL
 	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE 1=1 AND code = ?`,
@@ -870,6 +981,17 @@ func (t *CustomerPostingGroup) Modify(runTrigger bool) bool {
 	if err != nil {
 		fmt.Printf("Error: Failed to modify Customer_Posting_Group: %v\n", err)
 		return false
+	}
+	// A temporary record's rename stays in the record: other tables are not changed
+	for _, r := range renamed {
+		if t.temp != nil {
+			break
+		}
+		if err := t.renameReferences(r.field, r.old, r.new); err != nil {
+			fmt.Printf("Error: Failed to rename references to Customer_Posting_Group: %v\n", err)
+			t.triggerErr = err
+			return false
+		}
 	}
 	// The stored record now matches the current values (including a renamed key)
 	if t.oldValues != nil {
@@ -933,6 +1055,46 @@ func (t *CustomerPostingGroup) hasFieldChanged(fieldName string) bool {
 // run a Modify (with its rename cascade) inside a transaction.
 func (t *CustomerPostingGroup) SetDB(db database.Executor) {
 	t.db = db
+}
+
+// renameReferences carries a renamed key over to every field of another table that refers
+// to it (Rename). References from company tables are updated in this company — in
+// every company when this table is global. Runs on the record's executor, so inside the
+// caller's transaction.
+func (t *CustomerPostingGroup) renameReferences(field string, oldValue, newValue interface{}) error {
+	type reference struct {
+		table      string
+		global     bool
+		column     string
+		condColumn string // a conditional relation: only rows whose condColumn = condValue
+		condValue  int
+	}
+	references := map[string][]reference{
+		"code": {{"Customer", false, "customer_posting_group", "", 0}},
+	}
+	companies := []string{t.company}
+	for _, ref := range references[field] {
+		tables := []string{ref.table}
+		if !ref.global {
+			tables = tables[:0]
+			for _, c := range companies {
+				tables = append(tables, c+"$"+ref.table)
+			}
+		}
+		for _, tbl := range tables {
+			stmt := fmt.Sprintf(`UPDATE "%s" SET %s = ? WHERE %s = ?`, tbl, ref.column, ref.column)
+			args := []interface{}{newValue, oldValue}
+			if ref.condColumn != "" {
+				stmt += fmt.Sprintf(" AND %s = ?", ref.condColumn)
+				args = append(args, ref.condValue)
+			}
+			query := t.convertPlaceholders(stmt, len(args))
+			if _, err := t.db.Exec(query, args...); err != nil {
+				return fmt.Errorf("%s.%s: %w", tbl, ref.column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete removes the record from the database
@@ -1935,6 +2097,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 		} else {
 			return fmt.Errorf("invalid type for field receivables_account")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "receivables_account"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerPostingGroupOnValidate_Receivables_account); ok {
@@ -1952,6 +2118,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 			t.Service_charge_acc = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field service_charge_acc")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "service_charge_acc"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -1971,6 +2141,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 		} else {
 			return fmt.Errorf("invalid type for field payment_disc_acc")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "payment_disc_acc"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerPostingGroupOnValidate_Payment_disc_acc); ok {
@@ -1988,6 +2162,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 			t.Invoice_rounding_account = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field invoice_rounding_account")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "invoice_rounding_account"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -2007,6 +2185,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 		} else {
 			return fmt.Errorf("invalid type for field additional_fee_account")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "additional_fee_account"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerPostingGroupOnValidate_Additional_fee_account); ok {
@@ -2025,6 +2207,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 		} else {
 			return fmt.Errorf("invalid type for field interest_account")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "interest_account"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(CustomerPostingGroupOnValidate_Interest_account); ok {
@@ -2042,6 +2228,10 @@ func (t *CustomerPostingGroup) ValidateField(fieldName string, value interface{}
 			t.Curr_appln_rounding_account = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field curr_appln_rounding_account")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "curr_appln_rounding_account"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

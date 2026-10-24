@@ -14,7 +14,8 @@ func newGLDB(t *testing.T) database.Executor {
 	db := newTestDB(t)
 	for _, tbl := range []interface {
 		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.GLAccount{}, &gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.GeneralLedgerSetup{}} {
+	}{&gtables.GLAccount{}, &gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.GeneralLedgerSetup{},
+		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}} {
 		if err := tbl.CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}
@@ -61,6 +62,11 @@ func TestGLAccountTriggers(t *testing.T) {
 	if err := a.Validate("totaling", types.NewText("1000..1999")); err != nil {
 		t.Errorf("totaling on an End-Total: %v", err)
 	}
+	// stored as End-Total (xRec), then back to Posting: Direct Posting on again
+	a.No = "9999"
+	if !a.Insert(false) || !a.Get(types.Code("9999")) {
+		t.Fatal("store the account")
+	}
 	if err := a.Validate("account_type", at.Posting); err != nil || !a.Direct_posting {
 		t.Errorf("back to Posting: direct posting %v %v", a.Direct_posting, err)
 	}
@@ -77,7 +83,10 @@ func TestGLAccountTriggers(t *testing.T) {
 	prod.InitWithDBType(db, "c1", database.DBTypeSQLite)
 	prod.InitRecord()
 	prod.Code, prod.Def_tax_prod_posting_group, prod.Auto_insert_default = "RETAIL", "STD", false
-	if !bus.Insert(false) || !prod.Insert(false) {
+	var taxBus gtables.TaxBusinessPostingGroup
+	taxBus.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	taxBus.Code = "DOM"
+	if !bus.Insert(false) || !prod.Insert(false) || !taxBus.Insert(false) {
 		t.Fatal("insert posting groups")
 	}
 	if err := a.Validate("gen_bus_posting_group", types.NewCode("DOMESTIC")); err != nil || a.Tax_bus_posting_group != "DOM" {

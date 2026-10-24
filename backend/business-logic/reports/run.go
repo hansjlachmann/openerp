@@ -89,7 +89,8 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		run.options[name] = value
 	}
 	if opts.Record != nil {
-		if source, ok := opts.Record.(interface{ FilterExpressions() []ftables.FieldFilter }); ok {
+		source, ok := opts.Record.(interface{ FilterExpressions() []ftables.FieldFilter })
+		if ok {
 			for _, item := range allDataItems(def.DataItems) {
 				if sameTable(item.Table, opts.Record) {
 					run.filters[item.Name] = append(run.filters[item.Name], source.FilterExpressions()...)
@@ -106,12 +107,14 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 
 	err := func() error {
 		if def.OnPreReport != nil {
-			if err := def.OnPreReport(run); err != nil {
+			err := def.OnPreReport(run)
+			if err != nil {
 				return err
 			}
 		}
 		for _, item := range def.DataItems {
-			if err := runDataItem(run, item, nil); err != nil {
+			err := runDataItem(run, item, nil)
+			if err != nil {
 				return err
 			}
 		}
@@ -149,11 +152,13 @@ func requestPage(run *Run, def *Definition) bool {
 			continue
 		}
 		requestItem := fcodeunits.RequestDataItem{Name: item.Name, Caption: rec.GetTableName(), Indent: entry.indent}
-		if c, ok := rec.(interface{ GetCaption(string) string }); ok {
+		c, ok := rec.(interface{ GetCaption(string) string })
+		if ok {
 			requestItem.Caption = c.GetCaption(language)
 		}
 		caption := func(field string) string {
-			if c, ok := rec.(interface{ GetFieldCaption(string, string) string }); ok {
+			c, ok := rec.(interface{ GetFieldCaption(string, string) string })
+			if ok {
 				return c.GetFieldCaption(field, language)
 			}
 			return field
@@ -188,12 +193,17 @@ func requestPage(run *Run, def *Definition) bool {
 		return false
 	}
 	for key, value := range values {
-		if name, ok := strings.CutPrefix(key, "option:"); ok {
+		name, ok := strings.CutPrefix(key, "option:")
+		if ok {
 			run.options[name] = value
-		} else if name, ok := strings.CutPrefix(key, "filters:"); ok {
-			var filters []ftables.FieldFilter
-			if err := json.Unmarshal([]byte(value), &filters); err == nil {
-				run.filters[name] = filters
+		} else {
+			name, ok := strings.CutPrefix(key, "filters:")
+			if ok {
+				var filters []ftables.FieldFilter
+				err := json.Unmarshal([]byte(value), &filters)
+				if err == nil {
+					run.filters[name] = filters
+				}
 			}
 		}
 	}
@@ -279,7 +289,8 @@ func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
 	}
 
 	if item.OnPreDataItem != nil {
-		if err := item.OnPreDataItem(rec, run); err != nil {
+		err := item.OnPreDataItem(rec, run)
+		if err != nil {
 			if errors.Is(err, errBreak) {
 				return nil
 			}
@@ -308,14 +319,16 @@ func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
 			}
 		}
 		for _, child := range item.DataItems {
-			if err := runDataItem(run, child, rec); err != nil {
+			err := runDataItem(run, child, rec)
+			if err != nil {
 				return err
 			}
 		}
 	}
 
 	if item.OnPostDataItem != nil {
-		if err := item.OnPostDataItem(rec, run); err != nil && !errors.Is(err, errBreak) {
+		err := item.OnPostDataItem(rec, run)
+		if err != nil && !errors.Is(err, errBreak) {
 			return err
 		}
 	}

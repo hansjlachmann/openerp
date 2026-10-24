@@ -22,7 +22,7 @@ func init() { gtables.RegisterCompanyLogic(companyLogic{}) }
 // API's modifyInTransaction). The generated Modify then carries the name over to User
 // Member (table relation).
 func (companyLogic) OnRename(rec *gtables.Company) error {
-	oldName := fmt.Sprint(rec.OldValue("name"))
+	oldName := rec.XRec().Name.String()
 	newName, err := company.NormalizeName(rec.Name.String())
 	if err != nil {
 		return err
@@ -38,7 +38,8 @@ func (companyLogic) OnRename(rec *gtables.Company) error {
 		return apperrors.CompanyAlreadyExists(newName)
 	}
 
-	if err := company.RenameObjects(rec.GetDB(), rec.GetDBType(), oldName, newName); err != nil {
+	err = company.RenameObjects(rec.GetDB(), rec.GetDBType(), oldName, newName)
+	if err != nil {
 		return err
 	}
 	return syncCompanyKeys(rec.GetDB(), rec.GetDBType(), newName)
@@ -73,7 +74,8 @@ func syncCompanyKeys(db database.Executor, dbType database.DBType, companyName s
 			continue
 		}
 		done[table.GetTableName()] = true
-		if err := syncer.SyncKeys(db, companyName, dbType); err != nil {
+		err := syncer.SyncKeys(db, companyName, dbType)
+		if err != nil {
 			return fmt.Errorf("%s: %w", table.GetTableName(), err)
 		}
 	}

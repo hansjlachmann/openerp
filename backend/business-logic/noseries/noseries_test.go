@@ -11,6 +11,7 @@ import (
 	_ "github.com/hansjlachmann/openerp/backend/business-logic/tables" // the No. Series Line triggers
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -77,7 +78,7 @@ func TestGetNextNo(t *testing.T) {
 	db := newDB(t)
 	addSeries(t, db, "CUST", true, true, false)
 	addLine(t, db, "CUST", 10000, types.Date{}, "C00010", "C00030", "C00020", 10)
-	m := noseries.New(db, company, database.DBTypeSQLite)
+	m := noseries.New(ftables.DBSource(db, company, database.DBTypeSQLite))
 	var warned error
 	m.Warning = func(err error) { warned = err }
 
@@ -111,7 +112,7 @@ func TestGetNextNoStartingDateAndDateOrder(t *testing.T) {
 	addSeries(t, db, "INV", true, false, true)
 	addLine(t, db, "INV", 10000, day(1), "I1-001", "", "", 0)
 	addLine(t, db, "INV", 20000, day(20), "I2-001", "", "", 0)
-	m := noseries.New(db, company, database.DBTypeSQLite)
+	m := noseries.New(ftables.DBSource(db, company, database.DBTypeSQLite))
 	if got, _ := m.GetNextNo("INV", day(10), true); got != "I1-001" {
 		t.Errorf("before the 2nd line = %q", got)
 	}
@@ -135,7 +136,7 @@ func TestGetNextNoWithoutModify(t *testing.T) {
 	db := newDB(t)
 	addSeries(t, db, "S", true, false, false)
 	addLine(t, db, "S", 10000, types.Date{}, "100", "", "", 0)
-	m := noseries.New(db, company, database.DBTypeSQLite)
+	m := noseries.New(ftables.DBSource(db, company, database.DBTypeSQLite))
 	if no := m.TryGetNextNo("S", day(1)); no != "100" {
 		t.Errorf("TryGetNextNo = %q", no)
 	}
@@ -170,7 +171,7 @@ func TestInitSeriesAndTestManual(t *testing.T) {
 	if !rel.Insert(true) {
 		t.Fatal("insert relationship")
 	}
-	m := noseries.New(db, company, database.DBTypeSQLite)
+	m := noseries.New(ftables.DBSource(db, company, database.DBTypeSQLite))
 
 	var no, series types.Code
 	if err := m.InitSeries("CUST", "", day(1), &no, &series); err != nil || no != "C001" || series != "CUST" {

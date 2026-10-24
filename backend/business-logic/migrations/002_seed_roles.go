@@ -29,17 +29,20 @@ func (m *Migration002SeedRoles) Description() string {
 
 func (m *Migration002SeedRoles) Up(ctx *fmigrations.Context) error {
 	// Ensure tables exist (migrations run before table sync)
-	if err := m.ensureTables(ctx); err != nil {
+	err := m.ensureTables(ctx)
+	if err != nil {
 		return err
 	}
 
 	// Insert SUPER role (bypasses all permission checks via IsSuper flag)
-	if err := m.insertRole(ctx, "SUPER", "Full access - bypasses all permission checks"); err != nil {
+	err = m.insertRole(ctx, "SUPER", "Full access - bypasses all permission checks")
+	if err != nil {
 		return fmt.Errorf("failed to insert SUPER role: %w", err)
 	}
 
 	// Insert READER role (read-only access to all tables)
-	if err := m.insertRole(ctx, "READER", "Read-only access to all tables"); err != nil {
+	err = m.insertRole(ctx, "READER", "Read-only access to all tables")
+	if err != nil {
 		return fmt.Errorf("failed to insert READER role: %w", err)
 	}
 
@@ -60,7 +63,8 @@ func (m *Migration002SeedRoles) Up(ctx *fmigrations.Context) error {
 	}
 
 	for _, table := range readerTables {
-		if err := m.insertPermission(ctx, "READER", table, true, false, false, false); err != nil {
+		err := m.insertPermission(ctx, "READER", table, true, false, false, false)
+		if err != nil {
 			return fmt.Errorf("failed to insert READER permission for %s: %w", table, err)
 		}
 	}
@@ -91,14 +95,14 @@ func (m *Migration002SeedRoles) insertPermission(ctx *fmigrations.Context, roleI
 	return ctx.ExecuteSQL(query, roleID, tableName, canRead, canInsert, canModify, canDelete)
 }
 
-
 func (m *Migration002SeedRoles) ensureTables(ctx *fmigrations.Context) error {
 	userRoleSQL := `CREATE TABLE IF NOT EXISTS "User_Role" (
 		code VARCHAR(20) NOT NULL DEFAULT '',
 		description VARCHAR(50) NOT NULL DEFAULT '',
 		PRIMARY KEY (code)
 	)`
-	if err := ctx.ExecuteSQL(userRoleSQL); err != nil {
+	err := ctx.ExecuteSQL(userRoleSQL)
+	if err != nil {
 		return fmt.Errorf("failed to ensure User_Role table: %w", err)
 	}
 
@@ -108,7 +112,8 @@ func (m *Migration002SeedRoles) ensureTables(ctx *fmigrations.Context) error {
 		company VARCHAR(100) NOT NULL DEFAULT '',
 		PRIMARY KEY (user_id, role_id, company)
 	)`
-	if err := ctx.ExecuteSQL(userMemberSQL); err != nil {
+	err = ctx.ExecuteSQL(userMemberSQL)
+	if err != nil {
 		return fmt.Errorf("failed to ensure User_Member table: %w", err)
 	}
 
@@ -121,7 +126,8 @@ func (m *Migration002SeedRoles) ensureTables(ctx *fmigrations.Context) error {
 		can_delete BOOLEAN NOT NULL DEFAULT FALSE,
 		PRIMARY KEY (role_id, table_name)
 	)`
-	if err := ctx.ExecuteSQL(permissionSQL); err != nil {
+	err = ctx.ExecuteSQL(permissionSQL)
+	if err != nil {
 		return fmt.Errorf("failed to ensure Permission table: %w", err)
 	}
 

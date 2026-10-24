@@ -32,7 +32,8 @@ func (s *Scheduler) ensureLockTable() error {
 			);
 			INSERT OR IGNORE INTO "_scheduler_lock" (id) VALUES (1);`
 	}
-	if _, err := s.db.Exec(ddl); err != nil {
+	_, err := s.db.Exec(ddl)
+	if err != nil {
 		return fmt.Errorf("create _scheduler_lock: %w", err)
 	}
 	return nil

@@ -216,11 +216,63 @@ func (t *NoSeriesLine) GetPostgresTableSchema() string {
 	return GetNoSeriesLinePostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *NoSeriesLine) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *NoSeriesLine) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["series_code"]), fmt.Sprint(m["line_no"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(NoSeriesLineTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *NoSeriesLine) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(NoSeriesLineTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *NoSeriesLine) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(NoSeriesLineTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *NoSeriesLine) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(NoSeriesLineTableName, key)
 }
 
 // ========================================
@@ -596,6 +648,53 @@ func (t *NoSeriesLine) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *NoSeriesLine) XRec() *NoSeriesLine {
+	x := &NoSeriesLine{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["series_code"].(types.Code); ok {
+		x.Series_code = v
+	}
+	if v, ok := t.oldValues["line_no"].(int); ok {
+		x.Line_no = v
+	}
+	if v, ok := t.oldValues["starting_date"].(types.Date); ok {
+		x.Starting_date = v
+	}
+	if v, ok := t.oldValues["starting_no"].(types.Code); ok {
+		x.Starting_no = v
+	}
+	if v, ok := t.oldValues["ending_no"].(types.Code); ok {
+		x.Ending_no = v
+	}
+	if v, ok := t.oldValues["warning_no"].(types.Code); ok {
+		x.Warning_no = v
+	}
+	if v, ok := t.oldValues["increment_by_no"].(int); ok {
+		x.Increment_by_no = v
+	}
+	if v, ok := t.oldValues["last_no_used"].(types.Code); ok {
+		x.Last_no_used = v
+	}
+	if v, ok := t.oldValues["open"].(bool); ok {
+		x.Open = v
+	}
+	if v, ok := t.oldValues["last_date_used"].(types.Date); ok {
+		x.Last_date_used = v
+	}
+	return x
+}
+
+// NewNoSeriesLine returns a No_Series_Line record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewNoSeriesLine(from tables.Source) *NoSeriesLine {
+	rec := &NoSeriesLine{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *NoSeriesLine) IsGlobal() bool {
 	return false
@@ -747,15 +846,22 @@ func (t *NoSeriesLine) Insert(runTrigger bool) bool {
 		t.Last_date_used,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (series_code, line_no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert No_Series_Line: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(NoSeriesLineTableName, key)
 		return false
 	}
 	return true
@@ -1996,6 +2102,10 @@ func (t *NoSeriesLine) ValidateField(fieldName string, value interface{}) error 
 			t.Series_code = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field series_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "series_code"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {

@@ -30,10 +30,9 @@ func (currencyLogic) OnModify(rec *gtables.Currency) error {
 
 // OnDelete deletes the currency's exchange rates
 func (currencyLogic) OnDelete(rec *gtables.Currency) error {
-	var rate gtables.CurrencyExchangeRate
-	rate.InitWithDBType(rec.GetDB(), rec.GetCompany(), rec.GetDBType())
-	rate.SetRange("currency_code", rec.Code)
-	rate.DeleteAll()
+	currExchRate := gtables.NewCurrencyExchangeRate(rec)
+	currExchRate.SetRange("currency_code", rec.Code)
+	currExchRate.DeleteAll()
 	return nil
 }
 
@@ -77,14 +76,14 @@ func (currencyLogic) OnValidate_Unit_amount_decimal_places(rec *gtables.Currency
 // General Ledger Setup's, or 0.01 / 0.00001 when the setup has none (a currency record used
 // for the local currency)
 func InitRoundingPrecision(currency *gtables.Currency) {
-	setup := GetGeneralLedgerSetup(currency)
-	if !setup.Amount_rounding_precision.IsZero() {
-		currency.Amount_rounding_precision = setup.Amount_rounding_precision
+	glSetup := gtables.GetGeneralLedgerSetup(currency)
+	if !glSetup.Amount_rounding_precision.IsZero() {
+		currency.Amount_rounding_precision = glSetup.Amount_rounding_precision
 	} else {
 		currency.Amount_rounding_precision = types.MustDecimal("0.01")
 	}
-	if !setup.Unit_amount_rounding_precision.IsZero() {
-		currency.Unit_amount_rounding_precision = setup.Unit_amount_rounding_precision
+	if !glSetup.Unit_amount_rounding_precision.IsZero() {
+		currency.Unit_amount_rounding_precision = glSetup.Unit_amount_rounding_precision
 	} else {
 		currency.Unit_amount_rounding_precision = types.MustDecimal("0.00001")
 	}

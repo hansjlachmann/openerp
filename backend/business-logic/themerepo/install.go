@@ -62,10 +62,12 @@ type Installer struct {
 // separated) restricts the GitHub owners themes may come from.
 func NewInstaller(db *sql.DB, dbType database.DBType) *Installer {
 	in := &Installer{DB: db, DBType: dbType, Fetcher: themes.NewFetcher()}
-	if v := strings.TrimSpace(os.Getenv("THEME_ALLOWED_OWNERS")); v != "" {
+	v := strings.TrimSpace(os.Getenv("THEME_ALLOWED_OWNERS"))
+	if v != "" {
 		in.AllowedOwners = map[string]bool{}
 		for _, o := range strings.Split(v, ",") {
-			if o = strings.ToLower(strings.TrimSpace(o)); o != "" {
+			o = strings.ToLower(strings.TrimSpace(o))
+			if o != "" {
 				in.AllowedOwners[o] = true
 			}
 		}
@@ -99,7 +101,8 @@ func (in *Installer) Install(ctx context.Context, repoURL, userID string) (Resul
 		if !rec.Get(code) {
 			return Result{}, ErrNotInstalled
 		}
-		if err := tables.AddUserTheme(in.DB, in.DBType, userID, code); err != nil {
+		err := tables.AddUserTheme(in.DB, in.DBType, userID, code)
+		if err != nil {
 			return Result{}, err
 		}
 		return Result{Code: code, Name: rec.Name.String(), Mode: modeName(rec.Mode), Commit: rec.Commit_sha.String(), Unchanged: true}, nil
@@ -113,7 +116,8 @@ func (in *Installer) Install(ctx context.Context, repoURL, userID string) (Resul
 // Refresh downloads the theme again from its repository (and branch); nothing changes when
 // the repository has no new commit.
 func (in *Installer) Refresh(ctx context.Context, code, userID string) (Result, error) {
-	if _, ok := themes.Builtin(code); ok {
+	_, ok := themes.Builtin(code)
+	if ok {
 		return Result{}, ErrBuiltin
 	}
 	var rec gtables.Theme
@@ -159,7 +163,8 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 	var assets []asset
 	var thumbSource *themes.Image
 	if d.Preview != nil {
-		if img, err := themes.ProcessImage(d.Preview, themes.PreviewWidth); err == nil {
+		img, err := themes.ProcessImage(d.Preview, themes.PreviewWidth)
+		if err == nil {
 			assets = append(assets, asset{"preview", img})
 			thumbSource = &img
 		}
@@ -172,7 +177,8 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 		}
 		n++
 		assets = append(assets, asset{fmt.Sprintf("bg-%d", n), img})
-		if tb, err := themes.Thumbnail(img); err == nil {
+		tb, err := themes.Thumbnail(img)
+		if err == nil {
 			assets = append(assets, asset{fmt.Sprintf("tb-%d", n), tb}) // for the wallpaper picker
 		}
 		if thumbSource == nil {
@@ -180,7 +186,8 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 		}
 	}
 	if thumbSource != nil {
-		if thumb, err := themes.Thumbnail(*thumbSource); err == nil {
+		thumb, err := themes.Thumbnail(*thumbSource)
+		if err == nil {
 			assets = append(assets, asset{"thumb", thumb})
 		}
 	}
@@ -189,11 +196,13 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 	if err != nil {
 		return Result{}, err
 	}
-	if err := in.save(tx, repo, code, name, userID, d.CommitSHA, string(tokensJSON), tokens.Mode, n, assets); err != nil {
+	err = in.save(tx, repo, code, name, userID, d.CommitSHA, string(tokensJSON), tokens.Mode, n, assets)
+	if err != nil {
 		_ = tx.Rollback()
 		return Result{}, err
 	}
-	if err := tx.Commit(); err != nil {
+	err = tx.Commit()
+	if err != nil {
 		return Result{}, err
 	}
 	return Result{Code: code, Name: name, Mode: tokens.Mode, Commit: d.CommitSHA}, nil
@@ -233,13 +242,15 @@ func (in *Installer) save(tx *sql.Tx, repo themes.Repo, code, name, userID, comm
 		ok = rec.Insert(true)
 	}
 	if !ok {
-		if err := rec.TriggerError(); err != nil {
+		err := rec.TriggerError()
+		if err != nil {
 			return err
 		}
 		return fmt.Errorf("saving theme %s failed", code)
 	}
 
-	if err := tables.AddUserTheme(tx, in.DBType, userID, code); err != nil {
+	err := tables.AddUserTheme(tx, in.DBType, userID, code)
+	if err != nil {
 		return err
 	}
 
@@ -272,21 +283,17 @@ func LinkInstallers(db *sql.DB, dbType database.DBType) (int, error) {
 	rec.InitWithDBType(db, "", dbType)
 	type orphan struct{ code, user string }
 	var orphans []orphan
-	if rec.FindSet() {
-		for {
-			var links gtables.UserTheme
-			links.InitWithDBType(db, "", dbType)
-			links.SetRange("theme_code", rec.Code.String())
-			if links.Count() == 0 && rec.Installed_by.String() != "" {
-				orphans = append(orphans, orphan{rec.Code.String(), rec.Installed_by.String()})
-			}
-			if !rec.Next() {
-				break
-			}
+	for found := rec.FindSet(); found; found = rec.Next() {
+		var links gtables.UserTheme
+		links.InitWithDBType(db, "", dbType)
+		links.SetRange("theme_code", rec.Code.String())
+		if links.Count() == 0 && rec.Installed_by.String() != "" {
+			orphans = append(orphans, orphan{rec.Code.String(), rec.Installed_by.String()})
 		}
 	}
 	for _, o := range orphans {
-		if err := tables.AddUserTheme(db, dbType, o.user, o.code); err != nil {
+		err := tables.AddUserTheme(db, dbType, o.user, o.code)
+		if err != nil {
 			return 0, err
 		}
 	}
@@ -296,7 +303,8 @@ func LinkInstallers(db *sql.DB, dbType database.DBType) (int, error) {
 // Remove takes an installed theme off the user's themes; the files are deleted when no user
 // has the theme any more. removed is false when the user did not have it.
 func (in *Installer) Remove(userID, code string) (removed bool, err error) {
-	if _, ok := themes.Builtin(code); ok {
+	_, ok := themes.Builtin(code)
+	if ok {
 		return false, ErrBuiltin
 	}
 	tx, err := in.DB.Begin()
@@ -327,7 +335,8 @@ func (in *Installer) Remove(userID, code string) (removed bool, err error) {
 			return false, fmt.Errorf("deleting theme %s failed", code)
 		}
 	}
-	if err = tx.Commit(); err != nil {
+	err = tx.Commit()
+	if err != nil {
 		return false, err
 	}
 	return true, nil
@@ -345,7 +354,8 @@ func (in *Installer) codeFor(repo themes.Repo) (string, bool, error) {
 	}
 	owner := strings.Trim(codeChars.ReplaceAllString(strings.ToUpper(repo.Owner), "-"), "-")
 	for _, code := range []string{base, clip(base+"-"+owner, 50)} {
-		if _, builtin := themes.Builtin(code); builtin {
+		_, builtin := themes.Builtin(code)
+		if builtin {
 			continue
 		}
 		var rec gtables.Theme

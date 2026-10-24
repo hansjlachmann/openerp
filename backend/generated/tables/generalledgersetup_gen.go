@@ -62,7 +62,7 @@ type GeneralLedgerSetupLocal_address_format int
 
 // String returns the text representation of GeneralLedgerSetupLocal_address_format
 func (o GeneralLedgerSetupLocal_address_format) String() string {
-	options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+	options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 	if o >= 0 && int(o) < len(options) {
 		return options[o]
 	}
@@ -226,15 +226,15 @@ const GeneralLedgerSetupTableName = "General_Ledger_Setup"
 
 // GeneralLedgerSetup_Local_address_format provides named constants for the local_address_format option field (FieldName.OptionValue syntax)
 var GeneralLedgerSetup_Local_address_format = struct {
-	ZIPCodeCity          GeneralLedgerSetupLocal_address_format
-	CityZIPCode          GeneralLedgerSetupLocal_address_format
-	CityStateZIPCode     GeneralLedgerSetupLocal_address_format
-	BlankLineZIPCodeCity GeneralLedgerSetupLocal_address_format
+	PostCodeCity          GeneralLedgerSetupLocal_address_format
+	CityPostCode          GeneralLedgerSetupLocal_address_format
+	CityStatePostCode     GeneralLedgerSetupLocal_address_format
+	BlankLinePostCodeCity GeneralLedgerSetupLocal_address_format
 }{
-	ZIPCodeCity:          0,
-	CityZIPCode:          1,
-	CityStateZIPCode:     2,
-	BlankLineZIPCodeCity: 3,
+	PostCodeCity:          0,
+	CityPostCode:          1,
+	CityStatePostCode:     2,
+	BlankLinePostCodeCity: 3,
 }
 
 // GeneralLedgerSetup_Inv_rounding_type_lcy provides named constants for the inv_rounding_type_lcy option field (FieldName.OptionValue syntax)
@@ -482,11 +482,63 @@ func (t *GeneralLedgerSetup) GetPostgresTableSchema() string {
 	return GetGeneralLedgerSetupPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *GeneralLedgerSetup) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *GeneralLedgerSetup) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["primary_key"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(GeneralLedgerSetupTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *GeneralLedgerSetup) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(GeneralLedgerSetupTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *GeneralLedgerSetup) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(GeneralLedgerSetupTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *GeneralLedgerSetup) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(GeneralLedgerSetupTableName, key)
 }
 
 // ========================================
@@ -775,6 +827,18 @@ func (t *GeneralLedgerSetup) IsSetupTable() bool {
 	return true
 }
 
+// GetGeneralLedgerSetup reads the single General_Ledger_Setup record (classic SETUP.GET) in the database
+// and company of another record (from, e.g. the record a trigger works on) — a blank one, with
+// the definition's defaults, when it does not exist yet
+func GetGeneralLedgerSetup(from tables.Source) *GeneralLedgerSetup {
+	setup := &GeneralLedgerSetup{}
+	setup.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	if !setup.Get("") {
+		setup.InitRecord()
+	}
+	return setup
+}
+
 // GetGeneralLedgerSetupTableSchema returns the SQLite schema
 func GetGeneralLedgerSetupTableSchema() string {
 	return `
@@ -997,6 +1061,95 @@ func (t *GeneralLedgerSetup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *GeneralLedgerSetup) XRec() *GeneralLedgerSetup {
+	x := &GeneralLedgerSetup{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["primary_key"].(types.Code); ok {
+		x.Primary_key = v
+	}
+	if v, ok := t.oldValues["allow_posting_from"].(types.Date); ok {
+		x.Allow_posting_from = v
+	}
+	if v, ok := t.oldValues["allow_posting_to"].(types.Date); ok {
+		x.Allow_posting_to = v
+	}
+	if v, ok := t.oldValues["register_time"].(bool); ok {
+		x.Register_time = v
+	}
+	if v, ok := t.oldValues["pmt_disc_excl_tax"].(bool); ok {
+		x.Pmt_disc_excl_tax = v
+	}
+	if v, ok := t.oldValues["unrealized_tax"].(bool); ok {
+		x.Unrealized_tax = v
+	}
+	if v, ok := t.oldValues["adjust_for_payment_disc"].(bool); ok {
+		x.Adjust_for_payment_disc = v
+	}
+	if v, ok := t.oldValues["mark_cr_memos_as_corrections"].(bool); ok {
+		x.Mark_cr_memos_as_corrections = v
+	}
+	if v, ok := t.oldValues["local_address_format"].(GeneralLedgerSetupLocal_address_format); ok {
+		x.Local_address_format = v
+	}
+	if v, ok := t.oldValues["inv_rounding_precision_lcy"].(types.Decimal); ok {
+		x.Inv_rounding_precision_lcy = v
+	}
+	if v, ok := t.oldValues["inv_rounding_type_lcy"].(GeneralLedgerSetupInv_rounding_type_lcy); ok {
+		x.Inv_rounding_type_lcy = v
+	}
+	if v, ok := t.oldValues["local_cont_addr_format"].(GeneralLedgerSetupLocal_cont_addr_format); ok {
+		x.Local_cont_addr_format = v
+	}
+	if v, ok := t.oldValues["recalculate_sales_tax"].(bool); ok {
+		x.Recalculate_sales_tax = v
+	}
+	if v, ok := t.oldValues["summarize_gl_entries"].(bool); ok {
+		x.Summarize_gl_entries = v
+	}
+	if v, ok := t.oldValues["amount_decimal_places"].(types.Text); ok {
+		x.Amount_decimal_places = v
+	}
+	if v, ok := t.oldValues["unit_amount_decimal_places"].(types.Text); ok {
+		x.Unit_amount_decimal_places = v
+	}
+	if v, ok := t.oldValues["additional_reporting_currency"].(types.Code); ok {
+		x.Additional_reporting_currency = v
+	}
+	if v, ok := t.oldValues["vat_tolerance_percent"].(types.Decimal); ok {
+		x.Vat_tolerance_percent = v
+	}
+	if v, ok := t.oldValues["emu_currency"].(bool); ok {
+		x.Emu_currency = v
+	}
+	if v, ok := t.oldValues["lcy_code"].(types.Code); ok {
+		x.Lcy_code = v
+	}
+	if v, ok := t.oldValues["tax_exchange_rate_adjustment"].(GeneralLedgerSetupTax_exchange_rate_adjustment); ok {
+		x.Tax_exchange_rate_adjustment = v
+	}
+	if v, ok := t.oldValues["amount_rounding_precision"].(types.Decimal); ok {
+		x.Amount_rounding_precision = v
+	}
+	if v, ok := t.oldValues["unit_amount_rounding_precision"].(types.Decimal); ok {
+		x.Unit_amount_rounding_precision = v
+	}
+	if v, ok := t.oldValues["appln_rounding_precision"].(types.Decimal); ok {
+		x.Appln_rounding_precision = v
+	}
+	return x
+}
+
+// NewGeneralLedgerSetup returns a General_Ledger_Setup record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewGeneralLedgerSetup(from tables.Source) *GeneralLedgerSetup {
+	rec := &GeneralLedgerSetup{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *GeneralLedgerSetup) IsGlobal() bool {
 	return false
@@ -1194,15 +1347,22 @@ func (t *GeneralLedgerSetup) Insert(runTrigger bool) bool {
 		t.Appln_rounding_precision,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert General_Ledger_Setup: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(GeneralLedgerSetupTableName, key)
 		return false
 	}
 	return true
@@ -3206,7 +3366,7 @@ func (t *GeneralLedgerSetup) ValidateField(fieldName string, value interface{}) 
 				// Empty string defaults to first option (behavior)
 				t.Local_address_format = 0
 			} else {
-				options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+				options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 				found := false
 				for i, opt := range options {
 					if opt == v {
@@ -3439,6 +3599,10 @@ func (t *GeneralLedgerSetup) ValidateField(fieldName string, value interface{}) 
 			t.Additional_reporting_currency = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field additional_reporting_currency")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "additional_reporting_currency"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -4543,7 +4707,7 @@ func (t *GeneralLedgerSetup) FromMap(data map[string]interface{}) {
 			t.Local_address_format = GeneralLedgerSetupLocal_address_format(val)
 		case string:
 			// Lookup string value in options
-			options := []string{"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"}
+			options := []string{"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"}
 			for i, opt := range options {
 				if opt == val {
 					t.Local_address_format = GeneralLedgerSetupLocal_address_format(i)
@@ -5022,7 +5186,7 @@ func (t *GeneralLedgerSetup) GetFlowFields() []string {
 // GetOptionFields returns Option field names mapped to their option values
 func (t *GeneralLedgerSetup) GetOptionFields() map[string][]string {
 	return map[string][]string{
-		"local_address_format":         {"ZIP Code+City", "City+ZIP Code", "City+State+ZIP Code", "Blank Line+ZIP Code+City"},
+		"local_address_format":         {"Post Code+City", "City+Post Code", "City+State+Post Code", "Blank Line+Post Code+City"},
 		"inv_rounding_type_lcy":        {"Nearest", "Up", "Down"},
 		"local_cont_addr_format":       {"First", "After Company Name", "Last"},
 		"tax_exchange_rate_adjustment": {"No Adjustment", "Adjust Amount", "Adjust Additional-Currency Amount"},

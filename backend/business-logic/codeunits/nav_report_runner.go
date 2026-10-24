@@ -253,7 +253,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		// Parse the result field from response
 		var startResp StartJobResponse
-		if err := json.Unmarshal(respBody, &startResp); err != nil {
+		err = json.Unmarshal(respBody, &startResp)
+		if err != nil {
 			log.Printf("[NavReportRunner] Failed to parse StartJob response: %v", err)
 		}
 
@@ -289,10 +290,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 		if time.Since(startTime) > maxWaitTime {
 			log.Printf("[NavReportRunner] Job %s timed out", jobID)
 			errMsg := "Report generation timed out after 15 minutes"
-			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
+			err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+			if err != nil {
 				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 			}
-			if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+			err = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+			if err != nil {
 				log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 			}
 			return fcodeunits.Error(errMsg), nil
@@ -367,7 +370,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 
 		// Parse progress
 		var checkResult CheckJobResponse
-		if err := json.Unmarshal(checkBody, &checkResult); err != nil {
+		err = json.Unmarshal(checkBody, &checkResult)
+		if err != nil {
 			checkResult = parseProgressResponse(string(checkBody))
 		}
 
@@ -391,10 +395,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if checkJobError != "" {
 				log.Printf("[NavReportRunner] POST failed and checkjob error: %s", checkJobError)
 				errMsg := "NAV service error: " + postErrorMsg
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
+				err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
-				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+				err = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -407,10 +413,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 					log.Printf("[NavReportRunner] POST failed and no progress after %d polls — job never started", zeroProgressPolls)
 				}
 				errMsg := "NAV service error: " + postErrorMsg
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
+				err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
-				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+				err = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -430,7 +438,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 				if dialog != nil {
 					dialog.UpdateWithMessage(1, 100, "Process completed!")
 				}
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime); err != nil {
+				err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
 				return fcodeunits.Result{
@@ -484,10 +493,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if pdfPath == "" {
 				log.Printf("[NavReportRunner] No PDF path available — StartJob likely timed out")
 				errMsg := "Report completed but PDF path unavailable — the NAV proxy timed out. Try increasing the WCF SendTimeout on the proxy."
-				if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); err != nil {
+				err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 				}
-				if err := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); err != nil {
+				err = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if err != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", err)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -503,10 +514,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] Failed to marshal PDF request: %v", err)
 				errMsg := "Failed to marshal PDF request: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
+				logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
-				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+				logErr = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -517,10 +530,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] PDF fetch error: %v", err)
 				errMsg := "Failed to fetch PDF: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
+				logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
-				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+				logErr = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -532,10 +547,12 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if err != nil {
 				log.Printf("[NavReportRunner] Failed to read PDF response body: %v", err)
 				errMsg := "Failed to read PDF response: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
+				logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
-				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+				logErr = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -546,23 +563,28 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			if pdfResp.StatusCode != http.StatusOK {
 				log.Printf("[NavReportRunner] PDF fetch returned status %d", pdfResp.StatusCode)
 				errMsg := fmt.Sprintf("PDF fetch failed with status %d", pdfResp.StatusCode)
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
+				logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
-				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+				logErr = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
 			}
 
 			var pdfResult GetJobPdfResponse
-			if err := json.Unmarshal(pdfBody, &pdfResult); err != nil {
+			err = json.Unmarshal(pdfBody, &pdfResult)
+			if err != nil {
 				log.Printf("[NavReportRunner] Failed to parse PDF response: %v", err)
 				errMsg := "Failed to parse PDF response: " + err.Error()
-				if logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime); logErr != nil {
+				logErr := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Error, errMsg, jobStartTime)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to log job queue entry: %v", logErr)
 				}
-				if logErr := SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error); logErr != nil {
+				logErr = SetJobQueueStatus(c.db, c.company, c.dbType, jobQueue.No, gtables.JobQueue_Status.Error)
+				if logErr != nil {
 					log.Printf("[NavReportRunner] Failed to set job queue status: %v", logErr)
 				}
 				return fcodeunits.Error(errMsg), nil
@@ -573,7 +595,8 @@ func (c *NavReportRunner) Run(record interface{}) (fcodeunits.Result, error) {
 			}
 
 			// Log successful execution to Job Queue Entries
-			if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime); err != nil {
+			err = CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", jobStartTime)
+			if err != nil {
 				log.Printf("[NavReportRunner] Failed to log job queue entry: %v", err)
 			}
 
@@ -599,7 +622,8 @@ func parseParameter(param string) map[string]string {
 	param = strings.TrimSpace(param)
 
 	// Legacy: plain number = report ID with PDF
-	if _, err := strconv.Atoi(param); err == nil {
+	_, err := strconv.Atoi(param)
+	if err == nil {
 		result["reportId"] = param
 		result["format"] = "PDF"
 		return result
@@ -646,7 +670,8 @@ func parseJSONParameter(param string) (*JobParameter, error) {
 
 	if strings.HasPrefix(param, "{") {
 		var jp JobParameter
-		if err := json.Unmarshal([]byte(param), &jp); err != nil {
+		err := json.Unmarshal([]byte(param), &jp)
+		if err != nil {
 			return nil, fmt.Errorf("invalid JSON parameter: %w", err)
 		}
 		if jp.Format == "" {
@@ -676,7 +701,8 @@ func resolveFields(fields []fcodeunits.InputField, lang string) []fcodeunits.Inp
 	for i, f := range fields {
 		resolved[i] = f
 		// Try i18n key first; if no translation found, use label as-is
-		if translated := ts.Message(f.Label, lang); translated != f.Label {
+		translated := ts.Message(f.Label, lang)
+		if translated != f.Label {
 			resolved[i].Label = translated
 		}
 		// Magic default: "today" → current date ISO
@@ -692,7 +718,8 @@ func parseProgressResponse(body string) CheckJobResponse {
 	var result CheckJobResponse
 
 	// Try JSON parse first
-	if err := json.Unmarshal([]byte(body), &result); err == nil {
+	err := json.Unmarshal([]byte(body), &result)
+	if err == nil {
 		return result
 	}
 
@@ -700,7 +727,8 @@ func parseProgressResponse(body string) CheckJobResponse {
 	var simpleResult struct {
 		Result string `json:"result"`
 	}
-	if err := json.Unmarshal([]byte(body), &simpleResult); err == nil {
+	err = json.Unmarshal([]byte(body), &simpleResult)
+	if err == nil {
 		result.Result = simpleResult.Result
 		result.Progress = extractProgress(simpleResult.Result)
 	}
@@ -722,7 +750,8 @@ func extractProgress(s string) int {
 		re := regexp.MustCompile(pattern)
 		matches := re.FindStringSubmatch(s)
 		if len(matches) >= 2 {
-			if p, err := strconv.Atoi(matches[1]); err == nil {
+			p, err := strconv.Atoi(matches[1])
+			if err == nil {
 				return p
 			}
 		}
@@ -735,19 +764,22 @@ func extractProgress(s string) int {
 func extractPdfPath(result string) string {
 	// Look for "PDF: " marker (the standard format from NAV proxy)
 	pdfMarkerRe := regexp.MustCompile(`(?i)PDF:\s*(.+\.pdf)`)
-	if matches := pdfMarkerRe.FindStringSubmatch(result); len(matches) >= 2 {
+	matches := pdfMarkerRe.FindStringSubmatch(result)
+	if len(matches) >= 2 {
 		return strings.TrimSpace(matches[1])
 	}
 
 	// Try to find a Windows file path pattern (path may contain spaces)
 	winPathRe := regexp.MustCompile(`([A-Za-z]:\\.+\.pdf)`)
-	if matches := winPathRe.FindStringSubmatch(result); len(matches) >= 2 {
+	matches = winPathRe.FindStringSubmatch(result)
+	if len(matches) >= 2 {
 		return strings.TrimSpace(matches[1])
 	}
 
 	// Try to find a Unix file path pattern
 	unixPathRe := regexp.MustCompile(`(/.+\.pdf)`)
-	if matches := unixPathRe.FindStringSubmatch(result); len(matches) >= 2 {
+	matches = unixPathRe.FindStringSubmatch(result)
+	if len(matches) >= 2 {
 		return strings.TrimSpace(matches[1])
 	}
 
@@ -766,7 +798,8 @@ func generateJobID() string {
 
 	// Generate 8 random alphanumeric characters using crypto/rand
 	randomBytes := make([]byte, 8)
-	if _, err := cryptorand.Read(randomBytes); err != nil {
+	_, err := cryptorand.Read(randomBytes)
+	if err != nil {
 		// Fallback to timestamp-based uniqueness if crypto/rand fails
 		log.Printf("[NavReportRunner] crypto/rand failed: %v, using timestamp fallback", err)
 		return timestamp + "00000000"

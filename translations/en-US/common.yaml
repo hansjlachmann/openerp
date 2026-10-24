@@ -32,7 +32,6 @@ common:
     import: "Import"
     back_to_list: "Back to List"
     entries: "Entries"
-    generate_ledger_entries: "Generate Ledger Entries"
     ledger_entries: "Ledger Entries"
     line: "Line"
     run: "Run"
@@ -51,6 +50,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    payments: "Payments"
+    shipping: "Shipping"
+    foreign_trade: "Foreign Trade"
     numbering: "Numbering"
     posting: "Posting"
     consolidation: "Consolidation"

@@ -193,11 +193,63 @@ func (t *SMTPSetup) GetPostgresTableSchema() string {
 	return GetSMTPSetupPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *SMTPSetup) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *SMTPSetup) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["primary_key"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(SMTPSetupTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *SMTPSetup) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(SMTPSetupTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *SMTPSetup) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(SMTPSetupTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *SMTPSetup) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(SMTPSetupTableName, key)
 }
 
 // ========================================
@@ -370,6 +422,18 @@ func (t *SMTPSetup) IsSetupTable() bool {
 	return true
 }
 
+// GetSMTPSetup reads the single SMTP_Setup record (classic SETUP.GET) in the database
+// and company of another record (from, e.g. the record a trigger works on) — a blank one, with
+// the definition's defaults, when it does not exist yet
+func GetSMTPSetup(from tables.Source) *SMTPSetup {
+	setup := &SMTPSetup{}
+	setup.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	if !setup.Get("") {
+		setup.InitRecord()
+	}
+	return setup
+}
+
 // GetSMTPSetupTableSchema returns the SQLite schema
 func GetSMTPSetupTableSchema() string {
 	return `
@@ -526,6 +590,44 @@ func (t *SMTPSetup) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *SMTPSetup) XRec() *SMTPSetup {
+	x := &SMTPSetup{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["primary_key"].(types.Code); ok {
+		x.Primary_key = v
+	}
+	if v, ok := t.oldValues["enabled"].(bool); ok {
+		x.Enabled = v
+	}
+	if v, ok := t.oldValues["smtp_server"].(types.Text); ok {
+		x.Smtp_server = v
+	}
+	if v, ok := t.oldValues["smtp_server_port"].(int); ok {
+		x.Smtp_server_port = v
+	}
+	if v, ok := t.oldValues["user_id"].(types.Text); ok {
+		x.User_id = v
+	}
+	if v, ok := t.oldValues["password"].(types.Text); ok {
+		x.Password = v
+	}
+	if v, ok := t.oldValues["from_address"].(types.Text); ok {
+		x.From_address = v
+	}
+	return x
+}
+
+// NewSMTPSetup returns a SMTP_Setup record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewSMTPSetup(from tables.Source) *SMTPSetup {
+	rec := &SMTPSetup{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *SMTPSetup) IsGlobal() bool {
 	return true
@@ -660,15 +762,22 @@ func (t *SMTPSetup) Insert(runTrigger bool) bool {
 		t.From_address,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, enabled, smtp_server, smtp_server_port, user_id, password, from_address) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert SMTP_Setup: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(SMTPSetupTableName, key)
 		return false
 	}
 	return true

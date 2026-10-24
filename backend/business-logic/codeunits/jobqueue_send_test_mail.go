@@ -71,7 +71,8 @@ func (c *JobQueueSendTestMail) Run(record interface{}) (fcodeunits.Result, error
 		return fcodeunits.Result{}, errors.New(ts.MessageWithParams("JOBQUEUE_TEST_MAIL_NO_RECIPIENTS", lang,
 			job.No.String(), ts.FieldCaption(gtables.JobQueueTableName, "notification_email", lang)))
 	}
-	if _, err := mail.ParseAddressList(job.Notification_email.String()); err != nil {
+	_, err := mail.ParseAddressList(job.Notification_email.String())
+	if err != nil {
 		var listErr *mail.AddressListError
 		if errors.As(err, &listErr) && listErr.Duplicate {
 			return fcodeunits.Result{}, errors.New(apperrors.EmailDuplicate(gtables.JobQueueTableName, "notification_email", listErr.Address).Message(lang))

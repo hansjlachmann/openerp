@@ -48,35 +48,36 @@ type rateAmounts struct {
 // FindCurrency returns the rate of a currency valid on a date (FindCurrency): the last one with
 // a Starting Date on or before it
 func (c *CurrExchRate) FindCurrency(date types.Date, currencyCode types.Code) (*gtables.CurrencyExchangeRate, error) {
-	var r gtables.CurrencyExchangeRate
-	r.InitWithDBType(c.rate.GetDB(), c.rate.GetCompany(), c.rate.GetDBType())
-	r.SetRange("currency_code", currencyCode)
-	r.SetRange("starting_date", types.Date{}, date)
-	if !r.FindLast() {
+	currExchRate := gtables.NewCurrencyExchangeRate(&c.rate)
+	currExchRate.SetRange("currency_code", currencyCode)
+	currExchRate.SetRange("starting_date", types.Date{}, date)
+	if !currExchRate.FindLast() {
 		return nil, apperrors.NoExchangeRate(currencyCode.String(), system.Format(date))
 	}
-	return &r, nil
+	return currExchRate, nil
 }
 
 // find reads a rate and checks its amounts (TestField), taking the adjustment amounts when adjmt
 func (c *CurrExchRate) find(date types.Date, currencyCode types.Code, adjmt bool) (rateAmounts, error) {
-	r, err := c.FindCurrency(date, currencyCode)
+	currExchRate, err := c.FindCurrency(date, currencyCode)
 	if err != nil {
 		return rateAmounts{}, err
 	}
 	exchField, relField := "exchange_rate_amount", "relational_exch_rate_amount"
-	exch, rel := r.Exchange_rate_amount, r.Relational_exch_rate_amount
+	exch, rel := currExchRate.Exchange_rate_amount, currExchRate.Relational_exch_rate_amount
 	if adjmt {
 		exchField, relField = "adjustment_exch_rate_amount", "relational_adjmt_exch_rate_amt"
-		exch, rel = r.Adjustment_exch_rate_amount, r.Relational_adjmt_exch_rate_amt
+		exch, rel = currExchRate.Adjustment_exch_rate_amount, currExchRate.Relational_adjmt_exch_rate_amt
 	}
-	if err := r.TestField(exchField); err != nil {
+	err = currExchRate.TestField(exchField)
+	if err != nil {
 		return rateAmounts{}, err
 	}
-	if err := r.TestField(relField); err != nil {
+	err = currExchRate.TestField(relField)
+	if err != nil {
 		return rateAmounts{}, err
 	}
-	return rateAmounts{exch: exch.Decimal, rel: rel.Decimal, relCur: r.Relational_currency_code, fix: r.Fix_exchange_rate_amount, currency: r.Currency_code}, nil
+	return rateAmounts{exch: exch.Decimal, rel: rel.Decimal, relCur: currExchRate.Relational_currency_code, fix: currExchRate.Fix_exchange_rate_amount, currency: currExchRate.Currency_code}, nil
 }
 
 var exchFix = gtables.CurrencyExchangeRate_Fix_exchange_rate_amount

@@ -192,11 +192,63 @@ func (t *UserPreferences) GetPostgresTableSchema() string {
 	return GetUserPreferencesPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *UserPreferences) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *UserPreferences) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["user_id"]), fmt.Sprint(m["page_id"]), fmt.Sprint(m["preference_type"]), fmt.Sprint(m["preference_name"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(UserPreferencesTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *UserPreferences) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(UserPreferencesTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *UserPreferences) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(UserPreferencesTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *UserPreferences) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(UserPreferencesTableName, key)
 }
 
 // ========================================
@@ -550,6 +602,44 @@ func (t *UserPreferences) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *UserPreferences) XRec() *UserPreferences {
+	x := &UserPreferences{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["user_id"].(types.Code); ok {
+		x.User_id = v
+	}
+	if v, ok := t.oldValues["page_id"].(int); ok {
+		x.Page_id = v
+	}
+	if v, ok := t.oldValues["preference_type"].(types.Code); ok {
+		x.Preference_type = v
+	}
+	if v, ok := t.oldValues["preference_name"].(types.Code); ok {
+		x.Preference_name = v
+	}
+	if v, ok := t.oldValues["preference_data"].(types.Text); ok {
+		x.Preference_data = v
+	}
+	if v, ok := t.oldValues["created_at"].(types.DateTime); ok {
+		x.Created_at = v
+	}
+	if v, ok := t.oldValues["updated_at"].(types.DateTime); ok {
+		x.Updated_at = v
+	}
+	return x
+}
+
+// NewUserPreferences returns a User_Preferences record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewUserPreferences(from tables.Source) *UserPreferences {
+	rec := &UserPreferences{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *UserPreferences) IsGlobal() bool {
 	return true
@@ -709,15 +799,22 @@ func (t *UserPreferences) Insert(runTrigger bool) bool {
 		t.Updated_at,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id, page_id, preference_type, preference_name) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert User_Preferences: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(UserPreferencesTableName, key)
 		return false
 	}
 	return true

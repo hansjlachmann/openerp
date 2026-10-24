@@ -54,7 +54,8 @@ func (c *HelloWorld) UsesProgress() bool {
 func (c *HelloWorld) Run(record interface{}) (fcodeunits.Result, error) {
 	jobQueue := record.(*gtables.JobQueue)
 
-	if err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now()); err != nil {
+	err := CreateJobQueueEntry(c.db, c.company, c.dbType, jobQueue, gtables.JobQueueEntry_Status.Success, "", types.Now())
+	if err != nil {
 		return fcodeunits.Message(err.Error()), nil
 	}
 

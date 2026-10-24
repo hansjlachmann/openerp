@@ -699,11 +699,63 @@ func (t *GLAccount) GetPostgresTableSchema() string {
 	return GetGLAccountPostgresTableSchema()
 }
 
-// TriggerError returns the error from the OnInsert/OnModify/OnDelete trigger that made
-// the last Insert/Modify/Delete fail, or nil if it failed for another reason (database)
-// or succeeded. Trigger errors are business-rule messages meant for the user.
+// TriggerError returns the error that made the last Insert/Modify/Delete fail and is meant
+// for the user: the OnInsert/OnModify/OnDelete trigger's, or "<Table> <key> already exists"
+// when Insert found the key taken (also a key OnInsert assigned, e.g. from a number series);
+// nil if it failed for another reason (database) or succeeded.
 func (t *GLAccount) TriggerError() error {
 	return t.triggerErr
+}
+
+// GetOrError reads a record by its key (Get) and fails like a classic GET without IF when it
+// does not exist: "<Table> <key> not found" in the user's language
+func (t *GLAccount) GetOrError(primaryKey interface{}) error {
+	if t.Get(primaryKey) {
+		return nil
+	}
+	key := fmt.Sprint(primaryKey)
+	if m, ok := primaryKey.(map[string]interface{}); ok {
+		key = strings.Join([]string{fmt.Sprint(m["no"])}, ",")
+	}
+	return apperrors.TableRecordNotFound(GLAccountTableName, key)
+}
+
+// InsertOrError inserts the record (Insert) and fails like a classic INSERT without IF: the
+// trigger's error, "<Table> <key> already exists", or "Failed to insert <Table>"
+func (t *GLAccount) InsertOrError(runTrigger bool) error {
+	if t.Insert(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	return apperrors.TableInsertFailed(GLAccountTableName)
+}
+
+// ModifyOrError modifies the record (Modify) and fails like a classic MODIFY without IF: the
+// trigger's error or "Failed to modify <Table> <key>"
+func (t *GLAccount) ModifyOrError(runTrigger bool) error {
+	if t.Modify(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableModifyFailed(GLAccountTableName, key)
+}
+
+// DeleteOrError deletes the record (Delete) and fails like a classic DELETE without IF: the
+// trigger's error or "Failed to delete <Table> <key>"
+func (t *GLAccount) DeleteOrError(runTrigger bool) error {
+	if t.Delete(runTrigger) {
+		return nil
+	}
+	if err := t.TriggerError(); err != nil {
+		return err
+	}
+	_, key := t.recordKey()
+	return apperrors.TableDeleteFailed(GLAccountTableName, key)
 }
 
 // ========================================
@@ -1273,6 +1325,116 @@ func (t *GLAccount) OldValue(fieldName string) interface{} {
 	return t.oldValues[fieldName]
 }
 
+// XRec returns the record as it was last read from or written to the database (classic xRec),
+// in the same database and company: xRec := rec.XRec(); if rec.No != xRec.No { … }. For a new
+// record (never read) it is a blank record with the definition's defaults.
+func (t *GLAccount) XRec() *GLAccount {
+	x := &GLAccount{db: t.db, company: t.company, dbType: t.dbType, temp: t.temp}
+	x.InitRecord()
+	if v, ok := t.oldValues["no"].(types.Code); ok {
+		x.No = v
+	}
+	if v, ok := t.oldValues["name"].(types.Text); ok {
+		x.Name = v
+	}
+	if v, ok := t.oldValues["search_name"].(types.Code); ok {
+		x.Search_name = v
+	}
+	if v, ok := t.oldValues["account_type"].(GLAccountAccount_type); ok {
+		x.Account_type = v
+	}
+	if v, ok := t.oldValues["department_code"].(types.Code); ok {
+		x.Department_code = v
+	}
+	if v, ok := t.oldValues["project_code"].(types.Code); ok {
+		x.Project_code = v
+	}
+	if v, ok := t.oldValues["income_balance"].(GLAccountIncome_balance); ok {
+		x.Income_balance = v
+	}
+	if v, ok := t.oldValues["debit_credit"].(GLAccountDebit_credit); ok {
+		x.Debit_credit = v
+	}
+	if v, ok := t.oldValues["no_2"].(types.Code); ok {
+		x.No_2 = v
+	}
+	if v, ok := t.oldValues["blocked"].(bool); ok {
+		x.Blocked = v
+	}
+	if v, ok := t.oldValues["direct_posting"].(bool); ok {
+		x.Direct_posting = v
+	}
+	if v, ok := t.oldValues["reconciliation_account"].(bool); ok {
+		x.Reconciliation_account = v
+	}
+	if v, ok := t.oldValues["new_page"].(bool); ok {
+		x.New_page = v
+	}
+	if v, ok := t.oldValues["no_of_blank_lines"].(int); ok {
+		x.No_of_blank_lines = v
+	}
+	if v, ok := t.oldValues["indentation"].(int); ok {
+		x.Indentation = v
+	}
+	if v, ok := t.oldValues["last_date_modified"].(types.Date); ok {
+		x.Last_date_modified = v
+	}
+	if v, ok := t.oldValues["totaling"].(types.Text); ok {
+		x.Totaling = v
+	}
+	if v, ok := t.oldValues["consol_debit_acc"].(types.Code); ok {
+		x.Consol_debit_acc = v
+	}
+	if v, ok := t.oldValues["consol_credit_acc"].(types.Code); ok {
+		x.Consol_credit_acc = v
+	}
+	if v, ok := t.oldValues["gen_posting_type"].(GLAccountGen_posting_type); ok {
+		x.Gen_posting_type = v
+	}
+	if v, ok := t.oldValues["gen_bus_posting_group"].(types.Code); ok {
+		x.Gen_bus_posting_group = v
+	}
+	if v, ok := t.oldValues["gen_prod_posting_group"].(types.Code); ok {
+		x.Gen_prod_posting_group = v
+	}
+	if v, ok := t.oldValues["automatic_ext_text"].(bool); ok {
+		x.Automatic_ext_text = v
+	}
+	if v, ok := t.oldValues["department_posting"].(GLAccountDepartment_posting); ok {
+		x.Department_posting = v
+	}
+	if v, ok := t.oldValues["project_posting"].(GLAccountProject_posting); ok {
+		x.Project_posting = v
+	}
+	if v, ok := t.oldValues["tax_area_code"].(types.Code); ok {
+		x.Tax_area_code = v
+	}
+	if v, ok := t.oldValues["tax_liable"].(bool); ok {
+		x.Tax_liable = v
+	}
+	if v, ok := t.oldValues["tax_group_code"].(types.Code); ok {
+		x.Tax_group_code = v
+	}
+	if v, ok := t.oldValues["tax_bus_posting_group"].(types.Code); ok {
+		x.Tax_bus_posting_group = v
+	}
+	if v, ok := t.oldValues["tax_prod_posting_group"].(types.Code); ok {
+		x.Tax_prod_posting_group = v
+	}
+	if v, ok := t.oldValues["exchange_rate_adjustment"].(GLAccountExchange_rate_adjustment); ok {
+		x.Exchange_rate_adjustment = v
+	}
+	return x
+}
+
+// NewGLAccount returns a G_L_Account record in the database and company of another
+// record (from) — a classic Record variable: glAcc := gtables.NewGLAccount(rec)
+func NewGLAccount(from tables.Source) *GLAccount {
+	rec := &GLAccount{}
+	rec.InitWithDBType(from.GetDB(), from.GetCompany(), from.GetDBType())
+	return rec
+}
+
 // IsGlobal reports whether the table is global (no company prefix, e.g. User, Company)
 func (t *GLAccount) IsGlobal() bool {
 	return false
@@ -1498,15 +1660,22 @@ func (t *GLAccount) Insert(runTrigger bool) bool {
 		t.Exchange_rate_adjustment,
 	}
 
-	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, tableName)
+	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
+	// of failing: on PostgreSQL a failed INSERT would abort the transaction
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
 
-	_, err := t.exec().Exec(sqlStr, args...)
+	result, err := t.exec().Exec(sqlStr, args...)
 	if err != nil {
 		fmt.Printf("Error: Failed to insert G_L_Account: %v\n", err)
+		return false
+	}
+	// The key is taken (INSERT fails in the classic way: "<Table> <key> already exists")
+	if n, err := result.RowsAffected(); err == nil && n == 0 {
+		_, key := t.recordKey()
+		t.triggerErr = apperrors.TableRecordExists(GLAccountTableName, key)
 		return false
 	}
 	return true
@@ -5390,6 +5559,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field department_code")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "department_code"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Department_code); ok {
@@ -5407,6 +5580,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 			t.Project_code = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field project_code")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "project_code"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -5696,6 +5873,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field totaling")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "totaling"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Totaling); ok {
@@ -5799,6 +5980,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field gen_bus_posting_group")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "gen_bus_posting_group"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Gen_bus_posting_group); ok {
@@ -5816,6 +6001,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 			t.Gen_prod_posting_group = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field gen_prod_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "gen_prod_posting_group"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
@@ -5952,6 +6141,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field tax_area_code")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_area_code"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Tax_area_code); ok {
@@ -5989,6 +6182,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field tax_group_code")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_group_code"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Tax_group_code); ok {
@@ -6007,6 +6204,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 		} else {
 			return fmt.Errorf("invalid type for field tax_bus_posting_group")
 		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_bus_posting_group"); err != nil {
+			return err
+		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(GLAccountOnValidate_Tax_bus_posting_group); ok {
@@ -6024,6 +6225,10 @@ func (t *GLAccount) ValidateField(fieldName string, value interface{}) error {
 			t.Tax_prod_posting_group = types.NewCode(v)
 		} else {
 			return fmt.Errorf("invalid type for field tax_prod_posting_group")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_prod_posting_group"); err != nil {
+			return err
 		}
 		// OnValidate trigger of the business logic (OnValidate of the field)
 		for _, l := range t.registeredLogic() {
