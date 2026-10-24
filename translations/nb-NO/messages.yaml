@@ -226,6 +226,7 @@ messages:
   HELP_SEC_LOOKUP: "Oppslags- og alternativfelt"
   HELP_LOOKUP_OPEN: "Åpne listen (F4 åpner / lukker den)"
   HELP_LOOKUP_MOVE: "Flytt i den åpne listen; skriv for å filtrere"
+  HELP_LOOKUP_PAGE: "En side opp / ned i den åpne listen"
   HELP_LOOKUP_PICK: "Velg markert verdi"
   HELP_LOOKUP_ESCAPE: "Lukk listen uten å velge"
 
