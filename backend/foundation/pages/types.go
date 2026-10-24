@@ -187,22 +187,28 @@ type MenuDefinition struct {
 	Menu []MenuGroup `yaml:"menu" json:"menu"`
 }
 
-// MenuGroup represents a top-level menu group or direct menu item
+// MenuGroup is a module of the main menu (General Ledger, Sales & Receivables …): its menu
+// entries, or a direct page
 type MenuGroup struct {
 	Name   string     `yaml:"name" json:"name"`
 	Icon   string     `yaml:"icon,omitempty" json:"icon,omitempty"`
-	Items  []MenuItem `yaml:"items,omitempty" json:"items,omitempty"`     // For grouped menus
+	Items  []MenuItem `yaml:"items,omitempty" json:"items,omitempty"`     // the module's menu
 	PageID int        `yaml:"page_id,omitempty" json:"page_id,omitempty"` // For flat menus (direct item)
 }
 
-// MenuItem represents a menu item
+// MenuItem is an entry of a module's menu: it opens a page (PageID), runs a report or codeunit
+// (RunObject "report:93", "codeunit:6"), holds a sub-menu (Items, e.g. Setup, Activities) or is
+// a separator. Enabled is set when the menu is sent: the entry's object exists (a sub-menu:
+// one of its entries is available); an entry without one is shown greyed out (not built yet).
 type MenuItem struct {
-	Name        string `yaml:"name,omitempty" json:"name,omitempty"`
-	PageID      int    `yaml:"page_id,omitempty" json:"page_id,omitempty"`
-	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty"`
-	Description string `yaml:"description,omitempty" json:"description,omitempty"`
-	Separator   bool   `yaml:"separator,omitempty" json:"separator,omitempty"`
-	Enabled     bool   `yaml:"enabled,omitempty" json:"enabled"`
+	Name        string     `yaml:"name,omitempty" json:"name,omitempty"`
+	PageID      int        `yaml:"page_id,omitempty" json:"page_id,omitempty"`
+	RunObject   string     `yaml:"run_object,omitempty" json:"run_object,omitempty"`
+	Items       []MenuItem `yaml:"items,omitempty" json:"items,omitempty"`
+	Icon        string     `yaml:"icon,omitempty" json:"icon,omitempty"`
+	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
+	Separator   bool       `yaml:"separator,omitempty" json:"separator,omitempty"`
+	Enabled     bool       `yaml:"-" json:"enabled"`
 }
 
 // cloneActions copies actions and their menu items (captions are translated per request)

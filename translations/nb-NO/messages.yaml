@@ -106,6 +106,12 @@ messages:
   HOME_SHORTCUTS_TITLE: "Jobb raskere med tastaturet"
   HOME_SHORTCUTS_TEXT: "Vi oppfordrer deg til å lære deg hurtigtastene: de optimaliserer arbeidsflyten og gjør deg mer effektiv i det daglige arbeidet."
   HOME_SHORTCUTS_LINK: "Vis hurtigtastene"
+  HELP_MENU_SEARCH: "Søk i menyen"
+  HOME_MENU_NOT_AVAILABLE: "Ikke tilgjengelig ennå"
+  HOME_MENU_NO_RESULTS: "Fant ingen menyvalg"
+  HOME_MENU_SEARCH_RESULTS: "Søkeresultater"
+  HOME_MENU_SEARCH: "Søk i menyen… (Ctrl+F)"
+  HOME_MENU_MODULES: "Moduler"
 
   # MenuBar
   MENU_HOME: "Hjem"
@@ -175,7 +181,7 @@ messages:
   HELP_SWITCH_COMPANY: "Bytt selskap"
   HELP_ESCAPE: "Avbryt, lukk en dialog eller gå tilbake"
   HELP_SEC_MENU: "Hovedmeny"
-  HELP_MENU_ARROWS: "Flytt mellom menypunkter"
+  HELP_MENU_ARROWS: "Opp/ned flytt; høyre inn i modulens meny eller åpne en undermeny; venstre lukk den eller tilbake til modulene"
   HELP_MENU_HOME_END: "Første / siste menypunkt"
   HELP_MENU_OPEN: "Åpne valgt punkt"
   HELP_SEC_LIST: "Listeside"

@@ -9,6 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	apitypes "github.com/hansjlachmann/openerp/backend/api/types"
+	"github.com/hansjlachmann/openerp/backend/business-logic/codeunits"
+	"github.com/hansjlachmann/openerp/backend/business-logic/reports"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
@@ -337,16 +339,65 @@ func (h *PagesHandler) GetMenu(c *fiber.Ctx) error {
 	for i, group := range menuDef.Menu {
 		translated.Menu[i] = group
 		translated.Menu[i].Name = ts.MenuItemCaption(group.Name, language)
-		if len(group.Items) > 0 {
-			translated.Menu[i].Items = make([]pages.MenuItem, len(group.Items))
-			for j, item := range group.Items {
-				translated.Menu[i].Items[j] = item
-				translated.Menu[i].Items[j].Name = ts.MenuItemCaption(item.Name, language)
-			}
-		}
+		translated.Menu[i].Items = menuEntries(group.Items, ts, language)
 	}
 
 	return c.JSON(apitypes.NewSuccessResponse(&translated))
+}
+
+// menuEntries translates a menu's entries (and their sub-menus) and marks those whose page,
+// report or codeunit exists as enabled — a sub-menu when one of its entries is; the others are
+// shown greyed out (not built yet)
+func menuEntries(items []pages.MenuItem, ts *i18n.TranslationService, language string) []pages.MenuItem {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]pages.MenuItem, len(items))
+	for i, item := range items {
+		out[i] = item
+		if item.Separator {
+			continue
+		}
+		out[i].Name = ts.MenuItemCaption(item.Name, language)
+		out[i].Items = menuEntries(item.Items, ts, language)
+		switch {
+		case len(item.Items) > 0:
+			for _, sub := range out[i].Items {
+				if sub.Enabled {
+					out[i].Enabled = true
+					break
+				}
+			}
+		case item.PageID > 0:
+			_, err := pages.GetRegistry().GetPage(item.PageID)
+			out[i].Enabled = err == nil
+		case item.RunObject != "":
+			out[i].Enabled = runObjectExists(item.RunObject)
+		}
+	}
+	return out
+}
+
+// runObjectExists reports whether a menu entry's report or codeunit ("report:93",
+// "codeunit:6") is registered
+func runObjectExists(runObject string) bool {
+	kind, no, ok := strings.Cut(runObject, ":")
+	if !ok {
+		return false
+	}
+	id, err := strconv.Atoi(no)
+	if err != nil {
+		return false
+	}
+	switch kind {
+	case "report":
+		_, found := reports.Get(id)
+		return found
+	case "codeunit":
+		_, found := codeunits.Get(id)
+		return found
+	}
+	return false
 }
 
 // GetAllPages returns all loaded page definitions

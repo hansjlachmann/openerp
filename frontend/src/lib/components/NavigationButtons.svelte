@@ -18,9 +18,10 @@
 	}: Props = $props();
 </script>
 
-<!-- Previous Button (Left Edge) -->
+<!-- Previous Button (Left Edge); not Tab stops — the keyboard has Ctrl+Shift+↑/↓ -->
 <button
 	class="edge-nav-btn edge-nav-left"
+	tabindex="-1"
 	onclick={onPrevious}
 	disabled={!canNavigatePrevious}
 	title="Previous Record (Ctrl+Up)"
@@ -40,6 +41,7 @@
 <!-- Next Button (Right Edge) -->
 <button
 	class="edge-nav-btn edge-nav-right"
+	tabindex="-1"
 	onclick={onNext}
 	disabled={!canNavigateNext}
 	title="Next Record (Ctrl+Down)"
