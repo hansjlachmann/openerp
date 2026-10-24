@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.109](https://github.com/hansjlachmann/openerp/compare/v0.1.108...v0.1.109) (2026-10-24)
+
+
+### Features
+
+* classic Customer, generated record behaviour, business logic as classic code ([#141](https://github.com/hansjlachmann/openerp/issues/141)) ([c5522f5](https://github.com/hansjlachmann/openerp/commit/c5522f5ade5fdf12ccce920cf42fcf00d0811c77))
+
 ## [0.1.108](https://github.com/hansjlachmann/openerp/compare/v0.1.107...v0.1.108) (2026-10-22)
 
 
