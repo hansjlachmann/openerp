@@ -149,6 +149,9 @@ func TestApplyExchangeRateGain(t *testing.T) {
 	_, err := postBatch(t, src, "SALES", "DEFAULT")
 	must(t, err)
 	inv := custEntry(t, src, "TC5", "INV5")
+	if !inv.Open {
+		t.Fatal("the invoice is not open after posting")
+	}
 	rate := gtables.NewCurrencyExchangeRate(src)
 	rate.Currency_code = "EUR"
 	rate.Starting_date = date(t, 20, 10, 2026)

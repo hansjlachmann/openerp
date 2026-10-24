@@ -47,7 +47,7 @@ func (c *GenJnlPost) GetDBType() database.DBType { return c.dbType }
 func (c *GenJnlPost) Run(record interface{}) (fcodeunits.Result, error) {
 	rec, ok := record.(*gtables.GenJournalLine)
 	if !ok {
-		return fcodeunits.Result{}, errors.New("Gen. Jnl.-Post runs on a journal line")
+		return fcodeunits.Result{}, errors.New("codeunit 231 runs on a journal line")
 	}
 	result, err := c.code(rec)
 	var appErr *apperrors.AppError

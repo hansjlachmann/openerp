@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-type openTestRec struct{ name string }
+type openTestRec struct{}
 
 // OnOpenPage: the trigger reads the page's parameters, sets filters and parameters, or asks the
 // user to pick a record first (the following triggers do not run then)
