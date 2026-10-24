@@ -4,6 +4,17 @@ export interface PageDefinition {
 	page: PageMetadata;
 }
 
+// A field above a list page: shows and edits the OnOpenPage parameter `param`; its lookup opens
+// lookup_page filtered by lookup_filters (lookup field → list field) and takes lookup_field
+export interface HeaderField {
+	param: string;
+	source: string;
+	caption?: string;
+	lookup_page?: number;
+	lookup_field?: string;
+	lookup_filters?: Record<string, string>;
+}
+
 export interface PageMetadata {
 	id: number;
 	type: 'Card' | 'List' | 'Document' | 'Worksheet';
@@ -22,6 +33,12 @@ export interface PageMetadata {
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
 	actions?: Action[];
+	// List pages: fields above the list (page variables, a journal's Batch Name) — each edits a
+	// parameter of the page's OnOpenPage trigger
+	header_fields?: HeaderField[];
+	// List pages: calculated fields shown under the list for the cursor row
+	footer?: Field[];
+	has_open_trigger?: boolean; // OnOpenPage: ask /open for the page's filters before loading
 	// Primary key field names from the source table (sent by the backend), used to
 	// identify records even when the PK is not shown on the page (e.g. setup tables).
 	primary_key_fields?: string[];
@@ -96,7 +113,7 @@ export interface Action {
 	run_page?: number;
 	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
 	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
-	run_page_filters?: { field: string; value?: string; const?: string }[]; // several filters (record fields or constants)
+	run_page_filters?: { field: string; value?: string; const?: string; from?: string; to?: string }[]; // several filters (record fields, constants, or the range from..to of two fields)
 	run_object?: string; // "codeunit:455", "report:675", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)

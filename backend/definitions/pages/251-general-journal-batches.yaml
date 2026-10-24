@@ -1,0 +1,58 @@
+page:
+  id: 251
+  type: List
+  name: General Journal Batches
+  source_table: Gen_Journal_Batch
+  caption: General Journal Batches
+  editable: true   # opened from a template (filtered on it); a new batch takes the template's settings (OnNewRecord)
+
+  layout:
+    repeater:
+      fields:
+        - source: journal_template_name
+          width: 110
+          visible: false
+
+        - source: name
+          width: 110
+
+        - source: description
+          width: 250
+
+        - source: bal_account_type
+          width: 130
+
+        - source: bal_account_no
+          width: 110
+
+        - source: no_series
+          width: 110
+
+        - source: posting_no_series
+          width: 110
+
+        - source: reason_code
+          width: 110
+
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

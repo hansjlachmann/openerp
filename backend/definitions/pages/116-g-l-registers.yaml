@@ -1,0 +1,68 @@
+page:
+  id: 116
+  type: List
+  name: G/L Registers
+  source_table: G_L_Register
+  caption: G/L Registers
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 90
+
+        - source: creation_date
+          width: 100
+
+        - source: user_id
+          width: 110
+
+        - source: source_code
+          width: 110
+
+        - source: journal_batch_name
+          width: 110
+
+        - source: from_entry_no
+          width: 90
+
+        - source: to_entry_no
+          width: 90
+
+        - source: from_tax_entry_no
+          width: 90
+          visible: false
+
+        - source: to_tax_entry_no
+          width: 90
+          visible: false
+
+
+  actions:
+    # The entries the posting wrote (customer, vendor and bank entries share the G/L entry numbers)
+    - name: Register
+      caption: Register
+      image: Entries
+      promoted: true
+      items:
+        - name: General Ledger
+          caption: General Ledger
+          run_page: 20
+          run_page_filters:
+            - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Customer Ledger
+          caption: Customer Ledger
+          run_page: 25
+          run_page_filters:
+            - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Vendor Ledger
+          caption: Vendor Ledger
+          run_page: 29
+          run_page_filters:
+            - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Bank Account Ledger
+          caption: Bank Account Ledger
+          run_page: 372
+          run_page_filters:
+            - {field: entry_no, from: from_entry_no, to: to_entry_no}

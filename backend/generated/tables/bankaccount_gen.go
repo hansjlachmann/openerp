@@ -1640,6 +1640,8 @@ func (t *BankAccount) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(BankAccountTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -2206,7 +2208,7 @@ func (t *BankAccount) renameReferences(field string, oldValue, newValue interfac
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Bank_Account_Ledger_Entry", false, "bank_account_no", "", 0}, {"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Check_Ledger_Entry", false, "bank_account_no", "", 0}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Comment_Line", false, "no", "table_name", 8}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 3}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 3}, {"G_L_Entry", false, "source_no", "source_type", 3}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 1}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 3}},
+		"no": {{"Bank_Account_Ledger_Entry", false, "bank_account_no", "", 0}, {"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Check_Ledger_Entry", false, "bank_account_no", "", 0}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Comment_Line", false, "no", "table_name", 8}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 3}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 3}, {"Gen_Journal_Line", false, "account_no", "account_type", 3}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 3}, {"Gen_Journal_Line", false, "source_no", "source_type", 3}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 3}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 3}, {"G_L_Entry", false, "source_no", "source_type", 3}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 3}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 1}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 3}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -7140,10 +7142,14 @@ func (t *BankAccount) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *BankAccount) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, BankAccountTableName)
+	}
 	t.lockForUpdate = true
 }
 

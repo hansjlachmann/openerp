@@ -824,6 +824,8 @@ func (t *CustomerPostingGroup) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(CustomerPostingGroupTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -2449,10 +2451,14 @@ func (t *CustomerPostingGroup) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *CustomerPostingGroup) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, CustomerPostingGroupTableName)
+	}
 	t.lockForUpdate = true
 }
 

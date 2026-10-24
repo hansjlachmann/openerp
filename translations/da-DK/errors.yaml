@@ -116,3 +116,13 @@ errors:
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Menu ikke fundet"
   ERR_PAGE_NOT_FOUND: "Side %1 ikke fundet"
+  ERR_JNL_ACCOUNT_TYPES: "%1 eller %2 skal være Finanskonto eller Bankkonto."
+  ERR_JNL_OPTION_NOT_ALLOWED: "%1 kan ikke være %2."
+  ERR_JNL_OPTION_INTERNAL: "Indstillingen %2 i %1 kan kun bruges internt i systemet."
+  ERR_JNL_BANK_ACCOUNT_REQUIRED: "%1 eller %2 skal være en bankkonto."
+  ERR_JNL_WITHOUT_FIELD: "%1 kan ikke angives uden %2."
+  ERR_JNL_RECURRING_ONLY_FIELD: "Kun feltet %1 kan udfyldes i gentagelseskladder."
+  ERR_JNL_MUST_NOT_BE: "%1 må ikke være %2."
+  ERR_JNL_FIXED_ASSET_NOT_YET: "%1 Anlægsaktiv kan ikke bogføres endnu: det kommer med bogføring af anlægsaktiver."
+  ERR_JNL_TAX_NOT_YET: "%1 %2 kan ikke bogføres endnu: kun Salgsafgift understøttes."
+  ERR_JNL_TEMPLATE_TYPE_NO_PAGE: "Kladder med %1 %2 kan ikke åbnes endnu."

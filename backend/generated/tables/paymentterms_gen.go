@@ -751,6 +751,8 @@ func (t *PaymentTerms) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(PaymentTermsTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -976,7 +978,7 @@ func (t *PaymentTerms) renameReferences(field string, oldValue, newValue interfa
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "payment_terms_code", "", 0}, {"Vendor", false, "payment_terms_code", "", 0}},
+		"code": {{"Customer", false, "payment_terms_code", "", 0}, {"Gen_Journal_Line", false, "payment_terms_code", "", 0}, {"Vendor", false, "payment_terms_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2269,10 +2271,14 @@ func (t *PaymentTerms) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *PaymentTerms) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, PaymentTermsTableName)
+	}
 	t.lockForUpdate = true
 }
 

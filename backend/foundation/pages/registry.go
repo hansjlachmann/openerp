@@ -132,7 +132,6 @@ func (r *Registry) LoadMenu() error {
 		return fmt.Errorf("failed to parse menu YAML: %w", err)
 	}
 
-
 	r.menu = &menuDef
 
 	fmt.Printf("✓ Loaded menu with %d group(s)\n", len(menuDef.Menu))
@@ -198,7 +197,6 @@ func (r *Registry) GetMenuByName(menuName string) *MenuDefinition {
 		fmt.Printf("Warning: Failed to parse menu YAML %s: %v\n", menuPath, err)
 		return r.GetMenu()
 	}
-
 
 	return &menuDef
 }
@@ -274,6 +272,7 @@ func (r *Registry) CalculatedFields(tableName string) map[string]bool {
 		for _, s := range page.Page.Layout.Sections {
 			all = append(all, s.Fields...)
 		}
+		all = append(all, page.Page.Footer...)
 		for _, f := range all {
 			if f.Calculated {
 				fields[strings.ToLower(f.Source)] = true

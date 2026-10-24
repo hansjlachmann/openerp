@@ -349,3 +349,57 @@ pages:
     caption: "Insurance Statistics"
     fields:  # the calculated field (OnAfterGetRecord)
       over_underinsured: "Over/Underinsured"
+
+  # General journal and posting
+  general_journal:
+    caption: "General Journal"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Batch Name"
+      account_name: "Account Name"
+      bal_account_name: "Bal. Account Name"
+      balance: "Balance"
+      total_balance: "Total Balance"
+  sales_journal:
+    caption: "Sales Journal"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Batch Name"
+      account_name: "Account Name"
+      bal_account_name: "Bal. Account Name"
+      balance: "Balance"
+      total_balance: "Total Balance"
+  purchase_journal:
+    caption: "Purchase Journal"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Batch Name"
+      account_name: "Account Name"
+      bal_account_name: "Bal. Account Name"
+      balance: "Balance"
+      total_balance: "Total Balance"
+  cash_receipt_journal:
+    caption: "Cash Receipt Journal"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Batch Name"
+      account_name: "Account Name"
+      bal_account_name: "Bal. Account Name"
+      balance: "Balance"
+      total_balance: "Total Balance"
+  payment_journal:
+    caption: "Payment Journal"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Batch Name"
+      account_name: "Account Name"
+      bal_account_name: "Bal. Account Name"
+      balance: "Balance"
+      total_balance: "Total Balance"
+  general_journal_templates:
+    caption: "General Journal Templates"
+  general_journal_template_list:
+    caption: "General Journal Template List"
+  general_journal_batches:
+    caption: "General Journal Batches"
+  g_l_registers:
+    caption: "G/L Registers"
+  source_code_setup:
+    caption: "Source Code Setup"
+  user_setup:
+    caption: "User Setup"

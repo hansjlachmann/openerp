@@ -520,62 +520,22 @@ func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 	// fixed_filters: [{"field","value"}] — a subpage's link to its card's record: exact values
 	// in filter group 2, so the user's filters (group 0) narrow them and cannot replace them
 	if fixedParam := c.Query("fixed_filters", ""); fixedParam != "" {
-		var fixed []struct {
-			Field string      `json:"field"`
-			Value interface{} `json:"value"`
-		}
+		var fixed []fixedFilterParam
 		if err := json.Unmarshal([]byte(fixedParam), &fixed); err != nil {
 			return errors.New(apperrors.InvalidFilters().Message(language))
 		}
-		grouped, ok := table.(interface{ FilterGroup(group ...int) int })
-		if !ok {
-			return errors.New(apperrors.InvalidFilters().Message(language))
+		if err := applyFixedFilters(table, fixed, language); err != nil {
+			return err
 		}
-		ranger, ok := table.(interface {
-			SetRange(fieldName string, values ...interface{})
-		})
-		if !ok {
-			return errors.New(apperrors.InvalidFilters().Message(language))
-		}
-		grouped.FilterGroup(2)
-		for _, f := range fixed {
-			if !ftables.IsQueryableColumn(table, f.Field) {
-				grouped.FilterGroup(0)
-				return errors.New(apperrors.InvalidFilters().Message(language))
-			}
-			value := ""
-			switch v := f.Value.(type) {
-			case string:
-				value = v
-			case float64:
-				value = strconv.FormatFloat(v, 'f', -1, 64)
-			case bool:
-				value = strconv.FormatBool(v)
-			case nil:
-			default:
-				value = fmt.Sprint(v)
-			}
-			ranger.SetRange(f.Field, value)
-		}
-		grouped.FilterGroup(0)
 	}
 
 	if filtersParam := c.Query("filters", ""); filtersParam != "" {
-		var apiFilters []struct {
-			Field      string `json:"field"`
-			Expression string `json:"expression"`
-		}
+		var apiFilters []filterParam
 		if err := json.Unmarshal([]byte(filtersParam), &apiFilters); err != nil {
 			return errors.New(apperrors.InvalidFilters().Message(language))
 		}
-		for _, f := range apiFilters {
-			// Stored fields, and Sum/Count FlowFields on their calculated value (e.g. Balance)
-			switch err := ftables.ApplyFilter(table, ftables.FieldFilter{Field: f.Field, Expression: f.Expression}); {
-			case errors.Is(err, ftables.ErrFilterExpression):
-				return errors.New(apperrors.FilterInvalid(c.Params("table"), f.Field, f.Expression).Message(language))
-			case err != nil:
-				return errors.New(apperrors.InvalidFilters().Message(language))
-			}
+		if err := applyFieldFilters(table, apiFilters, c.Params("table"), language); err != nil {
+			return err
 		}
 	}
 
@@ -590,6 +550,70 @@ func applyListQuery(c *fiber.Ctx, table ftables.Table, language string) error {
 			}
 		}
 		table.SetSearch(searchFields, search)
+	}
+	return nil
+}
+
+// fixedFilterParam is an exact-value filter of filter group 2 (a subpage's link, a journal's
+// template and batch); filterParam a user filter (group 0) with a filter expression
+type fixedFilterParam struct {
+	Field string      `json:"field"`
+	Value interface{} `json:"value"`
+}
+
+type filterParam struct {
+	Field      string `json:"field"`
+	Expression string `json:"expression"`
+}
+
+// applyFixedFilters puts exact-value filters on stored fields into filter group 2
+func applyFixedFilters(table ftables.Table, fixed []fixedFilterParam, language string) error {
+	if len(fixed) == 0 {
+		return nil
+	}
+	grouped, ok := table.(interface{ FilterGroup(group ...int) int })
+	if !ok {
+		return errors.New(apperrors.InvalidFilters().Message(language))
+	}
+	ranger, ok := table.(interface {
+		SetRange(fieldName string, values ...interface{})
+	})
+	if !ok {
+		return errors.New(apperrors.InvalidFilters().Message(language))
+	}
+	grouped.FilterGroup(2)
+	defer grouped.FilterGroup(0)
+	for _, f := range fixed {
+		if !ftables.IsQueryableColumn(table, f.Field) {
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
+		value := ""
+		switch v := f.Value.(type) {
+		case string:
+			value = v
+		case float64:
+			value = strconv.FormatFloat(v, 'f', -1, 64)
+		case bool:
+			value = strconv.FormatBool(v)
+		case nil:
+		default:
+			value = fmt.Sprint(v)
+		}
+		ranger.SetRange(f.Field, value)
+	}
+	return nil
+}
+
+// applyFieldFilters applies user filters (filter group 0): stored fields, and Sum/Count
+// FlowFields on their calculated value (e.g. Balance)
+func applyFieldFilters(table ftables.Table, filters []filterParam, tableName, language string) error {
+	for _, f := range filters {
+		switch err := ftables.ApplyFilter(table, ftables.FieldFilter{Field: f.Field, Expression: f.Expression}); {
+		case errors.Is(err, ftables.ErrFilterExpression):
+			return errors.New(apperrors.FilterInvalid(tableName, f.Field, f.Expression).Message(language))
+		case err != nil:
+			return errors.New(apperrors.InvalidFilters().Message(language))
+		}
 	}
 	return nil
 }
@@ -835,8 +859,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 		}
 	}
 
-	response := apitypes.NewSuccessResponse(ftables.PublicMap(table))
-	return c.JSON(response)
+	return c.JSON(apitypes.NewSuccessResponse(h.recordWithCalculatedValues(c, table)))
 }
 
 // ModifyRecord updates an existing record
@@ -931,8 +954,28 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// Calculate FlowFields for response
 	table.CalcFields(table.GetFlowFields()...)
 
-	response := apitypes.NewSuccessResponse(ftables.PublicMap(table))
-	return c.JSON(response)
+	return c.JSON(apitypes.NewSuccessResponse(h.recordWithCalculatedValues(c, table)))
+}
+
+// recordWithCalculatedValues returns a saved record for the response; with page_id (a list
+// saving its row) also the page's calculated fields of the row, so a footer (a journal's
+// balance) follows the edit
+func (h *TablesHandler) recordWithCalculatedValues(c *fiber.Ctx, table ftables.Table) map[string]interface{} {
+	data := ftables.PublicMap(table)
+	pageID := c.QueryInt("page_id", 0)
+	if pageID <= 0 {
+		return data
+	}
+	sess := getSession(c)
+	tableName := c.Params("table")
+	err := calculatedValues(pageID, tableName, []map[string]interface{}{data}, func() ftables.Table {
+		rec, _ := h.getTable(tableName, sess.GetCompany())
+		return rec
+	})
+	if err != nil {
+		fmt.Printf("Warning: calculated fields of page %d: %v\n", pageID, err)
+	}
+	return data
 }
 
 // DeleteRecord deletes a record

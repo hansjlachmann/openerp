@@ -1,0 +1,53 @@
+page:
+  id: 250
+  type: List
+  name: General Journal Template List
+  source_table: Gen_Journal_Template
+  caption: General Journal Template List
+  editable: false   # opened to pick the template of a journal
+
+  layout:
+    repeater:
+      fields:
+        - source: name
+          width: 110
+
+        - source: description
+          width: 250
+
+        - source: type
+          width: 130
+          visible: false
+
+        - source: recurring
+          width: 80
+          visible: false
+
+        - source: source_code
+          width: 110
+          visible: false
+
+        - source: reason_code
+          width: 110
+          visible: false
+
+        - source: force_doc_balance
+          width: 80
+          visible: false
+
+        - source: page_id
+          width: 90
+          visible: false
+
+        - source: test_report_id
+          width: 90
+          visible: false
+
+        - source: posting_report_id
+          width: 90
+          visible: false
+
+        - source: force_posting_report
+          width: 80
+          visible: false
+

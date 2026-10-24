@@ -14,8 +14,17 @@ export const load: PageLoad = ({ params, url }) => {
 	// Opened from a lookup's New: the list starts a new record ready to type
 	const startNew = url.searchParams.get('new') === '1';
 
+	// The page's own parameters (a journal's template and batch, for its OnOpenPage trigger):
+	// every other query parameter
+	const reserved = new Set(['record', 'filter', 'back', 'select', 'card', 'new', 'nav']);
+	const openParams: Record<string, string> = {};
+	for (const [name, value] of url.searchParams) {
+		if (!reserved.has(name)) openParams[name] = value;
+	}
+
 	return {
 		pageId,
+		openParams,
 		recordId,
 		filter,
 		returnUrl,

@@ -116,3 +116,13 @@ errors:
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Meny ikke funnet"
   ERR_PAGE_NOT_FOUND: "Side %1 ble ikke funnet"
+  ERR_JNL_ACCOUNT_TYPES: "%1 eller %2 må være Finanskonto eller Bankkonto."
+  ERR_JNL_OPTION_NOT_ALLOWED: "%1 kan ikke være %2."
+  ERR_JNL_OPTION_INTERNAL: "Valget %2 i %1 kan bare brukes internt i systemet."
+  ERR_JNL_BANK_ACCOUNT_REQUIRED: "%1 eller %2 må være en bankkonto."
+  ERR_JNL_WITHOUT_FIELD: "%1 kan ikke angis uten %2."
+  ERR_JNL_RECURRING_ONLY_FIELD: "Bare feltet %1 kan fylles ut i gjentakende kladder."
+  ERR_JNL_MUST_NOT_BE: "%1 kan ikke være %2."
+  ERR_JNL_FIXED_ASSET_NOT_YET: "%1 Anleggsmiddel kan ikke bokføres ennå: det kommer med bokføring av anleggsmidler."
+  ERR_JNL_TAX_NOT_YET: "%1 %2 kan ikke bokføres ennå: bare Salgsavgift støttes."
+  ERR_JNL_TEMPLATE_TYPE_NO_PAGE: "Kladder med %1 %2 kan ikke åpnes ennå."

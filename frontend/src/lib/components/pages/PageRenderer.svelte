@@ -3,7 +3,8 @@
 	import { withNavigationQuery, type NavigationQuery } from '$lib/utils/recordNavigation';
 	import { onMount } from 'svelte';
 	import type { PageDefinition } from '$lib/types/pages';
-	import type { LookupData } from '$lib/types/api';
+	import type { LookupData, FixedFilter, TableFilter } from '$lib/types/api';
+	import type { HeaderField } from '$lib/types/pages';
 	import { fetchPage } from '$lib/services/pages';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
@@ -15,9 +16,11 @@
 	import Button from '../Button.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
+	import PageRenderer from './PageRenderer.svelte';
 	import ListPageSkeleton from './ListPageSkeleton.svelte';
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
+	import Modal from '../Modal.svelte';
 	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
@@ -41,7 +44,7 @@
 		embedded?: boolean;
 		initialFilters?: import('$lib/types/api').TableFilter[];
 		lookupMode?: boolean;
-		onclose?: (action: 'OK' | 'LookupOK' | 'Cancel', key?: string) => void; // key: the picked record's id
+		onclose?: (action: 'OK' | 'LookupOK' | 'Cancel', key?: string, record?: Record<string, any>) => void; // key: the picked record's id
 		// A subpage in a card: a list page tied to the card's record — fixed filters (the link),
 		// new records get the link values; Esc in navigation mode goes back to the card (onexit);
 		// onlineschange after a line was saved or deleted (the card's totals)
@@ -53,6 +56,9 @@
 		// A subpage: when its card bumps this (the header was saved, a function asked for it),
 		// the lines reload — with the user's filters, search and position
 		refreshToken?: number;
+		// The page's parameters from the URL (a journal's template and batch): its OnOpenPage
+		// trigger turns them into the list's filters
+		openParams?: Record<string, string>;
 	}
 
 	let {
@@ -73,8 +79,91 @@
 		newRecordDefaults = {},
 		onexit,
 		onlineschange,
-		refreshToken = 0
+		refreshToken = 0,
+		openParams = {}
 	}: Props = $props();
+
+	// ---- OnOpenPage (a journal): the page's parameters, the filters its trigger set ----
+	// svelte-ignore state_referenced_locally - the URL's parameters only start the page
+	let pageParams = $state<Record<string, string>>({ ...openParams });
+	let openFilters = $state<FixedFilter[]>([]);
+	// The trigger asks the user to pick a record first (a template), or a header field's lookup
+	let pickRequest = $state<{ pageId: number; filters: TableFilter[]; param: string; field: string } | null>(null);
+	// The list's fixed filters: a subpage's link and the OnOpenPage trigger's; new records get them
+	const listFixedFilters = $derived([...fixedFilters, ...openFilters]);
+	const listNewRecordDefaults = $derived({
+		...newRecordDefaults,
+		...Object.fromEntries(openFilters.map((f) => [f.field, f.value]))
+	});
+
+	// Runs the page's OnOpenPage trigger; false when the user must pick a record first
+	async function runOpenTrigger(): Promise<boolean> {
+		if (!page?.page.has_open_trigger) return true;
+		const result = await api.openPage(page.page.id, pageParams);
+		pageParams = result.params ?? {};
+		openFilters = result.fixed_filters ?? [];
+		if (result.select) {
+			pickRequest = {
+				pageId: result.select.page_id,
+				param: result.select.param,
+				field: result.select.field,
+				filters: (result.select.filters ?? []).map((f) => ({ field: f.field, expression: String(f.value ?? '') }))
+			};
+			return false;
+		}
+		// The page keeps its parameters (reload, back)
+		if (!embedded && !subpage && typeof window !== 'undefined') {
+			replaceState(pageUrlWith(pageParams), {});
+		}
+		return true;
+	}
+
+	// This page's URL with other parameters (the rest of the query kept)
+	function pageUrlWith(params: Record<string, string>): string {
+		const url = new URL(window.location.href);
+		for (const [name, value] of Object.entries(params)) {
+			if (value === '' || value === undefined || value === null) url.searchParams.delete(name);
+			else url.searchParams.set(name, value);
+		}
+		return url.pathname + url.search;
+	}
+
+	// Opens the page again with a changed parameter (a picked template, another batch)
+	function reopenWith(param: string, value: string) {
+		const params = { ...pageParams, [param]: value };
+		if (embedded || subpage) return;
+		goto(pageUrlWith(params), { replaceState: true });
+	}
+
+	// A header field's lookup: its page filtered to the list's values of lookup_filters
+	function openHeaderLookup(header: HeaderField) {
+		if (!header.lookup_page) return;
+		const filters: TableFilter[] = [];
+		for (const [lookupField, listField] of Object.entries(header.lookup_filters ?? {})) {
+			const value = openFilters.find((f) => f.field === listField)?.value;
+			if (value !== undefined && value !== null && value !== '') filters.push({ field: lookupField, expression: String(value) });
+		}
+		pickRequest = { pageId: header.lookup_page, filters, param: header.param, field: header.lookup_field ?? header.source };
+	}
+
+	// A picked record (template selection or a header lookup): its field becomes the parameter
+	function handlePick(action: 'OK' | 'LookupOK' | 'Cancel', picked?: Record<string, any>) {
+		const request = pickRequest;
+		pickRequest = null;
+		if (!request || action !== 'LookupOK' || !picked) {
+			// Nothing picked when the page could not open yet: back where the user came from
+			if (request && openFilters.length === 0 && !embedded && !subpage) goto(returnUrl ?? '/');
+			return;
+		}
+		reopenWith(request.param, String(picked[request.field] ?? ''));
+	}
+
+	// A header field typed in: Code values in upper case (on leaving the field)
+	function handleHeaderChange(header: HeaderField, value: string) {
+		const next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
+		if (next === (pageParams[header.param] ?? '')) return;
+		reopenWith(header.param, next);
+	}
 
 	// A subpage reloads its lines when its card asks (refreshToken changes after the first load)
 	let lastRefreshToken: number | undefined = undefined;
@@ -197,6 +286,8 @@
 				// Set breadcrumb for card page
 				await setBreadcrumbForCardPage();
 			} else if (page.page.type === 'List') {
+				// A page with an OnOpenPage trigger (a journal) gets its filters first
+				if (!(await runOpenTrigger())) return;
 				await loadListData(await initialListOffset());
 				// Set breadcrumb for list page (not for a page opened from a codeunit)
 				if (!embedded && !subpage) breadcrumb.setListPage(page.page.id, page.page.caption, navigation.home);
@@ -315,8 +406,8 @@
 		if (currentFilters.length > 0) {
 			query.filters = currentFilters;
 		}
-		if (fixedFilters.length > 0) {
-			query.fixed_filters = fixedFilters; // a subpage's link to its card
+		if (listFixedFilters.length > 0) {
+			query.fixed_filters = listFixedFilters; // a subpage's link to its card, a journal's batch
 		}
 		const flowFilters = apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, get(currentLanguage));
 		if (flowFilters.length > 0) {
@@ -582,7 +673,7 @@
 	function handleRowClick(clickedRecord: Record<string, any>, navigation?: NavigationQuery) {
 		if (embedded) {
 			// Opened from a codeunit: Enter / double-click picks the record in lookup mode
-			if (lookupMode) onclose?.('LookupOK', getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList) ?? '');
+			if (lookupMode) onclose?.('LookupOK', getRecordId(clickedRecord, primaryKeyField, primaryKeyFieldsList) ?? '', clickedRecord);
 			return;
 		}
 		if (!page || !page.page.card_page_id) return;
@@ -646,7 +737,7 @@
 		if (!page) return [];
 		try {
 			// In a subpage the pasted lines belong to the card's record: its link values
-			const rows = subpage ? records.map((r) => ({ ...r, ...newRecordDefaults })) : records;
+			const rows = subpage || openFilters.length > 0 ? records.map((r) => ({ ...r, ...listNewRecordDefaults })) : records;
 			const keys = await api.insertRecords(page.page.source_table, rows);
 			await loadListData();
 			onlineschange?.();
@@ -782,8 +873,8 @@
 					onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 					pickOnEnter={embedded}
 					{subpage}
-					{fixedFilters}
-					{newRecordDefaults}
+					fixedFilters={listFixedFilters}
+					newRecordDefaults={listNewRecordDefaults}
 					oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 					onwindow={handleListWindow}
 					onaction={handleListAction}
@@ -800,11 +891,42 @@
 					<Button
 						variant="primary"
 						disabled={!lookupCurrent}
-						onclick={() => onclose?.('LookupOK', getRecordId(lookupCurrent, primaryKeyField, primaryKeyFieldsList) ?? '')}
+						onclick={() => onclose?.('LookupOK', getRecordId(lookupCurrent, primaryKeyField, primaryKeyFieldsList) ?? '', lookupCurrent)}
 					>{t(BTN.OK)}</Button>
 				</div>
 			</div>
 		{:else}
+			{#if page.page.header_fields?.length && openFilters.length > 0}
+				<!-- Header fields above the list (a journal's Batch Name) -->
+				<div class="page-header-fields">
+					{#each page.page.header_fields as header (header.param)}
+						<label class="header-field">
+							<span class="header-caption">{header.caption ?? header.source}</span>
+							<span class="header-input-wrap">
+								<input
+									class="header-input"
+									data-header-param={header.param}
+									value={pageParams[header.param] ?? ''}
+									autocomplete="off"
+									onchange={(e) => handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value);
+										} else if ((e.key === 'ArrowDown' && e.altKey) || e.key === 'F4') {
+											e.preventDefault();
+											openHeaderLookup(header);
+										}
+									}}
+								/>
+								{#if header.lookup_page}
+									<button type="button" class="header-lookup" tabindex="-1" aria-label={header.caption} onclick={() => openHeaderLookup(header)}>▼</button>
+								{/if}
+							</span>
+						</label>
+					{/each}
+				</div>
+			{/if}
 			<ListPage
 				{page}
 				{records}
@@ -823,8 +945,8 @@
 				onclose={embedded ? () => onclose?.(lookupMode ? 'Cancel' : 'OK') : subpage ? onexit : undefined}
 				pickOnEnter={embedded}
 				{subpage}
-				{fixedFilters}
-				{newRecordDefaults}
+				fixedFilters={listFixedFilters}
+				newRecordDefaults={listNewRecordDefaults}
 				oncurrent={embedded && lookupMode ? (r) => (lookupCurrent = r) : undefined}
 				onwindow={handleListWindow}
 				onaction={handleListAction}
@@ -845,6 +967,22 @@
 	{/if}
 {/if}
 
+<!-- A record to pick before the page opens (a journal template), or a header field's lookup -->
+{#if pickRequest}
+	{@const request = pickRequest}
+	<Modal open={true} size="expanded" onclose={() => handlePick('Cancel')}>
+		<div class="pick-page">
+			<PageRenderer
+				pageid={request.pageId}
+				embedded={true}
+				initialFilters={request.filters}
+				lookupMode={true}
+				onclose={(action, _key, picked) => handlePick(action, picked)}
+			/>
+		</div>
+	</Modal>
+{/if}
+
 <!-- Confirm Modal -->
 <ConfirmModal
 	open={$confirm.open}
@@ -857,6 +995,58 @@
 />
 
 <style>
+	/* Header fields above a list (a journal's Batch Name) */
+	.page-header-fields {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 2rem;
+		margin-bottom: 0.75rem;
+	}
+	.header-field {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+	}
+	.header-caption {
+		color: rgb(var(--gray-600));
+	}
+	:global(.dark) .header-caption {
+		color: rgb(var(--gray-400));
+	}
+	.header-input-wrap {
+		display: inline-flex;
+		align-items: stretch;
+		border: 1px solid rgb(var(--gray-300));
+		border-radius: 0.25rem;
+		background-color: var(--color-bg-input);
+		color: var(--color-text-primary);
+	}
+	:global(.dark) .header-input-wrap {
+		border-color: rgb(var(--gray-600));
+	}
+	.header-input-wrap:focus-within {
+		border-color: rgb(var(--accent-500));
+	}
+	.header-input {
+		width: 9rem;
+		padding: 0.125rem 0.5rem;
+		background: transparent;
+		border: none;
+		outline: none;
+		color: inherit;
+	}
+	.header-lookup {
+		padding: 0 0.4rem;
+		font-size: 0.65rem;
+		color: rgb(var(--gray-500));
+	}
+	.pick-page {
+		height: 70vh;
+		display: flex;
+		flex-direction: column;
+	}
+
 	/* RunModal in lookup mode: the list with OK and Cancel below it */
 	.lookup-page {
 		@apply flex flex-col h-full gap-3;

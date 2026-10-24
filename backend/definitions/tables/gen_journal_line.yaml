@@ -1,0 +1,866 @@
+table:
+  id: 81
+  name: "Gen_Journal_Line"
+  caption: Gen. Journal Line
+  description: "General journal lines (table 81): the lines of a journal batch, posted by the posting codeunits"
+  fields:
+    - name: journal_template_name
+      no: 1
+      type: types.Code
+      db_name: journal_template_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Gen_Journal_Template
+        field: name
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: journal_batch_name
+      no: 51
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Gen_Journal_Batch
+        field: name
+        filters:
+          journal_template_name: {field: journal_template_name}
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+      required: true
+
+    - name: account_type
+      no: 3
+      type: Option
+      db_name: account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: account_no
+      no: 4
+      type: types.Code
+      db_name: account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: posting_date
+      no: 5
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 6
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      no: 7
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 8
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: tax_percent
+      no: 10
+      type: types.Decimal
+      db_name: tax_percent
+      editable: false
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+    - name: bal_account_no
+      no: 11
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: currency_code
+      no: 12
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: amount
+      no: 13
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+
+    - name: debit_amount
+      no: 14
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+
+    - name: credit_amount
+      no: 15
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+
+    - name: amount_lcy
+      no: 16
+      type: types.Decimal
+      db_name: amount_lcy
+      precision: 18
+      scale: 2
+
+    - name: balance_lcy
+      no: 17
+      type: types.Decimal
+      db_name: balance_lcy
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: currency_factor
+      no: 18
+      type: types.Decimal
+      db_name: currency_factor
+      editable: false
+      decimal_places: "0:15"
+      validation: {min: 0}
+      precision: 28
+      scale: 15
+
+    - name: sales_purch_lcy
+      no: 19
+      type: types.Decimal
+      db_name: sales_purch_lcy
+      precision: 18
+      scale: 2
+
+    - name: profit_lcy
+      no: 20
+      type: types.Decimal
+      db_name: profit_lcy
+      precision: 18
+      scale: 2
+
+    - name: inv_discount_lcy
+      no: 21
+      type: types.Decimal
+      db_name: inv_discount_lcy
+      precision: 18
+      scale: 2
+
+    - name: sell_to_buy_from_no
+      no: 22
+      type: types.Code
+      db_name: sell_to_buy_from_no
+      length: 20
+      editable: false
+
+    # Customer / Vendor / FA posting group of the account
+    - name: posting_group
+      no: 23
+      type: types.Code
+      db_name: posting_group
+      length: 10
+      editable: false
+
+    - name: department_code
+      no: 24
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 25
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: salespers_purch_code
+      no: 26
+      type: types.Code
+      db_name: salespers_purch_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: source_code
+      no: 29
+      type: types.Code
+      db_name: source_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: system_created_entry
+      no: 30
+      type: bool
+      db_name: system_created_entry
+      editable: false
+
+    - name: on_hold
+      no: 34
+      type: types.Code
+      db_name: on_hold
+      length: 3
+
+    - name: applies_to_doc_type
+      no: 35
+      type: Option
+      db_name: applies_to_doc_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: applies_to_doc_no
+      no: 36
+      type: types.Code
+      db_name: applies_to_doc_no
+      length: 20
+
+    - name: due_date
+      no: 38
+      type: types.Date
+      db_name: due_date
+
+    - name: pmt_discount_date
+      no: 39
+      type: types.Date
+      db_name: pmt_discount_date
+
+    - name: payment_discount_percent
+      no: 40
+      type: types.Decimal
+      db_name: payment_discount_percent
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+    - name: quantity
+      no: 43
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: tax_amount
+      no: 44
+      type: types.Decimal
+      db_name: tax_amount
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: vat_posting
+      no: 45
+      type: Option
+      db_name: vat_posting
+      options: ["Automatic VAT Entry", "Manual VAT Entry"]
+      editable: false
+
+    - name: payment_terms_code
+      no: 47
+      type: types.Code
+      db_name: payment_terms_code
+      length: 10
+      table_relation:
+        table: Payment_terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: applies_to_id
+      no: 48
+      type: types.Code
+      db_name: applies_to_id
+      length: 20
+
+    - name: reason_code
+      no: 52
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_posting_type
+      no: 57
+      type: Option
+      db_name: gen_posting_type
+      options: [" ", "Purchase", "Sale", "Settlement"]
+
+    - name: gen_bus_posting_group
+      no: 58
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 59
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_calculation_type
+      no: 60
+      type: Option
+      db_name: tax_calculation_type
+      options: ["Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"]
+      editable: false
+
+    - name: allow_application
+      no: 62
+      type: bool
+      db_name: allow_application
+      default: true
+
+    - name: bal_account_type
+      no: 63
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: bal_gen_posting_type
+      no: 64
+      type: Option
+      db_name: bal_gen_posting_type
+      options: [" ", "Purchase", "Sale", "Settlement"]
+
+    - name: bal_gen_bus_posting_group
+      no: 65
+      type: types.Code
+      db_name: bal_gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_gen_prod_posting_group
+      no: 66
+      type: types.Code
+      db_name: bal_gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_tax_calculation_type
+      no: 67
+      type: Option
+      db_name: bal_tax_calculation_type
+      options: ["Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"]
+      editable: false
+
+    - name: bal_tax_percent
+      no: 68
+      type: types.Decimal
+      db_name: bal_tax_percent
+      editable: false
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+    - name: bal_tax_amount
+      no: 69
+      type: types.Decimal
+      db_name: bal_tax_amount
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: bank_payment_type
+      no: 70
+      type: Option
+      db_name: bank_payment_type
+      options: [" ", "Computer Check", "Manual Check", "Electronic Payment"]
+
+    - name: tax_base_amount
+      no: 71
+      type: types.Decimal
+      db_name: tax_base_amount
+      precision: 18
+      scale: 2
+
+    - name: bal_tax_base_amount
+      no: 72
+      type: types.Decimal
+      db_name: bal_tax_base_amount
+      precision: 18
+      scale: 2
+
+    - name: correction
+      no: 73
+      type: bool
+      db_name: correction
+
+    - name: check_printed
+      no: 75
+      type: bool
+      db_name: check_printed
+      editable: false
+
+    - name: document_date
+      no: 76
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 77
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: source_type
+      no: 78
+      type: Option
+      db_name: source_type
+      options: [" ", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: source_no
+      no: 79
+      type: types.Code
+      db_name: source_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: source_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: posting_no_series
+      no: 80
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 82
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 83
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 84
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: use_tax
+      no: 85
+      type: bool
+      db_name: use_tax
+
+    - name: bal_tax_area_code
+      no: 86
+      type: types.Code
+      db_name: bal_tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_tax_liable
+      no: 87
+      type: bool
+      db_name: bal_tax_liable
+
+    - name: bal_tax_group_code
+      no: 88
+      type: types.Code
+      db_name: bal_tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_use_tax
+      no: 89
+      type: bool
+      db_name: bal_use_tax
+
+    - name: tax_bus_posting_group
+      no: 90
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 91
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_tax_bus_posting_group
+      no: 92
+      type: types.Code
+      db_name: bal_tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_tax_prod_posting_group
+      no: 93
+      type: types.Code
+      db_name: bal_tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: source_currency_code
+      no: 99
+      type: types.Code
+      db_name: source_currency_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: source_currency_amount
+      no: 100
+      type: types.Decimal
+      db_name: source_currency_amount
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: source_curr_tax_base_amount
+      no: 101
+      type: types.Decimal
+      db_name: source_curr_tax_base_amount
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: source_curr_tax_amount
+      no: 102
+      type: types.Decimal
+      db_name: source_curr_tax_amount
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: tax_amount_lcy
+      no: 104
+      type: types.Decimal
+      db_name: tax_amount_lcy
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: tax_base_amount_lcy
+      no: 105
+      type: types.Decimal
+      db_name: tax_base_amount_lcy
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: bal_tax_amount_lcy
+      no: 106
+      type: types.Decimal
+      db_name: bal_tax_amount_lcy
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: bal_tax_base_amount_lcy
+      no: 107
+      type: types.Decimal
+      db_name: bal_tax_base_amount_lcy
+      editable: false
+      precision: 18
+      scale: 2
+
+    - name: reversing_entry
+      no: 108
+      type: bool
+      db_name: reversing_entry
+      editable: false
+
+  keys:
+    - name: Primary
+      fields: [journal_template_name, journal_batch_name, line_no]
+      clustered: true
+    - name: posting_date
+      fields: [journal_template_name, journal_batch_name, posting_date, document_no]
+    - name: account
+      fields: [account_type, account_no, applies_to_doc_type, applies_to_doc_no]

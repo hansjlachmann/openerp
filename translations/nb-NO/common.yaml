@@ -8,6 +8,12 @@ common:
 
   # Common actions
   actions:
+    register: "Journal"
+    general_ledger: "Finans"
+    customer_ledger: "Kundeposter"
+    vendor_ledger: "Leverandørposter"
+    bank_account_ledger: "Bankkontoposter"
+    batches: "Kladder"
     depreciation_books: "Avskrivningsprofiler"
     maintenance_ledger_entries: "Vedlikeholdsposter"
     main_asset_components: "Hovedeiendelskomponenter"
@@ -64,6 +70,8 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    sales: "Salg"
+    purchases: "Kjøp"
     maintenance: "Vedlikehold"
     depreciation_books: "Avskrivningsprofiler"
     amounts: "Beløp"

@@ -63,6 +63,10 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		Record   map[string]interface{} `json:"record"`
 		// The records selected on the list (rec.SetSelectionFilter in the codeunit)
 		Selection *listSelection `json:"selection"`
+		// The list's filters: the record carries them (fixed filters in filter group 2, the
+		// user's in group 0), so the codeunit works on what the list shows (a journal's batch)
+		FixedFilters []fixedFilterParam `json:"fixed_filters"`
+		Filters      []filterParam      `json:"filters"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
@@ -134,6 +138,12 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 			return t
 		}
 		if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
+		if err := applyFixedFilters(table, req.FixedFilters, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
+		if err := applyFieldFilters(table, req.Filters, tableName, language); err != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 		}
 	}

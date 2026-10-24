@@ -183,3 +183,131 @@ func RunNewRecord(pageID int, rec, xRec any, belowXRec bool) error {
 	}
 	return nil
 }
+
+// FixedFilter is an exact-value filter the user cannot remove (filter group 2): a journal's
+// template and batch
+type FixedFilter struct {
+	Field string      `json:"field"`
+	Value interface{} `json:"value"`
+}
+
+// SelectRequest asks the user to pick a record before the page opens (classic RUNMODAL of a
+// list in lookup mode in OnOpenForm): the page PageID shown with Filters; the picked record's
+// Field becomes the page parameter Param, and the page opens again
+type SelectRequest struct {
+	PageID  int           `json:"page_id"`
+	Param   string        `json:"param"`
+	Field   string        `json:"field"`
+	Filters []FixedFilter `json:"filters,omitempty"`
+}
+
+// Open is the page as its OnOpenPage trigger sees it: the page's parameters (from the URL,
+// e.g. template and batch) and the filters it sets on the page's records
+//
+//	pages.OnOpenPage(39, func(rec *gtables.GenJournalLine, page *pages.Open) error {
+//		page.SetFilter("journal_template_name", "GENERAL")
+//		return nil
+//	})
+type Open struct {
+	params    map[string]string
+	filters   []FixedFilter
+	selection *SelectRequest
+}
+
+// NewOpen returns the page for an OnOpenPage trigger with the given parameters
+func NewOpen(params map[string]string) *Open {
+	o := &Open{params: map[string]string{}}
+	for name, value := range params {
+		o.params[strings.ToLower(name)] = value
+	}
+	return o
+}
+
+// Param returns a page parameter ("" when not given)
+func (o *Open) Param(name string) string {
+	return o.params[strings.ToLower(name)]
+}
+
+// SetParam sets a page parameter: the page keeps it (URL), so it opens the same way again
+func (o *Open) SetParam(name, value string) {
+	o.params[strings.ToLower(name)] = value
+}
+
+// Params returns the page parameters
+func (o *Open) Params() map[string]string {
+	return o.params
+}
+
+// SetFilter limits the page to records whose field has the value (filter group 2: the user's
+// filters narrow it, they cannot remove it); new records get the value. Setting a field again
+// replaces its filter.
+func (o *Open) SetFilter(field string, value interface{}) {
+	field = strings.ToLower(field)
+	for i, f := range o.filters {
+		if f.Field == field {
+			o.filters[i].Value = value
+			return
+		}
+	}
+	o.filters = append(o.filters, FixedFilter{Field: field, Value: value})
+}
+
+// Filters returns the filters the trigger set
+func (o *Open) Filters() []FixedFilter {
+	return o.filters
+}
+
+// SelectRecord asks the user to pick a record of a list page (in lookup mode, filtered) before
+// the page opens; the picked record's field becomes the parameter param and the page's
+// OnOpenPage runs again. The trigger returns after calling it.
+func (o *Open) SelectRecord(pageID int, param, field string, filters ...FixedFilter) {
+	o.selection = &SelectRequest{PageID: pageID, Param: strings.ToLower(param), Field: strings.ToLower(field), Filters: filters}
+}
+
+// Selection returns the pick the trigger asked for (nil: none)
+func (o *Open) Selection() *SelectRequest {
+	return o.selection
+}
+
+var openPage = map[int][]func(rec any, page *Open) error{}
+
+// OnOpenPage registers a trigger that runs when a page opens (classic OnOpenForm): it reads the
+// page's parameters and sets the filters of the records the page shows, or asks the user to
+// pick a record first (SelectRecord); an error stops the page from opening and is shown.
+func OnOpenPage[T any](pageID int, fn func(rec T, page *Open) error) {
+	triggersMu.Lock()
+	defer triggersMu.Unlock()
+	openPage[pageID] = append(openPage[pageID], func(rec any, page *Open) error {
+		r, ok := rec.(T)
+		if !ok {
+			var want T
+			return fmt.Errorf("page %d: OnOpenPage takes %T, the page's record is %T", pageID, want, rec)
+		}
+		return fn(r, page)
+	})
+}
+
+// HasOpenTrigger reports whether a page has OnOpenPage triggers
+func HasOpenTrigger(pageID int) bool {
+	triggersMu.RLock()
+	defer triggersMu.RUnlock()
+	return len(openPage[pageID]) > 0
+}
+
+// RunOpenPage runs a page's OnOpenPage triggers with its parameters; it stops after a trigger
+// that asked the user to pick a record
+func RunOpenPage(pageID int, rec any, params map[string]string) (*Open, error) {
+	triggersMu.RLock()
+	triggers := openPage[pageID]
+	triggersMu.RUnlock()
+	page := NewOpen(params)
+	for _, trigger := range triggers {
+		if err := trigger(rec, page); err != nil {
+			return nil, err
+		}
+		if page.selection != nil {
+			break
+		}
+	}
+	return page, nil
+}

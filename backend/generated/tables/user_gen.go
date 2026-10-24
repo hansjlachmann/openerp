@@ -814,6 +814,8 @@ func (t *User) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(UserTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -1072,7 +1074,7 @@ func (t *User) renameReferences(field string, oldValue, newValue interface{}) er
 		condValue  int
 	}
 	references := map[string][]reference{
-		"user_id": {{"Bank_Account_Ledger_Entry", false, "user_id", "", 0}, {"Check_Ledger_Entry", false, "user_id", "", 0}, {"Customer Ledger Entry", false, "user_id", "", 0}, {"FA_Ledger_Entry", false, "user_id", "", 0}, {"G_L_Entry", false, "user_id", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "user_id", "", 0}, {"Job_Queue", false, "user_id", "", 0}, {"Maintenance_Ledger_Entry", false, "user_id", "", 0}, {"User_Personalization", true, "user_id", "", 0}, {"User_Theme", true, "user_id", "", 0}, {"User_Member", true, "user_id", "", 0}, {"Vendor Ledger Entry", false, "user_id", "", 0}},
+		"user_id": {{"Bank_Account_Ledger_Entry", false, "user_id", "", 0}, {"Check_Ledger_Entry", false, "user_id", "", 0}, {"Customer Ledger Entry", false, "user_id", "", 0}, {"FA_Ledger_Entry", false, "user_id", "", 0}, {"G_L_Entry", false, "user_id", "", 0}, {"G_L_Register", false, "user_id", "", 0}, {"Ins_Coverage_Ledger_Entry", false, "user_id", "", 0}, {"Job_Queue", false, "user_id", "", 0}, {"Maintenance_Ledger_Entry", false, "user_id", "", 0}, {"User_Personalization", true, "user_id", "", 0}, {"User_Setup", false, "user_id", "", 0}, {"User_Theme", true, "user_id", "", 0}, {"User_Member", true, "user_id", "", 0}, {"Vendor Ledger Entry", false, "user_id", "", 0}},
 	}
 	var companies []string
 	rows, err := t.db.Query(`SELECT name FROM "Company"`)
@@ -2489,10 +2491,14 @@ func (t *User) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *User) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, UserTableName)
+	}
 	t.lockForUpdate = true
 }
 

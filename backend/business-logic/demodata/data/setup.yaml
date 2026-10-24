@@ -44,6 +44,12 @@ master_data:
       - {code: GENJNL, description: General journal}
       - {code: SALES, description: Sales}
       - {code: PURCHASES, description: Purchases}
+      - {code: SALESJNL, description: Sales journal}
+      - {code: PURCHJNL, description: Purchase journal}
+      - {code: CASHRECJNL, description: Cash receipt journal}
+      - {code: PAYMENTJNL, description: Payment journal}
+      - {code: SALESAPPL, description: Sales entry application}
+      - {code: PURCHAPPL, description: Purchase entry application}
   - table: Reason_Code
     records:
       - {code: CORRECTION, description: Correction of an entry}
@@ -333,6 +339,11 @@ master_data:
       - {code: "P-CR", description: Purchase credit memos, default_nos: true, manual_nos: true}
       - {code: "P-CR+", description: Posted purchase credit memos, default_nos: true, manual_nos: false}
       - {code: "P-RCPT", description: Posted purchase receipts, default_nos: true, manual_nos: false}
+      - {code: "GJNL-GEN", description: General journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-SALES", description: Sales journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-PURCH", description: Purchase journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-RCPT", description: Cash receipt journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-PMT", description: Payment journal, default_nos: true, manual_nos: true}
   - table: No_Series_Line   # starting at the beginning (blank Starting Date)
     records:
       - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
@@ -361,6 +372,11 @@ master_data:
       - {series_code: "P-CR", line_no: 10000, starting_no: "PCR000001", increment_by_no: 1, open: true}
       - {series_code: "P-CR+", line_no: 10000, starting_no: "PCM000001", increment_by_no: 1, open: true}
       - {series_code: "P-RCPT", line_no: 10000, starting_no: "PR000001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-GEN", line_no: 10000, starting_no: "G00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-SALES", line_no: 10000, starting_no: "GS00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-PURCH", line_no: 10000, starting_no: "GU00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-RCPT", line_no: 10000, starting_no: "GR00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-PMT", line_no: 10000, starting_no: "GP00001", increment_by_no: 1, open: true}
   - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
     records:
       - {code: CUST, series_code: CUST-EXP}
@@ -405,6 +421,23 @@ master_data:
     records:
       - {code: VEHICLE, description: Vehicle insurance}
       - {code: PROPERTY, description: Property insurance}
+  - table: Source_Code_Setup   # the single setup record (blank key): the journals' source codes
+    records:
+      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL}
+  - table: Gen_Journal_Template   # one per journal type (type 0 General … 4 Payments); page and source code come from the type
+    records:
+      - {name: GENERAL, description: General Journal, type: 0, no_series: GJNL-GEN}
+      - {name: SALES, description: Sales Journal, type: 1, no_series: GJNL-SALES}
+      - {name: PURCHASES, description: Purchase Journal, type: 2, no_series: GJNL-PURCH}
+      - {name: CASHRCPT, description: Cash Receipt Journal, type: 3, no_series: GJNL-RCPT, bal_account_type: 3, bal_account_no: B010}
+      - {name: PAYMENT, description: Payment Journal, type: 4, no_series: GJNL-PMT, bal_account_type: 3, bal_account_no: B010}
+  - table: Gen_Journal_Batch
+    records:
+      - {journal_template_name: GENERAL, name: DEFAULT, description: Default Journal, no_series: GJNL-GEN}
+      - {journal_template_name: SALES, name: DEFAULT, description: Default Journal, no_series: GJNL-SALES}
+      - {journal_template_name: PURCHASES, name: DEFAULT, description: Default Journal, no_series: GJNL-PURCH}
+      - {journal_template_name: CASHRCPT, name: DEFAULT, description: Default Journal, no_series: GJNL-RCPT, bal_account_type: 3, bal_account_no: B010}
+      - {journal_template_name: PAYMENT, name: DEFAULT, description: Default Journal, no_series: GJNL-PMT, bal_account_type: 3, bal_account_no: B010}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)

@@ -1,0 +1,42 @@
+table:
+  id: 91
+  name: "User_Setup"
+  caption: User Setup
+  description: "User setup (table 91): the posting period each user may post in"
+  fields:
+    - name: user_id
+      no: 1
+      type: types.Code
+      db_name: user_id
+      length: 50
+      primary_key: true
+      required: true
+      table_relation:
+        table: User
+        field: user_id
+        validate: false
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: allow_posting_from
+      no: 2
+      type: types.Date
+      db_name: allow_posting_from
+
+    - name: allow_posting_to
+      no: 3
+      type: types.Date
+      db_name: allow_posting_to
+
+    - name: register_time
+      no: 4
+      type: bool
+      db_name: register_time
+
+  keys:
+    - name: Primary
+      fields: [user_id]
+      clustered: true

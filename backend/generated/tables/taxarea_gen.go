@@ -656,6 +656,8 @@ func (t *TaxArea) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(TaxAreaTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -836,7 +838,7 @@ func (t *TaxArea) renameReferences(field string, oldValue, newValue interface{})
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "tax_area_code", "", 0}, {"FA_Ledger_Entry", false, "tax_area_code", "", 0}, {"G_L_Account", false, "tax_area_code", "", 0}, {"G_L_Entry", false, "tax_area_code", "", 0}, {"Maintenance_Ledger_Entry", false, "tax_area_code", "", 0}, {"Ship_to_Address", false, "tax_area_code", "", 0}, {"Vendor", false, "tax_area_code", "", 0}},
+		"code": {{"Customer", false, "tax_area_code", "", 0}, {"FA_Ledger_Entry", false, "tax_area_code", "", 0}, {"Gen_Journal_Line", false, "tax_area_code", "", 0}, {"Gen_Journal_Line", false, "bal_tax_area_code", "", 0}, {"G_L_Account", false, "tax_area_code", "", 0}, {"G_L_Entry", false, "tax_area_code", "", 0}, {"Maintenance_Ledger_Entry", false, "tax_area_code", "", 0}, {"Ship_to_Address", false, "tax_area_code", "", 0}, {"Vendor", false, "tax_area_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1923,10 +1925,14 @@ func (t *TaxArea) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *TaxArea) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, TaxAreaTableName)
+	}
 	t.lockForUpdate = true
 }
 

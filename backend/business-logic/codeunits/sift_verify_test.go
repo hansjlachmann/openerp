@@ -9,6 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -22,29 +23,9 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 	}
 	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = db.Close() })
-	for _, tbl := range []interface {
-		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{}, &gtables.JobQueue{}, &gtables.JobQueueEntry{},
-		// the demo data's master data tables
-		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
-		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
-		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
-		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
-		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
-		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{},
-		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
-		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
-		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
-		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
-		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
-		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{},
-		&gtables.BankAccount{}, &gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.BankAccountPostingGroup{},
-		&gtables.FixedAsset{}, &gtables.FALedgerEntry{}, &gtables.FASetup{}, &gtables.FAPostingGroup{}, &gtables.FAClass{}, &gtables.FASubclass{},
-		&gtables.FALocation{}, &gtables.DepreciationBook{}, &gtables.FADepreciationBook{}, &gtables.MaintenanceLedgerEntry{}, &gtables.Maintenance{},
-		&gtables.MaintenanceRegistration{}, &gtables.MainAssetComponent{}, &gtables.Insurance{}, &gtables.InsuranceType{}, &gtables.InsCoverageLedgerEntry{}} {
-		if err := tbl.CreateTableWithDBType(db, company, database.DBTypeSQLite); err != nil {
-			t.Fatal(err)
-		}
+	// every company table (the demo data's and the Job Queue's)
+	if err := tables.CreateCompanyTables(db, company, database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := demodata.Create(db, company, database.DBTypeSQLite, demodata.Options{Today: time.Date(2026, 10, 6, 0, 0, 0, 0, time.Local)}); err != nil {
 		t.Fatal(err)

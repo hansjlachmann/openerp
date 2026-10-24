@@ -138,6 +138,11 @@ func (d Decimal) Add(other Decimal) Decimal {
 	return Decimal{d.Decimal.Add(other.Decimal)}
 }
 
+// Neg returns -d
+func (d Decimal) Neg() Decimal {
+	return Decimal{d.Decimal.Neg()}
+}
+
 // Sub performs subtraction (d - other)
 func (d Decimal) Sub(other Decimal) Decimal {
 	return Decimal{d.Decimal.Sub(other.Decimal)}

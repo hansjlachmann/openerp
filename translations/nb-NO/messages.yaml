@@ -366,3 +366,5 @@ messages:
   BTN_OK: "OK"
   BTN_YES: "Ja"
   BTN_NO: "Nei"
+  GEN_JNL_TEMPLATE_DESCRIPTION: "Kladd %1"
+  GEN_JNL_DEFAULT_BATCH: "Standardkladd"

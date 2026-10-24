@@ -186,23 +186,9 @@ func TestLockTableReadsForUpdate(t *testing.T) {
 
 func TestMoreRecordFunctions(t *testing.T) {
 	db := newTestDB(t)
-	if err := (&gtables.Customer{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+	// Rename carries the new number over to every table that refers to customers
+	if err := CreateCompanyTables(db, "c1", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
-	}
-	// Rename carries the new number over to the ledger entries
-	if err := (&gtables.CustomerLedgerEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
-		t.Fatal(err)
-	}
-	if err := (&gtables.GLEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
-		t.Fatal(err)
-	}
-	for _, related := range []interface {
-		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.CommentLine{}, &gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.VendorLedgerEntry{},
-		&gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.FALedgerEntry{}, &gtables.MaintenanceLedgerEntry{}} {
-		if err := related.CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
-			t.Fatal(err)
-		}
 	}
 	for _, no := range []string{"C1", "C2", "C3"} {
 		c := &gtables.Customer{}

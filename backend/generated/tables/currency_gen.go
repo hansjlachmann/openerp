@@ -1196,6 +1196,8 @@ func (t *Currency) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(CurrencyTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -1608,7 +1610,7 @@ func (t *Currency) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}},
+		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer Ledger Entry", false, "closed_by_currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "source_currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "closed_by_currency_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3770,10 +3772,14 @@ func (t *Currency) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *Currency) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, CurrencyTableName)
+	}
 	t.lockForUpdate = true
 }
 

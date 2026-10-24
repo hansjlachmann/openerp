@@ -349,3 +349,57 @@ pages:
     caption: "Forsikringsstatistikk"
     fields:  # the calculated field (OnAfterGetRecord)
       over_underinsured: "Over-/underforsikret"
+
+  # General journal and posting
+  general_journal:
+    caption: "Finanskladd"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Motkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  sales_journal:
+    caption: "Salgskladd"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Motkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  purchase_journal:
+    caption: "Kjøpskladd"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Motkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  cash_receipt_journal:
+    caption: "Innbetalingskladd"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Motkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  payment_journal:
+    caption: "Utbetalingskladd"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Motkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  general_journal_templates:
+    caption: "Finanskladdemaler"
+  general_journal_template_list:
+    caption: "Finanskladdemalliste"
+  general_journal_batches:
+    caption: "Finanskladdenavn"
+  g_l_registers:
+    caption: "Finansjournaler"
+  source_code_setup:
+    caption: "Kildekodeoppsett"
+  user_setup:
+    caption: "Brukeroppsett"

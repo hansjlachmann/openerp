@@ -58,6 +58,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	pageDef.Page.PrimaryKeyFields = primaryKeyFields
 	pageDef.Page.HasRecordTriggers = pages.HasRecordTriggers(pageID)
 	pageDef.Page.HasNewRecordTriggers = pages.HasNewRecordTriggers(pageID)
+	pageDef.Page.HasOpenTrigger = pages.HasOpenTrigger(pageID)
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		tbl := factory()
 		pageDef.Page.FlowFields = tbl.GetFlowFields()
@@ -176,6 +177,24 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				}
 				applyTableField(field)
 			}
+		}
+
+		// The footer's calculated fields (shown under a list for the cursor row) and the header
+		// fields above it (their captions: the page's, else the table field's)
+		for i := range pageDef.Page.Footer {
+			field := &pageDef.Page.Footer[i]
+			fieldCaptions[field.Source] = pageFieldCaption(ts, pageDef.Page.Name, pageDef.Page.SourceTable, field, lang)
+			if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
+				fieldTypes[field.Source] = ft
+			}
+			if field.Calculated {
+				markCalculated(&pageDef.Page, field, fieldTypes)
+			}
+			applyTableField(field)
+		}
+		for i := range pageDef.Page.HeaderFields {
+			header := &pageDef.Page.HeaderFields[i]
+			header.Caption = pageFieldCaption(ts, pageDef.Page.Name, pageDef.Page.SourceTable, &pages.Field{Source: header.Source}, lang)
 		}
 
 		captions = &apitypes.CaptionData{

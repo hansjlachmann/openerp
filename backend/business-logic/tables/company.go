@@ -81,3 +81,31 @@ func syncCompanyKeys(db database.Executor, dbType database.DBType, companyName s
 	}
 	return nil
 }
+
+// CreateCompanyTables creates every company table of the application in a company (global
+// tables are left out) — for tests and tools that need a whole company
+func CreateCompanyTables(db database.Executor, companyName string, dbType database.DBType) error {
+	names := gtables.ListTableNames()
+	sort.Strings(names)
+	done := map[string]bool{}
+	for _, name := range names {
+		factory, ok := gtables.GetTableFactory(name)
+		if !ok {
+			continue
+		}
+		table := factory()
+		creator, ok := table.(interface {
+			CreateTableWithDBType(db database.Executor, company string, dbType database.DBType) error
+			IsGlobal() bool
+		})
+		if !ok || creator.IsGlobal() || done[table.GetTableName()] {
+			continue
+		}
+		done[table.GetTableName()] = true
+		err := creator.CreateTableWithDBType(db, companyName, dbType)
+		if err != nil {
+			return fmt.Errorf("%s: %w", table.GetTableName(), err)
+		}
+	}
+	return nil
+}

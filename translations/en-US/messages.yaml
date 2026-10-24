@@ -366,3 +366,5 @@ messages:
   BTN_OK: "OK"
   BTN_YES: "Yes"
   BTN_NO: "No"
+  GEN_JNL_TEMPLATE_DESCRIPTION: "%1 Journal"
+  GEN_JNL_DEFAULT_BATCH: "Default Journal"

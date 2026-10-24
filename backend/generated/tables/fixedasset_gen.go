@@ -1296,6 +1296,8 @@ func (t *FixedAsset) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(FixedAssetTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -1732,7 +1734,7 @@ func (t *FixedAsset) renameReferences(field string, oldValue, newValue interface
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Comment_Line", false, "no", "table_name", 10}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 4}, {"FA_Depreciation_Book", false, "fa_no", "", 0}, {"FA_Depreciation_Book", false, "component_of_main_asset", "", 0}, {"FA_Ledger_Entry", false, "fa_no", "", 0}, {"FA_Ledger_Entry", false, "fa_no_budgeted_fa_no", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"FA_Ledger_Entry", false, "canceled_from_fa_no", "", 0}, {"Fixed_Asset", false, "component_of_main_asset", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 4}, {"G_L_Entry", false, "source_no", "source_type", 4}, {"Ins_Coverage_Ledger_Entry", false, "fa_no", "", 0}, {"Main_Asset_Component", false, "main_asset_no", "", 0}, {"Main_Asset_Component", false, "fa_no", "", 0}, {"Maintenance_Registration", false, "fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "fa_no_budgeted_fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 4}},
+		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Comment_Line", false, "no", "table_name", 10}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 4}, {"FA_Depreciation_Book", false, "fa_no", "", 0}, {"FA_Depreciation_Book", false, "component_of_main_asset", "", 0}, {"FA_Ledger_Entry", false, "fa_no", "", 0}, {"FA_Ledger_Entry", false, "fa_no_budgeted_fa_no", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"FA_Ledger_Entry", false, "canceled_from_fa_no", "", 0}, {"Fixed_Asset", false, "component_of_main_asset", "", 0}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 4}, {"Gen_Journal_Line", false, "account_no", "account_type", 4}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 4}, {"Gen_Journal_Line", false, "source_no", "source_type", 4}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 4}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 4}, {"G_L_Entry", false, "source_no", "source_type", 4}, {"Ins_Coverage_Ledger_Entry", false, "fa_no", "", 0}, {"Main_Asset_Component", false, "main_asset_no", "", 0}, {"Main_Asset_Component", false, "fa_no", "", 0}, {"Maintenance_Registration", false, "fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "fa_no_budgeted_fa_no", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 4}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 4}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -4165,10 +4167,14 @@ func (t *FixedAsset) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *FixedAsset) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, FixedAssetTableName)
+	}
 	t.lockForUpdate = true
 }
 

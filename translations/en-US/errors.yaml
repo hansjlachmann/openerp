@@ -116,3 +116,13 @@ errors:
   # Menu/Pages
   ERR_MENU_NOT_FOUND: "Menu not found"
   ERR_PAGE_NOT_FOUND: "Page %1 not found"
+  ERR_JNL_ACCOUNT_TYPES: "%1 or %2 must be G/L Account or Bank Account."
+  ERR_JNL_OPTION_NOT_ALLOWED: "%1 cannot be %2."
+  ERR_JNL_OPTION_INTERNAL: "The %2 option of %1 can only be used internally in the system."
+  ERR_JNL_BANK_ACCOUNT_REQUIRED: "%1 or %2 must be a Bank Account."
+  ERR_JNL_WITHOUT_FIELD: "%1 cannot be specified without %2."
+  ERR_JNL_RECURRING_ONLY_FIELD: "Only the %1 field can be filled in on recurring journals."
+  ERR_JNL_MUST_NOT_BE: "%1 must not be %2."
+  ERR_JNL_FIXED_ASSET_NOT_YET: "%1 Fixed Asset cannot be posted yet: it comes with fixed asset posting."
+  ERR_JNL_TAX_NOT_YET: "%1 %2 cannot be posted yet: only Sales Tax is supported."
+  ERR_JNL_TEMPLATE_TYPE_NO_PAGE: "Journals of %1 %2 cannot be opened yet."
