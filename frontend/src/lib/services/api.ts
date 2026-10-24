@@ -244,16 +244,22 @@ export const api = {
 	// resulting record.
 	/**
 	 * Run a page's OnAfterGetRecord triggers for the record it shows: the fields they made
-	 * editable / read-only or visible / hidden
+	 * editable / read-only or visible / hidden, and the values of its calculated fields
 	 */
-	async getFieldStates(pageId: number, record: TableRecord): Promise<Record<string, FieldState>> {
+	async getFieldStates(
+		pageId: number,
+		record: TableRecord
+	): Promise<{ states: Record<string, FieldState>; values: Record<string, any> }> {
 		const response = await fetch(`${API_BASE}/pages/${pageId}/field-states`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(record)
 		});
-		const data = await handleApiResponse<{ field_states: Record<string, FieldState> }>(response, `field states of page ${pageId}`);
-		return data.field_states ?? {};
+		const data = await handleApiResponse<{ field_states: Record<string, FieldState>; values?: Record<string, any> }>(
+			response,
+			`field states of page ${pageId}`
+		);
+		return { states: data.field_states ?? {}, values: data.values ?? {} };
 	},
 
 	async validateField(

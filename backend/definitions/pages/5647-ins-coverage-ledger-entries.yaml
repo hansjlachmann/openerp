@@ -1,0 +1,93 @@
+page:
+  id: 5647
+  type: List
+  name: Ins. Coverage Ledger Entries
+  source_table: Ins_Coverage_Ledger_Entry
+  caption: Ins. Coverage Ledger Entries
+  # Editable for now (demo data); posted ledger entries are read-only once posting exists
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 110
+          visible: false
+
+        - source: document_no
+          width: 110
+
+        - source: insurance_no
+          width: 110
+
+        - source: fa_no
+          width: 100
+
+        - source: fa_description
+          width: 200
+
+        - source: description
+          width: 220
+          visible: false
+
+        - source: amount
+          width: 120
+
+        - source: disposed_fa
+          width: 90
+
+        - source: fa_class_code
+          width: 120
+          visible: false
+
+        - source: fa_location_code
+          width: 130
+          visible: false
+
+        - source: department_code
+          width: 120
+          visible: false
+
+        - source: project_code
+          width: 120
+          visible: false
+
+        - source: user_id
+          width: 100
+          visible: false
+
+        - source: source_code
+          width: 100
+          visible: false
+
+        - source: index_entry
+          width: 90
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

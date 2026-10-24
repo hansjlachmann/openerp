@@ -71,6 +71,7 @@
 		returnUrl?: string;
 		// Record to select when the list opens (returning from a drilldown)
 		initialSelectKey?: string;
+		initialOpenCard?: boolean; // open the selected record's modal card (back from a card action)
 		startNew?: boolean; // opened from a lookup's New: start a new record at once
 		// Esc and the close button call this instead of leaving the page (RunModal: cancel;
 		// subpage: back to the card)
@@ -113,6 +114,7 @@
 		onwindow,
 		returnUrl,
 		initialSelectKey,
+		initialOpenCard = false,
 		startNew = false,
 		onclose,
 		pickOnEnter = false,
@@ -491,6 +493,15 @@
 		initialSelectDone = true;
 		const index = records.findIndex((r) => getRecordId(r, primaryKeyField, primaryKeyFieldsList) === initialSelectKey);
 		if (index >= 0) selectedIndex = index;
+		// Back from a page a modal card opened (Statistics, Comments …): the card again, on
+		// the record — the parameter leaves the URL, so closing the card stays on the list
+		if (index >= 0 && initialOpenCard && page.page.modal_card && !subpage) {
+			const url = new URL(window.location.href);
+			url.searchParams.delete('card');
+			replaceState(url.pathname + url.search, {});
+			const record = records[index];
+			setTimeout(() => openModalCard(record), 0);
+		}
 	});
 
 	// Opened from a lookup's New (?new=1): start a new record ready to type, once — the
@@ -1253,8 +1264,20 @@
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
 
+	// Saves still running or queued finish first (at most a few seconds): the page's
+	// OnNewRecord triggers see the line just entered (Comment Sheet: only the first comment
+	// gets the work date)
+	async function waitForSaves(maxMs = 5000) {
+		await new Promise((resolve) => setTimeout(resolve, 0)); // the leaving row's save starts first
+		const start = Date.now();
+		while ((isSaving || pendingSaves.length > 0) && Date.now() - start < maxMs) {
+			await new Promise((resolve) => setTimeout(resolve, 25));
+		}
+	}
+
 	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true) {
 		let defaults: Record<string, any>;
+		if (page.page.has_new_record_triggers) await waitForSaves();
 		try {
 			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below, { ...newRowValues, ...autoSplitKeyValue() }));
 		} catch (err) {

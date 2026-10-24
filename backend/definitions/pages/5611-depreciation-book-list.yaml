@@ -1,0 +1,40 @@
+page:
+  id: 5611
+  type: List
+  name: Depreciation Book List
+  source_table: Depreciation_Book
+  caption: Depreciation Book List
+  card_page_id: 5610
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: description
+          width: 250
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

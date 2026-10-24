@@ -2,12 +2,15 @@
 // to the page they came from, on the same record. The target page gets the way back as
 // ?back=<path of the origin page, with select=<record key>>.
 
-// url with back=<the current page>, selecting selectKey there when the user returns
-export function withReturn(url: string, selectKey?: string): string {
+// url with back=<the current page>, selecting selectKey there when the user returns; openCard:
+// the page is a list with a modal card that was open on that record — it opens again (card=1)
+export function withReturn(url: string, selectKey?: string, openCard = false): string {
 	const origin = new URL(window.location.href);
 	origin.searchParams.delete('back');
 	origin.searchParams.delete('select');
+	origin.searchParams.delete('card');
 	if (selectKey) origin.searchParams.set('select', selectKey);
+	if (selectKey && openCard) origin.searchParams.set('card', '1');
 	const back = origin.pathname + origin.search;
 	return url + (url.includes('?') ? '&' : '?') + 'back=' + encodeURIComponent(back);
 }

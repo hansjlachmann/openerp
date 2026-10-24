@@ -1,0 +1,150 @@
+page:
+  id: 5613
+  type: List
+  name: FA Posting Groups
+  source_table: FA_Posting_Group
+  caption: FA Posting Groups
+  card_page_id: 5612
+  modal_card: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: acquisition_cost_account
+          width: 170
+
+        - source: accum_depreciation_account
+          width: 170
+
+        - source: write_down_account
+          width: 170
+
+        - source: appreciation_account
+          width: 170
+
+        - source: custom_1_account
+          width: 170
+          visible: false
+
+        - source: custom_2_account
+          width: 170
+          visible: false
+
+        - source: acq_cost_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: accum_depr_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: write_down_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: appreciation_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: custom_1_account_on_disposal
+          width: 170
+          visible: false
+
+        - source: custom_2_account_on_disposal
+          width: 170
+          visible: false
+
+        - source: gains_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: losses_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: book_value_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: sales_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: write_down_bal_acc_on_disp
+          width: 170
+          visible: false
+
+        - source: apprec_bal_acc_on_disp
+          width: 170
+          visible: false
+
+        - source: custom_1_bal_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: custom_2_bal_acc_on_disposal
+          width: 170
+          visible: false
+
+        - source: maintenance_expense_account
+          width: 170
+          visible: false
+
+        - source: maintenance_bal_acc
+          width: 170
+          visible: false
+
+        - source: acquisition_cost_bal_acc
+          width: 170
+          visible: false
+
+        - source: depreciation_expense_acc
+          width: 170
+          visible: false
+
+        - source: write_down_expense_acc
+          width: 170
+          visible: false
+
+        - source: appreciation_bal_account
+          width: 170
+          visible: false
+
+        - source: custom_1_expense_acc
+          width: 170
+          visible: false
+
+        - source: custom_2_expense_acc
+          width: 170
+          visible: false
+
+        - source: sales_bal_acc
+          width: 170
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

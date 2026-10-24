@@ -1,0 +1,210 @@
+table:
+  id: 5611
+  name: "Depreciation_Book"
+  caption: Depreciation Book
+  description: "Depreciation books (table 5611)"
+  data_caption_fields: [code, description]
+  lookup_page_id: 5611
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: g_l_integration_acq_cost
+      no: 3
+      type: bool
+      db_name: g_l_integration_acq_cost
+
+    - name: g_l_integration_depreciation
+      no: 4
+      type: bool
+      db_name: g_l_integration_depreciation
+
+    - name: g_l_integration_write_down
+      no: 5
+      type: bool
+      db_name: g_l_integration_write_down
+
+    - name: g_l_integration_appreciation
+      no: 6
+      type: bool
+      db_name: g_l_integration_appreciation
+
+    - name: g_l_integration_custom_1
+      no: 7
+      type: bool
+      db_name: g_l_integration_custom_1
+
+    - name: g_l_integration_custom_2
+      no: 8
+      type: bool
+      db_name: g_l_integration_custom_2
+
+    - name: g_l_integration_disposal
+      no: 9
+      type: bool
+      db_name: g_l_integration_disposal
+
+    - name: g_l_integration_maintenance
+      no: 10
+      type: bool
+      db_name: g_l_integration_maintenance
+
+    - name: disposal_calculation_method
+      no: 11
+      type: Option
+      db_name: disposal_calculation_method
+      options: ["Net", "Gross"]
+
+    - name: use_custom_1_depreciation
+      no: 12
+      type: bool
+      db_name: use_custom_1_depreciation
+
+    - name: allow_depr_below_zero
+      no: 13
+      type: bool
+      db_name: allow_depr_below_zero
+
+    - name: use_fa_exch_rate_in_duplic
+      no: 14
+      type: bool
+      db_name: use_fa_exch_rate_in_duplic
+
+    - name: part_of_duplication_list
+      no: 15
+      type: bool
+      db_name: part_of_duplication_list
+
+    - name: last_date_modified
+      no: 17
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: allow_indexation
+      no: 18
+      type: bool
+      db_name: allow_indexation
+
+    - name: use_same_fa_g_l_posting_dates
+      no: 19
+      type: bool
+      db_name: use_same_fa_g_l_posting_dates
+      default: true
+
+    - name: default_exchange_rate
+      no: 20
+      type: types.Decimal
+      db_name: default_exchange_rate
+      precision: 18
+      scale: 2
+      decimal_places: "4:4"
+
+    - name: use_fa_ledger_check
+      no: 23
+      type: bool
+      db_name: use_fa_ledger_check
+      default: true
+
+    - name: use_rounding_in_periodic_depr
+      no: 24
+      type: bool
+      db_name: use_rounding_in_periodic_depr
+
+    - name: new_fiscal_year_starting_date
+      no: 25
+      type: types.Date
+      db_name: new_fiscal_year_starting_date
+
+    - name: no_of_days_in_fiscal_year
+      no: 26
+      type: int
+      db_name: no_of_days_in_fiscal_year
+
+    - name: allow_changes_in_depr_fields
+      no: 27
+      type: bool
+      db_name: allow_changes_in_depr_fields
+
+    - name: default_final_rounding_amount
+      no: 28
+      type: types.Decimal
+      db_name: default_final_rounding_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: default_ending_book_value
+      no: 29
+      type: types.Decimal
+      db_name: default_ending_book_value
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: periodic_depr_date_calc
+      no: 32
+      type: Option
+      db_name: periodic_depr_date_calc
+      options: ["Last Entry", "Last Depr. Entry"]
+
+    - name: mark_errors_as_corrections
+      no: 33
+      type: bool
+      db_name: mark_errors_as_corrections
+
+    - name: add_curr_exch_rate_acq_cost
+      no: 34
+      type: bool
+      db_name: add_curr_exch_rate_acq_cost
+
+    - name: add_curr_exch_rate_depr
+      no: 35
+      type: bool
+      db_name: add_curr_exch_rate_depr
+
+    - name: add_curr_exch_rate_write_down
+      no: 36
+      type: bool
+      db_name: add_curr_exch_rate_write_down
+
+    - name: add_curr_exch_rate_apprec
+      no: 37
+      type: bool
+      db_name: add_curr_exch_rate_apprec
+
+    - name: add_curr_exch_rate_custom_1
+      no: 38
+      type: bool
+      db_name: add_curr_exch_rate_custom_1
+
+    - name: add_curr_exch_rate_custom_2
+      no: 39
+      type: bool
+      db_name: add_curr_exch_rate_custom_2
+
+    - name: add_curr_exch_rate_disp
+      no: 40
+      type: bool
+      db_name: add_curr_exch_rate_disp
+
+    - name: add_curr_exch_rate_maint
+      no: 41
+      type: bool
+      db_name: add_curr_exch_rate_maint
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

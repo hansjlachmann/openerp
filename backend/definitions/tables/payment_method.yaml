@@ -41,6 +41,14 @@ table:
                 width: 100
               - source: name
                 width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
 
   keys:
     - name: Primary

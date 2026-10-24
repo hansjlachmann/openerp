@@ -1,0 +1,157 @@
+page:
+  id: 5601
+  type: List
+  name: Fixed Asset List
+  source_table: Fixed_Asset
+  caption: Fixed Asset List
+  card_page_id: 5600
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 100
+
+        - source: description
+          width: 250
+
+        - source: fa_class_code
+          width: 120
+
+        - source: fa_subclass_code
+          width: 130
+
+        - source: fa_location_code
+          width: 130
+
+        - source: department_code
+          width: 120
+          visible: false
+
+        - source: project_code
+          width: 120
+          visible: false
+
+        - source: main_asset_component
+          width: 150
+
+        - source: component_of_main_asset
+          width: 150
+          visible: false
+
+        - source: budgeted_asset
+          width: 100
+          visible: false
+
+        - source: vendor_no
+          width: 110
+          visible: false
+
+        - source: maintenance_vendor_no
+          width: 140
+          visible: false
+
+        - source: responsible_employee
+          width: 140
+          visible: false
+
+        - source: serial_no
+          width: 140
+          visible: false
+
+        - source: search_description
+          width: 200
+
+        - source: insured
+          width: 80
+          visible: false
+
+        - source: inactive
+          width: 80
+          visible: false
+
+        - source: blocked
+          width: 80
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Depreciation Books
+      caption: Depreciation Books
+      image: Lines
+      promoted: true
+      run_page: 5619
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 5604
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Maintenance Ledger Entries
+      caption: Maintenance Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 5641
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 5602
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Main Asset Components
+      caption: Main Asset Components
+      image: Rows
+      promoted: true
+      run_page: 5658
+      run_page_filter_field: main_asset_no
+      run_page_filter_value: "no"
+
+    - name: Maintenance Registration
+      caption: Maintenance Registration
+      image: Calendar
+      promoted: true
+      run_page: 5625
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "10"}   # Fixed Asset
+        - {field: "no", value: "no"}

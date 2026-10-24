@@ -158,3 +158,194 @@ pages:
     caption: "Nummerserierelasjoner"
   sales_receivables_setup:
     caption: "Salgsoppsett"
+
+  # Customer: accounting periods, comments, ship-to addresses, bank accounts
+  accounting_periods:
+    caption: "Regnskapsperioder"
+  comment_sheet:
+    caption: "Merknadsark"
+  ship_to_address:
+    caption: "Leveringsadresse"
+  ship_to_address_list:
+    caption: "Leveringsadresseoversikt"
+  customer_bank_account_card:
+    caption: "Kundebankkontokort"
+  customer_bank_account_list:
+    caption: "Kundebankkontooversikt"
+  customer_statistics:
+    caption: "Kundestatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Totalt (NOK)"
+      balance_due_to_date_lcy: "Forfalt saldo (NOK)"
+      this_period_name: "Periode"
+      this_period_sales_lcy: "Salg (NOK)"
+      this_period_profit_lcy: "Fortjeneste (NOK)"
+      this_period_profit_pct: "Fortjeneste %"
+      this_period_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_period_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_period_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_period_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_period_payments_lcy: "Betalinger (NOK)"
+      this_period_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      this_year_name: "Periode"
+      this_year_sales_lcy: "Salg (NOK)"
+      this_year_profit_lcy: "Fortjeneste (NOK)"
+      this_year_profit_pct: "Fortjeneste %"
+      this_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_year_payments_lcy: "Betalinger (NOK)"
+      this_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      last_year_name: "Periode"
+      last_year_sales_lcy: "Salg (NOK)"
+      last_year_profit_lcy: "Fortjeneste (NOK)"
+      last_year_profit_pct: "Fortjeneste %"
+      last_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      last_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      last_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      last_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      last_year_payments_lcy: "Betalinger (NOK)"
+      last_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      to_date_name: "Periode"
+      to_date_sales_lcy: "Salg (NOK)"
+      to_date_profit_lcy: "Fortjeneste (NOK)"
+      to_date_profit_pct: "Fortjeneste %"
+      to_date_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      to_date_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      to_date_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      to_date_payments_lcy: "Betalinger (NOK)"
+      to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"
+
+  # Vendor pages
+  vendor_card:
+    caption: "Leverandørkort"
+  vendor_list:
+    caption: "Leverandøroversikt"
+  vendor_ledger_entries:
+    caption: "Leverandørposter"
+  vendor_posting_groups:
+    caption: "Leverandørbokføringsgrupper"
+  purchases_payables_setup:
+    caption: "Innkjøps- og leverandøroppsett"
+  order_address:
+    caption: "Bestillingsadresse"
+  order_address_list:
+    caption: "Bestillingsadresseoversikt"
+  vendor_bank_account_card:
+    caption: "Leverandørbankkontokort"
+  vendor_bank_account_list:
+    caption: "Leverandørbankkontooversikt"
+  vendor_statistics:
+    caption: "Leverandørstatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      total_lcy: "Totalt (NOK)"
+      balance_due_to_date_lcy: "Forfalt saldo (NOK)"
+      this_period_name: "Periode"
+      this_period_purchases_lcy: "Kjøp (NOK)"
+      this_period_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_period_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_period_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_period_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_period_payments_lcy: "Betalinger (NOK)"
+      this_period_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      this_year_name: "Periode"
+      this_year_purchases_lcy: "Kjøp (NOK)"
+      this_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      this_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      this_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      this_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      this_year_payments_lcy: "Betalinger (NOK)"
+      this_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      last_year_name: "Periode"
+      last_year_purchases_lcy: "Kjøp (NOK)"
+      last_year_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      last_year_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      last_year_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      last_year_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      last_year_payments_lcy: "Betalinger (NOK)"
+      last_year_reminder_amounts_lcy: "Purrebeløp (NOK)"
+      to_date_name: "Periode"
+      to_date_purchases_lcy: "Kjøp (NOK)"
+      to_date_inv_discounts_lcy: "Fakturarabatter (NOK)"
+      to_date_pmt_discounts_lcy: "Kontantrabatter (NOK)"
+      to_date_fin_charge_memo_amounts_lcy: "Rentenotabeløp (NOK)"
+      to_date_cr_memo_amounts_lcy: "Kreditnotabeløp (NOK)"
+      to_date_payments_lcy: "Betalinger (NOK)"
+      to_date_reminder_amounts_lcy: "Purrebeløp (NOK)"
+
+  # Bank pages
+  bank_account_card:
+    caption: "Bankkontokort"
+  bank_account_list:
+    caption: "Bankkontooversikt"
+  bank_account_ledger_entries:
+    caption: "Bankkontoposter"
+  bank_account_posting_groups:
+    caption: "Bankkontobokføringsgrupper"
+  check_ledger_entries:
+    caption: "Sjekkposter"
+  bank_account_statistics:
+    caption: "Bankkontostatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      this_period_name: "Periode"
+      this_period_net_change: "Bevegelse"
+      this_period_net_change_lcy: "Bevegelse (NOK)"
+      this_year_name: "Periode"
+      this_year_net_change: "Bevegelse"
+      this_year_net_change_lcy: "Bevegelse (NOK)"
+      last_year_name: "Periode"
+      last_year_net_change: "Bevegelse"
+      last_year_net_change_lcy: "Bevegelse (NOK)"
+      to_date_name: "Periode"
+      to_date_net_change: "Bevegelse"
+      to_date_net_change_lcy: "Bevegelse (NOK)"
+
+  # Fixed asset pages
+  fixed_asset_card:
+    caption: "Anleggskort"
+  fixed_asset_list:
+    caption: "Anleggsoversikt"
+  fixed_asset_statistics:
+    caption: "Anleggsstatistikk"
+  fa_ledger_entries:
+    caption: "Anleggsposter"
+  fixed_asset_setup:
+    caption: "Anleggsoppsett"
+  depreciation_book_card:
+    caption: "Avskrivningsprofilkort"
+  depreciation_book_list:
+    caption: "Avskrivningsprofiloversikt"
+  fa_posting_group_card:
+    caption: "Anleggsbokføringsgruppekort"
+  fa_posting_groups:
+    caption: "Anleggsbokføringsgrupper"
+  fa_classes:
+    caption: "Anleggsklasser"
+  fa_subclasses:
+    caption: "Anleggsunderklasser"
+  fa_locations:
+    caption: "Anleggslokasjoner"
+  fa_depreciation_books:
+    caption: "Anleggsavskrivningsprofiler"
+  maintenance_registration:
+    caption: "Vedlikeholdsregistrering"
+  maintenance_ledger_entries:
+    caption: "Vedlikeholdsposter"
+  maintenance:
+    caption: "Vedlikehold"
+  insurance_card:
+    caption: "Forsikringskort"
+  insurance_list:
+    caption: "Forsikringsoversikt"
+  ins_coverage_ledger_entries:
+    caption: "Forsikringsdekningsposter"
+  insurance_types:
+    caption: "Forsikringstyper"
+  main_asset_components:
+    caption: "Hovedeiendelskomponenter"
+  insurance_statistics:
+    caption: "Forsikringsstatistikk"
+    fields:  # the calculated field (OnAfterGetRecord)
+      over_underinsured: "Over-/underforsikret"

@@ -302,8 +302,14 @@ messages:
   INDENT_COA_CONFIRM: "This function updates the indentation of all the G/L accounts in the chart of accounts. All accounts between a Begin-Total and the matching End-Total are indented one level. The Totaling for each End-Total is also updated.\n\nDo you want to indent the chart of accounts?"
   INDENT_COA_WINDOW: "Indenting the chart of accounts #1##########"
 
+  # Accounting periods (codeunit 6 Fiscal Year-Close, DateFilter-Calc)
+  FISCAL_YEAR_NAME: "Fiscal Year %1"
+  FISCAL_YEAR_NO_OPEN_PERIOD: "There is no open accounting period. Create a fiscal year first."
+  FISCAL_YEAR_CREATE_NEW: "You must create a new fiscal year before you can close the old year."
+  FISCAL_YEAR_CLOSE_CONFIRM: "This function closes the fiscal year from %1 to %2. Once the fiscal year is closed it cannot be opened again, and the periods in the fiscal year cannot be changed.\n\nDo you want to close the fiscal year?"
+
   # Demo data (codeunit 901)
-  DEMO_DATA_DONE: "Demo data created: %1 customers and %2 customer ledger entries."
+  DEMO_DATA_DONE: "Demo data created: %1 customers with %2 customer ledger entries, %3 vendors with %4 vendor ledger entries."
   DEMO_DATA_NOT_EMPTY: "Company \"%1\" already has customers. Demo data is only created in a company without customers."
   DEMO_DATA_BAD_SIZE: "Unknown demo data size \"%1\". Set the job parameter to SMALL, LARGE or HEAVY."
   DEMO_DATA_INSERT_FAILED: "Could not create %1 %2: %3. No demo data was created."

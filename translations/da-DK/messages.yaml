@@ -302,8 +302,14 @@ messages:
   INDENT_COA_CONFIRM: "Denne funktion opdaterer indrykningen af alle finanskonti i kontoplanen. Alle konti mellem en Start-total og den tilhørende Slut-total rykkes ét niveau ind. Sammentællingen for hver Slut-total opdateres også.\n\nVil du indrykke kontoplanen?"
   INDENT_COA_WINDOW: "Indrykker kontoplanen #1##########"
 
+  # Accounting periods (codeunit 6 Fiscal Year-Close, DateFilter-Calc)
+  FISCAL_YEAR_NAME: "Regnskabsår %1"
+  FISCAL_YEAR_NO_OPEN_PERIOD: "Der findes ingen åben regnskabsperiode. Opret et regnskabsår først."
+  FISCAL_YEAR_CREATE_NEW: "Du skal oprette et nyt regnskabsår, før du kan lukke det gamle år."
+  FISCAL_YEAR_CLOSE_CONFIRM: "Denne funktion lukker regnskabsåret fra %1 til %2. Når regnskabsåret er lukket, kan det ikke åbnes igen, og perioderne i regnskabsåret kan ikke ændres.\n\nVil du lukke regnskabsåret?"
+
   # Demo data (codeunit 901)
-  DEMO_DATA_DONE: "Demodata oprettet: %1 debitorer og %2 debitorposter."
+  DEMO_DATA_DONE: "Demodata oprettet: %1 debitorer med %2 debitorposter, %3 kreditorer med %4 kreditorposter."
   DEMO_DATA_NOT_EMPTY: "Virksomheden \"%1\" har allerede debitorer. Demodata oprettes kun i en virksomhed uden debitorer."
   DEMO_DATA_BAD_SIZE: "Ukendt størrelse på demodata \"%1\". Sæt opgavens parameter til SMALL, LARGE eller HEAVY."
   DEMO_DATA_INSERT_FAILED: "Kunne ikke oprette %1 %2: %3. Der blev ikke oprettet demodata."

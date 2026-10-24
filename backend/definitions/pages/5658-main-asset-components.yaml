@@ -1,0 +1,43 @@
+page:
+  id: 5658
+  type: List
+  name: Main Asset Components
+  source_table: Main_Asset_Component
+  caption: Main Asset Components
+  # The components of a main asset (filtered on main_asset_no from the card)
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: main_asset_no
+          width: 120
+          visible: false
+
+        - source: fa_no
+          width: 120
+
+        - source: description
+          width: 300
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

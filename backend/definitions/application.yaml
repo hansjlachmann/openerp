@@ -12,6 +12,9 @@ application:
     objects:
       - from: 1
         to: 999
+      # Fixed assets keep their classic numbers (tables, pages 5600–5661)
+      - from: 5600
+        to: 5699
     # Fields of the application's tables (field IDs)
     fields:
       - from: 1

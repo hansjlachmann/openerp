@@ -25,6 +25,11 @@ page:
           - source: appln_rounding_precision
           - source: register_time
 
+      - name: Numbering
+        caption: Numbering
+        fields:
+          - source: bank_account_nos
+
       - name: Reporting
         caption: Reporting
         fields:

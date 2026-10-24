@@ -68,6 +68,21 @@ const (
 	// Deleting master records with ledger entries (MoveEntries)
 	ErrDeleteHasEntries  ErrorCode = "ERR_DELETE_HAS_ENTRIES"
 	ErrDeleteOpenEntries ErrorCode = "ERR_DELETE_OPEN_ENTRIES"
+	// Fixed assets (classic FA messages)
+	ErrFAMainAssetDelete ErrorCode = "ERR_FA_MAIN_ASSET_DELETE"
+	ErrFAHasDeprBooks    ErrorCode = "ERR_FA_HAS_DEPR_BOOKS"
+	ErrFANotDisposed     ErrorCode = "ERR_FA_NOT_DISPOSED"
+	ErrFADeleteEntries   ErrorCode = "ERR_FA_DELETE_ENTRIES"
+	ErrFABudgetEntries   ErrorCode = "ERR_FA_BUDGET_ENTRIES"
+	ErrFABudgetInsurance ErrorCode = "ERR_FA_BUDGET_INSURANCE"
+	ErrFAIsA             ErrorCode = "ERR_FA_IS_A"
+	ErrFAIsNotA          ErrorCode = "ERR_FA_IS_NOT_A"
+	ErrDeprBookInUse     ErrorCode = "ERR_DEPR_BOOK_IN_USE"
+	ErrDeprBookInsurance ErrorCode = "ERR_DEPR_BOOK_INSURANCE"
+	ErrRenameNotAllowed  ErrorCode = "ERR_RENAME_NOT_ALLOWED"
+	ErrDateLater         ErrorCode = "ERR_DATE_LATER"
+	// A field cannot change while the record has open ledger entries (Bank Account Currency Code)
+	ErrChangeOpenEntries ErrorCode = "ERR_CHANGE_OPEN_ENTRIES"
 
 	// Session/Auth
 	ErrNoActiveSession    ErrorCode = "ERR_NO_ACTIVE_SESSION"
@@ -329,6 +344,63 @@ func DeleteOpenEntries(table, key string) *AppError {
 	return &AppError{Code: ErrDeleteOpenEntries, Table: table, WithTableCaption: true, Params: []string{key}}
 }
 
+// FAMainAssetDelete: a main asset cannot be deleted
+func FAMainAssetDelete() *AppError { return &AppError{Code: ErrFAMainAssetDelete} }
+
+// FAHasDeprBooks: a fixed asset (key) still has depreciation books with entries
+func FAHasDeprBooks(table, key string) *AppError {
+	return &AppError{Code: ErrFAHasDeprBooks, Table: table, WithTableCaption: true, Params: []string{key}}
+}
+
+// FANotDisposed: only disposed fixed assets with entries can be deleted
+func FANotDisposed() *AppError { return &AppError{Code: ErrFANotDisposed} }
+
+// FADeleteEntries: a fixed asset has ledger entries in a fiscal year that is not closed
+func FADeleteEntries() *AppError { return &AppError{Code: ErrFADeleteEntries} }
+
+// FABudgetEntries: Budgeted Asset cannot change for a fixed asset with ledger entries
+func FABudgetEntries(table, field string) *AppError {
+	return &AppError{Code: ErrFABudgetEntries, Table: table, Field: field}
+}
+
+// FABudgetInsurance: Budgeted Asset cannot change for a fixed asset with insurance coverage
+func FABudgetInsurance(table, field string) *AppError {
+	return &AppError{Code: ErrFABudgetInsurance, Table: table, Field: field}
+}
+
+// FAIsA / FAIsNotA: a fixed asset (key) is / is not a main asset or component (value: the
+// option of field Main Asset/Component)
+func FAIsA(table, field, key string, value any) *AppError {
+	return &AppError{Code: ErrFAIsA, Table: table, Field: field, WithTableCaption: true, Params: []string{key}, Value: value}
+}
+
+func FAIsNotA(table, field, key string, value any) *AppError {
+	return &AppError{Code: ErrFAIsNotA, Table: table, Field: field, WithTableCaption: true, Params: []string{key}, Value: value}
+}
+
+// DeprBookInUse: a depreciation book has fixed assets
+func DeprBookInUse() *AppError { return &AppError{Code: ErrDeprBookInUse} }
+
+// DeprBookInsurance: a depreciation book is the insurance book of a setup table's field
+func DeprBookInsurance(table, field, book string) *AppError {
+	return &AppError{Code: ErrDeprBookInsurance, Table: table, Field: field, WithTableCaption: true, Params: []string{book}}
+}
+
+// RenameNotAllowed: records of a table cannot be renamed
+func RenameNotAllowed(table string) *AppError {
+	return &AppError{Code: ErrRenameNotAllowed, Table: table, WithTableCaption: true}
+}
+
+// DateLater: a date field is later than another (field2)
+func DateLater(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrDateLater, Table: table, Field: field, Field2: field2}
+}
+
+// ChangeOpenEntries: a field of a bank account cannot change while it has open ledger entries
+func ChangeOpenEntries(table, field string) *AppError {
+	return &AppError{Code: ErrChangeOpenEntries, Table: table, Field: field}
+}
+
 // TableRecordExists: a record of a table (key: its key values) exists already — the table's
 // caption in the user's language ("Customer C00010 already exists"), e.g. a number a number
 // series gave that is taken
@@ -433,6 +505,12 @@ func SameCurrency(table, field string) *AppError {
 // NoExchangeRate: a currency has no exchange rate on or before a date
 func NoExchangeRate(currency, date string) *AppError {
 	return &AppError{Code: ErrNoExchangeRate, Params: []string{currency, date}}
+}
+
+// FieldMustNotBeValue: as FieldMustNotBe, with the value in the user's language (an option's
+// caption, Yes/No)
+func FieldMustNotBeValue(table, field string, value any) *AppError {
+	return &AppError{Code: ErrFieldMustNotBe, Table: table, Field: field, Value: value}
 }
 
 // FieldMustNotBe: a table field has a value that does not allow the change (FieldError without

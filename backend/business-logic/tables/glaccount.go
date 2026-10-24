@@ -14,7 +14,7 @@ import (
 // (required, length, range) are checked after OnInsert and OnModify.
 //
 // Not migrated yet (their tables come later): OnDelete moves the account's G/L entries
-// (codeunit 361) and deletes its budget entries, comment lines and extended texts; changing
+// (codeunit 361) and deletes its budget entries and extended texts; changing
 // Account Type away from Posting is refused while ledger or budget entries exist.
 type gLAccountLogic struct{}
 
@@ -31,8 +31,9 @@ func (gLAccountLogic) OnModify(rec *gtables.GLAccount) error {
 	return nil
 }
 
-// OnDelete runs before a record is deleted
+// OnDelete deletes the account's comment lines
 func (gLAccountLogic) OnDelete(rec *gtables.GLAccount) error {
+	DeleteComments(rec, gtables.CommentLine_Table_name.GLAccount, rec.No)
 	return nil
 }
 

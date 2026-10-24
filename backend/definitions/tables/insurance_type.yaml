@@ -1,0 +1,25 @@
+table:
+  id: 5630
+  name: "Insurance_Type"
+  caption: Insurance Type
+  description: "Insurance types (table 5630)"
+  lookup_page_id: 5648
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

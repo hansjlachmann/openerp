@@ -1,0 +1,105 @@
+page:
+  id: 5641
+  type: List
+  name: Maintenance Ledger Entries
+  source_table: Maintenance_Ledger_Entry
+  caption: Maintenance Ledger Entries
+  # Editable for now (demo data); posted ledger entries are read-only once posting exists
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 80
+
+        - source: fa_posting_date
+          width: 110
+
+        - source: posting_date
+          width: 100
+          visible: false
+
+        - source: document_type
+          width: 110
+          visible: false
+
+        - source: document_no
+          width: 110
+
+        - source: fa_no
+          width: 100
+
+        - source: depreciation_book_code
+          width: 120
+
+        - source: maintenance_code
+          width: 120
+
+        - source: description
+          width: 220
+
+        - source: amount
+          width: 120
+
+        - source: debit_amount
+          width: 110
+          visible: false
+
+        - source: credit_amount
+          width: 110
+          visible: false
+
+        - source: quantity
+          width: 90
+          visible: false
+
+        - source: fa_posting_group
+          width: 120
+          visible: false
+
+        - source: department_code
+          width: 120
+          visible: false
+
+        - source: project_code
+          width: 120
+          visible: false
+
+        - source: bal_account_type
+          width: 120
+          visible: false
+
+        - source: bal_account_no
+          width: 120
+          visible: false
+
+        - source: user_id
+          width: 100
+          visible: false
+
+        - source: source_code
+          width: 100
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

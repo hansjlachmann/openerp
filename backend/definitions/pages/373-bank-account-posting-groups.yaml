@@ -1,0 +1,39 @@
+page:
+  id: 373
+  type: List
+  name: Bank Account Posting Groups
+  source_table: Bank_Account_Posting_Group
+  caption: Bank Account Posting Groups
+  editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+
+        - source: g_l_bank_account_no
+          width: 190
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

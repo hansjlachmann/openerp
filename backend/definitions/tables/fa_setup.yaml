@@ -1,0 +1,95 @@
+table:
+  id: 5603
+  name: "FA_Setup"
+  caption: FA Setup
+  description: "Fixed asset setup (table 5603), a single record per company"
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: allow_posting_to_main_assets
+      no: 3
+      type: bool
+      db_name: allow_posting_to_main_assets
+
+    - name: default_depr_book
+      no: 4
+      type: types.Code
+      db_name: default_depr_book
+      length: 10
+      table_relation:
+        table: Depreciation_Book
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: allow_fa_posting_from
+      no: 5
+      type: types.Date
+      db_name: allow_fa_posting_from
+
+    - name: allow_fa_posting_to
+      no: 6
+      type: types.Date
+      db_name: allow_fa_posting_to
+
+    - name: insurance_depr_book
+      no: 7
+      type: types.Code
+      db_name: insurance_depr_book
+      length: 10
+      table_relation:
+        table: Depreciation_Book
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: automatic_insurance_posting
+      no: 8
+      type: bool
+      db_name: automatic_insurance_posting
+      default: true
+
+    - name: fixed_asset_nos
+      no: 9
+      type: types.Code
+      db_name: fixed_asset_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: insurance_nos
+      no: 10
+      type: types.Code
+      db_name: insurance_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

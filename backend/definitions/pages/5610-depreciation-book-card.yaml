@@ -1,0 +1,94 @@
+page:
+  id: 5610
+  type: Card
+  name: Depreciation Book Card
+  source_table: Depreciation_Book
+  caption: Depreciation Book Card
+  list_page_id: 5611
+  enable_navigation: true
+  focus_field: code
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: code
+          - source: description
+          - source: disposal_calculation_method
+          - source: use_custom_1_depreciation
+          - source: allow_depr_below_zero
+          - source: allow_indexation
+          - source: use_same_fa_g_l_posting_dates
+          - source: allow_changes_in_depr_fields
+          - source: default_final_rounding_amount
+          - source: default_ending_book_value
+          - source: periodic_depr_date_calc
+          - source: mark_errors_as_corrections
+          - source: use_fa_ledger_check
+          - source: use_rounding_in_periodic_depr
+          - source: new_fiscal_year_starting_date
+          - source: no_of_days_in_fiscal_year
+          - source: last_date_modified
+
+      - name: Integration
+        caption: Integration
+        fields:
+          - source: g_l_integration_acq_cost
+          - source: g_l_integration_depreciation
+          - source: g_l_integration_write_down
+          - source: g_l_integration_appreciation
+          - source: g_l_integration_custom_1
+          - source: g_l_integration_custom_2
+          - source: g_l_integration_disposal
+          - source: g_l_integration_maintenance
+
+      - name: Duplication
+        caption: Duplication
+        fields:
+          - source: part_of_duplication_list
+          - source: use_fa_exch_rate_in_duplic
+          - source: default_exchange_rate
+
+      - name: Reporting
+        caption: Reporting
+        fields:
+          - source: add_curr_exch_rate_acq_cost
+          - source: add_curr_exch_rate_depr
+          - source: add_curr_exch_rate_write_down
+          - source: add_curr_exch_rate_apprec
+          - source: add_curr_exch_rate_custom_1
+          - source: add_curr_exch_rate_custom_2
+          - source: add_curr_exch_rate_disp
+          - source: add_curr_exch_rate_maint
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 5611
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

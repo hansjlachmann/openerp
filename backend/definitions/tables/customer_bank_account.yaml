@@ -1,0 +1,191 @@
+table:
+  id: 287
+  name: "Customer_Bank_Account"
+  caption: Customer Bank Account
+  description: "Customers' bank accounts (table 287)"
+  data_caption_fields: [customer_no, name, code]
+  lookup_page_id: 424
+  # Left out: 10000 Use for Electronic Payments (local field series)
+  fields:
+    - name: customer_no
+      no: 1
+      type: types.Code
+      db_name: customer_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: code
+      no: 2
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 3
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: name_2
+      no: 5
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 6
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 7
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 8
+      type: types.Text
+      db_name: city
+      length: 50
+
+    - name: post_code
+      no: 9
+      type: types.Code
+      db_name: post_code
+      length: 20
+      # classic ZIP Code; any code is accepted, a known one fills City
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: contact
+      no: 10
+      type: types.Text
+      db_name: contact
+      length: 50
+
+    - name: phone_no
+      no: 11
+      type: types.Text
+      db_name: phone_no
+      length: 30
+
+    - name: telex_no
+      no: 12
+      type: types.Text
+      db_name: telex_no
+      length: 20
+
+    - name: bank_branch_no
+      no: 13
+      type: types.Text
+      db_name: bank_branch_no
+      length: 20
+
+    - name: bank_account_no
+      no: 14
+      type: types.Text
+      db_name: bank_account_no
+      length: 30
+
+    - name: transit_no
+      no: 15
+      type: types.Text
+      db_name: transit_no
+      length: 20
+
+    - name: currency_code
+      no: 16
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: country_code
+      no: 17
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: state
+      no: 18
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: fax_no
+      no: 19
+      type: types.Text
+      db_name: fax_no
+      length: 30
+
+    - name: telex_answer_back
+      no: 20
+      type: types.Text
+      db_name: telex_answer_back
+      length: 20
+
+    - name: language_code
+      no: 21
+      type: types.Code
+      db_name: language_code
+      length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: e_mail
+      no: 22
+      type: types.Text
+      db_name: e_mail
+      length: 80
+
+    - name: home_page
+      no: 23
+      type: types.Text
+      db_name: home_page
+      length: 80
+
+  keys:
+    - name: Primary
+      fields: [customer_no, code]
+      clustered: true

@@ -11,3 +11,16 @@ reports:
       DAYS_NEGATIVE: "The number of days cannot be negative."
       WINDOW: "Deleting job queue log entries...\nJob queue        #1##########\nEntries deleted  #2######"
       DONE: "%1 job queue log entries were deleted."
+  "93":
+    caption: "Create Fiscal Year"
+    options:
+      starting_date: "Starting Date"
+      no_of_periods: "No. of Periods"
+      period_length: "Period Length"
+    texts:
+      OPTIONS: "Options"
+      CLOSE_NEW_YEAR: "The new fiscal year begins before an existing fiscal year, so the new year will be closed automatically.\n\n"
+      CONFIRM_CREATE_AND_CLOSE: "Do you want to create and close the fiscal year?"
+      CANNOT_CHANGE_START: "Once you create the new fiscal year you cannot change its starting date.\n\n"
+      CONFIRM_CREATE: "Do you want to create the fiscal year?"
+      ONLY_BEFORE_OR_AFTER: "It is only possible to create new fiscal years before or after the existing ones."

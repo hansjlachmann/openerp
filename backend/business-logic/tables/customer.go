@@ -11,9 +11,8 @@ import (
 
 // customerLogic is the business logic of table 18 Customer.
 //
-// Not migrated yet (their tables come later): OnDelete deletes the customer's comment lines,
-// bank accounts and ship-to addresses and refuses while sales orders are outstanding; the
-// contact update (codeunit 5002) of OnInsert/OnModify/OnDelete.
+// Not migrated yet (their tables come later): OnDelete refuses while sales orders are
+// outstanding; the contact update (codeunit 5002) of OnInsert/OnModify/OnDelete.
 type customerLogic struct{}
 
 func init() {
@@ -56,9 +55,24 @@ func (customerLogic) OnRename(rec *gtables.Customer) error {
 
 // OnDelete moves the customer's ledger entries away (MoveCustEntries): refused while it has
 // entries in a fiscal year that is not closed — every entry, as long as there are no
-// accounting periods — or open entries; otherwise the entries lose their Customer No.
+// accounting periods — or open entries; otherwise the entries lose their Customer No. The
+// customer's comment lines, bank accounts and ship-to addresses are deleted.
 func (customerLogic) OnDelete(rec *gtables.Customer) error {
-	return moveCustEntries(rec)
+	err := moveCustEntries(rec)
+	if err != nil {
+		return err
+	}
+
+	DeleteComments(rec, gtables.CommentLine_Table_name.Customer, rec.No)
+
+	custBankAcc := gtables.NewCustomerBankAccount(rec)
+	custBankAcc.SetRange("customer_no", rec.No)
+	custBankAcc.DeleteAll()
+
+	shipToAddr := gtables.NewShipToAddress(rec)
+	shipToAddr.SetRange("customer_no", rec.No)
+	shipToAddr.DeleteAll()
+	return nil
 }
 
 func moveCustEntries(rec *gtables.Customer) error {
@@ -66,10 +80,15 @@ func moveCustEntries(rec *gtables.Customer) error {
 	custLedgEntry.LockTable()
 	custLedgEntry.SetCurrentKey("customer_no")
 	custLedgEntry.SetRange("customer_no", rec.No)
-	// no Accounting Period table yet: no fiscal year is closed
+	accountingPeriod := gtables.NewAccountingPeriod(rec)
+	accountingPeriod.SetRange("closed", false)
+	if accountingPeriod.FindFirst() {
+		custLedgEntry.SetFilter("posting_date", ">="+accountingPeriod.Starting_date.String())
+	}
 	if !custLedgEntry.IsEmpty() {
 		return apperrors.DeleteHasEntries(gtables.CustomerTableName, rec.No.String())
 	}
+	custLedgEntry.SetRange("posting_date")
 	custLedgEntry.SetRange("open", true)
 	if !custLedgEntry.IsEmpty() {
 		return apperrors.DeleteOpenEntries(gtables.CustomerTableName, rec.No.String())

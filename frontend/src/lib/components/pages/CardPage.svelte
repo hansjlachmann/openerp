@@ -89,9 +89,11 @@
 	// Get primary key field name from page definition
 	const primaryKeyField = $derived(getPrimaryKeyField(page));
 
-	// Page triggers (OnAfterGetRecord): fields switched for the current record, asked from
-	// the server when the record or a field value changes
+	// Page triggers (OnAfterGetRecord): fields switched for the current record and the values
+	// of the calculated fields (page variables), asked from the server when the record or a
+	// field value changes
 	let fieldStates = $state<Record<string, FieldState>>({});
+	let calculatedValues = $state<Record<string, any>>({});
 	let fieldStatesRequest = 0;
 	$effect(() => {
 		if (!page.page.has_record_triggers) return;
@@ -99,8 +101,11 @@
 		const request = ++fieldStatesRequest;
 		const timer = setTimeout(async () => {
 			try {
-				const states = await api.getFieldStates(page.page.id, current);
-				if (request === fieldStatesRequest) fieldStates = states;
+				const result = await api.getFieldStates(page.page.id, current);
+				if (request === fieldStatesRequest) {
+					fieldStates = result.states;
+					calculatedValues = result.values;
+				}
 			} catch {
 				// keep the last states: the page definition still applies
 			}
@@ -125,8 +130,13 @@
 
 	// Check if this is a new record (no ID)
 	function checkIsNewRecord(): boolean {
-		// A setup record has a blank key and always exists
-		return !page?.page?.setup_table && isNewRecord(record);
+		// A setup record has a blank key and always exists. A composite key (FA No. + Depreciation
+		// Book Code) is new while one of its fields is blank — a new record from a filtered list
+		// already has the filter's field (Ship-to Address: Customer No.)
+		if (page?.page?.setup_table) return false;
+		const keyFields = getPrimaryKeyFields(page);
+		if (keyFields.length > 1) return keyFields.some((f) => record?.[f] === undefined || record?.[f] === null || record?.[f] === '');
+		return isNewRecord(record);
 	}
 
 	// Edit mode state - start in edit mode for new records or if initialEditMode is true
@@ -141,7 +151,7 @@
 
 	// Auto-enable edit mode when a new record is loaded (not when field values change)
 	$effect(() => {
-		const id = getRecordId(record, primaryKeyField);
+		const id = checkIsNewRecord() ? undefined : getRecordId(record, primaryKeyField, getPrimaryKeyFields(page));
 		// Only trigger when the record ID actually changes (not on every field change)
 		if (id !== lastRecordId) {
 			lastRecordId = id;
@@ -336,7 +346,8 @@
 		const url = runPagePath(action, record) ?? `/pages/${action.run_page}`;
 		// Esc / close on the opened page comes back here (from a modal card: to its list,
 		// on this record)
-		return withReturn(url, getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)));
+		// on this record; a modal card (over its list) opens again
+		return withReturn(url, getRecordId(record, getPrimaryKeyField(page), getPrimaryKeyFields(page)), !!onbacktolist);
 	}
 
 	// Run a page object with the card's record: a codeunit, a report or a function
@@ -736,6 +747,19 @@
 						{#each section.fields as field (field.source)}
 							{@const fieldEditable = field.editable !== false && fieldStates[field.source]?.editable !== false && editMode && !saveBlocked}
 							{@const fieldTabIndex = allFields.findIndex(f => f.source === field.source) + 1}
+							{#if field.calculated}
+								<!-- A calculated field: the page trigger's value, read-only -->
+								<FieldRenderer
+									{field}
+									value={calculatedValues[field.source]}
+									caption={getFieldCaption(field.source, captions, field.caption)}
+									editable={false}
+									fieldType={fieldTypes[field.source]}
+									fieldCaptions={captions}
+									tabindex={fieldTabIndex}
+									ondrilldown={field.drilldown && !checkIsNewRecord() ? () => openDrilldown(field) : undefined}
+								/>
+							{:else}
 							<FieldRenderer
 								{field}
 								bind:value={record[field.source]}
@@ -750,6 +774,7 @@
 								onassistedit={field.assist_edit && fieldEditable ? () => handleAssistEdit(field.assist_edit!) : undefined}
 								ondrilldown={field.drilldown && !fieldEditable && !checkIsNewRecord() ? () => openDrilldown(field) : undefined}
 							/>
+							{/if}
 						{/each}
 					</div>
 					{/if}

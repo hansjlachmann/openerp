@@ -1,0 +1,1145 @@
+table:
+  id: 23
+  name: "Vendor"
+  description: "Vendors (table 23)"
+  data_caption_fields: [no, name]
+  auto_key: true   # OnInsert gives a vendor without No. the next number of its series
+  # Left out until their tables exist: 78/79/113/114 Outstanding Orders / Amt. Rcd. Not
+  # Invoiced (Purchase Line); 10004/10016/10020 (local field series)
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: search_name
+      no: 3
+      type: types.Code
+      db_name: search_name
+      length: 50
+
+    - name: name_2
+      no: 4
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 5
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 6
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 7
+      type: types.Text
+      db_name: city
+      length: 50
+
+    - name: contact
+      no: 8
+      type: types.Text
+      db_name: contact
+      length: 50
+
+    - name: phone_no
+      no: 9
+      type: types.Text
+      db_name: phone_no
+      length: 30
+
+    - name: telex_no
+      no: 10
+      type: types.Text
+      db_name: telex_no
+      length: 20
+
+    - name: our_account_no
+      no: 14
+      type: types.Text
+      db_name: our_account_no
+      length: 20
+
+    - name: territory_code
+      no: 15
+      type: types.Code
+      db_name: territory_code
+      length: 10
+      table_relation:
+        table: Territory
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 16
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 17
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: budgeted_amount
+      no: 19
+      type: types.Decimal
+      db_name: budgeted_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: vendor_posting_group
+      no: 21
+      type: types.Code
+      db_name: vendor_posting_group
+      length: 10
+      table_relation:
+        table: Vendor_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: payables_account
+            width: 250
+
+    - name: currency_code
+      no: 22
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: language_code
+      no: 24
+      type: types.Code
+      db_name: language_code
+      length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: statistics_group
+      no: 26
+      type: int
+      db_name: statistics_group
+
+    - name: payment_terms_code
+      no: 27
+      type: types.Code
+      db_name: payment_terms_code
+      length: 10
+      table_relation:
+        table: Payment_terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: fin_charge_terms_code
+      no: 28
+      type: types.Code
+      db_name: fin_charge_terms_code
+      length: 10
+      table_relation:
+        table: Finance_Charge_Terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: purchaser_code
+      no: 29
+      type: types.Code
+      db_name: purchaser_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: shipment_method_code
+      no: 30
+      type: types.Code
+      db_name: shipment_method_code
+      length: 10
+      table_relation:
+        table: Shipment_Method
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: shipping_agent_code
+      no: 31
+      type: types.Code
+      db_name: shipping_agent_code
+      length: 10
+      table_relation:
+        table: Shipping_Agent
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: invoice_disc_code
+      no: 33
+      type: types.Code
+      db_name: invoice_disc_code
+      length: 20
+      # a vendor whose invoice discounts apply; any code is accepted (classic ValidateTableRelation=No)
+      table_relation:
+        table: Vendor
+        field: no
+        validate: false
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: country_code
+      no: 35
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: comment
+      no: 38
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 2   # Vendor
+        - field: no
+          type: field
+          value: no
+
+    - name: blocked
+      no: 39
+      type: bool
+      db_name: blocked
+
+    - name: pay_to_vendor_no
+      no: 45
+      type: types.Code
+      db_name: pay_to_vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: priority
+      no: 46
+      type: int
+      db_name: priority
+
+    - name: payment_method_code
+      no: 47
+      type: types.Code
+      db_name: payment_method_code
+      length: 10
+      table_relation:
+        table: Payment_Method
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: last_date_modified
+      no: 54
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: application_method
+      no: 80
+      type: Option
+      db_name: application_method
+      options: ["Manual", "Apply to Oldest"]
+
+    - name: fax_no
+      no: 84
+      type: types.Text
+      db_name: fax_no
+      length: 30
+
+    - name: telex_answer_back
+      no: 85
+      type: types.Text
+      db_name: telex_answer_back
+      length: 20
+
+    - name: vat_registration_no
+      no: 86
+      type: types.Text
+      db_name: vat_registration_no
+      length: 20
+
+    - name: gen_bus_posting_group
+      no: 88
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: picture
+      no: 89
+      type: "[]byte"
+      db_name: picture
+
+    - name: post_code
+      no: 91
+      type: types.Code
+      db_name: post_code
+      length: 20
+      # classic ZIP Code; any code is accepted (ValidateTableRelation=No), a known one fills City
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: state
+      no: 92
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: e_mail
+      no: 102
+      type: types.Text
+      db_name: e_mail
+      length: 80
+
+    - name: home_page
+      no: 103
+      type: types.Text
+      db_name: home_page
+      length: 80
+
+    - name: no_series
+      no: 107
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 108
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 109
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_bus_posting_group
+      no: 110
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reserve
+      no: 115
+      type: Option
+      db_name: reserve
+      options: ["Never", "Optional", "Always"]
+      default: 1 # Optional
+
+    # FlowFilters (FieldClass FlowFilter): not stored — the user sets them ("Filter totals
+    # by" in the filter pane) and the FlowFields below apply them to the ledger entries
+
+    - name: date_filter
+      no: 55
+      type: types.Date
+      flow_filter: true
+
+    - name: department_filter
+      no: 56
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: project_filter
+      no: 57
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    - name: currency_filter
+      no: 111
+      type: types.Code
+      length: 10
+      flow_filter: true
+
+    # FlowFields: totals of the vendor ledger entries (classic CalcFormulas)
+
+    - name: balance
+      no: 58
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: balance_lcy
+      no: 59
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: net_change
+      no: 60
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: net_change_lcy
+      no: 61
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: purchases_lcy
+      no: 62
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: purchase_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: inv_discounts_lcy
+      no: 64
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: inv_discount_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: pmt_discounts_lcy
+      no: 65
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: pmt_disc_rcd_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: balance_due
+      no: 66
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: remaining_amount
+      flow_filters:
+        - field: open
+          type: const
+          value: "true"
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: due_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: balance_due_lcy
+      no: 67
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: remaining_amt_lcy
+      flow_filters:
+        - field: open
+          type: const
+          value: "true"
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: due_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: payments
+      no: 69
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Payment
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: invoice_amounts
+      no: 70
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 2   # Invoice
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: cr_memo_amounts
+      no: 71
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 3   # Credit Memo
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: finance_charge_memo_amounts
+      no: 72
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 4   # Finance Charge Memo
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: payments_lcy
+      no: 74
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: original_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Payment
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: inv_amounts_lcy
+      no: 75
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: original_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 2   # Invoice
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: cr_memo_amounts_lcy
+      no: 76
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: original_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 3   # Credit Memo
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: fin_charge_memo_amounts_lcy
+      no: 77
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: original_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 4   # Finance Charge Memo
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: debit_amount
+      no: 97
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: debit_amount
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: credit_amount
+      no: 98
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: credit_amount
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: debit_amount_lcy
+      no: 99
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: debit_amount_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: credit_amount_lcy
+      no: 100
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: VendorLedgerEntry
+      source_field: credit_amount_lcy
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: reminder_amounts
+      no: 104
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 5   # Reminder
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: reminder_amounts_lcy
+      no: 105
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: original_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 5   # Reminder
+        - field: vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    # Not a classic field: the number of ledger entries (drilldown to them)
+
+    - name: no_of_ledger_entries
+      no: 903
+      type: int
+      flow_field: true
+      calc_formula: Count
+      source_table: VendorLedgerEntry
+      source_field: entry_no
+      flow_filters:
+        - field: vendor_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_name
+      fields: [search_name]
+    - name: vendor_posting_group
+      fields: [vendor_posting_group]
+    - name: priority
+      fields: [priority]
+    - name: currency_code
+      fields: [currency_code]
+    - name: country_code
+      fields: [country_code]
+    - name: gen_bus_posting_group
+      fields: [gen_bus_posting_group]
+    - name: purchaser_code
+      fields: [purchaser_code]

@@ -71,6 +71,28 @@ table:
           type: filter
           value: date_filter
 
+    - name: vendor_balances_due
+      no: 45
+      type: types.Decimal
+      flow_field: true
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: VendorLedgerEntry
+      source_field: remaining_amt_lcy
+      flow_filters:
+        - field: open
+          type: const
+          value: "true"
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: due_date
+          type: filter
+          value: date_filter
+
     - name: unrealized_tax
       no: 48
       type: bool
@@ -201,6 +223,20 @@ table:
       scale: 5
       decimal_places: "2:2" # amount in local currency
       validation: {min: 0}
+
+    - name: bank_account_nos
+      no: 63
+      type: types.Code
+      db_name: bank_account_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
 
   keys:
     - name: Primary

@@ -196,6 +196,14 @@ func TestMoreRecordFunctions(t *testing.T) {
 	if err := (&gtables.GLEntry{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
 		t.Fatal(err)
 	}
+	for _, related := range []interface {
+		CreateTableWithDBType(database.Executor, string, database.DBType) error
+	}{&gtables.CommentLine{}, &gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.VendorLedgerEntry{},
+		&gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.FALedgerEntry{}, &gtables.MaintenanceLedgerEntry{}} {
+		if err := related.CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for _, no := range []string{"C1", "C2", "C3"} {
 		c := &gtables.Customer{}
 		c.InitWithDBType(db, "c1", database.DBTypeSQLite)

@@ -1,0 +1,43 @@
+page:
+  id: 460
+  type: Card
+  name: Purchases & Payables Setup
+  source_table: Purchases_Payables_Setup   # setup table: opens on its single record
+  caption: Purchases & Payables Setup
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: discount_posting
+          - source: receipt_on_invoice
+          - source: invoice_rounding
+          - source: ext_doc_no_mandatory
+          - source: calc_inv_discount
+          - source: appln_between_currencies
+          - source: copy_comments_blanket_to_order
+          - source: copy_comments_order_to_invoice
+          - source: copy_comments_order_to_receipt
+
+      - name: Numbering
+        caption: Numbering
+        fields:
+          - source: vendor_nos
+          - source: quote_nos
+          - source: blanket_order_nos
+          - source: order_nos
+          - source: invoice_nos
+          - source: posted_invoice_nos
+          - source: credit_memo_nos
+          - source: posted_credit_memo_nos
+          - source: posted_receipt_nos
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true

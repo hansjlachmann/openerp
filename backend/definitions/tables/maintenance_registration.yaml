@@ -1,0 +1,77 @@
+table:
+  id: 5616
+  name: "Maintenance_Registration"
+  caption: Maintenance Registration
+  description: "Service visits registered for a fixed asset (table 5616)"
+  lookup_page_id: 5625
+  fields:
+    - name: fa_no
+      no: 1
+      type: types.Code
+      db_name: fa_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Fixed_Asset
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+      required: true
+
+    - name: service_date
+      no: 3
+      type: types.Date
+      db_name: service_date
+
+    - name: maintenance_vendor_no
+      no: 4
+      type: types.Code
+      db_name: maintenance_vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: comment
+      no: 5
+      type: types.Text
+      db_name: comment
+      length: 80
+
+    - name: service_agent_name
+      no: 6
+      type: types.Text
+      db_name: service_agent_name
+      length: 50
+
+    - name: service_agent_phone_no
+      no: 7
+      type: types.Text
+      db_name: service_agent_phone_no
+      length: 30
+
+    - name: service_agent_mobile_phone
+      no: 8
+      type: types.Text
+      db_name: service_agent_mobile_phone
+      length: 30
+
+  keys:
+    - name: Primary
+      fields: [fa_no, line_no]
+      clustered: true

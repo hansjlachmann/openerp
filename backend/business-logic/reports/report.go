@@ -55,6 +55,9 @@ type Definition struct {
 	OptionsCaption string
 	// Top-level data items, run one after another
 	DataItems []*DataItem
+	// OnInitReport runs before the request page, after the options got their defaults: it can
+	// set other defaults (SetOption); options given to the run override them
+	OnInitReport func(run *Run) error
 	// OnPreReport runs after the request page, before the data items (Quit stops the report)
 	OnPreReport func(run *Run) error
 	// OnPostReport runs after the data items (not after Quit)

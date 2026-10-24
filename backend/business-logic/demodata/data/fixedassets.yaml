@@ -1,0 +1,22 @@
+# Demo fixed assets (all sizes): acquired months_ago months before the run date at cost,
+# depreciated straight-line over years in the COMPANY book (monthly entries up to last month).
+# A vehicle gets a yearly service; insured assets are covered by the insurance INS010.
+
+fixed_assets:
+  - {no: FA0010, description: Delivery van VW Crafter, subclass: VEHICLES, location: WAREHOUSE, posting_group: VEHICLES, vendor: V00050, maintenance_vendor: V00050, months_ago: 22, cost: 485000, years: 5, serial_no: WV1ZZZSYZL9012345, insured: true}
+  - {no: FA0020, description: Company car Tesla Model Y, subclass: VEHICLES, location: HQ, posting_group: VEHICLES, vendor: V00050, maintenance_vendor: V00050, months_ago: 14, cost: 520000, years: 5, serial_no: XP7YGCEK5PB123456, insured: true}
+  - {no: FA0030, description: Forklift Toyota 8FBE, subclass: EQUIPMENT, location: WAREHOUSE, posting_group: EQUIPMENT, vendor: V00040, maintenance_vendor: V00040, months_ago: 30, cost: 265000, years: 8, serial_no: 8FBE18-61234, insured: true}
+  - {no: FA0040, description: Pallet racking, subclass: EQUIPMENT, location: WAREHOUSE, posting_group: EQUIPMENT, vendor: V00020, months_ago: 34, cost: 148000, years: 10}
+  - {no: FA0050, description: Office furniture, head office, subclass: OFFICE, location: HQ, posting_group: OFFICE, vendor: V00030, months_ago: 26, cost: 186500, years: 10}
+  - {no: FA0060, description: Laptops for sales staff, subclass: OFFICE, location: HQ, posting_group: OFFICE, vendor: V00010, months_ago: 9, cost: 96000, years: 3}
+  - {no: FA0070, description: Server rack with network, subclass: OFFICE, location: HQ, posting_group: OFFICE, vendor: V00010, months_ago: 18, cost: 212000, years: 5, insured: true}
+  - {no: FA0080, description: Backup storage unit, subclass: OFFICE, location: HQ, posting_group: OFFICE, vendor: V00010, months_ago: 18, cost: 64000, years: 5, component_of: FA0070}
+
+insurance:
+  no: INS010
+  description: Vehicles and equipment
+  insurance_type: VEHICLE
+  vendor: V00080
+  policy_no: GJ-2291-77
+  annual_premium: 38500
+  policy_coverage: 1500000

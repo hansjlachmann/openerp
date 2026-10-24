@@ -1,0 +1,107 @@
+page:
+  id: 5645
+  type: List
+  name: Insurance List
+  source_table: Insurance
+  caption: Insurance List
+  card_page_id: 5644
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: no
+          width: 100
+
+        - source: description
+          width: 250
+
+        - source: insurance_vendor_no
+          width: 140
+
+        - source: effective_date
+          width: 110
+
+        - source: policy_no
+          width: 140
+
+        - source: insurance_type
+          width: 120
+          visible: false
+
+        - source: annual_premium
+          width: 120
+
+        - source: policy_coverage
+          width: 130
+
+        - source: total_value_insured
+          width: 140
+          drilldown: 5647
+          drilldown_filter_field: insurance_no
+          drilldown_filter_value: "no"
+
+        - source: fa_class_code
+          width: 120
+          visible: false
+
+        - source: fa_location_code
+          width: 130
+          visible: false
+
+        - source: search_description
+          width: 200
+          visible: false
+
+        - source: blocked
+          width: 80
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Coverage Ledger Entries
+      caption: Coverage Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 5647
+      run_page_filter_field: insurance_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 5646
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "11"}   # Insurance
+        - {field: "no", value: "no"}

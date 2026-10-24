@@ -1,0 +1,76 @@
+page:
+  id: 5602
+  type: Card
+  name: Fixed Asset Statistics
+  source_table: FA_Depreciation_Book
+  caption: Fixed Asset Statistics
+  # opened from the Fixed Asset Card and List (F7): the asset's first depreciation book
+  editable: false
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: fa_no
+          - source: depreciation_book_code
+          - source: description
+          - source: acquisition_date
+          - source: g_l_acquisition_date
+          - source: disposal_date
+
+      - name: Amounts
+        caption: Amounts
+        fields:
+          - source: acquisition_cost
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: depreciation
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: write_down
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: appreciation
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: custom_1
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: custom_2
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: book_value
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: salvage_value
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: depreciable_basis
+            drilldown: 5604
+            drilldown_filter_field: fa_no
+            drilldown_filter_value: fa_no
+          - source: maintenance
+          - source: proceeds_on_disposal
+          - source: gain_loss
+
+      - name: Last FA Posting Date
+        caption: Last FA Posting Date
+        fields:
+          - source: last_acquisition_cost_date
+          - source: last_depreciation_date
+          - source: last_write_down_date
+          - source: last_appreciation_date
+          - source: last_custom_1_date
+          - source: last_custom_2_date
+          - source: last_salvage_value_date
+          - source: last_maintenance_date
+

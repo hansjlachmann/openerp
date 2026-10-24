@@ -1,0 +1,71 @@
+page:
+  id: 423
+  type: Card
+  name: Customer Bank Account Card
+  source_table: Customer_Bank_Account
+  caption: Customer Bank Account Card
+  list_page_id: 424
+  enable_navigation: true
+  editable: true
+  focus_field: code
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: customer_no
+          - source: code
+          - source: name
+          - source: address
+          - source: address_2
+          - source: post_code
+          - source: city
+          - source: state
+          - source: country_code
+          - source: phone_no
+          - source: contact
+          - source: bank_branch_no
+          - source: bank_account_no
+          - source: transit_no
+          - source: currency_code
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: fax_no
+          - source: telex_no
+          - source: telex_answer_back
+          - source: e_mail
+          - source: home_page
+          - source: language_code
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 424
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

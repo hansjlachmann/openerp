@@ -1,0 +1,203 @@
+page:
+  id: 151
+  type: Card
+  name: Customer Statistics
+  source_table: Customer   # opened from the Customer Card and List (F7) on one customer
+  caption: Customer Statistics
+  editable: false
+
+  # The calculated fields are filled by the page's OnAfterGetRecord trigger
+  # (business-logic/pages/customerstatistics.go); their captions are pages.customer_statistics.fields.*
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+          - source: name
+          - source: balance_lcy
+            drilldown: 25
+            drilldown_filter_field: customer_no
+            drilldown_filter_value: "no"
+          - source: total_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+            style: Strong
+          - source: credit_limit_lcy
+          - source: balance_due_to_date_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: This Period
+        caption: This Period
+        fields:
+          - source: this_period_name
+            calculated: true
+            type: types.Text
+          - source: this_period_sales_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_profit_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_profit_pct
+            calculated: true
+            type: types.Decimal
+            decimal_places: "1:1"
+          - source: this_period_inv_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_pmt_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_fin_charge_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_cr_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_payments_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_period_reminder_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: This Year
+        caption: This Year
+        fields:
+          - source: this_year_name
+            calculated: true
+            type: types.Text
+          - source: this_year_sales_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_profit_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_profit_pct
+            calculated: true
+            type: types.Decimal
+            decimal_places: "1:1"
+          - source: this_year_inv_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_pmt_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_fin_charge_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_cr_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_payments_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: this_year_reminder_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: Last Year
+        caption: Last Year
+        fields:
+          - source: last_year_name
+            calculated: true
+            type: types.Text
+          - source: last_year_sales_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_profit_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_profit_pct
+            calculated: true
+            type: types.Decimal
+            decimal_places: "1:1"
+          - source: last_year_inv_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_pmt_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_fin_charge_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_cr_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_payments_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: last_year_reminder_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+
+      - name: To Date
+        caption: To Date
+        fields:
+          - source: to_date_name
+            calculated: true
+            type: types.Text
+          - source: to_date_sales_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_profit_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_profit_pct
+            calculated: true
+            type: types.Decimal
+            decimal_places: "1:1"
+          - source: to_date_inv_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_pmt_discounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_fin_charge_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_cr_memo_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_payments_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: to_date_reminder_amounts_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"

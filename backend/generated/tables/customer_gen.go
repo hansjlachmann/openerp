@@ -134,67 +134,69 @@ func (o CustomerReserve) IsValid() bool {
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterCustomerLogic.
 type Customer struct {
-	No                     types.Code                 `db:"no,pk"`
-	Name                   types.Text                 `db:"name"`
-	Search_name            types.Code                 `db:"search_name"`
-	Name_2                 types.Text                 `db:"name_2"`
-	Address                types.Text                 `db:"address"`
-	Address_2              types.Text                 `db:"address_2"`
-	City                   types.Text                 `db:"city"`
-	Contact                types.Text                 `db:"contact"`
-	Phone_no               types.Text                 `db:"phone_no"`
-	Telex_no               types.Text                 `db:"telex_no"`
-	Our_account_no         types.Text                 `db:"our_account_no"`
-	Territory_code         types.Code                 `db:"territory_code"`
-	Department_code        types.Code                 `db:"department_code"`
-	Project_code           types.Code                 `db:"project_code"`
-	Chain_name             types.Code                 `db:"chain_name"`
-	Budgeted_amount        types.Decimal              `db:"budgeted_amount"`
-	Credit_limit_lcy       types.Decimal              `db:"credit_limit_lcy"`
-	Customer_posting_group types.Code                 `db:"customer_posting_group"`
-	Currency_code          types.Code                 `db:"currency_code"`
-	Price_group_code       types.Code                 `db:"price_group_code"`
-	Language_code          types.Code                 `db:"language_code"`
-	Statistics_group       int                        `db:"statistics_group"`
-	Payment_terms_code     types.Code                 `db:"payment_terms_code"`
-	Fin_charge_terms_code  types.Code                 `db:"fin_charge_terms_code"`
-	Salesperson_code       types.Code                 `db:"salesperson_code"`
-	Shipment_method_code   types.Code                 `db:"shipment_method_code"`
-	Shipping_agent_code    types.Code                 `db:"shipping_agent_code"`
-	Place_of_export        types.Code                 `db:"place_of_export"`
-	Invoice_disc_code      types.Code                 `db:"invoice_disc_code"`
-	Cust_item_disc_gr      types.Code                 `db:"cust_item_disc_gr"`
-	Country_code           types.Code                 `db:"country_code"`
-	Collection_method      types.Code                 `db:"collection_method"`
-	Amount                 types.Decimal              `db:"amount"`
-	Blocked                bool                       `db:"blocked"`
-	Invoice_copies         int                        `db:"invoice_copies"`
-	Last_statement_no      int                        `db:"last_statement_no"`
-	Print_statements       bool                       `db:"print_statements"`
-	Bill_to_customer_no    types.Code                 `db:"bill_to_customer_no"`
-	Priority               int                        `db:"priority"`
-	Payment_method_code    types.Code                 `db:"payment_method_code"`
-	Last_date_modified     types.Date                 `db:"last_date_modified"`
-	Application_method     CustomerApplication_method `db:"application_method"`
-	Allow_quantity_disc    bool                       `db:"allow_quantity_disc"`
-	Prices_including_tax   bool                       `db:"prices_including_tax"`
-	Location_code          types.Code                 `db:"location_code"`
-	Fax_no                 types.Text                 `db:"fax_no"`
-	Telex_answer_back      types.Text                 `db:"telex_answer_back"`
-	Vat_registration_no    types.Text                 `db:"vat_registration_no"`
-	Combine_shipments      bool                       `db:"combine_shipments"`
-	Gen_bus_posting_group  types.Code                 `db:"gen_bus_posting_group"`
-	Picture                []byte                     `db:"picture"`
-	Post_code              types.Code                 `db:"post_code"`
-	State                  types.Text                 `db:"state"`
-	E_mail                 types.Text                 `db:"e_mail"`
-	Home_page              types.Text                 `db:"home_page"`
-	Reminder_terms_code    types.Code                 `db:"reminder_terms_code"`
-	No_series              types.Code                 `db:"no_series"`
-	Tax_area_code          types.Code                 `db:"tax_area_code"`
-	Tax_liable             bool                       `db:"tax_liable"`
-	Tax_bus_posting_group  types.Code                 `db:"tax_bus_posting_group"`
-	Reserve                CustomerReserve            `db:"reserve"`
+	No                     types.Code    `db:"no,pk"`
+	Name                   types.Text    `db:"name"`
+	Search_name            types.Code    `db:"search_name"`
+	Name_2                 types.Text    `db:"name_2"`
+	Address                types.Text    `db:"address"`
+	Address_2              types.Text    `db:"address_2"`
+	City                   types.Text    `db:"city"`
+	Contact                types.Text    `db:"contact"`
+	Phone_no               types.Text    `db:"phone_no"`
+	Telex_no               types.Text    `db:"telex_no"`
+	Our_account_no         types.Text    `db:"our_account_no"`
+	Territory_code         types.Code    `db:"territory_code"`
+	Department_code        types.Code    `db:"department_code"`
+	Project_code           types.Code    `db:"project_code"`
+	Chain_name             types.Code    `db:"chain_name"`
+	Budgeted_amount        types.Decimal `db:"budgeted_amount"`
+	Credit_limit_lcy       types.Decimal `db:"credit_limit_lcy"`
+	Customer_posting_group types.Code    `db:"customer_posting_group"`
+	Currency_code          types.Code    `db:"currency_code"`
+	Price_group_code       types.Code    `db:"price_group_code"`
+	Language_code          types.Code    `db:"language_code"`
+	Statistics_group       int           `db:"statistics_group"`
+	Payment_terms_code     types.Code    `db:"payment_terms_code"`
+	Fin_charge_terms_code  types.Code    `db:"fin_charge_terms_code"`
+	Salesperson_code       types.Code    `db:"salesperson_code"`
+	Shipment_method_code   types.Code    `db:"shipment_method_code"`
+	Shipping_agent_code    types.Code    `db:"shipping_agent_code"`
+	Place_of_export        types.Code    `db:"place_of_export"`
+	Invoice_disc_code      types.Code    `db:"invoice_disc_code"`
+	Cust_item_disc_gr      types.Code    `db:"cust_item_disc_gr"`
+	Country_code           types.Code    `db:"country_code"`
+	Collection_method      types.Code    `db:"collection_method"`
+	Amount                 types.Decimal `db:"amount"`
+	// FlowField: Exist(CommentLine.line_no)
+	Comment               bool
+	Blocked               bool                       `db:"blocked"`
+	Invoice_copies        int                        `db:"invoice_copies"`
+	Last_statement_no     int                        `db:"last_statement_no"`
+	Print_statements      bool                       `db:"print_statements"`
+	Bill_to_customer_no   types.Code                 `db:"bill_to_customer_no"`
+	Priority              int                        `db:"priority"`
+	Payment_method_code   types.Code                 `db:"payment_method_code"`
+	Last_date_modified    types.Date                 `db:"last_date_modified"`
+	Application_method    CustomerApplication_method `db:"application_method"`
+	Allow_quantity_disc   bool                       `db:"allow_quantity_disc"`
+	Prices_including_tax  bool                       `db:"prices_including_tax"`
+	Location_code         types.Code                 `db:"location_code"`
+	Fax_no                types.Text                 `db:"fax_no"`
+	Telex_answer_back     types.Text                 `db:"telex_answer_back"`
+	Vat_registration_no   types.Text                 `db:"vat_registration_no"`
+	Combine_shipments     bool                       `db:"combine_shipments"`
+	Gen_bus_posting_group types.Code                 `db:"gen_bus_posting_group"`
+	Picture               []byte                     `db:"picture"`
+	Post_code             types.Code                 `db:"post_code"`
+	State                 types.Text                 `db:"state"`
+	E_mail                types.Text                 `db:"e_mail"`
+	Home_page             types.Text                 `db:"home_page"`
+	Reminder_terms_code   types.Code                 `db:"reminder_terms_code"`
+	No_series             types.Code                 `db:"no_series"`
+	Tax_area_code         types.Code                 `db:"tax_area_code"`
+	Tax_liable            bool                       `db:"tax_liable"`
+	Tax_bus_posting_group types.Code                 `db:"tax_bus_posting_group"`
+	Reserve               CustomerReserve            `db:"reserve"`
 	// FlowField: Sum(CustomerLedgerEntry.amount)
 	Balance types.Decimal
 	// FlowField: Sum(CustomerLedgerEntry.amount_lcy)
@@ -376,6 +378,7 @@ var Customer_FieldNo = struct {
 	Country_code                int
 	Collection_method           int
 	Amount                      int
+	Comment                     int
 	Blocked                     int
 	Invoice_copies              int
 	Last_statement_no           int
@@ -467,6 +470,7 @@ var Customer_FieldNo = struct {
 	Country_code:                35,
 	Collection_method:           36,
 	Amount:                      37,
+	Comment:                     38,
 	Blocked:                     39,
 	Invoice_copies:              40,
 	Last_statement_no:           41,
@@ -595,6 +599,8 @@ func (t *Customer) FieldNo(fieldName string) int {
 		return 36
 	case "amount":
 		return 37
+	case "comment":
+		return 38
 	case "blocked":
 		return 39
 	case "invoice_copies":
@@ -782,6 +788,8 @@ func (t *Customer) FieldName(fieldNo int) string {
 		return "collection_method"
 	case 37:
 		return "amount"
+	case 38:
+		return "comment"
 	case 39:
 		return "blocked"
 	case 40:
@@ -1470,6 +1478,7 @@ func GetCustomerTableSchema() string {
 		country_code TEXT(10),
 		collection_method TEXT(20),
 		amount TEXT,
+		comment INTEGER,
 		blocked INTEGER,
 		invoice_copies INTEGER,
 		last_statement_no INTEGER,
@@ -1562,6 +1571,7 @@ func GetCustomerPostgresTableSchema() string {
 		country_code VARCHAR(10),
 		collection_method VARCHAR(20),
 		amount NUMERIC,
+		comment BOOLEAN,
 		blocked BOOLEAN,
 		invoice_copies INTEGER,
 		last_statement_no INTEGER,
@@ -3251,7 +3261,7 @@ func (t *Customer) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Customer Ledger Entry", false, "customer_no", "", 0}, {"Customer Ledger Entry", false, "sell_to_customer_no", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"Customer", false, "invoice_disc_code", "", 0}, {"Customer", false, "bill_to_customer_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "source_no", "source_type", 1}},
+		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 1}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 1}, {"Comment_Line", false, "no", "table_name", 1}, {"Customer Ledger Entry", false, "customer_no", "", 0}, {"Customer Ledger Entry", false, "sell_to_customer_no", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 1}, {"Customer", false, "invoice_disc_code", "", 0}, {"Customer", false, "bill_to_customer_no", "", 0}, {"Customer_Bank_Account", false, "customer_no", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 1}, {"G_L_Entry", false, "source_no", "source_type", 1}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 1}, {"Ship_to_Address", false, "customer_no", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 1}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3322,6 +3332,7 @@ func (t *Customer) Delete(runTrigger bool) bool {
 func (t *Customer) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
+		t.calcFlowField_comment()
 		t.calcFlowField_balance()
 		t.calcFlowField_balance_lcy()
 		t.calcFlowField_net_change()
@@ -3353,6 +3364,8 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 	// Calculate only specified fields
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "comment":
+			t.calcFlowField_comment()
 		case "balance":
 			t.calcFlowField_balance()
 		case "balance_lcy":
@@ -3405,6 +3418,12 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 			t.calcFlowField_no_of_ledger_entries()
 		}
 	}
+}
+
+// calcFlowField_comment calculates the comment FlowField
+// CalcFormula: Exist(CommentLine.line_no)
+func (t *Customer) calcFlowField_comment() {
+	t.Comment = t.calcCount_comment() > 0
 }
 
 // calcFlowField_balance calculates the balance FlowField
@@ -3570,6 +3589,8 @@ func (t *Customer) CalcFieldsForRecords(records []map[string]interface{}, fieldN
 	}
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "comment":
+			t.calcForRecords_comment(records)
 		case "balance":
 			t.calcForRecords_balance(records)
 		case "balance_lcy":
@@ -3621,6 +3642,75 @@ func (t *Customer) CalcFieldsForRecords(records []map[string]interface{}, fieldN
 		case "no_of_ledger_entries":
 			t.calcForRecords_no_of_ledger_entries(records)
 		}
+	}
+}
+
+// calcForRecords_comment calculates the comment FlowField for a set of records
+// CalcFormula: Exist(CommentLine.line_no)
+func (t *Customer) calcForRecords_comment(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CommentLineTableName), false
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]int, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "table_name = ?")
+		args = append(args, 1)
+		if chunk != nil {
+			whereClauses = append(whereClauses, "no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(`SELECT no, %s FROM "%s" WHERE %s GROUP BY no`, agg, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate comment: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		rec["comment"] = values[fmt.Sprint(rec["no"])] > 0
 	}
 }
 
@@ -6087,6 +6177,43 @@ func (t *Customer) calcForRecords_no_of_ledger_entries(records []map[string]inte
 }
 
 // Helper methods for FlowField calculations
+
+func (t *Customer) calcCount_comment() int {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CommentLineTableName), false
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "table_name = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "no = ?")
+	args = append(args, t.No)
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(`SELECT %s FROM "%s" WHERE %s`, agg, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var count int
+	err := t.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate count for comment: %v\n", err)
+		return 0
+	}
+
+	return count
+}
 
 func (t *Customer) calcSum_balance() types.Decimal {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
@@ -9887,13 +10014,13 @@ func (t *Customer) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set
-// Must be called after FindSet() or FindSetBuffered()
+// Next advances to the next record: in the result set after FindSet() or FindSetBuffered(),
+// else from the current record in the current key (after Get, Find, FindFirst, FindLast)
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
 //   - Next(5): Skip forward 5 records
-//   - Next(-1): Move backward 1 record (only with FindSetBuffered)
-//   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
+//   - Next(-1): Move backward 1 record (FindSetBuffered, or after Get/Find)
+//   - Next(-3): Skip backward 3 records (FindSetBuffered, or after Get/Find)
 //
 // Returns true if a record was loaded, false if no more records or out of bounds
 func (t *Customer) Next(steps ...int) bool {
@@ -10130,8 +10257,26 @@ func (t *Customer) Next(steps ...int) bool {
 		return true
 	}
 
-	// No active recordset
-	return false
+	// No record set (after Get, Find, FindFirst, FindLast): the next record in the current key
+	// and direction within the filters, one step at a time (classic NEXT after FIND); a step
+	// that finds none leaves the record on the last one reached
+	if step == 0 {
+		return false
+	}
+	for i := 0; i != step; {
+		if step > 0 {
+			if !t.findInKey(">", false) {
+				return false
+			}
+			i++
+		} else {
+			if !t.findInKey("<", true) {
+				return false
+			}
+			i--
+		}
+	}
+	return true
 }
 
 // FindSetBuffered loads all filtered records into memory for bidirectional navigation
@@ -10420,6 +10565,7 @@ func (t *Customer) copyFromBuffered(record *Customer) {
 	t.Country_code = record.Country_code
 	t.Collection_method = record.Collection_method
 	t.Amount = record.Amount
+	t.Comment = record.Comment
 	t.Blocked = record.Blocked
 	t.Invoice_copies = record.Invoice_copies
 	t.Last_statement_no = record.Last_statement_no
@@ -12091,6 +12237,65 @@ func (t *Customer) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *Customer) flowFieldValue(no int) (any, bool) {
+	switch no {
+	case 38:
+		return t.Comment, true
+	case 58:
+		return t.Balance, true
+	case 59:
+		return t.Balance_lcy, true
+	case 60:
+		return t.Net_change, true
+	case 61:
+		return t.Net_change_lcy, true
+	case 62:
+		return t.Sales_lcy, true
+	case 63:
+		return t.Profit_lcy, true
+	case 64:
+		return t.Inv_discounts_lcy, true
+	case 65:
+		return t.Pmt_discounts_lcy, true
+	case 66:
+		return t.Balance_due, true
+	case 67:
+		return t.Balance_due_lcy, true
+	case 69:
+		return t.Payments, true
+	case 70:
+		return t.Invoice_amounts, true
+	case 71:
+		return t.Cr_memo_amounts, true
+	case 72:
+		return t.Finance_charge_memo_amounts, true
+	case 74:
+		return t.Payments_lcy, true
+	case 75:
+		return t.Inv_amounts_lcy, true
+	case 76:
+		return t.Cr_memo_amounts_lcy, true
+	case 77:
+		return t.Fin_charge_memo_amounts_lcy, true
+	case 97:
+		return t.Debit_amount, true
+	case 98:
+		return t.Credit_amount, true
+	case 99:
+		return t.Debit_amount_lcy, true
+	case 100:
+		return t.Credit_amount_lcy, true
+	case 105:
+		return t.Reminder_amounts, true
+	case 106:
+		return t.Reminder_amounts_lcy, true
+	case 903:
+		return t.No_of_ledger_entries, true
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *Customer) SetFieldValue(no int, value any) bool {
@@ -12616,7 +12821,11 @@ func (t *Customer) TestField(fieldName string, value ...any) error {
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Customer", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Customer", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -12953,7 +13162,8 @@ func (t *Customer) Copy(from *Customer) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *Customer) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -12979,10 +13189,10 @@ func (t *Customer) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false
@@ -13345,34 +13555,36 @@ func (t *Customer) ToMap() map[string]interface{} {
 		"country_code":           t.Country_code.String(),
 		"collection_method":      t.Collection_method.String(),
 		"amount":                 t.Amount.String(),
-		"blocked":                t.Blocked,
-		"invoice_copies":         t.Invoice_copies,
-		"last_statement_no":      t.Last_statement_no,
-		"print_statements":       t.Print_statements,
-		"bill_to_customer_no":    t.Bill_to_customer_no.String(),
-		"priority":               t.Priority,
-		"payment_method_code":    t.Payment_method_code.String(),
-		"last_date_modified":     t.Last_date_modified.String(),
-		"application_method":     int(t.Application_method),
-		"allow_quantity_disc":    t.Allow_quantity_disc,
-		"prices_including_tax":   t.Prices_including_tax,
-		"location_code":          t.Location_code.String(),
-		"fax_no":                 t.Fax_no.String(),
-		"telex_answer_back":      t.Telex_answer_back.String(),
-		"vat_registration_no":    t.Vat_registration_no.String(),
-		"combine_shipments":      t.Combine_shipments,
-		"gen_bus_posting_group":  t.Gen_bus_posting_group.String(),
-		"picture":                t.Picture,
-		"post_code":              t.Post_code.String(),
-		"state":                  t.State.String(),
-		"e_mail":                 t.E_mail.String(),
-		"home_page":              t.Home_page.String(),
-		"reminder_terms_code":    t.Reminder_terms_code.String(),
-		"no_series":              t.No_series.String(),
-		"tax_area_code":          t.Tax_area_code.String(),
-		"tax_liable":             t.Tax_liable,
-		"tax_bus_posting_group":  t.Tax_bus_posting_group.String(),
-		"reserve":                int(t.Reserve),
+		// FlowField: comment
+		"comment":               t.Comment,
+		"blocked":               t.Blocked,
+		"invoice_copies":        t.Invoice_copies,
+		"last_statement_no":     t.Last_statement_no,
+		"print_statements":      t.Print_statements,
+		"bill_to_customer_no":   t.Bill_to_customer_no.String(),
+		"priority":              t.Priority,
+		"payment_method_code":   t.Payment_method_code.String(),
+		"last_date_modified":    t.Last_date_modified.String(),
+		"application_method":    int(t.Application_method),
+		"allow_quantity_disc":   t.Allow_quantity_disc,
+		"prices_including_tax":  t.Prices_including_tax,
+		"location_code":         t.Location_code.String(),
+		"fax_no":                t.Fax_no.String(),
+		"telex_answer_back":     t.Telex_answer_back.String(),
+		"vat_registration_no":   t.Vat_registration_no.String(),
+		"combine_shipments":     t.Combine_shipments,
+		"gen_bus_posting_group": t.Gen_bus_posting_group.String(),
+		"picture":               t.Picture,
+		"post_code":             t.Post_code.String(),
+		"state":                 t.State.String(),
+		"e_mail":                t.E_mail.String(),
+		"home_page":             t.Home_page.String(),
+		"reminder_terms_code":   t.Reminder_terms_code.String(),
+		"no_series":             t.No_series.String(),
+		"tax_area_code":         t.Tax_area_code.String(),
+		"tax_liable":            t.Tax_liable,
+		"tax_bus_posting_group": t.Tax_bus_posting_group.String(),
+		"reserve":               int(t.Reserve),
 		// FlowField: balance
 		"balance": t.Balance.String(),
 		// FlowField: balance_lcy
@@ -14162,6 +14374,16 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			DecimalPlaces: "2:2",
 		},
 		{
+			No:         38,
+			Name:       "comment",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  true,
+		},
+		{
 			No:         39,
 			Name:       "blocked",
 			Type:       tables.FieldTypeBoolean,
@@ -14765,6 +14987,7 @@ func (t *Customer) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 // GetFlowFields returns names of FlowFields that need CalcFields
 func (t *Customer) GetFlowFields() []string {
 	return []string{
+		"comment",
 		"balance",
 		"balance_lcy",
 		"net_change",

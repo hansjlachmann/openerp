@@ -1,0 +1,367 @@
+table:
+  id: 271
+  name: "Bank_Account_Ledger_Entry"
+  caption: Bank Account Ledger Entry
+  description: "Bank account ledger entries, posted (table 271)"
+  lookup_page_id: 372
+  # Statement No./Line No. relate to the bank reconciliation lines (table 274), which come with posting
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: bank_account_no
+      no: 3
+      type: types.Code
+      db_name: bank_account_no
+      length: 20
+      table_relation:
+        table: Bank_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: document_type
+      no: 5
+      type: Option
+      db_name: document_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    - name: document_no
+      no: 6
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 100
+
+    - name: currency_code
+      no: 11
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: amount
+      no: 13
+      type: types.Decimal
+      db_name: amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: remaining_amount
+      no: 14
+      type: types.Decimal
+      db_name: remaining_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: amount_lcy
+      no: 17
+      type: types.Decimal
+      db_name: amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: bank_acc_posting_group
+      no: 22
+      type: types.Code
+      db_name: bank_acc_posting_group
+      length: 10
+      table_relation:
+        table: Bank_Account_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: g_l_bank_account_no
+            width: 250
+
+    - name: department_code
+      no: 23
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 24
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: our_contact_code
+      no: 25
+      type: types.Code
+      db_name: our_contact_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 27
+      type: types.Code
+      db_name: user_id
+      length: 20
+      table_relation:
+        table: User
+        field: user_id
+        validate: false   # the user who posted; not checked (classic TestTableRelation=No)
+        lookup_columns:
+          - source: user_id
+            width: 100
+          - source: user_name
+            width: 250
+
+    - name: source_code
+      no: 28
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: open
+      no: 36
+      type: bool
+      db_name: open
+
+    - name: positive
+      no: 43
+      type: bool
+      db_name: positive
+
+    - name: closed_by_entry_no
+      no: 44
+      type: int
+      db_name: closed_by_entry_no
+
+    - name: closed_at_date
+      no: 45
+      type: types.Date
+      db_name: closed_at_date
+
+    - name: journal_batch_name
+      no: 49
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: reason_code
+      no: 50
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_account_type
+      no: 51
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset", "Employee"]
+
+    - name: bal_account_no
+      no: 52
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      # The balancing account's table depends on Bal. Account Type (employees come with their table)
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: transaction_no
+      no: 53
+      type: int
+      db_name: transaction_no
+
+    - name: statement_status
+      no: 55
+      type: Option
+      db_name: statement_status
+      options: ["Open", "Bank Acc. Entry Applied", "Check Entry Applied", "Closed"]
+
+    - name: statement_no
+      no: 56
+      type: types.Code
+      db_name: statement_no
+      length: 20
+
+    - name: statement_line_no
+      no: 57
+      type: int
+      db_name: statement_line_no
+
+    - name: debit_amount
+      no: 58
+      type: types.Decimal
+      db_name: debit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount
+      no: 59
+      type: types.Decimal
+      db_name: credit_amount
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: debit_amount_lcy
+      no: 60
+      type: types.Decimal
+      db_name: debit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: credit_amount_lcy
+      no: 61
+      type: types.Decimal
+      db_name: credit_amount_lcy
+      precision: 18
+      scale: 2
+      decimal_places: "2:2"
+
+    - name: document_date
+      no: 62
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 63
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: bank_account_date
+      fields: [bank_account_no, posting_date]
+      sum_index_fields:
+        - amount
+        - amount_lcy
+        - debit_amount
+        - credit_amount
+        - debit_amount_lcy
+        - credit_amount_lcy
+    - name: bank_account_dimensions
+      fields: [bank_account_no, department_code, project_code, posting_date]
+      sum_index_fields:
+        - amount
+        - amount_lcy
+        - debit_amount
+        - credit_amount
+        - debit_amount_lcy
+        - credit_amount_lcy
+    - name: bank_account_open
+      fields: [bank_account_no, open]
+    - name: document_type
+      fields: [document_type, bank_account_no, posting_date]
+      sum_index_fields:
+        - amount
+    - name: document
+      fields: [document_no, posting_date]
+    - name: transaction
+      fields: [transaction_no]

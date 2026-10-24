@@ -56,8 +56,8 @@ table:
       type: types.Code
       db_name: bal_account_no
       length: 20
-      # The balancing account's table depends on Bal. Account Type (vendors, bank accounts, fixed
-      # assets and employees come with their tables)
+      # The balancing account's table depends on Bal. Account Type (fixed assets and employees
+      # come with their tables)
       table_relation:
         conditions:
           - when: {field: bal_account_type, equal: 0}
@@ -75,6 +75,30 @@ table:
               - source: no
                 width: 100
               - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
                 width: 250
 
     - name: amount
@@ -283,7 +307,8 @@ table:
       type: types.Code
       db_name: source_no
       length: 20
-      # The source's table depends on Source Type (the others come with their tables)
+      # The source's table depends on Source Type (fixed assets and employees come with their
+      # tables)
       table_relation:
         conditions:
           - when: {field: source_type, equal: 1}
@@ -293,6 +318,30 @@ table:
               - source: no
                 width: 100
               - source: name
+                width: 250
+          - when: {field: source_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
                 width: 250
 
     - name: no_series

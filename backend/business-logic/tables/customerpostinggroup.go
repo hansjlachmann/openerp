@@ -1,6 +1,7 @@
 package tables
 
 import (
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -35,38 +36,38 @@ func (customerPostingGroupLogic) OnRename(rec *gtables.CustomerPostingGroup) err
 
 // OnValidate_Receivables_account: a posting account
 func (customerPostingGroupLogic) OnValidate_Receivables_account(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Receivables_account, false, false)
+	return checkPostingGroupGLAcc(rec, rec.Receivables_account, false, false)
 }
 
 // OnValidate_Service_charge_acc: a posting account with a Gen. Prod. Posting Group and Direct Posting
 func (customerPostingGroupLogic) OnValidate_Service_charge_acc(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Service_charge_acc, true, true)
+	return checkPostingGroupGLAcc(rec, rec.Service_charge_acc, true, true)
 }
 
 // OnValidate_Payment_disc_acc: a posting account
 func (customerPostingGroupLogic) OnValidate_Payment_disc_acc(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Payment_disc_acc, false, false)
+	return checkPostingGroupGLAcc(rec, rec.Payment_disc_acc, false, false)
 }
 
 // OnValidate_Invoice_rounding_account: a posting account with a Gen. Prod. Posting Group
 func (customerPostingGroupLogic) OnValidate_Invoice_rounding_account(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Invoice_rounding_account, true, false)
+	return checkPostingGroupGLAcc(rec, rec.Invoice_rounding_account, true, false)
 }
 
 // OnValidate_Additional_fee_account: a posting account with a Gen. Prod. Posting Group and Direct Posting
 func (customerPostingGroupLogic) OnValidate_Additional_fee_account(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Additional_fee_account, true, true)
+	return checkPostingGroupGLAcc(rec, rec.Additional_fee_account, true, true)
 }
 
 // OnValidate_Interest_account: a posting account with a Gen. Prod. Posting Group
 func (customerPostingGroupLogic) OnValidate_Interest_account(rec *gtables.CustomerPostingGroup) error {
-	return checkCustPostingGroupGLAcc(rec, rec.Interest_account, true, false)
+	return checkPostingGroupGLAcc(rec, rec.Interest_account, true, false)
 }
 
-// checkCustPostingGroupGLAcc checks the G/L account entered in a field: it exists and is a
+// checkPostingGroupGLAcc checks the G/L account entered in a field of a customer or vendor posting group: it exists and is a
 // posting account that is not blocked, with a Gen. Prod. Posting Group and Direct Posting when
 // asked
-func checkCustPostingGroupGLAcc(rec *gtables.CustomerPostingGroup, accNo types.Code, checkProdPostingGroup, checkDirectPosting bool) error {
+func checkPostingGroupGLAcc(rec ftables.Source, accNo types.Code, checkProdPostingGroup, checkDirectPosting bool) error {
 	if accNo != "" {
 		glAcc := gtables.NewGLAccount(rec)
 		err := glAcc.GetOrError(accNo)

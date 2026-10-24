@@ -4,7 +4,7 @@ table:
   description: "Customers (table 18)"
   data_caption_fields: [no, name]
   auto_key: true   # OnInsert gives a customer without No. the next number of its series
-  # Left out until their tables exist: 38 Comment (Comment Line), 78/79/113/114 Outstanding
+  # Left out until their tables exist: 78/79/113/114 Outstanding
   # Orders / Shipped Not Invoiced (Sales Line); 10004/10015 (local field series)
   fields:
     - name: no
@@ -331,6 +331,22 @@ table:
       precision: 18
       scale: 2
       decimal_places: "2:2"
+
+    # FlowField: whether the record has comments (Comment Line of table name Customer)
+    - name: comment
+      no: 38
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 1
+        - field: no
+          type: field
+          value: no
 
     - name: blocked
       no: 39

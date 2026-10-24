@@ -1,0 +1,120 @@
+page:
+  id: 5619
+  type: List
+  name: FA Depreciation Books
+  source_table: FA_Depreciation_Book
+  caption: FA Depreciation Books
+  # The depreciation books of a fixed asset (filtered on fa_no from the card)
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: fa_no
+          width: 100
+          visible: false
+
+        - source: depreciation_book_code
+          width: 130
+
+        - source: fa_posting_group
+          width: 130
+
+        - source: depreciation_method
+          width: 150
+
+        - source: depreciation_starting_date
+          width: 130
+
+        - source: no_of_depreciation_years
+          width: 110
+
+        - source: no_of_depreciation_months
+          width: 110
+          visible: false
+
+        - source: straight_line_percent
+          width: 110
+          visible: false
+
+        - source: declining_balance_percent
+          width: 110
+          visible: false
+
+        - source: fixed_depr_amount
+          width: 120
+          visible: false
+
+        - source: depreciation_ending_date
+          width: 130
+
+        - source: ending_book_value
+          width: 120
+          visible: false
+
+        - source: final_rounding_amount
+          width: 120
+          visible: false
+
+        - source: use_fa_ledger_check
+          width: 100
+          visible: false
+
+        - source: acquisition_cost
+          width: 130
+          drilldown: 5604
+          drilldown_filter_field: fa_no
+          drilldown_filter_value: fa_no
+
+        - source: book_value
+          width: 130
+          drilldown: 5604
+          drilldown_filter_field: fa_no
+          drilldown_filter_value: fa_no
+
+        - source: acquisition_date
+          width: 120
+          visible: false
+
+        - source: disposal_date
+          width: 120
+          visible: false
+
+        - source: last_depreciation_date
+          width: 130
+          visible: false
+
+        - source: description
+          width: 200
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 5602
+      run_page_filter_field: fa_no
+      run_page_filter_value: fa_no

@@ -1,0 +1,144 @@
+page:
+  id: 5600
+  type: Card
+  name: Fixed Asset Card
+  source_table: Fixed_Asset
+  caption: Fixed Asset Card
+  list_page_id: 5601
+  enable_navigation: true
+  focus_field: "no"
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            assist_edit: "table:Fixed_Asset.AssistEdit"   # pick another number series (…, Shift+F2)
+          - source: description
+          - source: search_description
+          - source: responsible_employee
+          - source: serial_no
+          - source: main_asset_component
+          - source: component_of_main_asset
+          - source: inactive
+          - source: blocked
+          - source: last_date_modified
+          - source: comment
+
+      - name: Posting
+        caption: Posting
+        fields:
+          - source: fa_class_code
+          - source: fa_subclass_code
+          - source: fa_location_code
+          - source: department_code
+          - source: project_code
+          - source: budgeted_asset
+
+      - name: Maintenance
+        caption: Maintenance
+        fields:
+          - source: vendor_no
+          - source: maintenance_vendor_no
+          - source: under_maintenance
+          - source: next_service_date
+          - source: warranty_date
+          - source: insured
+
+      - name: Depreciation Books
+        caption: Depreciation Books
+        subpage:
+          page_id: 5619
+          link:
+            fa_no: "no"
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 5601
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Depreciation Books
+      caption: Depreciation Books
+      image: Lines
+      promoted: true
+      run_page: 5619
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 5604
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Maintenance Ledger Entries
+      caption: Maintenance Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 5641
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 5602
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Main Asset Components
+      caption: Main Asset Components
+      image: Rows
+      promoted: true
+      run_page: 5658
+      run_page_filter_field: main_asset_no
+      run_page_filter_value: "no"
+
+    - name: Maintenance Registration
+      caption: Maintenance Registration
+      image: Calendar
+      promoted: true
+      run_page: 5625
+      run_page_filter_field: fa_no
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "10"}   # Fixed Asset
+        - {field: "no", value: "no"}

@@ -117,9 +117,10 @@ type Field struct {
 	// Set in the page YAML (e.g. the User card's virtual password field) or taken from the
 	// table field's masked: true
 	Masked bool `yaml:"masked,omitempty" json:"masked,omitempty"`
-	// DecimalPlaces (populated at request time from the table field's decimal_places): the
-	// "min:max" digits after the point the page shows
-	DecimalPlaces string `yaml:"-" json:"decimal_places,omitempty"`
+	// DecimalPlaces: the "min:max" digits after the point the page shows — the page field's
+	// own (decimal_places in the page YAML; a calculated field's), else the table field's
+	// (filled in at request time)
+	DecimalPlaces string `yaml:"decimal_places,omitempty" json:"decimal_places,omitempty"`
 	// IndentField (lists): indent the cell by this field's value of the record, one step per
 	// level (the chart of accounts indents names by Indentation)
 	IndentField string `yaml:"indent_field,omitempty" json:"indent_field,omitempty"`

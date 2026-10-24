@@ -1,0 +1,100 @@
+page:
+  id: 5644
+  type: Card
+  name: Insurance Card
+  source_table: Insurance
+  caption: Insurance Card
+  list_page_id: 5645
+  enable_navigation: true
+  focus_field: "no"
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            assist_edit: "table:Insurance.AssistEdit"   # pick another number series (…, Shift+F2)
+          - source: description
+          - source: search_description
+          - source: insurance_vendor_no
+          - source: effective_date
+          - source: policy_no
+          - source: insurance_type
+          - source: annual_premium
+          - source: policy_coverage
+          - source: total_value_insured
+            drilldown: 5647
+            drilldown_filter_field: insurance_no
+            drilldown_filter_value: "no"
+          - source: blocked
+          - source: last_date_modified
+          - source: comment
+
+      - name: Posting
+        caption: Posting
+        fields:
+          - source: fa_class_code
+          - source: fa_subclass_code
+          - source: fa_location_code
+          - source: department_code
+          - source: project_code
+          - source: location_code
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 5645
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Coverage Ledger Entries
+      caption: Coverage Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 5647
+      run_page_filter_field: insurance_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 5646
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "11"}   # Insurance
+        - {field: "no", value: "no"}

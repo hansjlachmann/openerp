@@ -848,7 +848,7 @@ func (t *TaxBusinessPostingGroup) renameReferences(field string, oldValue, newVa
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "tax_bus_posting_group", "", 0}, {"Gen_Business_Posting_Group", false, "def_tax_bus_posting_group", "", 0}, {"G_L_Account", false, "tax_bus_posting_group", "", 0}, {"G_L_Entry", false, "tax_bus_posting_group", "", 0}},
+		"code": {{"Customer", false, "tax_bus_posting_group", "", 0}, {"FA_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Gen_Business_Posting_Group", false, "def_tax_bus_posting_group", "", 0}, {"G_L_Account", false, "tax_bus_posting_group", "", 0}, {"G_L_Entry", false, "tax_bus_posting_group", "", 0}, {"Maintenance_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Vendor", false, "tax_bus_posting_group", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1456,13 +1456,13 @@ func (t *TaxBusinessPostingGroup) FindSet() bool {
 	return t.Next()
 }
 
-// Next advances to the next record in the result set
-// Must be called after FindSet() or FindSetBuffered()
+// Next advances to the next record: in the result set after FindSet() or FindSetBuffered(),
+// else from the current record in the current key (after Get, Find, FindFirst, FindLast)
 // Optional steps parameter:
 //   - Next() or Next(1): Move forward 1 record (default)
 //   - Next(5): Skip forward 5 records
-//   - Next(-1): Move backward 1 record (only with FindSetBuffered)
-//   - Next(-3): Skip backward 3 records (only with FindSetBuffered)
+//   - Next(-1): Move backward 1 record (FindSetBuffered, or after Get/Find)
+//   - Next(-3): Skip backward 3 records (FindSetBuffered, or after Get/Find)
 //
 // Returns true if a record was loaded, false if no more records or out of bounds
 func (t *TaxBusinessPostingGroup) Next(steps ...int) bool {
@@ -1532,8 +1532,26 @@ func (t *TaxBusinessPostingGroup) Next(steps ...int) bool {
 		return true
 	}
 
-	// No active recordset
-	return false
+	// No record set (after Get, Find, FindFirst, FindLast): the next record in the current key
+	// and direction within the filters, one step at a time (classic NEXT after FIND); a step
+	// that finds none leaves the record on the last one reached
+	if step == 0 {
+		return false
+	}
+	for i := 0; i != step; {
+		if step > 0 {
+			if !t.findInKey(">", false) {
+				return false
+			}
+			i++
+		} else {
+			if !t.findInKey("<", true) {
+				return false
+			}
+			i--
+		}
+	}
+	return true
 }
 
 // FindSetBuffered loads all filtered records into memory for bidirectional navigation
@@ -1814,6 +1832,13 @@ func (t *TaxBusinessPostingGroup) FieldValue(no int) (any, bool) {
 	return nil, false
 }
 
+// flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
+func (t *TaxBusinessPostingGroup) flowFieldValue(no int) (any, bool) {
+	switch no {
+	}
+	return nil, false
+}
+
 // SetFieldValue sets a stored field by its number when the value has the field's type
 // (options: any option value or int); it reports whether the field was set
 func (t *TaxBusinessPostingGroup) SetFieldValue(no int, value any) bool {
@@ -1876,7 +1901,11 @@ func (t *TaxBusinessPostingGroup) TestField(fieldName string, value ...any) erro
 	no := t.FieldNo(fieldName)
 	current, ok := t.FieldValue(no)
 	if !ok {
-		return fmt.Errorf("TestField: %s is not a stored field of Tax_Business_Posting_Group", fieldName)
+		// a FlowField: its value as CalcFields left it (classic TESTFIELD after CALCFIELDS)
+		current, ok = t.flowFieldValue(no)
+	}
+	if !ok {
+		return fmt.Errorf("TestField: %s is not a field of Tax_Business_Posting_Group", fieldName)
 	}
 	field := t.FieldName(no)
 	if len(value) == 0 {
@@ -2141,7 +2170,8 @@ func (t *TaxBusinessPostingGroup) Copy(from *TaxBusinessPostingGroup) {
 // Find finds a record (Find) within the filters, in the current key and direction
 // (SetCurrentKey, SetAscending): "-" the first, "+" the last, "=" the record with the
 // current primary key, ">" the next record after the current one, "<" the one before it.
-// "=><" combine: "=>" the current record or else the next one.
+// "=<>" combine, tried in that order: "=<>" the current record, else the one before it, else
+// the next one.
 func (t *TaxBusinessPostingGroup) Find(which ...string) bool {
 	how := "="
 	if len(which) > 0 && which[0] != "" {
@@ -2167,10 +2197,10 @@ func (t *TaxBusinessPostingGroup) Find(which ...string) bool {
 			return true
 		}
 	}
-	if strings.Contains(how, ">") && t.findInKey(">", false) {
+	if strings.Contains(how, "<") && t.findInKey("<", true) {
 		return true
 	}
-	if strings.Contains(how, "<") && t.findInKey("<", true) {
+	if strings.Contains(how, ">") && t.findInKey(">", false) {
 		return true
 	}
 	return false

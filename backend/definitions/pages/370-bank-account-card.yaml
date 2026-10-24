@@ -1,0 +1,137 @@
+page:
+  id: 370
+  type: Card
+  name: Bank Account Card
+  source_table: Bank_Account
+  caption: Bank Account Card
+  list_page_id: 371
+  enable_navigation: true
+  editable: true
+  focus_field: "no"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            assist_edit: "table:Bank_Account.AssistEdit"   # pick another number series (…, Shift+F2)
+          - source: name
+          - source: address
+          - source: address_2
+          - source: post_code
+          - source: city
+          - source: state
+          - source: phone_no
+          - source: contact
+          - source: search_name
+          - source: balance
+            drilldown: 372   # Bank Account Ledger Entries of this bank account, in a modal
+            drilldown_filter_field: bank_account_no
+            drilldown_filter_value: "no"
+            style: Strong
+          - source: balance_lcy
+            drilldown: 372
+            drilldown_filter_field: bank_account_no
+            drilldown_filter_value: "no"
+          - source: min_balance
+          - source: our_contact_code
+          - source: blocked
+          - source: last_date_modified
+          - source: comment
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: phone_no
+          - source: fax_no
+          - source: e_mail
+          - source: home_page
+          - source: telex_no
+          - source: telex_answer_back
+
+      - name: Posting
+        caption: Posting
+        fields:
+          - source: currency_code
+          - source: last_check_no
+          - source: transit_no
+          - source: last_statement_no
+          - source: balance_last_statement
+          - source: bank_acc_posting_group
+          - source: department_code
+          - source: project_code
+
+      - name: Bank
+        caption: Bank
+        fields:
+          - source: bank_account_no
+          - source: bank_branch_no
+          - source: territory_code
+          - source: language_code
+          - source: country_code
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      enabled: true
+      run_page: 371
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      run_page: 372
+      run_page_filter_field: bank_account_no
+      run_page_filter_value: "no"
+
+    - name: Check Ledger Entries
+      caption: Check Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 374
+      run_page_filter_field: bank_account_no
+      run_page_filter_value: "no"
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F7
+      promoted: true
+      run_page: 375
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "8"}   # Bank Account
+        - {field: "no", value: "no"}
