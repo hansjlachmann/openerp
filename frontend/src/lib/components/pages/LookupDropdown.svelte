@@ -34,6 +34,8 @@
 		openOnFocus?: boolean;
 		// The related table's list page: the lookup shows New, which opens it with a new record
 		newPageId?: number;
+		// New with the relation's filters (an item's units of measure): the list opens filtered
+		newPath?: string;
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -53,6 +55,7 @@
 		freeText = false,
 		openOnFocus = false,
 		newPageId,
+		newPath,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -273,7 +276,22 @@
 		}, 150);
 	}
 
+	// New: the related table's list with a new record ready to type (filtered like the relation)
+	function openNew() {
+		if (!newPageId) return;
+		isOpen = false;
+		const path = newPath ? `${newPath}&new=1` : `/pages/${newPageId}?new=1`;
+		goto(withReturn(path));
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
+		// Alt+N in the open list: its New (the list's own Alt+N must not start a new row)
+		if (isOpen && newPageId && e.altKey && (e.key === 'n' || e.key === 'N' || e.code === 'KeyN')) {
+			e.preventDefault();
+			e.stopPropagation();
+			openNew();
+			return;
+		}
 		switch (e.key) {
 			case 'Escape':
 				if (isOpen) {
@@ -407,8 +425,11 @@
 	const totalWidth = $derived(columns.reduce((sum, col) => sum + (col.width || 100), 0));
 </script>
 
+<!-- While its list is open the dropdown owns the keys (data-own-keys): the page's shortcuts
+     (Alt+N New, …) must not act on them -->
 <div
 	class="lookup-dropdown"
+	data-own-keys={isOpen ? 'lookup' : undefined}
 	bind:this={containerRef}
 	style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
 	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen }}
@@ -499,13 +520,11 @@
 						class="lookup-new-btn"
 						tabindex={-1}
 						onmousedown={(e) => e.preventDefault()}
-						onclick={() => {
-							isOpen = false;
-							goto(withReturn(`/pages/${newPageId}?new=1`));
-						}}
+						onclick={openNew}
 					>
 						<span aria-hidden="true">+</span>
 						{t(MSG.LOOKUP_NEW)}
+						<span class="lookup-new-key">Alt+N</span>
 					</button>
 				</div>
 			{/if}
@@ -527,6 +546,11 @@
 		border-color: rgb(var(--gray-700));
 	}
 
+	.lookup-new-key {
+		margin-left: auto;
+		font-size: 0.75rem;
+		opacity: 0.6;
+	}
 	.lookup-new-btn {
 		@apply flex items-center gap-1 px-2 py-1 text-sm rounded text-blue-600 hover:bg-blue-50;
 	}

@@ -194,6 +194,7 @@
 					lazyUrl={lookups.lazy_url}
 					freeText={lookups.free_text}
 					newPageId={lookups.new_page_id}
+					newPath={lookups.new_path}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
@@ -282,6 +283,7 @@
 					lazyUrl={lookups.lazy_url}
 					freeText={lookups.free_text}
 					newPageId={lookups.new_page_id}
+					newPath={lookups.new_path}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}

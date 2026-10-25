@@ -93,3 +93,20 @@ describe('isBlobType', () => {
 		expect(isBlobType(undefined)).toBe(false);
 	});
 });
+
+describe('lookupFor New with relation filters', () => {
+	it('opens the related list filtered like the relation', () => {
+		const lookups = {
+			base_unit_of_measure: {
+				rows: [{ _key: 'PCS', item_no: '1000' }, { _key: 'BOX', item_no: '2000' }],
+				filters: [{ column: 'item_no', field: 'no' }],
+				new_page_id: 5404
+			}
+		} as unknown as Record<string, LookupData>;
+		const lookup = lookupFor(lookups, 'base_unit_of_measure', { no: '1000' });
+		expect(lookup?.rows?.map((r) => r._key)).toEqual(['PCS']);
+		expect(lookup?.new_path).toBe('/pages/5404?filter=item_no%3D1000');
+		// a new item (no No. yet): plain New
+		expect(lookupFor(lookups, 'base_unit_of_measure', { no: '' })?.new_path).toBeUndefined();
+	});
+});

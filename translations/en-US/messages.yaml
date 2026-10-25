@@ -227,6 +227,7 @@ messages:
   HELP_LOOKUP_OPEN: "Open the list (F4 opens / closes it)"
   HELP_LOOKUP_MOVE: "Move in the open list; type to filter it"
   HELP_LOOKUP_PAGE: "A page up / down in the open list"
+  HELP_LOOKUP_NEW: "New: a new record in the related list (when the list offers New)"
   HELP_LOOKUP_PICK: "Pick the highlighted value"
   HELP_LOOKUP_ESCAPE: "Close the list without picking"
 

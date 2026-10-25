@@ -3235,6 +3235,7 @@
 												lazyUrl={lookupFor(lookups, field.source, record)!.lazy_url}
 												freeText={lookupFor(lookups, field.source, record)!.free_text}
 												newPageId={lookupFor(lookups, field.source, record)!.new_page_id}
+												newPath={lookupFor(lookups, field.source, record)!.new_path}
 												openOnFocus={openLookupOnEdit}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}

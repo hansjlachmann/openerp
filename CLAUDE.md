@@ -463,7 +463,7 @@ Matches classic ERP (see `screenshots/GeneralJournal01-07.png`).
 ### Lookup opening and New (ABSOLUTE RULE)
 - Moving the cursor into a relation field never opens its lookup: it opens with Alt+↓ (also ↓, F4, the ▼ button). `LookupDropdown` opens on focus only with `openOnFocus` — the list sets it for a cell entered with Alt+↓ or its ▼ (`openLookupOnEdit`); F2, typing and double-click only edit.
 - Every relation field shows its dropdown, also for an empty related table ("No records found").
-- The lookup panel has **New** when the related table has a list page (`LookupData.new_page_id`: the table YAML's `lookup_page_id` — classic LookupFormID — else its list page with the lowest number, `Registry.LookupPage`): it opens that page with `?new=1` (the list starts a new record ready to type: an inline row, or the modal card) and `back` to where it came from.
+- The lookup panel has **New** when the related table has a list page (`LookupData.new_page_id`: the table YAML's `lookup_page_id` — classic LookupFormID — else its list page with the lowest number, `Registry.LookupPage`): it opens that page with `?new=1` (the list starts a new record ready to type: an inline row, or the modal card) and `back` to where it came from. New also has Alt+N while the list is open (the open dropdown owns the keys: `data-own-keys`). For a relation with WHERE filters (an item's units of measure) New opens the list filtered the same way (`lookupFor` → `new_path`), so the new record gets the values.
 
 ### LookupDropdown Select vs Blur (ABSOLUTE RULE)
 - When the user selects a value from a `LookupDropdown` (via click or Enter), the component must call `onselect` (to set the value) and re-focus its input — it must NOT call `onblur` or trigger a save.

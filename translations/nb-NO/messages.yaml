@@ -227,6 +227,7 @@ messages:
   HELP_LOOKUP_OPEN: "Åpne listen (F4 åpner / lukker den)"
   HELP_LOOKUP_MOVE: "Flytt i den åpne listen; skriv for å filtrere"
   HELP_LOOKUP_PAGE: "En side opp / ned i den åpne listen"
+  HELP_LOOKUP_NEW: "Ny: en ny post i den tilknyttede listen (når listen har Ny)"
   HELP_LOOKUP_PICK: "Velg markert verdi"
   HELP_LOOKUP_ESCAPE: "Lukk listen uten å velge"
 

@@ -17,3 +17,11 @@ page:
         caption: Numbering
         fields:
           - source: item_nos
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
