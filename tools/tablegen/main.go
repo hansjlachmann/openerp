@@ -600,10 +600,13 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 			if f.TableRelation == nil || f.FlowField {
 				continue
 			}
-			if len(f.TableRelation.Filters) > 0 {
+			if hasFieldFilter(f.TableRelation.Filters) {
 				continue // a relation to part of a composite key: no rename cascade (yet)
 			}
 			for _, branch := range f.TableRelation.Branches() {
+				if hasFieldFilter(branch.Filters) {
+					continue
+				}
 				target, ok := byName[normalizedTableName(branch.Table)]
 				if !ok {
 					continue
@@ -626,6 +629,18 @@ func resolveReferences[T any](items []T, defOf func(T) *TableDef) {
 			}
 		}
 	}
+}
+
+// hasFieldFilter: a relation filter on another field of the record (WHERE x=FIELD(y)) — the
+// relation points to part of a composite key. Constant filters (WHERE Account Type=CONST(Posting))
+// still point to the whole key, so a rename cascades.
+func hasFieldFilter(filters map[string]RelationFilter) bool {
+	for _, f := range filters {
+		if f.Field != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // Highest field number: the base application uses its field series (application.yaml, 1–999),
@@ -5929,7 +5944,7 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 {{- if .TableRelation.Filters }}
 			Filters: []tables.RelationFilterInfo{
 {{- range .TableRelation.SortedFilters }}
-				{Column: "{{ .Column }}", Field: "{{ .Field }}", Const: "{{ if .Const }}{{ .Const }}{{ end }}"},
+				{Column: "{{ .Column }}", Field: "{{ .Field }}", Const: "{{ if ne (printf "%v" .Const) "<nil>" }}{{ .Const }}{{ end }}"},
 {{- end }}
 			},
 {{- end }}

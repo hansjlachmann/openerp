@@ -4828,6 +4828,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"realized_gains_acc": {
 			Table:        "G_L_Account",
@@ -4838,6 +4841,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"unrealized_losses_acc": {
 			Table:        "G_L_Account",
@@ -4848,6 +4854,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"realized_losses_acc": {
 			Table:        "G_L_Account",
@@ -4858,6 +4867,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"realized_gl_gains_account": {
 			Table:        "G_L_Account",
@@ -4868,6 +4880,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"realized_gl_losses_account": {
 			Table:        "G_L_Account",
@@ -4878,6 +4893,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"residual_gains_account": {
 			Table:        "G_L_Account",
@@ -4888,6 +4906,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"residual_losses_account": {
 			Table:        "G_L_Account",
@@ -4898,6 +4919,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"conv_lcy_rndg_debit_acc": {
 			Table:        "G_L_Account",
@@ -4908,6 +4932,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"conv_lcy_rndg_credit_acc": {
 			Table:        "G_L_Account",
@@ -4918,6 +4945,9 @@ func (t *Currency) GetTableRelationFields() map[string]tables.TableRelationInfo 
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

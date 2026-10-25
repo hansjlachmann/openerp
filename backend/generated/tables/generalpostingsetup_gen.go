@@ -3980,6 +3980,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_line_disc_account": {
 			Table:        "G_L_Account",
@@ -3990,6 +3993,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_inv_disc_account": {
 			Table:        "G_L_Account",
@@ -4000,6 +4006,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_payment_disc_account": {
 			Table:        "G_L_Account",
@@ -4010,6 +4019,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_account": {
 			Table:        "G_L_Account",
@@ -4020,6 +4032,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_line_disc_account": {
 			Table:        "G_L_Account",
@@ -4030,6 +4045,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_inv_disc_account": {
 			Table:        "G_L_Account",
@@ -4040,6 +4058,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_payment_disc_account": {
 			Table:        "G_L_Account",
@@ -4050,6 +4071,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"cogs_account": {
 			Table:        "G_L_Account",
@@ -4060,6 +4084,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"inventory_adjmt_account": {
 			Table:        "G_L_Account",
@@ -4070,6 +4097,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"job_sales_adjmt_account": {
 			Table:        "G_L_Account",
@@ -4080,6 +4110,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"job_cost_adjmt_account": {
 			Table:        "G_L_Account",
@@ -4090,6 +4123,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_credit_memo_account": {
 			Table:        "G_L_Account",
@@ -4100,6 +4136,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_credit_memo_account": {
 			Table:        "G_L_Account",
@@ -4110,6 +4149,9 @@ func (t *GeneralPostingSetup) GetTableRelationFields() map[string]tables.TableRe
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

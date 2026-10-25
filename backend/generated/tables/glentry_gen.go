@@ -6854,6 +6854,9 @@ func (t *GLEntry) GetTableRelationFields() map[string]tables.TableRelationInfo {
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"bal_account_no": {
 			Conditions: []tables.ConditionalRelationInfo{

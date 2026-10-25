@@ -349,6 +349,12 @@ func (h *TablesHandler) LookupRows(c *fiber.Ctx) error {
 		}
 	}
 
+	// The relation's constant filters (WHERE Account Type=CONST(Posting)): only those rows
+	for _, f := range relInfo.Filters {
+		if f.Field == "" {
+			relTable.SetFilter(f.Column, f.Const)
+		}
+	}
 	if key := c.Query("key", ""); key != "" {
 		relTable.SetFilter(relInfo.Field, strings.ToUpper(key))
 	} else if search := strings.TrimSpace(c.Query("search", "")); search != "" {

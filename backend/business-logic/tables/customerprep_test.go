@@ -62,8 +62,8 @@ func TestCustomerPostingGroupAndPaymentMethodAccounts(t *testing.T) {
 		field, acc string
 		want       apperrors.ErrorCode
 	}{
-		{"receivables_account", "1000", apperrors.ErrFieldMustBe}, // not a posting account
-		{"receivables_account", "1100", apperrors.ErrFieldMustBe}, // blocked
+		{"receivables_account", "1000", apperrors.ErrRelatedNotFound}, // not a posting account: the relation is to posting accounts only
+		{"receivables_account", "1100", apperrors.ErrFieldMustBe},     // blocked
 		{"receivables_account", "9999", apperrors.ErrRelatedNotFound},
 		{"receivables_account", "1200", ""},                      // no further checks
 		{"interest_account", "1200", apperrors.ErrRequiredField}, // Gen. Prod. Posting Group
@@ -271,5 +271,33 @@ func setupCustomerNos(t *testing.T, db *sql.DB, company string, manual bool) {
 	setup.Customer_nos = "CUST"
 	if !s.Insert(false) || !l.Insert(false) || !setup.Insert(false) {
 		t.Fatal("insert customer number setup")
+	}
+}
+
+// A relation to posting accounts only (WHERE Account Type=CONST(Posting)) still follows a G/L
+// account's rename
+func TestPostingAccountRelationRename(t *testing.T) {
+	db := newTestDB(t)
+	if err := CreateCompanyTables(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	addGLAccount(t, db, "1200", gtables.GLAccount_Account_type.Posting, false, "", false)
+	var g gtables.CustomerPostingGroup
+	g.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	g.InitRecord()
+	g.Code = "DOM"
+	if err := g.Validate("receivables_account", types.Code("1200")); err != nil {
+		t.Fatal(err)
+	}
+	if !g.Insert(false) {
+		t.Fatal("insert posting group")
+	}
+	var glAcc gtables.GLAccount
+	glAcc.InitWithDBType(db, "c1", database.DBTypeSQLite)
+	if !glAcc.Get(types.Code("1200")) || !glAcc.Rename(types.Code("1210")) {
+		t.Fatalf("rename: %v", glAcc.TriggerError())
+	}
+	if !g.Get(types.Code("DOM")) || g.Receivables_account != "1210" {
+		t.Errorf("receivables account after the rename: %q", g.Receivables_account)
 	}
 }

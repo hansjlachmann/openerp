@@ -3162,6 +3162,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"service_charge_acc": {
 			Table:        "G_L_Account",
@@ -3172,6 +3175,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"payment_disc_acc": {
 			Table:        "G_L_Account",
@@ -3182,6 +3188,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"invoice_rounding_account": {
 			Table:        "G_L_Account",
@@ -3192,6 +3201,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"additional_fee_account": {
 			Table:        "G_L_Account",
@@ -3202,6 +3214,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"interest_account": {
 			Table:        "G_L_Account",
@@ -3212,6 +3227,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"curr_appln_rounding_account": {
 			Table:        "G_L_Account",
@@ -3222,6 +3240,9 @@ func (t *CustomerPostingGroup) GetTableRelationFields() map[string]tables.TableR
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

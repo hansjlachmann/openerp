@@ -20,6 +20,8 @@ table:
       table_relation:
         table: G_L_Account
         field: no
+        filters:
+          account_type: {const: 0}   # Posting accounts only
         lookup_columns:
           - source: no
             width: 100
@@ -34,6 +36,8 @@ table:
       table_relation:
         table: G_L_Account
         field: no
+        filters:
+          account_type: {const: 0}   # Posting accounts only
         lookup_columns:
           - source: no
             width: 100
@@ -48,6 +52,8 @@ table:
       table_relation:
         table: G_L_Account
         field: no
+        filters:
+          account_type: {const: 0}   # Posting accounts only
         lookup_columns:
           - source: no
             width: 100
@@ -62,6 +68,8 @@ table:
       table_relation:
         table: G_L_Account
         field: no
+        filters:
+          account_type: {const: 0}   # Posting accounts only
         lookup_columns:
           - source: no
             width: 100
@@ -76,6 +84,8 @@ table:
       table_relation:
         table: G_L_Account
         field: no
+        filters:
+          account_type: {const: 0}   # Posting accounts only
         lookup_columns:
           - source: no
             width: 100
