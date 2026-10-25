@@ -1,0 +1,42 @@
+page:
+  id: 35
+  type: List
+  name: Item Translations
+  source_table: Item_Translation
+  caption: Item Translations
+  editable: true
+  delayed_insert: true
+
+  layout:
+    repeater:
+      fields:
+        - source: item_no
+          width: 110
+          visible: false
+        - source: variant_code
+          width: 110
+        - source: language_code
+          width: 120
+        - source: description
+          width: 250
+        - source: description_2
+          width: 250
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

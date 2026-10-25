@@ -429,3 +429,74 @@ pages:
     caption: "Tax Details"
   tax_posting_setup:
     caption: "Tax Posting Setup"
+
+  # Items
+  item_list:
+    caption: "Item List"
+  item_card:
+    caption: "Item Card"
+  units_of_measure:
+    caption: "Units of Measure"
+  unit_of_measure_translation:
+    caption: "Unit of Measure Translation"
+  item_units_of_measure:
+    caption: "Item Units of Measure"
+  item_variants:
+    caption: "Item Variants"
+  item_translations:
+    caption: "Item Translations"
+  item_vendor_catalog:
+    caption: "Item Vendor Catalog"
+  vendor_item_catalog:
+    caption: "Vendor Item Catalog"
+  inventory_posting_groups:
+    caption: "Inventory Posting Groups"
+  inventory_setup:
+    caption: "Inventory Setup"
+
+  # Item prices and discounts
+  item_prices:
+    caption: "Item Prices"
+  sales_qty_discounts:
+    caption: "Sales Qty. Discounts"
+  cust_item_discounts:
+    caption: "Cust./Item Discounts"
+  item_cust_discounts:
+    caption: "Item/Cust. Discounts"
+  item_disc_groups:
+    caption: "Item Disc. Groups"
+
+  # Item journals and item ledger
+  item_journal:
+    caption: "Item Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  item_journal_templates:
+    caption: "Item Journal Templates"
+  item_journal_template_list:
+    caption: "Item Journal Template List"
+  item_journal_batches:
+    caption: "Item Journal Batches"
+  item_registers:
+    caption: "Item Registers"
+  item_ledger_entries:
+    caption: "Item Ledger Entries"
+  item_application_entries:
+    caption: "Item Application Entries"
+
+  # Item transfer and phys. inventory journals
+  item_transfer_journal:
+    caption: "Item Transfer Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  phys_inventory_journal:
+    caption: "Phys. Inventory Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  phys_inventory_ledger_entries:
+    caption: "Phys. Inventory Ledger Entries"
+  item_picture:
+    caption: "Item Picture"

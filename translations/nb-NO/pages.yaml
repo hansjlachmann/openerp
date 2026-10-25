@@ -429,3 +429,74 @@ pages:
     caption: "Mva.-detaljer"
   tax_posting_setup:
     caption: "Mva.-bokføringsoppsett"
+
+  # Items
+  item_list:
+    caption: "Vareliste"
+  item_card:
+    caption: "Varekort"
+  units_of_measure:
+    caption: "Enheter"
+  unit_of_measure_translation:
+    caption: "Enhetsoversettelse"
+  item_units_of_measure:
+    caption: "Vareenheter"
+  item_variants:
+    caption: "Varevarianter"
+  item_translations:
+    caption: "Vareoversettelser"
+  item_vendor_catalog:
+    caption: "Varens leverandørkatalog"
+  vendor_item_catalog:
+    caption: "Leverandørens varekatalog"
+  inventory_posting_groups:
+    caption: "Lagerbokføringsgrupper"
+  inventory_setup:
+    caption: "Lageroppsett"
+
+  # Item prices and discounts
+  item_prices:
+    caption: "Varepriser"
+  sales_qty_discounts:
+    caption: "Antallsrabatter salg"
+  cust_item_discounts:
+    caption: "Kunde-/varerabatter"
+  item_cust_discounts:
+    caption: "Vare-/kunderabatter"
+  item_disc_groups:
+    caption: "Varerabattgrupper"
+
+  # Item journals and item ledger
+  item_journal:
+    caption: "Varekladd"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  item_journal_templates:
+    caption: "Varekladdemaler"
+  item_journal_template_list:
+    caption: "Varekladdemalliste"
+  item_journal_batches:
+    caption: "Varekladdenavn"
+  item_registers:
+    caption: "Varejournaler"
+  item_ledger_entries:
+    caption: "Vareposter"
+  item_application_entries:
+    caption: "Vareutligningsposter"
+
+  # Item transfer and phys. inventory journals
+  item_transfer_journal:
+    caption: "Overføringskladd"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_journal:
+    caption: "Opptellingskladd"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_ledger_entries:
+    caption: "Opptellingsposter"
+  item_picture:
+    caption: "Varebilde"

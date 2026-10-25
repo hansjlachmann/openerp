@@ -2541,6 +2541,65 @@ func (t *DepreciationBook) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *DepreciationBook) isBoolColumn(column string) bool {
+	switch column {
+	case "g_l_integration_acq_cost":
+		return true
+	case "g_l_integration_depreciation":
+		return true
+	case "g_l_integration_write_down":
+		return true
+	case "g_l_integration_appreciation":
+		return true
+	case "g_l_integration_custom_1":
+		return true
+	case "g_l_integration_custom_2":
+		return true
+	case "g_l_integration_disposal":
+		return true
+	case "g_l_integration_maintenance":
+		return true
+	case "use_custom_1_depreciation":
+		return true
+	case "allow_depr_below_zero":
+		return true
+	case "use_fa_exch_rate_in_duplic":
+		return true
+	case "part_of_duplication_list":
+		return true
+	case "allow_indexation":
+		return true
+	case "use_same_fa_g_l_posting_dates":
+		return true
+	case "use_fa_ledger_check":
+		return true
+	case "use_rounding_in_periodic_depr":
+		return true
+	case "allow_changes_in_depr_fields":
+		return true
+	case "mark_errors_as_corrections":
+		return true
+	case "add_curr_exch_rate_acq_cost":
+		return true
+	case "add_curr_exch_rate_depr":
+		return true
+	case "add_curr_exch_rate_write_down":
+		return true
+	case "add_curr_exch_rate_apprec":
+		return true
+	case "add_curr_exch_rate_custom_1":
+		return true
+	case "add_curr_exch_rate_custom_2":
+		return true
+	case "add_curr_exch_rate_disp":
+		return true
+	case "add_curr_exch_rate_maint":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *DepreciationBook) isDateColumn(column string) bool {
 	switch column {
@@ -2626,9 +2685,13 @@ func (t *DepreciationBook) parseFilterExpression(fieldName, expr string) (string
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -2694,9 +2757,12 @@ func (t *DepreciationBook) getLimitClause() string {
 func (t *DepreciationBook) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, DepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2832,9 +2898,15 @@ func (t *DepreciationBook) FindFirst() bool {
 func (t *DepreciationBook) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, DepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -5007,6 +5079,16 @@ func (t *DepreciationBook) Rename(newKey ...interface{}) bool {
 func (t *DepreciationBook) Copy(from *DepreciationBook) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -5081,10 +5163,13 @@ func (t *DepreciationBook) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

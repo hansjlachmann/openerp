@@ -64,3 +64,18 @@ page:
           - source: purchase_entry_application
             editable: true
 
+
+      - name: Inventory
+        caption: Inventory
+        fields:
+          - source: item_journal
+            editable: true
+
+          - source: item_transfer_journal
+            editable: true
+
+          - source: phys_inventory_journal
+            editable: true
+
+          - source: inventory_post_cost
+            editable: true

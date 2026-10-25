@@ -8,6 +8,22 @@ common:
 
   # Common actions
   actions:
+    picture: "Billede"
+    calculate_inventory: "Beregn lager"
+    phys_inventory_ledger: "Lageropgørelsesposter"
+    phys_inventory_ledger_entries: "Lageropgørelsesposter"
+    item_ledger: "Vareposter"
+    application_entries: "Udligningsposter"
+    item: "Vare"
+    prices: "Priser"
+    quantity_discounts: "Antalsrabatter"
+    item_cust_discounts: "Vare-/debitorrabatter"
+    cust_item_discounts: "Debitor-/varerabatter"
+    translations: "Oversættelser"
+    items: "Varer"
+    units_of_measure: "Enheder"
+    variants: "Varianter"
+    vendors: "Kreditorer"
     setup: "Opsætning"
     details: "Detaljer"
     tax_register: "Momsjournal"
@@ -77,6 +93,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    picture: "Billede"
+    inventory: "Lager"
+    ordering: "Bestilling"
     lines: "Linjer"
     sales: "Salg"
     purchases: "Køb"

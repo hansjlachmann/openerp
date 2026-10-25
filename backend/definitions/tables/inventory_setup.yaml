@@ -1,0 +1,41 @@
+table:
+  id: 313
+  name: "Inventory_Setup"
+  description: "Inventory Setup (table 313, one record)"
+  setup_table: true
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: automatic_cost_posting
+      no: 2
+      type: bool
+      db_name: automatic_cost_posting
+
+    - name: location_mandatory
+      no: 3
+      type: bool
+      db_name: location_mandatory
+
+    - name: item_nos
+      no: 4
+      type: types.Code
+      db_name: item_nos
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

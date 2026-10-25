@@ -160,7 +160,7 @@ func TestRequestPage(t *testing.T) {
 				all := strings.Join(fieldNames, ",")
 				if customer.Name != "Customer" || customer.Indent != 0 || entry.Name != "Entry" || entry.Indent != 1 ||
 					len(customer.Filters) != 2 || customer.Filters[0].Field != "no" || customer.Filters[1].Field != "city" ||
-					!strings.Contains(all, "name") || !strings.Contains(all, "balance_lcy") || strings.Contains(all, "date_filter") {
+					!strings.Contains(all, "name") || !strings.Contains(all, "balance_lcy") || !strings.Contains(all, "date_filter") {
 					t.Errorf("data items %+v / %+v", customer, entry)
 				}
 			}

@@ -227,6 +227,7 @@ messages:
   HELP_LOOKUP_OPEN: "Open the list (F4 opens / closes it)"
   HELP_LOOKUP_MOVE: "Move in the open list; type to filter it"
   HELP_LOOKUP_PAGE: "A page up / down in the open list"
+  HELP_LOOKUP_NEW: "New: a new record in the related list (when the list offers New)"
   HELP_LOOKUP_PICK: "Pick the highlighted value"
   HELP_LOOKUP_ESCAPE: "Close the list without picking"
 
@@ -375,3 +376,12 @@ messages:
   GEN_JNL_POSTED_NEW_BATCH: "The journal lines were successfully posted. You are now in the %1 journal."
   GEN_JNL_POST_WINDOW: "Journal Batch Name #1##########\nChecking lines #2######\nChecking balance #3###### @4@@@@@@@@@@@@@\nPosting lines #5###### @6@@@@@@@@@@@@@"
   GEN_JNL_APPLY_CHANGE_CURRENCY: "The %1 in the %2 will be changed from %3 to %4.\nDo you wish to continue?"
+  ITEM_JNL_POST_WINDOW: "Journal Batch Name #1##########
+Checking lines #2######
+Posting lines #3###### @4@@@@@@@@@@@@@"
+  PICTURE_NONE: "No picture"
+  PICTURE_IMPORT: "Import"
+  PICTURE_EXPORT: "Export"
+  PICTURE_DELETE: "Delete"
+  PICTURE_DELETE_TITLE: "Delete Picture"
+  PICTURE_DELETE_CONFIRM: "Do you want to delete the picture?"

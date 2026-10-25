@@ -222,6 +222,62 @@ table:
           - source: description
             width: 250
 
+    - name: inventory_post_cost
+      no: 4
+      type: types.Code
+      db_name: inventory_post_cost
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: item_journal
+      no: 16
+      type: types.Code
+      db_name: item_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: item_transfer_journal
+      no: 33
+      type: types.Code
+      db_name: item_transfer_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: phys_inventory_journal
+      no: 34
+      type: types.Code
+      db_name: phys_inventory_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
   keys:
     - name: Primary
       fields: [primary_key]

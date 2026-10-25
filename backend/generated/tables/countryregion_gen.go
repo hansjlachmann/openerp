@@ -1078,7 +1078,7 @@ func (t *CountryRegion) renameReferences(field string, oldValue, newValue interf
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "country_code", "", 0}, {"Customer", false, "country_code", "", 0}, {"Customer_Bank_Account", false, "country_code", "", 0}, {"Order_Address", false, "country_code", "", 0}, {"Ship_to_Address", false, "country_code", "", 0}, {"Tax_Entry", false, "country_code", "", 0}, {"Vendor", false, "country_code", "", 0}, {"Vendor_Bank_Account", false, "country_code", "", 0}},
+		"code": {{"Bank_Account", false, "country_code", "", 0}, {"Customer", false, "country_code", "", 0}, {"Customer_Bank_Account", false, "country_code", "", 0}, {"Item", false, "country_purchased_code", "", 0}, {"Item", false, "country_of_origin_code", "", 0}, {"Order_Address", false, "country_code", "", 0}, {"Ship_to_Address", false, "country_code", "", 0}, {"Tax_Entry", false, "country_code", "", 0}, {"Vendor", false, "country_code", "", 0}, {"Vendor_Bank_Account", false, "country_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1456,6 +1456,13 @@ func (t *CountryRegion) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *CountryRegion) isBoolColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *CountryRegion) isDateColumn(column string) bool {
 	switch column {
@@ -1537,9 +1544,13 @@ func (t *CountryRegion) parseFilterExpression(fieldName, expr string) (string, [
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -1605,9 +1616,12 @@ func (t *CountryRegion) getLimitClause() string {
 func (t *CountryRegion) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, eu_country_code, intrastat_code, address_format, contact_address_format FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name, eu_country_code, intrastat_code, address_format, contact_address_format FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1655,9 +1669,15 @@ func (t *CountryRegion) FindFirst() bool {
 func (t *CountryRegion) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CountryRegionTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, name, eu_country_code, intrastat_code, address_format, contact_address_format FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, name, eu_country_code, intrastat_code, address_format, contact_address_format FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2672,6 +2692,16 @@ func (t *CountryRegion) Rename(newKey ...interface{}) bool {
 func (t *CountryRegion) Copy(from *CountryRegion) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -2746,10 +2776,13 @@ func (t *CountryRegion) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

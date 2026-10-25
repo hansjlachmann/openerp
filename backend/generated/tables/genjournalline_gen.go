@@ -4604,6 +4604,31 @@ func (t *GenJournalLine) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *GenJournalLine) isBoolColumn(column string) bool {
+	switch column {
+	case "system_created_entry":
+		return true
+	case "allow_application":
+		return true
+	case "correction":
+		return true
+	case "check_printed":
+		return true
+	case "tax_liable":
+		return true
+	case "use_tax":
+		return true
+	case "bal_tax_liable":
+		return true
+	case "bal_use_tax":
+		return true
+	case "reversing_entry":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *GenJournalLine) isDateColumn(column string) bool {
 	switch column {
@@ -4693,9 +4718,13 @@ func (t *GenJournalLine) parseFilterExpression(fieldName, expr string) (string, 
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -4761,9 +4790,12 @@ func (t *GenJournalLine) getLimitClause() string {
 func (t *GenJournalLine) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalLineTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT journal_template_name, journal_batch_name, line_no, account_type, account_no, posting_date, document_type, document_no, description, tax_percent, bal_account_no, currency_code, amount, debit_amount, credit_amount, amount_lcy, balance_lcy, currency_factor, sales_purch_lcy, profit_lcy, inv_discount_lcy, sell_to_buy_from_no, posting_group, department_code, project_code, salespers_purch_code, source_code, system_created_entry, on_hold, applies_to_doc_type, applies_to_doc_no, due_date, pmt_discount_date, payment_discount_percent, quantity, tax_amount, vat_posting, payment_terms_code, applies_to_id, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, allow_application, bal_account_type, bal_gen_posting_type, bal_gen_bus_posting_group, bal_gen_prod_posting_group, bal_tax_calculation_type, bal_tax_percent, bal_tax_amount, bank_payment_type, tax_base_amount, bal_tax_base_amount, correction, check_printed, document_date, external_document_no, source_type, source_no, posting_no_series, tax_area_code, tax_liable, tax_group_code, use_tax, bal_tax_area_code, bal_tax_liable, bal_tax_group_code, bal_use_tax, tax_bus_posting_group, tax_prod_posting_group, bal_tax_bus_posting_group, bal_tax_prod_posting_group, source_currency_code, source_currency_amount, source_curr_tax_base_amount, source_curr_tax_amount, tax_amount_lcy, tax_base_amount_lcy, bal_tax_amount_lcy, bal_tax_base_amount_lcy, reversing_entry FROM "%s" WHERE %s ORDER BY journal_template_name, journal_batch_name, line_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT journal_template_name, journal_batch_name, line_no, account_type, account_no, posting_date, document_type, document_no, description, tax_percent, bal_account_no, currency_code, amount, debit_amount, credit_amount, amount_lcy, balance_lcy, currency_factor, sales_purch_lcy, profit_lcy, inv_discount_lcy, sell_to_buy_from_no, posting_group, department_code, project_code, salespers_purch_code, source_code, system_created_entry, on_hold, applies_to_doc_type, applies_to_doc_no, due_date, pmt_discount_date, payment_discount_percent, quantity, tax_amount, vat_posting, payment_terms_code, applies_to_id, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, allow_application, bal_account_type, bal_gen_posting_type, bal_gen_bus_posting_group, bal_gen_prod_posting_group, bal_tax_calculation_type, bal_tax_percent, bal_tax_amount, bank_payment_type, tax_base_amount, bal_tax_base_amount, correction, check_printed, document_date, external_document_no, source_type, source_no, posting_no_series, tax_area_code, tax_liable, tax_group_code, use_tax, bal_tax_area_code, bal_tax_liable, bal_tax_group_code, bal_use_tax, tax_bus_posting_group, tax_prod_posting_group, bal_tax_bus_posting_group, bal_tax_prod_posting_group, source_currency_code, source_currency_amount, source_curr_tax_base_amount, source_curr_tax_amount, tax_amount_lcy, tax_base_amount_lcy, bal_tax_amount_lcy, bal_tax_base_amount_lcy, reversing_entry FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -5040,9 +5072,15 @@ func (t *GenJournalLine) FindFirst() bool {
 func (t *GenJournalLine) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalLineTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT journal_template_name, journal_batch_name, line_no, account_type, account_no, posting_date, document_type, document_no, description, tax_percent, bal_account_no, currency_code, amount, debit_amount, credit_amount, amount_lcy, balance_lcy, currency_factor, sales_purch_lcy, profit_lcy, inv_discount_lcy, sell_to_buy_from_no, posting_group, department_code, project_code, salespers_purch_code, source_code, system_created_entry, on_hold, applies_to_doc_type, applies_to_doc_no, due_date, pmt_discount_date, payment_discount_percent, quantity, tax_amount, vat_posting, payment_terms_code, applies_to_id, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, allow_application, bal_account_type, bal_gen_posting_type, bal_gen_bus_posting_group, bal_gen_prod_posting_group, bal_tax_calculation_type, bal_tax_percent, bal_tax_amount, bank_payment_type, tax_base_amount, bal_tax_base_amount, correction, check_printed, document_date, external_document_no, source_type, source_no, posting_no_series, tax_area_code, tax_liable, tax_group_code, use_tax, bal_tax_area_code, bal_tax_liable, bal_tax_group_code, bal_use_tax, tax_bus_posting_group, tax_prod_posting_group, bal_tax_bus_posting_group, bal_tax_prod_posting_group, source_currency_code, source_currency_amount, source_curr_tax_base_amount, source_curr_tax_amount, tax_amount_lcy, tax_base_amount_lcy, bal_tax_amount_lcy, bal_tax_base_amount_lcy, reversing_entry FROM "%s" WHERE %s ORDER BY journal_template_name, journal_batch_name, line_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT journal_template_name, journal_batch_name, line_no, account_type, account_no, posting_date, document_type, document_no, description, tax_percent, bal_account_no, currency_code, amount, debit_amount, credit_amount, amount_lcy, balance_lcy, currency_factor, sales_purch_lcy, profit_lcy, inv_discount_lcy, sell_to_buy_from_no, posting_group, department_code, project_code, salespers_purch_code, source_code, system_created_entry, on_hold, applies_to_doc_type, applies_to_doc_no, due_date, pmt_discount_date, payment_discount_percent, quantity, tax_amount, vat_posting, payment_terms_code, applies_to_id, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, allow_application, bal_account_type, bal_gen_posting_type, bal_gen_bus_posting_group, bal_gen_prod_posting_group, bal_tax_calculation_type, bal_tax_percent, bal_tax_amount, bank_payment_type, tax_base_amount, bal_tax_base_amount, correction, check_printed, document_date, external_document_no, source_type, source_no, posting_no_series, tax_area_code, tax_liable, tax_group_code, use_tax, bal_tax_area_code, bal_tax_liable, bal_tax_group_code, bal_use_tax, tax_bus_posting_group, tax_prod_posting_group, bal_tax_bus_posting_group, bal_tax_prod_posting_group, source_currency_code, source_currency_amount, source_curr_tax_base_amount, source_curr_tax_amount, tax_amount_lcy, tax_base_amount_lcy, bal_tax_amount_lcy, bal_tax_base_amount_lcy, reversing_entry FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -9746,6 +9784,16 @@ func (t *GenJournalLine) Rename(newKey ...interface{}) bool {
 func (t *GenJournalLine) Copy(from *GenJournalLine) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -9820,10 +9868,13 @@ func (t *GenJournalLine) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

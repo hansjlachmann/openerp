@@ -429,3 +429,74 @@ pages:
     caption: "Momsdetaljer"
   tax_posting_setup:
     caption: "Momsbogføringsopsætning"
+
+  # Items
+  item_list:
+    caption: "Vareoversigt"
+  item_card:
+    caption: "Varekort"
+  units_of_measure:
+    caption: "Enheder"
+  unit_of_measure_translation:
+    caption: "Enhedsoversættelse"
+  item_units_of_measure:
+    caption: "Vareenheder"
+  item_variants:
+    caption: "Varevarianter"
+  item_translations:
+    caption: "Vareoversættelser"
+  item_vendor_catalog:
+    caption: "Varens kreditorkatalog"
+  vendor_item_catalog:
+    caption: "Kreditorens varekatalog"
+  inventory_posting_groups:
+    caption: "Lagerbogføringsgrupper"
+  inventory_setup:
+    caption: "Lageropsætning"
+
+  # Item prices and discounts
+  item_prices:
+    caption: "Varepriser"
+  sales_qty_discounts:
+    caption: "Antalsrabatter salg"
+  cust_item_discounts:
+    caption: "Debitor-/varerabatter"
+  item_cust_discounts:
+    caption: "Vare-/debitorrabatter"
+  item_disc_groups:
+    caption: "Varerabatgrupper"
+
+  # Item journals and item ledger
+  item_journal:
+    caption: "Varekladde"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  item_journal_templates:
+    caption: "Varekladdetyper"
+  item_journal_template_list:
+    caption: "Varekladdetypeoversigt"
+  item_journal_batches:
+    caption: "Varekladdenavne"
+  item_registers:
+    caption: "Varejournaler"
+  item_ledger_entries:
+    caption: "Vareposter"
+  item_application_entries:
+    caption: "Vareudligningsposter"
+
+  # Item transfer and phys. inventory journals
+  item_transfer_journal:
+    caption: "Overførselskladde"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_journal:
+    caption: "Lageropgørelseskladde"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_ledger_entries:
+    caption: "Lageropgørelsesposter"
+  item_picture:
+    caption: "Varebillede"

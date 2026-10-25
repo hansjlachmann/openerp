@@ -1,0 +1,544 @@
+table:
+  id: 83
+  name: "Item_Journal_Line"
+  description: "Item journal lines (table 83)"
+  # Left out until their objects exist: 38/61 Serial No., 5400/5405 Lot No., 5401 Prod. Order No.,
+  # 5403/5406 Bin Code (item tracking, bins, production); 43-45 recurring; 47, 48, 49, 59, 63, 64
+  # (trade statistics); 68, 69, 5468, 5469 reserved quantities (reservations); 72, 73 (additional
+  # reporting currency)
+  fields:
+    - name: journal_template_name
+      no: 1
+      type: types.Code
+      db_name: journal_template_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item_Journal_Template
+        field: name
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: journal_batch_name
+      no: 41
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item_Journal_Batch
+        field: name
+        filters:
+          journal_template_name: {field: journal_template_name}
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+      required: true
+
+    - name: item_no
+      no: 3
+      type: types.Code
+      db_name: item_no
+      length: 20
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: entry_type
+      no: 5
+      type: Option
+      db_name: entry_type
+      options: ["Purchase", "Sale", "Positive Adjmt.", "Negative Adjmt.", "Transfer"]
+
+    - name: source_no
+      no: 6
+      type: types.Code
+      db_name: source_no
+      length: 20
+      editable: false
+      table_relation:
+        conditions:
+          - when: {field: source_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: source_type, equal: 3}
+            table: Item
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: document_no
+      no: 7
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 8
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: location_code
+      no: 9
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: inventory_posting_group
+      no: 10
+      type: types.Code
+      db_name: inventory_posting_group
+      length: 10
+      editable: false
+      table_relation:
+        table: Inventory_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: source_posting_group
+      no: 11
+      type: types.Code
+      db_name: source_posting_group
+      length: 10
+      editable: false
+      table_relation:
+        conditions:
+          - when: {field: source_type, equal: 1}
+            table: Customer_Posting_Group
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+          - when: {field: source_type, equal: 2}
+            table: Vendor_Posting_Group
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+          - when: {field: source_type, equal: 3}
+            table: Inventory_Posting_Group
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+
+    - name: quantity
+      no: 13
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: invoiced_quantity
+      no: 15
+      type: types.Decimal
+      db_name: invoiced_quantity
+      editable: false
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_amount
+      no: 16
+      type: types.Decimal
+      db_name: unit_amount
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_cost
+      no: 17
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: amount
+      no: 18
+      type: types.Decimal
+      db_name: amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 2
+
+    - name: discount_amount
+      no: 22
+      type: types.Decimal
+      db_name: discount_amount
+      editable: false
+      decimal_places: "2:2"
+      precision: 18
+      scale: 2
+
+    - name: salespers_purch_code
+      no: 23
+      type: types.Code
+      db_name: salespers_purch_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: source_code
+      no: 26
+      type: types.Code
+      db_name: source_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: applies_to_entry
+      no: 29
+      type: int
+      db_name: applies_to_entry
+      table_relation:
+        table: Item_Ledger_Entry
+        field: entry_no
+        filters:
+          item_no: {field: item_no}
+          open: {const: true}
+        lookup_columns:
+          - source: entry_no
+            width: 90
+          - source: posting_date
+            width: 100
+          - source: entry_type
+            width: 120
+          - source: document_no
+            width: 110
+          - source: location_code
+            width: 100
+          - source: remaining_quantity
+            width: 120
+
+    - name: item_shpt_entry_no
+      no: 32
+      type: int
+      db_name: item_shpt_entry_no
+      editable: false
+
+    - name: department_code
+      no: 34
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 35
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: indirect_cost_percent
+      no: 37
+      type: types.Decimal
+      db_name: indirect_cost_percent
+      decimal_places: "0:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: source_type
+      no: 39
+      type: Option
+      db_name: source_type
+      options: [" ", "Customer", "Vendor", "Item"]
+      editable: false
+
+    - name: reason_code
+      no: 42
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: drop_shipment
+      no: 46
+      type: bool
+      db_name: drop_shipment
+      editable: false
+
+    - name: new_location_code
+      no: 50
+      type: types.Code
+      db_name: new_location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: new_department_code
+      no: 51
+      type: types.Code
+      db_name: new_department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: new_project_code
+      no: 52
+      type: types.Code
+      db_name: new_project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: qty_calculated
+      no: 53
+      type: types.Decimal
+      db_name: qty_calculated
+      editable: false
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: qty_phys_inventory
+      no: 54
+      type: types.Decimal
+      db_name: qty_phys_inventory
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: last_item_ledger_entry_no
+      no: 55
+      type: int
+      db_name: last_item_ledger_entry_no
+      editable: false
+
+    - name: phys_inventory
+      no: 56
+      type: bool
+      db_name: phys_inventory
+      editable: false
+
+    - name: gen_bus_posting_group
+      no: 57
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 58
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: document_date
+      no: 60
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 62
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: posting_no_series
+      no: 65
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reserve
+      no: 70
+      type: Option
+      db_name: reserve
+      options: ["Never", "Optional", "Always"]
+
+    - name: variant_code
+      no: 5402
+      type: types.Code
+      db_name: variant_code
+      length: 10
+      table_relation:
+        table: Item_Variant
+        field: code
+        filters:
+          item_no: {field: item_no}
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: qty_per_unit_of_measure
+      no: 5404
+      type: types.Decimal
+      db_name: qty_per_unit_of_measure
+      default: 1
+      editable: false
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_of_measure_code
+      no: 5407
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        table: Item_Unit_of_Measure
+        field: code
+        filters:
+          item_no: {field: item_no}
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: qty_per_unit_of_measure
+            width: 120
+
+    - name: quantity_base
+      no: 5413
+      type: types.Decimal
+      db_name: quantity_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: invoiced_qty_base
+      no: 5415
+      type: types.Decimal
+      db_name: invoiced_qty_base
+      editable: false
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [journal_template_name, journal_batch_name, line_no]
+      clustered: true
+    - name: entry_type_item
+      fields: [entry_type, item_no, variant_code, location_code, posting_date]

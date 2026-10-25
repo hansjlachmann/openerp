@@ -25,6 +25,9 @@ page:
         - source: allow_invoice_disc
           width: 150
 
+        - source: tax_bus_posting_gr_price
+          width: 180
+
   actions:
     - name: New
       caption: New

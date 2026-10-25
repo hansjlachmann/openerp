@@ -13,7 +13,7 @@
 	import NavigationButtons from '$lib/components/NavigationButtons.svelte';
 	import { shortcuts, createShortcutMap, normalizeShortcut } from '$lib/utils/shortcuts';
 	import { currentUser } from '$lib/stores/user';
-	import { lookupFor, getFieldCaption, isItemVisible, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { lookupFor, getFieldCaption, isItemVisible, isBlobType, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
 	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
 	import { runPagePath, type RunPageAction } from '$lib/utils/runPage';
@@ -21,6 +21,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
+	import PictureField from './PictureField.svelte';
 	import { handleFieldEnterKey, getFieldControls } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
@@ -787,6 +788,19 @@
 									tabindex={fieldTabIndex}
 									ondrilldown={field.drilldown && !checkIsNewRecord() ? () => openDrilldown(field) : undefined}
 								/>
+							{:else if isBlobType(fieldTypes[field.source])}
+								<!-- A picture (BLOB): its own endpoint; a new record must be saved first -->
+								{#if !checkIsNewRecord()}
+									<PictureField
+										table={page.page.source_table}
+										field={field.source}
+										recordId={getRecordId(record, primaryKeyField, getPrimaryKeyFields(page)) ?? ''}
+										caption={getFieldCaption(field.source, captions, field.caption)}
+										hasPicture={!!record[field.source]}
+										editable={field.editable !== false && !saveBlocked}
+										onchange={(has) => (record[field.source] = has)}
+									/>
+								{/if}
 							{:else}
 							<FieldRenderer
 								{field}

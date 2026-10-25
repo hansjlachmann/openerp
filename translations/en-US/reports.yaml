@@ -24,3 +24,20 @@ reports:
       CANNOT_CHANGE_START: "Once you create the new fiscal year you cannot change its starting date.\n\n"
       CONFIRM_CREATE: "Do you want to create the fiscal year?"
       ONLY_BEFORE_OR_AFTER: "It is only possible to create new fiscal years before or after the existing ones."
+  "790":
+    caption: "Calculate Inventory"
+    options:
+      posting_date: "Posting Date"
+      document_no: "Document No."
+      items_not_on_inventory: "Items Not on Inventory"
+      by_department: "By Department"
+      by_project: "By Project"
+      by_location: "By Location"
+    texts:
+      OPTIONS: "Options"
+      NO: "No"
+      YES: "Yes"
+      NO_JOURNAL: "Run Calculate Inventory from a phys. inventory journal."
+      ENTER_POSTING_DATE: "Please enter the posting date."
+      ENTER_DOCUMENT_NO: "Please enter the document no."
+      WINDOW: "Processing items    #1##########"

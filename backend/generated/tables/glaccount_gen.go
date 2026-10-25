@@ -2197,7 +2197,7 @@ func (t *GLAccount) renameReferences(field string, oldValue, newValue interface{
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Bank_Account_Posting_Group", false, "g_l_bank_account_no", "", 0}, {"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_account", "", 0}, {"FA_Posting_Group", false, "accum_depreciation_account", "", 0}, {"FA_Posting_Group", false, "write_down_account", "", 0}, {"FA_Posting_Group", false, "appreciation_account", "", 0}, {"FA_Posting_Group", false, "custom_1_account", "", 0}, {"FA_Posting_Group", false, "custom_2_account", "", 0}, {"FA_Posting_Group", false, "acq_cost_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "accum_depr_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "appreciation_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_1_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "gains_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "losses_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "book_value_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "sales_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "apprec_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "custom_1_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "maintenance_expense_account", "", 0}, {"FA_Posting_Group", false, "maintenance_bal_acc", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_bal_acc", "", 0}, {"FA_Posting_Group", false, "depreciation_expense_acc", "", 0}, {"FA_Posting_Group", false, "write_down_expense_acc", "", 0}, {"FA_Posting_Group", false, "appreciation_bal_account", "", 0}, {"FA_Posting_Group", false, "custom_1_expense_acc", "", 0}, {"FA_Posting_Group", false, "custom_2_expense_acc", "", 0}, {"FA_Posting_Group", false, "sales_bal_acc", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Line", false, "account_no", "account_type", 0}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 0}, {"General_Posting_Setup", false, "sales_account", "", 0}, {"General_Posting_Setup", false, "sales_line_disc_account", "", 0}, {"General_Posting_Setup", false, "sales_inv_disc_account", "", 0}, {"General_Posting_Setup", false, "sales_payment_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_account", "", 0}, {"General_Posting_Setup", false, "purch_line_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_inv_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_payment_disc_account", "", 0}, {"General_Posting_Setup", false, "cogs_account", "", 0}, {"General_Posting_Setup", false, "inventory_adjmt_account", "", 0}, {"General_Posting_Setup", false, "job_sales_adjmt_account", "", 0}, {"General_Posting_Setup", false, "job_cost_adjmt_account", "", 0}, {"General_Posting_Setup", false, "sales_credit_memo_account", "", 0}, {"General_Posting_Setup", false, "purch_credit_memo_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}, {"Tax_Jurisdiction", false, "tax_account_sales", "", 0}, {"Tax_Jurisdiction", false, "tax_account_purchases", "", 0}, {"Tax_Jurisdiction", false, "unreal_tax_acc_sales", "", 0}, {"Tax_Jurisdiction", false, "unreal_tax_acc_purchases", "", 0}, {"Tax_Jurisdiction", false, "reverse_charge_purchases", "", 0}, {"Tax_Jurisdiction", false, "unreal_rev_charge_purch", "", 0}, {"Tax_Posting_Setup", false, "sales_vat_account", "", 0}, {"Tax_Posting_Setup", false, "sales_vat_unreal_account", "", 0}, {"Tax_Posting_Setup", false, "purchase_vat_account", "", 0}, {"Tax_Posting_Setup", false, "purch_vat_unreal_account", "", 0}, {"Tax_Posting_Setup", false, "reverse_chrg_vat_acc", "", 0}, {"Tax_Posting_Setup", false, "reverse_chrg_vat_unreal_acc", "", 0}, {"Vendor_Posting_Group", false, "payables_account", "", 0}, {"Vendor_Posting_Group", false, "service_charge_acc", "", 0}, {"Vendor_Posting_Group", false, "payment_disc_acc", "", 0}, {"Vendor_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Vendor_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 0}},
+		"no": {{"Bank_Account_Posting_Group", false, "g_l_bank_account_no", "", 0}, {"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Comment_Line", false, "no", "table_name", 0}, {"Currency", false, "unrealized_gains_acc", "", 0}, {"Currency", false, "realized_gains_acc", "", 0}, {"Currency", false, "unrealized_losses_acc", "", 0}, {"Currency", false, "realized_losses_acc", "", 0}, {"Currency", false, "realized_gl_gains_account", "", 0}, {"Currency", false, "realized_gl_losses_account", "", 0}, {"Currency", false, "residual_gains_account", "", 0}, {"Currency", false, "residual_losses_account", "", 0}, {"Currency", false, "conv_lcy_rndg_debit_acc", "", 0}, {"Currency", false, "conv_lcy_rndg_credit_acc", "", 0}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 0}, {"Customer_Posting_Group", false, "receivables_account", "", 0}, {"Customer_Posting_Group", false, "service_charge_acc", "", 0}, {"Customer_Posting_Group", false, "payment_disc_acc", "", 0}, {"Customer_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Customer_Posting_Group", false, "additional_fee_account", "", 0}, {"Customer_Posting_Group", false, "interest_account", "", 0}, {"Customer_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_account", "", 0}, {"FA_Posting_Group", false, "accum_depreciation_account", "", 0}, {"FA_Posting_Group", false, "write_down_account", "", 0}, {"FA_Posting_Group", false, "appreciation_account", "", 0}, {"FA_Posting_Group", false, "custom_1_account", "", 0}, {"FA_Posting_Group", false, "custom_2_account", "", 0}, {"FA_Posting_Group", false, "acq_cost_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "accum_depr_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "appreciation_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_1_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_account_on_disposal", "", 0}, {"FA_Posting_Group", false, "gains_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "losses_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "book_value_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "sales_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "write_down_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "apprec_bal_acc_on_disp", "", 0}, {"FA_Posting_Group", false, "custom_1_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "custom_2_bal_acc_on_disposal", "", 0}, {"FA_Posting_Group", false, "maintenance_expense_account", "", 0}, {"FA_Posting_Group", false, "maintenance_bal_acc", "", 0}, {"FA_Posting_Group", false, "acquisition_cost_bal_acc", "", 0}, {"FA_Posting_Group", false, "depreciation_expense_acc", "", 0}, {"FA_Posting_Group", false, "write_down_expense_acc", "", 0}, {"FA_Posting_Group", false, "appreciation_bal_account", "", 0}, {"FA_Posting_Group", false, "custom_1_expense_acc", "", 0}, {"FA_Posting_Group", false, "custom_2_expense_acc", "", 0}, {"FA_Posting_Group", false, "sales_bal_acc", "", 0}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Line", false, "account_no", "account_type", 0}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 0}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 0}, {"General_Posting_Setup", false, "sales_account", "", 0}, {"General_Posting_Setup", false, "sales_line_disc_account", "", 0}, {"General_Posting_Setup", false, "sales_inv_disc_account", "", 0}, {"General_Posting_Setup", false, "sales_payment_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_account", "", 0}, {"General_Posting_Setup", false, "purch_line_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_inv_disc_account", "", 0}, {"General_Posting_Setup", false, "purch_payment_disc_account", "", 0}, {"General_Posting_Setup", false, "cogs_account", "", 0}, {"General_Posting_Setup", false, "inventory_adjmt_account", "", 0}, {"General_Posting_Setup", false, "job_sales_adjmt_account", "", 0}, {"General_Posting_Setup", false, "job_cost_adjmt_account", "", 0}, {"General_Posting_Setup", false, "sales_credit_memo_account", "", 0}, {"General_Posting_Setup", false, "purch_credit_memo_account", "", 0}, {"G_L_Account", false, "totaling", "", 0}, {"G_L_Entry", false, "gl_account_no", "", 0}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Inventory_Posting_Group", false, "inventory_account", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 0}, {"Payment_Method", false, "bal_account_no", "bal_account_type", 0}, {"Tax_Jurisdiction", false, "tax_account_sales", "", 0}, {"Tax_Jurisdiction", false, "tax_account_purchases", "", 0}, {"Tax_Jurisdiction", false, "unreal_tax_acc_sales", "", 0}, {"Tax_Jurisdiction", false, "unreal_tax_acc_purchases", "", 0}, {"Tax_Jurisdiction", false, "reverse_charge_purchases", "", 0}, {"Tax_Jurisdiction", false, "unreal_rev_charge_purch", "", 0}, {"Tax_Posting_Setup", false, "sales_vat_account", "", 0}, {"Tax_Posting_Setup", false, "sales_vat_unreal_account", "", 0}, {"Tax_Posting_Setup", false, "purchase_vat_account", "", 0}, {"Tax_Posting_Setup", false, "purch_vat_unreal_account", "", 0}, {"Tax_Posting_Setup", false, "reverse_chrg_vat_acc", "", 0}, {"Tax_Posting_Setup", false, "reverse_chrg_vat_unreal_acc", "", 0}, {"Vendor_Posting_Group", false, "payables_account", "", 0}, {"Vendor_Posting_Group", false, "service_charge_acc", "", 0}, {"Vendor_Posting_Group", false, "payment_disc_acc", "", 0}, {"Vendor_Posting_Group", false, "invoice_rounding_account", "", 0}, {"Vendor_Posting_Group", false, "curr_appln_rounding_account", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -4665,6 +4665,25 @@ func (t *GLAccount) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *GLAccount) isBoolColumn(column string) bool {
+	switch column {
+	case "blocked":
+		return true
+	case "direct_posting":
+		return true
+	case "reconciliation_account":
+		return true
+	case "new_page":
+		return true
+	case "automatic_ext_text":
+		return true
+	case "tax_liable":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *GLAccount) isDateColumn(column string) bool {
 	switch column {
@@ -4748,9 +4767,13 @@ func (t *GLAccount) parseFilterExpression(fieldName, expr string) (string, []int
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -4816,9 +4839,12 @@ func (t *GLAccount) getLimitClause() string {
 func (t *GLAccount) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLAccountTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4937,9 +4963,15 @@ func (t *GLAccount) FindFirst() bool {
 func (t *GLAccount) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLAccountTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -7144,6 +7176,16 @@ func (t *GLAccount) Rename(newKey ...interface{}) bool {
 func (t *GLAccount) Copy(from *GLAccount) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -7218,10 +7260,13 @@ func (t *GLAccount) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

@@ -1,0 +1,39 @@
+page:
+  id: 24
+  type: List
+  name: Cust./Item Discounts
+  source_table: Cust_Item_Discount
+  caption: Cust./Item Discounts
+  editable: true
+  delayed_insert: true
+  # The discounts of a customer discount group (Customer Disc. Groups → Cust./Item Discounts)
+
+  layout:
+    repeater:
+      fields:
+        - source: customer_disc_group
+          width: 140
+          visible: false
+        - source: item_discount_group
+          width: 140
+        - source: discount_percent
+          width: 120
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

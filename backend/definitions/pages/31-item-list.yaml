@@ -1,0 +1,184 @@
+page:
+  id: 31
+  type: List
+  name: Item List
+  source_table: Item
+  caption: Item List
+  card_page_id: 30
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 100
+        - source: description
+          width: 250
+        - source: base_unit_of_measure
+          width: 110
+        - source: shelf_bin_no
+          width: 110
+          visible: false
+        - source: costing_method
+          width: 110
+          visible: false
+        - source: average_cost
+          width: 120
+          visible: false
+        - source: standard_cost
+          width: 120
+          visible: false
+        - source: quantity_on_hand
+          width: 120
+          drilldown: 38
+          drilldown_filter_field: item_no
+          drilldown_filter_value: "no"
+        - source: unit_cost
+          width: 120
+        - source: last_direct_cost
+          width: 120
+          visible: false
+        - source: price_profit_calculation
+          width: 150
+          visible: false
+        - source: profit_percent
+          width: 100
+          visible: false
+        - source: unit_price
+          width: 120
+        - source: inventory_posting_group
+          width: 150
+          visible: false
+        - source: gen_prod_posting_group
+          width: 150
+          visible: false
+        - source: tax_prod_posting_group
+          width: 150
+          visible: false
+        - source: vendor_no
+          width: 110
+        - source: vendor_item_no
+          width: 150
+          visible: false
+        - source: search_description
+          width: 200
+        - source: blocked
+          width: 80
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Units of Measure
+      caption: Units of Measure
+      image: Rows
+      promoted: true
+      run_page: 5404
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Variants
+      caption: Variants
+      image: Lines
+      promoted: true
+      run_page: 5401
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Translations
+      caption: Translations
+      image: Document
+      promoted: true
+      run_page: 35
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Vendors
+      caption: Vendors
+      image: Navigate
+      promoted: true
+      run_page: 114
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "3"}   # Item
+        - {field: "no", value: "no"}
+
+    - name: Prices
+      caption: Prices
+      image: Calculate
+      promoted: true
+      run_page: 33
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Quantity Discounts
+      caption: Quantity Discounts
+      image: Calculate
+      promoted: true
+      run_page: 34
+      run_page_filter_field: code
+      run_page_filter_value: sales_qty_disc_code
+
+    - name: Item/Cust. Discounts
+      caption: Item/Cust. Discounts
+      image: Calculate
+      promoted: true
+      run_page: 32
+      run_page_filter_field: item_discount_group
+      run_page_filter_value: item_cust_disc_gr
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F5
+      promoted: true
+      run_page: 38
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Application Entries
+      caption: Application Entries
+      image: Navigate
+      promoted: true
+      run_page: 506
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Phys. Inventory Ledger Entries
+      caption: Phys. Inventory Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 390
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Picture
+      caption: Picture
+      image: Attach
+      promoted: true
+      run_page: 346
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"

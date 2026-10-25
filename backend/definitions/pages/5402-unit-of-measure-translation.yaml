@@ -1,0 +1,37 @@
+page:
+  id: 5402
+  type: List
+  name: Unit of Measure Translation
+  source_table: Unit_of_Measure_Translation
+  caption: Unit of Measure Translation
+  editable: true
+  delayed_insert: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 100
+        - source: language_code
+          width: 120
+        - source: description
+          width: 200
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

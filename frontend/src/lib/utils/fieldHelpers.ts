@@ -1,3 +1,4 @@
+import { runPagePath } from './runPage';
 import type { Field } from '$lib/types/pages';
 
 // --- Date/DateTime type detection and formatting ---
@@ -390,6 +391,7 @@ export function lookupFor<
 		variant_field?: string;
 		filters?: { column: string; field?: string; const?: string }[];
 		rows?: Array<Record<string, any>> | null;
+		new_path?: string;
 	}
 >(lookups: Record<string, L> | undefined, field: string, record: Record<string, any> | undefined): L | undefined {
 	let lookup = lookups?.[field];
@@ -405,5 +407,20 @@ export function lookupFor<
 		);
 		lookup = { ...lookup, rows };
 	}
+	// …and its New opens the related list filtered the same way, so the new record gets the
+	// values (an item's unit of measure gets the item's No.)
+	const newPageId = (lookup as { new_page_id?: number } | undefined)?.new_page_id;
+	if (lookup?.filters?.length && newPageId) {
+		const path = runPagePath(
+			{ run_page: newPageId, run_page_filters: lookup.filters.map((f) => ({ field: f.column, value: f.field, const: f.const })) },
+			record
+		);
+		if (path) lookup = { ...lookup, new_path: path };
+	}
 	return lookup;
+}
+
+/** A picture field (BLOB: YAML "[]byte", API "Blob") — shown by PictureField, never edited inline */
+export function isBlobType(fieldType: string | undefined): boolean {
+	return fieldType === '[]byte' || fieldType === 'Blob' || fieldType === 'BLOB';
 }

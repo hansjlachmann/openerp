@@ -4078,6 +4078,31 @@ func (t *FALedgerEntry) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *FALedgerEntry) isBoolColumn(column string) bool {
+	switch column {
+	case "reclassification_entry":
+		return true
+	case "part_of_book_value":
+		return true
+	case "part_of_depreciable_basis":
+		return true
+	case "correction":
+		return true
+	case "index_entry":
+		return true
+	case "use_fa_ledger_check":
+		return true
+	case "automatic_entry":
+		return true
+	case "tax_liable":
+		return true
+	case "use_tax":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *FALedgerEntry) isDateColumn(column string) bool {
 	switch column {
@@ -4173,9 +4198,13 @@ func (t *FALedgerEntry) parseFilterExpression(fieldName, expr string) (string, [
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -4241,9 +4270,12 @@ func (t *FALedgerEntry) getLimitClause() string {
 func (t *FALedgerEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FALedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, depreciation_book_code, fa_posting_category, fa_posting_type, amount, debit_amount, credit_amount, reclassification_entry, part_of_book_value, part_of_depreciable_basis, disposal_calculation_method, disposal_entry_no, no_of_depreciation_days, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, fixed_depr_amount, declining_balance_percent, depreciation_table_code, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, fa_exchange_rate, amount_lcy, result_on_disposal, correction, index_entry, canceled_from_fa_no, depreciation_ending_date, use_fa_ledger_check, automatic_entry, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_percent_this_year_custom_1, property_class_custom_1, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, depreciation_book_code, fa_posting_category, fa_posting_type, amount, debit_amount, credit_amount, reclassification_entry, part_of_book_value, part_of_depreciable_basis, disposal_calculation_method, disposal_entry_no, no_of_depreciation_days, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, fixed_depr_amount, declining_balance_percent, depreciation_table_code, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, fa_exchange_rate, amount_lcy, result_on_disposal, correction, index_entry, canceled_from_fa_no, depreciation_ending_date, use_fa_ledger_check, automatic_entry, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_percent_this_year_custom_1, property_class_custom_1, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4473,9 +4505,15 @@ func (t *FALedgerEntry) FindFirst() bool {
 func (t *FALedgerEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FALedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, depreciation_book_code, fa_posting_category, fa_posting_type, amount, debit_amount, credit_amount, reclassification_entry, part_of_book_value, part_of_depreciable_basis, disposal_calculation_method, disposal_entry_no, no_of_depreciation_days, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, fixed_depr_amount, declining_balance_percent, depreciation_table_code, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, fa_exchange_rate, amount_lcy, result_on_disposal, correction, index_entry, canceled_from_fa_no, depreciation_ending_date, use_fa_ledger_check, automatic_entry, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_percent_this_year_custom_1, property_class_custom_1, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, depreciation_book_code, fa_posting_category, fa_posting_type, amount, debit_amount, credit_amount, reclassification_entry, part_of_book_value, part_of_depreciable_basis, disposal_calculation_method, disposal_entry_no, no_of_depreciation_days, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, fixed_depr_amount, declining_balance_percent, depreciation_table_code, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, fa_exchange_rate, amount_lcy, result_on_disposal, correction, index_entry, canceled_from_fa_no, depreciation_ending_date, use_fa_ledger_check, automatic_entry, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_percent_this_year_custom_1, property_class_custom_1, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -8480,6 +8518,16 @@ func (t *FALedgerEntry) Rename(newKey ...interface{}) bool {
 func (t *FALedgerEntry) Copy(from *FALedgerEntry) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -8554,10 +8602,13 @@ func (t *FALedgerEntry) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

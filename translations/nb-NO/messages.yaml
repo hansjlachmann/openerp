@@ -227,6 +227,7 @@ messages:
   HELP_LOOKUP_OPEN: "Åpne listen (F4 åpner / lukker den)"
   HELP_LOOKUP_MOVE: "Flytt i den åpne listen; skriv for å filtrere"
   HELP_LOOKUP_PAGE: "En side opp / ned i den åpne listen"
+  HELP_LOOKUP_NEW: "Ny: en ny post i den tilknyttede listen (når listen har Ny)"
   HELP_LOOKUP_PICK: "Velg markert verdi"
   HELP_LOOKUP_ESCAPE: "Lukk listen uten å velge"
 
@@ -375,3 +376,12 @@ messages:
   GEN_JNL_POSTED_NEW_BATCH: "Kladdelinjene er bokført. Du er nå i kladden %1."
   GEN_JNL_POST_WINDOW: "Kladdenavn #1##########\nKontrollerer linjer #2######\nKontrollerer saldo #3###### @4@@@@@@@@@@@@@\nBokfører linjer #5###### @6@@@@@@@@@@@@@"
   GEN_JNL_APPLY_CHANGE_CURRENCY: "%1 i %2 endres fra %3 til %4.\nVil du fortsette?"
+  ITEM_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bokfører linjer #3###### @4@@@@@@@@@@@@@"
+  PICTURE_NONE: "Ikke noe bilde"
+  PICTURE_IMPORT: "Importer"
+  PICTURE_EXPORT: "Eksporter"
+  PICTURE_DELETE: "Slett"
+  PICTURE_DELETE_TITLE: "Slett bilde"
+  PICTURE_DELETE_CONFIRM: "Vil du slette bildet?"

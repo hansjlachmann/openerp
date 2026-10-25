@@ -33,6 +33,7 @@ export interface LookupData {
 	variants?: Record<string, LookupData>; // a conditional relation: the lookup per value of variant_field
 	variant_field?: string;
 	filters?: { column: string; field?: string; const?: string }[]; // a relation with WHERE filters: rows matching the record
+	new_path?: string; // New with the relation's filters (set by lookupFor): the new record gets them
 }
 
 // Table record type (generic)

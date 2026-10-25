@@ -4831,6 +4831,15 @@ func (t *BankAccount) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *BankAccount) isBoolColumn(column string) bool {
+	switch column {
+	case "blocked":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *BankAccount) isDateColumn(column string) bool {
 	switch column {
@@ -4914,9 +4923,13 @@ func (t *BankAccount) parseFilterExpression(fieldName, expr string) (string, []i
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -4988,9 +5001,12 @@ func (t *BankAccount) getLimitClause() string {
 func (t *BankAccount) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, BankAccountTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, bank_account_no, transit_no, territory_code, department_code, project_code, chain_name, min_balance, bank_acc_posting_group, currency_code, language_code, statistics_group, our_contact_code, country_code, blocked, last_statement_no, last_date_modified, fax_no, telex_answer_back, picture, post_code, state, last_check_no, balance_last_statement, bank_branch_no, e_mail, home_page, no_series FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, bank_account_no, transit_no, territory_code, department_code, project_code, chain_name, min_balance, bank_acc_posting_group, currency_code, language_code, statistics_group, our_contact_code, country_code, blocked, last_statement_no, last_date_modified, fax_no, telex_answer_back, picture, post_code, state, last_check_no, balance_last_statement, bank_branch_no, e_mail, home_page, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -5127,9 +5143,15 @@ func (t *BankAccount) FindFirst() bool {
 func (t *BankAccount) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, BankAccountTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, bank_account_no, transit_no, territory_code, department_code, project_code, chain_name, min_balance, bank_acc_posting_group, currency_code, language_code, statistics_group, our_contact_code, country_code, blocked, last_statement_no, last_date_modified, fax_no, telex_answer_back, picture, post_code, state, last_check_no, balance_last_statement, bank_branch_no, e_mail, home_page, no_series FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, bank_account_no, transit_no, territory_code, department_code, project_code, chain_name, min_balance, bank_acc_posting_group, currency_code, language_code, statistics_group, our_contact_code, country_code, blocked, last_statement_no, last_date_modified, fax_no, telex_answer_back, picture, post_code, state, last_check_no, balance_last_statement, bank_branch_no, e_mail, home_page, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -7424,6 +7446,16 @@ func (t *BankAccount) Rename(newKey ...interface{}) bool {
 func (t *BankAccount) Copy(from *BankAccount) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -7498,10 +7530,13 @@ func (t *BankAccount) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

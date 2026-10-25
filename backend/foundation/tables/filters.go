@@ -35,6 +35,15 @@ func ApplyFilter(table Table, f FieldFilter) error {
 			return nil
 		}
 	}
+	// A FlowFilter field (Date Filter, Location Filter …): the FlowFields that apply it use it
+	for _, flowFilter := range table.GetFlowFilterFields() {
+		if flowFilter.Name == f.Field {
+			if err := table.SetFlowFilter(f.Field, f.Expression); err != nil {
+				return ErrFilterExpression
+			}
+			return nil
+		}
+	}
 	if !IsQueryableColumn(table, f.Field) {
 		return ErrFilterField
 	}

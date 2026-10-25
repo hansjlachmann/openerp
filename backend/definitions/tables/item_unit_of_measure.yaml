@@ -1,0 +1,50 @@
+table:
+  id: 5404
+  name: "Item_Unit_of_Measure"
+  description: "The units of measure of an item and their quantity in the base unit (table 5404)"
+  fields:
+    - name: item_no
+      no: 1
+      type: types.Code
+      db_name: item_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: code
+      no: 2
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: qty_per_unit_of_measure
+      no: 3
+      type: types.Decimal
+      db_name: qty_per_unit_of_measure
+      default: 1
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [item_no, code]
+      clustered: true

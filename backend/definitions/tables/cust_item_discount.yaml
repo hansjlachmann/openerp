@@ -1,0 +1,52 @@
+table:
+  id: 20
+  name: "Cust_Item_Discount"
+  description: "The discount % of a customer discount group on an item discount group (table 20)"
+  fields:
+    - name: customer_disc_group
+      no: 1
+      type: types.Code
+      db_name: customer_disc_group
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Customer_Discount_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: item_discount_group
+      no: 2
+      type: types.Code
+      db_name: item_discount_group
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item_Discount_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: discount_percent
+      no: 3
+      type: types.Decimal
+      db_name: discount_percent
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [customer_disc_group, item_discount_group]
+      clustered: true
+    - name: item_discount_group
+      fields: [item_discount_group]

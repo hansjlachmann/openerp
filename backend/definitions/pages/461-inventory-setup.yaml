@@ -1,0 +1,27 @@
+page:
+  id: 461
+  type: Card
+  name: Inventory Setup
+  source_table: Inventory_Setup
+  caption: Inventory Setup
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: automatic_cost_posting
+          - source: location_mandatory
+      - name: Numbering
+        caption: Numbering
+        fields:
+          - source: item_nos
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true

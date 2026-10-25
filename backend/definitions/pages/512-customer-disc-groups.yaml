@@ -37,3 +37,11 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    - name: Cust./Item Discounts
+      caption: Cust./Item Discounts
+      image: Lines
+      promoted: true
+      run_page: 24
+      run_page_filter_field: customer_disc_group
+      run_page_filter_value: code

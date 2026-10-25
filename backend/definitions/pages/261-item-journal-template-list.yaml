@@ -1,0 +1,20 @@
+page:
+  id: 261
+  type: List
+  name: Item Journal Template List
+  source_table: Item_Journal_Template
+  caption: Item Journal Template List
+  editable: false
+  # The template to open an item journal with (lookup)
+
+  layout:
+    repeater:
+      fields:
+        - source: name
+          width: 110
+        - source: description
+          width: 250
+        - source: type
+          width: 130
+        - source: recurring
+          width: 80

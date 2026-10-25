@@ -1,0 +1,40 @@
+page:
+  id: 5401
+  type: List
+  name: Item Variants
+  source_table: Item_Variant
+  caption: Item Variants
+  editable: true
+  delayed_insert: true
+
+  layout:
+    repeater:
+      fields:
+        - source: item_no
+          width: 110
+          visible: false
+        - source: code
+          width: 100
+        - source: description
+          width: 250
+        - source: description_2
+          width: 250
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

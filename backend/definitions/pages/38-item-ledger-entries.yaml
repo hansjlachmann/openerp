@@ -1,0 +1,104 @@
+page:
+  id: 38
+  type: List
+  name: Item Ledger Entries
+  source_table: Item_Ledger_Entry
+  caption: Item Ledger Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+        - source: entry_type
+          width: 130
+        - source: document_no
+          width: 110
+        - source: item_no
+          width: 110
+        - source: variant_code
+          width: 100
+          visible: false
+        - source: description
+          width: 250
+        - source: location_code
+          width: 100
+        - source: department_code
+          width: 110
+          visible: false
+        - source: project_code
+          width: 110
+          visible: false
+        - source: source_type
+          width: 100
+          visible: false
+        - source: source_no
+          width: 110
+          visible: false
+        - source: quantity
+          width: 100
+        - source: invoiced_quantity
+          width: 110
+        - source: remaining_quantity
+          width: 120
+        - source: unit_of_measure_code
+          width: 110
+          visible: false
+        - source: amount
+          width: 120
+        - source: discount_amount
+          width: 120
+          visible: false
+        - source: adjusted_cost_qty
+          width: 130
+        - source: adjusted_cost_invoiced_qty
+          width: 140
+          visible: false
+        - source: cost_posted_to_gl
+          width: 130
+          visible: false
+        - source: unit_cost
+          width: 110
+          visible: false
+        - source: applies_to_entry
+          width: 100
+          visible: false
+        - source: open
+          width: 70
+        - source: positive
+          width: 70
+          visible: false
+        - source: cost_is_adjusted
+          width: 90
+          visible: false
+        - source: closed_by_entry_no
+          width: 100
+          visible: false
+        - source: salespers_purch_code
+          width: 110
+          visible: false
+        - source: reason_code
+          width: 100
+          visible: false
+        - source: user_id
+          width: 110
+          visible: false
+        - source: source_code
+          width: 100
+          visible: false
+        - source: journal_batch_name
+          width: 110
+          visible: false
+        - source: entry_no
+          width: 90
+
+  actions:
+
+    - name: Application Entries
+      caption: Application Entries
+      image: Navigate
+      promoted: true
+      run_page: 506
+      run_page_filter_field: item_ledger_entry_no
+      run_page_filter_value: entry_no

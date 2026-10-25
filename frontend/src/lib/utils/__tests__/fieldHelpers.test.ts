@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LookupData } from '$lib/types/api';
-import { isAdvancedLookup, lookupFor, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput } from '../fieldHelpers';
+import { isAdvancedLookup, lookupFor, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput, isBlobType } from '../fieldHelpers';
 
 describe('isAdvancedLookup', () => {
 	const columns = [{ source: 'code' }];
@@ -82,5 +82,31 @@ describe('lookupFor with relation filters', () => {
 		};
 		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'DOM' })?.rows?.length).toBe(2);
 		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'FOR' })?.rows?.length).toBe(1);
+	});
+});
+
+describe('isBlobType', () => {
+	it('recognizes picture fields in both spellings', () => {
+		expect(isBlobType('[]byte')).toBe(true);
+		expect(isBlobType('Blob')).toBe(true);
+		expect(isBlobType('types.Text')).toBe(false);
+		expect(isBlobType(undefined)).toBe(false);
+	});
+});
+
+describe('lookupFor New with relation filters', () => {
+	it('opens the related list filtered like the relation', () => {
+		const lookups = {
+			base_unit_of_measure: {
+				rows: [{ _key: 'PCS', item_no: '1000' }, { _key: 'BOX', item_no: '2000' }],
+				filters: [{ column: 'item_no', field: 'no' }],
+				new_page_id: 5404
+			}
+		} as unknown as Record<string, LookupData>;
+		const lookup = lookupFor(lookups, 'base_unit_of_measure', { no: '1000' });
+		expect(lookup?.rows?.map((r) => r._key)).toEqual(['PCS']);
+		expect(lookup?.new_path).toBe('/pages/5404?filter=item_no%3D1000');
+		// a new item (no No. yet): plain New
+		expect(lookupFor(lookups, 'base_unit_of_measure', { no: '' })?.new_path).toBeUndefined();
 	});
 });

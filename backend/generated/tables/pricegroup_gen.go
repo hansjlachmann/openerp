@@ -15,6 +15,7 @@
 //	OnValidate_Allow_quantity_disc(rec *gtables.PriceGroup) error
 //	OnValidate_Allow_cust_item_disc(rec *gtables.PriceGroup) error
 //	OnValidate_Allow_invoice_disc(rec *gtables.PriceGroup) error
+//	OnValidate_Tax_bus_posting_gr_price(rec *gtables.PriceGroup) error
 
 package tables
 
@@ -36,11 +37,12 @@ import (
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterPriceGroupLogic.
 type PriceGroup struct {
-	Code                 types.Code `db:"code,pk"`
-	Price_includes_tax   bool       `db:"price_includes_tax"`
-	Allow_quantity_disc  bool       `db:"allow_quantity_disc"`
-	Allow_cust_item_disc bool       `db:"allow_cust_item_disc"`
-	Allow_invoice_disc   bool       `db:"allow_invoice_disc"`
+	Code                     types.Code `db:"code,pk"`
+	Price_includes_tax       bool       `db:"price_includes_tax"`
+	Allow_quantity_disc      bool       `db:"allow_quantity_disc"`
+	Allow_cust_item_disc     bool       `db:"allow_cust_item_disc"`
+	Allow_invoice_disc       bool       `db:"allow_invoice_disc"`
+	Tax_bus_posting_gr_price types.Code `db:"tax_bus_posting_gr_price"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -107,17 +109,19 @@ const PriceGroupTableName = "Price_Group"
 // PriceGroup_FieldNo holds the field numbers of Price_Group (FieldNo):
 // PriceGroup_FieldNo.Code is 1
 var PriceGroup_FieldNo = struct {
-	Code                 int
-	Price_includes_tax   int
-	Allow_quantity_disc  int
-	Allow_cust_item_disc int
-	Allow_invoice_disc   int
+	Code                     int
+	Price_includes_tax       int
+	Allow_quantity_disc      int
+	Allow_cust_item_disc     int
+	Allow_invoice_disc       int
+	Tax_bus_posting_gr_price int
 }{
-	Code:                 1,
-	Price_includes_tax:   2,
-	Allow_quantity_disc:  3,
-	Allow_cust_item_disc: 4,
-	Allow_invoice_disc:   5,
+	Code:                     1,
+	Price_includes_tax:       2,
+	Allow_quantity_disc:      3,
+	Allow_cust_item_disc:     4,
+	Allow_invoice_disc:       5,
+	Tax_bus_posting_gr_price: 6,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -133,6 +137,8 @@ func (t *PriceGroup) FieldNo(fieldName string) int {
 		return 4
 	case "allow_invoice_disc":
 		return 5
+	case "tax_bus_posting_gr_price":
+		return 6
 	}
 	return 0
 }
@@ -150,6 +156,8 @@ func (t *PriceGroup) FieldName(fieldNo int) string {
 		return "allow_cust_item_disc"
 	case 5:
 		return "allow_invoice_disc"
+	case 6:
+		return "tax_bus_posting_gr_price"
 	}
 	return ""
 }
@@ -239,15 +247,16 @@ func (t *PriceGroup) DeleteOrError(runTrigger bool) error {
 
 // Triggers of Price_Group: a business logic type implements the ones it needs
 type (
-	PriceGroupOnInsert                        interface{ OnInsert(rec *PriceGroup) error }
-	PriceGroupOnModify                        interface{ OnModify(rec *PriceGroup) error }
-	PriceGroupOnDelete                        interface{ OnDelete(rec *PriceGroup) error }
-	PriceGroupOnRename                        interface{ OnRename(rec *PriceGroup) error }
-	PriceGroupOnValidate_Code                 interface{ OnValidate_Code(rec *PriceGroup) error }
-	PriceGroupOnValidate_Price_includes_tax   interface{ OnValidate_Price_includes_tax(rec *PriceGroup) error }
-	PriceGroupOnValidate_Allow_quantity_disc  interface{ OnValidate_Allow_quantity_disc(rec *PriceGroup) error }
-	PriceGroupOnValidate_Allow_cust_item_disc interface{ OnValidate_Allow_cust_item_disc(rec *PriceGroup) error }
-	PriceGroupOnValidate_Allow_invoice_disc   interface{ OnValidate_Allow_invoice_disc(rec *PriceGroup) error }
+	PriceGroupOnInsert                            interface{ OnInsert(rec *PriceGroup) error }
+	PriceGroupOnModify                            interface{ OnModify(rec *PriceGroup) error }
+	PriceGroupOnDelete                            interface{ OnDelete(rec *PriceGroup) error }
+	PriceGroupOnRename                            interface{ OnRename(rec *PriceGroup) error }
+	PriceGroupOnValidate_Code                     interface{ OnValidate_Code(rec *PriceGroup) error }
+	PriceGroupOnValidate_Price_includes_tax       interface{ OnValidate_Price_includes_tax(rec *PriceGroup) error }
+	PriceGroupOnValidate_Allow_quantity_disc      interface{ OnValidate_Allow_quantity_disc(rec *PriceGroup) error }
+	PriceGroupOnValidate_Allow_cust_item_disc     interface{ OnValidate_Allow_cust_item_disc(rec *PriceGroup) error }
+	PriceGroupOnValidate_Allow_invoice_disc       interface{ OnValidate_Allow_invoice_disc(rec *PriceGroup) error }
+	PriceGroupOnValidate_Tax_bus_posting_gr_price interface{ OnValidate_Tax_bus_posting_gr_price(rec *PriceGroup) error }
 )
 
 // priceGroupLogic is the registered business logic of Price_Group, in
@@ -287,6 +296,8 @@ func priceGroupTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(PriceGroupOnValidate_Allow_cust_item_disc)
 	case "OnValidate_Allow_invoice_disc":
 		_, ok = logic.(PriceGroupOnValidate_Allow_invoice_disc)
+	case "OnValidate_Tax_bus_posting_gr_price":
+		_, ok = logic.(PriceGroupOnValidate_Tax_bus_posting_gr_price)
 	default:
 		return false, false
 	}
@@ -367,6 +378,9 @@ func (t *PriceGroup) CheckFields() error {
 	if err := tables.CheckMaxLength(PriceGroupTableName, "code", string(t.Code), 10); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(PriceGroupTableName, "tax_bus_posting_gr_price", string(t.Tax_bus_posting_gr_price), 10); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -398,7 +412,8 @@ func GetPriceGroupTableSchema() string {
 		price_includes_tax INTEGER,
 		allow_quantity_disc INTEGER DEFAULT true,
 		allow_cust_item_disc INTEGER DEFAULT true,
-		allow_invoice_disc INTEGER DEFAULT true
+		allow_invoice_disc INTEGER DEFAULT true,
+		tax_bus_posting_gr_price TEXT(10)
 	`
 }
 
@@ -409,7 +424,8 @@ func GetPriceGroupPostgresTableSchema() string {
 		price_includes_tax BOOLEAN,
 		allow_quantity_disc BOOLEAN DEFAULT true,
 		allow_cust_item_disc BOOLEAN DEFAULT true,
-		allow_invoice_disc BOOLEAN DEFAULT true
+		allow_invoice_disc BOOLEAN DEFAULT true,
+		tax_bus_posting_gr_price VARCHAR(10)
 	`
 }
 
@@ -540,6 +556,7 @@ func (t *PriceGroup) StoreOldValues() {
 	t.oldValues["allow_quantity_disc"] = t.Allow_quantity_disc
 	t.oldValues["allow_cust_item_disc"] = t.Allow_cust_item_disc
 	t.oldValues["allow_invoice_disc"] = t.Allow_invoice_disc
+	t.oldValues["tax_bus_posting_gr_price"] = t.Tax_bus_posting_gr_price
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -568,6 +585,9 @@ func (t *PriceGroup) XRec() *PriceGroup {
 	}
 	if v, ok := t.oldValues["allow_invoice_disc"].(bool); ok {
 		x.Allow_invoice_disc = v
+	}
+	if v, ok := t.oldValues["tax_bus_posting_gr_price"].(types.Code); ok {
+		x.Tax_bus_posting_gr_price = v
 	}
 	return x
 }
@@ -635,6 +655,7 @@ func (t *PriceGroup) GetByPK(code types.Code) bool {
 	var allow_quantity_discBool sql.NullBool
 	var allow_cust_item_discBool sql.NullBool
 	var allow_invoice_discBool sql.NullBool
+	var tax_bus_posting_gr_priceNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -642,7 +663,7 @@ func (t *PriceGroup) GetByPK(code types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc FROM "%s" WHERE 1=1 AND code = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price FROM "%s" WHERE 1=1 AND code = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -654,6 +675,7 @@ func (t *PriceGroup) GetByPK(code types.Code) bool {
 		&allow_quantity_discBool,
 		&allow_cust_item_discBool,
 		&allow_invoice_discBool,
+		&tax_bus_posting_gr_priceNull,
 	)
 
 	if err != nil {
@@ -672,6 +694,7 @@ func (t *PriceGroup) GetByPK(code types.Code) bool {
 	t.Allow_quantity_disc = allow_quantity_discBool.Bool
 	t.Allow_cust_item_disc = allow_cust_item_discBool.Bool
 	t.Allow_invoice_disc = allow_invoice_discBool.Bool
+	t.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -699,11 +722,12 @@ func (t *PriceGroup) Insert(runTrigger bool) bool {
 		t.Allow_quantity_disc,
 		t.Allow_cust_item_disc,
 		t.Allow_invoice_disc,
+		t.Tax_bus_posting_gr_price,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc) VALUES (?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (code) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -746,10 +770,11 @@ func (t *PriceGroup) InsertAll(records []*PriceGroup, runTrigger bool) error {
 			r.Allow_quantity_disc,
 			r.Allow_cust_item_disc,
 			r.Allow_invoice_disc,
+			r.Tax_bus_posting_gr_price,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, PriceGroupTableName)
-	columns := []string{"code", "price_includes_tax", "allow_quantity_disc", "allow_cust_item_disc", "allow_invoice_disc"}
+	columns := []string{"code", "price_includes_tax", "allow_quantity_disc", "allow_cust_item_disc", "allow_invoice_disc", "tax_bus_posting_gr_price"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -809,6 +834,10 @@ func (t *PriceGroup) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "allow_invoice_disc = ?")
 			values = append(values, t.Allow_invoice_disc)
 		}
+		if t.hasFieldChanged("tax_bus_posting_gr_price") {
+			setClauses = append(setClauses, "tax_bus_posting_gr_price = ?")
+			values = append(values, t.Tax_bus_posting_gr_price)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -824,6 +853,8 @@ func (t *PriceGroup) Modify(runTrigger bool) bool {
 		values = append(values, t.Allow_cust_item_disc)
 		setClauses = append(setClauses, "allow_invoice_disc = ?")
 		values = append(values, t.Allow_invoice_disc)
+		setClauses = append(setClauses, "tax_bus_posting_gr_price = ?")
+		values = append(values, t.Tax_bus_posting_gr_price)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -914,6 +945,10 @@ func (t *PriceGroup) hasFieldChanged(fieldName string) bool {
 			return t.Allow_invoice_disc != old
 		}
 		return true // Type mismatch, assume changed
+	case "tax_bus_posting_gr_price":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Tax_bus_posting_gr_price.Equal(old)
+		}
 	}
 
 	return false
@@ -938,7 +973,7 @@ func (t *PriceGroup) renameReferences(field string, oldValue, newValue interface
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "price_group_code", "", 0}},
+		"code": {{"Customer", false, "price_group_code", "", 0}, {"Item_Price", false, "price_group_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1164,6 +1199,8 @@ func (t *PriceGroup) columnName(fieldName string) (string, bool) {
 		return "allow_cust_item_disc", true
 	case strings.ToLower("allow_invoice_disc"):
 		return "allow_invoice_disc", true
+	case strings.ToLower("tax_bus_posting_gr_price"):
+		return "tax_bus_posting_gr_price", true
 	}
 	return "", false
 }
@@ -1314,6 +1351,21 @@ func (t *PriceGroup) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *PriceGroup) isBoolColumn(column string) bool {
+	switch column {
+	case "price_includes_tax":
+		return true
+	case "allow_quantity_disc":
+		return true
+	case "allow_cust_item_disc":
+		return true
+	case "allow_invoice_disc":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *PriceGroup) isDateColumn(column string) bool {
 	switch column {
@@ -1395,9 +1447,13 @@ func (t *PriceGroup) parseFilterExpression(fieldName, expr string) (string, []in
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -1463,9 +1519,12 @@ func (t *PriceGroup) getLimitClause() string {
 func (t *PriceGroup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PriceGroupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1475,6 +1534,7 @@ func (t *PriceGroup) FindFirst() bool {
 	var allow_quantity_discBool sql.NullBool
 	var allow_cust_item_discBool sql.NullBool
 	var allow_invoice_discBool sql.NullBool
+	var tax_bus_posting_gr_priceNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
@@ -1482,6 +1542,7 @@ func (t *PriceGroup) FindFirst() bool {
 		&allow_quantity_discBool,
 		&allow_cust_item_discBool,
 		&allow_invoice_discBool,
+		&tax_bus_posting_gr_priceNull,
 	)
 
 	if err != nil {
@@ -1498,6 +1559,7 @@ func (t *PriceGroup) FindFirst() bool {
 	t.Allow_quantity_disc = allow_quantity_discBool.Bool
 	t.Allow_cust_item_disc = allow_cust_item_discBool.Bool
 	t.Allow_invoice_disc = allow_invoice_discBool.Bool
+	t.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1510,9 +1572,15 @@ func (t *PriceGroup) FindFirst() bool {
 func (t *PriceGroup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PriceGroupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1522,6 +1590,7 @@ func (t *PriceGroup) FindLast() bool {
 	var allow_quantity_discBool sql.NullBool
 	var allow_cust_item_discBool sql.NullBool
 	var allow_invoice_discBool sql.NullBool
+	var tax_bus_posting_gr_priceNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&codeNull,
@@ -1529,6 +1598,7 @@ func (t *PriceGroup) FindLast() bool {
 		&allow_quantity_discBool,
 		&allow_cust_item_discBool,
 		&allow_invoice_discBool,
+		&tax_bus_posting_gr_priceNull,
 	)
 
 	if err != nil {
@@ -1545,6 +1615,7 @@ func (t *PriceGroup) FindLast() bool {
 	t.Allow_quantity_disc = allow_quantity_discBool.Bool
 	t.Allow_cust_item_disc = allow_cust_item_discBool.Bool
 	t.Allow_invoice_disc = allow_invoice_discBool.Bool
+	t.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1595,7 +1666,7 @@ func (t *PriceGroup) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1669,6 +1740,7 @@ func (t *PriceGroup) Next(steps ...int) bool {
 		var allow_quantity_discBool sql.NullBool
 		var allow_cust_item_discBool sql.NullBool
 		var allow_invoice_discBool sql.NullBool
+		var tax_bus_posting_gr_priceNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&codeNull,
@@ -1676,6 +1748,7 @@ func (t *PriceGroup) Next(steps ...int) bool {
 			&allow_quantity_discBool,
 			&allow_cust_item_discBool,
 			&allow_invoice_discBool,
+			&tax_bus_posting_gr_priceNull,
 		)
 
 		if err != nil {
@@ -1691,6 +1764,7 @@ func (t *PriceGroup) Next(steps ...int) bool {
 		t.Allow_quantity_disc = allow_quantity_discBool.Bool
 		t.Allow_cust_item_disc = allow_cust_item_discBool.Bool
 		t.Allow_invoice_disc = allow_invoice_discBool.Bool
+		t.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -1740,7 +1814,7 @@ func (t *PriceGroup) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT code, price_includes_tax, allow_quantity_disc, allow_cust_item_disc, allow_invoice_disc, tax_bus_posting_gr_price FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1767,6 +1841,7 @@ func (t *PriceGroup) FindSetBuffered() bool {
 		var allow_quantity_discBool sql.NullBool
 		var allow_cust_item_discBool sql.NullBool
 		var allow_invoice_discBool sql.NullBool
+		var tax_bus_posting_gr_priceNull sql.NullString
 
 		err := rows.Scan(
 			&codeNull,
@@ -1774,6 +1849,7 @@ func (t *PriceGroup) FindSetBuffered() bool {
 			&allow_quantity_discBool,
 			&allow_cust_item_discBool,
 			&allow_invoice_discBool,
+			&tax_bus_posting_gr_priceNull,
 		)
 
 		if err != nil {
@@ -1787,6 +1863,7 @@ func (t *PriceGroup) FindSetBuffered() bool {
 		record.Allow_quantity_disc = allow_quantity_discBool.Bool
 		record.Allow_cust_item_disc = allow_cust_item_discBool.Bool
 		record.Allow_invoice_disc = allow_invoice_discBool.Bool
+		record.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -1820,6 +1897,7 @@ func (t *PriceGroup) copyFromBuffered(record *PriceGroup) {
 	t.Allow_quantity_disc = record.Allow_quantity_disc
 	t.Allow_cust_item_disc = record.Allow_cust_item_disc
 	t.Allow_invoice_disc = record.Allow_invoice_disc
+	t.Tax_bus_posting_gr_price = record.Tax_bus_posting_gr_price
 	t.StoreOldValues()
 }
 
@@ -2048,6 +2126,28 @@ func (t *PriceGroup) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "tax_bus_posting_gr_price":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Tax_bus_posting_gr_price = v
+		} else if v, ok := value.(string); ok {
+			t.Tax_bus_posting_gr_price = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field tax_bus_posting_gr_price")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "tax_bus_posting_gr_price"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(PriceGroupOnValidate_Tax_bus_posting_gr_price); ok {
+				if err := trg.OnValidate_Tax_bus_posting_gr_price(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2070,6 +2170,8 @@ func (t *PriceGroup) FieldValue(no int) (any, bool) {
 		return t.Allow_cust_item_disc, true
 	case 5:
 		return t.Allow_invoice_disc, true
+	case 6:
+		return t.Tax_bus_posting_gr_price, true
 	}
 	return nil, false
 }
@@ -2112,6 +2214,15 @@ func (t *PriceGroup) SetFieldValue(no int, value any) bool {
 	case 5:
 		if v, ok := value.(bool); ok {
 			t.Allow_invoice_disc = v
+			return true
+		}
+	case 6:
+		if v, ok := value.(types.Code); ok {
+			t.Tax_bus_posting_gr_price = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Tax_bus_posting_gr_price = types.NewCode(v)
 			return true
 		}
 	}
@@ -2422,6 +2533,16 @@ func (t *PriceGroup) Rename(newKey ...interface{}) bool {
 func (t *PriceGroup) Copy(from *PriceGroup) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -2496,10 +2617,13 @@ func (t *PriceGroup) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found
@@ -2530,6 +2654,8 @@ func (t *PriceGroup) columnValue(column string) (interface{}, bool) {
 		return t.Allow_cust_item_disc, true
 	case "allow_invoice_disc":
 		return t.Allow_invoice_disc, true
+	case "tax_bus_posting_gr_price":
+		return t.Tax_bus_posting_gr_price, true
 	}
 	return nil, false
 }
@@ -2588,6 +2714,7 @@ func (t *PriceGroup) Init() {
 	t.Allow_quantity_disc = *new(bool)
 	t.Allow_cust_item_disc = *new(bool)
 	t.Allow_invoice_disc = *new(bool)
+	t.Tax_bus_posting_gr_price = *new(types.Code)
 	t.applyDefaults()
 }
 
@@ -2622,11 +2749,12 @@ func (t *PriceGroup) ClearFilters() {
 // ToMap converts the current record to a map for JSON serialization
 func (t *PriceGroup) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"code":                 t.Code.String(),
-		"price_includes_tax":   t.Price_includes_tax,
-		"allow_quantity_disc":  t.Allow_quantity_disc,
-		"allow_cust_item_disc": t.Allow_cust_item_disc,
-		"allow_invoice_disc":   t.Allow_invoice_disc,
+		"code":                     t.Code.String(),
+		"price_includes_tax":       t.Price_includes_tax,
+		"allow_quantity_disc":      t.Allow_quantity_disc,
+		"allow_cust_item_disc":     t.Allow_cust_item_disc,
+		"allow_invoice_disc":       t.Allow_invoice_disc,
+		"tax_bus_posting_gr_price": t.Tax_bus_posting_gr_price.String(),
 	}
 }
 
@@ -2655,6 +2783,11 @@ func (t *PriceGroup) FromMap(data map[string]interface{}) {
 	if v, ok := data["allow_invoice_disc"]; ok && v != nil {
 		if b, ok := v.(bool); ok {
 			t.Allow_invoice_disc = b
+		}
+	}
+	if v, ok := data["tax_bus_posting_gr_price"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Tax_bus_posting_gr_price = types.NewCode(s)
 		}
 	}
 }
@@ -2728,6 +2861,16 @@ func (t *PriceGroup) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:         6,
+			Name:       "tax_bus_posting_gr_price",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -2756,5 +2899,16 @@ func (t *PriceGroup) GetOptionFields() map[string][]string {
 
 // GetTableRelationFields returns fields that have table relations (foreign keys)
 func (t *PriceGroup) GetTableRelationFields() map[string]tables.TableRelationInfo {
-	return map[string]tables.TableRelationInfo{}
+	return map[string]tables.TableRelationInfo{
+		"tax_bus_posting_gr_price": {
+			Table:        "Tax_Business_Posting_Group",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+	}
 }

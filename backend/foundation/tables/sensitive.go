@@ -61,6 +61,10 @@ func PublicMap(table Table) map[string]interface{} {
 		switch {
 		case f.Sensitive:
 			delete(m, f.Name)
+		case f.Type == FieldTypeBlob:
+			// a picture is served by its own endpoint: the record says whether there is one
+			data, _ := m[f.Name].([]byte)
+			m[f.Name] = len(data) > 0
 		case f.Masked:
 			if v, ok := m[f.Name]; ok && fmt.Sprint(v) != "" {
 				m[f.Name] = MaskedValue
@@ -83,14 +87,15 @@ func IsReadOnly(table Table, field string) bool {
 	return false
 }
 
-// DropReadOnlyFields removes the read-only fields (editable: false) from data (a write from a
+// DropReadOnlyFields removes the read-only fields (editable: false) and pictures (BLOB) from data (a write from a
 // page): an insert gets their initial value, a modify keeps the stored one — only business
 // logic sets them (e.g. Last Date Modified). A read-only key field is kept on insert (keepKeys):
 // its value comes from the list's filter or the subpage link (the currency of its exchange
 // rates); on modify it is dropped, so it is never renamed.
 func DropReadOnlyFields(table Table, data map[string]interface{}, keepKeys bool) {
 	for _, f := range table.GetFields() {
-		if f.ReadOnly && !(keepKeys && f.PrimaryKey) {
+		if f.ReadOnly && !(keepKeys && f.PrimaryKey) || f.Type == FieldTypeBlob {
+			// a picture (BLOB) is written by its own endpoint only
 			delete(data, f.Name)
 		}
 	}

@@ -376,11 +376,14 @@ menu:
     icon: package
     items:
       - name: "Items"
-        page_id: 30
+        page_id: 31
       - separator: true
       - name: "Item Journals"
+        page_id: 40
       - name: "Item Transfer Journals"
+        page_id: 393
       - name: "Phys. Inventory Journals"
+        page_id: 392
       - name: "BOM Journals"
       - separator: true
       - name: "Item Reports"

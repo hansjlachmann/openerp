@@ -157,3 +157,11 @@ page:
       run_page: 369
       run_page_filter_field: vendor_no
       run_page_filter_value: "no"
+
+    - name: Items
+      caption: Items
+      image: Lines
+      promoted: true
+      run_page: 297
+      run_page_filter_field: vendor_no
+      run_page_filter_value: "no"

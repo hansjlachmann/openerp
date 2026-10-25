@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
+	"github.com/hansjlachmann/openerp/backend/business-logic/itemjnl"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -96,7 +98,7 @@ func (c *DemoDataCreate) create(jobQueue *gtables.JobQueue, ts *i18n.Translation
 		}
 	}
 
-	return demodata.Create(c.db, c.company, c.dbType, demodata.Options{Size: size, Progress: progress})
+	return demodata.Create(c.db, c.company, c.dbType, demodata.Options{Size: size, Progress: progress, ItemJnlPostLine: openItemJnlPostLine})
 }
 
 // errorMessage translates the demodata errors users can act on.
@@ -112,4 +114,9 @@ func (c *DemoDataCreate) errorMessage(err error, ts *i18n.TranslationService, la
 		return ts.MessageWithParams("DEMO_DATA_INSERT_FAILED", lang, insertErr.Table, insertErr.Key, insertErr.Err.Error())
 	}
 	return err.Error()
+}
+
+// openItemJnlPostLine opens the item posting (codeunit 22) for the demo items' postings
+func openItemJnlPostLine(src ftables.Source) demodata.ItemJnlPoster {
+	return itemjnl.NewItemJnlPostLine(src)
 }

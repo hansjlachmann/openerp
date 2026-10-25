@@ -2592,6 +2592,23 @@ func (t *TaxEntry) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *TaxEntry) isBoolColumn(column string) bool {
+	switch column {
+	case "eu_3_party_trade":
+		return true
+	case "closed":
+		return true
+	case "tax_liable":
+		return true
+	case "use_tax":
+		return true
+	case "tax_on_tax":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *TaxEntry) isDateColumn(column string) bool {
 	switch column {
@@ -2675,9 +2692,13 @@ func (t *TaxEntry) parseFilterExpression(fieldName, expr string) (string, []inte
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -2743,9 +2764,12 @@ func (t *TaxEntry) getLimitClause() string {
 func (t *TaxEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2879,9 +2903,15 @@ func (t *TaxEntry) FindFirst() bool {
 func (t *TaxEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -5369,6 +5399,16 @@ func (t *TaxEntry) Rename(newKey ...interface{}) bool {
 func (t *TaxEntry) Copy(from *TaxEntry) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -5443,10 +5483,13 @@ func (t *TaxEntry) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

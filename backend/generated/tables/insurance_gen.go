@@ -2184,6 +2184,15 @@ func (t *Insurance) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *Insurance) isBoolColumn(column string) bool {
+	switch column {
+	case "blocked":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *Insurance) isDateColumn(column string) bool {
 	switch column {
@@ -2269,9 +2278,13 @@ func (t *Insurance) parseFilterExpression(fieldName, expr string) (string, []int
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -2343,9 +2356,12 @@ func (t *Insurance) getLimitClause() string {
 func (t *Insurance) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, InsuranceTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2429,9 +2445,15 @@ func (t *Insurance) FindFirst() bool {
 func (t *Insurance) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, InsuranceTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3947,6 +3969,16 @@ func (t *Insurance) Rename(newKey ...interface{}) bool {
 func (t *Insurance) Copy(from *Insurance) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -4021,10 +4053,13 @@ func (t *Insurance) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

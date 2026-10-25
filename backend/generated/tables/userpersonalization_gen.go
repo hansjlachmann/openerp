@@ -1630,6 +1630,13 @@ func (t *UserPersonalization) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *UserPersonalization) isBoolColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *UserPersonalization) isDateColumn(column string) bool {
 	switch column {
@@ -1711,9 +1718,13 @@ func (t *UserPersonalization) parseFilterExpression(fieldName, expr string) (str
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -1779,9 +1790,12 @@ func (t *UserPersonalization) getLimitClause() string {
 func (t *UserPersonalization) FindFirst() bool {
 	tableName := UserPersonalizationTableName
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1839,9 +1853,15 @@ func (t *UserPersonalization) FindFirst() bool {
 func (t *UserPersonalization) FindLast() bool {
 	tableName := UserPersonalizationTableName
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3164,6 +3184,16 @@ func (t *UserPersonalization) Rename(newKey ...interface{}) bool {
 func (t *UserPersonalization) Copy(from *UserPersonalization) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -3238,10 +3268,13 @@ func (t *UserPersonalization) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

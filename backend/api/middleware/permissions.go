@@ -77,6 +77,10 @@ func mapRouteToOperation(c *fiber.Ctx) session.PermissionOperation {
 	case "PUT":
 		return session.PermModify
 	case "DELETE":
+		// removing a picture changes its record
+		if strings.Contains(path, "/blob/") {
+			return session.PermModify
+		}
 		return session.PermDelete
 	default:
 		return ""

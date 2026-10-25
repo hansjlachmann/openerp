@@ -8,6 +8,22 @@ common:
 
   # Common actions
   actions:
+    picture: "Picture"
+    calculate_inventory: "Calculate Inventory"
+    phys_inventory_ledger: "Phys. Inventory Ledger"
+    phys_inventory_ledger_entries: "Phys. Inventory Ledger Entries"
+    item_ledger: "Item Ledger"
+    application_entries: "Application Entries"
+    item: "Item"
+    prices: "Prices"
+    quantity_discounts: "Quantity Discounts"
+    item_cust_discounts: "Item/Cust. Discounts"
+    cust_item_discounts: "Cust./Item Discounts"
+    translations: "Translations"
+    items: "Items"
+    units_of_measure: "Units of Measure"
+    variants: "Variants"
+    vendors: "Vendors"
     setup: "Setup"
     details: "Details"
     tax_register: "Tax Register"
@@ -77,6 +93,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    picture: "Picture"
+    inventory: "Inventory"
+    ordering: "Ordering"
     lines: "Lines"
     sales: "Sales"
     purchases: "Purchases"

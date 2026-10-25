@@ -1,0 +1,39 @@
+page:
+  id: 34
+  type: List
+  name: Sales Qty. Discounts
+  source_table: Item_Sales_Qty_Disc
+  caption: Sales Qty. Discounts
+  editable: true
+  delayed_insert: true
+  # The quantity discounts of an item's Sales Qty. Disc. Code
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 110
+          visible: false
+        - source: minimum_quantity
+          width: 140
+        - source: discount_percent
+          width: 120
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

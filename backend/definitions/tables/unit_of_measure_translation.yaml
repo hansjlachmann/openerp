@@ -1,0 +1,48 @@
+table:
+  id: 5402
+  name: "Unit_of_Measure_Translation"
+  description: "A unit of measure's description in a language (table 5402)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: language_code
+      no: 2
+      type: types.Code
+      db_name: language_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: description
+      no: 3
+      type: types.Text
+      db_name: description
+      length: 10
+      required: true
+
+  keys:
+    - name: Primary
+      fields: [code, language_code]
+      clustered: true

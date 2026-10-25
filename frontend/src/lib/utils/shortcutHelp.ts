@@ -105,6 +105,7 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 			{ keys: ['↓', 'Alt+↓', 'F4'], description: 'HELP_LOOKUP_OPEN' },
 			{ keys: ['↑', '↓'], description: 'HELP_LOOKUP_MOVE' },
 			{ keys: ['PgUp', 'PgDn'], description: 'HELP_LOOKUP_PAGE' },
+			{ keys: ['Alt+N'], description: 'HELP_LOOKUP_NEW' },
 			{ keys: ['Enter'], description: 'HELP_LOOKUP_PICK' },
 			{ keys: ['Esc'], description: 'HELP_LOOKUP_ESCAPE' }
 		]
