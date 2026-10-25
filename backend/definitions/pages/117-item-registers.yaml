@@ -43,3 +43,8 @@ page:
           run_page: 38
           run_page_filters:
             - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Phys. Inventory Ledger
+          caption: Phys. Inventory Ledger
+          run_page: 390
+          run_page_filters:
+            - {field: entry_no, from: from_phys_inventory_entry_no, to: to_phys_inventory_entry_no}

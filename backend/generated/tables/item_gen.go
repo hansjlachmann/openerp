@@ -3154,7 +3154,7 @@ func (t *Item) renameReferences(field string, oldValue, newValue interface{}) er
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Application_Entry", false, "item_no", "", 0}, {"Item_Journal_Line", false, "item_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 3}, {"Item_Ledger_Entry", false, "item_no", "", 0}, {"Item_Ledger_Entry", false, "source_no", "source_type", 3}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}},
+		"no": {{"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Application_Entry", false, "item_no", "", 0}, {"Item_Journal_Line", false, "item_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 3}, {"Item_Ledger_Entry", false, "item_no", "", 0}, {"Item_Ledger_Entry", false, "source_no", "source_type", 3}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}, {"Phys_Inventory_Ledger_Entry", false, "item_no", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

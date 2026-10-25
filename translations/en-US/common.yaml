@@ -8,6 +8,9 @@ common:
 
   # Common actions
   actions:
+    calculate_inventory: "Calculate Inventory"
+    phys_inventory_ledger: "Phys. Inventory Ledger"
+    phys_inventory_ledger_entries: "Phys. Inventory Ledger Entries"
     item_ledger: "Item Ledger"
     application_entries: "Application Entries"
     item: "Item"

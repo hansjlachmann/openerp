@@ -1,0 +1,62 @@
+page:
+  id: 390
+  type: List
+  name: Phys. Inventory Ledger Entries
+  source_table: Phys_Inventory_Ledger_Entry
+  caption: Phys. Inventory Ledger Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+        - source: entry_type
+          width: 130
+        - source: document_no
+          width: 110
+        - source: item_no
+          width: 110
+        - source: variant_code
+          width: 100
+          visible: false
+        - source: description
+          width: 250
+        - source: location_code
+          width: 100
+        - source: department_code
+          width: 110
+          visible: false
+        - source: project_code
+          width: 110
+          visible: false
+        - source: qty_calculated
+          width: 130
+        - source: qty_phys_inventory
+          width: 140
+        - source: quantity
+          width: 100
+        - source: unit_of_measure_code
+          width: 110
+          visible: false
+        - source: unit_amount
+          width: 120
+          visible: false
+        - source: amount
+          width: 120
+        - source: unit_cost
+          width: 120
+        - source: user_id
+          width: 110
+          visible: false
+        - source: source_code
+          width: 100
+          visible: false
+        - source: reason_code
+          width: 100
+          visible: false
+        - source: journal_batch_name
+          width: 110
+          visible: false
+        - source: entry_no
+          width: 90

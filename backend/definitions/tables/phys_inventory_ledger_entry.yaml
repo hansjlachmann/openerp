@@ -1,0 +1,280 @@
+table:
+  id: 281
+  name: "Phys_Inventory_Ledger_Entry"
+  description: "Phys. inventory ledger entries (table 281): the counted and calculated quantities of a phys. inventory"
+  lookup_page_id: 390
+  # Left out until their objects exist: 40 Serial No., 5400 Lot No., 5403 Bin Code
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: item_no
+      no: 2
+      type: types.Code
+      db_name: item_no
+      length: 20
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_date
+      no: 3
+      type: types.Date
+      db_name: posting_date
+
+    - name: entry_type
+      no: 4
+      type: Option
+      db_name: entry_type
+      options: ["Purchase", "Sale", "Positive Adjmt.", "Negative Adjmt.", "Transfer"]
+
+    - name: document_no
+      no: 6
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: location_code
+      no: 8
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: inventory_posting_group
+      no: 9
+      type: types.Code
+      db_name: inventory_posting_group
+      length: 10
+      table_relation:
+        table: Inventory_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: quantity
+      no: 12
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_amount
+      no: 15
+      type: types.Decimal
+      db_name: unit_amount
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_cost
+      no: 16
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: amount
+      no: 17
+      type: types.Decimal
+      db_name: amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 2
+
+    - name: salespers_purch_code
+      no: 22
+      type: types.Code
+      db_name: salespers_purch_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 24
+      type: types.Code
+      db_name: user_id
+      length: 50
+      table_relation:
+        table: User
+        field: user_id
+        validate: false
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: source_code
+      no: 25
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: department_code
+      no: 33
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 34
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: journal_batch_name
+      no: 45
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: reason_code
+      no: 46
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: qty_calculated
+      no: 54
+      type: types.Decimal
+      db_name: qty_calculated
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: qty_phys_inventory
+      no: 55
+      type: types.Decimal
+      db_name: qty_phys_inventory
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: last_item_ledger_entry_no
+      no: 56
+      type: int
+      db_name: last_item_ledger_entry_no
+
+    - name: document_date
+      no: 60
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 61
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: no_series
+      no: 64
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: variant_code
+      no: 5402
+      type: types.Code
+      db_name: variant_code
+      length: 10
+      table_relation:
+        table: Item_Variant
+        field: code
+        filters:
+          item_no: {field: item_no}
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: unit_of_measure_code
+      no: 5407
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: item
+      fields: [item_no, variant_code, posting_date]
+    - name: item_location
+      fields: [item_no, variant_code, department_code, project_code, location_code, posting_date]
+    - name: document
+      fields: [document_no, posting_date]

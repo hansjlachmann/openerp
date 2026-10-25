@@ -62,6 +62,10 @@ type Definition struct {
 	OnPreReport func(run *Run) error
 	// OnPostReport runs after the data items (not after Quit)
 	OnPostReport func(run *Run) error
+	// ContextTable: run from a page of this table, the report gets the page's record (with the
+	// page's filters) as its Run.Context instead of request filters — e.g. Calculate Inventory
+	// fills the journal batch it is run from (classic SetItemJnlLine before RUNMODAL)
+	ContextTable string
 }
 
 // Option is a field of the request page
@@ -69,7 +73,7 @@ type Option struct {
 	Name     string   // key (read with Run.Option); the label is reports.<id>.options.<name>
 	Type     string   // "text", "number", "date" or "option"
 	Default  string   // initial value ("option": the number, 1-based)
-	Options  []string // the choices of an "option" field (translated texts)
+	Options  []string // the choices of an "option" field: text keys of the report (reports.<id>.texts.<key>)
 	Required bool
 }
 

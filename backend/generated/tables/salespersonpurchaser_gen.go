@@ -884,7 +884,7 @@ func (t *SalespersonPurchaser) renameReferences(field string, oldValue, newValue
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "our_contact_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "our_contact_code", "", 0}, {"Customer Ledger Entry", false, "salesperson_code", "", 0}, {"Customer", false, "salesperson_code", "", 0}, {"Gen_Journal_Line", false, "salespers_purch_code", "", 0}, {"Item_Journal_Line", false, "salespers_purch_code", "", 0}, {"Item_Ledger_Entry", false, "salespers_purch_code", "", 0}, {"Vendor", false, "purchaser_code", "", 0}, {"Vendor Ledger Entry", false, "purchaser_code", "", 0}},
+		"code": {{"Bank_Account", false, "our_contact_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "our_contact_code", "", 0}, {"Customer Ledger Entry", false, "salesperson_code", "", 0}, {"Customer", false, "salesperson_code", "", 0}, {"Gen_Journal_Line", false, "salespers_purch_code", "", 0}, {"Item_Journal_Line", false, "salespers_purch_code", "", 0}, {"Item_Ledger_Entry", false, "salespers_purch_code", "", 0}, {"Phys_Inventory_Ledger_Entry", false, "salespers_purch_code", "", 0}, {"Vendor", false, "purchaser_code", "", 0}, {"Vendor Ledger Entry", false, "purchaser_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

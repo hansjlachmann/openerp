@@ -36,6 +36,9 @@ func (c *reportCodeunit) UsesProgress() bool { return true }
 func (c *reportCodeunit) SourceTable() string {
 	factory, _ := Get(c.id)
 	def := factory().Definition()
+	if def.ContextTable != "" {
+		return def.ContextTable
+	}
 	if len(def.DataItems) > 0 {
 		return def.DataItems[0].Table
 	}
@@ -43,7 +46,12 @@ func (c *reportCodeunit) SourceTable() string {
 }
 
 func (c *reportCodeunit) Run(record interface{}) (fcodeunits.Result, error) {
-	result, err := Execute(c.id, c.db, c.company, c.dbType, RunOptions{RequestPage: true})
+	opts := RunOptions{RequestPage: true}
+	factory, _ := Get(c.id)
+	if factory().Definition().ContextTable != "" {
+		opts.Context = record // the page's record (with its filters) the report works on
+	}
+	result, err := Execute(c.id, c.db, c.company, c.dbType, opts)
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {
 		// e.g. a request filter that cannot be applied: in the user's language

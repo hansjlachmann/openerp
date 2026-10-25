@@ -38,6 +38,7 @@ type ItemJnlPostLine struct {
 	genJnlPostLine     *genjnl.GenJnlPostLine
 	checkLine          bool
 	entryNo            int
+	physInvtEntryNo    int
 	applicationEntryNo int
 	invtSetupRead      bool
 }
@@ -804,7 +805,57 @@ func (p *ItemJnlPostLine) insertApplicationEntry(itemLedgEntryNo, appliedToEntry
 	return itemApplicationEntry.InsertOrError(false)
 }
 
-// insertPhysInventoryEntry: phys. inventory entries come with the Phys. Inventory Journal
+// insertPhysInventoryEntry writes the phys. inventory entry of a counted line (the calculated
+// and counted quantities) and widens the Item Register's phys. inventory range
 func (p *ItemJnlPostLine) insertPhysInventoryEntry() error {
-	return nil
+	itemJnlLine := p.itemJnlLine
+	physInvtLedgEntry := gtables.NewPhysInventoryLedgerEntry(p.src)
+	if p.physInvtEntryNo == 0 {
+		physInvtLedgEntry.LockTable()
+		if physInvtLedgEntry.FindLast() {
+			p.physInvtEntryNo = physInvtLedgEntry.Entry_no
+		}
+	}
+
+	p.physInvtEntryNo = p.physInvtEntryNo + 1
+
+	physInvtLedgEntry.Init()
+	physInvtLedgEntry.Entry_no = p.physInvtEntryNo
+	physInvtLedgEntry.Item_no = itemJnlLine.Item_no
+	physInvtLedgEntry.Posting_date = itemJnlLine.Posting_date
+	physInvtLedgEntry.Document_date = itemJnlLine.Document_date
+	physInvtLedgEntry.Entry_type = gtables.PhysInventoryLedgerEntryEntry_type(itemJnlLine.Entry_type)
+	physInvtLedgEntry.Document_no = itemJnlLine.Document_no
+	physInvtLedgEntry.External_document_no = itemJnlLine.External_document_no
+	physInvtLedgEntry.Description = itemJnlLine.Description
+	physInvtLedgEntry.Location_code = itemJnlLine.Location_code
+	physInvtLedgEntry.Inventory_posting_group = itemJnlLine.Inventory_posting_group
+	physInvtLedgEntry.Unit_cost = itemJnlLine.Unit_cost
+	physInvtLedgEntry.Amount = itemJnlLine.Amount
+	physInvtLedgEntry.Salespers_purch_code = itemJnlLine.Salespers_purch_code
+	physInvtLedgEntry.Source_code = itemJnlLine.Source_code
+	physInvtLedgEntry.Department_code = itemJnlLine.Department_code
+	physInvtLedgEntry.Project_code = itemJnlLine.Project_code
+	physInvtLedgEntry.Journal_batch_name = itemJnlLine.Journal_batch_name
+	physInvtLedgEntry.Reason_code = itemJnlLine.Reason_code
+	physInvtLedgEntry.User_id = types.Code(system.UserId())
+	physInvtLedgEntry.No_series = itemJnlLine.Posting_no_series
+	if physInvtLedgEntry.Description == p.item.Description {
+		physInvtLedgEntry.Description = ""
+	}
+	physInvtLedgEntry.Variant_code = itemJnlLine.Variant_code
+	physInvtLedgEntry.Unit_of_measure_code = itemJnlLine.Unit_of_measure_code
+
+	physInvtLedgEntry.Quantity = itemJnlLine.Quantity
+	physInvtLedgEntry.Unit_amount = itemJnlLine.Unit_amount
+	physInvtLedgEntry.Qty_calculated = itemJnlLine.Qty_calculated
+	physInvtLedgEntry.Qty_phys_inventory = itemJnlLine.Qty_phys_inventory
+	physInvtLedgEntry.Last_item_ledger_entry_no = itemJnlLine.Last_item_ledger_entry_no
+
+	err := physInvtLedgEntry.InsertOrError(false)
+	if err != nil {
+		return err
+	}
+
+	return p.insertItemReg(0, physInvtLedgEntry.Entry_no)
 }

@@ -381,7 +381,9 @@ menu:
       - name: "Item Journals"
         page_id: 40
       - name: "Item Transfer Journals"
+        page_id: 393
       - name: "Phys. Inventory Journals"
+        page_id: 392
       - name: "BOM Journals"
       - separator: true
       - name: "Item Reports"

@@ -27,7 +27,12 @@ type Run struct {
 	options map[string]string
 	filters map[string][]ftables.FieldFilter // data item name → the user's filters
 	message string
+	context interface{}
 }
+
+// Context is what the caller gave the report to work on (RunOptions.Context) — e.g. the item
+// journal line whose batch Calculate Inventory fills (classic SetItemJnlLine before RUNMODAL)
+func (r *Run) Context() interface{} { return r.context }
 
 // Option returns an option of the request page as text
 func (r *Run) Option(name string) string { return r.options[name] }
@@ -69,6 +74,8 @@ type RunOptions struct {
 	Record ftables.Table
 	// Options: starting values of the request page options
 	Options map[string]string
+	// Context: a value the report works on (Run.Context), set by the caller before the run
+	Context interface{}
 }
 
 // Result is how a report ended
@@ -84,7 +91,7 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		return Result{}, fmt.Errorf("report %d does not exist", id)
 	}
 	def := factory().Definition()
-	run := &Run{ID: id, DB: db, Company: company, DBType: dbType, options: map[string]string{}, filters: map[string][]ftables.FieldFilter{}}
+	run := &Run{ID: id, DB: db, Company: company, DBType: dbType, options: map[string]string{}, filters: map[string][]ftables.FieldFilter{}, context: opts.Context}
 	for _, o := range def.Options {
 		run.options[o.Name] = o.Default
 	}
@@ -150,7 +157,7 @@ func requestPage(run *Run, def *Definition) bool {
 			Type:     o.Type,
 			Required: o.Required,
 			Default:  run.options[o.Name],
-			Options:  o.Options,
+			Options:  translatedChoices(run, o.Options),
 		})
 	}
 	var items []fcodeunits.RequestDataItem
@@ -174,6 +181,10 @@ func requestPage(run *Run, def *Definition) bool {
 		}
 		for _, f := range ftables.FilterableFields(rec) {
 			requestItem.Fields = append(requestItem.Fields, fcodeunits.RequestField{Name: f.Name, Caption: caption(f.Name), Type: string(f.Type)})
+		}
+		// FlowFilter fields too (Date Filter, Location Filter …): they limit the FlowFields
+		for _, f := range rec.GetFlowFilterFields() {
+			requestItem.Fields = append(requestItem.Fields, fcodeunits.RequestField{Name: f.Name, Caption: caption(f.Name), Type: string(flowFilterFieldType[f.Kind])})
 		}
 		// The request filter fields first (blank or with the starting filter), then the other
 		// starting filters
@@ -381,3 +392,22 @@ func translate(id int, key string) string {
 func (r *Run) GetDB() database.Executor   { return r.DB }
 func (r *Run) GetCompany() string         { return r.Company }
 func (r *Run) GetDBType() database.DBType { return r.DBType }
+
+// flowFilterFieldType: the field type a FlowFilter's kind is shown as on the request page
+var flowFilterFieldType = map[string]ftables.FieldType{
+	"date": ftables.FieldTypeDate,
+	"bool": ftables.FieldTypeBoolean,
+	"int":  ftables.FieldTypeInteger,
+	"text": ftables.FieldTypeText,
+	"code": ftables.FieldTypeCode,
+}
+
+// translatedChoices: the choices of an option field in the user's language (text keys of the
+// report)
+func translatedChoices(run *Run, keys []string) []string {
+	var choices []string
+	for _, key := range keys {
+		choices = append(choices, run.Text(key))
+	}
+	return choices
+}

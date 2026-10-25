@@ -166,3 +166,11 @@ page:
       run_page: 506
       run_page_filter_field: item_no
       run_page_filter_value: "no"
+
+    - name: Phys. Inventory Ledger Entries
+      caption: Phys. Inventory Ledger Entries
+      image: Entries
+      promoted: true
+      run_page: 390
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"

@@ -484,3 +484,17 @@ pages:
     caption: "Vareposter"
   item_application_entries:
     caption: "Vareudligningsposter"
+
+  # Item transfer and phys. inventory journals
+  item_transfer_journal:
+    caption: "Overførselskladde"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_journal:
+    caption: "Lageropgørelseskladde"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  phys_inventory_ledger_entries:
+    caption: "Lageropgørelsesposter"

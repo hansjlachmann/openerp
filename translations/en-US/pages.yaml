@@ -484,3 +484,17 @@ pages:
     caption: "Item Ledger Entries"
   item_application_entries:
     caption: "Item Application Entries"
+
+  # Item transfer and phys. inventory journals
+  item_transfer_journal:
+    caption: "Item Transfer Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  phys_inventory_journal:
+    caption: "Phys. Inventory Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  phys_inventory_ledger_entries:
+    caption: "Phys. Inventory Ledger Entries"

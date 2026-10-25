@@ -24,3 +24,20 @@ reports:
       CANNOT_CHANGE_START: "Når du har opprettet det nye regnskapsåret, kan du ikke endre startdatoen.\n\n"
       CONFIRM_CREATE: "Vil du opprette regnskapsåret?"
       ONLY_BEFORE_OR_AFTER: "Du kan bare opprette nye regnskapsår før eller etter de eksisterende."
+  "790":
+    caption: "Beregn lager"
+    options:
+      posting_date: "Bokføringsdato"
+      document_no: "Bilagsnr."
+      items_not_on_inventory: "Varer som ikke er på lager"
+      by_department: "Per avdeling"
+      by_project: "Per prosjekt"
+      by_location: "Per lokasjon"
+    texts:
+      OPTIONS: "Alternativer"
+      NO: "Nei"
+      YES: "Ja"
+      NO_JOURNAL: "Kjør Beregn lager fra en opptellingskladd."
+      ENTER_POSTING_DATE: "Angi bokføringsdato."
+      ENTER_DOCUMENT_NO: "Angi bilagsnummer."
+      WINDOW: "Behandler varer    #1##########"

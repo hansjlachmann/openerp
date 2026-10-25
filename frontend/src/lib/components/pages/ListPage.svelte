@@ -797,6 +797,12 @@
 	}
 
 	// Handle action clicks
+	// A codeunit or report action runs on the list's filters, also without a row (classic
+	// RUN(…, Rec) with the form's filters) — a table function needs the row
+	function runsOnListFilters(runObject: string | undefined): boolean {
+		return !!runObject && (runObject.startsWith('codeunit:') || runObject.startsWith('report:'));
+	}
+
 	async function handleAction(actionName: string) {
 		// Several rows selected: Delete deletes them all (other actions use the cursor row)
 		if (actionName === 'Delete' && multiSelected && isNavigation) {
@@ -2972,7 +2978,7 @@
 						<!-- A menu button: its items need a record when they run something -->
 						<ActionMenu
 							{action}
-							itemDisabled={(item) => !!(item.run_object || item.run_page) && !selectedRecord}
+							itemDisabled={(item) => !!(item.run_object || item.run_page) && !runsOnListFilters(item.run_object) && !selectedRecord}
 							onselect={handleMenuItem}
 						/>
 					{:else}
@@ -2985,6 +2991,10 @@
 
 						// Delete requires a selected record
 						if (action.name === 'Delete') return !selectedRecord;
+
+						// A codeunit or report runs on the list's filters: no row needed (an empty
+						// journal can be calculated or posted)
+						if (runsOnListFilters(action.run_object)) return false;
 
 						// Other buttons require selection
 						return !selectedRecord;
