@@ -1,0 +1,87 @@
+table:
+  id: 322
+  name: "Tax_Detail"
+  caption: Tax Detail
+  description: "Tax details (table 322): the sales tax rates of a jurisdiction and tax group from an effective date"
+  fields:
+    - name: tax_jurisdiction_code
+      no: 1
+      type: types.Code
+      db_name: tax_jurisdiction_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Tax_Jurisdiction
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_group_code
+      no: 2
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_type
+      no: 3
+      type: Option
+      db_name: tax_type
+      primary_key: true
+      options: ["Sales Tax", "Excise Tax"]
+
+    - name: maximum_amount_qty
+      no: 4
+      type: types.Decimal
+      db_name: maximum_amount_qty
+      decimal_places: "2:2"
+      validation: {min: 0}
+      precision: 18
+      scale: 2
+
+    - name: tax_below_maximum
+      no: 5
+      type: types.Decimal
+      db_name: tax_below_maximum
+      decimal_places: "2:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: tax_above_maximum
+      no: 6
+      type: types.Decimal
+      db_name: tax_above_maximum
+      decimal_places: "2:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: effective_date
+      no: 7
+      type: types.Date
+      db_name: effective_date
+      primary_key: true
+
+    - name: calculate_tax_on_tax
+      no: 8
+      type: bool
+      db_name: calculate_tax_on_tax
+      editable: false
+
+  keys:
+    - name: Primary
+      fields: [tax_jurisdiction_code, tax_group_code, tax_type, effective_date]
+      clustered: true

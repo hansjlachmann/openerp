@@ -1196,6 +1196,8 @@ func (t *Currency) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(CurrencyTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -1608,7 +1610,7 @@ func (t *Currency) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}},
+		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer Ledger Entry", false, "closed_by_currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "source_currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "closed_by_currency_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1930,7 +1932,7 @@ func (t *Currency) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
 				args = append(args, filter.maxValue)
 			} else if filter.blankDate {
-				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
@@ -2013,11 +2015,37 @@ func (t *Currency) FilterGroup(group ...int) int {
 	return t.filterGroup
 }
 
+// isKeyDateColumn: a Date column of the primary key (a blank date is types.BlankKeyDate)
+func (t *Currency) isKeyDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
+// isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
+func (t *Currency) isDateColumn(column string) bool {
+	switch column {
+	case "last_date_modified":
+		return true
+	case "last_date_adjusted":
+		return true
+	}
+	return false
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *Currency) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
+	// Blank dates are stored as NULL and come before every date
+	isDate := t.isDateColumn(fieldName)
+	orBlankDate := func(condition string) string {
+		if isDate {
+			return fmt.Sprintf("(%s OR %s IS NULL)", condition, fieldName)
+		}
+		return condition
+	}
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -2035,7 +2063,7 @@ func (t *Currency) parseFilterExpression(fieldName, expr string) (string, []inte
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
 					args = append(args, max)
 				case max == "":
 					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
@@ -2045,9 +2073,21 @@ func (t *Currency) parseFilterExpression(fieldName, expr string) (string, []inte
 					args = append(args, min, max)
 				}
 			}
+		} else if part == "''" {
+			// '' is the blank value
+			if isDate {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+				args = append(args, "")
+			}
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
-			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			if op == "<" || op == "<=" {
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
@@ -2057,8 +2097,15 @@ func (t *Currency) parseFilterExpression(fieldName, expr string) (string, []inte
 		} else if strings.HasPrefix(part, "<>") {
 			// Not equal
 			value := strings.TrimSpace(strings.TrimPrefix(part, "<>"))
-			conditions = append(conditions, fmt.Sprintf("%s <> ?", fieldName))
-			args = append(args, value)
+			if isDate && (value == "''" || value == "") {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NOT NULL AND %s <> '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				if value == "''" {
+					value = ""
+				}
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				args = append(args, value)
+			}
 		} else {
 			// Exact match
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
@@ -2349,9 +2396,11 @@ func (t *Currency) Count() int {
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *Currency) FindSet() bool {
-	// A temporary record reads all at once: its in-memory database has one connection, which
-	// an open result set would block (Modify while looping)
-	if t.temp != nil {
+	// A temporary record, and a record in a transaction, reads all at once: its in-memory
+	// database or the transaction has one connection, which an open result set would block for
+	// the statements of the loop (Modify while looping; on PostgreSQL a query while the rows are
+	// read breaks the connection — "unexpected Parse response")
+	if _, inTx := t.db.(*sql.Tx); t.temp != nil || inTx {
 		return t.FindSetBuffered()
 	}
 	// Close any existing result set
@@ -3770,10 +3819,14 @@ func (t *Currency) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *Currency) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, CurrencyTableName)
+	}
 	t.lockForUpdate = true
 }
 
@@ -4053,6 +4106,9 @@ func (t *Currency) findInKey(seek string, reverse bool) bool {
 			if !ok {
 				fmt.Printf("Error: Find(%q) on Currency needs a key of stored fields\n", seek)
 				return false
+			}
+			if t.isKeyDateColumn(column) {
+				v = types.KeyDate(v)
 			}
 			columns = append(columns, column)
 			values = append(values, v)

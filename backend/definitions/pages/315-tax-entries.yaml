@@ -1,0 +1,116 @@
+page:
+  id: 315
+  type: List
+  name: Tax Entries
+  source_table: Tax_Entry
+  caption: Tax Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+
+        - source: document_type
+          width: 120
+
+        - source: document_no
+          width: 110
+
+        - source: type
+          width: 100
+
+        - source: tax_jurisdiction_code
+          width: 120
+
+        - source: tax_group_used
+          width: 110
+
+        - source: tax_area_code
+          width: 110
+
+        - source: tax_group_code
+          width: 110
+
+        - source: tax_type
+          width: 110
+          visible: false
+
+        - source: tax_liable
+          width: 80
+
+        - source: use_tax
+          width: 80
+
+        - source: tax_on_tax
+          width: 80
+          visible: false
+
+        - source: base
+          width: 120
+
+        - source: amount
+          width: 120
+
+        - source: tax_calculation_type
+          width: 130
+          visible: false
+
+        - source: tax_bus_posting_group
+          width: 120
+          visible: false
+
+        - source: tax_prod_posting_group
+          width: 120
+          visible: false
+
+        - source: gen_bus_posting_group
+          width: 120
+          visible: false
+
+        - source: gen_prod_posting_group
+          width: 120
+          visible: false
+
+        - source: sell_to_buy_from_no
+          width: 120
+
+        - source: country_code
+          width: 90
+          visible: false
+
+        - source: external_document_no
+          width: 130
+          visible: false
+
+        - source: closed
+          width: 80
+          visible: false
+
+        - source: closed_by_entry_no
+          width: 90
+          visible: false
+
+        - source: user_id
+          width: 110
+          visible: false
+
+        - source: source_code
+          width: 110
+          visible: false
+
+        - source: reason_code
+          width: 110
+          visible: false
+
+        - source: transaction_no
+          width: 90
+          visible: false
+
+        - source: sales_tax_connection_no
+          width: 90
+          visible: false
+
+        - source: entry_no
+          width: 90

@@ -8,6 +8,19 @@ common:
 
   # Common actions
   actions:
+    setup: "Oppsett"
+    details: "Detaljer"
+    tax_register: "Mva.-journal"
+    apply_entries: "Utlign poster"
+    set_applies_to_id: "Angi utlignings-ID"
+    account: "Konto"
+    card: "Kort"
+    register: "Journal"
+    general_ledger: "Finans"
+    customer_ledger: "Kundeposter"
+    vendor_ledger: "Leverandørposter"
+    bank_account_ledger: "Bankkontoposter"
+    batches: "Kladder"
     depreciation_books: "Avskrivningsprofiler"
     maintenance_ledger_entries: "Vedlikeholdsposter"
     main_asset_components: "Hovedeiendelskomponenter"
@@ -64,6 +77,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    lines: "Linjer"
+    sales: "Salg"
+    purchases: "Kjøp"
     maintenance: "Vedlikehold"
     depreciation_books: "Avskrivningsprofiler"
     amounts: "Beløp"

@@ -803,6 +803,8 @@ func (t *ReminderText) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(ReminderTextTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -1263,7 +1265,7 @@ func (t *ReminderText) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
 				args = append(args, filter.maxValue)
 			} else if filter.blankDate {
-				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
@@ -1346,11 +1348,33 @@ func (t *ReminderText) FilterGroup(group ...int) int {
 	return t.filterGroup
 }
 
+// isKeyDateColumn: a Date column of the primary key (a blank date is types.BlankKeyDate)
+func (t *ReminderText) isKeyDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
+// isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
+func (t *ReminderText) isDateColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *ReminderText) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
+	// Blank dates are stored as NULL and come before every date
+	isDate := t.isDateColumn(fieldName)
+	orBlankDate := func(condition string) string {
+		if isDate {
+			return fmt.Sprintf("(%s OR %s IS NULL)", condition, fieldName)
+		}
+		return condition
+	}
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -1368,7 +1392,7 @@ func (t *ReminderText) parseFilterExpression(fieldName, expr string) (string, []
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
 					args = append(args, max)
 				case max == "":
 					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
@@ -1378,9 +1402,21 @@ func (t *ReminderText) parseFilterExpression(fieldName, expr string) (string, []
 					args = append(args, min, max)
 				}
 			}
+		} else if part == "''" {
+			// '' is the blank value
+			if isDate {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+				args = append(args, "")
+			}
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
-			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			if op == "<" || op == "<=" {
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
@@ -1390,8 +1426,15 @@ func (t *ReminderText) parseFilterExpression(fieldName, expr string) (string, []
 		} else if strings.HasPrefix(part, "<>") {
 			// Not equal
 			value := strings.TrimSpace(strings.TrimPrefix(part, "<>"))
-			conditions = append(conditions, fmt.Sprintf("%s <> ?", fieldName))
-			args = append(args, value)
+			if isDate && (value == "''" || value == "") {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NOT NULL AND %s <> '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				if value == "''" {
+					value = ""
+				}
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				args = append(args, value)
+			}
 		} else {
 			// Exact match
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
@@ -1566,9 +1609,11 @@ func (t *ReminderText) Count() int {
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *ReminderText) FindSet() bool {
-	// A temporary record reads all at once: its in-memory database has one connection, which
-	// an open result set would block (Modify while looping)
-	if t.temp != nil {
+	// A temporary record, and a record in a transaction, reads all at once: its in-memory
+	// database or the transaction has one connection, which an open result set would block for
+	// the statements of the loop (Modify while looping; on PostgreSQL a query while the rows are
+	// read breaks the connection — "unexpected Parse response")
+	if _, inTx := t.db.(*sql.Tx); t.temp != nil || inTx {
 		return t.FindSetBuffered()
 	}
 	// Close any existing result set
@@ -2254,10 +2299,14 @@ func (t *ReminderText) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *ReminderText) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, ReminderTextTableName)
+	}
 	t.lockForUpdate = true
 }
 
@@ -2540,6 +2589,9 @@ func (t *ReminderText) findInKey(seek string, reverse bool) bool {
 			if !ok {
 				fmt.Printf("Error: Find(%q) on Reminder_Text needs a key of stored fields\n", seek)
 				return false
+			}
+			if t.isKeyDateColumn(column) {
+				v = types.KeyDate(v)
 			}
 			columns = append(columns, column)
 			values = append(values, v)

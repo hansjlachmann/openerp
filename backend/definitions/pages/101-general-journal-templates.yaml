@@ -1,0 +1,90 @@
+page:
+  id: 101
+  type: List
+  name: General Journal Templates
+  source_table: Gen_Journal_Template
+  caption: General Journal Templates
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: name
+          width: 110
+
+        - source: description
+          width: 250
+
+        - source: type
+          width: 130
+
+        - source: recurring
+          width: 80
+
+        - source: bal_account_type
+          width: 130
+
+        - source: bal_account_no
+          width: 110
+
+        - source: no_series
+          width: 110
+
+        - source: posting_no_series
+          width: 110
+
+        - source: source_code
+          width: 110
+
+        - source: reason_code
+          width: 110
+
+        - source: force_doc_balance
+          width: 80
+
+        - source: page_id
+          width: 90
+          visible: false
+
+        - source: test_report_id
+          width: 90
+          visible: false
+
+        - source: posting_report_id
+          width: 90
+          visible: false
+
+        - source: force_posting_report
+          width: 80
+          visible: false
+
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true
+
+    - name: Batches
+      caption: Batches
+      image: Lines
+      promoted: true
+      run_page: 251
+      run_page_filter_field: journal_template_name
+      run_page_filter_value: name

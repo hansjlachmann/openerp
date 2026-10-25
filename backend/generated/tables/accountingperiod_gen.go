@@ -669,7 +669,7 @@ func (t *AccountingPeriod) GetByPK(starting_date types.Date) bool {
 
 	// Collect arguments for query
 	args := []interface{}{
-		starting_date,
+		types.KeyDate(starting_date),
 	}
 
 	// Build SQL with placeholders
@@ -725,7 +725,7 @@ func (t *AccountingPeriod) Insert(runTrigger bool) bool {
 
 	// Collect arguments for INSERT
 	args := []interface{}{
-		t.Starting_date,
+		types.KeyDate(t.Starting_date),
 		t.Name,
 		t.New_fiscal_year,
 		t.Closed,
@@ -750,6 +750,8 @@ func (t *AccountingPeriod) Insert(runTrigger bool) bool {
 		t.triggerErr = apperrors.TableRecordExists(AccountingPeriodTableName, key)
 		return false
 	}
+	// The record as written: its xRec from now on (a following Modify or Rename compares with it)
+	t.StoreOldValues()
 	return true
 }
 
@@ -770,7 +772,7 @@ func (t *AccountingPeriod) InsertAll(records []*AccountingPeriod, runTrigger boo
 			}
 		}
 		rows = append(rows, []interface{}{
-			r.Starting_date,
+			types.KeyDate(r.Starting_date),
 			r.Name,
 			r.New_fiscal_year,
 			r.Closed,
@@ -820,7 +822,7 @@ func (t *AccountingPeriod) Modify(runTrigger bool) bool {
 	if t.oldValues != nil {
 		if t.hasFieldChanged("starting_date") {
 			setClauses = append(setClauses, "starting_date = ?")
-			values = append(values, t.Starting_date)
+			values = append(values, types.KeyDate(t.Starting_date))
 		}
 		if t.hasFieldChanged("name") {
 			setClauses = append(setClauses, "name = ?")
@@ -857,9 +859,9 @@ func (t *AccountingPeriod) Modify(runTrigger bool) bool {
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
 	if old, ok := t.oldValues["starting_date"]; ok {
-		values = append(values, old)
+		values = append(values, types.KeyDate(old))
 	} else {
-		values = append(values, t.Starting_date)
+		values = append(values, types.KeyDate(t.Starting_date))
 	}
 
 	// Build and execute SQL
@@ -946,7 +948,7 @@ func (t *AccountingPeriod) Delete(runTrigger bool) bool {
 
 	// Collect arguments for DELETE
 	args := []interface{}{
-		t.Starting_date,
+		types.KeyDate(t.Starting_date),
 	}
 
 	// Build SQL with placeholders
@@ -1190,7 +1192,7 @@ func (t *AccountingPeriod) buildWhereClause() (string, []interface{}) {
 				conditions = append(conditions, fmt.Sprintf("(%s <= ? OR %s IS NULL)", filter.fieldName, filter.fieldName))
 				args = append(args, filter.maxValue)
 			} else if filter.blankDate {
-				conditions = append(conditions, fmt.Sprintf("%s IS NULL", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
 				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
 				args = append(args, filter.minValue, filter.maxValue)
@@ -1273,11 +1275,37 @@ func (t *AccountingPeriod) FilterGroup(group ...int) int {
 	return t.filterGroup
 }
 
+// isKeyDateColumn: a Date column of the primary key (a blank date is types.BlankKeyDate)
+func (t *AccountingPeriod) isKeyDateColumn(column string) bool {
+	switch column {
+	case "starting_date":
+		return true
+	}
+	return false
+}
+
+// isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
+func (t *AccountingPeriod) isDateColumn(column string) bool {
+	switch column {
+	case "starting_date":
+		return true
+	}
+	return false
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *AccountingPeriod) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
 	var conditions []string
 	var args []interface{}
+	// Blank dates are stored as NULL and come before every date
+	isDate := t.isDateColumn(fieldName)
+	orBlankDate := func(condition string) string {
+		if isDate {
+			return fmt.Sprintf("(%s OR %s IS NULL)", condition, fieldName)
+		}
+		return condition
+	}
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -1295,7 +1323,7 @@ func (t *AccountingPeriod) parseFilterExpression(fieldName, expr string) (string
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, fmt.Sprintf("%s <= ?", fieldName))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
 					args = append(args, max)
 				case max == "":
 					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
@@ -1305,9 +1333,21 @@ func (t *AccountingPeriod) parseFilterExpression(fieldName, expr string) (string
 					args = append(args, min, max)
 				}
 			}
+		} else if part == "''" {
+			// '' is the blank value
+			if isDate {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+				args = append(args, "")
+			}
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
-			conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			if op == "<" || op == "<=" {
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+			} else {
+				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
 			// Wildcard support: convert * to %
@@ -1317,8 +1357,15 @@ func (t *AccountingPeriod) parseFilterExpression(fieldName, expr string) (string
 		} else if strings.HasPrefix(part, "<>") {
 			// Not equal
 			value := strings.TrimSpace(strings.TrimPrefix(part, "<>"))
-			conditions = append(conditions, fmt.Sprintf("%s <> ?", fieldName))
-			args = append(args, value)
+			if isDate && (value == "''" || value == "") {
+				conditions = append(conditions, fmt.Sprintf("(%s IS NOT NULL AND %s <> '%s')", fieldName, fieldName, types.BlankKeyDate))
+			} else {
+				if value == "''" {
+					value = ""
+				}
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				args = append(args, value)
+			}
 		} else {
 			// Exact match
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
@@ -1501,9 +1548,11 @@ func (t *AccountingPeriod) Count() int {
 // Call Next() to iterate through the results
 // Returns true if at least one record found, false otherwise
 func (t *AccountingPeriod) FindSet() bool {
-	// A temporary record reads all at once: its in-memory database has one connection, which
-	// an open result set would block (Modify while looping)
-	if t.temp != nil {
+	// A temporary record, and a record in a transaction, reads all at once: its in-memory
+	// database or the transaction has one connection, which an open result set would block for
+	// the statements of the loop (Modify while looping; on PostgreSQL a query while the rows are
+	// read breaks the connection — "unexpected Parse response")
+	if _, inTx := t.db.(*sql.Tx); t.temp != nil || inTx {
 		return t.FindSetBuffered()
 	}
 	// Close any existing result set
@@ -2116,10 +2165,14 @@ func (t *AccountingPeriod) CalcSums(fieldNames ...string) error {
 	return nil
 }
 
-// LockTable makes the following reads (Get, FindFirst, FindLast, FindSet) lock the rows they
-// read until the transaction ends (SELECT … FOR UPDATE on Postgres; SQLite locks the whole
-// database on write anyway). Use it inside a transaction.
+// LockTable locks the table until the transaction ends (classic LOCKTABLE): on Postgres a
+// table lock (tables.LockTable) and the following reads (Get, FindFirst, FindLast, FindSet)
+// lock the rows they read (SELECT … FOR UPDATE); SQLite locks the whole database on write
+// anyway. Use it inside a transaction.
 func (t *AccountingPeriod) LockTable() {
+	if !t.lockForUpdate {
+		tables.LockTable(t.db, t.dbType, t.company, AccountingPeriodTableName)
+	}
 	t.lockForUpdate = true
 }
 
@@ -2279,7 +2332,7 @@ func (t *AccountingPeriod) SetRecFilter() {
 
 // recordKey returns the primary key values of the current record and their text
 func (t *AccountingPeriod) recordKey() ([]interface{}, string) {
-	values := []interface{}{t.Starting_date}
+	values := []interface{}{types.KeyDate(t.Starting_date)}
 	parts := make([]string, len(values))
 	for i, v := range values {
 		parts[i] = fmt.Sprint(v)
@@ -2399,6 +2452,9 @@ func (t *AccountingPeriod) findInKey(seek string, reverse bool) bool {
 			if !ok {
 				fmt.Printf("Error: Find(%q) on Accounting_Period needs a key of stored fields\n", seek)
 				return false
+			}
+			if t.isKeyDateColumn(column) {
+				v = types.KeyDate(v)
 			}
 			columns = append(columns, column)
 			values = append(values, v)

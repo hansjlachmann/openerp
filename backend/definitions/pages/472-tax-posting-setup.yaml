@@ -1,0 +1,79 @@
+page:
+  id: 472
+  type: List
+  name: Tax Posting Setup
+  source_table: Tax_Posting_Setup
+  caption: Tax Posting Setup
+  editable: true
+  copy_paste_allowed: true
+  delayed_insert: true
+  # Posting: only Sales Tax lines are posted so far (VAT calculation types are refused)
+
+  layout:
+    repeater:
+      fields:
+        - source: tax_bus_posting_group
+          width: 120
+
+        - source: tax_prod_posting_group
+          width: 120
+
+        - source: tax_calculation_type
+          width: 140
+
+        - source: vat_percent
+          width: 90
+
+        - source: unrealized_tax_type
+          width: 130
+          visible: false
+
+        - source: adjust_for_payment_discount
+          width: 90
+          visible: false
+
+        - source: sales_vat_account
+          width: 110
+          visible: false
+
+        - source: sales_vat_unreal_account
+          width: 110
+          visible: false
+
+        - source: purchase_vat_account
+          width: 110
+          visible: false
+
+        - source: purch_vat_unreal_account
+          width: 110
+          visible: false
+
+        - source: reverse_chrg_vat_acc
+          width: 110
+          visible: false
+
+        - source: reverse_chrg_vat_unreal_acc
+          width: 110
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

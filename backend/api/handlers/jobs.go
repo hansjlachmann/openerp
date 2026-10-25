@@ -63,6 +63,13 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		Record   map[string]interface{} `json:"record"`
 		// The records selected on the list (rec.SetSelectionFilter in the codeunit)
 		Selection *listSelection `json:"selection"`
+		// The list's filters: the record carries them (fixed filters in filter group 2, the
+		// user's in group 0), so the codeunit works on what the list shows (a journal's batch)
+		FixedFilters []fixedFilterParam `json:"fixed_filters"`
+		Filters      []filterParam      `json:"filters"`
+		// The page's parameters (a page opened from code with parameters): its functions read
+		// them with system.PageParam
+		PageParams map[string]string `json:"page_params"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.InvalidRequestBody().Message(language)))
@@ -136,6 +143,12 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		if err := applySelection(c, table, req.Selection, newTable, language); err != nil {
 			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 		}
+		if err := applyFixedFilters(table, req.FixedFilters, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
+		if err := applyFieldFilters(table, req.Filters, tableName, language); err != nil {
+			return c.Status(400).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+		}
 	}
 
 	// Check if codeunit uses progress - if not, run synchronously
@@ -143,6 +156,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// Set context for sync execution (same goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
 		fcodeunits.SetCurrentAccess(sess)
+		fcodeunits.SetCurrentPageParams(req.PageParams)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Run synchronously and return result directly
@@ -183,6 +197,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// Set context for async execution (new goroutine)
 		fcodeunits.SetCurrentContext(userID, userName, company, language)
 		fcodeunits.SetCurrentAccess(sess)
+		fcodeunits.SetCurrentPageParams(req.PageParams)
 		defer fcodeunits.ClearCurrentContext()
 
 		// Set dialog in context for the codeunit to use
@@ -219,8 +234,8 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 			}
 			dialog.CloseWithData(result.Data, message)
 		} else if result.Dialog != nil {
-			dialog.UpdateWithMessage(0, 100, result.Dialog.Message)
-			dialog.Close()
+			// The codeunit's closing message box (Message): the page shows it
+			dialog.CloseWithData(map[string]interface{}{"dialog": result.Dialog}, result.Dialog.Message)
 		} else {
 			dialog.Close()
 		}

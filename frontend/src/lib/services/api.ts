@@ -8,7 +8,8 @@ import type {
 	LookupData,
 	CodeunitResult,
 	ValidateFieldResult,
-	TableFilter
+	TableFilter,
+	FixedFilter
 } from '$types/api';
 import type { Appearance, AppearanceSettings, ThemeInstallResult, ThemeList } from '$lib/theme/apply';
 import { handleApiResponse, handleApiResponseVoid, handleApiResponseFull, handleApiResponseWithCaptions, type DataWithCaptions } from '$lib/utils/apiHelpers';
@@ -60,6 +61,9 @@ export function buildQueryString(options?: ListOptions): string {
 		params.append('fields', JSON.stringify(options.fields));
 	}
 	if (options.page_id) params.append('page_id', options.page_id.toString());
+	if (options.page_params && Object.keys(options.page_params).length > 0) {
+		params.append('page_params', JSON.stringify(options.page_params));
+	}
 
 	return params.toString();
 }
@@ -210,8 +214,10 @@ export const api = {
 		};
 	},
 
-	async insertRecord<T = TableRecord>(tableName: string, data: Partial<T>): Promise<T> {
-		const response = await fetch(`${API_BASE}/tables/${tableName}/insert`, {
+	// pageId: a list saving its row — the response also carries the page's calculated fields of
+	// the row (its footer)
+	async insertRecord<T = TableRecord>(tableName: string, data: Partial<T>, pageId?: number): Promise<T> {
+		const response = await fetch(`${API_BASE}/tables/${tableName}/insert${pageId ? `?page_id=${pageId}` : ''}`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
@@ -219,12 +225,25 @@ export const api = {
 		return handleApiResponse<T>(response, `insert ${tableName}`);
 	},
 
+	// A page's OnOpenPage trigger (a journal): its parameters as the trigger left them, the
+	// filters of its list (filter group 2) and, when the user must pick a record first, the page
+	// to pick from
+	async openPage(pageId: number, params: Record<string, string>): Promise<OpenPageResult> {
+		const response = await fetch(`${API_BASE}/pages/${pageId}/open`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ params })
+		});
+		return handleApiResponse<OpenPageResult>(response, `open page ${pageId}`);
+	},
+
 	async modifyRecord<T = TableRecord>(
 		tableName: string,
 		id: string,
-		data: Partial<T>
+		data: Partial<T>,
+		pageId?: number
 	): Promise<T> {
-		const response = await fetch(recordUrl(tableName, 'modify', id), {
+		const response = await fetch(recordUrl(tableName, 'modify', id) + (pageId ? `?page_id=${pageId}` : ''), {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
@@ -457,3 +476,9 @@ export const api = {
 		}
 	}
 };
+
+export interface OpenPageResult {
+	params: Record<string, string>;
+	fixed_filters: FixedFilter[];
+	select: { page_id: number; param: string; field: string; filters?: FixedFilter[] } | null;
+}

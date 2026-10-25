@@ -37,3 +37,11 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    - name: Setup
+      caption: Setup
+      image: Setup
+      promoted: true
+      run_page: 472
+      run_page_filter_field: tax_prod_posting_group
+      run_page_filter_value: code

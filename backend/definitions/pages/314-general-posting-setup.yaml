@@ -1,0 +1,83 @@
+page:
+  id: 314
+  type: List
+  name: General Posting Setup
+  source_table: General_Posting_Setup
+  caption: General Posting Setup
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: gen_bus_posting_group
+          width: 120
+
+        - source: gen_prod_posting_group
+          width: 120
+
+        - source: sales_account
+          width: 110
+
+        - source: sales_credit_memo_account
+          width: 110
+
+        - source: sales_line_disc_account
+          width: 110
+
+        - source: sales_inv_disc_account
+          width: 110
+
+        - source: sales_payment_disc_account
+          width: 110
+
+        - source: purch_account
+          width: 110
+
+        - source: purch_credit_memo_account
+          width: 110
+
+        - source: purch_line_disc_account
+          width: 110
+
+        - source: purch_inv_disc_account
+          width: 110
+
+        - source: purch_payment_disc_account
+          width: 110
+
+        - source: cogs_account
+          width: 110
+
+        - source: inventory_adjmt_account
+          width: 110
+
+        - source: job_sales_adjmt_account
+          width: 110
+          visible: false
+
+        - source: job_cost_adjmt_account
+          width: 110
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

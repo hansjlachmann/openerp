@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dropdownPageSize, pageIndex } from '$utils/dropdownPaging';
 	import { cn } from '$lib/utils/cn';
 	import { clickOutside } from '$lib/actions/clickOutside';
 
@@ -114,6 +115,14 @@
 				e.preventDefault();
 				if (isOpen) {
 					selectedIndex = Math.max(selectedIndex - 1, 0);
+				}
+				break;
+			case 'PageDown':
+			case 'PageUp':
+				// A page of rows down / up in the open list (long lists: G/L accounts)
+				if (isOpen) {
+					e.preventDefault();
+					selectedIndex = pageIndex(selectedIndex, entries.length, dropdownPageSize(bodyRef, '.option-row'), e.key === 'PageDown' ? 1 : -1);
 				}
 				break;
 			case 'Enter':

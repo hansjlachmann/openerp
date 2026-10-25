@@ -225,3 +225,18 @@ func (d Date) Value() (driver.Value, error) {
 	}
 	return d.String(), nil
 }
+
+// BlankKeyDate is how a blank date is stored in a primary key column: a key column cannot hold
+// NULL (PostgreSQL) and NULL never equals itself in a key lookup. It reads back as the blank
+// date (the zero time) and sorts before every date.
+const BlankKeyDate = "0001-01-01"
+
+// KeyDate is the database value of a primary key field: a blank date becomes BlankKeyDate, other
+// values are unchanged
+func KeyDate(v interface{}) interface{} {
+	d, ok := v.(Date)
+	if ok && d.IsZero() {
+		return BlankKeyDate
+	}
+	return v
+}

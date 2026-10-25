@@ -1,0 +1,228 @@
+table:
+  id: 242
+  name: "Source_Code_Setup"
+  caption: Source Code Setup
+  description: "Source code setup (table 242): the source code of each journal and posting routine, a single record per company"
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: sales
+      no: 2
+      type: types.Code
+      db_name: sales
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: purchases
+      no: 3
+      type: types.Code
+      db_name: purchases
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: exchange_rate_adjmt
+      no: 5
+      type: types.Code
+      db_name: exchange_rate_adjmt
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: close_income_statement
+      no: 8
+      type: types.Code
+      db_name: close_income_statement
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: general_journal
+      no: 10
+      type: types.Code
+      db_name: general_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: sales_journal
+      no: 11
+      type: types.Code
+      db_name: sales_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: purchase_journal
+      no: 12
+      type: types.Code
+      db_name: purchase_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: cash_receipt_journal
+      no: 13
+      type: types.Code
+      db_name: cash_receipt_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: payment_journal
+      no: 14
+      type: types.Code
+      db_name: payment_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: sales_entry_application
+      no: 21
+      type: types.Code
+      db_name: sales_entry_application
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: purchase_entry_application
+      no: 22
+      type: types.Code
+      db_name: purchase_entry_application
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_settlement
+      no: 23
+      type: types.Code
+      db_name: tax_settlement
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: financially_voided_check
+      no: 37
+      type: types.Code
+      db_name: financially_voided_check
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: finance_charge_memo
+      no: 38
+      type: types.Code
+      db_name: finance_charge_memo
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reminder
+      no: 39
+      type: types.Code
+      db_name: reminder
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

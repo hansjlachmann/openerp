@@ -9,8 +9,6 @@ page:
   editable: true
   focus_field: "code"
 
-  # The classic card shows the area's lines (Tax Area Line 319 → Tax Jurisdiction 320) as a
-  # subpage: they come with those tables
   layout:
     sections:
       - name: General
@@ -20,6 +18,14 @@ page:
             importance: Promoted
           - source: description
             importance: Promoted
+
+      # The area's jurisdictions (Tax Area Line), in their calculation order
+      - name: Lines
+        caption: Lines
+        subpage:
+          page_id: 465
+          link:
+            tax_area: code
 
   actions:
     - name: Back to List

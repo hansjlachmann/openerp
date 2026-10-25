@@ -86,6 +86,8 @@
 		// change them; new records get their values (newRecordDefaults)
 		fixedFilters?: FixedFilter[];
 		newRecordDefaults?: Record<string, any>;
+		// The page's parameters (a page opened from code): its functions read them
+		pageParams?: Record<string, string>;
 		// The record the cursor is on (RunModal lookup: OK picks it)
 		oncurrent?: (record: Record<string, any> | undefined) => void;
 		onaction?: (actionName: string, record?: Record<string, any>) => void;
@@ -121,6 +123,7 @@
 		subpage = false,
 		fixedFilters = [],
 		newRecordDefaults = {},
+		pageParams = {},
 		oncurrent,
 		onaction,
 		onrowclick,
@@ -212,6 +215,7 @@
 		filters: import('$lib/types/api').TableFilter[];
 		select?: string;
 		lookupMode: boolean;
+		params?: Record<string, string>; // the page's parameters (Page.SetParam)
 		respond: (values: Record<string, string> | null) => void;
 	} | null>(null);
 	let progressTitle = $state(t(MSG.PROCESSING));
@@ -702,6 +706,7 @@
 						filters: (data.filters as import('$lib/types/api').TableFilter[]) ?? [],
 						select: (data.select as string) || undefined,
 						lookupMode: data.lookup_mode === true,
+						params: (data.params as Record<string, string>) ?? undefined,
 						respond
 					};
 				},
@@ -734,13 +739,22 @@
 						toast.error(syncResult.message || t(ERR.CODEUNIT_FAILED));
 					}
 				}
-			}, jobSelection, isFunction ? 'function' : isReport ? 'report' : 'codeunit', isFunction ? runObject : undefined);
+			}, jobSelection, isFunction ? 'function' : isReport ? 'report' : 'codeunit', isFunction ? runObject : undefined, {
+				filters: cardNavigationQuery?.filters,
+				fixed_filters: cardNavigationQuery?.fixed_filters,
+				page_params: pageParams
+			});
 
 			// For async jobs, keep modal open briefly to show 100%
 			if (result && 'job_id' in result) {
 				await new Promise((resolve) => setTimeout(resolve, 500));
 				progressModalOpen = false;
-				if (!progressError) {
+				// The codeunit's closing message box (Message), else a plain notice
+				const finalDialog = (result as { data?: Record<string, unknown> }).data?.dialog as DialogResult | undefined;
+				if (!progressError && finalDialog) {
+					dialogData = finalDialog;
+					dialogOpen = true;
+				} else if (!progressError) {
 					toast.success(t(MSG.JOB_COMPLETED));
 				}
 				// Refresh list data to reflect changes (e.g. new entries, status updates)
@@ -751,6 +765,23 @@
 			progressModalOpen = false;
 			toast.error(errMsg);
 		}
+	}
+
+	// The footer shows the calculated fields of the cursor row (selected row, or the row of the
+	// selected/edited cell)
+	function footerRecord(): Record<string, any> | undefined {
+		const row = isNavigation ? selectedIndex : currentCellRow;
+		return row >= 0 ? displayRecords[row] : undefined;
+	}
+	function formatFooterValue(value: any, field: Field): string {
+		if (value === undefined || value === null) return '';
+		if (typeof value === 'number' || (typeof value === 'string' && field.decimal_places)) return formatDecimal(value, field.decimal_places);
+		return String(value);
+	}
+
+	// A saved row comes back with the page's calculated fields (the footer follows the edit)
+	function rowPageId(): number | undefined {
+		return page.page.has_record_triggers ? page.page.id : undefined;
 	}
 
 	// The page's actions with the items of its menu buttons (one list for names and shortcuts)
@@ -1145,7 +1176,7 @@
 
 				const tempId = record._tempId;
 				saveState = 'saving';
-				const savedRecord = await api.insertRecord(page.page.source_table, stripInternalFields(record));
+				const savedRecord = await api.insertRecord(page.page.source_table, stripInternalFields(record), rowPageId());
 				// Update the row in place, keeping _tempId so Svelte's keyed each stays stable.
 				// Find it by _tempId: an await can race with rows being removed or with
 				// exitToNavigation() clearing editableRecords.
@@ -1166,7 +1197,7 @@
 				// Existing record - update it (recordId may be "" for a blank-PK setup record)
 				const _tempId = record._tempId;
 				saveState = 'saving';
-				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, stripInternalFields(record));
+				const savedRecord = await api.modifyRecord(page.page.source_table, recordId, stripInternalFields(record), rowPageId());
 				// Update the row object itself (not by index: the displayed order can differ from
 				// editableRecords, and an await can race with exitToNavigation() clearing it;
 				// updating a detached row is harmless). Keep any _tempId.
@@ -3466,6 +3497,19 @@
 		</div>
 	</div>
 
+	<!-- Footer: calculated fields of the cursor row (a journal's Account Name, Balance) -->
+	{#if page.page.footer?.length}
+		{@const footerRow = footerRecord()}
+		<div class="list-footer">
+			{#each page.page.footer as field (field.source)}
+				<div class="footer-field" data-footer-field={field.source}>
+					<span class="footer-caption">{getFieldCaption(field.source, captions, field.caption)}</span>
+					<span class="footer-value">{footerRow ? formatFooterValue(footerRow[field.source], field) : ''}</span>
+				</div>
+			{/each}
+		</div>
+	{/if}
+
 	<div class="status-bar">
 		<span class="text-sm text-gray-600 dark:text-gray-400">
 			{total === 1 ? t(LIST.RECORD_COUNT_ONE) : t(LIST.RECORD_COUNT, total.toLocaleString(locale))}{searchQuery ? ' ' + t(LIST.FILTERED) : ''}
@@ -3562,9 +3606,12 @@
 				initialFilters={request.filters}
 				initialSelect={request.select}
 				lookupMode={request.lookupMode}
+				openParams={request.params}
 				onclose={(action, key) => {
+					// respond first: {@const request} follows runPage, which is cleared next
+					const respond = request.respond;
+					respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 					runPage = null;
-					request.respond(action === 'Cancel' ? null : { action, key: key ?? '' });
 				}}
 			/>
 		</div>
@@ -3890,6 +3937,32 @@
 		vertical-align: bottom;
 	}
 
+	.list-footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 2rem;
+		padding: 0.5rem 1rem;
+		border-top: 1px solid rgb(var(--gray-200));
+	}
+	:global(.dark) .list-footer {
+		border-top-color: rgb(var(--gray-700));
+	}
+	.footer-field {
+		display: flex;
+		gap: 0.5rem;
+		align-items: baseline;
+		font-size: 0.875rem;
+	}
+	.footer-caption {
+		color: rgb(var(--gray-600));
+	}
+	:global(.dark) .footer-caption {
+		color: rgb(var(--gray-400));
+	}
+	.footer-value {
+		min-width: 6rem;
+		font-variant-numeric: tabular-nums;
+	}
 	.status-bar {
 		@apply px-4 py-2 bg-gray-50 border-t border-gray-200 rounded-b;
 	}

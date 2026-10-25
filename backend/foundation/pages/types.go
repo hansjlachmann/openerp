@@ -32,6 +32,16 @@ type PageMetadata struct {
 	FocusField   string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
 	Layout       Layout   `yaml:"layout" json:"layout"`
 	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	// HeaderFields (list pages): fields above the list that are not table fields (classic page
+	// variables, e.g. a journal's Batch Name) — each edits a parameter of the page's OnOpenPage
+	// trigger, which turns it into the list's filters
+	HeaderFields []HeaderField `yaml:"header_fields,omitempty" json:"header_fields,omitempty"`
+	// Footer (list pages): calculated fields shown under the list for the cursor row (a
+	// journal's Account Name, Balance, Total Balance); OnAfterGetRecord fills them per row
+	Footer []Field `yaml:"footer,omitempty" json:"footer,omitempty"`
+	// HasOpenTrigger (populated at request time): the page has an OnOpenPage trigger — the
+	// page asks POST /api/pages/:id/open for its filters before it loads its records
+	HasOpenTrigger bool `yaml:"-" json:"has_open_trigger,omitempty"`
 	// DataCaptionFields (populated at request time from the table's data_caption_fields): the
 	// fields whose values a card shows in its title
 	DataCaptionFields []string `yaml:"-" json:"data_caption_fields,omitempty"`
@@ -59,6 +69,19 @@ type PageMetadata struct {
 	// FlowFilterFields (populated at request time): the source table's FlowFilter fields
 	// (e.g. Date Filter), offered in the filter pane under "Filter totals by"
 	FlowFilterFields []FlowFilterField `yaml:"-" json:"flow_filter_fields,omitempty"`
+}
+
+// HeaderField is a field above a list (a page variable): it shows and edits the page parameter
+// Param of the OnOpenPage trigger (e.g. batch). Source names the list field it stands for (its
+// caption and type); its lookup opens LookupPage filtered to the list's filters on the fields
+// of LookupFilters (lookup field → list field) and takes the picked record's LookupField.
+type HeaderField struct {
+	Param         string            `yaml:"param" json:"param"`
+	Source        string            `yaml:"source" json:"source"`
+	Caption       string            `yaml:"caption,omitempty" json:"caption,omitempty"`
+	LookupPage    int               `yaml:"lookup_page,omitempty" json:"lookup_page,omitempty"`
+	LookupField   string            `yaml:"lookup_field,omitempty" json:"lookup_field,omitempty"`
+	LookupFilters map[string]string `yaml:"lookup_filters,omitempty" json:"lookup_filters,omitempty"`
 }
 
 // FlowFilterField is a FlowFilter field as the page sends it: name, kind and caption
@@ -146,11 +169,15 @@ type StyleExpr struct {
 }
 
 // RunPageFilter is one filter of an action's run_page: Field of the opened page = this record's
-// Value field, or Const
+// Value field, or Const, or the range From..To of two of its fields
 type RunPageFilter struct {
 	Field string `yaml:"field" json:"field"`
 	Value string `yaml:"value,omitempty" json:"value,omitempty"`
 	Const string `yaml:"const,omitempty" json:"const,omitempty"`
+	// From / To: a range of this record's two fields (from..to), e.g. a G/L Register's
+	// From Entry No. .. To Entry No.
+	From string `yaml:"from,omitempty" json:"from,omitempty"`
+	To   string `yaml:"to,omitempty" json:"to,omitempty"`
 }
 
 // Action represents a page action/button
@@ -240,6 +267,8 @@ func (p *PageDefinition) Clone() *PageDefinition {
 		m.Layout.Repeater = &r
 	}
 	m.Actions = cloneActions(p.Page.Actions)
+	m.HeaderFields = append([]HeaderField(nil), p.Page.HeaderFields...)
+	m.Footer = append([]Field(nil), p.Page.Footer...)
 	m.PrimaryKeyFields = append([]string(nil), p.Page.PrimaryKeyFields...)
 	m.FlowFields = append([]string(nil), p.Page.FlowFields...)
 	m.SortableFlowFields = append([]string(nil), p.Page.SortableFlowFields...)

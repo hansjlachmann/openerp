@@ -37,3 +37,11 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    - name: Details
+      caption: Details
+      image: Lines
+      promoted: true
+      run_page: 468
+      run_page_filter_field: tax_group_code
+      run_page_filter_value: code

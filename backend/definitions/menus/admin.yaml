@@ -19,6 +19,7 @@ menu:
         page_id: 113
       - separator: true
       - name: "General Journals"
+        page_id: 39
       - separator: true
       - name: "Reports"
       - name: "Registers"
@@ -27,6 +28,8 @@ menu:
         page_id: 20
       - name: "Bank Account Ledger Entries"
         page_id: 372
+      - name: "Tax Entries"
+        page_id: 315
       - name: "Navigate"
         page_id: 344
       - separator: true
@@ -205,7 +208,9 @@ menu:
         page_id: 22
       - separator: true
       - name: "Sales Journals"
+        page_id: 253
       - name: "Cash Receipt Journals"
+        page_id: 255
       - separator: true
       - name: "Quotes"
         page_id: 41
@@ -298,7 +303,9 @@ menu:
         page_id: 27
       - separator: true
       - name: "Purchase Journals"
+        page_id: 254
       - name: "Payment Journals"
+        page_id: 256
       - separator: true
       - name: "Requisition Worksheets"
       - name: "Quotes"

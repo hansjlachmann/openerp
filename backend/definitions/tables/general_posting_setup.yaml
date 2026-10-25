@@ -1,0 +1,240 @@
+table:
+  id: 252
+  name: "General_Posting_Setup"
+  caption: General Posting Setup
+  description: "General posting setup (table 252): the G/L accounts of each combination of general business and product posting group"
+  lookup_page_id: 314
+  fields:
+    - name: gen_bus_posting_group
+      no: 1
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 2
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: sales_account
+      no: 10
+      type: types.Code
+      db_name: sales_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_line_disc_account
+      no: 11
+      type: types.Code
+      db_name: sales_line_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_inv_disc_account
+      no: 12
+      type: types.Code
+      db_name: sales_inv_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_payment_disc_account
+      no: 13
+      type: types.Code
+      db_name: sales_payment_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_account
+      no: 14
+      type: types.Code
+      db_name: purch_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_line_disc_account
+      no: 15
+      type: types.Code
+      db_name: purch_line_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_inv_disc_account
+      no: 16
+      type: types.Code
+      db_name: purch_inv_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_payment_disc_account
+      no: 17
+      type: types.Code
+      db_name: purch_payment_disc_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: cogs_account
+      no: 18
+      type: types.Code
+      db_name: cogs_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: inventory_adjmt_account
+      no: 19
+      type: types.Code
+      db_name: inventory_adjmt_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: job_sales_adjmt_account
+      no: 24
+      type: types.Code
+      db_name: job_sales_adjmt_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: job_cost_adjmt_account
+      no: 25
+      type: types.Code
+      db_name: job_cost_adjmt_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sales_credit_memo_account
+      no: 27
+      type: types.Code
+      db_name: sales_credit_memo_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: purch_credit_memo_account
+      no: 28
+      type: types.Code
+      db_name: purch_credit_memo_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [gen_bus_posting_group, gen_prod_posting_group]
+      clustered: true
+    - name: product
+      fields: [gen_prod_posting_group, gen_bus_posting_group]

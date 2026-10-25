@@ -119,7 +119,10 @@ export async function startJob(
 	callbacks: JobCallbacks = {},
 	selection?: JobSelection,
 	objectType: 'codeunit' | 'report' | 'function' = 'codeunit', // a report: its number is in codeunitId
-	functionName?: string // objectType 'function': "table:Job_Queue_Entry.ShowLineNo"
+	functionName?: string, // objectType 'function': "table:Job_Queue_Entry.ShowLineNo"
+	// The list's filters: the codeunit's record carries them (a journal's Post works on the batch
+	// the list shows)
+	listFilters?: Pick<ListOptions, 'filters' | 'fixed_filters' | 'page_params'>
 ): Promise<ProgressEvent | SyncJobResult | null> {
 	// Start the job; a list's selection (all: with the list's query) goes along for
 	// rec.SetSelectionFilter in the codeunit
@@ -134,7 +137,10 @@ export async function startJob(
 					? { report_id: codeunitId }
 					: { codeunit_id: codeunitId }),
 			record,
-			...(selection ? { selection: { keys: selection.keys, all: selection.all } } : {})
+			...(selection ? { selection: { keys: selection.keys, all: selection.all } } : {}),
+			...(listFilters?.filters?.length ? { filters: listFilters.filters } : {}),
+			...(listFilters?.fixed_filters?.length ? { fixed_filters: listFilters.fixed_filters } : {}),
+			...(listFilters?.page_params && Object.keys(listFilters.page_params).length ? { page_params: listFilters.page_params } : {})
 		})
 	});
 

@@ -44,6 +44,12 @@ master_data:
       - {code: GENJNL, description: General journal}
       - {code: SALES, description: Sales}
       - {code: PURCHASES, description: Purchases}
+      - {code: SALESJNL, description: Sales journal}
+      - {code: PURCHJNL, description: Purchase journal}
+      - {code: CASHRECJNL, description: Cash receipt journal}
+      - {code: PAYMENTJNL, description: Payment journal}
+      - {code: SALESAPPL, description: Sales entry application}
+      - {code: PURCHAPPL, description: Purchase entry application}
   - table: Reason_Code
     records:
       - {code: CORRECTION, description: Correction of an entry}
@@ -56,6 +62,7 @@ master_data:
     records:
       - {code: TAXABLE, description: Taxable}
       - {code: NONTAXABLE, description: Not taxable}
+      - {code: REDUCED, description: Reduced rate}
   - table: Gen_Business_Posting_Group
     records:
       - {code: DOMESTIC, description: Domestic customers and vendors, def_tax_bus_posting_group: DOMESTIC}
@@ -117,16 +124,16 @@ master_data:
       - {no: "2999", name: "Total Liabilities and Equity", account_type: 4, income_balance: 1, direct_posting: false}
       - {no: "3000", name: "INCOME STATEMENT", account_type: 1, income_balance: 0, direct_posting: false}
       - {no: "3100", name: "Revenue", account_type: 3, income_balance: 0, direct_posting: false}
-      - {no: "3110", name: "Sales, Retail Domestic", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "3120", name: "Sales, Retail Export", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT}
-      - {no: "3130", name: "Sales, Services", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "3140", name: "Sales, Food", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: REDUCED}
+      - {no: "3110", name: "Sales, Retail Domestic", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
+      - {no: "3120", name: "Sales, Retail Export", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT, tax_area_code: ABROAD, tax_liable: false, tax_group_code: NONTAXABLE}
+      - {no: "3130", name: "Sales, Services", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
+      - {no: "3140", name: "Sales, Food", account_type: 0, income_balance: 0, gen_posting_type: 2, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: REDUCED, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: REDUCED}
       - {no: "3150", name: "Sales Discounts", account_type: 0, income_balance: 0}
       - {no: "3199", name: "Total Revenue", account_type: 4, income_balance: 0, direct_posting: false}
       - {no: "4000", name: "Cost of Goods Sold", account_type: 3, income_balance: 0, direct_posting: false}
-      - {no: "4110", name: "Cost of Materials", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
-      - {no: "4120", name: "Cost of Retail Goods", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT}
-      - {no: "4130", name: "Freight In", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD}
+      - {no: "4110", name: "Cost of Materials", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
+      - {no: "4120", name: "Cost of Retail Goods", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT, tax_area_code: ABROAD, tax_liable: false, tax_group_code: NONTAXABLE}
+      - {no: "4130", name: "Freight In", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
       - {no: "4140", name: "Inventory Adjustment", account_type: 0, income_balance: 0}
       - {no: "4199", name: "Total Cost of Goods Sold", account_type: 4, income_balance: 0, direct_posting: false}
       - {no: "4900", name: "GROSS PROFIT", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3100..4199"}
@@ -175,6 +182,39 @@ master_data:
       - {no: "6170", name: "Unrealized Exchange Losses", account_type: 0, income_balance: 0}
       - {no: "6199", name: "Total Financial Items", account_type: 4, income_balance: 0, direct_posting: false}
       - {no: "8999", name: "NET INCOME", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3000..6999"}
+  - table: Tax_Jurisdiction   # sales tax: the domestic tax on the demo's tax accounts
+    records:
+      - {code: "NO", description: Norway, tax_account_sales: "2330", tax_account_purchases: "1440", reverse_charge_purchases: "2330", report_to_jurisdiction: "NO"}
+  - table: Tax_Area_Line
+    records:
+      - {tax_area: DOMESTIC, tax_jurisdiction_code: "NO"}
+  - table: Tax_Detail   # the rates of the demo tax groups
+    records:
+      - {tax_jurisdiction_code: "NO", tax_group_code: TAXABLE, tax_type: 0, tax_below_maximum: 25}
+      - {tax_jurisdiction_code: "NO", tax_group_code: REDUCED, tax_type: 0, tax_below_maximum: 15}
+      - {tax_jurisdiction_code: "NO", tax_group_code: NONTAXABLE, tax_type: 0, tax_below_maximum: 0}
+  - table: Tax_Posting_Setup   # every combination of the demo's tax posting groups calculates sales tax
+    records:
+      - {tax_bus_posting_group: "", tax_prod_posting_group: "", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "", tax_prod_posting_group: "STANDARD", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "", tax_prod_posting_group: "REDUCED", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "", tax_prod_posting_group: "EXEMPT", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "DOMESTIC", tax_prod_posting_group: "", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "DOMESTIC", tax_prod_posting_group: "STANDARD", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "DOMESTIC", tax_prod_posting_group: "REDUCED", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "DOMESTIC", tax_prod_posting_group: "EXEMPT", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "STANDARD", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "REDUCED", tax_calculation_type: 3}
+      - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "EXEMPT", tax_calculation_type: 3}
+  - table: General_Posting_Setup
+    records:
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, sales_account: "3110", purch_account: "4110"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, sales_account: "3130", purch_account: "4130"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, sales_account: "3140", purch_account: "4110"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, sales_account: "3120", purch_account: "4120"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: SERVICES, sales_account: "3120", purch_account: "4120"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: FOOD, sales_account: "3120", purch_account: "4120"}
   - table: Currency
     records:
       - {code: EUR, description: Euro, amount_rounding_precision: 0.01, invoice_rounding_precision: 0.01, realized_gains_acc: "6140", realized_losses_acc: "6150", unrealized_gains_acc: "6160", unrealized_losses_acc: "6170"}
@@ -333,6 +373,11 @@ master_data:
       - {code: "P-CR", description: Purchase credit memos, default_nos: true, manual_nos: true}
       - {code: "P-CR+", description: Posted purchase credit memos, default_nos: true, manual_nos: false}
       - {code: "P-RCPT", description: Posted purchase receipts, default_nos: true, manual_nos: false}
+      - {code: "GJNL-GEN", description: General journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-SALES", description: Sales journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-PURCH", description: Purchase journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-RCPT", description: Cash receipt journal, default_nos: true, manual_nos: true}
+      - {code: "GJNL-PMT", description: Payment journal, default_nos: true, manual_nos: true}
   - table: No_Series_Line   # starting at the beginning (blank Starting Date)
     records:
       - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
@@ -361,6 +406,11 @@ master_data:
       - {series_code: "P-CR", line_no: 10000, starting_no: "PCR000001", increment_by_no: 1, open: true}
       - {series_code: "P-CR+", line_no: 10000, starting_no: "PCM000001", increment_by_no: 1, open: true}
       - {series_code: "P-RCPT", line_no: 10000, starting_no: "PR000001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-GEN", line_no: 10000, starting_no: "G00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-SALES", line_no: 10000, starting_no: "GS00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-PURCH", line_no: 10000, starting_no: "GU00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-RCPT", line_no: 10000, starting_no: "GR00001", increment_by_no: 1, open: true}
+      - {series_code: "GJNL-PMT", line_no: 10000, starting_no: "GP00001", increment_by_no: 1, open: true}
   - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
     records:
       - {code: CUST, series_code: CUST-EXP}
@@ -405,6 +455,23 @@ master_data:
     records:
       - {code: VEHICLE, description: Vehicle insurance}
       - {code: PROPERTY, description: Property insurance}
+  - table: Source_Code_Setup   # the single setup record (blank key): the journals' source codes
+    records:
+      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL}
+  - table: Gen_Journal_Template   # one per journal type (type 0 General … 4 Payments); page and source code come from the type
+    records:
+      - {name: GENERAL, description: General Journal, type: 0, no_series: GJNL-GEN}
+      - {name: SALES, description: Sales Journal, type: 1, no_series: GJNL-SALES}
+      - {name: PURCHASES, description: Purchase Journal, type: 2, no_series: GJNL-PURCH}
+      - {name: CASHRCPT, description: Cash Receipt Journal, type: 3, no_series: GJNL-RCPT, bal_account_type: 3, bal_account_no: B010}
+      - {name: PAYMENT, description: Payment Journal, type: 4, no_series: GJNL-PMT, bal_account_type: 3, bal_account_no: B010}
+  - table: Gen_Journal_Batch
+    records:
+      - {journal_template_name: GENERAL, name: DEFAULT, description: Default Journal, no_series: GJNL-GEN}
+      - {journal_template_name: SALES, name: DEFAULT, description: Default Journal, no_series: GJNL-SALES}
+      - {journal_template_name: PURCHASES, name: DEFAULT, description: Default Journal, no_series: GJNL-PURCH}
+      - {journal_template_name: CASHRCPT, name: DEFAULT, description: Default Journal, no_series: GJNL-RCPT, bal_account_type: 3, bal_account_no: B010}
+      - {journal_template_name: PAYMENT, name: DEFAULT, description: Default Journal, no_series: GJNL-PMT, bal_account_type: 3, bal_account_no: B010}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)

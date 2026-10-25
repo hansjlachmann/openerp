@@ -1,0 +1,45 @@
+page:
+  id: 119
+  type: List
+  name: User Setup
+  source_table: User_Setup
+  caption: User Setup
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: user_id
+          width: 110
+
+        - source: allow_posting_from
+          width: 100
+
+        - source: allow_posting_to
+          width: 100
+
+        - source: register_time
+          width: 80
+
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

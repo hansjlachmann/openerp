@@ -8,6 +8,19 @@ common:
 
   # Common actions
   actions:
+    setup: "Opsætning"
+    details: "Detaljer"
+    tax_register: "Momsjournal"
+    apply_entries: "Udlign poster"
+    set_applies_to_id: "Angiv udlignings-id"
+    account: "Konto"
+    card: "Kort"
+    register: "Journal"
+    general_ledger: "Finans"
+    customer_ledger: "Debitorposter"
+    vendor_ledger: "Kreditorposter"
+    bank_account_ledger: "Bankkontoposter"
+    batches: "Kladder"
     depreciation_books: "Afskrivningsprofiler"
     maintenance_ledger_entries: "Vedligeholdelsesposter"
     main_asset_components: "Hovedaktivkomponenter"
@@ -64,6 +77,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    lines: "Linjer"
+    sales: "Salg"
+    purchases: "Køb"
     maintenance: "Vedligeholdelse"
     depreciation_books: "Afskrivningsprofiler"
     amounts: "Beløb"

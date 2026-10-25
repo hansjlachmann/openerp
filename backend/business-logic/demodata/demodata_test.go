@@ -30,29 +30,9 @@ func newTestDB(t *testing.T) *sql.DB {
 	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = db.Close() })
 
-	creators := []interface {
-		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.CountryRegion{}, &gtables.PaymentTerms{}, &gtables.Customer{}, &gtables.CustomerLedgerEntry{},
-		&gtables.Currency{}, &gtables.FinanceChargeTerms{}, &gtables.PriceGroup{}, &gtables.StandardText{},
-		&gtables.ShipmentMethod{}, &gtables.Department{}, &gtables.Project{}, &gtables.SalespersonPurchaser{},
-		&gtables.Location{}, &gtables.GeneralLedgerSetup{}, &gtables.CurrencyExchangeRate{},
-		&gtables.GenBusinessPostingGroup{}, &gtables.GenProductPostingGroup{}, &gtables.TaxGroup{},
-		&gtables.TaxBusinessPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.TaxArea{}, &gtables.GLAccount{},
-		&gtables.GLEntry{}, &gtables.SourceCode{}, &gtables.ReasonCode{},
-		&gtables.CustomerPostingGroup{}, &gtables.CustomerDiscountGroup{}, &gtables.PaymentMethod{},
-		&gtables.ShippingAgent{}, &gtables.Territory{}, &gtables.PostCode{}, &gtables.ReminderTerms{},
-		&gtables.ReminderLevel{}, &gtables.ReminderText{}, &gtables.NoSeries{}, &gtables.NoSeriesLine{},
-		&gtables.NoSeriesRelationship{}, &gtables.SalesReceivablesSetup{}, &gtables.AccountingPeriod{}, &gtables.CommentLine{},
-		&gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.Vendor{}, &gtables.VendorLedgerEntry{},
-		&gtables.VendorPostingGroup{}, &gtables.PurchasesPayablesSetup{}, &gtables.OrderAddress{}, &gtables.VendorBankAccount{},
-		&gtables.BankAccount{}, &gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.BankAccountPostingGroup{},
-		&gtables.FixedAsset{}, &gtables.FALedgerEntry{}, &gtables.FASetup{}, &gtables.FAPostingGroup{}, &gtables.FAClass{}, &gtables.FASubclass{},
-		&gtables.FALocation{}, &gtables.DepreciationBook{}, &gtables.FADepreciationBook{}, &gtables.MaintenanceLedgerEntry{}, &gtables.Maintenance{},
-		&gtables.MaintenanceRegistration{}, &gtables.MainAssetComponent{}, &gtables.Insurance{}, &gtables.InsuranceType{}, &gtables.InsCoverageLedgerEntry{}}
-	for _, c := range creators {
-		if err := c.CreateTableWithDBType(db, testCompany, database.DBTypeSQLite); err != nil {
-			t.Fatalf("create table: %v", err)
-		}
+	// every company table (the demo data and the triggers it runs touch many)
+	if err := tables.CreateCompanyTables(db, testCompany, database.DBTypeSQLite); err != nil {
+		t.Fatalf("create tables: %v", err)
 	}
 	return db
 }
@@ -99,8 +79,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 287 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 287 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 338 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 338 master data records, at least 500 G/L entries", counts)
 	}
 	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
 	// monthly periods and the next year's first, the oldest year closed

@@ -36,6 +36,7 @@
 		filters: import('$lib/types/api').TableFilter[];
 		select?: string;
 		lookupMode: boolean;
+		params?: Record<string, string>; // the page's parameters (Page.SetParam)
 		respond: (values: Record<string, string> | null) => void;
 	} | null>(null);
 	let dialog = $state<DialogResult | null>(null);
@@ -109,6 +110,7 @@
 							filters: (data.filters as import('$lib/types/api').TableFilter[]) ?? [],
 							select: (data.select as string) || undefined,
 							lookupMode: data.lookup_mode === true,
+							params: (data.params as Record<string, string>) ?? undefined,
 							respond
 						};
 					},
@@ -145,7 +147,10 @@
 			if (result && 'job_id' in result) {
 				if (!quiet) {
 					await new Promise((resolve) => setTimeout(resolve, 500));
-					if (!progressError) toast.success(t(MSG.JOB_COMPLETED));
+					// The codeunit's closing message box (Message), else a plain notice
+					const finalDialog = (result as { data?: Record<string, unknown> }).data?.dialog as DialogResult | undefined;
+					if (!progressError && finalDialog) dialog = finalDialog;
+					else if (!progressError) toast.success(t(MSG.JOB_COMPLETED));
 					refresh = true; // an async job may have changed anything
 				}
 				progressOpen = false;
@@ -186,6 +191,7 @@
 				initialFilters={request.filters}
 				initialSelect={request.select}
 				lookupMode={request.lookupMode}
+				openParams={request.params}
 				onclose={(action, key) => {
 					// respond first: {@const request} follows runPage, which is cleared next
 					const respond = request.respond;

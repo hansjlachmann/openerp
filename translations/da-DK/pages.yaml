@@ -349,3 +349,83 @@ pages:
     caption: "Forsikringsstatistik"
     fields:  # the calculated field (OnAfterGetRecord)
       over_underinsured: "Over-/underforsikret"
+
+  # General journal and posting
+  general_journal:
+    caption: "Finanskladde"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Modkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  sales_journal:
+    caption: "Salgskladde"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Modkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  purchase_journal:
+    caption: "Købskladde"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Modkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  cash_receipt_journal:
+    caption: "Indbetalingskladde"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Modkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  payment_journal:
+    caption: "Udbetalingskladde"
+    fields:  # the batch above the lines and the footer (calculated)
+      journal_batch_name: "Kladdenavn"
+      account_name: "Kontonavn"
+      bal_account_name: "Modkontonavn"
+      balance: "Saldo"
+      total_balance: "Total saldo"
+  general_journal_templates:
+    caption: "Finanskladdetyper"
+  general_journal_template_list:
+    caption: "Finanskladdetypeoversigt"
+  general_journal_batches:
+    caption: "Finanskladdenavne"
+  g_l_registers:
+    caption: "Finansjournaler"
+  source_code_setup:
+    caption: "Kildekodeopsætning"
+  user_setup:
+    caption: "Brugeropsætning"
+  apply_customer_entries:
+    caption: "Udlign debitorposter"
+    fields:  # the totals under the list (calculated)
+      appln_amount: "Beløb"
+      applied_amount: "Udlignet beløb"
+      appln_balance: "Saldo"
+  apply_vendor_entries:
+    caption: "Udlign kreditorposter"
+    fields:  # the totals under the list (calculated)
+      appln_amount: "Beløb"
+      applied_amount: "Udlignet beløb"
+      appln_balance: "Saldo"
+
+  # Sales tax
+  general_posting_setup:
+    caption: "Bogføringsopsætning"
+  tax_entries:
+    caption: "Momsposter"
+  tax_area_lines:
+    caption: "Momsområdelinjer"
+  tax_jurisdictions:
+    caption: "Momsjurisdiktioner"
+  tax_details:
+    caption: "Momsdetaljer"
+  tax_posting_setup:
+    caption: "Momsbogføringsopsætning"

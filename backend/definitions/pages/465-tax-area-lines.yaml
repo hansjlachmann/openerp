@@ -1,0 +1,47 @@
+page:
+  id: 465
+  type: List
+  name: Tax Area Lines
+  source_table: Tax_Area_Line
+  caption: Tax Area Lines
+  editable: true
+  delayed_insert: true
+  # The jurisdictions of a tax area: the Tax Area card (464) shows them as its subpage
+
+  layout:
+    repeater:
+      fields:
+        - source: tax_area
+          width: 110
+          visible: false
+
+        - source: tax_jurisdiction_code
+          width: 120
+
+        - source: jurisdiction_description
+          width: 250
+
+        - source: calculation_order
+          width: 110
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+      enabled: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+      enabled: true

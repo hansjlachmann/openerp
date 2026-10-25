@@ -1,0 +1,138 @@
+table:
+  id: 232
+  name: "Gen_Journal_Batch"
+  caption: Gen. Journal Batch
+  description: "General journal batches (table 232): the batches of a journal template"
+  lookup_page_id: 251
+  data_caption_fields: [name, description]
+  fields:
+    - name: journal_template_name
+      no: 1
+      type: types.Code
+      db_name: journal_template_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Gen_Journal_Template
+        field: name
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: name
+      no: 2
+      type: types.Code
+      db_name: name
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 3
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: reason_code
+      no: 4
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: bal_account_type
+      no: 5
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: bal_account_no
+      no: 6
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: no_series
+      no: 7
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_no_series
+      no: 8
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [journal_template_name, name]
+      clustered: true

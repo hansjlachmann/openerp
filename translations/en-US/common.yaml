@@ -8,6 +8,19 @@ common:
 
   # Common actions
   actions:
+    setup: "Setup"
+    details: "Details"
+    tax_register: "Tax Register"
+    apply_entries: "Apply Entries"
+    set_applies_to_id: "Set Applies-to ID"
+    account: "Account"
+    card: "Card"
+    register: "Register"
+    general_ledger: "General Ledger"
+    customer_ledger: "Customer Ledger"
+    vendor_ledger: "Vendor Ledger"
+    bank_account_ledger: "Bank Account Ledger"
+    batches: "Batches"
     depreciation_books: "Depreciation Books"
     maintenance_ledger_entries: "Maintenance Ledger Entries"
     main_asset_components: "Main Asset Components"
@@ -64,6 +77,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    lines: "Lines"
+    sales: "Sales"
+    purchases: "Purchases"
     maintenance: "Maintenance"
     depreciation_books: "Depreciation Books"
     amounts: "Amounts"

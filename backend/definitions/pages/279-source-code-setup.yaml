@@ -1,0 +1,66 @@
+page:
+  id: 279
+  type: Card
+  name: Source Code Setup
+  source_table: Source_Code_Setup
+  caption: Source Code Setup
+  editable: true
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: general_journal
+            editable: true
+
+          - source: close_income_statement
+            editable: true
+
+          - source: tax_settlement
+            editable: true
+
+          - source: exchange_rate_adjmt
+            editable: true
+
+          - source: financially_voided_check
+            editable: true
+
+
+      - name: Sales
+        caption: Sales
+        fields:
+          - source: sales
+            editable: true
+
+          - source: sales_journal
+            editable: true
+
+          - source: cash_receipt_journal
+            editable: true
+
+          - source: sales_entry_application
+            editable: true
+
+          - source: finance_charge_memo
+            editable: true
+
+          - source: reminder
+            editable: true
+
+
+      - name: Purchases
+        caption: Purchases
+        fields:
+          - source: purchases
+            editable: true
+
+          - source: purchase_journal
+            editable: true
+
+          - source: payment_journal
+            editable: true
+
+          - source: purchase_entry_application
+            editable: true
+

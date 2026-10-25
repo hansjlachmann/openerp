@@ -447,6 +447,62 @@ table:
               - source: description
                 width: 250
 
+    # Application (closing in another currency, rounding) and numbering
+    - name: no_series
+      no: 64
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: closed_by_currency_code
+      no: 65
+      type: types.Code
+      db_name: closed_by_currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: closed_by_currency_amount
+      no: 66
+      type: types.Decimal
+      db_name: closed_by_currency_amount
+      precision: 18
+      scale: 2
+
+    - name: rounding_currency
+      no: 68
+      type: types.Code
+      db_name: rounding_currency
+      length: 10
+
+    - name: rounding_amount
+      no: 69
+      type: types.Decimal
+      db_name: rounding_amount
+      precision: 18
+      scale: 2
+
+    - name: rounding_amount_lcy
+      no: 70
+      type: types.Decimal
+      db_name: rounding_amount_lcy
+      precision: 18
+      scale: 2
+
   # Keys (Indexes) - style
   # These indexes optimize FlowField calculations and common queries
   keys:

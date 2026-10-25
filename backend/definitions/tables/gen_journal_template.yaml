@@ -1,0 +1,176 @@
+table:
+  id: 80
+  name: "Gen_Journal_Template"
+  caption: Gen. Journal Template
+  description: "General journal templates (table 80): the journal types and their pages, source codes and numbering"
+  lookup_page_id: 250
+  data_caption_fields: [name, description]
+  fields:
+    - name: name
+      no: 1
+      type: types.Code
+      db_name: name
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 80
+
+    # Reports (test, posting) come with the report prints
+    - name: test_report_id
+      no: 5
+      type: int
+      db_name: test_report_id
+
+    # Form ID: the journal page of the template (set by Type)
+    - name: page_id
+      no: 6
+      type: int
+      db_name: page_id
+
+    - name: posting_report_id
+      no: 7
+      type: int
+      db_name: posting_report_id
+
+    - name: force_posting_report
+      no: 8
+      type: bool
+      db_name: force_posting_report
+
+    - name: type
+      no: 9
+      type: Option
+      db_name: type
+      options: ["General", "Sales", "Purchases", "Cash Receipts", "Payments", "Assets", "Payroll Accrual"]
+
+    - name: source_code
+      no: 10
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: reason_code
+      no: 11
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    # Recurring journals come later
+    - name: recurring
+      no: 12
+      type: bool
+      db_name: recurring
+
+    - name: force_doc_balance
+      no: 18
+      type: bool
+      db_name: force_doc_balance
+      default: true
+
+    - name: bal_account_type
+      no: 19
+      type: Option
+      db_name: bal_account_type
+      options: ["G/L Account", "Customer", "Vendor", "Bank Account", "Fixed Asset"]
+
+    - name: bal_account_no
+      no: 20
+      type: types.Code
+      db_name: bal_account_no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: bal_account_type, equal: 0}
+            table: G_L_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 1}
+            table: Customer
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 2}
+            table: Vendor
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 3}
+            table: Bank_Account
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: bal_account_type, equal: 4}
+            table: Fixed_Asset
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+
+    - name: no_series
+      no: 21
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_no_series
+      no: 22
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [name]
+      clustered: true
