@@ -5921,6 +5921,13 @@ func (t *{{ .StructName }}) GetTableRelationFields() map[string]tables.TableRela
 {{- if not .ShouldValidate }}
 					NoValidate: true,
 {{- end }}
+{{- if .Filters }}
+					Filters: []tables.RelationFilterInfo{
+{{- range .SortedFilters }}
+						{Column: "{{ .Column }}", Field: "{{ .Field }}", Const: "{{ if ne (printf "%v" .Const) "<nil>" }}{{ .Const }}{{ end }}"},
+{{- end }}
+					},
+{{- end }}
 				}},
 {{- end }}
 			},

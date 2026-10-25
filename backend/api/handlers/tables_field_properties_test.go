@@ -277,6 +277,7 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 		`{"entry_no":3,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":1,"bal_account_no":"2000"}`:   false,
 		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     false,
 		`{"entry_no":5,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":5,"bal_account_no":"E9"}`:     true, // employees: no table yet
+		`{"entry_no":6,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":0,"bal_account_no":"2999"}`:   false, // a total account: posting accounts only
 	} {
 		status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Entry/insert", body)
 		if (status == 200) != ok {
@@ -290,6 +291,13 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 	variants := lookup["variants"].(map[string]interface{})
 	if lookup["variant_field"] != "bal_account_type" || len(variants) != 5 || variants["1"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
 		t.Errorf("bal_account_no lookup = %v", lookup)
+	}
+	// The G/L Account variant shows the posting accounts only (classic WHERE Account Type=CONST(Posting))
+	if filters := fmt.Sprint(variants["0"].(map[string]interface{})["filters"]); filters != "[map[column:account_type const:0]]" {
+		t.Errorf("G/L Account variant filters = %s", filters)
+	}
+	if status, out := getJSON(t, app, "/api/tables/G_L_Entry/lookup/bal_account_no?variant=0"); status != 200 || len(out["data"].(map[string]interface{})["rows"].([]interface{})) != 2 {
+		t.Errorf("lazy lookup of variant 0 (posting accounts 1000, 2000): %d %v", status, out)
 	}
 	if status, out := getJSON(t, app, "/api/tables/G_L_Entry/lookup/bal_account_no?variant=1"); status != 200 || out["data"].(map[string]interface{})["rows"].([]interface{})[0].(map[string]interface{})["_key"] != "C1" {
 		t.Errorf("lazy lookup of variant 1: %d %v", status, out)
