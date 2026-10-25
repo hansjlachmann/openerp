@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.112](https://github.com/hansjlachmann/openerp/compare/v0.1.111...v0.1.112) (2026-10-25)
+
+
+### Features
+
+* items — master data, prices, item journals and posting, picture ([#149](https://github.com/hansjlachmann/openerp/issues/149)) ([d24214d](https://github.com/hansjlachmann/openerp/commit/d24214d2775a9196ddf8ec334ce3022e526d71dd))
+
 ## [0.1.111](https://github.com/hansjlachmann/openerp/compare/v0.1.110...v0.1.111) (2026-10-24)
 
 
