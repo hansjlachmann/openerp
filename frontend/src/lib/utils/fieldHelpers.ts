@@ -407,3 +407,8 @@ export function lookupFor<
 	}
 	return lookup;
 }
+
+/** A picture field (BLOB: YAML "[]byte", API "Blob") — shown by PictureField, never edited inline */
+export function isBlobType(fieldType: string | undefined): boolean {
+	return fieldType === '[]byte' || fieldType === 'Blob' || fieldType === 'BLOB';
+}

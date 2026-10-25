@@ -179,3 +179,5 @@ errors:
   ERR_ITEM_JNL_PHYS_ENTRY_TYPE: "%1 must be Positive Adjmt. or Negative Adjmt. when %2 is Yes."
   ERR_ITEM_JNL_PHYS_QTY: "%1 must be the difference between the counted and the calculated quantity."
   ERR_ITEM_SPECIFIC_NOT_YET: "Items with %1 %2 cannot be posted yet: they need serial numbers."
+  ERR_PICTURE_INVALID: "The file is not a PNG, JPEG or WebP picture of an acceptable size (at most 8000 × 8000 pixels, 4 MB)."
+  ERR_PICTURE_NO_FIELD: "There is no picture field %1."

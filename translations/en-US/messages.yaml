@@ -378,3 +378,9 @@ messages:
   ITEM_JNL_POST_WINDOW: "Journal Batch Name #1##########
 Checking lines #2######
 Posting lines #3###### @4@@@@@@@@@@@@@"
+  PICTURE_NONE: "No picture"
+  PICTURE_IMPORT: "Import"
+  PICTURE_EXPORT: "Export"
+  PICTURE_DELETE: "Delete"
+  PICTURE_DELETE_TITLE: "Delete Picture"
+  PICTURE_DELETE_CONFIRM: "Do you want to delete the picture?"

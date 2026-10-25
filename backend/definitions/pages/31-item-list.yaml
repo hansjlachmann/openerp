@@ -174,3 +174,11 @@ page:
       run_page: 390
       run_page_filter_field: item_no
       run_page_filter_value: "no"
+
+    - name: Picture
+      caption: Picture
+      image: Attach
+      promoted: true
+      run_page: 346
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"

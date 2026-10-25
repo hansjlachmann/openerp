@@ -8,6 +8,7 @@ common:
 
   # Common actions
   actions:
+    picture: "Picture"
     calculate_inventory: "Calculate Inventory"
     phys_inventory_ledger: "Phys. Inventory Ledger"
     phys_inventory_ledger_entries: "Phys. Inventory Ledger Entries"
@@ -92,6 +93,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    picture: "Picture"
     inventory: "Inventory"
     ordering: "Ordering"
     lines: "Lines"

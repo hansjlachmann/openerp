@@ -68,6 +68,11 @@ page:
           - source: alternative_item_no
           - source: reserve
           - source: rounding_precision
+      - name: Picture
+        caption: Picture
+        fields:
+          - source: picture
+
       - name: Foreign Trade
         caption: Foreign Trade
         fields:
@@ -195,4 +200,12 @@ page:
       promoted: true
       run_page: 390
       run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Picture
+      caption: Picture
+      image: Attach
+      promoted: true
+      run_page: 346
+      run_page_filter_field: "no"
       run_page_filter_value: "no"

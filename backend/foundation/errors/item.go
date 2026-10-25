@@ -100,3 +100,17 @@ const ErrItemSpecificNotYet ErrorCode = "ERR_ITEM_SPECIFIC_NOT_YET"
 func ItemSpecificNotYet(table, field string, value any) *AppError {
 	return &AppError{Code: ErrItemSpecificNotYet, Table: table, Field: field, Value: value}
 }
+
+// Pictures (BLOB fields)
+const (
+	ErrPictureInvalid ErrorCode = "ERR_PICTURE_INVALID"
+	ErrPictureNoField ErrorCode = "ERR_PICTURE_NO_FIELD"
+)
+
+// PictureInvalid: an uploaded file is not a PNG, JPEG or WebP image of acceptable size
+func PictureInvalid() *AppError { return &AppError{Code: ErrPictureInvalid} }
+
+// PictureNoField: a table has no picture field of that name
+func PictureNoField(field string) *AppError {
+	return &AppError{Code: ErrPictureNoField, Params: []string{field}}
+}

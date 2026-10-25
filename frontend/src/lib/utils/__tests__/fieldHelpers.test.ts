@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LookupData } from '$lib/types/api';
-import { isAdvancedLookup, lookupFor, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput } from '../fieldHelpers';
+import { isAdvancedLookup, lookupFor, formatLookupValue, isCodeType, toDateTimeInput, fromDateTimeInput, isBlobType } from '../fieldHelpers';
 
 describe('isAdvancedLookup', () => {
 	const columns = [{ source: 'code' }];
@@ -82,5 +82,14 @@ describe('lookupFor with relation filters', () => {
 		};
 		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'DOM' })?.rows?.length).toBe(2);
 		expect(lookupFor({ reminder_level: levels }, 'reminder_level', { reminder_terms_code: 'FOR' })?.rows?.length).toBe(1);
+	});
+});
+
+describe('isBlobType', () => {
+	it('recognizes picture fields in both spellings', () => {
+		expect(isBlobType('[]byte')).toBe(true);
+		expect(isBlobType('Blob')).toBe(true);
+		expect(isBlobType('types.Text')).toBe(false);
+		expect(isBlobType(undefined)).toBe(false);
 	});
 });

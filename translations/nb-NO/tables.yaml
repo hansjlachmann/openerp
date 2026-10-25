@@ -2523,6 +2523,7 @@ tables:
   item:
     caption: "Vare"
     fields:
+      picture: "Bilde"
       quantity_on_hand: "Beholdning"
       net_invoiced_qty: "Netto fakturert antall"
       net_change: "Bevegelse"

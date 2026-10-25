@@ -126,6 +126,10 @@ func (s *Server) Setup() {
 	tables.Delete("/delete/:id", tablesHandler.DeleteRecord)
 	tables.Post("/validate", tablesHandler.ValidateField)
 	tables.Post("/init", tablesHandler.InitRecord)
+	// Pictures (BLOB fields): served, uploaded (re-encoded) and removed one record at a time
+	tables.Get("/blob/:field/:id", tablesHandler.GetBlob)
+	tables.Put("/blob/:field/:id", tablesHandler.PutBlob)
+	tables.Delete("/blob/:field/:id", tablesHandler.DeleteBlob)
 	// No-id variants for setup tables (single record with a blank primary key)
 	tables.Get("/card", tablesHandler.GetRecord)
 	tables.Put("/modify", tablesHandler.ModifyRecord)

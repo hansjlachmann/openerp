@@ -498,3 +498,5 @@ pages:
       item_description: "Varebeskrivelse"
   phys_inventory_ledger_entries:
     caption: "Lageropgørelsesposter"
+  item_picture:
+    caption: "Varebillede"

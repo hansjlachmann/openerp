@@ -8,7 +8,7 @@ table:
   # Left out until their tables exist: 6 Bill of Materials (BOM), 47 Tariff No., 84/85 Qty. on
   # Purch./Sales Order, 96 Automatic Ext. Text, 101-103/5429/5430 reserved quantities, 104
   # Add.-Curr. Average Cost, manufacturing and requisition fields 5400-5421/5428, 5423 Bin Filter,
-  # 10004 Duty Class (local series). 92 Picture comes with the picture part of the step.
+  # 10004 Duty Class (local series).
   fields:
     - name: no
       no: 1
@@ -997,6 +997,13 @@ table:
             width: 100
           - source: description
             width: 250
+
+    # The item's picture: served and uploaded through /api/tables/Item/blob/picture/<no>
+    # (re-encoded PNG/JPEG), never part of the record's JSON
+    - name: picture
+      no: 92
+      type: "[]byte"
+      db_name: picture
 
     - name: country_of_origin_code
       no: 95

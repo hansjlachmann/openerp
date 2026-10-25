@@ -61,6 +61,7 @@
 //	OnValidate_Price_includes_tax(rec *gtables.Item) error
 //	OnValidate_Tax_bus_posting_gr_price(rec *gtables.Item) error
 //	OnValidate_Gen_prod_posting_group(rec *gtables.Item) error
+//	OnValidate_Picture(rec *gtables.Item) error
 //	OnValidate_Country_of_origin_code(rec *gtables.Item) error
 //	OnValidate_No_series(rec *gtables.Item) error
 //	OnValidate_Tax_group_code(rec *gtables.Item) error
@@ -75,6 +76,7 @@ package tables
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"slices"
 	"strconv"
@@ -230,6 +232,7 @@ type Item struct {
 	Price_includes_tax       bool          `db:"price_includes_tax"`
 	Tax_bus_posting_gr_price types.Code    `db:"tax_bus_posting_gr_price"`
 	Gen_prod_posting_group   types.Code    `db:"gen_prod_posting_group"`
+	Picture                  []byte        `db:"picture"`
 	Country_of_origin_code   types.Code    `db:"country_of_origin_code"`
 	No_series                types.Code    `db:"no_series"`
 	Tax_group_code           types.Code    `db:"tax_group_code"`
@@ -424,6 +427,7 @@ var Item_FieldNo = struct {
 	Price_includes_tax       int
 	Tax_bus_posting_gr_price int
 	Gen_prod_posting_group   int
+	Picture                  int
 	Country_of_origin_code   int
 	No_series                int
 	Tax_group_code           int
@@ -506,6 +510,7 @@ var Item_FieldNo = struct {
 	Price_includes_tax:       87,
 	Tax_bus_posting_gr_price: 90,
 	Gen_prod_posting_group:   91,
+	Picture:                  92,
 	Country_of_origin_code:   95,
 	No_series:                97,
 	Tax_group_code:           98,
@@ -658,6 +663,8 @@ func (t *Item) FieldNo(fieldName string) int {
 		return 90
 	case "gen_prod_posting_group":
 		return 91
+	case "picture":
+		return 92
 	case "country_of_origin_code":
 		return 95
 	case "no_series":
@@ -827,6 +834,8 @@ func (t *Item) FieldName(fieldNo int) string {
 		return "tax_bus_posting_gr_price"
 	case 91:
 		return "gen_prod_posting_group"
+	case 92:
+		return "picture"
 	case 95:
 		return "country_of_origin_code"
 	case 97:
@@ -1001,6 +1010,7 @@ type (
 	ItemOnValidate_Price_includes_tax       interface{ OnValidate_Price_includes_tax(rec *Item) error }
 	ItemOnValidate_Tax_bus_posting_gr_price interface{ OnValidate_Tax_bus_posting_gr_price(rec *Item) error }
 	ItemOnValidate_Gen_prod_posting_group   interface{ OnValidate_Gen_prod_posting_group(rec *Item) error }
+	ItemOnValidate_Picture                  interface{ OnValidate_Picture(rec *Item) error }
 	ItemOnValidate_Country_of_origin_code   interface{ OnValidate_Country_of_origin_code(rec *Item) error }
 	ItemOnValidate_No_series                interface{ OnValidate_No_series(rec *Item) error }
 	ItemOnValidate_Tax_group_code           interface{ OnValidate_Tax_group_code(rec *Item) error }
@@ -1141,6 +1151,8 @@ func itemTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(ItemOnValidate_Tax_bus_posting_gr_price)
 	case "OnValidate_Gen_prod_posting_group":
 		_, ok = logic.(ItemOnValidate_Gen_prod_posting_group)
+	case "OnValidate_Picture":
+		_, ok = logic.(ItemOnValidate_Picture)
 	case "OnValidate_Country_of_origin_code":
 		_, ok = logic.(ItemOnValidate_Country_of_origin_code)
 	case "OnValidate_No_series":
@@ -1452,6 +1464,7 @@ func GetItemTableSchema() string {
 		price_includes_tax INTEGER,
 		tax_bus_posting_gr_price TEXT(10),
 		gen_prod_posting_group TEXT(10),
+		picture BLOB,
 		country_of_origin_code TEXT(10),
 		no_series TEXT(10),
 		tax_group_code TEXT(10),
@@ -1533,6 +1546,7 @@ func GetItemPostgresTableSchema() string {
 		price_includes_tax BOOLEAN,
 		tax_bus_posting_gr_price VARCHAR(10),
 		gen_prod_posting_group VARCHAR(10),
+		picture BYTEA,
 		country_of_origin_code VARCHAR(10),
 		no_series VARCHAR(10),
 		tax_group_code VARCHAR(10),
@@ -1754,6 +1768,7 @@ func (t *Item) StoreOldValues() {
 	t.oldValues["price_includes_tax"] = t.Price_includes_tax
 	t.oldValues["tax_bus_posting_gr_price"] = t.Tax_bus_posting_gr_price
 	t.oldValues["gen_prod_posting_group"] = t.Gen_prod_posting_group
+	t.oldValues["picture"] = t.Picture
 	t.oldValues["country_of_origin_code"] = t.Country_of_origin_code
 	t.oldValues["no_series"] = t.No_series
 	t.oldValues["tax_group_code"] = t.Tax_group_code
@@ -1930,6 +1945,9 @@ func (t *Item) XRec() *Item {
 	if v, ok := t.oldValues["gen_prod_posting_group"].(types.Code); ok {
 		x.Gen_prod_posting_group = v
 	}
+	if v, ok := t.oldValues["picture"].([]byte); ok {
+		x.Picture = v
+	}
 	if v, ok := t.oldValues["country_of_origin_code"].(types.Code); ok {
 		x.Country_of_origin_code = v
 	}
@@ -2069,6 +2087,7 @@ func (t *Item) GetByPK(no types.Code) bool {
 	var price_includes_taxBool sql.NullBool
 	var tax_bus_posting_gr_priceNull sql.NullString
 	var gen_prod_posting_groupNull sql.NullString
+	var pictureVal []byte
 	var country_of_origin_codeNull sql.NullString
 	var no_seriesNull sql.NullString
 	var tax_group_codeNull sql.NullString
@@ -2085,7 +2104,7 @@ func (t *Item) GetByPK(no types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE 1=1 AND no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE 1=1 AND no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -2143,6 +2162,7 @@ func (t *Item) GetByPK(no types.Code) bool {
 		&price_includes_taxBool,
 		&tax_bus_posting_gr_priceNull,
 		&gen_prod_posting_groupNull,
+		&pictureVal,
 		&country_of_origin_codeNull,
 		&no_seriesNull,
 		&tax_group_codeNull,
@@ -2216,6 +2236,7 @@ func (t *Item) GetByPK(no types.Code) bool {
 	t.Price_includes_tax = price_includes_taxBool.Bool
 	t.Tax_bus_posting_gr_price = types.NewCode(tax_bus_posting_gr_priceNull.String)
 	t.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+	t.Picture = pictureVal
 	t.Country_of_origin_code = types.NewCode(country_of_origin_codeNull.String)
 	t.No_series = types.NewCode(no_seriesNull.String)
 	t.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -2298,6 +2319,7 @@ func (t *Item) Insert(runTrigger bool) bool {
 		t.Price_includes_tax,
 		t.Tax_bus_posting_gr_price,
 		t.Gen_prod_posting_group,
+		t.Picture,
 		t.Country_of_origin_code,
 		t.No_series,
 		t.Tax_group_code,
@@ -2311,7 +2333,7 @@ func (t *Item) Insert(runTrigger bool) bool {
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -2400,6 +2422,7 @@ func (t *Item) InsertAll(records []*Item, runTrigger bool) error {
 			r.Price_includes_tax,
 			r.Tax_bus_posting_gr_price,
 			r.Gen_prod_posting_group,
+			r.Picture,
 			r.Country_of_origin_code,
 			r.No_series,
 			r.Tax_group_code,
@@ -2412,7 +2435,7 @@ func (t *Item) InsertAll(records []*Item, runTrigger bool) error {
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, ItemTableName)
-	columns := []string{"no", "no_2", "description", "search_description", "description_2", "class", "base_unit_of_measure", "price_unit_conversion", "inventory_posting_group", "shelf_bin_no", "sales_qty_disc_code", "item_cust_disc_gr", "allow_invoice_disc", "statistics_group", "commission_group", "unit_price", "price_profit_calculation", "profit_percent", "costing_method", "unit_cost", "standard_cost", "last_direct_cost", "average_cost", "minimum_unit_price", "indirect_cost_percent", "vendor_no", "vendor_item_no", "lead_time_calculation", "reorder_point", "maximum_inventory", "reorder_quantity", "alternative_item_no", "unit_list_price", "duty_due_percent", "duty_code", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "durability", "freight_type", "duty_unit_conversion", "country_purchased_code", "budget_quantity", "budgeted_amount", "budget_profit", "blocked", "last_date_modified", "price_includes_tax", "tax_bus_posting_gr_price", "gen_prod_posting_group", "country_of_origin_code", "no_series", "tax_group_code", "tax_prod_posting_group", "reserve", "inventory_value_zero", "rounding_precision", "sales_unit_of_measure", "purch_unit_of_measure"}
+	columns := []string{"no", "no_2", "description", "search_description", "description_2", "class", "base_unit_of_measure", "price_unit_conversion", "inventory_posting_group", "shelf_bin_no", "sales_qty_disc_code", "item_cust_disc_gr", "allow_invoice_disc", "statistics_group", "commission_group", "unit_price", "price_profit_calculation", "profit_percent", "costing_method", "unit_cost", "standard_cost", "last_direct_cost", "average_cost", "minimum_unit_price", "indirect_cost_percent", "vendor_no", "vendor_item_no", "lead_time_calculation", "reorder_point", "maximum_inventory", "reorder_quantity", "alternative_item_no", "unit_list_price", "duty_due_percent", "duty_code", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "durability", "freight_type", "duty_unit_conversion", "country_purchased_code", "budget_quantity", "budgeted_amount", "budget_profit", "blocked", "last_date_modified", "price_includes_tax", "tax_bus_posting_gr_price", "gen_prod_posting_group", "picture", "country_of_origin_code", "no_series", "tax_group_code", "tax_prod_posting_group", "reserve", "inventory_value_zero", "rounding_precision", "sales_unit_of_measure", "purch_unit_of_measure"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -2656,6 +2679,10 @@ func (t *Item) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "gen_prod_posting_group = ?")
 			values = append(values, t.Gen_prod_posting_group)
 		}
+		if t.hasFieldChanged("picture") {
+			setClauses = append(setClauses, "picture = ?")
+			values = append(values, t.Picture)
+		}
 		if t.hasFieldChanged("country_of_origin_code") {
 			setClauses = append(setClauses, "country_of_origin_code = ?")
 			values = append(values, t.Country_of_origin_code)
@@ -2799,6 +2826,8 @@ func (t *Item) Modify(runTrigger bool) bool {
 		values = append(values, t.Tax_bus_posting_gr_price)
 		setClauses = append(setClauses, "gen_prod_posting_group = ?")
 		values = append(values, t.Gen_prod_posting_group)
+		setClauses = append(setClauses, "picture = ?")
+		values = append(values, t.Picture)
 		setClauses = append(setClauses, "country_of_origin_code = ?")
 		values = append(values, t.Country_of_origin_code)
 		setClauses = append(setClauses, "no_series = ?")
@@ -3093,6 +3122,9 @@ func (t *Item) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Gen_prod_posting_group.Equal(old)
 		}
+	case "picture":
+		// Skip comparison for BLOB fields (too large, use always modified)
+		return true
 	case "country_of_origin_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Country_of_origin_code.Equal(old)
@@ -7403,6 +7435,8 @@ func (t *Item) columnName(fieldName string) (string, bool) {
 		return "tax_bus_posting_gr_price", true
 	case strings.ToLower("gen_prod_posting_group"):
 		return "gen_prod_posting_group", true
+	case strings.ToLower("picture"):
+		return "picture", true
 	case strings.ToLower("country_of_origin_code"):
 		return "country_of_origin_code", true
 	case strings.ToLower("no_series"):
@@ -7764,7 +7798,7 @@ func (t *Item) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -7879,6 +7913,7 @@ func (t *Item) FindFirst() bool {
 		&price_includes_taxBool,
 		&tax_bus_posting_gr_priceNull,
 		&gen_prod_posting_groupNull,
+		&t.Picture,
 		&country_of_origin_codeNull,
 		&no_seriesNull,
 		&tax_group_codeNull,
@@ -7976,7 +8011,7 @@ func (t *Item) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -8091,6 +8126,7 @@ func (t *Item) FindLast() bool {
 		&price_includes_taxBool,
 		&tax_bus_posting_gr_priceNull,
 		&gen_prod_posting_groupNull,
+		&t.Picture,
 		&country_of_origin_codeNull,
 		&no_seriesNull,
 		&tax_group_codeNull,
@@ -8218,7 +8254,7 @@ func (t *Item) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -8397,6 +8433,7 @@ func (t *Item) Next(steps ...int) bool {
 			&price_includes_taxBool,
 			&tax_bus_posting_gr_priceNull,
 			&gen_prod_posting_groupNull,
+			&t.Picture,
 			&country_of_origin_codeNull,
 			&no_seriesNull,
 			&tax_group_codeNull,
@@ -8522,7 +8559,7 @@ func (t *Item) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT no, no_2, description, search_description, description_2, class, base_unit_of_measure, price_unit_conversion, inventory_posting_group, shelf_bin_no, sales_qty_disc_code, item_cust_disc_gr, allow_invoice_disc, statistics_group, commission_group, unit_price, price_profit_calculation, profit_percent, costing_method, unit_cost, standard_cost, last_direct_cost, average_cost, minimum_unit_price, indirect_cost_percent, vendor_no, vendor_item_no, lead_time_calculation, reorder_point, maximum_inventory, reorder_quantity, alternative_item_no, unit_list_price, duty_due_percent, duty_code, gross_weight, net_weight, units_per_parcel, unit_volume, durability, freight_type, duty_unit_conversion, country_purchased_code, budget_quantity, budgeted_amount, budget_profit, blocked, last_date_modified, price_includes_tax, tax_bus_posting_gr_price, gen_prod_posting_group, picture, country_of_origin_code, no_series, tax_group_code, tax_prod_posting_group, reserve, inventory_value_zero, rounding_precision, sales_unit_of_measure, purch_unit_of_measure FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -8654,6 +8691,7 @@ func (t *Item) FindSetBuffered() bool {
 			&price_includes_taxBool,
 			&tax_bus_posting_gr_priceNull,
 			&gen_prod_posting_groupNull,
+			&record.Picture,
 			&country_of_origin_codeNull,
 			&no_seriesNull,
 			&tax_group_codeNull,
@@ -8822,6 +8860,7 @@ func (t *Item) copyFromBuffered(record *Item) {
 	t.Price_includes_tax = record.Price_includes_tax
 	t.Tax_bus_posting_gr_price = record.Tax_bus_posting_gr_price
 	t.Gen_prod_posting_group = record.Gen_prod_posting_group
+	t.Picture = record.Picture
 	t.Country_of_origin_code = record.Country_of_origin_code
 	t.No_series = record.No_series
 	t.Tax_group_code = record.Tax_group_code
@@ -10230,6 +10269,36 @@ func (t *Item) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "picture":
+		// Set field value
+		// Accept nil, []byte, or base64-encoded string
+		if value == nil {
+			t.Picture = nil
+		} else if v, ok := value.([]byte); ok {
+			t.Picture = v
+		} else if s, ok := value.(string); ok {
+			if s == "" {
+				t.Picture = nil
+			} else {
+				// Try base64 decode
+				decoded, err := base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					return fmt.Errorf("invalid base64 value for field picture: %w", err)
+				}
+				t.Picture = decoded
+			}
+		} else {
+			return fmt.Errorf("invalid type for field picture (expected []byte, string, or nil)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(ItemOnValidate_Picture); ok {
+				if err := trg.OnValidate_Picture(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "country_of_origin_code":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
@@ -10572,6 +10641,8 @@ func (t *Item) FieldValue(no int) (any, bool) {
 		return t.Tax_bus_posting_gr_price, true
 	case 91:
 		return t.Gen_prod_posting_group, true
+	case 92:
+		return t.Picture, true
 	case 95:
 		return t.Country_of_origin_code, true
 	case 97:
@@ -10972,6 +11043,11 @@ func (t *Item) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Gen_prod_posting_group = types.NewCode(v)
+			return true
+		}
+	case 92:
+		if v, ok := value.([]byte); ok {
+			t.Picture = v
 			return true
 		}
 	case 95:
@@ -11780,6 +11856,8 @@ func (t *Item) columnValue(column string) (interface{}, bool) {
 		return t.Tax_bus_posting_gr_price, true
 	case "gen_prod_posting_group":
 		return t.Gen_prod_posting_group, true
+	case "picture":
+		return t.Picture, true
 	case "country_of_origin_code":
 		return t.Country_of_origin_code, true
 	case "no_series":
@@ -11902,6 +11980,7 @@ func (t *Item) Init() {
 	t.Price_includes_tax = *new(bool)
 	t.Tax_bus_posting_gr_price = *new(types.Code)
 	t.Gen_prod_posting_group = *new(types.Code)
+	t.Picture = *new([]byte)
 	t.Country_of_origin_code = *new(types.Code)
 	t.No_series = *new(types.Code)
 	t.Tax_group_code = *new(types.Code)
@@ -12026,6 +12105,7 @@ func (t *Item) ToMap() map[string]interface{} {
 		"price_includes_tax":       t.Price_includes_tax,
 		"tax_bus_posting_gr_price": t.Tax_bus_posting_gr_price.String(),
 		"gen_prod_posting_group":   t.Gen_prod_posting_group.String(),
+		"picture":                  t.Picture,
 		"country_of_origin_code":   t.Country_of_origin_code.String(),
 		"no_series":                t.No_series.String(),
 		"tax_group_code":           t.Tax_group_code.String(),
@@ -12489,6 +12569,8 @@ func (t *Item) FromMap(data map[string]interface{}) {
 		if s, ok := v.(string); ok {
 			t.Gen_prod_posting_group = types.NewCode(s)
 		}
+	}
+	if v, ok := data["picture"]; ok && v != nil {
 	}
 	if v, ok := data["country_of_origin_code"]; ok && v != nil {
 		if s, ok := v.(string); ok {
@@ -13267,6 +13349,16 @@ func (t *Item) GetFields() []tables.FieldInfo {
 			Name:       "gen_prod_posting_group",
 			Type:       tables.FieldTypeCode,
 			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         92,
+			Name:       "picture",
+			Type:       tables.FieldTypeBlob,
+			Length:     0,
 			Required:   false,
 			Editable:   true,
 			PrimaryKey: false,

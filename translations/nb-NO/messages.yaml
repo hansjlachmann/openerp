@@ -378,3 +378,9 @@ messages:
   ITEM_JNL_POST_WINDOW: "Kladdenavn #1##########
 Kontrollerer linjer #2######
 Bokfører linjer #3###### @4@@@@@@@@@@@@@"
+  PICTURE_NONE: "Ikke noe bilde"
+  PICTURE_IMPORT: "Importer"
+  PICTURE_EXPORT: "Eksporter"
+  PICTURE_DELETE: "Slett"
+  PICTURE_DELETE_TITLE: "Slett bilde"
+  PICTURE_DELETE_CONFIRM: "Vil du slette bildet?"

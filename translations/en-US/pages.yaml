@@ -498,3 +498,5 @@ pages:
       item_description: "Item Description"
   phys_inventory_ledger_entries:
     caption: "Phys. Inventory Ledger Entries"
+  item_picture:
+    caption: "Item Picture"

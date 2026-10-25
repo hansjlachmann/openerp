@@ -254,6 +254,15 @@ export const HELP = {
 	COL_ACTION: 'HELP_COL_ACTION'
 } as const;
 
+export const PICTURE = {
+	NONE: 'PICTURE_NONE',
+	IMPORT: 'PICTURE_IMPORT',
+	EXPORT: 'PICTURE_EXPORT',
+	DELETE: 'PICTURE_DELETE',
+	DELETE_TITLE: 'PICTURE_DELETE_TITLE',
+	DELETE_CONFIRM: 'PICTURE_DELETE_CONFIRM'
+} as const;
+
 export const CARD = {
 	SAVE_FIRST: 'CARD_SAVE_FIRST', // a subpage of a record that is not saved yet
 	NO_RECORD: 'CARD_NO_RECORD',

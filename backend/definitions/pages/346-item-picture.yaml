@@ -1,0 +1,20 @@
+page:
+  id: 346
+  type: Card
+  name: Item Picture
+  source_table: Item
+  caption: Item Picture
+  editable: true
+  # classic form 346: the item's picture with Import / Export / Delete (the picture field's
+  # buttons; the image goes through /api/tables/Item/blob/picture/<no>)
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            editable: false
+          - source: description
+            editable: false
+          - source: picture

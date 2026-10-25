@@ -179,3 +179,5 @@ errors:
   ERR_ITEM_JNL_PHYS_ENTRY_TYPE: "%1 må være Oppjustering eller Nedjustering når %2 er Ja."
   ERR_ITEM_JNL_PHYS_QTY: "%1 må være differansen mellom opptalt og beregnet antall."
   ERR_ITEM_SPECIFIC_NOT_YET: "Varer med %1 %2 kan ikke bokføres ennå: de trenger serienumre."
+  ERR_PICTURE_INVALID: "Filen er ikke et PNG-, JPEG- eller WebP-bilde av akseptabel størrelse (høyst 8000 × 8000 piksler, 4 MB)."
+  ERR_PICTURE_NO_FIELD: "Det finnes ikke noe bildefelt %1."

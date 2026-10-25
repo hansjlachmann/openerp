@@ -8,6 +8,7 @@ common:
 
   # Common actions
   actions:
+    picture: "Billede"
     calculate_inventory: "Beregn lager"
     phys_inventory_ledger: "Lageropgørelsesposter"
     phys_inventory_ledger_entries: "Lageropgørelsesposter"
@@ -92,6 +93,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    picture: "Billede"
     inventory: "Lager"
     ordering: "Bestilling"
     lines: "Linjer"
