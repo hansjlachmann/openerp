@@ -313,7 +313,7 @@ func (p *ItemJnlPostLine) updateUnitCost() error {
 		}
 
 		if !p.itemJnlLine.Drop_shipment {
-			averageCost := p.item.Average_cost
+			var averageCost types.Decimal
 			netInvoicedQty := p.itemNetInvoicedQty(itemLedgEntry.Drop_shipment)
 			if netInvoicedQty.GreaterThan(itemLedgEntry.Invoiced_quantity) {
 				averageCost = netInvoicedQty.Sub(itemLedgEntry.Invoiced_quantity).Mul(p.item.Average_cost) // Inventory valuation for this purchase
