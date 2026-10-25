@@ -12,6 +12,9 @@ application:
     objects:
       - from: 1
         to: 999
+      # Items keep their classic numbers (Item Variant 5401, Item Unit of Measure 5404 …)
+      - from: 5400
+        to: 5499
       # Fixed assets keep their classic numbers (tables, pages 5600–5661)
       - from: 5600
         to: 5699
@@ -19,6 +22,9 @@ application:
     fields:
       - from: 1
         to: 999
+      # The classic item fields (Variant Code 5402, Unit of Measure Code 5407 …)
+      - from: 5400
+        to: 5499
   # System tables (2000000000 range: User, Company, Permission …)
   system_tables:
     - from: 2000000000

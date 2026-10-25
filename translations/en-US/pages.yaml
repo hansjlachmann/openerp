@@ -429,3 +429,27 @@ pages:
     caption: "Tax Details"
   tax_posting_setup:
     caption: "Tax Posting Setup"
+
+  # Items
+  item_list:
+    caption: "Item List"
+  item_card:
+    caption: "Item Card"
+  units_of_measure:
+    caption: "Units of Measure"
+  unit_of_measure_translation:
+    caption: "Unit of Measure Translation"
+  item_units_of_measure:
+    caption: "Item Units of Measure"
+  item_variants:
+    caption: "Item Variants"
+  item_translations:
+    caption: "Item Translations"
+  item_vendor_catalog:
+    caption: "Item Vendor Catalog"
+  vendor_item_catalog:
+    caption: "Vendor Item Catalog"
+  inventory_posting_groups:
+    caption: "Inventory Posting Groups"
+  inventory_setup:
+    caption: "Inventory Setup"

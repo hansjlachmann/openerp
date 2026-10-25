@@ -1,0 +1,24 @@
+table:
+  id: 204
+  name: "Unit_of_Measure"
+  description: "Units of measure (table 204)"
+  data_caption_fields: [code, description]
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 10
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

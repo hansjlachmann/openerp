@@ -1,0 +1,49 @@
+page:
+  id: 114
+  type: List
+  name: Item Vendor Catalog
+  source_table: Item_Vendor
+  caption: Item Vendor Catalog
+  editable: true
+  delayed_insert: true
+  # The vendors of an item (Item card → Vendors); 297 shows the items of a vendor
+
+  layout:
+    repeater:
+      fields:
+        - source: item_no
+          width: 110
+          visible: false
+        - source: vendor_no
+          width: 110
+        - source: vendor_item_no
+          width: 150
+        - source: unit_of_measure_code
+          width: 130
+        - source: starting_date
+          width: 110
+        - source: currency_code
+          width: 100
+        - source: direct_unit_cost
+          width: 130
+        - source: lead_time_calculation
+          width: 150
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

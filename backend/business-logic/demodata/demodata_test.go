@@ -79,8 +79,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 338 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 338 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 426 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 426 master data records, at least 500 G/L entries", counts)
 	}
 	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
 	// monthly periods and the next year's first, the oldest year closed
@@ -94,7 +94,7 @@ func TestCreateSmall(t *testing.T) {
 	}
 	// Vendors with their ledger entries (Balance (LCY) is what is owed: the open invoices),
 	// comments, order addresses and bank accounts; the VEND series continues after them
-	if counts.Vendors != 8 || counts.VendorLedgerEntries < 8*12 || counts.VendorData != 7 {
+	if counts.Vendors != 8 || counts.VendorLedgerEntries < 8*12 || counts.VendorData != 22 {
 		t.Errorf("vendors %d, vendor ledger entries %d, vendor data %d", counts.Vendors, counts.VendorLedgerEntries, counts.VendorData)
 	}
 	var vend gtables.Vendor

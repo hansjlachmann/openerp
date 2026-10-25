@@ -850,7 +850,7 @@ func (t *TaxBusinessPostingGroup) renameReferences(field string, oldValue, newVa
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "tax_bus_posting_group", "", 0}, {"FA_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Gen_Business_Posting_Group", false, "def_tax_bus_posting_group", "", 0}, {"Gen_Journal_Line", false, "tax_bus_posting_group", "", 0}, {"Gen_Journal_Line", false, "bal_tax_bus_posting_group", "", 0}, {"G_L_Account", false, "tax_bus_posting_group", "", 0}, {"G_L_Entry", false, "tax_bus_posting_group", "", 0}, {"Maintenance_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Tax_Entry", false, "tax_bus_posting_group", "", 0}, {"Tax_Posting_Setup", false, "tax_bus_posting_group", "", 0}, {"Vendor", false, "tax_bus_posting_group", "", 0}},
+		"code": {{"Customer", false, "tax_bus_posting_group", "", 0}, {"FA_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Gen_Business_Posting_Group", false, "def_tax_bus_posting_group", "", 0}, {"Gen_Journal_Line", false, "tax_bus_posting_group", "", 0}, {"Gen_Journal_Line", false, "bal_tax_bus_posting_group", "", 0}, {"G_L_Account", false, "tax_bus_posting_group", "", 0}, {"G_L_Entry", false, "tax_bus_posting_group", "", 0}, {"Item", false, "tax_bus_posting_gr_price", "", 0}, {"Maintenance_Ledger_Entry", false, "tax_bus_posting_group", "", 0}, {"Tax_Entry", false, "tax_bus_posting_group", "", 0}, {"Tax_Posting_Setup", false, "tax_bus_posting_group", "", 0}, {"Vendor", false, "tax_bus_posting_group", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

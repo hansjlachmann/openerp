@@ -8,6 +8,11 @@ common:
 
   # Common actions
   actions:
+    translations: "Translations"
+    items: "Items"
+    units_of_measure: "Units of Measure"
+    variants: "Variants"
+    vendors: "Vendors"
     setup: "Setup"
     details: "Details"
     tax_register: "Tax Register"
@@ -77,6 +82,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    ordering: "Ordering"
     lines: "Lines"
     sales: "Sales"
     purchases: "Purchases"

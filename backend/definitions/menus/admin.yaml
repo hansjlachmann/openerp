@@ -376,7 +376,7 @@ menu:
     icon: package
     items:
       - name: "Items"
-        page_id: 30
+        page_id: 31
       - separator: true
       - name: "Item Journals"
       - name: "Item Transfer Journals"

@@ -164,3 +164,8 @@ errors:
   ERR_JNL_SPECIFY_ONE: "Du skal angive %1 eller %2."
   ERR_JNL_CUST_OR_VEND: "%1 eller %2 skal være Debitor eller Kreditor."
   ERR_JNL_UPDATE_INTERRUPTED: "Opdateringen blev afbrudt på grund af advarslen."
+  # Items
+  ERR_ITEM_UOM_QTY_NOT_POSITIVE: "%1 skal være større end 0."
+  ERR_ITEM_PRICE_INCL_TAX_SALES_TAX: "Priser inkl. moms kan ikke beregnes, når %1 er %2."
+  ERR_ITEM_OPEN_ENTRIES_CHANGE: "Du kan ikke ændre %1 for vare %2, fordi der findes åbne poster."
+  ERR_ITEM_HAS_ENTRIES_CHANGE: "Du kan ikke ændre %1, fordi der findes poster for denne vare."

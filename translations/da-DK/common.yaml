@@ -8,6 +8,11 @@ common:
 
   # Common actions
   actions:
+    translations: "Oversættelser"
+    items: "Varer"
+    units_of_measure: "Enheder"
+    variants: "Varianter"
+    vendors: "Kreditorer"
     setup: "Opsætning"
     details: "Detaljer"
     tax_register: "Momsjournal"
@@ -77,6 +82,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    ordering: "Bestilling"
     lines: "Linjer"
     sales: "Salg"
     purchases: "Køb"

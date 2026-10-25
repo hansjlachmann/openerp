@@ -429,3 +429,27 @@ pages:
     caption: "Momsdetaljer"
   tax_posting_setup:
     caption: "Momsbogføringsopsætning"
+
+  # Items
+  item_list:
+    caption: "Vareoversigt"
+  item_card:
+    caption: "Varekort"
+  units_of_measure:
+    caption: "Enheder"
+  unit_of_measure_translation:
+    caption: "Enhedsoversættelse"
+  item_units_of_measure:
+    caption: "Vareenheder"
+  item_variants:
+    caption: "Varevarianter"
+  item_translations:
+    caption: "Vareoversættelser"
+  item_vendor_catalog:
+    caption: "Varens kreditorkatalog"
+  vendor_item_catalog:
+    caption: "Kreditorens varekatalog"
+  inventory_posting_groups:
+    caption: "Lagerbogføringsgrupper"
+  inventory_setup:
+    caption: "Lageropsætning"

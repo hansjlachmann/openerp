@@ -1,0 +1,70 @@
+table:
+  id: 30
+  name: "Item_Translation"
+  description: "An item's description in a language (table 30)"
+  fields:
+    - name: item_no
+      no: 1
+      type: types.Code
+      db_name: item_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: variant_code
+      no: 5400
+      type: types.Code
+      db_name: variant_code
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Item_Variant
+        field: code
+        filters:
+          item_no: {field: item_no}
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: language_code
+      no: 2
+      type: types.Code
+      db_name: language_code
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: description
+      no: 3
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: description_2
+      no: 4
+      type: types.Text
+      db_name: description_2
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [item_no, variant_code, language_code]
+      clustered: true

@@ -1,0 +1,37 @@
+table:
+  id: 94
+  name: "Inventory_Posting_Group"
+  description: "Inventory posting groups: the inventory account of the items (table 94)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 900
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: inventory_account
+      no: 6
+      type: types.Code
+      db_name: inventory_account
+      length: 20
+      table_relation:
+        table: G_L_Account
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

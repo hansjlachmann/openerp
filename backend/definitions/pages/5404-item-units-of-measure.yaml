@@ -1,0 +1,39 @@
+page:
+  id: 5404
+  type: List
+  name: Item Units of Measure
+  source_table: Item_Unit_of_Measure
+  caption: Item Units of Measure
+  editable: true
+  delayed_insert: true
+  # Opened from an item (filtered on its No.): new lines take it
+
+  layout:
+    repeater:
+      fields:
+        - source: item_no
+          width: 110
+          visible: false
+        - source: code
+          width: 100
+        - source: qty_per_unit_of_measure
+          width: 160
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

@@ -164,3 +164,8 @@ errors:
   ERR_JNL_SPECIFY_ONE: "Du må angi %1 eller %2."
   ERR_JNL_CUST_OR_VEND: "%1 eller %2 må være Kunde eller Leverandør."
   ERR_JNL_UPDATE_INTERRUPTED: "Oppdateringen ble avbrutt på grunn av advarselen."
+  # Items
+  ERR_ITEM_UOM_QTY_NOT_POSITIVE: "%1 må være større enn 0."
+  ERR_ITEM_PRICE_INCL_TAX_SALES_TAX: "Priser inkludert mva. kan ikke beregnes når %1 er %2."
+  ERR_ITEM_OPEN_ENTRIES_CHANGE: "Du kan ikke endre %1 for vare %2 fordi det finnes åpne poster."
+  ERR_ITEM_HAS_ENTRIES_CHANGE: "Du kan ikke endre %1 fordi det finnes poster for denne varen."

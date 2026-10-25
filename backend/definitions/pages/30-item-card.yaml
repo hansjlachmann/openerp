@@ -1,0 +1,139 @@
+page:
+  id: 30
+  type: Card
+  name: Item Card
+  source_table: Item
+  caption: Item Card
+  list_page_id: 31
+  enable_navigation: true
+  editable: true
+  focus_field: "no"
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            assist_edit: "table:Item.AssistEdit"   # pick another number series (…, Shift+F2)
+          - source: description
+          - source: base_unit_of_measure
+          - source: shelf_bin_no
+          - source: search_description
+          - source: blocked
+          - source: last_date_modified
+          - source: comment
+      - name: Invoicing
+        caption: Invoicing
+        fields:
+          - source: costing_method
+          - source: average_cost
+          - source: standard_cost
+          - source: unit_cost
+          - source: last_direct_cost
+          - source: indirect_cost_percent
+          - source: price_profit_calculation
+          - source: profit_percent
+          - source: unit_price
+          - source: unit_list_price
+          - source: minimum_unit_price
+          - source: price_includes_tax
+          - source: tax_bus_posting_gr_price
+          - source: inventory_posting_group
+          - source: allow_invoice_disc
+          - source: gen_prod_posting_group
+          - source: tax_prod_posting_group
+          - source: tax_group_code
+          - source: sales_unit_of_measure
+      - name: Ordering
+        caption: Ordering
+        fields:
+          - source: vendor_no
+          - source: vendor_item_no
+          - source: lead_time_calculation
+          - source: reorder_point
+          - source: maximum_inventory
+          - source: reorder_quantity
+          - source: purch_unit_of_measure
+          - source: alternative_item_no
+          - source: reserve
+          - source: rounding_precision
+      - name: Foreign Trade
+        caption: Foreign Trade
+        fields:
+          - source: gross_weight
+          - source: net_weight
+          - source: units_per_parcel
+          - source: unit_volume
+          - source: country_purchased_code
+          - source: country_of_origin_code
+          - source: duty_code
+          - source: duty_due_percent
+          - source: duty_unit_conversion
+
+  actions:
+    - name: Back to List
+      caption: Back to List
+      image: Back
+      shortcut: Esc
+      promoted: true
+      run_page: 31
+
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Units of Measure
+      caption: Units of Measure
+      image: Rows
+      promoted: true
+      run_page: 5404
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Variants
+      caption: Variants
+      image: Lines
+      promoted: true
+      run_page: 5401
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Translations
+      caption: Translations
+      image: Document
+      promoted: true
+      run_page: 35
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Vendors
+      caption: Vendors
+      image: Navigate
+      promoted: true
+      run_page: 114
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "3"}   # Item
+        - {field: "no", value: "no"}

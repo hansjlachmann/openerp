@@ -429,3 +429,27 @@ pages:
     caption: "Mva.-detaljer"
   tax_posting_setup:
     caption: "Mva.-bokføringsoppsett"
+
+  # Items
+  item_list:
+    caption: "Vareliste"
+  item_card:
+    caption: "Varekort"
+  units_of_measure:
+    caption: "Enheter"
+  unit_of_measure_translation:
+    caption: "Enhetsoversettelse"
+  item_units_of_measure:
+    caption: "Vareenheter"
+  item_variants:
+    caption: "Varevarianter"
+  item_translations:
+    caption: "Vareoversettelser"
+  item_vendor_catalog:
+    caption: "Varens leverandørkatalog"
+  vendor_item_catalog:
+    caption: "Leverandørens varekatalog"
+  inventory_posting_groups:
+    caption: "Lagerbokføringsgrupper"
+  inventory_setup:
+    caption: "Lageroppsett"
