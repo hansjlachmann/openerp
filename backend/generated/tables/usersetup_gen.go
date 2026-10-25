@@ -1366,9 +1366,12 @@ func (t *UserSetup) getLimitClause() string {
 func (t *UserSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, UserSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, allow_posting_from, allow_posting_to, register_time FROM "%s" WHERE %s ORDER BY user_id ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, allow_posting_from, allow_posting_to, register_time FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1410,9 +1413,15 @@ func (t *UserSetup) FindFirst() bool {
 func (t *UserSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, UserSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, allow_posting_from, allow_posting_to, register_time FROM "%s" WHERE %s ORDER BY user_id DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, allow_posting_from, allow_posting_to, register_time FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

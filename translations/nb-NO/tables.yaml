@@ -524,6 +524,7 @@ tables:
   price_group:
     caption: "Prisgruppe"
     fields:
+      tax_bus_posting_gr_price: "Mva.-bedriftsbokf.gruppe (pris)"
       code: "Kode"
       price_includes_tax: "Pris inkl. mva."
       allow_quantity_disc: "Tillat antallsrabatt"
@@ -2518,6 +2519,8 @@ tables:
   item:
     caption: "Vare"
     fields:
+      sales_qty_disc_code: "Antallsrabattkode salg"
+      item_cust_disc_gr: "Vare-/kunderabattgr."
       no: "Nr."
       no_2: "Nr. 2"
       description: "Beskrivelse"
@@ -2597,3 +2600,36 @@ tables:
         never: "Aldri"
         optional: "Valgfritt"
         always: "Alltid"
+
+  # Item prices and discounts
+  item_price:
+    caption: "Varepris"
+    fields:
+      item_no: "Varenr."
+      price_group_code: "Prisgruppekode"
+      unit_of_measure_code: "Enhetskode"
+      currency_code: "Valutakode"
+      starting_date: "Startdato"
+      unit_price: "Enhetspris"
+      price_includes_tax: "Pris inkl. mva."
+      allow_quantity_disc: "Tillat antallsrabatt"
+      allow_cust_item_disc: "Tillat kunde-/varerabatt"
+      allow_invoice_disc: "Tillat fakturarabatt"
+      tax_bus_posting_gr_price: "Mva.-bedriftsbokf.gruppe (pris)"
+  item_sales_qty_disc:
+    caption: "Antallsrabatt salg"
+    fields:
+      code: "Kode"
+      minimum_quantity: "Minimumsantall"
+      discount_percent: "Rabatt %"
+  item_discount_group:
+    caption: "Varerabattgruppe"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+  cust_item_discount:
+    caption: "Kunde-/varerabatt"
+    fields:
+      customer_disc_group: "Kunderabattgruppe"
+      item_discount_group: "Varerabattgruppe"
+      discount_percent: "Rabatt %"

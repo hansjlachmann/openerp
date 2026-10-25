@@ -4816,9 +4816,12 @@ func (t *GLAccount) getLimitClause() string {
 func (t *GLAccount) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLAccountTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4937,9 +4940,15 @@ func (t *GLAccount) FindFirst() bool {
 func (t *GLAccount) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLAccountTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, account_type, department_code, project_code, income_balance, debit_credit, no_2, blocked, direct_posting, reconciliation_account, new_page, no_of_blank_lines, indentation, last_date_modified, totaling, consol_debit_acc, consol_credit_acc, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, automatic_ext_text, department_posting, project_posting, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, exchange_rate_adjustment FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

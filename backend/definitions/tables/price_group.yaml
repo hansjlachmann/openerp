@@ -35,6 +35,20 @@ table:
       db_name: allow_invoice_disc
       default: true
 
+    - name: tax_bus_posting_gr_price
+      no: 6
+      type: types.Code
+      db_name: tax_bus_posting_gr_price
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
   keys:
     - name: Primary
       fields: [code]

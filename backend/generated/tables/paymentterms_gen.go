@@ -1505,9 +1505,12 @@ func (t *PaymentTerms) getLimitClause() string {
 func (t *PaymentTerms) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1555,9 +1558,15 @@ func (t *PaymentTerms) FindFirst() bool {
 func (t *PaymentTerms) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PaymentTermsTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, due_date_calculation, discount_date_calculation, discount_percent, description, active FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

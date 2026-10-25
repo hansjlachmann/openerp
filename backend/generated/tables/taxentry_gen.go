@@ -2743,9 +2743,12 @@ func (t *TaxEntry) getLimitClause() string {
 func (t *TaxEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2879,9 +2882,15 @@ func (t *TaxEntry) FindFirst() bool {
 func (t *TaxEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gen_bus_posting_group, gen_prod_posting_group, posting_date, document_no, document_type, type, base, amount, tax_calculation_type, sell_to_buy_from_no, eu_3_party_trade, user_id, source_code, reason_code, closed_by_entry_no, closed, country_code, internal_ref_no, transaction_no, unrealized_amount, unrealized_base, remaining_unrealized_amount, remaining_unrealized_base, external_document_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_jurisdiction_code, tax_group_used, tax_type, tax_on_tax, sales_tax_connection_no, unrealized_tax_entry_no, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

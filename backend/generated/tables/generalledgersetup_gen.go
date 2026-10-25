@@ -2681,9 +2681,12 @@ func (t *GeneralLedgerSetup) getLimitClause() string {
 func (t *GeneralLedgerSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GeneralLedgerSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2788,9 +2791,15 @@ func (t *GeneralLedgerSetup) FindFirst() bool {
 func (t *GeneralLedgerSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GeneralLedgerSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_from, allow_posting_to, register_time, pmt_disc_excl_tax, unrealized_tax, adjust_for_payment_disc, mark_cr_memos_as_corrections, local_address_format, inv_rounding_precision_lcy, inv_rounding_type_lcy, local_cont_addr_format, recalculate_sales_tax, summarize_gl_entries, amount_decimal_places, unit_amount_decimal_places, additional_reporting_currency, vat_tolerance_percent, emu_currency, lcy_code, tax_exchange_rate_adjustment, amount_rounding_precision, unit_amount_rounding_precision, appln_rounding_precision, bank_account_nos FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -1942,9 +1942,12 @@ func (t *GenJournalTemplate) getLimitClause() string {
 func (t *GenJournalTemplate) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalTemplateTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, description, test_report_id, page_id, posting_report_id, force_posting_report, type, source_code, reason_code, recurring, force_doc_balance, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT name, description, test_report_id, page_id, posting_report_id, force_posting_report, type, source_code, reason_code, recurring, force_doc_balance, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2013,9 +2016,15 @@ func (t *GenJournalTemplate) FindFirst() bool {
 func (t *GenJournalTemplate) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalTemplateTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT name, description, test_report_id, page_id, posting_report_id, force_posting_report, type, source_code, reason_code, recurring, force_doc_balance, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT name, description, test_report_id, page_id, posting_report_id, force_posting_report, type, source_code, reason_code, recurring, force_doc_balance, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

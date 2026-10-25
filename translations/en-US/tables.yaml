@@ -524,6 +524,7 @@ tables:
   price_group:
     caption: "Price Group"
     fields:
+      tax_bus_posting_gr_price: "Tax Bus. Posting Gr. (Price)"
       code: "Code"
       price_includes_tax: "Price Includes Tax"
       allow_quantity_disc: "Allow Quantity Disc."
@@ -2518,6 +2519,8 @@ tables:
   item:
     caption: "Item"
     fields:
+      sales_qty_disc_code: "Sales Qty. Disc. Code"
+      item_cust_disc_gr: "Item/Cust. Disc. Gr."
       no: "No."
       no_2: "No. 2"
       description: "Description"
@@ -2597,3 +2600,36 @@ tables:
         never: "Never"
         optional: "Optional"
         always: "Always"
+
+  # Item prices and discounts
+  item_price:
+    caption: "Item Price"
+    fields:
+      item_no: "Item No."
+      price_group_code: "Price Group Code"
+      unit_of_measure_code: "Unit of Measure Code"
+      currency_code: "Currency Code"
+      starting_date: "Starting Date"
+      unit_price: "Unit Price"
+      price_includes_tax: "Price Includes Tax"
+      allow_quantity_disc: "Allow Quantity Disc."
+      allow_cust_item_disc: "Allow Cust./Item Disc."
+      allow_invoice_disc: "Allow Invoice Disc."
+      tax_bus_posting_gr_price: "Tax Bus. Posting Gr. (Price)"
+  item_sales_qty_disc:
+    caption: "Item Sales Qty. Disc."
+    fields:
+      code: "Code"
+      minimum_quantity: "Minimum Quantity"
+      discount_percent: "Discount %"
+  item_discount_group:
+    caption: "Item Discount Group"
+    fields:
+      code: "Code"
+      description: "Description"
+  cust_item_discount:
+    caption: "Cust./Item Discount"
+    fields:
+      customer_disc_group: "Customer Disc. Group"
+      item_discount_group: "Item Discount Group"
+      discount_percent: "Discount %"

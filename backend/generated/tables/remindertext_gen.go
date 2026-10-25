@@ -1504,9 +1504,12 @@ func (t *ReminderText) getLimitClause() string {
 func (t *ReminderText) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ReminderTextTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT reminder_terms_code, reminder_level, position, line_no, text FROM "%s" WHERE %s ORDER BY reminder_terms_code, reminder_level, position, line_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT reminder_terms_code, reminder_level, position, line_no, text FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1547,9 +1550,15 @@ func (t *ReminderText) FindFirst() bool {
 func (t *ReminderText) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ReminderTextTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT reminder_terms_code, reminder_level, position, line_no, text FROM "%s" WHERE %s ORDER BY reminder_terms_code, reminder_level, position, line_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT reminder_terms_code, reminder_level, position, line_no, text FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

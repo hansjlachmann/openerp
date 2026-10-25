@@ -1386,9 +1386,12 @@ func (t *ItemVariant) getLimitClause() string {
 func (t *ItemVariant) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ItemVariantTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT item_no, code, description, description_2 FROM "%s" WHERE %s ORDER BY item_no, code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT item_no, code, description, description_2 FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1430,9 +1433,15 @@ func (t *ItemVariant) FindFirst() bool {
 func (t *ItemVariant) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ItemVariantTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT item_no, code, description, description_2 FROM "%s" WHERE %s ORDER BY item_no, code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT item_no, code, description, description_2 FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

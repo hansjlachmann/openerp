@@ -1543,9 +1543,12 @@ func (t *UserPreferences) getLimitClause() string {
 func (t *UserPreferences) FindFirst() bool {
 	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_id, page_id, preference_type, preference_name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1594,9 +1597,15 @@ func (t *UserPreferences) FindFirst() bool {
 func (t *UserPreferences) FindLast() bool {
 	tableName := UserPreferencesTableName
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY user_id, page_id, preference_type, preference_name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT user_id, page_id, preference_type, preference_name, preference_data, created_at, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

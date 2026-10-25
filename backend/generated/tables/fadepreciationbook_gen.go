@@ -4533,9 +4533,12 @@ func (t *FADepreciationBook) getLimitClause() string {
 func (t *FADepreciationBook) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FADepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT fa_no, depreciation_book_code, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, no_of_depreciation_months, fixed_depr_amount, declining_balance_percent, depreciation_table_code, final_rounding_amount, ending_book_value, fa_posting_group, depreciation_ending_date, acquisition_date, g_l_acquisition_date, disposal_date, last_acquisition_cost_date, last_depreciation_date, last_write_down_date, last_appreciation_date, last_custom_1_date, last_custom_2_date, last_salvage_value_date, fa_exchange_rate, fixed_depr_amount_below_zero, last_date_modified, first_user_defined_depr_date, use_fa_ledger_check, last_maintenance_date, depr_below_zero_percent, projected_disposal_date, projected_proceeds_on_disposal, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_this_year_percent_custom_1, property_class_custom_1, description, main_asset_component, component_of_main_asset, fa_add_currency_factor FROM "%s" WHERE %s ORDER BY fa_no, depreciation_book_code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT fa_no, depreciation_book_code, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, no_of_depreciation_months, fixed_depr_amount, declining_balance_percent, depreciation_table_code, final_rounding_amount, ending_book_value, fa_posting_group, depreciation_ending_date, acquisition_date, g_l_acquisition_date, disposal_date, last_acquisition_cost_date, last_depreciation_date, last_write_down_date, last_appreciation_date, last_custom_1_date, last_custom_2_date, last_salvage_value_date, fa_exchange_rate, fixed_depr_amount_below_zero, last_date_modified, first_user_defined_depr_date, use_fa_ledger_check, last_maintenance_date, depr_below_zero_percent, projected_disposal_date, projected_proceeds_on_disposal, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_this_year_percent_custom_1, property_class_custom_1, description, main_asset_component, component_of_main_asset, fa_add_currency_factor FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4691,9 +4694,15 @@ func (t *FADepreciationBook) FindFirst() bool {
 func (t *FADepreciationBook) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FADepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT fa_no, depreciation_book_code, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, no_of_depreciation_months, fixed_depr_amount, declining_balance_percent, depreciation_table_code, final_rounding_amount, ending_book_value, fa_posting_group, depreciation_ending_date, acquisition_date, g_l_acquisition_date, disposal_date, last_acquisition_cost_date, last_depreciation_date, last_write_down_date, last_appreciation_date, last_custom_1_date, last_custom_2_date, last_salvage_value_date, fa_exchange_rate, fixed_depr_amount_below_zero, last_date_modified, first_user_defined_depr_date, use_fa_ledger_check, last_maintenance_date, depr_below_zero_percent, projected_disposal_date, projected_proceeds_on_disposal, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_this_year_percent_custom_1, property_class_custom_1, description, main_asset_component, component_of_main_asset, fa_add_currency_factor FROM "%s" WHERE %s ORDER BY fa_no, depreciation_book_code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT fa_no, depreciation_book_code, depreciation_method, depreciation_starting_date, straight_line_percent, no_of_depreciation_years, no_of_depreciation_months, fixed_depr_amount, declining_balance_percent, depreciation_table_code, final_rounding_amount, ending_book_value, fa_posting_group, depreciation_ending_date, acquisition_date, g_l_acquisition_date, disposal_date, last_acquisition_cost_date, last_depreciation_date, last_write_down_date, last_appreciation_date, last_custom_1_date, last_custom_2_date, last_salvage_value_date, fa_exchange_rate, fixed_depr_amount_below_zero, last_date_modified, first_user_defined_depr_date, use_fa_ledger_check, last_maintenance_date, depr_below_zero_percent, projected_disposal_date, projected_proceeds_on_disposal, depr_starting_date_custom_1, depr_ending_date_custom_1, accum_depr_percent_custom_1, depr_this_year_percent_custom_1, property_class_custom_1, description, main_asset_component, component_of_main_asset, fa_add_currency_factor FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

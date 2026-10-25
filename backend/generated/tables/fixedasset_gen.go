@@ -2572,9 +2572,12 @@ func (t *FixedAsset) getLimitClause() string {
 func (t *FixedAsset) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FixedAssetTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, search_description, description_2, fa_class_code, fa_subclass_code, department_code, project_code, location_code, fa_location_code, vendor_no, main_asset_component, component_of_main_asset, budgeted_asset, warranty_date, responsible_employee, serial_no, last_date_modified, blocked, picture, maintenance_vendor_no, under_maintenance, next_service_date, inactive, no_series FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, search_description, description_2, fa_class_code, fa_subclass_code, department_code, project_code, location_code, fa_location_code, vendor_no, main_asset_component, component_of_main_asset, budgeted_asset, warranty_date, responsible_employee, serial_no, last_date_modified, blocked, picture, maintenance_vendor_no, under_maintenance, next_service_date, inactive, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2677,9 +2680,15 @@ func (t *FixedAsset) FindFirst() bool {
 func (t *FixedAsset) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FixedAssetTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, search_description, description_2, fa_class_code, fa_subclass_code, department_code, project_code, location_code, fa_location_code, vendor_no, main_asset_component, component_of_main_asset, budgeted_asset, warranty_date, responsible_employee, serial_no, last_date_modified, blocked, picture, maintenance_vendor_no, under_maintenance, next_service_date, inactive, no_series FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, search_description, description_2, fa_class_code, fa_subclass_code, department_code, project_code, location_code, fa_location_code, vendor_no, main_asset_component, component_of_main_asset, budgeted_asset, warranty_date, responsible_employee, serial_no, last_date_modified, blocked, picture, maintenance_vendor_no, under_maintenance, next_service_date, inactive, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

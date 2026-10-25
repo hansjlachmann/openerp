@@ -1601,9 +1601,12 @@ func (t *GenJournalBatch) getLimitClause() string {
 func (t *GenJournalBatch) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalBatchTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT journal_template_name, name, description, reason_code, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY journal_template_name, name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT journal_template_name, name, description, reason_code, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1657,9 +1660,15 @@ func (t *GenJournalBatch) FindFirst() bool {
 func (t *GenJournalBatch) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GenJournalBatchTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT journal_template_name, name, description, reason_code, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY journal_template_name, name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT journal_template_name, name, description, reason_code, bal_account_type, bal_account_no, no_series, posting_no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

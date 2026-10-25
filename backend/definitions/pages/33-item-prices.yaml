@@ -1,0 +1,56 @@
+page:
+  id: 33
+  type: List
+  name: Item Prices
+  source_table: Item_Price
+  caption: Item Prices
+  editable: true
+  delayed_insert: true
+  # The prices of an item (Item card → Prices); the best one for a sale: codeunit 52 (business-logic/itemprice)
+
+  layout:
+    repeater:
+      fields:
+        - source: item_no
+          width: 110
+          visible: false
+        - source: price_group_code
+          width: 130
+        - source: unit_of_measure_code
+          width: 130
+        - source: currency_code
+          width: 110
+        - source: starting_date
+          width: 110
+        - source: unit_price
+          width: 120
+        - source: price_includes_tax
+          width: 110
+        - source: tax_bus_posting_gr_price
+          width: 150
+          visible: false
+        - source: allow_quantity_disc
+          width: 110
+        - source: allow_cust_item_disc
+          width: 120
+        - source: allow_invoice_disc
+          width: 110
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

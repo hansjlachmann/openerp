@@ -1862,9 +1862,12 @@ func (t *SourceCodeSetup) getLimitClause() string {
 func (t *SourceCodeSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, SourceCodeSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1942,9 +1945,15 @@ func (t *SourceCodeSetup) FindFirst() bool {
 func (t *SourceCodeSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, SourceCodeSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

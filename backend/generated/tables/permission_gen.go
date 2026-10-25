@@ -1599,9 +1599,12 @@ func (t *Permission) getLimitClause() string {
 func (t *Permission) FindFirst() bool {
 	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY role_id, table_name ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1656,9 +1659,15 @@ func (t *Permission) FindFirst() bool {
 func (t *Permission) FindLast() bool {
 	tableName := PermissionTableName
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY role_id, table_name DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT role_id, table_name, can_read, can_insert, can_modify, can_delete, object_type, object_id, can_execute FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

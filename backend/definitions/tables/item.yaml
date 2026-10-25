@@ -8,7 +8,7 @@ table:
   # Left out until their tables exist: 6 Bill of Materials (BOM), 47 Tariff No., 84/85 Qty. on
   # Purch./Sales Order, 96 Automatic Ext. Text, 101-103/5429/5430 reserved quantities, 104
   # Add.-Curr. Average Cost, manufacturing and requisition fields 5400-5421/5428, 5423 Bin Filter,
-  # 10004 Duty Class (local series). Prices/discounts (13, 14), ledger FlowFields (68-83, 93, 94,
+  # 10004 Duty Class (local series). Ledger FlowFields (68-83, 93, 94,
   # 89 Drop Shipment Filter) and 92 Picture come with the next parts of the step.
   fields:
     - name: no
@@ -89,6 +89,35 @@ table:
       type: types.Code
       db_name: shelf_bin_no
       length: 10
+
+    - name: sales_qty_disc_code
+      no: 13
+      type: types.Code
+      db_name: sales_qty_disc_code
+      length: 20
+      table_relation:
+        table: Item
+        field: no
+        validate: false
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: item_cust_disc_gr
+      no: 14
+      type: types.Code
+      db_name: item_cust_disc_gr
+      length: 10
+      table_relation:
+        table: Item_Discount_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
 
     - name: allow_invoice_disc
       no: 15

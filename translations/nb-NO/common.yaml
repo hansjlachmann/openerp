@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    prices: "Priser"
+    quantity_discounts: "Antallsrabatter"
+    item_cust_discounts: "Vare-/kunderabatter"
+    cust_item_discounts: "Kunde-/varerabatter"
     translations: "Oversettelser"
     items: "Varer"
     units_of_measure: "Enheter"

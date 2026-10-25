@@ -8832,9 +8832,12 @@ func (t *Vendor) getLimitClause() string {
 func (t *Vendor) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, VendorTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, budgeted_amount, vendor_posting_group, currency_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, purchaser_code, shipment_method_code, shipping_agent_code, invoice_disc_code, country_code, blocked, pay_to_vendor_no, priority, payment_method_code, last_date_modified, application_method, fax_no, telex_answer_back, vat_registration_no, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, budgeted_amount, vendor_posting_group, currency_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, purchaser_code, shipment_method_code, shipping_agent_code, invoice_disc_code, country_code, blocked, pay_to_vendor_no, priority, payment_method_code, last_date_modified, application_method, fax_no, telex_answer_back, vat_registration_no, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -8996,9 +8999,15 @@ func (t *Vendor) FindFirst() bool {
 func (t *Vendor) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, VendorTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, budgeted_amount, vendor_posting_group, currency_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, purchaser_code, shipment_method_code, shipping_agent_code, invoice_disc_code, country_code, blocked, pay_to_vendor_no, priority, payment_method_code, last_date_modified, application_method, fax_no, telex_answer_back, vat_registration_no, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, budgeted_amount, vendor_posting_group, currency_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, purchaser_code, shipment_method_code, shipping_agent_code, invoice_disc_code, country_code, blocked, pay_to_vendor_no, priority, payment_method_code, last_date_modified, application_method, fax_no, telex_answer_back, vat_registration_no, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

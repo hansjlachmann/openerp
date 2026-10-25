@@ -1,0 +1,24 @@
+table:
+  id: 341
+  name: "Item_Discount_Group"
+  description: "Item discount groups (table 341)"
+  data_caption_fields: [code, description]
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: description
+      no: 2
+      type: types.Text
+      db_name: description
+      length: 50
+
+  keys:
+    - name: Primary
+      fields: [code]
+      clustered: true

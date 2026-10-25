@@ -1559,9 +1559,12 @@ func (t *FASetup) getLimitClause() string {
 func (t *FASetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FASetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_to_main_assets, default_depr_book, allow_fa_posting_from, allow_fa_posting_to, insurance_depr_book, automatic_insurance_posting, fixed_asset_nos, insurance_nos FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_to_main_assets, default_depr_book, allow_fa_posting_from, allow_fa_posting_to, insurance_depr_book, automatic_insurance_posting, fixed_asset_nos, insurance_nos FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1618,9 +1621,15 @@ func (t *FASetup) FindFirst() bool {
 func (t *FASetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FASetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, allow_posting_to_main_assets, default_depr_book, allow_fa_posting_from, allow_fa_posting_to, insurance_depr_book, automatic_insurance_posting, fixed_asset_nos, insurance_nos FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, allow_posting_to_main_assets, default_depr_book, allow_fa_posting_from, allow_fa_posting_to, insurance_depr_book, automatic_insurance_posting, fixed_asset_nos, insurance_nos FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

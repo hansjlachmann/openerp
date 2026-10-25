@@ -2745,9 +2745,12 @@ func (t *BankAccountLedgerEntry) getLimitClause() string {
 func (t *BankAccountLedgerEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, BankAccountLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, bank_account_no, posting_date, document_type, document_no, description, currency_code, amount, remaining_amount, amount_lcy, bank_acc_posting_group, department_code, project_code, our_contact_code, user_id, source_code, open, positive, closed_by_entry_no, closed_at_date, journal_batch_name, reason_code, bal_account_type, bal_account_no, transaction_no, statement_status, statement_no, statement_line_no, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, document_date, external_document_no FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, bank_account_no, posting_date, document_type, document_no, description, currency_code, amount, remaining_amount, amount_lcy, bank_acc_posting_group, department_code, project_code, our_contact_code, user_id, source_code, open, positive, closed_by_entry_no, closed_at_date, journal_batch_name, reason_code, bal_account_type, bal_account_no, transaction_no, statement_status, statement_no, statement_line_no, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, document_date, external_document_no FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2871,9 +2874,15 @@ func (t *BankAccountLedgerEntry) FindFirst() bool {
 func (t *BankAccountLedgerEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, BankAccountLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, bank_account_no, posting_date, document_type, document_no, description, currency_code, amount, remaining_amount, amount_lcy, bank_acc_posting_group, department_code, project_code, our_contact_code, user_id, source_code, open, positive, closed_by_entry_no, closed_at_date, journal_batch_name, reason_code, bal_account_type, bal_account_no, transaction_no, statement_status, statement_no, statement_line_no, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, document_date, external_document_no FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, bank_account_no, posting_date, document_type, document_no, description, currency_code, amount, remaining_amount, amount_lcy, bank_acc_posting_group, department_code, project_code, our_contact_code, user_id, source_code, open, positive, closed_by_entry_no, closed_at_date, journal_batch_name, reason_code, bal_account_type, bal_account_no, transaction_no, statement_status, statement_no, statement_line_no, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, document_date, external_document_no FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

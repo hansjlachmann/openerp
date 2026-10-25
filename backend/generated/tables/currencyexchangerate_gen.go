@@ -1598,9 +1598,12 @@ func (t *CurrencyExchangeRate) getLimitClause() string {
 func (t *CurrencyExchangeRate) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CurrencyExchangeRateTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT currency_code, starting_date, exchange_rate_amount, adjustment_exch_rate_amount, relational_currency_code, relational_exch_rate_amount, fix_exchange_rate_amount, relational_adjmt_exch_rate_amt FROM "%s" WHERE %s ORDER BY currency_code, starting_date ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT currency_code, starting_date, exchange_rate_amount, adjustment_exch_rate_amount, relational_currency_code, relational_exch_rate_amount, fix_exchange_rate_amount, relational_adjmt_exch_rate_amt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1654,9 +1657,15 @@ func (t *CurrencyExchangeRate) FindFirst() bool {
 func (t *CurrencyExchangeRate) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CurrencyExchangeRateTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT currency_code, starting_date, exchange_rate_amount, adjustment_exch_rate_amount, relational_currency_code, relational_exch_rate_amount, fix_exchange_rate_amount, relational_adjmt_exch_rate_amt FROM "%s" WHERE %s ORDER BY currency_code, starting_date DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT currency_code, starting_date, exchange_rate_amount, adjustment_exch_rate_amount, relational_currency_code, relational_exch_rate_amount, fix_exchange_rate_amount, relational_adjmt_exch_rate_amt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

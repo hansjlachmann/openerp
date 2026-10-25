@@ -2356,9 +2356,12 @@ func (t *SalesReceivablesSetup) getLimitClause() string {
 func (t *SalesReceivablesSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, SalesReceivablesSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2466,9 +2469,15 @@ func (t *SalesReceivablesSetup) FindFirst() bool {
 func (t *SalesReceivablesSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, SalesReceivablesSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, discount_posting, line_discount_calculation, credit_warnings, stockout_warning, shipment_on_invoice, invoice_rounding, ext_doc_no_mandatory, customer_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_shipment_nos, reminder_nos, issued_reminder_nos, fin_chrg_memo_nos, issued_fin_chrg_m_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_shpt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

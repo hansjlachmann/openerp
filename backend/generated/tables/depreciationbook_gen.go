@@ -2694,9 +2694,12 @@ func (t *DepreciationBook) getLimitClause() string {
 func (t *DepreciationBook) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, DepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2832,9 +2835,15 @@ func (t *DepreciationBook) FindFirst() bool {
 func (t *DepreciationBook) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, DepreciationBookTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, g_l_integration_acq_cost, g_l_integration_depreciation, g_l_integration_write_down, g_l_integration_appreciation, g_l_integration_custom_1, g_l_integration_custom_2, g_l_integration_disposal, g_l_integration_maintenance, disposal_calculation_method, use_custom_1_depreciation, allow_depr_below_zero, use_fa_exch_rate_in_duplic, part_of_duplication_list, last_date_modified, allow_indexation, use_same_fa_g_l_posting_dates, default_exchange_rate, use_fa_ledger_check, use_rounding_in_periodic_depr, new_fiscal_year_starting_date, no_of_days_in_fiscal_year, allow_changes_in_depr_fields, default_final_rounding_amount, default_ending_book_value, periodic_depr_date_calc, mark_errors_as_corrections, add_curr_exch_rate_acq_cost, add_curr_exch_rate_depr, add_curr_exch_rate_write_down, add_curr_exch_rate_apprec, add_curr_exch_rate_custom_1, add_curr_exch_rate_custom_2, add_curr_exch_rate_disp, add_curr_exch_rate_maint FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

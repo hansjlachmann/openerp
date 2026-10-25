@@ -2461,9 +2461,12 @@ func (t *FAPostingGroup) getLimitClause() string {
 func (t *FAPostingGroup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FAPostingGroupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, acquisition_cost_account, accum_depreciation_account, write_down_account, appreciation_account, custom_1_account, custom_2_account, acq_cost_acc_on_disposal, accum_depr_acc_on_disposal, write_down_acc_on_disposal, appreciation_acc_on_disposal, custom_1_account_on_disposal, custom_2_account_on_disposal, gains_acc_on_disposal, losses_acc_on_disposal, book_value_acc_on_disposal, sales_acc_on_disposal, write_down_bal_acc_on_disp, apprec_bal_acc_on_disp, custom_1_bal_acc_on_disposal, custom_2_bal_acc_on_disposal, maintenance_expense_account, maintenance_bal_acc, acquisition_cost_bal_acc, depreciation_expense_acc, write_down_expense_acc, appreciation_bal_account, custom_1_expense_acc, custom_2_expense_acc, sales_bal_acc FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, acquisition_cost_account, accum_depreciation_account, write_down_account, appreciation_account, custom_1_account, custom_2_account, acq_cost_acc_on_disposal, accum_depr_acc_on_disposal, write_down_acc_on_disposal, appreciation_acc_on_disposal, custom_1_account_on_disposal, custom_2_account_on_disposal, gains_acc_on_disposal, losses_acc_on_disposal, book_value_acc_on_disposal, sales_acc_on_disposal, write_down_bal_acc_on_disp, apprec_bal_acc_on_disp, custom_1_bal_acc_on_disposal, custom_2_bal_acc_on_disposal, maintenance_expense_account, maintenance_bal_acc, acquisition_cost_bal_acc, depreciation_expense_acc, write_down_expense_acc, appreciation_bal_account, custom_1_expense_acc, custom_2_expense_acc, sales_bal_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2583,9 +2586,15 @@ func (t *FAPostingGroup) FindFirst() bool {
 func (t *FAPostingGroup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, FAPostingGroupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, acquisition_cost_account, accum_depreciation_account, write_down_account, appreciation_account, custom_1_account, custom_2_account, acq_cost_acc_on_disposal, accum_depr_acc_on_disposal, write_down_acc_on_disposal, appreciation_acc_on_disposal, custom_1_account_on_disposal, custom_2_account_on_disposal, gains_acc_on_disposal, losses_acc_on_disposal, book_value_acc_on_disposal, sales_acc_on_disposal, write_down_bal_acc_on_disp, apprec_bal_acc_on_disp, custom_1_bal_acc_on_disposal, custom_2_bal_acc_on_disposal, maintenance_expense_account, maintenance_bal_acc, acquisition_cost_bal_acc, depreciation_expense_acc, write_down_expense_acc, appreciation_bal_account, custom_1_expense_acc, custom_2_expense_acc, sales_bal_acc FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, acquisition_cost_account, accum_depreciation_account, write_down_account, appreciation_account, custom_1_account, custom_2_account, acq_cost_acc_on_disposal, accum_depr_acc_on_disposal, write_down_acc_on_disposal, appreciation_acc_on_disposal, custom_1_account_on_disposal, custom_2_account_on_disposal, gains_acc_on_disposal, losses_acc_on_disposal, book_value_acc_on_disposal, sales_acc_on_disposal, write_down_bal_acc_on_disp, apprec_bal_acc_on_disp, custom_1_bal_acc_on_disposal, custom_2_bal_acc_on_disposal, maintenance_expense_account, maintenance_bal_acc, acquisition_cost_bal_acc, depreciation_expense_acc, write_down_expense_acc, appreciation_bal_account, custom_1_expense_acc, custom_2_expense_acc, sales_bal_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -1610,7 +1610,7 @@ func (t *Currency) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer Ledger Entry", false, "closed_by_currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "source_currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Item_Vendor", false, "currency_code", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "closed_by_currency_code", "", 0}},
+		"code": {{"Bank_Account", false, "currency_code", "", 0}, {"Bank_Account_Ledger_Entry", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "currency_code", "", 0}, {"Currency_Exchange_Rate", false, "relational_currency_code", "", 0}, {"Customer Ledger Entry", false, "currency_code", "", 0}, {"Customer Ledger Entry", false, "closed_by_currency_code", "", 0}, {"Customer", false, "currency_code", "", 0}, {"Customer_Bank_Account", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "currency_code", "", 0}, {"Gen_Journal_Line", false, "source_currency_code", "", 0}, {"General_Ledger_Setup", false, "additional_reporting_currency", "", 0}, {"Item_Price", false, "currency_code", "", 0}, {"Item_Vendor", false, "currency_code", "", 0}, {"Vendor", false, "currency_code", "", 0}, {"Vendor_Bank_Account", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "currency_code", "", 0}, {"Vendor Ledger Entry", false, "closed_by_currency_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2175,9 +2175,12 @@ func (t *Currency) getLimitClause() string {
 func (t *Currency) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CurrencyTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2276,9 +2279,15 @@ func (t *Currency) FindFirst() bool {
 func (t *Currency) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CurrencyTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, last_date_modified, last_date_adjusted, unrealized_gains_acc, realized_gains_acc, unrealized_losses_acc, realized_losses_acc, invoice_rounding_precision, invoice_rounding_type, amount_rounding_precision, unit_amount_rounding_precision, description, amount_decimal_places, unit_amount_decimal_places, appln_rounding_precision, emu_currency, currency_factor, realized_gl_gains_account, realized_gl_losses_account, residual_gains_account, residual_losses_account, conv_lcy_rndg_debit_acc, conv_lcy_rndg_credit_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -2035,9 +2035,12 @@ func (t *PurchasesPayablesSetup) getLimitClause() string {
 func (t *PurchasesPayablesSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PurchasesPayablesSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, discount_posting, receipt_on_invoice, invoice_rounding, ext_doc_no_mandatory, vendor_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_receipt_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_receipt FROM "%s" WHERE %s ORDER BY primary_key ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, discount_posting, receipt_on_invoice, invoice_rounding, ext_doc_no_mandatory, vendor_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_receipt_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_receipt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2124,9 +2127,15 @@ func (t *PurchasesPayablesSetup) FindFirst() bool {
 func (t *PurchasesPayablesSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, PurchasesPayablesSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, discount_posting, receipt_on_invoice, invoice_rounding, ext_doc_no_mandatory, vendor_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_receipt_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_receipt FROM "%s" WHERE %s ORDER BY primary_key DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT primary_key, discount_posting, receipt_on_invoice, invoice_rounding, ext_doc_no_mandatory, vendor_nos, quote_nos, order_nos, invoice_nos, posted_invoice_nos, credit_memo_nos, posted_credit_memo_nos, posted_receipt_nos, blanket_order_nos, calc_inv_discount, appln_between_currencies, copy_comments_blanket_to_order, copy_comments_order_to_invoice, copy_comments_order_to_receipt FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

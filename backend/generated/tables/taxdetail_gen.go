@@ -1611,9 +1611,12 @@ func (t *TaxDetail) getLimitClause() string {
 func (t *TaxDetail) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxDetailTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_jurisdiction_code, tax_group_code, tax_type, maximum_amount_qty, tax_below_maximum, tax_above_maximum, effective_date, calculate_tax_on_tax FROM "%s" WHERE %s ORDER BY tax_jurisdiction_code, tax_group_code, tax_type, effective_date ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_jurisdiction_code, tax_group_code, tax_type, maximum_amount_qty, tax_below_maximum, tax_above_maximum, effective_date, calculate_tax_on_tax FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1667,9 +1670,15 @@ func (t *TaxDetail) FindFirst() bool {
 func (t *TaxDetail) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxDetailTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_jurisdiction_code, tax_group_code, tax_type, maximum_amount_qty, tax_below_maximum, tax_above_maximum, effective_date, calculate_tax_on_tax FROM "%s" WHERE %s ORDER BY tax_jurisdiction_code, tax_group_code, tax_type, effective_date DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_jurisdiction_code, tax_group_code, tax_type, maximum_amount_qty, tax_below_maximum, tax_above_maximum, effective_date, calculate_tax_on_tax FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

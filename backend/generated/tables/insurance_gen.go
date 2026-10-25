@@ -2343,9 +2343,12 @@ func (t *Insurance) getLimitClause() string {
 func (t *Insurance) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, InsuranceTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2429,9 +2432,15 @@ func (t *Insurance) FindFirst() bool {
 func (t *Insurance) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, InsuranceTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, effective_date, policy_no, annual_premium, policy_coverage, insurance_type, last_date_modified, insurance_vendor_no, fa_class_code, fa_subclass_code, fa_location_code, department_code, project_code, location_code, blocked, description, search_description, no_series FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

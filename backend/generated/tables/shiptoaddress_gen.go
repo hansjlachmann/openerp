@@ -2180,9 +2180,12 @@ func (t *ShipToAddress) getLimitClause() string {
 func (t *ShipToAddress) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ShipToAddressTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT customer_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, shipment_method_code, shipping_agent_code, place_of_export, country_code, last_date_modified, location_code, fax_no, telex_answer_back, post_code, state, e_mail, home_page, tax_area_code, tax_liable FROM "%s" WHERE %s ORDER BY customer_no, code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT customer_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, shipment_method_code, shipping_agent_code, place_of_export, country_code, last_date_modified, location_code, fax_no, telex_answer_back, post_code, state, e_mail, home_page, tax_area_code, tax_liable FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2284,9 +2287,15 @@ func (t *ShipToAddress) FindFirst() bool {
 func (t *ShipToAddress) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, ShipToAddressTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT customer_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, shipment_method_code, shipping_agent_code, place_of_export, country_code, last_date_modified, location_code, fax_no, telex_answer_back, post_code, state, e_mail, home_page, tax_area_code, tax_liable FROM "%s" WHERE %s ORDER BY customer_no, code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT customer_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, shipment_method_code, shipping_agent_code, place_of_export, country_code, last_date_modified, location_code, fax_no, telex_answer_back, post_code, state, e_mail, home_page, tax_area_code, tax_liable FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

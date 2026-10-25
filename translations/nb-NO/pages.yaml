@@ -453,3 +453,15 @@ pages:
     caption: "Lagerbokføringsgrupper"
   inventory_setup:
     caption: "Lageroppsett"
+
+  # Item prices and discounts
+  item_prices:
+    caption: "Varepriser"
+  sales_qty_discounts:
+    caption: "Antallsrabatter salg"
+  cust_item_discounts:
+    caption: "Kunde-/varerabatter"
+  item_cust_discounts:
+    caption: "Vare-/kunderabatter"
+  item_disc_groups:
+    caption: "Varerabattgrupper"

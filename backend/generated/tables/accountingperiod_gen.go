@@ -1435,9 +1435,12 @@ func (t *AccountingPeriod) getLimitClause() string {
 func (t *AccountingPeriod) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, AccountingPeriodTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT starting_date, name, new_fiscal_year, closed, date_locked FROM "%s" WHERE %s ORDER BY starting_date ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT starting_date, name, new_fiscal_year, closed, date_locked FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1482,9 +1485,15 @@ func (t *AccountingPeriod) FindFirst() bool {
 func (t *AccountingPeriod) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, AccountingPeriodTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT starting_date, name, new_fiscal_year, closed, date_locked FROM "%s" WHERE %s ORDER BY starting_date DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT starting_date, name, new_fiscal_year, closed, date_locked FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

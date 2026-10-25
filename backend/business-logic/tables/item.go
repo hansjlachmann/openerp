@@ -38,6 +38,7 @@ func (itemLogic) OnInsert(rec *gtables.Item) error {
 		if err != nil {
 			return err
 		}
+		rec.Sales_qty_disc_code = rec.No
 	}
 	return nil
 }
@@ -54,14 +55,18 @@ func (itemLogic) OnRename(rec *gtables.Item) error {
 	return nil
 }
 
-// OnDelete deletes the item's comment lines, vendors, translations, units of measure and
-// variants
+// OnDelete deletes the item's comment lines, vendors, prices, translations, units of measure
+// and variants
 func (itemLogic) OnDelete(rec *gtables.Item) error {
 	DeleteComments(rec, gtables.CommentLine_Table_name.Item, rec.No)
 
 	itemVend := gtables.NewItemVendor(rec)
 	itemVend.SetRange("item_no", rec.No)
 	itemVend.DeleteAll()
+
+	itemPrice := gtables.NewItemPrice(rec)
+	itemPrice.SetRange("item_no", rec.No)
+	itemPrice.DeleteAll()
 
 	itemTranslation := gtables.NewItemTranslation(rec)
 	itemTranslation.SetRange("item_no", rec.No)
@@ -79,7 +84,7 @@ func (itemLogic) OnDelete(rec *gtables.Item) error {
 
 // OnValidate_No: a number typed by hand must be allowed by the Item Nos. series (Manual Nos.)
 // and takes the item out of its series; a new item saved with the number its series just
-// issued (AssistEdit) keeps that series
+// issued (AssistEdit) keeps that series. Sales Qty. Disc. Code follows the No.
 func (itemLogic) OnValidate_No(rec *gtables.Item) error {
 	xRec := rec.XRec()
 	if rec.No != xRec.No {
@@ -96,6 +101,7 @@ func (itemLogic) OnValidate_No(rec *gtables.Item) error {
 			rec.No_series = ""
 		}
 	}
+	rec.Sales_qty_disc_code = rec.No
 	return nil
 }
 
@@ -272,6 +278,7 @@ func AssistEditItem(rec *gtables.Item) (bool, error) {
 			return false, err
 		}
 		rec.No_series = noSeries
+		rec.Sales_qty_disc_code = rec.No
 	}
 	return picked, nil
 }

@@ -2389,6 +2389,18 @@ func (t *{{ .StructName }}) Get(primaryKey interface{}) bool {
 					{{ lowerFirst $f.Name }}Val = {{ fieldGoType $.StructName $f }}(n)
 				}
 			}
+{{- else if eq $f.Type "types.Decimal" }}
+			switch val := v.(type) {
+			case types.Decimal:
+				{{ lowerFirst $f.Name }}Val = val
+			case int:
+				{{ lowerFirst $f.Name }}Val = types.NewDecimalFromInt(int64(val))
+			case float64:
+				{{ lowerFirst $f.Name }}Val = types.NewDecimal(val)
+			case string:
+				// the key part as text: the API's "CODE,10"
+				{{ lowerFirst $f.Name }}Val, _ = types.NewDecimalFromString(strings.TrimSpace(val))
+			}
 {{- else if eq $f.Type "types.Date" }}
 			switch val := v.(type) {
 			case types.Date:
@@ -4041,9 +4053,12 @@ func (t *{{ .StructName }}) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
 {{- end }}
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} ASC LIMIT 1`" + `, tableName, where)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s LIMIT 1`" + `, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4143,9 +4158,15 @@ func (t *{{ .StructName }}) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, {{ .StructName }}TableName)
 {{- end }}
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY {{ range $i, $f := .Table.Fields }}{{ if $f.PrimaryKey }}{{ $f.DBName }}{{ if not (isLastPK $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} DESC LIMIT 1`" + `, tableName, where)
+	query := fmt.Sprintf(` + "`SELECT {{ range $i, $f := .Table.Fields }}{{ if not $f.FlowField }}{{ $f.DBName }}{{ if not (isLastDBField $i $.Table.Fields) }}, {{ end }}{{ end }}{{ end }} FROM \"%s\" WHERE %s ORDER BY %s LIMIT 1`" + `, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

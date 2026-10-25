@@ -9595,9 +9595,12 @@ func (t *Customer) getLimitClause() string {
 func (t *Customer) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -9800,9 +9803,15 @@ func (t *Customer) FindFirst() bool {
 func (t *Customer) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, name, search_name, name_2, address, address_2, city, contact, phone_no, telex_no, our_account_no, territory_code, department_code, project_code, chain_name, budgeted_amount, credit_limit_lcy, customer_posting_group, currency_code, price_group_code, language_code, statistics_group, payment_terms_code, fin_charge_terms_code, salesperson_code, shipment_method_code, shipping_agent_code, place_of_export, invoice_disc_code, cust_item_disc_gr, country_code, collection_method, amount, blocked, invoice_copies, last_statement_no, print_statements, bill_to_customer_no, priority, payment_method_code, last_date_modified, application_method, allow_quantity_disc, prices_including_tax, location_code, fax_no, telex_answer_back, vat_registration_no, combine_shipments, gen_bus_posting_group, picture, post_code, state, e_mail, home_page, reminder_terms_code, no_series, tax_area_code, tax_liable, tax_bus_posting_group, reserve FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

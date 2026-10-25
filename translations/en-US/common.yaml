@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    prices: "Prices"
+    quantity_discounts: "Quantity Discounts"
+    item_cust_discounts: "Item/Cust. Discounts"
+    cust_item_discounts: "Cust./Item Discounts"
     translations: "Translations"
     items: "Items"
     units_of_measure: "Units of Measure"

@@ -2110,9 +2110,12 @@ func (t *JobQueue) getLimitClause() string {
 func (t *JobQueue) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2180,9 +2183,15 @@ func (t *JobQueue) FindFirst() bool {
 func (t *JobQueue) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, JobQueueTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, description, description_2, status, object_id_to_run, parameter, next_start, minutes_between_run, recurring_job, recurrence, notification_email, notify_on, notification_language, user_id FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

@@ -1621,9 +1621,12 @@ func (t *NoSeriesLine) getLimitClause() string {
 func (t *NoSeriesLine) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, NoSeriesLineTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used FROM "%s" WHERE %s ORDER BY series_code, line_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1679,9 +1682,15 @@ func (t *NoSeriesLine) FindFirst() bool {
 func (t *NoSeriesLine) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, NoSeriesLineTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used FROM "%s" WHERE %s ORDER BY series_code, line_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT series_code, line_no, starting_date, starting_no, ending_no, warning_no, increment_by_no, last_no_used, open, last_date_used FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

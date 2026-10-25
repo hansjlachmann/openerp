@@ -2878,9 +2878,12 @@ func (t *GLEntry) getLimitClause() string {
 func (t *GLEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gl_account_no, posting_date, document_type, document_no, description, bal_account_no, amount, department_code, project_code, user_id, source_code, system_created_entry, prior_year_entry, job_no, quantity, tax_amount, business_unit_code, journal_batch_name, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, bal_account_type, transaction_no, debit_amount, credit_amount, document_date, external_document_no, source_type, source_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group, additional_currency_amount, add_currency_debit_amount, add_currency_credit_amount FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gl_account_no, posting_date, document_type, document_no, description, bal_account_no, amount, department_code, project_code, user_id, source_code, system_created_entry, prior_year_entry, job_no, quantity, tax_amount, business_unit_code, journal_batch_name, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, bal_account_type, transaction_no, debit_amount, credit_amount, document_date, external_document_no, source_type, source_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group, additional_currency_amount, add_currency_debit_amount, add_currency_credit_amount FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3029,9 +3032,15 @@ func (t *GLEntry) FindFirst() bool {
 func (t *GLEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, gl_account_no, posting_date, document_type, document_no, description, bal_account_no, amount, department_code, project_code, user_id, source_code, system_created_entry, prior_year_entry, job_no, quantity, tax_amount, business_unit_code, journal_batch_name, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, bal_account_type, transaction_no, debit_amount, credit_amount, document_date, external_document_no, source_type, source_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group, additional_currency_amount, add_currency_debit_amount, add_currency_credit_amount FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, gl_account_no, posting_date, document_type, document_no, description, bal_account_no, amount, department_code, project_code, user_id, source_code, system_created_entry, prior_year_entry, job_no, quantity, tax_amount, business_unit_code, journal_batch_name, reason_code, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, bal_account_type, transaction_no, debit_amount, credit_amount, document_date, external_document_no, source_type, source_no, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group, additional_currency_amount, add_currency_debit_amount, add_currency_credit_amount FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

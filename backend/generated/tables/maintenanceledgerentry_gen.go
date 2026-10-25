@@ -3189,9 +3189,12 @@ func (t *MaintenanceLedgerEntry) getLimitClause() string {
 func (t *MaintenanceLedgerEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, MaintenanceLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, amount, debit_amount, credit_amount, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, depreciation_book_code, fa_exchange_rate, amount_lcy, maintenance_code, correction, index_entry, automatic_entry, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, amount, debit_amount, credit_amount, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, depreciation_book_code, fa_exchange_rate, amount_lcy, maintenance_code, correction, index_entry, automatic_entry, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3356,9 +3359,15 @@ func (t *MaintenanceLedgerEntry) FindFirst() bool {
 func (t *MaintenanceLedgerEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, MaintenanceLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, amount, debit_amount, credit_amount, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, depreciation_book_code, fa_exchange_rate, amount_lcy, maintenance_code, correction, index_entry, automatic_entry, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, g_l_entry_no, fa_no, fa_posting_date, posting_date, document_type, document_date, document_no, external_document_no, description, amount, debit_amount, credit_amount, quantity, fa_no_budgeted_fa_no, fa_subclass_code, fa_location_code, fa_posting_group, department_code, project_code, location_code, user_id, journal_batch_name, source_code, reason_code, transaction_no, bal_account_type, bal_account_no, tax_amount, gen_posting_type, gen_bus_posting_group, gen_prod_posting_group, fa_class_code, depreciation_book_code, fa_exchange_rate, amount_lcy, maintenance_code, correction, index_entry, automatic_entry, no_series, tax_area_code, tax_liable, tax_group_code, use_tax, tax_bus_posting_group, tax_prod_posting_group FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

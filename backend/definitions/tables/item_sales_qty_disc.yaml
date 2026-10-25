@@ -1,0 +1,36 @@
+table:
+  id: 29
+  name: "Item_Sales_Qty_Disc"
+  description: "Quantity discounts of an item's Sales Qty. Disc. Code (table 29)"
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: minimum_quantity
+      no: 3
+      type: types.Decimal
+      db_name: minimum_quantity
+      primary_key: true
+      decimal_places: "0:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: discount_percent
+      no: 4
+      type: types.Decimal
+      db_name: discount_percent
+      decimal_places: "0:5"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [code, minimum_quantity]
+      clustered: true

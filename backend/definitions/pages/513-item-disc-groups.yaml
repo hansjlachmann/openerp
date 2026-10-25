@@ -1,0 +1,43 @@
+page:
+  id: 513
+  type: List
+  name: Item Disc. Groups
+  source_table: Item_Discount_Group
+  caption: Item Disc. Groups
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 110
+        - source: description
+          width: 250
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Item/Cust. Discounts
+      caption: Item/Cust. Discounts
+      image: Lines
+      promoted: true
+      run_page: 32
+      run_page_filter_field: item_discount_group
+      run_page_filter_value: code

@@ -1873,9 +1873,12 @@ func (t *GeneralPostingSetup) getLimitClause() string {
 func (t *GeneralPostingSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GeneralPostingSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT gen_bus_posting_group, gen_prod_posting_group, sales_account, sales_line_disc_account, sales_inv_disc_account, sales_payment_disc_account, purch_account, purch_line_disc_account, purch_inv_disc_account, purch_payment_disc_account, cogs_account, inventory_adjmt_account, job_sales_adjmt_account, job_cost_adjmt_account, sales_credit_memo_account, purch_credit_memo_account FROM "%s" WHERE %s ORDER BY gen_bus_posting_group, gen_prod_posting_group ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT gen_bus_posting_group, gen_prod_posting_group, sales_account, sales_line_disc_account, sales_inv_disc_account, sales_payment_disc_account, purch_account, purch_line_disc_account, purch_inv_disc_account, purch_payment_disc_account, cogs_account, inventory_adjmt_account, job_sales_adjmt_account, job_cost_adjmt_account, sales_credit_memo_account, purch_credit_memo_account FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1953,9 +1956,15 @@ func (t *GeneralPostingSetup) FindFirst() bool {
 func (t *GeneralPostingSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GeneralPostingSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT gen_bus_posting_group, gen_prod_posting_group, sales_account, sales_line_disc_account, sales_inv_disc_account, sales_payment_disc_account, purch_account, purch_line_disc_account, purch_inv_disc_account, purch_payment_disc_account, cogs_account, inventory_adjmt_account, job_sales_adjmt_account, job_cost_adjmt_account, sales_credit_memo_account, purch_credit_memo_account FROM "%s" WHERE %s ORDER BY gen_bus_posting_group, gen_prod_posting_group DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT gen_bus_posting_group, gen_prod_posting_group, sales_account, sales_line_disc_account, sales_inv_disc_account, sales_payment_disc_account, purch_account, purch_line_disc_account, purch_inv_disc_account, purch_payment_disc_account, cogs_account, inventory_adjmt_account, job_sales_adjmt_account, job_cost_adjmt_account, sales_credit_memo_account, purch_credit_memo_account FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

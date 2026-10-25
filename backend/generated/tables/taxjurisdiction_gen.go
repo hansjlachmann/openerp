@@ -1823,9 +1823,12 @@ func (t *TaxJurisdiction) getLimitClause() string {
 func (t *TaxJurisdiction) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxJurisdictionTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, tax_account_sales, tax_account_purchases, report_to_jurisdiction, unreal_tax_acc_sales, unreal_tax_acc_purchases, reverse_charge_purchases, unreal_rev_charge_purch, unrealized_tax_type, calculate_tax_on_tax, adjust_for_payment_discount FROM "%s" WHERE %s ORDER BY code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, tax_account_sales, tax_account_purchases, report_to_jurisdiction, unreal_tax_acc_sales, unreal_tax_acc_purchases, reverse_charge_purchases, unreal_rev_charge_purch, unrealized_tax_type, calculate_tax_on_tax, adjust_for_payment_discount FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1891,9 +1894,15 @@ func (t *TaxJurisdiction) FindFirst() bool {
 func (t *TaxJurisdiction) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxJurisdictionTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT code, description, tax_account_sales, tax_account_purchases, report_to_jurisdiction, unreal_tax_acc_sales, unreal_tax_acc_purchases, reverse_charge_purchases, unreal_rev_charge_purch, unrealized_tax_type, calculate_tax_on_tax, adjust_for_payment_discount FROM "%s" WHERE %s ORDER BY code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT code, description, tax_account_sales, tax_account_purchases, report_to_jurisdiction, unreal_tax_acc_sales, unreal_tax_acc_purchases, reverse_charge_purchases, unreal_rev_charge_purch, unrealized_tax_type, calculate_tax_on_tax, adjust_for_payment_discount FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

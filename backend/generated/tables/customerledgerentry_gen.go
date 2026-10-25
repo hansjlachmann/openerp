@@ -3362,9 +3362,12 @@ func (t *CustomerLedgerEntry) getLimitClause() string {
 func (t *CustomerLedgerEntry) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no, no_series, closed_by_currency_code, closed_by_currency_amount, rounding_currency, rounding_amount, rounding_amount_lcy FROM "%s" WHERE %s ORDER BY entry_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no, no_series, closed_by_currency_code, closed_by_currency_amount, rounding_currency, rounding_amount, rounding_amount_lcy FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3547,9 +3550,15 @@ func (t *CustomerLedgerEntry) FindFirst() bool {
 func (t *CustomerLedgerEntry) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no, no_series, closed_by_currency_code, closed_by_currency_amount, rounding_currency, rounding_amount, rounding_amount_lcy FROM "%s" WHERE %s ORDER BY entry_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT entry_no, customer_no, sell_to_customer_no, posting_date, document_date, document_type, document_no, external_document_no, description, currency_code, amount, remaining_amount, closed_by_amount, original_amount_lcy, remaining_amt_lcy, amount_lcy, closed_by_amount_lcy, debit_amount, credit_amount, debit_amount_lcy, credit_amount_lcy, sales_lcy, profit_lcy, inv_discount_lcy, pmt_discount_date, pmt_disc_possible, pmt_disc_given_lcy, customer_posting_group, department_code, project_code, salesperson_code, user_id, source_code, reason_code, journal_batch_name, transaction_no, applies_to_doc_type, applies_to_doc_no, applies_to_id, open, positive, on_hold, due_date, closed_by_entry_no, closed_at_date, bal_account_type, bal_account_no, no_series, closed_by_currency_code, closed_by_currency_amount, rounding_currency, rounding_amount, rounding_amount_lcy FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

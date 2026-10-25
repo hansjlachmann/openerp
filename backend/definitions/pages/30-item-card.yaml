@@ -41,6 +41,8 @@ page:
           - source: tax_bus_posting_gr_price
           - source: inventory_posting_group
           - source: allow_invoice_disc
+          - source: sales_qty_disc_code
+          - source: item_cust_disc_gr
           - source: gen_prod_posting_group
           - source: tax_prod_posting_group
           - source: tax_group_code
@@ -137,3 +139,27 @@ page:
       run_page_filters:
         - {field: table_name, const: "3"}   # Item
         - {field: "no", value: "no"}
+
+    - name: Prices
+      caption: Prices
+      image: Calculate
+      promoted: true
+      run_page: 33
+      run_page_filter_field: item_no
+      run_page_filter_value: "no"
+
+    - name: Quantity Discounts
+      caption: Quantity Discounts
+      image: Calculate
+      promoted: true
+      run_page: 34
+      run_page_filter_field: code
+      run_page_filter_value: sales_qty_disc_code
+
+    - name: Item/Cust. Discounts
+      caption: Item/Cust. Discounts
+      image: Calculate
+      promoted: true
+      run_page: 32
+      run_page_filter_field: item_discount_group
+      run_page_filter_value: item_cust_disc_gr

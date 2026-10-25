@@ -1784,9 +1784,12 @@ func (t *TaxPostingSetup) getLimitClause() string {
 func (t *TaxPostingSetup) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxPostingSetupTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_bus_posting_group, tax_prod_posting_group, tax_calculation_type, vat_percent, unrealized_tax_type, adjust_for_payment_discount, sales_vat_account, sales_vat_unreal_account, purchase_vat_account, purch_vat_unreal_account, reverse_chrg_vat_acc, reverse_chrg_vat_unreal_acc FROM "%s" WHERE %s ORDER BY tax_bus_posting_group, tax_prod_posting_group ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_bus_posting_group, tax_prod_posting_group, tax_calculation_type, vat_percent, unrealized_tax_type, adjust_for_payment_discount, sales_vat_account, sales_vat_unreal_account, purchase_vat_account, purch_vat_unreal_account, reverse_chrg_vat_acc, reverse_chrg_vat_unreal_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1852,9 +1855,15 @@ func (t *TaxPostingSetup) FindFirst() bool {
 func (t *TaxPostingSetup) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxPostingSetupTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_bus_posting_group, tax_prod_posting_group, tax_calculation_type, vat_percent, unrealized_tax_type, adjust_for_payment_discount, sales_vat_account, sales_vat_unreal_account, purchase_vat_account, purch_vat_unreal_account, reverse_chrg_vat_acc, reverse_chrg_vat_unreal_acc FROM "%s" WHERE %s ORDER BY tax_bus_posting_group, tax_prod_posting_group DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_bus_posting_group, tax_prod_posting_group, tax_calculation_type, vat_percent, unrealized_tax_type, adjust_for_payment_discount, sales_vat_account, sales_vat_unreal_account, purchase_vat_account, purch_vat_unreal_account, reverse_chrg_vat_acc, reverse_chrg_vat_unreal_acc FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

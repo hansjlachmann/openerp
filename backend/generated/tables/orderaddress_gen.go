@@ -1904,9 +1904,12 @@ func (t *OrderAddress) getLimitClause() string {
 func (t *OrderAddress) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, OrderAddressTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT vendor_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, country_code, last_date_modified, fax_no, telex_answer_back, post_code, state, e_mail, home_page FROM "%s" WHERE %s ORDER BY vendor_no, code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT vendor_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, country_code, last_date_modified, fax_no, telex_answer_back, post_code, state, e_mail, home_page FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1990,9 +1993,15 @@ func (t *OrderAddress) FindFirst() bool {
 func (t *OrderAddress) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, OrderAddressTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT vendor_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, country_code, last_date_modified, fax_no, telex_answer_back, post_code, state, e_mail, home_page FROM "%s" WHERE %s ORDER BY vendor_no, code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT vendor_no, code, name, name_2, address, address_2, city, contact, phone_no, telex_no, country_code, last_date_modified, fax_no, telex_answer_back, post_code, state, e_mail, home_page FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

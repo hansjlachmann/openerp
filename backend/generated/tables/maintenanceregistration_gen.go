@@ -1559,9 +1559,12 @@ func (t *MaintenanceRegistration) getLimitClause() string {
 func (t *MaintenanceRegistration) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, MaintenanceRegistrationTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT fa_no, line_no, service_date, maintenance_vendor_no, comment, service_agent_name, service_agent_phone_no, service_agent_mobile_phone FROM "%s" WHERE %s ORDER BY fa_no, line_no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT fa_no, line_no, service_date, maintenance_vendor_no, comment, service_agent_name, service_agent_phone_no, service_agent_mobile_phone FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1613,9 +1616,15 @@ func (t *MaintenanceRegistration) FindFirst() bool {
 func (t *MaintenanceRegistration) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, MaintenanceRegistrationTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT fa_no, line_no, service_date, maintenance_vendor_no, comment, service_agent_name, service_agent_phone_no, service_agent_mobile_phone FROM "%s" WHERE %s ORDER BY fa_no, line_no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT fa_no, line_no, service_date, maintenance_vendor_no, comment, service_agent_name, service_agent_phone_no, service_agent_mobile_phone FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

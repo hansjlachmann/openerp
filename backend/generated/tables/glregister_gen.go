@@ -1564,9 +1564,12 @@ func (t *GLRegister) getLimitClause() string {
 func (t *GLRegister) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLRegisterTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, from_entry_no, to_entry_no, creation_date, source_code, user_id, journal_batch_name, from_tax_entry_no, to_tax_entry_no FROM "%s" WHERE %s ORDER BY no ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, from_entry_no, to_entry_no, creation_date, source_code, user_id, journal_batch_name, from_tax_entry_no, to_tax_entry_no FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1613,9 +1616,15 @@ func (t *GLRegister) FindFirst() bool {
 func (t *GLRegister) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, GLRegisterTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT no, from_entry_no, to_entry_no, creation_date, source_code, user_id, journal_batch_name, from_tax_entry_no, to_tax_entry_no FROM "%s" WHERE %s ORDER BY no DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT no, from_entry_no, to_entry_no, creation_date, source_code, user_id, journal_batch_name, from_tax_entry_no, to_tax_entry_no FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))

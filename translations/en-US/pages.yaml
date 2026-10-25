@@ -453,3 +453,15 @@ pages:
     caption: "Inventory Posting Groups"
   inventory_setup:
     caption: "Inventory Setup"
+
+  # Item prices and discounts
+  item_prices:
+    caption: "Item Prices"
+  sales_qty_discounts:
+    caption: "Sales Qty. Discounts"
+  cust_item_discounts:
+    caption: "Cust./Item Discounts"
+  item_cust_discounts:
+    caption: "Item/Cust. Discounts"
+  item_disc_groups:
+    caption: "Item Disc. Groups"

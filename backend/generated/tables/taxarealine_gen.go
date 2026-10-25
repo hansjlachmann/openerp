@@ -1444,9 +1444,12 @@ func (t *TaxAreaLine) getLimitClause() string {
 func (t *TaxAreaLine) FindFirst() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxAreaLineTableName)
 	where, args := t.buildWhereClause()
+	// The first record in the current key and direction (classic FIND('-'))
+	orderBy, orderArgs := t.getOrderByClause()
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_area, tax_jurisdiction_code, calculation_order FROM "%s" WHERE %s ORDER BY tax_area, tax_jurisdiction_code ASC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_area, tax_jurisdiction_code, calculation_order FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1483,9 +1486,15 @@ func (t *TaxAreaLine) FindFirst() bool {
 func (t *TaxAreaLine) FindLast() bool {
 	tableName := fmt.Sprintf("%s$%s", t.company, TaxAreaLineTableName)
 	where, args := t.buildWhereClause()
+	// The last record in the current key and direction (classic FIND('+')): the key reversed,
+	// every column of it
+	t.descending = !t.descending
+	orderBy, orderArgs := t.getOrderByClause()
+	t.descending = !t.descending
+	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT tax_area, tax_jurisdiction_code, calculation_order FROM "%s" WHERE %s ORDER BY tax_area, tax_jurisdiction_code DESC LIMIT 1`, tableName, where)
+	query := fmt.Sprintf(`SELECT tax_area, tax_jurisdiction_code, calculation_order FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
