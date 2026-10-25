@@ -2954,6 +2954,9 @@ func (t *VendorPostingGroup) GetTableRelationFields() map[string]tables.TableRel
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"service_charge_acc": {
 			Table:        "G_L_Account",
@@ -2964,6 +2967,9 @@ func (t *VendorPostingGroup) GetTableRelationFields() map[string]tables.TableRel
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"payment_disc_acc": {
 			Table:        "G_L_Account",
@@ -2974,6 +2980,9 @@ func (t *VendorPostingGroup) GetTableRelationFields() map[string]tables.TableRel
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"invoice_rounding_account": {
 			Table:        "G_L_Account",
@@ -2984,6 +2993,9 @@ func (t *VendorPostingGroup) GetTableRelationFields() map[string]tables.TableRel
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"curr_appln_rounding_account": {
 			Table:        "G_L_Account",
@@ -2994,6 +3006,9 @@ func (t *VendorPostingGroup) GetTableRelationFields() map[string]tables.TableRel
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

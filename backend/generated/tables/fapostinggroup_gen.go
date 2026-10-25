@@ -5450,6 +5450,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"accum_depreciation_account": {
 			Table:        "G_L_Account",
@@ -5460,6 +5463,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"write_down_account": {
 			Table:        "G_L_Account",
@@ -5470,6 +5476,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"appreciation_account": {
 			Table:        "G_L_Account",
@@ -5480,6 +5489,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_1_account": {
 			Table:        "G_L_Account",
@@ -5490,6 +5502,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_2_account": {
 			Table:        "G_L_Account",
@@ -5500,6 +5515,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"acq_cost_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5510,6 +5528,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"accum_depr_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5520,6 +5541,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"write_down_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5530,6 +5554,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"appreciation_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5540,6 +5567,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_1_account_on_disposal": {
 			Table:        "G_L_Account",
@@ -5550,6 +5580,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_2_account_on_disposal": {
 			Table:        "G_L_Account",
@@ -5560,6 +5593,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"gains_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5570,6 +5606,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"losses_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5580,6 +5619,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"book_value_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5590,6 +5632,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5600,6 +5645,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"write_down_bal_acc_on_disp": {
 			Table:        "G_L_Account",
@@ -5610,6 +5658,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"apprec_bal_acc_on_disp": {
 			Table:        "G_L_Account",
@@ -5620,6 +5671,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_1_bal_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5630,6 +5684,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_2_bal_acc_on_disposal": {
 			Table:        "G_L_Account",
@@ -5640,6 +5697,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"maintenance_expense_account": {
 			Table:        "G_L_Account",
@@ -5650,6 +5710,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"maintenance_bal_acc": {
 			Table:        "G_L_Account",
@@ -5660,6 +5723,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"acquisition_cost_bal_acc": {
 			Table:        "G_L_Account",
@@ -5670,6 +5736,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"depreciation_expense_acc": {
 			Table:        "G_L_Account",
@@ -5680,6 +5749,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"write_down_expense_acc": {
 			Table:        "G_L_Account",
@@ -5690,6 +5762,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"appreciation_bal_account": {
 			Table:        "G_L_Account",
@@ -5700,6 +5775,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_1_expense_acc": {
 			Table:        "G_L_Account",
@@ -5710,6 +5788,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"custom_2_expense_acc": {
 			Table:        "G_L_Account",
@@ -5720,6 +5801,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_bal_acc": {
 			Table:        "G_L_Account",
@@ -5730,6 +5814,9 @@ func (t *FAPostingGroup) GetTableRelationFields() map[string]tables.TableRelatio
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

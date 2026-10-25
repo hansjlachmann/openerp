@@ -270,6 +270,8 @@ table:
           - when: {field: bal_account_type, equal: 0}
             table: G_L_Account
             field: no
+            filters:
+              account_type: {const: 0}   # Posting accounts only
             lookup_columns:
               - source: no
                 width: 100

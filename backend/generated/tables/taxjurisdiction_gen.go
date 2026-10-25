@@ -3680,6 +3680,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"tax_account_purchases": {
 			Table:        "G_L_Account",
@@ -3690,6 +3693,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"report_to_jurisdiction": {
 			Table:        "Tax_Jurisdiction",
@@ -3710,6 +3716,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"unreal_tax_acc_purchases": {
 			Table:        "G_L_Account",
@@ -3720,6 +3729,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"reverse_charge_purchases": {
 			Table:        "G_L_Account",
@@ -3730,6 +3742,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"unreal_rev_charge_purch": {
 			Table:        "G_L_Account",
@@ -3740,6 +3755,9 @@ func (t *TaxJurisdiction) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

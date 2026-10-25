@@ -2638,6 +2638,9 @@ func (t *InventoryPostingGroup) GetTableRelationFields() map[string]tables.Table
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

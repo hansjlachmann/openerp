@@ -3730,6 +3730,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"sales_vat_unreal_account": {
 			Table:        "G_L_Account",
@@ -3740,6 +3743,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purchase_vat_account": {
 			Table:        "G_L_Account",
@@ -3750,6 +3756,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"purch_vat_unreal_account": {
 			Table:        "G_L_Account",
@@ -3760,6 +3769,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"reverse_chrg_vat_acc": {
 			Table:        "G_L_Account",
@@ -3770,6 +3782,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 		"reverse_chrg_vat_unreal_acc": {
 			Table:        "G_L_Account",
@@ -3780,6 +3795,9 @@ func (t *TaxPostingSetup) GetTableRelationFields() map[string]tables.TableRelati
 				{Source: "name", Width: 250},
 			},
 			SearchTimeout: 0,
+			Filters: []tables.RelationFilterInfo{
+				{Column: "account_type", Field: "", Const: "0"},
+			},
 		},
 	}
 }

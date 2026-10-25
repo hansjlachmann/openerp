@@ -7623,6 +7623,9 @@ func (t *MaintenanceLedgerEntry) GetTableRelationFields() map[string]tables.Tabl
 					Table: "G_L_Account", Field: "no", DisplayField: "",
 					LookupColumns: []tables.LookupColumnInfo{{Source: "no", Width: 100}, {Source: "name", Width: 250}},
 					SearchTimeout: 0,
+					Filters: []tables.RelationFilterInfo{
+						{Column: "account_type", Field: "", Const: "0"},
+					},
 				}},
 				{Field: "bal_account_type", Value: 1, Relation: tables.TableRelationInfo{
 					Table: "Customer", Field: "no", DisplayField: "",
