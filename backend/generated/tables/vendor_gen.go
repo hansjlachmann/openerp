@@ -2751,7 +2751,7 @@ func (t *Vendor) renameReferences(field string, oldValue, newValue interface{}) 
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Comment_Line", false, "no", "table_name", 2}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 2}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Fixed_Asset", false, "vendor_no", "", 0}, {"Fixed_Asset", false, "maintenance_vendor_no", "", 0}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 2}, {"Gen_Journal_Line", false, "account_no", "account_type", 2}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 2}, {"Gen_Journal_Line", false, "source_no", "source_type", 2}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 2}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 2}, {"G_L_Entry", false, "source_no", "source_type", 2}, {"Insurance", false, "insurance_vendor_no", "", 0}, {"Item", false, "vendor_no", "", 0}, {"Item_Vendor", false, "vendor_no", "", 0}, {"Maintenance_Registration", false, "maintenance_vendor_no", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Order_Address", false, "vendor_no", "", 0}, {"Vendor", false, "invoice_disc_code", "", 0}, {"Vendor", false, "pay_to_vendor_no", "", 0}, {"Vendor_Bank_Account", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "buy_from_vendor_no", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 2}},
+		"no": {{"Bank_Account_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Check_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Comment_Line", false, "no", "table_name", 2}, {"Customer Ledger Entry", false, "bal_account_no", "bal_account_type", 2}, {"FA_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Fixed_Asset", false, "vendor_no", "", 0}, {"Fixed_Asset", false, "maintenance_vendor_no", "", 0}, {"Gen_Journal_Batch", false, "bal_account_no", "bal_account_type", 2}, {"Gen_Journal_Line", false, "account_no", "account_type", 2}, {"Gen_Journal_Line", false, "bal_account_no", "bal_account_type", 2}, {"Gen_Journal_Line", false, "source_no", "source_type", 2}, {"Gen_Journal_Template", false, "bal_account_no", "bal_account_type", 2}, {"G_L_Entry", false, "bal_account_no", "bal_account_type", 2}, {"G_L_Entry", false, "source_no", "source_type", 2}, {"Insurance", false, "insurance_vendor_no", "", 0}, {"Item", false, "vendor_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 2}, {"Item_Ledger_Entry", false, "source_no", "source_type", 2}, {"Item_Vendor", false, "vendor_no", "", 0}, {"Maintenance_Registration", false, "maintenance_vendor_no", "", 0}, {"Maintenance_Ledger_Entry", false, "bal_account_no", "bal_account_type", 2}, {"Order_Address", false, "vendor_no", "", 0}, {"Vendor", false, "invoice_disc_code", "", 0}, {"Vendor", false, "pay_to_vendor_no", "", 0}, {"Vendor_Bank_Account", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "vendor_no", "", 0}, {"Vendor Ledger Entry", false, "buy_from_vendor_no", "", 0}, {"Vendor Ledger Entry", false, "bal_account_no", "bal_account_type", 2}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -8675,6 +8675,17 @@ func (t *Vendor) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *Vendor) isBoolColumn(column string) bool {
+	switch column {
+	case "blocked":
+		return true
+	case "tax_liable":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *Vendor) isDateColumn(column string) bool {
 	switch column {
@@ -8758,9 +8769,13 @@ func (t *Vendor) parseFilterExpression(fieldName, expr string) (string, []interf
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -11779,6 +11794,16 @@ func (t *Vendor) Rename(newKey ...interface{}) bool {
 func (t *Vendor) Copy(from *Vendor) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -11853,10 +11878,13 @@ func (t *Vendor) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

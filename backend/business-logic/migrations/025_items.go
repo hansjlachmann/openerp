@@ -12,8 +12,8 @@ func init() {
 // Posting Group, 99 Item Vendor, 204 Unit of Measure, 313 Inventory Setup, 5401 Item Variant,
 // 5402 Unit of Measure Translation, 5404 Item Unit of Measure) and their prices and discounts
 // (28 Item Price, 29 Item Sales Qty. Disc., 341 Item Discount Group, 20 Cust./Item
-// Discount). The READER role may read them,
-// as all business tables; the tables come from the table sync.
+// Discount), the item journals and the item ledger (82, 233, 83, 32, 339, 46). The READER role
+// may read them, as all business tables; the tables come from the table sync.
 type Migration025Items struct{}
 
 func (m *Migration025Items) Version() int {
@@ -25,7 +25,7 @@ func (m *Migration025Items) Name() string {
 }
 
 func (m *Migration025Items) Description() string {
-	return "READER reads the items and their units, variants, translations, vendors, prices, discounts and setup"
+	return "READER reads the items, their prices and discounts, the item journals and the item ledger"
 }
 
 func (m *Migration025Items) Up(ctx *fmigrations.Context) error {
@@ -35,5 +35,6 @@ func (m *Migration025Items) Up(ctx *fmigrations.Context) error {
 var itemTables = []string{
 	"ITEM", "ITEM_TRANSLATION", "INVENTORY_POSTING_GROUP", "ITEM_VENDOR", "UNIT_OF_MEASURE", "INVENTORY_SETUP",
 	"ITEM_VARIANT", "UNIT_OF_MEASURE_TRANSLATION", "ITEM_UNIT_OF_MEASURE", "ITEM_PRICE", "ITEM_SALES_QTY_DISC",
-	"ITEM_DISCOUNT_GROUP", "CUST_ITEM_DISCOUNT",
+	"ITEM_DISCOUNT_GROUP", "CUST_ITEM_DISCOUNT", "ITEM_JOURNAL_TEMPLATE", "ITEM_JOURNAL_BATCH", "ITEM_JOURNAL_LINE",
+	"ITEM_LEDGER_ENTRY", "ITEM_APPLICATION_ENTRY", "ITEM_REGISTER",
 }

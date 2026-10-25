@@ -50,6 +50,10 @@ master_data:
       - {code: PAYMENTJNL, description: Payment journal}
       - {code: SALESAPPL, description: Sales entry application}
       - {code: PURCHAPPL, description: Purchase entry application}
+      - {code: ITEMJNL, description: Item journal}
+      - {code: TRANSFER, description: Item transfer journal}
+      - {code: PHYSINVJNL, description: Phys. inventory journal}
+      - {code: INVTPCOST, description: Inventory cost posted to the G/L}
   - table: Reason_Code
     records:
       - {code: CORRECTION, description: Correction of an entry}
@@ -89,7 +93,8 @@ master_data:
       - {no: "1300", name: "Current Assets", account_type: 3, income_balance: 1, direct_posting: false}
       - {no: "1310", name: "Inventory", account_type: 3, income_balance: 1, direct_posting: false}
       - {no: "1320", name: "Raw Materials", account_type: 0, income_balance: 1}
-      - {no: "1330", name: "Goods for Resale", account_type: 0, income_balance: 1}
+      - {no: "1330", name: "Finished Goods", account_type: 0, income_balance: 1}
+      - {no: "1333", name: "Goods for Resale", account_type: 0, income_balance: 1}
       - {no: "1335", name: "Food and Beverages", account_type: 0, income_balance: 1}
       - {no: "1330", name: "Finished Goods", account_type: 0, income_balance: 1}
       - {no: "1339", name: "Total Inventory", account_type: 4, income_balance: 1, direct_posting: false}
@@ -136,6 +141,7 @@ master_data:
       - {no: "4110", name: "Cost of Materials", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
       - {no: "4120", name: "Cost of Retail Goods", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, tax_bus_posting_group: EXPORT, tax_prod_posting_group: EXEMPT, tax_area_code: ABROAD, tax_liable: false, tax_group_code: NONTAXABLE}
       - {no: "4130", name: "Freight In", account_type: 0, income_balance: 0, gen_posting_type: 1, gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, tax_bus_posting_group: DOMESTIC, tax_prod_posting_group: STANDARD, tax_area_code: DOMESTIC, tax_liable: true, tax_group_code: TAXABLE}
+      - {no: "4135", name: "Cost of Goods Sold, Items", account_type: 0, income_balance: 0}
       - {no: "4140", name: "Inventory Adjustment", account_type: 0, income_balance: 0}
       - {no: "4199", name: "Total Cost of Goods Sold", account_type: 4, income_balance: 0, direct_posting: false}
       - {no: "4900", name: "GROSS PROFIT", account_type: 2, income_balance: 0, direct_posting: false, totaling: "3100..4199"}
@@ -211,12 +217,15 @@ master_data:
       - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "EXEMPT", tax_calculation_type: 3}
   - table: General_Posting_Setup
     records:
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, sales_account: "3110", purch_account: "4110"}
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, sales_account: "3130", purch_account: "4130"}
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, sales_account: "3140", purch_account: "4110"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, sales_account: "3120", purch_account: "4120"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: SERVICES, sales_account: "3120", purch_account: "4120"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: FOOD, sales_account: "3120", purch_account: "4120"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, sales_account: "3110", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, sales_account: "3130", purch_account: "4130", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, sales_account: "3140", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: SERVICES, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: FOOD, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: "", gen_prod_posting_group: RETAIL, cogs_account: "4135", inventory_adjmt_account: "4140"}   # item journals: no business group
+      - {gen_bus_posting_group: "", gen_prod_posting_group: SERVICES, cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: "", gen_prod_posting_group: FOOD, cogs_account: "4135", inventory_adjmt_account: "4140"}
   - table: Unit_of_Measure
     records:
       - {code: PCS, description: Piece}
@@ -241,11 +250,11 @@ master_data:
       - {code: HOUR, language_code: DA-DK, description: Time}
   - table: Inventory_Posting_Group   # the inventory account of the items
     records:
-      - {code: RESALE, description: Goods for resale, inventory_account: "1330"}
+      - {code: RESALE, description: Goods for resale, inventory_account: "1333"}
       - {code: FOOD, description: Food and beverages, inventory_account: "1335"}
   - table: Inventory_Setup   # the single setup record (blank key)
     records:
-      - {item_nos: ITEM}
+      - {item_nos: ITEM, automatic_cost_posting: true}
   - table: Item   # costing method 0 FIFO, 3 Average, 4 Standard; unit cost = average/standard cost
     records:
       - {"no": "1000", description: "Copy paper A4, 500 sheets", search_description: "COPY PAPER A4, 500 SHEETS", base_unit_of_measure: PACK, sales_unit_of_measure: PACK, purch_unit_of_measure: PACK, inventory_posting_group: RESALE, gen_prod_posting_group: RETAIL, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, costing_method: 0, average_cost: "45", unit_cost: "45", last_direct_cost: "45", unit_price: "79", profit_percent: "43.03797", vendor_no: V00010, vendor_item_no: "NP-A4-80", sales_qty_disc_code: "1000", item_cust_disc_gr: PAPER}
@@ -514,6 +523,9 @@ master_data:
       - {code: "GJNL-RCPT", description: Cash receipt journal, default_nos: true, manual_nos: true}
       - {code: "GJNL-PMT", description: Payment journal, default_nos: true, manual_nos: true}
       - {code: "ITEM", description: Items, default_nos: true, manual_nos: true}
+      - {code: "IJNL-GEN", description: Item journal, default_nos: true, manual_nos: true}
+      - {code: "IJNL-TRANS", description: Item transfer journal, default_nos: true, manual_nos: true}
+      - {code: "IJNL-PHYS", description: Phys. inventory journal, default_nos: true, manual_nos: true}
   - table: No_Series_Line   # starting at the beginning (blank Starting Date)
     records:
       - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
@@ -548,6 +560,9 @@ master_data:
       - {series_code: "GJNL-RCPT", line_no: 10000, starting_no: "GR00001", increment_by_no: 1, open: true}
       - {series_code: "GJNL-PMT", line_no: 10000, starting_no: "GP00001", increment_by_no: 1, open: true}
       - {series_code: "ITEM", line_no: 10000, starting_no: "70000", ending_no: "79990", increment_by_no: 10, open: true}
+      - {series_code: "IJNL-GEN", line_no: 10000, starting_no: "T00001", increment_by_no: 1, open: true}
+      - {series_code: "IJNL-TRANS", line_no: 10000, starting_no: "T01001", increment_by_no: 1, open: true}
+      - {series_code: "IJNL-PHYS", line_no: 10000, starting_no: "T02001", increment_by_no: 1, open: true}
   - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
     records:
       - {code: CUST, series_code: CUST-EXP}
@@ -594,7 +609,7 @@ master_data:
       - {code: PROPERTY, description: Property insurance}
   - table: Source_Code_Setup   # the single setup record (blank key): the journals' source codes
     records:
-      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL}
+      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL, item_journal: ITEMJNL, item_transfer_journal: TRANSFER, phys_inventory_journal: PHYSINVJNL, inventory_post_cost: INVTPCOST}
   - table: Gen_Journal_Template   # one per journal type (type 0 General … 4 Payments); page and source code come from the type
     records:
       - {name: GENERAL, description: General Journal, type: 0, no_series: GJNL-GEN}
@@ -609,6 +624,16 @@ master_data:
       - {journal_template_name: PURCHASES, name: DEFAULT, description: Default Journal, no_series: GJNL-PURCH}
       - {journal_template_name: CASHRCPT, name: DEFAULT, description: Default Journal, no_series: GJNL-RCPT, bal_account_type: 3, bal_account_no: B010}
       - {journal_template_name: PAYMENT, name: DEFAULT, description: Default Journal, no_series: GJNL-PMT, bal_account_type: 3, bal_account_no: B010}
+  - table: Item_Journal_Template   # one per journal type (0 Item, 1 Transfer, 2 Phys. Inventory); page and source code come from the type
+    records:
+      - {name: ITEM, description: Item Journal, type: 0, no_series: IJNL-GEN}
+      - {name: TRANSFER, description: Transfer Journal, type: 1, no_series: IJNL-TRANS}
+      - {name: PHYS. INV., description: Phys. Inventory Journal, type: 2, no_series: IJNL-PHYS}
+  - table: Item_Journal_Batch
+    records:
+      - {journal_template_name: ITEM, name: DEFAULT, description: Default Journal, no_series: IJNL-GEN}
+      - {journal_template_name: TRANSFER, name: DEFAULT, description: Default Journal, no_series: IJNL-TRANS}
+      - {journal_template_name: PHYS. INV., name: DEFAULT, description: Default Journal, no_series: IJNL-PHYS}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)

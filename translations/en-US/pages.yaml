@@ -465,3 +465,22 @@ pages:
     caption: "Item/Cust. Discounts"
   item_disc_groups:
     caption: "Item Disc. Groups"
+
+  # Item journals and item ledger
+  item_journal:
+    caption: "Item Journal"
+    fields:
+      journal_batch_name: "Batch Name"
+      item_description: "Item Description"
+  item_journal_templates:
+    caption: "Item Journal Templates"
+  item_journal_template_list:
+    caption: "Item Journal Template List"
+  item_journal_batches:
+    caption: "Item Journal Batches"
+  item_registers:
+    caption: "Item Registers"
+  item_ledger_entries:
+    caption: "Item Ledger Entries"
+  item_application_entries:
+    caption: "Item Application Entries"

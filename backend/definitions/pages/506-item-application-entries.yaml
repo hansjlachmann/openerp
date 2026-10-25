@@ -1,0 +1,38 @@
+page:
+  id: 506
+  type: List
+  name: Item Application Entries
+  source_table: Item_Application_Entry
+  caption: Item Application Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+        - source: entry_type
+          width: 130
+        - source: document_no
+          width: 110
+        - source: item_no
+          width: 110
+        - source: item_ledger_entry_no
+          width: 110
+        - source: applied_to_entry_no
+          width: 120
+        - source: applied_from_entry_no
+          width: 120
+        - source: quantity
+          width: 100
+        - source: transfered_from_entry_no
+          width: 120
+          visible: false
+        - source: location_code
+          width: 100
+          visible: false
+        - source: fixed_application
+          width: 90
+          visible: false
+        - source: entry_no
+          width: 90

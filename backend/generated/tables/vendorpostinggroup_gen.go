@@ -998,7 +998,7 @@ func (t *VendorPostingGroup) renameReferences(field string, oldValue, newValue i
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Vendor", false, "vendor_posting_group", "", 0}, {"Vendor Ledger Entry", false, "vendor_posting_group", "", 0}},
+		"code": {{"Item_Journal_Line", false, "source_posting_group", "source_type", 2}, {"Item_Ledger_Entry", false, "source_posting_group", "source_type", 2}, {"Vendor", false, "vendor_posting_group", "", 0}, {"Vendor Ledger Entry", false, "vendor_posting_group", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -1376,6 +1376,13 @@ func (t *VendorPostingGroup) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *VendorPostingGroup) isBoolColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *VendorPostingGroup) isDateColumn(column string) bool {
 	switch column {
@@ -1457,9 +1464,13 @@ func (t *VendorPostingGroup) parseFilterExpression(fieldName, expr string) (stri
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -2567,6 +2578,16 @@ func (t *VendorPostingGroup) Rename(newKey ...interface{}) bool {
 func (t *VendorPostingGroup) Copy(from *VendorPostingGroup) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -2641,10 +2662,13 @@ func (t *VendorPostingGroup) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found

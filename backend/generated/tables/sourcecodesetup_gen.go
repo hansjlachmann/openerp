@@ -26,6 +26,10 @@
 //	OnValidate_Financially_voided_check(rec *gtables.SourceCodeSetup) error
 //	OnValidate_Finance_charge_memo(rec *gtables.SourceCodeSetup) error
 //	OnValidate_Reminder(rec *gtables.SourceCodeSetup) error
+//	OnValidate_Inventory_post_cost(rec *gtables.SourceCodeSetup) error
+//	OnValidate_Item_journal(rec *gtables.SourceCodeSetup) error
+//	OnValidate_Item_transfer_journal(rec *gtables.SourceCodeSetup) error
+//	OnValidate_Phys_inventory_journal(rec *gtables.SourceCodeSetup) error
 
 package tables
 
@@ -63,6 +67,10 @@ type SourceCodeSetup struct {
 	Financially_voided_check   types.Code `db:"financially_voided_check"`
 	Finance_charge_memo        types.Code `db:"finance_charge_memo"`
 	Reminder                   types.Code `db:"reminder"`
+	Inventory_post_cost        types.Code `db:"inventory_post_cost"`
+	Item_journal               types.Code `db:"item_journal"`
+	Item_transfer_journal      types.Code `db:"item_transfer_journal"`
+	Phys_inventory_journal     types.Code `db:"phys_inventory_journal"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -145,6 +153,10 @@ var SourceCodeSetup_FieldNo = struct {
 	Financially_voided_check   int
 	Finance_charge_memo        int
 	Reminder                   int
+	Inventory_post_cost        int
+	Item_journal               int
+	Item_transfer_journal      int
+	Phys_inventory_journal     int
 }{
 	Primary_key:                1,
 	Sales:                      2,
@@ -162,6 +174,10 @@ var SourceCodeSetup_FieldNo = struct {
 	Financially_voided_check:   37,
 	Finance_charge_memo:        38,
 	Reminder:                   39,
+	Inventory_post_cost:        4,
+	Item_journal:               16,
+	Item_transfer_journal:      33,
+	Phys_inventory_journal:     34,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -199,6 +215,14 @@ func (t *SourceCodeSetup) FieldNo(fieldName string) int {
 		return 38
 	case "reminder":
 		return 39
+	case "inventory_post_cost":
+		return 4
+	case "item_journal":
+		return 16
+	case "item_transfer_journal":
+		return 33
+	case "phys_inventory_journal":
+		return 34
 	}
 	return 0
 }
@@ -238,6 +262,14 @@ func (t *SourceCodeSetup) FieldName(fieldNo int) string {
 		return "finance_charge_memo"
 	case 39:
 		return "reminder"
+	case 4:
+		return "inventory_post_cost"
+	case 16:
+		return "item_journal"
+	case 33:
+		return "item_transfer_journal"
+	case 34:
+		return "phys_inventory_journal"
 	}
 	return ""
 }
@@ -387,6 +419,18 @@ type (
 	SourceCodeSetupOnValidate_Reminder interface {
 		OnValidate_Reminder(rec *SourceCodeSetup) error
 	}
+	SourceCodeSetupOnValidate_Inventory_post_cost interface {
+		OnValidate_Inventory_post_cost(rec *SourceCodeSetup) error
+	}
+	SourceCodeSetupOnValidate_Item_journal interface {
+		OnValidate_Item_journal(rec *SourceCodeSetup) error
+	}
+	SourceCodeSetupOnValidate_Item_transfer_journal interface {
+		OnValidate_Item_transfer_journal(rec *SourceCodeSetup) error
+	}
+	SourceCodeSetupOnValidate_Phys_inventory_journal interface {
+		OnValidate_Phys_inventory_journal(rec *SourceCodeSetup) error
+	}
 )
 
 // sourceCodeSetupLogic is the registered business logic of Source_Code_Setup, in
@@ -448,6 +492,14 @@ func sourceCodeSetupTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SourceCodeSetupOnValidate_Finance_charge_memo)
 	case "OnValidate_Reminder":
 		_, ok = logic.(SourceCodeSetupOnValidate_Reminder)
+	case "OnValidate_Inventory_post_cost":
+		_, ok = logic.(SourceCodeSetupOnValidate_Inventory_post_cost)
+	case "OnValidate_Item_journal":
+		_, ok = logic.(SourceCodeSetupOnValidate_Item_journal)
+	case "OnValidate_Item_transfer_journal":
+		_, ok = logic.(SourceCodeSetupOnValidate_Item_transfer_journal)
+	case "OnValidate_Phys_inventory_journal":
+		_, ok = logic.(SourceCodeSetupOnValidate_Phys_inventory_journal)
 	default:
 		return false, false
 	}
@@ -570,6 +622,18 @@ func (t *SourceCodeSetup) CheckFields() error {
 	if err := tables.CheckMaxLength(SourceCodeSetupTableName, "reminder", string(t.Reminder), 10); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(SourceCodeSetupTableName, "inventory_post_cost", string(t.Inventory_post_cost), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(SourceCodeSetupTableName, "item_journal", string(t.Item_journal), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(SourceCodeSetupTableName, "item_transfer_journal", string(t.Item_transfer_journal), 10); err != nil {
+		return err
+	}
+	if err := tables.CheckMaxLength(SourceCodeSetupTableName, "phys_inventory_journal", string(t.Phys_inventory_journal), 10); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -624,7 +688,11 @@ func GetSourceCodeSetupTableSchema() string {
 		tax_settlement TEXT(10),
 		financially_voided_check TEXT(10),
 		finance_charge_memo TEXT(10),
-		reminder TEXT(10)
+		reminder TEXT(10),
+		inventory_post_cost TEXT(10),
+		item_journal TEXT(10),
+		item_transfer_journal TEXT(10),
+		phys_inventory_journal TEXT(10)
 	`
 }
 
@@ -646,7 +714,11 @@ func GetSourceCodeSetupPostgresTableSchema() string {
 		tax_settlement VARCHAR(10),
 		financially_voided_check VARCHAR(10),
 		finance_charge_memo VARCHAR(10),
-		reminder VARCHAR(10)
+		reminder VARCHAR(10),
+		inventory_post_cost VARCHAR(10),
+		item_journal VARCHAR(10),
+		item_transfer_journal VARCHAR(10),
+		phys_inventory_journal VARCHAR(10)
 	`
 }
 
@@ -785,6 +857,10 @@ func (t *SourceCodeSetup) StoreOldValues() {
 	t.oldValues["financially_voided_check"] = t.Financially_voided_check
 	t.oldValues["finance_charge_memo"] = t.Finance_charge_memo
 	t.oldValues["reminder"] = t.Reminder
+	t.oldValues["inventory_post_cost"] = t.Inventory_post_cost
+	t.oldValues["item_journal"] = t.Item_journal
+	t.oldValues["item_transfer_journal"] = t.Item_transfer_journal
+	t.oldValues["phys_inventory_journal"] = t.Phys_inventory_journal
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -846,6 +922,18 @@ func (t *SourceCodeSetup) XRec() *SourceCodeSetup {
 	}
 	if v, ok := t.oldValues["reminder"].(types.Code); ok {
 		x.Reminder = v
+	}
+	if v, ok := t.oldValues["inventory_post_cost"].(types.Code); ok {
+		x.Inventory_post_cost = v
+	}
+	if v, ok := t.oldValues["item_journal"].(types.Code); ok {
+		x.Item_journal = v
+	}
+	if v, ok := t.oldValues["item_transfer_journal"].(types.Code); ok {
+		x.Item_transfer_journal = v
+	}
+	if v, ok := t.oldValues["phys_inventory_journal"].(types.Code); ok {
+		x.Phys_inventory_journal = v
 	}
 	return x
 }
@@ -924,6 +1012,10 @@ func (t *SourceCodeSetup) GetByPK(primary_key types.Code) bool {
 	var financially_voided_checkNull sql.NullString
 	var finance_charge_memoNull sql.NullString
 	var reminderNull sql.NullString
+	var inventory_post_costNull sql.NullString
+	var item_journalNull sql.NullString
+	var item_transfer_journalNull sql.NullString
+	var phys_inventory_journalNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -931,7 +1023,7 @@ func (t *SourceCodeSetup) GetByPK(primary_key types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal FROM "%s" WHERE 1=1 AND primary_key = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -954,6 +1046,10 @@ func (t *SourceCodeSetup) GetByPK(primary_key types.Code) bool {
 		&financially_voided_checkNull,
 		&finance_charge_memoNull,
 		&reminderNull,
+		&inventory_post_costNull,
+		&item_journalNull,
+		&item_transfer_journalNull,
+		&phys_inventory_journalNull,
 	)
 
 	if err != nil {
@@ -983,6 +1079,10 @@ func (t *SourceCodeSetup) GetByPK(primary_key types.Code) bool {
 	t.Financially_voided_check = types.NewCode(financially_voided_checkNull.String)
 	t.Finance_charge_memo = types.NewCode(finance_charge_memoNull.String)
 	t.Reminder = types.NewCode(reminderNull.String)
+	t.Inventory_post_cost = types.NewCode(inventory_post_costNull.String)
+	t.Item_journal = types.NewCode(item_journalNull.String)
+	t.Item_transfer_journal = types.NewCode(item_transfer_journalNull.String)
+	t.Phys_inventory_journal = types.NewCode(phys_inventory_journalNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1021,11 +1121,15 @@ func (t *SourceCodeSetup) Insert(runTrigger bool) bool {
 		t.Financially_voided_check,
 		t.Finance_charge_memo,
 		t.Reminder,
+		t.Inventory_post_cost,
+		t.Item_journal,
+		t.Item_transfer_journal,
+		t.Phys_inventory_journal,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (primary_key) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1079,10 +1183,14 @@ func (t *SourceCodeSetup) InsertAll(records []*SourceCodeSetup, runTrigger bool)
 			r.Financially_voided_check,
 			r.Finance_charge_memo,
 			r.Reminder,
+			r.Inventory_post_cost,
+			r.Item_journal,
+			r.Item_transfer_journal,
+			r.Phys_inventory_journal,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, SourceCodeSetupTableName)
-	columns := []string{"primary_key", "sales", "purchases", "exchange_rate_adjmt", "close_income_statement", "general_journal", "sales_journal", "purchase_journal", "cash_receipt_journal", "payment_journal", "sales_entry_application", "purchase_entry_application", "tax_settlement", "financially_voided_check", "finance_charge_memo", "reminder"}
+	columns := []string{"primary_key", "sales", "purchases", "exchange_rate_adjmt", "close_income_statement", "general_journal", "sales_journal", "purchase_journal", "cash_receipt_journal", "payment_journal", "sales_entry_application", "purchase_entry_application", "tax_settlement", "financially_voided_check", "finance_charge_memo", "reminder", "inventory_post_cost", "item_journal", "item_transfer_journal", "phys_inventory_journal"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -1186,6 +1294,22 @@ func (t *SourceCodeSetup) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "reminder = ?")
 			values = append(values, t.Reminder)
 		}
+		if t.hasFieldChanged("inventory_post_cost") {
+			setClauses = append(setClauses, "inventory_post_cost = ?")
+			values = append(values, t.Inventory_post_cost)
+		}
+		if t.hasFieldChanged("item_journal") {
+			setClauses = append(setClauses, "item_journal = ?")
+			values = append(values, t.Item_journal)
+		}
+		if t.hasFieldChanged("item_transfer_journal") {
+			setClauses = append(setClauses, "item_transfer_journal = ?")
+			values = append(values, t.Item_transfer_journal)
+		}
+		if t.hasFieldChanged("phys_inventory_journal") {
+			setClauses = append(setClauses, "phys_inventory_journal = ?")
+			values = append(values, t.Phys_inventory_journal)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -1223,6 +1347,14 @@ func (t *SourceCodeSetup) Modify(runTrigger bool) bool {
 		values = append(values, t.Finance_charge_memo)
 		setClauses = append(setClauses, "reminder = ?")
 		values = append(values, t.Reminder)
+		setClauses = append(setClauses, "inventory_post_cost = ?")
+		values = append(values, t.Inventory_post_cost)
+		setClauses = append(setClauses, "item_journal = ?")
+		values = append(values, t.Item_journal)
+		setClauses = append(setClauses, "item_transfer_journal = ?")
+		values = append(values, t.Item_transfer_journal)
+		setClauses = append(setClauses, "phys_inventory_journal = ?")
+		values = append(values, t.Phys_inventory_journal)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1330,6 +1462,22 @@ func (t *SourceCodeSetup) hasFieldChanged(fieldName string) bool {
 	case "reminder":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Reminder.Equal(old)
+		}
+	case "inventory_post_cost":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Inventory_post_cost.Equal(old)
+		}
+	case "item_journal":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Item_journal.Equal(old)
+		}
+	case "item_transfer_journal":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Item_transfer_journal.Equal(old)
+		}
+	case "phys_inventory_journal":
+		if old, ok := oldValue.(types.Code); ok {
+			return !t.Phys_inventory_journal.Equal(old)
 		}
 	}
 
@@ -1563,6 +1711,14 @@ func (t *SourceCodeSetup) columnName(fieldName string) (string, bool) {
 		return "finance_charge_memo", true
 	case strings.ToLower("reminder"):
 		return "reminder", true
+	case strings.ToLower("inventory_post_cost"):
+		return "inventory_post_cost", true
+	case strings.ToLower("item_journal"):
+		return "item_journal", true
+	case strings.ToLower("item_transfer_journal"):
+		return "item_transfer_journal", true
+	case strings.ToLower("phys_inventory_journal"):
+		return "phys_inventory_journal", true
 	}
 	return "", false
 }
@@ -1713,6 +1869,13 @@ func (t *SourceCodeSetup) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *SourceCodeSetup) isBoolColumn(column string) bool {
+	switch column {
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *SourceCodeSetup) isDateColumn(column string) bool {
 	switch column {
@@ -1794,9 +1957,13 @@ func (t *SourceCodeSetup) parseFilterExpression(fieldName, expr string) (string,
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -1867,7 +2034,7 @@ func (t *SourceCodeSetup) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1888,6 +2055,10 @@ func (t *SourceCodeSetup) FindFirst() bool {
 	var financially_voided_checkNull sql.NullString
 	var finance_charge_memoNull sql.NullString
 	var reminderNull sql.NullString
+	var inventory_post_costNull sql.NullString
+	var item_journalNull sql.NullString
+	var item_transfer_journalNull sql.NullString
+	var phys_inventory_journalNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&primary_keyNull,
@@ -1906,6 +2077,10 @@ func (t *SourceCodeSetup) FindFirst() bool {
 		&financially_voided_checkNull,
 		&finance_charge_memoNull,
 		&reminderNull,
+		&inventory_post_costNull,
+		&item_journalNull,
+		&item_transfer_journalNull,
+		&phys_inventory_journalNull,
 	)
 
 	if err != nil {
@@ -1933,6 +2108,10 @@ func (t *SourceCodeSetup) FindFirst() bool {
 	t.Financially_voided_check = types.NewCode(financially_voided_checkNull.String)
 	t.Finance_charge_memo = types.NewCode(finance_charge_memoNull.String)
 	t.Reminder = types.NewCode(reminderNull.String)
+	t.Inventory_post_cost = types.NewCode(inventory_post_costNull.String)
+	t.Item_journal = types.NewCode(item_journalNull.String)
+	t.Item_transfer_journal = types.NewCode(item_transfer_journalNull.String)
+	t.Phys_inventory_journal = types.NewCode(phys_inventory_journalNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1953,7 +2132,7 @@ func (t *SourceCodeSetup) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1974,6 +2153,10 @@ func (t *SourceCodeSetup) FindLast() bool {
 	var financially_voided_checkNull sql.NullString
 	var finance_charge_memoNull sql.NullString
 	var reminderNull sql.NullString
+	var inventory_post_costNull sql.NullString
+	var item_journalNull sql.NullString
+	var item_transfer_journalNull sql.NullString
+	var phys_inventory_journalNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&primary_keyNull,
@@ -1992,6 +2175,10 @@ func (t *SourceCodeSetup) FindLast() bool {
 		&financially_voided_checkNull,
 		&finance_charge_memoNull,
 		&reminderNull,
+		&inventory_post_costNull,
+		&item_journalNull,
+		&item_transfer_journalNull,
+		&phys_inventory_journalNull,
 	)
 
 	if err != nil {
@@ -2019,6 +2206,10 @@ func (t *SourceCodeSetup) FindLast() bool {
 	t.Financially_voided_check = types.NewCode(financially_voided_checkNull.String)
 	t.Finance_charge_memo = types.NewCode(finance_charge_memoNull.String)
 	t.Reminder = types.NewCode(reminderNull.String)
+	t.Inventory_post_cost = types.NewCode(inventory_post_costNull.String)
+	t.Item_journal = types.NewCode(item_journalNull.String)
+	t.Item_transfer_journal = types.NewCode(item_transfer_journalNull.String)
+	t.Phys_inventory_journal = types.NewCode(phys_inventory_journalNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -2069,7 +2260,7 @@ func (t *SourceCodeSetup) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2154,6 +2345,10 @@ func (t *SourceCodeSetup) Next(steps ...int) bool {
 		var financially_voided_checkNull sql.NullString
 		var finance_charge_memoNull sql.NullString
 		var reminderNull sql.NullString
+		var inventory_post_costNull sql.NullString
+		var item_journalNull sql.NullString
+		var item_transfer_journalNull sql.NullString
+		var phys_inventory_journalNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&primary_keyNull,
@@ -2172,6 +2367,10 @@ func (t *SourceCodeSetup) Next(steps ...int) bool {
 			&financially_voided_checkNull,
 			&finance_charge_memoNull,
 			&reminderNull,
+			&inventory_post_costNull,
+			&item_journalNull,
+			&item_transfer_journalNull,
+			&phys_inventory_journalNull,
 		)
 
 		if err != nil {
@@ -2198,6 +2397,10 @@ func (t *SourceCodeSetup) Next(steps ...int) bool {
 		t.Financially_voided_check = types.NewCode(financially_voided_checkNull.String)
 		t.Finance_charge_memo = types.NewCode(finance_charge_memoNull.String)
 		t.Reminder = types.NewCode(reminderNull.String)
+		t.Inventory_post_cost = types.NewCode(inventory_post_costNull.String)
+		t.Item_journal = types.NewCode(item_journalNull.String)
+		t.Item_transfer_journal = types.NewCode(item_transfer_journalNull.String)
+		t.Phys_inventory_journal = types.NewCode(phys_inventory_journalNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -2247,7 +2450,7 @@ func (t *SourceCodeSetup) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT primary_key, sales, purchases, exchange_rate_adjmt, close_income_statement, general_journal, sales_journal, purchase_journal, cash_receipt_journal, payment_journal, sales_entry_application, purchase_entry_application, tax_settlement, financially_voided_check, finance_charge_memo, reminder, inventory_post_cost, item_journal, item_transfer_journal, phys_inventory_journal FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2285,6 +2488,10 @@ func (t *SourceCodeSetup) FindSetBuffered() bool {
 		var financially_voided_checkNull sql.NullString
 		var finance_charge_memoNull sql.NullString
 		var reminderNull sql.NullString
+		var inventory_post_costNull sql.NullString
+		var item_journalNull sql.NullString
+		var item_transfer_journalNull sql.NullString
+		var phys_inventory_journalNull sql.NullString
 
 		err := rows.Scan(
 			&primary_keyNull,
@@ -2303,6 +2510,10 @@ func (t *SourceCodeSetup) FindSetBuffered() bool {
 			&financially_voided_checkNull,
 			&finance_charge_memoNull,
 			&reminderNull,
+			&inventory_post_costNull,
+			&item_journalNull,
+			&item_transfer_journalNull,
+			&phys_inventory_journalNull,
 		)
 
 		if err != nil {
@@ -2327,6 +2538,10 @@ func (t *SourceCodeSetup) FindSetBuffered() bool {
 		record.Financially_voided_check = types.NewCode(financially_voided_checkNull.String)
 		record.Finance_charge_memo = types.NewCode(finance_charge_memoNull.String)
 		record.Reminder = types.NewCode(reminderNull.String)
+		record.Inventory_post_cost = types.NewCode(inventory_post_costNull.String)
+		record.Item_journal = types.NewCode(item_journalNull.String)
+		record.Item_transfer_journal = types.NewCode(item_transfer_journalNull.String)
+		record.Phys_inventory_journal = types.NewCode(phys_inventory_journalNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2371,6 +2586,10 @@ func (t *SourceCodeSetup) copyFromBuffered(record *SourceCodeSetup) {
 	t.Financially_voided_check = record.Financially_voided_check
 	t.Finance_charge_memo = record.Finance_charge_memo
 	t.Reminder = record.Reminder
+	t.Inventory_post_cost = record.Inventory_post_cost
+	t.Item_journal = record.Item_journal
+	t.Item_transfer_journal = record.Item_transfer_journal
+	t.Phys_inventory_journal = record.Phys_inventory_journal
 	t.StoreOldValues()
 }
 
@@ -2853,6 +3072,94 @@ func (t *SourceCodeSetup) ValidateField(fieldName string, value interface{}) err
 			}
 		}
 		return nil
+	case "inventory_post_cost":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Inventory_post_cost = v
+		} else if v, ok := value.(string); ok {
+			t.Inventory_post_cost = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field inventory_post_cost")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "inventory_post_cost"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SourceCodeSetupOnValidate_Inventory_post_cost); ok {
+				if err := trg.OnValidate_Inventory_post_cost(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "item_journal":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Item_journal = v
+		} else if v, ok := value.(string); ok {
+			t.Item_journal = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field item_journal")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "item_journal"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SourceCodeSetupOnValidate_Item_journal); ok {
+				if err := trg.OnValidate_Item_journal(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "item_transfer_journal":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Item_transfer_journal = v
+		} else if v, ok := value.(string); ok {
+			t.Item_transfer_journal = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field item_transfer_journal")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "item_transfer_journal"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SourceCodeSetupOnValidate_Item_transfer_journal); ok {
+				if err := trg.OnValidate_Item_transfer_journal(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "phys_inventory_journal":
+		// Set field value
+		if v, ok := value.(types.Code); ok {
+			t.Phys_inventory_journal = v
+		} else if v, ok := value.(string); ok {
+			t.Phys_inventory_journal = types.NewCode(v)
+		} else {
+			return fmt.Errorf("invalid type for field phys_inventory_journal")
+		}
+		// TableRelation: the value must exist in the related table (before OnValidate)
+		if err := tables.CheckRelation(t, t.db, t.company, t.dbType, "phys_inventory_journal"); err != nil {
+			return err
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SourceCodeSetupOnValidate_Phys_inventory_journal); ok {
+				if err := trg.OnValidate_Phys_inventory_journal(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2897,6 +3204,14 @@ func (t *SourceCodeSetup) FieldValue(no int) (any, bool) {
 		return t.Finance_charge_memo, true
 	case 39:
 		return t.Reminder, true
+	case 4:
+		return t.Inventory_post_cost, true
+	case 16:
+		return t.Item_journal, true
+	case 33:
+		return t.Item_transfer_journal, true
+	case 34:
+		return t.Phys_inventory_journal, true
 	}
 	return nil, false
 }
@@ -3054,6 +3369,42 @@ func (t *SourceCodeSetup) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Reminder = types.NewCode(v)
+			return true
+		}
+	case 4:
+		if v, ok := value.(types.Code); ok {
+			t.Inventory_post_cost = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Inventory_post_cost = types.NewCode(v)
+			return true
+		}
+	case 16:
+		if v, ok := value.(types.Code); ok {
+			t.Item_journal = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Item_journal = types.NewCode(v)
+			return true
+		}
+	case 33:
+		if v, ok := value.(types.Code); ok {
+			t.Item_transfer_journal = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Item_transfer_journal = types.NewCode(v)
+			return true
+		}
+	case 34:
+		if v, ok := value.(types.Code); ok {
+			t.Phys_inventory_journal = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.Phys_inventory_journal = types.NewCode(v)
 			return true
 		}
 	}
@@ -3364,6 +3715,16 @@ func (t *SourceCodeSetup) Rename(newKey ...interface{}) bool {
 func (t *SourceCodeSetup) Copy(from *SourceCodeSetup) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -3438,10 +3799,13 @@ func (t *SourceCodeSetup) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found
@@ -3494,6 +3858,14 @@ func (t *SourceCodeSetup) columnValue(column string) (interface{}, bool) {
 		return t.Finance_charge_memo, true
 	case "reminder":
 		return t.Reminder, true
+	case "inventory_post_cost":
+		return t.Inventory_post_cost, true
+	case "item_journal":
+		return t.Item_journal, true
+	case "item_transfer_journal":
+		return t.Item_transfer_journal, true
+	case "phys_inventory_journal":
+		return t.Phys_inventory_journal, true
 	}
 	return nil, false
 }
@@ -3563,6 +3935,10 @@ func (t *SourceCodeSetup) Init() {
 	t.Financially_voided_check = *new(types.Code)
 	t.Finance_charge_memo = *new(types.Code)
 	t.Reminder = *new(types.Code)
+	t.Inventory_post_cost = *new(types.Code)
+	t.Item_journal = *new(types.Code)
+	t.Item_transfer_journal = *new(types.Code)
+	t.Phys_inventory_journal = *new(types.Code)
 	t.applyDefaults()
 }
 
@@ -3613,6 +3989,10 @@ func (t *SourceCodeSetup) ToMap() map[string]interface{} {
 		"financially_voided_check":   t.Financially_voided_check.String(),
 		"finance_charge_memo":        t.Finance_charge_memo.String(),
 		"reminder":                   t.Reminder.String(),
+		"inventory_post_cost":        t.Inventory_post_cost.String(),
+		"item_journal":               t.Item_journal.String(),
+		"item_transfer_journal":      t.Item_transfer_journal.String(),
+		"phys_inventory_journal":     t.Phys_inventory_journal.String(),
 	}
 }
 
@@ -3696,6 +4076,26 @@ func (t *SourceCodeSetup) FromMap(data map[string]interface{}) {
 	if v, ok := data["reminder"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Reminder = types.NewCode(s)
+		}
+	}
+	if v, ok := data["inventory_post_cost"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Inventory_post_cost = types.NewCode(s)
+		}
+	}
+	if v, ok := data["item_journal"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Item_journal = types.NewCode(s)
+		}
+	}
+	if v, ok := data["item_transfer_journal"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Item_transfer_journal = types.NewCode(s)
+		}
+	}
+	if v, ok := data["phys_inventory_journal"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Phys_inventory_journal = types.NewCode(s)
 		}
 	}
 }
@@ -3879,6 +4279,46 @@ func (t *SourceCodeSetup) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:         4,
+			Name:       "inventory_post_cost",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         16,
+			Name:       "item_journal",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         33,
+			Name:       "item_transfer_journal",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         34,
+			Name:       "phys_inventory_journal",
+			Type:       tables.FieldTypeCode,
+			Length:     10,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -4049,6 +4489,46 @@ func (t *SourceCodeSetup) GetTableRelationFields() map[string]tables.TableRelati
 			SearchTimeout: 0,
 		},
 		"reminder": {
+			Table:        "Source_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"inventory_post_cost": {
+			Table:        "Source_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"item_journal": {
+			Table:        "Source_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"item_transfer_journal": {
+			Table:        "Source_Code",
+			Field:        "code",
+			DisplayField: "",
+			LookupColumns: []tables.LookupColumnInfo{
+				{Source: "code", Width: 100},
+				{Source: "description", Width: 250},
+			},
+			SearchTimeout: 0,
+		},
+		"phys_inventory_journal": {
 			Table:        "Source_Code",
 			Field:        "code",
 			DisplayField: "",

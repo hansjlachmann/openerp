@@ -1,0 +1,165 @@
+table:
+  id: 339
+  name: "Item_Application_Entry"
+  description: "Item application entries (table 339): which inbound entry each outbound quantity came from"
+  lookup_page_id: 506
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: item_ledger_entry_no
+      no: 2
+      type: int
+      db_name: item_ledger_entry_no
+
+    - name: applied_to_entry_no
+      no: 3
+      type: int
+      db_name: applied_to_entry_no
+
+    - name: applied_from_entry_no
+      no: 4
+      type: int
+      db_name: applied_from_entry_no
+
+    - name: new_entry_no
+      no: 5
+      type: int
+      db_name: new_entry_no
+
+    - name: fixed_applied_to_entry_no
+      no: 6
+      type: int
+      db_name: fixed_applied_to_entry_no
+
+    - name: fixed_application
+      no: 7
+      type: bool
+      db_name: fixed_application
+
+    - name: creation_date
+      no: 8
+      type: types.Date
+      db_name: creation_date
+
+    - name: valid
+      no: 9
+      type: bool
+      db_name: valid
+
+    - name: valuated
+      no: 10
+      type: bool
+      db_name: valuated
+
+    - name: quantity
+      no: 11
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: reserved_quantity
+      no: 12
+      type: types.Decimal
+      db_name: reserved_quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: remaining_quantity
+      no: 13
+      type: types.Decimal
+      db_name: remaining_quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: open
+      no: 14
+      type: bool
+      db_name: open
+
+    - name: positive
+      no: 15
+      type: bool
+      db_name: positive
+
+    - name: adjusted_cost
+      no: 16
+      type: types.Decimal
+      db_name: adjusted_cost
+      decimal_places: "2:2"
+      precision: 18
+      scale: 2
+
+    - name: cost_is_adjusted
+      no: 17
+      type: bool
+      db_name: cost_is_adjusted
+
+    - name: document_no
+      no: 18
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: entry_type
+      no: 19
+      type: Option
+      db_name: entry_type
+      options: ["Purchase", "Sale", "Positive Adjmt.", "Negative Adjmt.", "Transfer"]
+
+    - name: item_no
+      no: 20
+      type: types.Code
+      db_name: item_no
+      length: 20
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: posting_date
+      no: 21
+      type: types.Date
+      db_name: posting_date
+
+    - name: location_code
+      no: 22
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: transfered_from_entry_no
+      no: 23
+      type: int
+      db_name: transfered_from_entry_no
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: item
+      fields: [item_no, posting_date]
+    - name: item_ledger_entry
+      fields: [item_ledger_entry_no, applied_to_entry_no, applied_from_entry_no]
+    - name: document
+      fields: [document_no, posting_date]

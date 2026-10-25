@@ -8,8 +8,7 @@ table:
   # Left out until their tables exist: 6 Bill of Materials (BOM), 47 Tariff No., 84/85 Qty. on
   # Purch./Sales Order, 96 Automatic Ext. Text, 101-103/5429/5430 reserved quantities, 104
   # Add.-Curr. Average Cost, manufacturing and requisition fields 5400-5421/5428, 5423 Bin Filter,
-  # 10004 Duty Class (local series). Ledger FlowFields (68-83, 93, 94,
-  # 89 Drop Shipment Filter) and 92 Picture come with the next parts of the step.
+  # 10004 Duty Class (local series). 92 Picture comes with the picture part of the step.
   fields:
     - name: no
       no: 1
@@ -150,12 +149,13 @@ table:
       db_name: price_profit_calculation
       options: ["Profit=Price-Cost", "Price=Cost+Profit", "No Relationship"]
 
+    # Classic MaxValue 99.99999 limits only what the user types; the price/profit calculation
+    # gives 100 for a price without cost, so it is not a stored-value check here
     - name: profit_percent
       no: 20
       type: types.Decimal
       db_name: profit_percent
       decimal_places: "0:5"
-      validation: {max: 99.99999}
       precision: 18
       scale: 5
 
@@ -478,6 +478,492 @@ table:
             width: 100
           - source: name
             width: 250
+
+    - name: quantity_on_hand
+      no: 68
+      type: types.Decimal
+      db_name: quantity_on_hand
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: quantity
+      flow_filters:
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+
+    - name: net_invoiced_qty
+      no: 69
+      type: types.Decimal
+      db_name: net_invoiced_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+
+    - name: net_change
+      no: 70
+      type: types.Decimal
+      db_name: net_change
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: quantity
+      flow_filters:
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: purchases_qty
+      no: 71
+      type: types.Decimal
+      db_name: purchases_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: sales_qty
+      no: 72
+      type: types.Decimal
+      db_name: sales_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: positive_adjmt_qty
+      no: 73
+      type: types.Decimal
+      db_name: positive_adjmt_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 2
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: negative_adjmt_qty
+      no: 74
+      type: types.Decimal
+      db_name: negative_adjmt_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 3
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: purchases_lcy
+      no: 77
+      type: types.Decimal
+      db_name: purchases_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: sales_lcy
+      no: 78
+      type: types.Decimal
+      db_name: sales_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: ItemLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: positive_adjmt_lcy
+      no: 79
+      type: types.Decimal
+      db_name: positive_adjmt_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 2
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: negative_adjmt_lcy
+      no: 80
+      type: types.Decimal
+      db_name: negative_adjmt_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: ItemLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 3
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: cogs_lcy
+      no: 83
+      type: types.Decimal
+      db_name: cogs_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      reverse_sign: true   # classic -Sum
+      source_table: ItemLedgerEntry
+      source_field: adjusted_cost_invoiced_qty
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: drop_shipment_filter
+      no: 89
+      type: bool
+      db_name: drop_shipment_filter
+      flow_filter: true
+
+    - name: transferred_qty
+      no: 93
+      type: types.Decimal
+      db_name: transferred_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: invoiced_quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 4
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
+
+    - name: transferred_lcy
+      no: 94
+      type: types.Decimal
+      db_name: transferred_lcy
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ItemLedgerEntry
+      source_field: amount
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 4
+        - field: item_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: location_code
+          type: filter
+          value: location_filter
+        - field: drop_shipment
+          type: filter
+          value: drop_shipment_filter
+        - field: variant_code
+          type: filter
+          value: variant_filter
+        - field: posting_date
+          type: filter
+          value: date_filter
 
     - name: price_includes_tax
       no: 87

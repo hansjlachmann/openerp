@@ -196,9 +196,37 @@ type Item struct {
 	Budgeted_amount          types.Decimal                `db:"budgeted_amount"`
 	Budget_profit            types.Decimal                `db:"budget_profit"`
 	// FlowField: Exist(CommentLine.line_no)
-	Comment                  bool
-	Blocked                  bool          `db:"blocked"`
-	Last_date_modified       types.Date    `db:"last_date_modified"`
+	Comment            bool
+	Blocked            bool       `db:"blocked"`
+	Last_date_modified types.Date `db:"last_date_modified"`
+	// FlowField: Sum(ItemLedgerEntry.quantity)
+	Quantity_on_hand types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Net_invoiced_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.quantity)
+	Net_change types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Purchases_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Sales_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Positive_adjmt_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Negative_adjmt_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.amount)
+	Purchases_lcy types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.amount)
+	Sales_lcy types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.amount)
+	Positive_adjmt_lcy types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.amount)
+	Negative_adjmt_lcy types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.adjusted_cost_invoiced_qty)
+	Cogs_lcy types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.invoiced_quantity)
+	Transferred_qty types.Decimal
+	// FlowField: Sum(ItemLedgerEntry.amount)
+	Transferred_lcy          types.Decimal
 	Price_includes_tax       bool          `db:"price_includes_tax"`
 	Tax_bus_posting_gr_price types.Code    `db:"tax_bus_posting_gr_price"`
 	Gen_prod_posting_group   types.Code    `db:"gen_prod_posting_group"`
@@ -219,6 +247,8 @@ type Item struct {
 	Project_filter string
 	// FlowFilter location_filter (types.Code): the filter expression FlowFields apply — not stored
 	Location_filter string
+	// FlowFilter drop_shipment_filter (bool): the filter expression FlowFields apply — not stored
+	Drop_shipment_filter string
 	// FlowFilter variant_filter (types.Code): the filter expression FlowFields apply — not stored
 	Variant_filter string
 
@@ -377,6 +407,20 @@ var Item_FieldNo = struct {
 	Comment                  int
 	Blocked                  int
 	Last_date_modified       int
+	Quantity_on_hand         int
+	Net_invoiced_qty         int
+	Net_change               int
+	Purchases_qty            int
+	Sales_qty                int
+	Positive_adjmt_qty       int
+	Negative_adjmt_qty       int
+	Purchases_lcy            int
+	Sales_lcy                int
+	Positive_adjmt_lcy       int
+	Negative_adjmt_lcy       int
+	Cogs_lcy                 int
+	Transferred_qty          int
+	Transferred_lcy          int
 	Price_includes_tax       int
 	Tax_bus_posting_gr_price int
 	Gen_prod_posting_group   int
@@ -393,6 +437,7 @@ var Item_FieldNo = struct {
 	Department_filter        int
 	Project_filter           int
 	Location_filter          int
+	Drop_shipment_filter     int
 	Variant_filter           int
 }{
 	No:                       1,
@@ -444,6 +489,20 @@ var Item_FieldNo = struct {
 	Comment:                  53,
 	Blocked:                  54,
 	Last_date_modified:       62,
+	Quantity_on_hand:         68,
+	Net_invoiced_qty:         69,
+	Net_change:               70,
+	Purchases_qty:            71,
+	Sales_qty:                72,
+	Positive_adjmt_qty:       73,
+	Negative_adjmt_qty:       74,
+	Purchases_lcy:            77,
+	Sales_lcy:                78,
+	Positive_adjmt_lcy:       79,
+	Negative_adjmt_lcy:       80,
+	Cogs_lcy:                 83,
+	Transferred_qty:          93,
+	Transferred_lcy:          94,
 	Price_includes_tax:       87,
 	Tax_bus_posting_gr_price: 90,
 	Gen_prod_posting_group:   91,
@@ -460,6 +519,7 @@ var Item_FieldNo = struct {
 	Department_filter:        65,
 	Project_filter:           66,
 	Location_filter:          67,
+	Drop_shipment_filter:     89,
 	Variant_filter:           5424,
 }
 
@@ -564,6 +624,34 @@ func (t *Item) FieldNo(fieldName string) int {
 		return 54
 	case "last_date_modified":
 		return 62
+	case "quantity_on_hand":
+		return 68
+	case "net_invoiced_qty":
+		return 69
+	case "net_change":
+		return 70
+	case "purchases_qty":
+		return 71
+	case "sales_qty":
+		return 72
+	case "positive_adjmt_qty":
+		return 73
+	case "negative_adjmt_qty":
+		return 74
+	case "purchases_lcy":
+		return 77
+	case "sales_lcy":
+		return 78
+	case "positive_adjmt_lcy":
+		return 79
+	case "negative_adjmt_lcy":
+		return 80
+	case "cogs_lcy":
+		return 83
+	case "transferred_qty":
+		return 93
+	case "transferred_lcy":
+		return 94
 	case "price_includes_tax":
 		return 87
 	case "tax_bus_posting_gr_price":
@@ -596,6 +684,8 @@ func (t *Item) FieldNo(fieldName string) int {
 		return 66
 	case "location_filter":
 		return 67
+	case "drop_shipment_filter":
+		return 89
 	case "variant_filter":
 		return 5424
 	}
@@ -703,6 +793,34 @@ func (t *Item) FieldName(fieldNo int) string {
 		return "blocked"
 	case 62:
 		return "last_date_modified"
+	case 68:
+		return "quantity_on_hand"
+	case 69:
+		return "net_invoiced_qty"
+	case 70:
+		return "net_change"
+	case 71:
+		return "purchases_qty"
+	case 72:
+		return "sales_qty"
+	case 73:
+		return "positive_adjmt_qty"
+	case 74:
+		return "negative_adjmt_qty"
+	case 77:
+		return "purchases_lcy"
+	case 78:
+		return "sales_lcy"
+	case 79:
+		return "positive_adjmt_lcy"
+	case 80:
+		return "negative_adjmt_lcy"
+	case 83:
+		return "cogs_lcy"
+	case 93:
+		return "transferred_qty"
+	case 94:
+		return "transferred_lcy"
 	case 87:
 		return "price_includes_tax"
 	case 90:
@@ -735,6 +853,8 @@ func (t *Item) FieldName(fieldNo int) string {
 		return "project_filter"
 	case 67:
 		return "location_filter"
+	case 89:
+		return "drop_shipment_filter"
 	case 5424:
 		return "variant_filter"
 	}
@@ -1152,9 +1272,6 @@ func (t *Item) CheckFields() error {
 	if err := tables.CheckDecimalRange(ItemTableName, "unit_price", t.Unit_price, "0", ""); err != nil {
 		return err
 	}
-	if err := tables.CheckDecimalRange(ItemTableName, "profit_percent", t.Profit_percent, "", "99.99999"); err != nil {
-		return err
-	}
 	if err := tables.CheckDecimalRange(ItemTableName, "unit_cost", t.Unit_cost, "0", ""); err != nil {
 		return err
 	}
@@ -1318,6 +1435,20 @@ func GetItemTableSchema() string {
 		comment INTEGER,
 		blocked INTEGER,
 		last_date_modified TEXT,
+		quantity_on_hand TEXT,
+		net_invoiced_qty TEXT,
+		net_change TEXT,
+		purchases_qty TEXT,
+		sales_qty TEXT,
+		positive_adjmt_qty TEXT,
+		negative_adjmt_qty TEXT,
+		purchases_lcy TEXT,
+		sales_lcy TEXT,
+		positive_adjmt_lcy TEXT,
+		negative_adjmt_lcy TEXT,
+		cogs_lcy TEXT,
+		transferred_qty TEXT,
+		transferred_lcy TEXT,
 		price_includes_tax INTEGER,
 		tax_bus_posting_gr_price TEXT(10),
 		gen_prod_posting_group TEXT(10),
@@ -1385,6 +1516,20 @@ func GetItemPostgresTableSchema() string {
 		comment BOOLEAN,
 		blocked BOOLEAN,
 		last_date_modified DATE,
+		quantity_on_hand NUMERIC,
+		net_invoiced_qty NUMERIC,
+		net_change NUMERIC,
+		purchases_qty NUMERIC,
+		sales_qty NUMERIC,
+		positive_adjmt_qty NUMERIC,
+		negative_adjmt_qty NUMERIC,
+		purchases_lcy NUMERIC,
+		sales_lcy NUMERIC,
+		positive_adjmt_lcy NUMERIC,
+		negative_adjmt_lcy NUMERIC,
+		cogs_lcy NUMERIC,
+		transferred_qty NUMERIC,
+		transferred_lcy NUMERIC,
 		price_includes_tax BOOLEAN,
 		tax_bus_posting_gr_price VARCHAR(10),
 		gen_prod_posting_group VARCHAR(10),
@@ -3009,7 +3154,7 @@ func (t *Item) renameReferences(field string, oldValue, newValue interface{}) er
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}},
+		"no": {{"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Application_Entry", false, "item_no", "", 0}, {"Item_Journal_Line", false, "item_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 3}, {"Item_Ledger_Entry", false, "item_no", "", 0}, {"Item_Ledger_Entry", false, "source_no", "source_type", 3}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3081,6 +3226,20 @@ func (t *Item) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
 		t.calcFlowField_comment()
+		t.calcFlowField_quantity_on_hand()
+		t.calcFlowField_net_invoiced_qty()
+		t.calcFlowField_net_change()
+		t.calcFlowField_purchases_qty()
+		t.calcFlowField_sales_qty()
+		t.calcFlowField_positive_adjmt_qty()
+		t.calcFlowField_negative_adjmt_qty()
+		t.calcFlowField_purchases_lcy()
+		t.calcFlowField_sales_lcy()
+		t.calcFlowField_positive_adjmt_lcy()
+		t.calcFlowField_negative_adjmt_lcy()
+		t.calcFlowField_cogs_lcy()
+		t.calcFlowField_transferred_qty()
+		t.calcFlowField_transferred_lcy()
 		return
 	}
 
@@ -3089,6 +3248,34 @@ func (t *Item) CalcFields(fieldNames ...string) {
 		switch fieldName {
 		case "comment":
 			t.calcFlowField_comment()
+		case "quantity_on_hand":
+			t.calcFlowField_quantity_on_hand()
+		case "net_invoiced_qty":
+			t.calcFlowField_net_invoiced_qty()
+		case "net_change":
+			t.calcFlowField_net_change()
+		case "purchases_qty":
+			t.calcFlowField_purchases_qty()
+		case "sales_qty":
+			t.calcFlowField_sales_qty()
+		case "positive_adjmt_qty":
+			t.calcFlowField_positive_adjmt_qty()
+		case "negative_adjmt_qty":
+			t.calcFlowField_negative_adjmt_qty()
+		case "purchases_lcy":
+			t.calcFlowField_purchases_lcy()
+		case "sales_lcy":
+			t.calcFlowField_sales_lcy()
+		case "positive_adjmt_lcy":
+			t.calcFlowField_positive_adjmt_lcy()
+		case "negative_adjmt_lcy":
+			t.calcFlowField_negative_adjmt_lcy()
+		case "cogs_lcy":
+			t.calcFlowField_cogs_lcy()
+		case "transferred_qty":
+			t.calcFlowField_transferred_qty()
+		case "transferred_lcy":
+			t.calcFlowField_transferred_lcy()
 		}
 	}
 }
@@ -3097,6 +3284,90 @@ func (t *Item) CalcFields(fieldNames ...string) {
 // CalcFormula: Exist(CommentLine.line_no)
 func (t *Item) calcFlowField_comment() {
 	t.Comment = t.calcCount_comment() > 0
+}
+
+// calcFlowField_quantity_on_hand calculates the quantity_on_hand FlowField
+// CalcFormula: Sum(ItemLedgerEntry.quantity)
+func (t *Item) calcFlowField_quantity_on_hand() {
+	t.Quantity_on_hand = t.calcSum_quantity_on_hand()
+}
+
+// calcFlowField_net_invoiced_qty calculates the net_invoiced_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_net_invoiced_qty() {
+	t.Net_invoiced_qty = t.calcSum_net_invoiced_qty()
+}
+
+// calcFlowField_net_change calculates the net_change FlowField
+// CalcFormula: Sum(ItemLedgerEntry.quantity)
+func (t *Item) calcFlowField_net_change() {
+	t.Net_change = t.calcSum_net_change()
+}
+
+// calcFlowField_purchases_qty calculates the purchases_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_purchases_qty() {
+	t.Purchases_qty = t.calcSum_purchases_qty()
+}
+
+// calcFlowField_sales_qty calculates the sales_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_sales_qty() {
+	t.Sales_qty = t.calcSum_sales_qty()
+}
+
+// calcFlowField_positive_adjmt_qty calculates the positive_adjmt_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_positive_adjmt_qty() {
+	t.Positive_adjmt_qty = t.calcSum_positive_adjmt_qty()
+}
+
+// calcFlowField_negative_adjmt_qty calculates the negative_adjmt_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_negative_adjmt_qty() {
+	t.Negative_adjmt_qty = t.calcSum_negative_adjmt_qty()
+}
+
+// calcFlowField_purchases_lcy calculates the purchases_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcFlowField_purchases_lcy() {
+	t.Purchases_lcy = t.calcSum_purchases_lcy()
+}
+
+// calcFlowField_sales_lcy calculates the sales_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcFlowField_sales_lcy() {
+	t.Sales_lcy = t.calcSum_sales_lcy()
+}
+
+// calcFlowField_positive_adjmt_lcy calculates the positive_adjmt_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcFlowField_positive_adjmt_lcy() {
+	t.Positive_adjmt_lcy = t.calcSum_positive_adjmt_lcy()
+}
+
+// calcFlowField_negative_adjmt_lcy calculates the negative_adjmt_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcFlowField_negative_adjmt_lcy() {
+	t.Negative_adjmt_lcy = t.calcSum_negative_adjmt_lcy()
+}
+
+// calcFlowField_cogs_lcy calculates the cogs_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.adjusted_cost_invoiced_qty)
+func (t *Item) calcFlowField_cogs_lcy() {
+	t.Cogs_lcy = t.calcSum_cogs_lcy()
+}
+
+// calcFlowField_transferred_qty calculates the transferred_qty FlowField
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcFlowField_transferred_qty() {
+	t.Transferred_qty = t.calcSum_transferred_qty()
+}
+
+// calcFlowField_transferred_lcy calculates the transferred_lcy FlowField
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcFlowField_transferred_lcy() {
+	t.Transferred_lcy = t.calcSum_transferred_lcy()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -3114,6 +3385,34 @@ func (t *Item) CalcFieldsForRecords(records []map[string]interface{}, fieldNames
 		switch fieldName {
 		case "comment":
 			t.calcForRecords_comment(records)
+		case "quantity_on_hand":
+			t.calcForRecords_quantity_on_hand(records)
+		case "net_invoiced_qty":
+			t.calcForRecords_net_invoiced_qty(records)
+		case "net_change":
+			t.calcForRecords_net_change(records)
+		case "purchases_qty":
+			t.calcForRecords_purchases_qty(records)
+		case "sales_qty":
+			t.calcForRecords_sales_qty(records)
+		case "positive_adjmt_qty":
+			t.calcForRecords_positive_adjmt_qty(records)
+		case "negative_adjmt_qty":
+			t.calcForRecords_negative_adjmt_qty(records)
+		case "purchases_lcy":
+			t.calcForRecords_purchases_lcy(records)
+		case "sales_lcy":
+			t.calcForRecords_sales_lcy(records)
+		case "positive_adjmt_lcy":
+			t.calcForRecords_positive_adjmt_lcy(records)
+		case "negative_adjmt_lcy":
+			t.calcForRecords_negative_adjmt_lcy(records)
+		case "cogs_lcy":
+			t.calcForRecords_cogs_lcy(records)
+		case "transferred_qty":
+			t.calcForRecords_transferred_qty(records)
+		case "transferred_lcy":
+			t.calcForRecords_transferred_lcy(records)
 		}
 	}
 }
@@ -3187,6 +3486,1610 @@ func (t *Item) calcForRecords_comment(records []map[string]interface{}) {
 	}
 }
 
+// calcForRecords_quantity_on_hand calculates the quantity_on_hand FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.quantity)
+func (t *Item) calcForRecords_quantity_on_hand(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate quantity_on_hand: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["quantity_on_hand"] = v.String()
+	}
+}
+
+// calcForRecords_net_invoiced_qty calculates the net_invoiced_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_net_invoiced_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate net_invoiced_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["net_invoiced_qty"] = v.String()
+	}
+}
+
+// calcForRecords_net_change calculates the net_change FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.quantity)
+func (t *Item) calcForRecords_net_change(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate net_change: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["net_change"] = v.String()
+	}
+}
+
+// calcForRecords_purchases_qty calculates the purchases_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_purchases_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate purchases_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["purchases_qty"] = v.String()
+	}
+}
+
+// calcForRecords_sales_qty calculates the sales_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_sales_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, -COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_qty"] = v.String()
+	}
+}
+
+// calcForRecords_positive_adjmt_qty calculates the positive_adjmt_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_positive_adjmt_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 2)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate positive_adjmt_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["positive_adjmt_qty"] = v.String()
+	}
+}
+
+// calcForRecords_negative_adjmt_qty calculates the negative_adjmt_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_negative_adjmt_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 3)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, -COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate negative_adjmt_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["negative_adjmt_qty"] = v.String()
+	}
+}
+
+// calcForRecords_purchases_lcy calculates the purchases_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcForRecords_purchases_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate purchases_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["purchases_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_sales_lcy calculates the sales_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcForRecords_sales_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_positive_adjmt_lcy calculates the positive_adjmt_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcForRecords_positive_adjmt_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 2)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate positive_adjmt_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["positive_adjmt_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_negative_adjmt_lcy calculates the negative_adjmt_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcForRecords_negative_adjmt_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 3)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate negative_adjmt_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["negative_adjmt_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_cogs_lcy calculates the cogs_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.adjusted_cost_invoiced_qty)
+func (t *Item) calcForRecords_cogs_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, -COALESCE(SUM(adjusted_cost_invoiced_qty), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate cogs_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["cogs_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_transferred_qty calculates the transferred_qty FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.invoiced_quantity)
+func (t *Item) calcForRecords_transferred_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 4)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate transferred_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["transferred_qty"] = v.String()
+	}
+}
+
+// calcForRecords_transferred_lcy calculates the transferred_lcy FlowField for a set of records
+// CalcFormula: Sum(ItemLedgerEntry.amount)
+func (t *Item) calcForRecords_transferred_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 4)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT item_no, COALESCE(SUM(amount), 0) FROM "%s" WHERE %s GROUP BY item_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate transferred_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["transferred_lcy"] = v.String()
+	}
+}
+
 // Helper methods for FlowField calculations
 
 func (t *Item) calcCount_comment() int {
@@ -3226,6 +5129,1120 @@ func (t *Item) calcCount_comment() int {
 	return count
 }
 
+func (t *Item) calcSum_quantity_on_hand() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for quantity_on_hand: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_net_invoiced_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for net_invoiced_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_net_change() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for net_change: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_purchases_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for purchases_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_sales_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for sales_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_positive_adjmt_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 2)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for positive_adjmt_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_negative_adjmt_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 3)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for negative_adjmt_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_purchases_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for purchases_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_sales_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for sales_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_positive_adjmt_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 2)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for positive_adjmt_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_negative_adjmt_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 3)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for negative_adjmt_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_cogs_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(adjusted_cost_invoiced_qty), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for cogs_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_transferred_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 4)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(invoiced_quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for transferred_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Item) calcSum_transferred_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+	if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 4)
+	whereClauses = append(whereClauses, "item_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Location_filter != "" {
+		// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Drop_shipment_filter != "" {
+		// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Variant_filter != "" {
+		// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for transferred_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
 // ========================================
 // Filtering and Search
 // ========================================
@@ -3239,6 +6256,7 @@ type itemFilterCondition struct {
 	isExpression bool   // True if using filterExpr instead of min/max
 	invalidField bool   // Filter on an unknown field: matches no rows (fail closed)
 	blankDate    bool   // A date range from the blank date: blank dates (NULL) match too
+	flowField    string // Filter on a FlowField (filterExpr applied to its subquery)
 }
 
 // SetRange sets a range filter on a field
@@ -3310,6 +6328,16 @@ func (t *Item) SetFilter(fieldName, filterExpr string) {
 	if t.filters == nil {
 		t.filters = make(map[string]*itemFilterCondition)
 	}
+	if _, ok := t.FlowFieldFilterKind(fieldName); ok {
+		// A FlowField is not a column: the filter applies to its subquery (flowFieldExpr)
+		name := strings.ToLower(fieldName)
+		t.filters["flowfield:"+name] = &itemFilterCondition{
+			flowField:    name,
+			filterExpr:   filterExpr,
+			isExpression: true,
+		}
+		return
+	}
 	column, ok := t.columnName(fieldName)
 	if !ok {
 		// Unknown field: fail closed (no rows) rather than drop the filter or put
@@ -3325,12 +6353,912 @@ func (t *Item) SetFilter(fieldName, filterExpr string) {
 	}
 }
 
+// FlowFieldFilterKind reports whether a list can be filtered on FlowField field (Sum and
+// Count FlowFields: SETFILTER on a FlowField) and the kind of its values.
+func (t *Item) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
+	switch strings.ToLower(field) {
+	case "quantity_on_hand":
+		return flowfilter.KindDecimal, true
+	case "net_invoiced_qty":
+		return flowfilter.KindDecimal, true
+	case "net_change":
+		return flowfilter.KindDecimal, true
+	case "purchases_qty":
+		return flowfilter.KindDecimal, true
+	case "sales_qty":
+		return flowfilter.KindDecimal, true
+	case "positive_adjmt_qty":
+		return flowfilter.KindDecimal, true
+	case "negative_adjmt_qty":
+		return flowfilter.KindDecimal, true
+	case "purchases_lcy":
+		return flowfilter.KindDecimal, true
+	case "sales_lcy":
+		return flowfilter.KindDecimal, true
+	case "positive_adjmt_lcy":
+		return flowfilter.KindDecimal, true
+	case "negative_adjmt_lcy":
+		return flowfilter.KindDecimal, true
+	case "cogs_lcy":
+		return flowfilter.KindDecimal, true
+	case "transferred_qty":
+		return flowfilter.KindDecimal, true
+	case "transferred_lcy":
+		return flowfilter.KindDecimal, true
+	}
+	return "", false
+}
+
+// flowFieldExpr is the SQL expression computing FlowField field for each row of a query
+// on this table: a correlated subquery reading the source like CalcFieldsForRecords (the
+// SIFT totals of a covering key, else the entries), with the FlowFilters set on t.
+func (t *Item) flowFieldExpr(field string) (string, []interface{}) {
+	outer := "\"" + fmt.Sprintf("%s$%s", t.company, ItemTableName) + "\""
+	_ = outer
+	switch strings.ToLower(field) {
+	case "quantity_on_hand":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "net_invoiced_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "net_change":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "item_location"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "purchases_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "positive_adjmt_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 2)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "negative_adjmt_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 3)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "purchases_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "positive_adjmt_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 2)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "negative_adjmt_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 3)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "cogs_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(adjusted_cost_invoiced_qty), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "transferred_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 4)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(invoiced_quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "transferred_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ItemLedgerEntryTableName, "entry_type_item"), true
+		if t.Department_filter != "" || t.Project_filter != "" || t.Location_filter != "" || t.Drop_shipment_filter != "" || t.Variant_filter != "" || t.Date_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, ItemLedgerEntryTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 4)
+		whereClauses = append(whereClauses, "item_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Location_filter != "" {
+			// FlowFilter location_filter applied to location_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("location_code", flowfilter.KindCode, t.Location_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Drop_shipment_filter != "" {
+			// FlowFilter drop_shipment_filter applied to drop_shipment (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("drop_shipment", flowfilter.KindBool, t.Drop_shipment_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Variant_filter != "" {
+			// FlowFilter variant_filter applied to variant_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("variant_code", flowfilter.KindCode, t.Variant_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	}
+	return "NULL", nil
+}
+
 // SetCurrentKey sets the sort order for queries
 // Unknown fields are ignored (the primary key order is used if none remain).
 // Example: customer.SetCurrentKey("City", "Name")
 func (t *Item) SetCurrentKey(fields ...string) {
 	t.orderByFields = nil
 	for _, field := range fields {
+		// A Sum/Count FlowField sorts on its calculated value (flowFieldExpr, see getOrderByClause)
+		if _, ok := t.FlowFieldFilterKind(field); ok {
+			t.orderByFields = append(t.orderByFields, "flowfield:"+strings.ToLower(field))
+			continue
+		}
 		column, ok := t.columnName(field)
 		if !ok {
 			fmt.Printf("Error: SetCurrentKey on unknown field %q of Item\n", field)
@@ -3542,6 +7470,18 @@ func (t *Item) buildWhereClause() (string, []interface{}) {
 	for _, filter := range filters {
 		if filter.invalidField {
 			conditions = append(conditions, "1=0")
+		} else if filter.flowField != "" {
+			// filter syntax on the FlowField's value; an invalid expression matches no rows
+			// (the API validates it first and reports it)
+			kind, _ := t.FlowFieldFilterKind(filter.flowField)
+			expr, exprArgs := t.flowFieldExpr(filter.flowField)
+			clause, clauseArgs, err := flowfilter.ClauseFor(expr, exprArgs, kind, filter.filterExpr)
+			if err != nil {
+				conditions = append(conditions, "1=0")
+			} else if clause != "" {
+				conditions = append(conditions, clause)
+				args = append(args, clauseArgs...)
+			}
 		} else if filter.isExpression {
 			// Parse filter expression
 			clause, exprArgs := t.parseFilterExpression(filter.fieldName, filter.filterExpr)
@@ -3643,6 +7583,21 @@ func (t *Item) isKeyDateColumn(column string) bool {
 	return false
 }
 
+// isBoolColumn: a Boolean column
+func (t *Item) isBoolColumn(column string) bool {
+	switch column {
+	case "allow_invoice_disc":
+		return true
+	case "blocked":
+		return true
+	case "price_includes_tax":
+		return true
+	case "inventory_value_zero":
+		return true
+	}
+	return false
+}
+
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *Item) isDateColumn(column string) bool {
 	switch column {
@@ -3726,9 +7681,13 @@ func (t *Item) parseFilterExpression(fieldName, expr string) (string, []interfac
 				args = append(args, value)
 			}
 		} else {
-			// Exact match
+			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
 			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
-			args = append(args, part)
+			if t.isBoolColumn(fieldName) {
+				args = append(args, tables.FilterBool(part))
+			} else {
+				args = append(args, part)
+			}
 		}
 	}
 
@@ -3747,6 +7706,12 @@ func (t *Item) getOrderByClause() (string, []interface{}) {
 	var columns []string
 	var args []interface{}
 	for _, column := range t.orderByFields {
+		if name, ok := strings.CutPrefix(column, "flowfield:"); ok {
+			expr, exprArgs := t.flowFieldExpr(name)
+			columns = append(columns, expr)
+			args = append(args, exprArgs...)
+			continue
+		}
 		columns = append(columns, column)
 	}
 	for _, column := range pk {
@@ -4840,6 +8805,20 @@ func (t *Item) copyFromBuffered(record *Item) {
 	t.Comment = record.Comment
 	t.Blocked = record.Blocked
 	t.Last_date_modified = record.Last_date_modified
+	t.Quantity_on_hand = record.Quantity_on_hand
+	t.Net_invoiced_qty = record.Net_invoiced_qty
+	t.Net_change = record.Net_change
+	t.Purchases_qty = record.Purchases_qty
+	t.Sales_qty = record.Sales_qty
+	t.Positive_adjmt_qty = record.Positive_adjmt_qty
+	t.Negative_adjmt_qty = record.Negative_adjmt_qty
+	t.Purchases_lcy = record.Purchases_lcy
+	t.Sales_lcy = record.Sales_lcy
+	t.Positive_adjmt_lcy = record.Positive_adjmt_lcy
+	t.Negative_adjmt_lcy = record.Negative_adjmt_lcy
+	t.Cogs_lcy = record.Cogs_lcy
+	t.Transferred_qty = record.Transferred_qty
+	t.Transferred_lcy = record.Transferred_lcy
 	t.Price_includes_tax = record.Price_includes_tax
 	t.Tax_bus_posting_gr_price = record.Tax_bus_posting_gr_price
 	t.Gen_prod_posting_group = record.Gen_prod_posting_group
@@ -6620,6 +10599,34 @@ func (t *Item) flowFieldValue(no int) (any, bool) {
 	switch no {
 	case 53:
 		return t.Comment, true
+	case 68:
+		return t.Quantity_on_hand, true
+	case 69:
+		return t.Net_invoiced_qty, true
+	case 70:
+		return t.Net_change, true
+	case 71:
+		return t.Purchases_qty, true
+	case 72:
+		return t.Sales_qty, true
+	case 73:
+		return t.Positive_adjmt_qty, true
+	case 74:
+		return t.Negative_adjmt_qty, true
+	case 77:
+		return t.Purchases_lcy, true
+	case 78:
+		return t.Sales_lcy, true
+	case 79:
+		return t.Positive_adjmt_lcy, true
+	case 80:
+		return t.Negative_adjmt_lcy, true
+	case 83:
+		return t.Cogs_lcy, true
+	case 93:
+		return t.Transferred_qty, true
+	case 94:
+		return t.Transferred_lcy, true
 	}
 	return nil, false
 }
@@ -7431,6 +11438,9 @@ func (t *Item) FilterExpressions() []tables.FieldFilter {
 			continue
 		}
 		field := f.fieldName
+		if f.flowField != "" {
+			field = f.flowField
+		}
 		result = append(result, tables.FieldFilter{Field: field, Expression: expr})
 	}
 	return result
@@ -7557,6 +11567,16 @@ func (t *Item) Rename(newKey ...interface{}) bool {
 func (t *Item) Copy(from *Item) {
 	t.TransferFields(from)
 	t.CopyFilters(from)
+	// The copy is the record as read: its stored values (xRec, the key a Modify matches) are
+	// the source's — a Modify after Copy changes the copied record, never the one read before
+	if from.oldValues != nil {
+		t.oldValues = make(map[string]interface{}, len(from.oldValues))
+		for k, v := range from.oldValues {
+			t.oldValues[k] = v
+		}
+	} else {
+		t.oldValues = nil
+	}
 }
 
 // Find finds a record (Find) within the filters, in the current key and direction
@@ -7631,10 +11651,13 @@ func (t *Item) findInKey(seek string, reverse bool) bool {
 		t.descending = !t.descending
 	}
 	found := t.FindSet()
+	// One record read: a later Next seeks from it in the key (inside a transaction FindSet
+	// buffers its rows — a one-row buffer would end the Next at once)
 	if t.currentRows != nil {
 		t.currentRows.Close()
 		t.currentRows = nil
 	}
+	t.bufferedRecords = nil
 	t.limit, t.offset, t.descending = savedLimit, savedOffset, savedDescending
 	t.seek, t.seekArgs = "", nil
 	return found
@@ -7969,9 +11992,37 @@ func (t *Item) ToMap() map[string]interface{} {
 		"budgeted_amount":          t.Budgeted_amount.String(),
 		"budget_profit":            t.Budget_profit.String(),
 		// FlowField: comment
-		"comment":                  t.Comment,
-		"blocked":                  t.Blocked,
-		"last_date_modified":       t.Last_date_modified.String(),
+		"comment":            t.Comment,
+		"blocked":            t.Blocked,
+		"last_date_modified": t.Last_date_modified.String(),
+		// FlowField: quantity_on_hand
+		"quantity_on_hand": t.Quantity_on_hand.String(),
+		// FlowField: net_invoiced_qty
+		"net_invoiced_qty": t.Net_invoiced_qty.String(),
+		// FlowField: net_change
+		"net_change": t.Net_change.String(),
+		// FlowField: purchases_qty
+		"purchases_qty": t.Purchases_qty.String(),
+		// FlowField: sales_qty
+		"sales_qty": t.Sales_qty.String(),
+		// FlowField: positive_adjmt_qty
+		"positive_adjmt_qty": t.Positive_adjmt_qty.String(),
+		// FlowField: negative_adjmt_qty
+		"negative_adjmt_qty": t.Negative_adjmt_qty.String(),
+		// FlowField: purchases_lcy
+		"purchases_lcy": t.Purchases_lcy.String(),
+		// FlowField: sales_lcy
+		"sales_lcy": t.Sales_lcy.String(),
+		// FlowField: positive_adjmt_lcy
+		"positive_adjmt_lcy": t.Positive_adjmt_lcy.String(),
+		// FlowField: negative_adjmt_lcy
+		"negative_adjmt_lcy": t.Negative_adjmt_lcy.String(),
+		// FlowField: cogs_lcy
+		"cogs_lcy": t.Cogs_lcy.String(),
+		// FlowField: transferred_qty
+		"transferred_qty": t.Transferred_qty.String(),
+		// FlowField: transferred_lcy
+		"transferred_lcy":          t.Transferred_lcy.String(),
 		"price_includes_tax":       t.Price_includes_tax,
 		"tax_bus_posting_gr_price": t.Tax_bus_posting_gr_price.String(),
 		"gen_prod_posting_group":   t.Gen_prod_posting_group.String(),
@@ -9038,6 +13089,160 @@ func (t *Item) GetFields() []tables.FieldInfo {
 			ReadOnly:   true,
 		},
 		{
+			No:            68,
+			Name:          "quantity_on_hand",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            69,
+			Name:          "net_invoiced_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            70,
+			Name:          "net_change",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            71,
+			Name:          "purchases_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            72,
+			Name:          "sales_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            73,
+			Name:          "positive_adjmt_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            74,
+			Name:          "negative_adjmt_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            77,
+			Name:          "purchases_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            78,
+			Name:          "sales_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            79,
+			Name:          "positive_adjmt_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            80,
+			Name:          "negative_adjmt_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            83,
+			Name:          "cogs_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            93,
+			Name:          "transferred_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            94,
+			Name:          "transferred_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
 			No:         87,
 			Name:       "price_includes_tax",
 			Type:       tables.FieldTypeBoolean,
@@ -9190,6 +13395,12 @@ func (t *Item) SetFlowFilter(field, expr string) error {
 		}
 		t.Location_filter = expr
 		return nil
+	case "drop_shipment_filter":
+		if err := flowfilter.Validate(flowfilter.KindBool, expr); err != nil {
+			return err
+		}
+		t.Drop_shipment_filter = expr
+		return nil
 	case "variant_filter":
 		if err := flowfilter.Validate(flowfilter.KindCode, expr); err != nil {
 			return err
@@ -9207,6 +13418,7 @@ func (t *Item) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 		{Name: "department_filter", Kind: string(flowfilter.KindCode)},
 		{Name: "project_filter", Kind: string(flowfilter.KindCode)},
 		{Name: "location_filter", Kind: string(flowfilter.KindCode)},
+		{Name: "drop_shipment_filter", Kind: string(flowfilter.KindBool)},
 		{Name: "variant_filter", Kind: string(flowfilter.KindCode)},
 	}
 }
@@ -9215,6 +13427,20 @@ func (t *Item) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 func (t *Item) GetFlowFields() []string {
 	return []string{
 		"comment",
+		"quantity_on_hand",
+		"net_invoiced_qty",
+		"net_change",
+		"purchases_qty",
+		"sales_qty",
+		"positive_adjmt_qty",
+		"negative_adjmt_qty",
+		"purchases_lcy",
+		"sales_lcy",
+		"positive_adjmt_lcy",
+		"negative_adjmt_lcy",
+		"cogs_lcy",
+		"transferred_qty",
+		"transferred_lcy",
 	}
 }
 

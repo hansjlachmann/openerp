@@ -85,6 +85,16 @@ type Options struct {
 	Progress func(percent int, phase Phase)
 	// Today (optional) anchors the generated dates; zero means the current date.
 	Today time.Time
+	// ItemJnlPostLine (optional) opens the item posting (codeunit 22) in the demo's
+	// transaction: the demo items' opening stock, purchases and sales of the year are posted
+	// through it. The caller passes it (codeunit 901: itemjnl.NewItemJnlPostLine) — the item
+	// posting depends on the general journal posting, whose tests use this package.
+	ItemJnlPostLine func(src ftables.Source) ItemJnlPoster
+}
+
+// ItemJnlPoster posts an item journal line (codeunit 22 Item Jnl.-Post Line)
+type ItemJnlPoster interface {
+	Run(itemJnlLine *gtables.ItemJournalLine) error
 }
 
 // Counts reports what Create inserted.
@@ -103,6 +113,7 @@ type Counts struct {
 	Customers                int
 	LedgerEntries            int
 	GLEntries                int // demo G/L entries (monthly sales and costs against the bank)
+	ItemLedgerEntries        int // the demo items' opening stock, purchases and sales (posted)
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -398,6 +409,14 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	if err != nil {
 		rollback()
 		return Counts{}, err
+	}
+
+	if opts.ItemJnlPostLine != nil {
+		err = postDemoItems(ftables.DBSource(exec, company, dbType), opts.ItemJnlPostLine, today, setup.MasterData, &counts)
+		if err != nil {
+			rollback()
+			return Counts{}, err
+		}
 	}
 
 	if tx != nil {

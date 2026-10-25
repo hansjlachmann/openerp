@@ -79,8 +79,8 @@ func TestCreateSmall(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 450 || counts.GLEntries < 500 {
-		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 450 master data records, at least 500 G/L entries", counts)
+	if counts.Countries != 3 || counts.PaymentTerms != 4 || counts.Customers != 20 || counts.MasterData != 471 || counts.GLEntries < 500 {
+		t.Errorf("counts = %+v, want 3 countries, 4 payment terms, 20 customers, 471 master data records, at least 500 G/L entries", counts)
 	}
 	// The customers' comments, ship-to addresses and bank accounts; three fiscal years of
 	// monthly periods and the next year's first, the oldest year closed

@@ -465,3 +465,22 @@ pages:
     caption: "Vare-/kunderabatter"
   item_disc_groups:
     caption: "Varerabattgrupper"
+
+  # Item journals and item ledger
+  item_journal:
+    caption: "Varekladd"
+    fields:
+      journal_batch_name: "Kladdenavn"
+      item_description: "Varebeskrivelse"
+  item_journal_templates:
+    caption: "Varekladdemaler"
+  item_journal_template_list:
+    caption: "Varekladdemalliste"
+  item_journal_batches:
+    caption: "Varekladdenavn"
+  item_registers:
+    caption: "Varejournaler"
+  item_ledger_entries:
+    caption: "Vareposter"
+  item_application_entries:
+    caption: "Vareutligningsposter"

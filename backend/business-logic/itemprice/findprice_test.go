@@ -43,8 +43,8 @@ func priceCompany(t *testing.T) ftables.Source {
 	must(t, priceGr.InsertOrError(false))
 	for _, p := range []struct {
 		group, currency, uom string
-		start            types.Date
-		price            string
+		start                types.Date
+		price                string
 	}{
 		{"", "", "", types.NewDate(2026, 1, 1), "90"},
 		{"", "", "", types.NewDate(2026, 7, 1), "95"},

@@ -2,6 +2,7 @@ package tables
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -84,4 +85,14 @@ func relationFilterValue(f RelationFilterInfo, record map[string]interface{}) st
 		return fmt.Sprint(v)
 	}
 	return ""
+}
+
+// FilterBool is the value of a filter on a Boolean field: Yes, true, 1 (and the Norwegian/Danish
+// Ja) are true, everything else false
+func FilterBool(s string) bool {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "yes", "true", "1", "ja":
+		return true
+	}
+	return false
 }
