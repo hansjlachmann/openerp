@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.113](https://github.com/hansjlachmann/openerp/compare/v0.1.112...v0.1.113) (2026-10-25)
+
+
+### Bug Fixes
+
+* G/L account fields relate to posting accounts only ([#151](https://github.com/hansjlachmann/openerp/issues/151)) ([906e600](https://github.com/hansjlachmann/openerp/commit/906e6008f215ecac5190e18152d26fdfcce8612b))
+
 ## [0.1.112](https://github.com/hansjlachmann/openerp/compare/v0.1.111...v0.1.112) (2026-10-25)
 
 
