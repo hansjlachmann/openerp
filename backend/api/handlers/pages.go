@@ -153,6 +153,22 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 				}
 				applyTableField(field)
 			}
+			// A period grid's filter fields and columns (FlowFields or calculated)
+			if grid := pageDef.Page.Layout.Sections[i].PeriodGrid; grid != nil {
+				for _, fields := range [][]pages.Field{grid.Filters, grid.Columns} {
+					for j := range fields {
+						field := &fields[j]
+						fieldCaptions[field.Source] = pageFieldCaption(ts, pageDef.Page.Name, pageDef.Page.SourceTable, field, lang)
+						if ft := tableMeta.GetFieldType(pageDef.Page.SourceTable, field.Source); ft != "" {
+							fieldTypes[field.Source] = ft
+						}
+						if field.Calculated {
+							markCalculated(&pageDef.Page, field, fieldTypes)
+						}
+						applyTableField(field)
+					}
+				}
+			}
 		}
 
 		// Get captions for list page repeater and mark primary key / required fields

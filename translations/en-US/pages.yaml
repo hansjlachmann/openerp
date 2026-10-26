@@ -552,3 +552,21 @@ pages:
     caption: "BOM Registers"
   bom_ledger_entries:
     caption: "BOM Ledger Entries"
+  item_availability_by_periods:
+    caption: "Item Availability by Periods"
+    fields:
+      net_change: "Inventory"
+  item_availability_by_location:
+    caption: "Item Availability by Location"
+    fields:
+      net_change: "Inventory"
+  item_availability_by_variant:
+    caption: "Item Availability by Variant"
+    fields:
+      net_change: "Inventory"
+  item_turnover:
+    caption: "Item Turnover"
+  resource_availability:
+    caption: "Resource Availability"
+  res_group_availability:
+    caption: "Res. Group Availability"

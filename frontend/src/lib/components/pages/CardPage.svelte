@@ -22,6 +22,7 @@
 	import { api } from '$lib/services/api';
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 	import PictureField from './PictureField.svelte';
+	import PeriodGrid from './PeriodGrid.svelte';
 	import { handleFieldEnterKey, getFieldControls } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
@@ -618,7 +619,7 @@
 					.sort((a: any, b: any) => a.order - b.order)
 					.map((item: any) => item.field)
 			}))
-			.filter(section => section.fields.length > 0 || !!section.subpage);
+			.filter(section => section.fields.length > 0 || !!section.subpage || !!section.period_grid);
 	});
 
 	// Open customize modal
@@ -751,7 +752,21 @@
 						</h3>
 					{/snippet}
 
-					{#if section.subpage}
+					{#if section.period_grid}
+						<!-- The record's FlowFields per period (or per record of the grid's rows table) -->
+						{#if !checkIsNewRecord()}
+							<PeriodGrid
+								pageId={page.page.id}
+								section={section.name}
+								grid={section.period_grid}
+								{record}
+								{captions}
+								ondrilldown={(pageId, filters) => { drilldown = { pageId, filters }; }}
+							/>
+						{:else}
+							<p class="subpage-empty">{t(CARD.SAVE_FIRST)}</p>
+						{/if}
+					{:else if section.subpage}
 						{@const sub = section.subpage}
 						<!-- A subpage: the list page with the lines of this record (its own keys) -->
 						<div class="subpage-part" data-subpage-part data-own-keys>

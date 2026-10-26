@@ -552,3 +552,21 @@ pages:
     caption: "Styklistejournaler"
   bom_ledger_entries:
     caption: "Styklisteposter"
+  item_availability_by_periods:
+    caption: "Varedisponering pr. periode"
+    fields:
+      net_change: "Lager"
+  item_availability_by_location:
+    caption: "Varedisponering pr. lokation"
+    fields:
+      net_change: "Lager"
+  item_availability_by_variant:
+    caption: "Varedisponering pr. variant"
+    fields:
+      net_change: "Lager"
+  item_turnover:
+    caption: "Vareomsætning"
+  resource_availability:
+    caption: "Ressourcedisponering"
+  res_group_availability:
+    caption: "Ressourcegruppedisponering"

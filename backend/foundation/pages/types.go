@@ -105,6 +105,44 @@ type Section struct {
 	// Subpage: instead of fields, the section shows a list page with the records linked to
 	// the card's record (e.g. a document's lines)
 	Subpage *Subpage `yaml:"subpage,omitempty" json:"subpage,omitempty"`
+	// PeriodGrid: instead of fields, the section shows the record's FlowFields per period
+	// (classic matrix-by-periods forms: Item Availability by Periods, Item Turnover)
+	PeriodGrid *PeriodGrid `yaml:"period_grid,omitempty" json:"period_grid,omitempty"`
+}
+
+// PeriodGrid is a card section listing periods (days … years, accounting periods) — or, with
+// Rows, the records of a table — with the card record's FlowFields calculated for each: the
+// row's period goes into the FlowFilter DateFilter (View as Net Change: the period, Balance at
+// Date: up to its end). Rows from a table (Item Availability by Location) set their key into
+// the FlowFilter Rows.Filter and share the one period chosen above the grid.
+type PeriodGrid struct {
+	DateFilter string `yaml:"date_filter" json:"date_filter"`
+	// Filters: FlowFilter fields of the record the user filters the grid by (Location Filter)
+	Filters []Field `yaml:"filters" json:"filters"`
+	// Columns: FlowFields of the record, or calculated fields its page's OnAfterGetRecord
+	// trigger fills for each row; drilldown opens a page filtered to the record (Drilldown
+	// filter field/value) and the row's dates (DrilldownDateField)
+	Columns            []Field `yaml:"columns" json:"columns"`
+	DrilldownDateField string  `yaml:"drilldown_date_field,omitempty" json:"drilldown_date_field,omitempty"`
+	// ViewBy: the period length the grid starts with (0 Day … 4 Year, 5 Accounting Period)
+	ViewBy int `yaml:"view_by" json:"view_by"`
+	// Rows: the rows are the records of a table instead of periods
+	Rows *PeriodGridRows `yaml:"rows,omitempty" json:"rows,omitempty"`
+}
+
+// PeriodGridRows are the records a period grid lists (locations, variants): Table's records —
+// those matching Filters (a field of the row table → a field of the card record, the variants
+// of the item) — keyed by Field and named by CaptionField; each row's key goes into the record's
+// FlowFilter Filter
+type PeriodGridRows struct {
+	Table        string            `yaml:"table" json:"table"`
+	Field        string            `yaml:"field" json:"field"`
+	CaptionField string            `yaml:"caption_field" json:"caption_field"`
+	Filter       string            `yaml:"filter" json:"filter"`
+	Filters      map[string]string `yaml:"filters,omitempty" json:"filters,omitempty"`
+	// DrilldownFilterField: the field of a column's drilldown page the row's key filters
+	// (location_code)
+	DrilldownFilterField string `yaml:"drilldown_filter_field,omitempty" json:"drilldown_filter_field,omitempty"`
 }
 
 // Subpage is a list page shown in a card, tied to the card's record by Link (SubPageLink)
@@ -134,8 +172,11 @@ type Field struct {
 	Drilldown            int    `yaml:"drilldown,omitempty" json:"drilldown,omitempty"`                           // Page ID to navigate to on click
 	DrilldownFilterField string `yaml:"drilldown_filter_field,omitempty" json:"drilldown_filter_field,omitempty"` // Field on target table to filter
 	DrilldownFilterValue string `yaml:"drilldown_filter_value,omitempty" json:"drilldown_filter_value,omitempty"` // Field on current record for filter value
-	PrimaryKey           bool   `yaml:"-" json:"primary_key,omitempty"`                                           // Is this the primary key field (populated at runtime)
-	Required             bool   `yaml:"-" json:"required,omitempty"`                                              // Is this field required (populated at runtime)
+	// DrilldownDateField: in a period grid, the date field of the drilldown page the row's dates
+	// filter (else the grid's)
+	DrilldownDateField string `yaml:"drilldown_date_field,omitempty" json:"drilldown_date_field,omitempty"`
+	PrimaryKey         bool   `yaml:"-" json:"primary_key,omitempty"` // Is this the primary key field (populated at runtime)
+	Required           bool   `yaml:"-" json:"required,omitempty"`    // Is this field required (populated at runtime)
 	// Masked (ExtendedDatatype Masked): shown as a password input, never in clear text.
 	// Set in the page YAML (e.g. the User card's virtual password field) or taken from the
 	// table field's masked: true
@@ -259,6 +300,12 @@ func (p *PageDefinition) Clone() *PageDefinition {
 	m.Layout.Sections = make([]Section, len(p.Page.Layout.Sections))
 	for i, s := range p.Page.Layout.Sections {
 		s.Fields = append([]Field{}, s.Fields...) // never null (a subpage section has none)
+		if s.PeriodGrid != nil {
+			g := *s.PeriodGrid
+			g.Filters = append([]Field{}, g.Filters...)
+			g.Columns = append([]Field{}, g.Columns...)
+			s.PeriodGrid = &g
+		}
 		m.Layout.Sections[i] = s
 	}
 	if p.Page.Layout.Repeater != nil {

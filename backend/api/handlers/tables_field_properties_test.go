@@ -276,7 +276,7 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 		`{"entry_no":2,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"-100","bal_account_type":1,"bal_account_no":"C1"}`:  true,
 		`{"entry_no":3,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":1,"bal_account_no":"2000"}`:   false,
 		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     false,
-		`{"entry_no":5,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":5,"bal_account_no":"E9"}`:     true, // employees: no table yet
+		`{"entry_no":5,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":5,"bal_account_no":"E9"}`:     true,  // employees: no table yet
 		`{"entry_no":6,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":0,"bal_account_no":"2999"}`:   false, // a total account: posting accounts only
 	} {
 		status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Entry/insert", body)

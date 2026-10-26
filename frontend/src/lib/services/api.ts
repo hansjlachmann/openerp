@@ -1,5 +1,5 @@
 import type { NavigationQuery } from '$lib/utils/recordNavigation';
-import type { FieldState } from '$lib/types/pages';
+import type { FieldState, PeriodGridRow } from '$lib/types/pages';
 import type {
 	ApiResponse,
 	ListResponse,
@@ -279,6 +279,30 @@ export const api = {
 			`field states of page ${pageId}`
 		);
 		return { states: data.field_states ?? {}, values: data.values ?? {} };
+	},
+
+	// A card's period grid section: the record's FlowFields per period (or per record of the
+	// grid's rows table) — POST /api/pages/:id/period-grid
+	async periodGrid(
+		pageId: number,
+		request: {
+			section: string;
+			record: TableRecord;
+			filters: { field: string; expression: string }[];
+			view_by: number;
+			view_as: number;
+			date: string;
+			step: number;
+			rows: number;
+		}
+	): Promise<{ rows: PeriodGridRow[]; date: string }> {
+		const response = await fetch(`${API_BASE}/pages/${pageId}/period-grid`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(request)
+		});
+		const data = await handleApiResponse<{ rows: PeriodGridRow[]; date: string }>(response, `period grid of page ${pageId}`);
+		return { rows: data.rows ?? [], date: data.date ?? '' };
 	},
 
 	async validateField(

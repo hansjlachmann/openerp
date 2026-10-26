@@ -552,3 +552,21 @@ pages:
     caption: "Stykklistejournaler"
   bom_ledger_entries:
     caption: "Stykklisteposter"
+  item_availability_by_periods:
+    caption: "Varetilgjengelighet per periode"
+    fields:
+      net_change: "Lager"
+  item_availability_by_location:
+    caption: "Varetilgjengelighet per lokasjon"
+    fields:
+      net_change: "Lager"
+  item_availability_by_variant:
+    caption: "Varetilgjengelighet per variant"
+    fields:
+      net_change: "Lager"
+  item_turnover:
+    caption: "Vareomsetning"
+  resource_availability:
+    caption: "Ressurstilgjengelighet"
+  res_group_availability:
+    caption: "Ressursgruppetilgjengelighet"

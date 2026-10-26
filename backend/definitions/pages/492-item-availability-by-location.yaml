@@ -1,0 +1,38 @@
+page:
+  id: 492
+  type: Card
+  name: Item Availability by Location
+  source_table: Item
+  caption: Item Availability by Location
+  editable: false
+  # classic form 492 with its lines (form 515): the item's inventory per location in a period
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            editable: false
+          - source: description
+            editable: false
+      - name: Locations
+        caption: Locations
+        period_grid:
+          date_filter: date_filter
+          drilldown_date_field: posting_date
+          view_by: 0
+          rows:
+            table: Location
+            field: code
+            caption_field: name
+            filter: location_filter
+            drilldown_filter_field: location_code
+          filters:
+            - source: variant_filter
+              drilldown_filter_field: variant_code
+          columns:
+            - source: net_change
+              drilldown: 38
+              drilldown_filter_field: item_no
+              drilldown_filter_value: "no"

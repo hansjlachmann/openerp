@@ -8,6 +8,13 @@ common:
 
   # Common actions
   actions:
+    item_availability_by: "Varetilgjengelighet per"
+    location: "Lokasjon"
+    period: "Periode"
+    res_group_availability: "Ressursgruppetilgjengelighet"
+    resource_availability: "Ressurstilgjengelighet"
+    turnover: "Omsetning"
+    variant: "Variant"
     bill_of_materials: "Stykkliste"
     bom_ledger: "Stykklisteposter"
     calc_standard_cost: "Beregn standardkost"
@@ -103,6 +110,9 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    locations: "Lokasjoner"
+    variants: "Varianter"
+    periods: "Perioder"
     personal_data: "Personopplysninger"
     picture: "Bilde"
     inventory: "Lager"

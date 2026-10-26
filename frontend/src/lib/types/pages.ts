@@ -63,6 +63,27 @@ export interface Section {
 	caption: string;
 	fields: Field[];
 	subpage?: Subpage; // instead of fields: a list page linked to the card's record
+	period_grid?: PeriodGrid; // instead of fields: the record's FlowFields per period
+}
+
+/** A card section of periods (or of a table's records) with the record's FlowFields per row */
+export interface PeriodGrid {
+	date_filter: string;
+	filters: Field[]; // FlowFilter fields the grid is filtered by (Location Filter)
+	columns: Field[];
+	drilldown_date_field?: string; // the date field a column's drilldown filters on
+	view_by: number; // 0 Day … 4 Year, 5 Accounting Period
+	rows?: { table: string; field: string; caption_field: string; filter: string; filters?: Record<string, string>; drilldown_filter_field?: string };
+}
+
+/** A row of a period grid: its period (or record) and the columns' values */
+export interface PeriodGridRow {
+	period_start: string;
+	period_end: string;
+	period_name?: string;
+	key?: string;
+	caption?: string;
+	values: Record<string, unknown>;
 }
 
 /** A list page shown in a card section, tied to the card's record */
@@ -76,6 +97,7 @@ export interface Repeater {
 }
 
 export interface Field {
+	drilldown_date_field?: string; // in a period grid: the drilldown page's date field the row's dates filter
 	source: string;
 	caption?: string;
 	editable?: boolean;
