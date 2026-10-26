@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
 
 	_ "github.com/hansjlachmann/openerp/backend/business-logic/pages"
+	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -64,5 +67,46 @@ func TestPageFieldStates(t *testing.T) {
 	}
 	if st, err := pages.RunAfterGetRecord(99991, &gtables.Customer{}); err != nil || *st["name"].Visible {
 		t.Errorf("SetVisible: %v %v", st, err)
+	}
+}
+
+// A journal line entered on its page gets its read-only fields from the page's OnNewRecord
+// (the template's Source Code), not from the payload — the browser cannot send them
+func TestInsertTakesReadOnlyFieldsFromNewRecord(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = db.Close() })
+	if err := tables.CreateCompanyTables(db, "TEST", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	src := ftables.DBSource(db, "TEST", database.DBTypeSQLite)
+	template := gtables.NewResJournalTemplate(src)
+	template.Name, template.Page_id, template.Source_code = "RESOURCES", 207, "RESJNL"
+	batch := gtables.NewResJournalBatch(src)
+	batch.Journal_template_name, batch.Name = "RESOURCES", "DEFAULT"
+	for _, err := range []error{template.InsertOrError(false), batch.InsertOrError(false)} {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("session", &session.Session{Company: "TEST", Language: "en-US"})
+		return c.Next()
+	})
+	app.Post("/api/tables/:table/insert", NewTablesHandler(db).InsertRecord)
+
+	line := `{"journal_template_name":"RESOURCES","journal_batch_name":"DEFAULT","line_no":%d,"source_code":"HACK"}`
+	status, out := sendJSON(t, app, "POST", "/api/tables/Res_Journal_Line/insert?page_id=207", fmt.Sprintf(line, 10000))
+	if status != 200 || out["data"].(map[string]interface{})["source_code"] != "RESJNL" {
+		t.Errorf("insert on page 207: %d %v", status, out)
+	}
+	// without the page the read-only field stays blank (only business logic sets it)
+	status, out = sendJSON(t, app, "POST", "/api/tables/Res_Journal_Line/insert", fmt.Sprintf(line, 20000))
+	if status != 200 || out["data"].(map[string]interface{})["source_code"] != "" {
+		t.Errorf("insert without a page: %d %v", status, out)
 	}
 }

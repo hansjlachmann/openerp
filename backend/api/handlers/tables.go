@@ -852,7 +852,7 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableName).Message(language)))
 	}
-	table, status, msg := h.insertOne(tx, tableName, company, language, data)
+	table, status, msg := h.insertOne(tx, tableName, company, language, data, c.QueryInt("page_id", 0))
 	if msg != "" {
 		_ = tx.Rollback()
 		return c.Status(status).JSON(apitypes.NewErrorResponse(msg))
@@ -1046,9 +1046,11 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 // insertOne runs a record insert as the API does it (InsertRecord, and each record of a
 // paste): masked placeholders dropped, sensitive fields refused, table relations checked,
 // changed fields validated (OnValidate), key not empty and not existing, Insert(true) with
-// OnInsert. exec is the database or the paste's transaction. On failure it returns the
-// HTTP status and the message for the user; msg is "" on success.
-func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, language string, data map[string]interface{}) (table ftables.Table, status int, msg string) {
+// OnInsert. exec is the database or the paste's transaction. pageID (0: none) is the page the
+// record was entered on: its read-only fields take the values the page's OnNewRecord gives
+// them (a journal line's Source Code), as the record had them when the user started it. On
+// failure it returns the HTTP status and the message for the user; msg is "" on success.
+func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, language string, data map[string]interface{}, pageID int) (table ftables.Table, status int, msg string) {
 	tableCaption := i18n.GetInstance().TableCaption(tableName, language)
 	table, err := h.getTableOn(exec, tableName, company)
 	if err != nil {
@@ -1061,6 +1063,17 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	ftables.DropReadOnlyFields(table, data, true) // editable: false — only business logic sets them
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return nil, 400, err.Error()
+	}
+
+	// Read-only fields of a record entered on a page with OnNewRecord triggers: the values the
+	// server's own init gives them (the payload's are dropped above)
+	if pageID > 0 && pages.HasNewRecordTriggers(pageID) {
+		newRecordValues, err := h.newRecordReadOnlyValues(exec, tableName, company, data, pageID)
+		if err != nil {
+			return nil, 400, errorMessage(err, language)
+		}
+		// before the user's fields are validated: their triggers may set read-only fields too
+		table.UpdateFromMap(newRecordValues)
 	}
 
 	// Validate and set each changed field (runs OnValidate triggers for table relations, etc.)
@@ -1226,7 +1239,7 @@ func (h *TablesHandler) InsertRecords(c *fiber.Ctx) error {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
 	for i, data := range req.Records {
-		table, status, msg := h.insertOne(tx, tableName, company, language, data)
+		table, status, msg := h.insertOne(tx, tableName, company, language, data, 0)
 		if msg != "" {
 			_ = tx.Rollback()
 			return c.Status(status).JSON(apitypes.NewErrorResponse(
@@ -1424,6 +1437,35 @@ func validateChangedFields(table ftables.Table, tableName string, data map[strin
 		}
 	}
 	return nil
+}
+
+// newRecordReadOnlyValues are the read-only (editable: false), non-key fields of a new record
+// as the page's OnNewRecord triggers set them (InitRecord, the record's values, OnNewRecord
+// without a record above): only business logic sets read-only fields, so the API takes them
+// from its own init instead of the payload
+func (h *TablesHandler) newRecordReadOnlyValues(exec database.Executor, tableName, company string, data map[string]interface{}, pageID int) (map[string]interface{}, error) {
+	rec, err := h.getTableOn(exec, tableName, company)
+	if err != nil {
+		return nil, err
+	}
+	xRec, err := h.getTableOn(exec, tableName, company)
+	if err != nil {
+		return nil, err
+	}
+	rec.InitRecord()
+	rec.UpdateFromMap(data)
+	err = pages.RunNewRecord(pageID, rec, xRec, false)
+	if err != nil {
+		return nil, err
+	}
+	values := rec.ToMap()
+	readOnly := map[string]interface{}{}
+	for _, f := range rec.GetFields() {
+		if f.ReadOnly && !f.PrimaryKey && f.Type != ftables.FieldTypeBlob {
+			readOnly[f.Name] = values[f.Name]
+		}
+	}
+	return readOnly, nil
 }
 
 // InitRecord returns a new, not yet inserted record with its defaults applied
