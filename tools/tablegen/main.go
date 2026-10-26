@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
+	"go/token"
 	"os"
 	"path/filepath"
 	"slices"
@@ -1397,11 +1398,17 @@ func upperFirst(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
+// lowerFirst is a variable or parameter name for a field or type: a Go keyword (a key field
+// named Type) gets a trailing underscore
 func lowerFirst(s string) string {
 	if s == "" {
 		return ""
 	}
-	return strings.ToLower(s[:1]) + s[1:]
+	name := strings.ToLower(s[:1]) + s[1:]
+	if token.IsKeyword(name) {
+		name += "_"
+	}
+	return name
 }
 
 func isLast(index int, slice []Field) bool {

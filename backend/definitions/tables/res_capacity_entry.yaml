@@ -1,0 +1,63 @@
+table:
+  id: 160
+  name: "Res_Capacity_Entry"
+  description: "Res. Capacity Entries (table 160)"
+  lookup_page_id: 224
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+
+    - name: resource_no
+      no: 2
+      type: types.Code
+      db_name: resource_no
+      length: 20
+      table_relation:
+        table: Resource
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: resource_group_no
+      no: 3
+      type: types.Code
+      db_name: resource_group_no
+      length: 20
+      table_relation:
+        table: Resource_Group
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: date
+      no: 4
+      type: types.Date
+      db_name: date
+
+    - name: capacity
+      no: 5
+      type: types.Decimal
+      db_name: capacity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: resource_date
+      fields: [resource_no, date]
+      sum_index_fields: [capacity]
+    - name: resource_group_date
+      fields: [resource_group_no, date]
+      sum_index_fields: [capacity]

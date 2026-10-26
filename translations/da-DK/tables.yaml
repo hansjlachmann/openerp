@@ -2894,3 +2894,139 @@ tables:
         positive_adjmt: "Opregulering"
         negative_adjmt: "Nedregulering"
         transfer: "Overførsel"
+  resource:
+    caption: "Ressource"
+    fields:
+      no: "Nr."
+      type: "Type"
+      name: "Navn"
+      search_name: "Søgenavn"
+      name_2: "Navn 2"
+      address: "Adresse"
+      address_2: "Adresse 2"
+      city: "By"
+      social_security_no: "CPR-nr."
+      title: "Stilling"
+      education: "Uddannelse"
+      contract_class: "Kontraktklasse"
+      employment_date: "Ansættelsesdato"
+      resource_group_no: "Ressourcegruppenr."
+      department_code: "Afdelingskode"
+      project_code: "Projektkode"
+      unit_of_measure_code: "Enhedskode"
+      direct_unit_cost: "Købspris"
+      indirect_cost_percent: "Indirekte omkost. %"
+      unit_cost: "Kostpris"
+      profit_percent: "Avance %"
+      price_profit_calculation: "Pris/avanceberegning"
+      unit_price: "Enhedspris"
+      vendor_no: "Kreditornr."
+      last_date_modified: "Rettet den"
+      comment: "Bemærkning"
+      blocked: "Spærret"
+      date_filter: "Datofilter"
+      unit_of_measure_filter: "Enhedsfilter"
+      capacity: "Kapacitet"
+      chargeable_filter: "Fakturerbar-filter"
+      gen_prod_posting_group: "Produktbogføringsgruppe"
+      picture: "Billede"
+      post_code: "Postnr."
+      state: "Amt"
+      no_series: "Nummerserie"
+      tax_group_code: "Afgiftsgruppekode"
+      tax_prod_posting_group: "Momsproduktbogføringsgruppe"
+    options:
+      type:
+        person: "Person"
+        machine: "Maskine"
+      price_profit_calculation:
+        profit_price_cost: "Avance=Pris-Kostpris"
+        price_cost_profit: "Pris=Kostpris+Avance"
+        no_relationship: "Ingen relation"
+  resource_group:
+    caption: "Ressourcegruppe"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      date_filter: "Datofilter"
+      capacity: "Kapacitet"
+      unit_of_measure_filter: "Enhedsfilter"
+      chargeable_filter: "Fakturerbar-filter"
+  resources_setup:
+    caption: "Ressourceopsætning"
+    fields:
+      primary_key: "Primærnøgle"
+      resource_nos: "Ressourcenumre"
+  work_type:
+    caption: "Arbejdstype"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      unit_of_measure_code: "Enhedskode"
+  resource_price:
+    caption: "Ressourcepris"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbejdstypekode"
+      currency_code: "Valutakode"
+      unit_price: "Enhedspris"
+    options:
+      type:
+        resource: "Ressource"
+        group_resource: "Gruppe(ressource)"
+        all: "Alle"
+  resource_price_change:
+    caption: "Ressourceprisændring"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbejdstypekode"
+      currency_code: "Valutakode"
+      current_unit_price: "Aktuel enhedspris"
+      new_unit_price: "Ny enhedspris"
+    options:
+      type:
+        resource: "Ressource"
+        group_resource: "Gruppe(ressource)"
+        all: "Alle"
+  resource_cost:
+    caption: "Ressourcekostpris"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbejdstypekode"
+      cost_type: "Kostprisart"
+      direct_unit_cost: "Købspris"
+      unit_cost: "Kostpris"
+    options:
+      type:
+        resource: "Ressource"
+        group_resource: "Gruppe(ressource)"
+        all: "Alle"
+      cost_type:
+        fixed: "Fast"
+        extra: "% tillæg"
+        lcy_extra: "DKK-tillæg"
+  res_capacity_entry:
+    caption: "Ressourcekapacitetspost"
+    fields:
+      entry_no: "Løbenr."
+      resource_no: "Ressourcenr."
+      resource_group_no: "Ressourcegruppenr."
+      date: "Dato"
+      capacity: "Kapacitet"
+  rounding_method:
+    caption: "Afrundingsmetode"
+    fields:
+      code: "Kode"
+      minimum_amount: "Minimumsbeløb"
+      amount_added_before: "Beløb tillagt før"
+      type: "Type"
+      precision: "Præcision"
+      amount_added_after: "Beløb tillagt efter"
+    options:
+      type:
+        nearest: "Nærmeste"
+        up: "Op"
+        down: "Ned"

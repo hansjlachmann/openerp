@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    costs: "Costs"
+    suggest_res_price_chg_res: "Suggest Res. Price Chg. (Res.)"
+    suggest_res_price_chg_price: "Suggest Res. Price Chg. (Price)"
+    implement_price_change: "Implement Price Change"
     picture: "Picture"
     calculate_inventory: "Calculate Inventory"
     phys_inventory_ledger: "Phys. Inventory Ledger"
@@ -93,6 +97,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    personal_data: "Personal Data"
     picture: "Picture"
     inventory: "Inventory"
     ordering: "Ordering"

@@ -10,7 +10,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { t, MSG, ERR, BTN } from '$lib/services/i18n.svelte';
 	import type { DialogResult } from '$lib/types/api';
-	import type { RequestDataItem } from '$lib/types/pages';
+	import type { RequestDataItem, RequestInputField } from '$lib/types/pages';
 
 	interface Props {
 		// After a run: refresh = the result asked for it (or an async job ran)
@@ -27,7 +27,7 @@
 	let confirmMessage = $state('');
 	let confirmCallback = $state<((r: boolean) => void) | undefined>(undefined);
 	let inputMode = $state(false);
-	let inputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string; options?: string[] }>>([]);
+	let inputFields = $state<RequestInputField[]>([]);
 	let inputDataItems = $state<RequestDataItem[]>([]);
 	let optionsCaption = $state('');
 	let inputCallback = $state<((v: Record<string, string> | null) => void) | undefined>(undefined);

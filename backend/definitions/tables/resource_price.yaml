@@ -1,0 +1,81 @@
+table:
+  id: 201
+  name: "Resource_Price"
+  description: "Resource Prices (table 201)"
+  lookup_page_id: 204
+  # 1 Job No. (first key field) is left out until jobs exist: the prices are those of every job
+  fields:
+    - name: type
+      no: 2
+      type: Option
+      db_name: type
+      primary_key: true
+      options: ["Resource", "Group(Resource)", "All"]
+
+    - name: code
+      no: 3
+      type: types.Code
+      db_name: code
+      length: 20
+      primary_key: true
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 0}
+            table: Resource
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: type, equal: 1}
+            table: Resource_Group
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: work_type_code
+      no: 4
+      type: types.Code
+      db_name: work_type_code
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Work_Type
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: unit_price
+      no: 5
+      type: types.Decimal
+      db_name: unit_price
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: currency_code
+      no: 6
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [type, code, work_type_code, currency_code]
+      clustered: true

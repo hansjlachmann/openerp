@@ -1,0 +1,377 @@
+table:
+  id: 156
+  name: "Resource"
+  description: "Resources (table 156)"
+  data_caption_fields: [no, name]
+  auto_key: true   # OnInsert gives a resource without No. the next number of its series
+  lookup_page_id: 77
+  # Left out until their tables exist: 42/43 Qty. on Order/Quoted (Job) (Job Budget Entry),
+  # 55 Automatic Ext. Text (Extended Texts). The ledger FlowFields 44-49 come with the Res.
+  # Ledger Entry.
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: type
+      no: 2
+      type: Option
+      db_name: type
+      options: ["Person", "Machine"]
+
+    - name: name
+      no: 3
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: search_name
+      no: 4
+      type: types.Code
+      db_name: search_name
+      length: 50
+
+    - name: name_2
+      no: 5
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 6
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 7
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 8
+      type: types.Text
+      db_name: city
+      length: 30
+
+    - name: social_security_no
+      no: 9
+      type: types.Text
+      db_name: social_security_no
+      length: 30
+
+    - name: title
+      no: 10
+      type: types.Text
+      db_name: title
+      length: 30
+
+    - name: education
+      no: 11
+      type: types.Text
+      db_name: education
+      length: 30
+
+    - name: contract_class
+      no: 12
+      type: types.Text
+      db_name: contract_class
+      length: 30
+
+    - name: employment_date
+      no: 13
+      type: types.Date
+      db_name: employment_date
+
+    - name: resource_group_no
+      no: 14
+      type: types.Code
+      db_name: resource_group_no
+      length: 20
+      table_relation:
+        table: Resource_Group
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 16
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 17
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: unit_of_measure_code
+      no: 18
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: direct_unit_cost
+      no: 19
+      type: types.Decimal
+      db_name: direct_unit_cost
+      decimal_places: "2:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: indirect_cost_percent
+      no: 20
+      type: types.Decimal
+      db_name: indirect_cost_percent
+      decimal_places: "2:2"
+      validation: {min: 0, max: 100}
+      precision: 18
+      scale: 5
+
+    - name: unit_cost
+      no: 21
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    # Classic MaxValue 100 limits only what the user types; the price/profit calculation gives
+    # 100 for a price without cost, so it is not a stored-value check here
+    - name: profit_percent
+      no: 22
+      type: types.Decimal
+      db_name: profit_percent
+      decimal_places: "0:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: price_profit_calculation
+      no: 23
+      type: Option
+      db_name: price_profit_calculation
+      options: ["Profit=Price-Cost", "Price=Cost+Profit", "No Relationship"]
+
+    - name: unit_price
+      no: 24
+      type: types.Decimal
+      db_name: unit_price
+      decimal_places: "2:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: vendor_no
+      no: 25
+      type: types.Code
+      db_name: vendor_no
+      length: 20
+      table_relation:
+        table: Vendor
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: last_date_modified
+      no: 26
+      type: types.Date
+      db_name: last_date_modified
+      editable: false
+
+    - name: comment
+      no: 27
+      type: bool
+      db_name: comment
+      flow_field: true
+      calc_formula: Exist
+      source_table: CommentLine
+      source_field: line_no
+      flow_filters:
+        - field: table_name
+          type: const
+          value: 4   # Resource
+        - field: no
+          type: field
+          value: no
+
+    - name: blocked
+      no: 38
+      type: bool
+      db_name: blocked
+
+    - name: date_filter
+      no: 39
+      type: types.Date
+      db_name: date_filter
+      flow_filter: true
+
+    - name: unit_of_measure_filter
+      no: 40
+      type: types.Code
+      db_name: unit_of_measure_filter
+      flow_filter: true
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: capacity
+      no: 41
+      type: types.Decimal
+      db_name: capacity
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResCapacityEntry
+      source_field: capacity
+      flow_filters:
+        - field: resource_no
+          type: field
+          value: no
+        - field: date
+          type: filter
+          value: date_filter
+
+    - name: chargeable_filter
+      no: 50
+      type: bool
+      db_name: chargeable_filter
+      flow_filter: true
+
+    - name: gen_prod_posting_group
+      no: 51
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    # The resource's picture: served and uploaded through /api/tables/Resource/blob/picture/<no>
+    # (re-encoded PNG/JPEG), never part of the record's JSON
+    - name: picture
+      no: 52
+      type: "[]byte"
+      db_name: picture
+
+    - name: post_code
+      no: 53
+      type: types.Code
+      db_name: post_code
+      length: 20
+      # classic ZIP Code; any code is accepted (ValidateTableRelation=No), a known one fills City
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: state
+      no: 54
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: no_series
+      no: 56
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_group_code
+      no: 57
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 58
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true
+    - name: search_name
+      fields: [search_name]
+    - name: gen_prod_posting_group
+      fields: [gen_prod_posting_group]

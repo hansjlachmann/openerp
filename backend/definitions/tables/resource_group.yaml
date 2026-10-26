@@ -1,0 +1,70 @@
+table:
+  id: 152
+  name: "Resource_Group"
+  description: "Resource Groups (table 152)"
+  data_caption_fields: [no, name]
+  lookup_page_id: 72
+  # Left out until their tables exist: 24/25 Qty. on Order/Quoted (Job) (Job Budget Entry). The
+  # ledger FlowFields 27-32 come with the Res. Ledger Entry.
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: date_filter
+      no: 22
+      type: types.Date
+      db_name: date_filter
+      flow_filter: true
+
+    - name: capacity
+      no: 23
+      type: types.Decimal
+      db_name: capacity
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResCapacityEntry
+      source_field: capacity
+      flow_filters:
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: date
+          type: filter
+          value: date_filter
+
+    - name: unit_of_measure_filter
+      no: 26
+      type: types.Code
+      db_name: unit_of_measure_filter
+      flow_filter: true
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: chargeable_filter
+      no: 33
+      type: bool
+      db_name: chargeable_filter
+      flow_filter: true
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true

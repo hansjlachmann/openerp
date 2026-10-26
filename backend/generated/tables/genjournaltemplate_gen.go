@@ -943,7 +943,7 @@ func (t *GenJournalTemplate) GetByPK(name types.Code) bool {
 	var page_idVal int
 	var posting_report_idVal int
 	var force_posting_reportBool sql.NullBool
-	var typeInt int
+	var type_Int int
 	var source_codeNull sql.NullString
 	var reason_codeNull sql.NullString
 	var recurringBool sql.NullBool
@@ -972,7 +972,7 @@ func (t *GenJournalTemplate) GetByPK(name types.Code) bool {
 		&page_idVal,
 		&posting_report_idVal,
 		&force_posting_reportBool,
-		&typeInt,
+		&type_Int,
 		&source_codeNull,
 		&reason_codeNull,
 		&recurringBool,
@@ -1000,7 +1000,7 @@ func (t *GenJournalTemplate) GetByPK(name types.Code) bool {
 	t.Page_id = page_idVal
 	t.Posting_report_id = posting_report_idVal
 	t.Force_posting_report = force_posting_reportBool.Bool
-	t.Type = GenJournalTemplateType(typeInt)
+	t.Type = GenJournalTemplateType(type_Int)
 	t.Source_code = types.NewCode(source_codeNull.String)
 	t.Reason_code = types.NewCode(reason_codeNull.String)
 	t.Recurring = recurringBool.Bool

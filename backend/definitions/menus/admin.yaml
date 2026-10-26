@@ -466,7 +466,7 @@ menu:
     icon: user
     items:
       - name: "Resources"
-        page_id: 76
+        page_id: 77
       - name: "Resource Groups"
         page_id: 72
       - name: "Resource Capacity"

@@ -1,0 +1,60 @@
+page:
+  id: 493
+  type: List
+  name: Resource Price Changes
+  source_table: Resource_Price_Change
+  caption: Resource Price Changes
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: type
+          width: 130
+        - source: code
+          width: 110
+        - source: work_type_code
+          width: 120
+        - source: currency_code
+          width: 110
+        - source: current_unit_price
+          width: 140
+        - source: new_unit_price
+          width: 140
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Suggest Res. Price Chg. (Res.)
+      caption: Suggest Res. Price Chg. (Res.)
+      image: Calculate
+      promoted: true
+      run_object: report:1191
+
+    - name: Suggest Res. Price Chg. (Price)
+      caption: Suggest Res. Price Chg. (Price)
+      image: Calculate
+      promoted: true
+      run_object: report:1192
+
+    - name: Implement Price Change
+      caption: Implement Price Change
+      image: Approve
+      promoted: true
+      run_object: report:1193

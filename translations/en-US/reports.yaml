@@ -35,9 +35,50 @@ reports:
       by_location: "By Location"
     texts:
       OPTIONS: "Options"
-      NO: "No"
-      YES: "Yes"
       NO_JOURNAL: "Run Calculate Inventory from a phys. inventory journal."
       ENTER_POSTING_DATE: "Please enter the posting date."
       ENTER_DOCUMENT_NO: "Please enter the document no."
       WINDOW: "Processing items    #1##########"
+  "1191":
+    caption: "Suggest Res. Price Chg. (Res.)"
+    options:
+      work_type_code: "Work Type Code"
+      currency_code: "Currency Code"
+      unit_price_factor: "Adjustment Factor"
+      rounding_method: "Rounding Method"
+      price_lower_limit: "Only Prices Above"
+      create_new_prices: "Create New Prices"
+    texts:
+      COPY_TO: "Copy to Res. Price Change..."
+      WINDOW: "Processing resources  #1##########"
+  "1192":
+    caption: "Suggest Res. Price Chg. (Price)"
+    options:
+      currency_code: "Currency Code"
+      work_type_code: "Work Type Code"
+      unit_price_factor: "Adjustment Factor"
+      rounding_method: "Rounding Method"
+      price_lower_limit: "Only Prices Above"
+      create_new_prices: "Create New Prices"
+    texts:
+      COPY_TO: "Copy to Res. Price Change..."
+      WINDOW: "Processing resources...\n\nType         #1##########\nCode         #2##########"
+  "1193":
+    caption: "Implement Res. Price Change"
+    texts:
+      WINDOW: "Updating Resource Prices...\n\nType                #1##########\nCode                #2##########\nWork Type Code      #3##########\nCurrency Code       #4##########"
+      DELETE_SUGGESTIONS: "The resource prices have now been updated in accordance with the suggested price changes.\n\nDo you want to delete the suggested price changes?"
+  "1195":
+    caption: "Adjust Resource Costs/Prices"
+    options:
+      adjust_field: "Adjust Field"
+      adjustment_factor: "Adjustment Factor"
+      rounding_method: "Rounding Method"
+    texts:
+      OPTIONS: "Options"
+      WINDOW: "Processing resources  #1##########"
+      DIRECT_UNIT_COST: "Direct Unit Cost"
+      INDIRECT_COST_PERCENT: "Indirect Cost %"
+      UNIT_COST: "Unit Cost"
+      PROFIT_PERCENT: "Profit %"
+      UNIT_PRICE: "Unit Price"

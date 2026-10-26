@@ -1409,7 +1409,7 @@ func (t *TaxEntry) GetByPK(entry_no int) bool {
 	var posting_dateNull sql.NullString
 	var document_noNull sql.NullString
 	var document_typeInt int
-	var typeInt int
+	var type_Int int
 	var baseNull sql.NullString
 	var amountNull sql.NullString
 	var tax_calculation_typeInt int
@@ -1461,7 +1461,7 @@ func (t *TaxEntry) GetByPK(entry_no int) bool {
 		&posting_dateNull,
 		&document_noNull,
 		&document_typeInt,
-		&typeInt,
+		&type_Int,
 		&baseNull,
 		&amountNull,
 		&tax_calculation_typeInt,
@@ -1512,7 +1512,7 @@ func (t *TaxEntry) GetByPK(entry_no int) bool {
 	t.Posting_date, _ = types.NewDateFromString(posting_dateNull.String)
 	t.Document_no = types.NewCode(document_noNull.String)
 	t.Document_type = TaxEntryDocument_type(document_typeInt)
-	t.Type = TaxEntryType(typeInt)
+	t.Type = TaxEntryType(type_Int)
 	t.Base, _ = types.NewDecimalFromString(baseNull.String)
 	t.Amount, _ = types.NewDecimalFromString(amountNull.String)
 	t.Tax_calculation_type = TaxEntryTax_calculation_type(tax_calculation_typeInt)

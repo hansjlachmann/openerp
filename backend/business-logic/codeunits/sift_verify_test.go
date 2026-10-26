@@ -53,10 +53,10 @@ func TestSIFTVerifyCodeunit(t *testing.T) {
 		return e.Status
 	}
 
-	// Correct totals: success, the 21 keys checked (customer, vendor, bank, FA, maintenance, item and
-	// insurance coverage ledger, G/L entries)
+	// Correct totals: success, the 23 keys checked (customer, vendor, bank, FA, maintenance, item and
+	// insurance coverage ledger, G/L entries, resource capacity)
 	msg, err := run("")
-	if err != nil || !strings.Contains(msg, "21 SIFT keys") {
+	if err != nil || !strings.Contains(msg, "23 SIFT keys") {
 		t.Fatalf("verify on correct totals: %q, %v", msg, err)
 	}
 	if lastEntryStatus() != gtables.JobQueueEntry_Status.Success {

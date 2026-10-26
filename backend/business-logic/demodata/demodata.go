@@ -114,6 +114,7 @@ type Counts struct {
 	LedgerEntries            int
 	GLEntries                int // demo G/L entries (monthly sales and costs against the bank)
 	ItemLedgerEntries        int // the demo items' opening stock, purchases and sales (posted)
+	ResCapacityEntries       int // the demo resources' capacity per working day
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -396,6 +397,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	seriesUse["BANK"] = ledgerUse{no: lastRecordNo(setup.MasterData, gtables.BankAccountTableName)}
 	seriesUse["FA"] = ledgerUse{no: fixedAssets.FixedAssets[len(fixedAssets.FixedAssets)-1].No}
 	seriesUse["INS"] = ledgerUse{no: fixedAssets.Insurance.No}
+	seriesUse["RES"] = ledgerUse{no: lastRecordNo(setup.MasterData, gtables.ResourceTableName)}
 	err = useSeriesNumbers(exec, company, dbType, customers, entries, seriesUse)
 	if err != nil {
 		rollback()
@@ -406,6 +408,12 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		e.InitWithDBType(exec, company, dbType)
 		return e
 	}), &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+
+	err = insertResCapacity(exec, company, dbType, setup.MasterData, today, &counts)
 	if err != nil {
 		rollback()
 		return Counts{}, err

@@ -170,6 +170,7 @@ errors:
   ERR_ITEM_OPEN_ENTRIES_CHANGE: "Du kan ikke endre %1 for vare %2 fordi det finnes åpne poster."
   ERR_ITEM_HAS_ENTRIES_CHANGE: "Du kan ikke endre %1 fordi det finnes poster for denne varen."
   ERR_ITEM_CANNOT_CHANGE_WHEN: "Du kan ikke endre %1 når %2 er %3."
+  ERR_RES_CODE_WHEN_TYPE_ALL: "%1 kan ikke angis når %2 er %3."
   ERR_ITEM_NOT_ON_INVENTORY: "Vare %1 finnes ikke på lager."
   ERR_ITEM_MUST_BE_RESERVED: "Når feltet %1 for vare %2 inneholder %3, må varen reserveres."
   ERR_FIELD_TOO_LOW: "%1 er for lav."

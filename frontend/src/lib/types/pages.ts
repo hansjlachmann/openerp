@@ -163,6 +163,22 @@ export interface FieldState {
 	visible?: boolean;
 }
 
+/** A field of an input dialog or a report's request page (options) */
+export interface RequestInputField {
+	name: string;
+	label: string;
+	type: string; // "text", "number", "date", "option", "bool"
+	required?: boolean;
+	default?: string;
+	options?: string[]; // type "option": the choices; the value is the chosen number (1-based)
+	// A code picked from a table (an option with a table relation): the dropdown's rows
+	lookup?: {
+		columns: { source: string; width: number }[];
+		rows: Array<{ _key: string; [key: string]: unknown }>;
+		captions?: Record<string, string>;
+	};
+}
+
 /** A data item of a report's request page: its fields can be filtered as on a list page */
 export interface RequestDataItem {
 	name: string;

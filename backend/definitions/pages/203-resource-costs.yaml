@@ -1,0 +1,43 @@
+page:
+  id: 203
+  type: List
+  name: Resource Costs
+  source_table: Resource_Cost
+  caption: Resource Costs
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: type
+          width: 130
+        - source: code
+          width: 110
+        - source: work_type_code
+          width: 120
+        - source: cost_type
+          width: 110
+        - source: direct_unit_cost
+          width: 130
+        - source: unit_cost
+          width: 120
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

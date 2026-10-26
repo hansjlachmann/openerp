@@ -1,0 +1,109 @@
+page:
+  id: 77
+  type: List
+  name: Resource List
+  source_table: Resource
+  caption: Resource List
+  card_page_id: 76
+  modal_card: true
+  editable: true
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 100
+        - source: name
+          width: 250
+        - source: type
+          width: 100
+        - source: unit_of_measure_code
+          width: 110
+        - source: resource_group_no
+          width: 130
+        - source: direct_unit_cost
+          width: 120
+          visible: false
+        - source: indirect_cost_percent
+          width: 110
+          visible: false
+        - source: unit_cost
+          width: 120
+        - source: price_profit_calculation
+          width: 150
+          visible: false
+        - source: profit_percent
+          width: 100
+          visible: false
+        - source: unit_price
+          width: 120
+        - source: gen_prod_posting_group
+          width: 150
+          visible: false
+        - source: tax_prod_posting_group
+          width: 150
+          visible: false
+        - source: department_code
+          width: 120
+          visible: false
+        - source: project_code
+          width: 120
+          visible: false
+        - source: search_name
+          width: 200
+        - source: blocked
+          width: 80
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Costs
+      caption: Costs
+      image: Calculate
+      promoted: true
+      run_page: 203
+      run_page_filters:
+        - {field: type, const: "0"}   # Resource
+        - {field: code, value: "no"}
+
+    - name: Prices
+      caption: Prices
+      image: Calculate
+      promoted: true
+      run_page: 204
+      run_page_filters:
+        - {field: type, const: "0"}   # Resource
+        - {field: code, value: "no"}
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "4"}   # Resource
+        - {field: "no", value: "no"}
+
+    - name: Picture
+      caption: Picture
+      image: Attach
+      promoted: true
+      run_page: 407
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"

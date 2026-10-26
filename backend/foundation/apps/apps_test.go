@@ -15,7 +15,7 @@ func TestBaseApplication(t *testing.T) {
 		id         int
 		want       bool
 	}{
-		{Table, 18, true}, {Page, 999, true}, {Codeunit, 1000, false}, {Report, 0, false},
+		{Table, 18, true}, {Page, 999, true}, {Codeunit, 1000, true}, {Codeunit, 1300, false}, {Report, 0, false},
 		{Table, 2000000002, true}, {Table, 2000000200, false},
 		{Page, 2000000002, false}, {Codeunit, 2000000006, false}, // system range: tables only
 	}

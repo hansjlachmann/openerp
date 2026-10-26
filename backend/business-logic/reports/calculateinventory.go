@@ -41,16 +41,15 @@ type quantityOnHandKey struct {
 }
 
 func (r *calculateInventory) Definition() *Definition {
-	noYes := []string{"NO", "YES"}
 	return &Definition{
 		OptionsCaption: "OPTIONS",
 		Options: []Option{
 			{Name: "posting_date", Type: "date", Required: true},
 			{Name: "document_no", Type: "text"},
-			{Name: "items_not_on_inventory", Type: "option", Options: noYes, Default: "1"},
-			{Name: "by_department", Type: "option", Options: noYes, Default: "1"},
-			{Name: "by_project", Type: "option", Options: noYes, Default: "1"},
-			{Name: "by_location", Type: "option", Options: noYes, Default: "1"},
+			{Name: "items_not_on_inventory", Type: "bool", Default: "false"},
+			{Name: "by_department", Type: "bool", Default: "false"},
+			{Name: "by_project", Type: "bool", Default: "false"},
+			{Name: "by_location", Type: "bool", Default: "false"},
 		},
 		OnInitReport: r.onInitReport,
 		ContextTable: gtables.ItemJournalLineTableName,
@@ -101,10 +100,10 @@ func (r *calculateInventory) onInitReport(run *Run) error {
 func (r *calculateInventory) itemOnPreDataItem(item *gtables.Item, run *Run) error {
 	r.postingDate = run.OptionDate("posting_date")
 	r.nextDocNo = types.Code(system.UpperCase(run.Option("document_no")))
-	r.zeroQty = run.OptionInt("items_not_on_inventory") == 2
-	r.byDept = run.OptionInt("by_department") == 2
-	r.byProj = run.OptionInt("by_project") == 2
-	r.byLocation = run.OptionInt("by_location") == 2
+	r.zeroQty = run.OptionBool("items_not_on_inventory")
+	r.byDept = run.OptionBool("by_department")
+	r.byProj = run.OptionBool("by_project")
+	r.byLocation = run.OptionBool("by_location")
 	if r.postingDate.IsZero() {
 		return system.Error(run.Text("ENTER_POSTING_DATE"))
 	}

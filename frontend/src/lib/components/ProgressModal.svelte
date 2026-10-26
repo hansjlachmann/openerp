@@ -5,16 +5,10 @@
 	import { getDateFormatPattern, parseLocaleDate, formatDate } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import RequestFilters from './RequestFilters.svelte';
-	import type { RequestDataItem, RequestFilter } from '$lib/types/pages';
+	import type { RequestDataItem, RequestFilter, RequestInputField } from '$lib/types/pages';
+	import LookupDropdown from './pages/LookupDropdown.svelte';
 
-	interface InputField {
-		name: string;
-		label: string;
-		type: string;
-		required?: boolean;
-		default?: string;
-		options?: string[]; // type "option": the choices; the value is the chosen number (1-based)
-	}
+	type InputField = RequestInputField;
 
 	interface Props {
 		open?: boolean;
@@ -174,7 +168,33 @@
 
 {#snippet inputFieldList()}
 {#each inputFields as field}
-	{#if field.type === 'option'}
+	{#if field.type === 'bool'}
+		<label class="option-choice">
+			<input
+				id="input-{field.name}"
+				type="checkbox"
+				checked={inputValues[field.name] === 'true'}
+				onchange={(e) => { inputValues[field.name] = (e.currentTarget as HTMLInputElement).checked ? 'true' : 'false'; }}
+			/>
+			<span>{field.label}</span>
+		</label>
+	{:else if field.lookup}
+		<div class="input-field">
+			<label class="input-label" for="input-{field.name}">
+				{field.label}
+				{#if field.required}<span class="required-mark">*</span>{/if}
+			</label>
+			<LookupDropdown
+				columns={field.lookup.columns}
+				rows={field.lookup.rows}
+				captions={field.lookup.captions ?? {}}
+				fieldName={field.label}
+				freeText
+				value={inputValues[field.name] ?? ''}
+				onselect={(key) => { inputValues[field.name] = key; }}
+			/>
+		</div>
+	{:else if field.type === 'option'}
 		<div class="input-field" role="radiogroup" aria-label={field.label || title}>
 			{#if field.label}<span class="input-label">{field.label}</span>{/if}
 			{#each field.options ?? [] as option, i}

@@ -1,0 +1,20 @@
+page:
+  id: 407
+  type: Card
+  name: Resource Picture
+  source_table: Resource
+  caption: Resource Picture
+  editable: true
+  # classic form 407: the resource's picture with Import / Export / Delete (the picture field's
+  # buttons; the image goes through /api/tables/Resource/blob/picture/<no>)
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            editable: false
+          - source: name
+            editable: false
+          - source: picture

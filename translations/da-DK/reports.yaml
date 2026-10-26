@@ -35,9 +35,50 @@ reports:
       by_location: "Pr. lokation"
     texts:
       OPTIONS: "Indstillinger"
-      NO: "Nej"
-      YES: "Ja"
       NO_JOURNAL: "Kør Beregn lager fra en lageropgørelseskladde."
       ENTER_POSTING_DATE: "Angiv bogføringsdatoen."
       ENTER_DOCUMENT_NO: "Angiv bilagsnummeret."
       WINDOW: "Behandler varer    #1##########"
+  "1191":
+    caption: "Foreslå ressourceprisændr. (ress.)"
+    options:
+      work_type_code: "Arbejdstypekode"
+      currency_code: "Valutakode"
+      unit_price_factor: "Reguleringsfaktor"
+      rounding_method: "Afrundingsmetode"
+      price_lower_limit: "Kun priser over"
+      create_new_prices: "Opret nye priser"
+    texts:
+      COPY_TO: "Kopier til ressourceprisændring..."
+      WINDOW: "Behandler ressourcer  #1##########"
+  "1192":
+    caption: "Foreslå ressourceprisændr. (pris)"
+    options:
+      currency_code: "Valutakode"
+      work_type_code: "Arbejdstypekode"
+      unit_price_factor: "Reguleringsfaktor"
+      rounding_method: "Afrundingsmetode"
+      price_lower_limit: "Kun priser over"
+      create_new_prices: "Opret nye priser"
+    texts:
+      COPY_TO: "Kopier til ressourceprisændring..."
+      WINDOW: "Behandler ressourcer...\n\nType         #1##########\nKode         #2##########"
+  "1193":
+    caption: "Implementer ressourceprisændring"
+    texts:
+      WINDOW: "Opdaterer ressourcepriser...\n\nType                #1##########\nKode                #2##########\nArbejdstypekode     #3##########\nValutakode          #4##########"
+      DELETE_SUGGESTIONS: "Ressourcepriserne er nu opdateret i overensstemmelse med de foreslåede prisændringer.\n\nVil du slette de foreslåede prisændringer?"
+  "1195":
+    caption: "Reguler ressourcekost/-priser"
+    options:
+      adjust_field: "Reguler felt"
+      adjustment_factor: "Reguleringsfaktor"
+      rounding_method: "Afrundingsmetode"
+    texts:
+      OPTIONS: "Indstillinger"
+      WINDOW: "Behandler ressourcer  #1##########"
+      DIRECT_UNIT_COST: "Købspris"
+      INDIRECT_COST_PERCENT: "Indirekte omkost. %"
+      UNIT_COST: "Kostpris"
+      PROFIT_PERCENT: "Avance %"
+      UNIT_PRICE: "Enhedspris"

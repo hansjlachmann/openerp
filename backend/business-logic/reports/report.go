@@ -71,10 +71,20 @@ type Definition struct {
 // Option is a field of the request page
 type Option struct {
 	Name     string   // key (read with Run.Option); the label is reports.<id>.options.<name>
-	Type     string   // "text", "number", "date" or "option"
+	Type     string   // "text", "number", "date", "option" or "bool" (a check box: true/false)
 	Default  string   // initial value ("option": the number, 1-based)
 	Options  []string // the choices of an "option" field: text keys of the report (reports.<id>.texts.<key>)
 	Required bool
+	// Relation: a "text" option picked from a table (classic request page control with a
+	// TableRelation, e.g. Currency) — the dropdown shows its rows, Columns the key field
+	// first and the columns shown; the report checks the value itself (classic FIND)
+	Relation *OptionRelation
+}
+
+// OptionRelation is the table a request page option is picked from
+type OptionRelation struct {
+	Table   string   // the table's API name (Currency, Work_Type, Rounding_Method)
+	Columns []string // the key field first, then the columns shown (code, description)
 }
 
 // TriggerFunc is a data item trigger; rec is the data item's record

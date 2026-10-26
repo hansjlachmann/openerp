@@ -13,7 +13,7 @@
 	import ActionButton from '../ActionButton.svelte';
 	import { newLineNo } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
-	import type { RequestDataItem, Action } from '$lib/types/pages';
+	import type { RequestDataItem, RequestInputField, Action } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
@@ -230,7 +230,7 @@
 	let progressInputMode = $state(false);
 	let progressInputDataItems = $state<RequestDataItem[]>([]); // a report's request page
 	let progressOptionsCaption = $state(''); // … and the heading of its options
-	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string; options?: string[] }>>([]);
+	let progressInputFields = $state<RequestInputField[]>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
 	// Rows shown: the loaded window of the list. Search and sort run on the server

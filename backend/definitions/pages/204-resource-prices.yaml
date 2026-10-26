@@ -1,0 +1,41 @@
+page:
+  id: 204
+  type: List
+  name: Resource Prices
+  source_table: Resource_Price
+  caption: Resource Prices
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: type
+          width: 130
+        - source: code
+          width: 110
+        - source: work_type_code
+          width: 120
+        - source: currency_code
+          width: 110
+        - source: unit_price
+          width: 120
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

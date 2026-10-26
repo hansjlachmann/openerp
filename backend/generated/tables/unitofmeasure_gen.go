@@ -850,7 +850,7 @@ func (t *UnitOfMeasure) renameReferences(field string, oldValue, newValue interf
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Item_Unit_of_Measure", false, "code", "", 0}, {"Unit_of_Measure_Translation", false, "code", "", 0}},
+		"code": {{"Item_Unit_of_Measure", false, "code", "", 0}, {"Resource", false, "unit_of_measure_code", "", 0}, {"Unit_of_Measure_Translation", false, "code", "", 0}, {"Work_Type", false, "unit_of_measure_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

@@ -2894,3 +2894,139 @@ tables:
         positive_adjmt: "Positive Adjmt."
         negative_adjmt: "Negative Adjmt."
         transfer: "Transfer"
+  resource:
+    caption: "Resource"
+    fields:
+      no: "No."
+      type: "Type"
+      name: "Name"
+      search_name: "Search Name"
+      name_2: "Name 2"
+      address: "Address"
+      address_2: "Address 2"
+      city: "City"
+      social_security_no: "Social Security No."
+      title: "Title"
+      education: "Education"
+      contract_class: "Contract Class"
+      employment_date: "Employment Date"
+      resource_group_no: "Resource Group No."
+      department_code: "Department Code"
+      project_code: "Project Code"
+      unit_of_measure_code: "Unit of Measure Code"
+      direct_unit_cost: "Direct Unit Cost"
+      indirect_cost_percent: "Indirect Cost %"
+      unit_cost: "Unit Cost"
+      profit_percent: "Profit %"
+      price_profit_calculation: "Price/Profit Calculation"
+      unit_price: "Unit Price"
+      vendor_no: "Vendor No."
+      last_date_modified: "Last Date Modified"
+      comment: "Comment"
+      blocked: "Blocked"
+      date_filter: "Date Filter"
+      unit_of_measure_filter: "Unit of Measure Filter"
+      capacity: "Capacity"
+      chargeable_filter: "Chargeable Filter"
+      gen_prod_posting_group: "Gen. Prod. Posting Group"
+      picture: "Picture"
+      post_code: "Post Code"
+      state: "State"
+      no_series: "No. Series"
+      tax_group_code: "Tax Group Code"
+      tax_prod_posting_group: "Tax Prod. Posting Group"
+    options:
+      type:
+        person: "Person"
+        machine: "Machine"
+      price_profit_calculation:
+        profit_price_cost: "Profit=Price-Cost"
+        price_cost_profit: "Price=Cost+Profit"
+        no_relationship: "No Relationship"
+  resource_group:
+    caption: "Resource Group"
+    fields:
+      no: "No."
+      name: "Name"
+      date_filter: "Date Filter"
+      capacity: "Capacity"
+      unit_of_measure_filter: "Unit of Measure Filter"
+      chargeable_filter: "Chargeable Filter"
+  resources_setup:
+    caption: "Resources Setup"
+    fields:
+      primary_key: "Primary Key"
+      resource_nos: "Resource Nos."
+  work_type:
+    caption: "Work Type"
+    fields:
+      code: "Code"
+      description: "Description"
+      unit_of_measure_code: "Unit of Measure Code"
+  resource_price:
+    caption: "Resource Price"
+    fields:
+      type: "Type"
+      code: "Code"
+      work_type_code: "Work Type Code"
+      currency_code: "Currency Code"
+      unit_price: "Unit Price"
+    options:
+      type:
+        resource: "Resource"
+        group_resource: "Group(Resource)"
+        all: "All"
+  resource_price_change:
+    caption: "Resource Price Change"
+    fields:
+      type: "Type"
+      code: "Code"
+      work_type_code: "Work Type Code"
+      currency_code: "Currency Code"
+      current_unit_price: "Current Unit Price"
+      new_unit_price: "New Unit Price"
+    options:
+      type:
+        resource: "Resource"
+        group_resource: "Group(Resource)"
+        all: "All"
+  resource_cost:
+    caption: "Resource Cost"
+    fields:
+      type: "Type"
+      code: "Code"
+      work_type_code: "Work Type Code"
+      cost_type: "Cost Type"
+      direct_unit_cost: "Direct Unit Cost"
+      unit_cost: "Unit Cost"
+    options:
+      type:
+        resource: "Resource"
+        group_resource: "Group(Resource)"
+        all: "All"
+      cost_type:
+        fixed: "Fixed"
+        extra: "% Extra"
+        lcy_extra: "LCY Extra"
+  res_capacity_entry:
+    caption: "Res. Capacity Entry"
+    fields:
+      entry_no: "Entry No."
+      resource_no: "Resource No."
+      resource_group_no: "Resource Group No."
+      date: "Date"
+      capacity: "Capacity"
+  rounding_method:
+    caption: "Rounding Method"
+    fields:
+      code: "Code"
+      minimum_amount: "Minimum Amount"
+      amount_added_before: "Amount Added Before"
+      type: "Type"
+      precision: "Precision"
+      amount_added_after: "Amount Added After"
+    options:
+      type:
+        nearest: "Nearest"
+        up: "Up"
+        down: "Down"

@@ -96,6 +96,14 @@ var tableRegistry = map[string]tables.TableFactory{
 	"Reminder_Level":              func() tables.Table { return &ReminderLevel{} },
 	"Reminder_Terms":              func() tables.Table { return &ReminderTerms{} },
 	"Reminder_Text":               func() tables.Table { return &ReminderText{} },
+	"Res_Capacity_Entry":          func() tables.Table { return &ResCapacityEntry{} },
+	"Resource":                    func() tables.Table { return &Resource{} },
+	"Resource_Cost":               func() tables.Table { return &ResourceCost{} },
+	"Resource_Group":              func() tables.Table { return &ResourceGroup{} },
+	"Resource_Price":              func() tables.Table { return &ResourcePrice{} },
+	"Resource_Price_Change":       func() tables.Table { return &ResourcePriceChange{} },
+	"Resources_Setup":             func() tables.Table { return &ResourcesSetup{} },
+	"Rounding_Method":             func() tables.Table { return &RoundingMethod{} },
 	"Sales_Receivables_Setup":     func() tables.Table { return &SalesReceivablesSetup{} },
 	"Salesperson_Purchaser":       func() tables.Table { return &SalespersonPurchaser{} },
 	"Ship_to_Address":             func() tables.Table { return &ShipToAddress{} },
@@ -130,6 +138,7 @@ var tableRegistry = map[string]tables.TableFactory{
 	"Vendor_Bank_Account":         func() tables.Table { return &VendorBankAccount{} },
 	"Vendor_Posting_Group":        func() tables.Table { return &VendorPostingGroup{} },
 	"Vendor_ledger_entry":         func() tables.Table { return &VendorLedgerEntry{} },
+	"Work_Type":                   func() tables.Table { return &WorkType{} },
 }
 
 // NewRecords returns a new record of every table by table ID (the object registry)
@@ -217,6 +226,14 @@ func NewRecords() map[int]tables.Table {
 		ReminderLevelTableID:            &ReminderLevel{},
 		ReminderTermsTableID:            &ReminderTerms{},
 		ReminderTextTableID:             &ReminderText{},
+		ResCapacityEntryTableID:         &ResCapacityEntry{},
+		ResourceTableID:                 &Resource{},
+		ResourceCostTableID:             &ResourceCost{},
+		ResourceGroupTableID:            &ResourceGroup{},
+		ResourcePriceTableID:            &ResourcePrice{},
+		ResourcePriceChangeTableID:      &ResourcePriceChange{},
+		ResourcesSetupTableID:           &ResourcesSetup{},
+		RoundingMethodTableID:           &RoundingMethod{},
 		SalesReceivablesSetupTableID:    &SalesReceivablesSetup{},
 		SalespersonPurchaserTableID:     &SalespersonPurchaser{},
 		ShipToAddressTableID:            &ShipToAddress{},
@@ -251,6 +268,7 @@ func NewRecords() map[int]tables.Table {
 		VendorBankAccountTableID:        &VendorBankAccount{},
 		VendorPostingGroupTableID:       &VendorPostingGroup{},
 		VendorLedgerEntryTableID:        &VendorLedgerEntry{},
+		WorkTypeTableID:                 &WorkType{},
 	}
 }
 

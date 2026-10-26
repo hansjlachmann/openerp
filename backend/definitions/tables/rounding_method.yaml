@@ -1,0 +1,59 @@
+table:
+  id: 42
+  name: "Rounding_Method"
+  description: "Rounding Methods (table 42)"
+  lookup_page_id: 65
+  fields:
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 10
+      primary_key: true
+      required: true
+
+    - name: minimum_amount
+      no: 2
+      type: types.Decimal
+      db_name: minimum_amount
+      primary_key: true
+      decimal_places: "0:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: amount_added_before
+      no: 3
+      type: types.Decimal
+      db_name: amount_added_before
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: type
+      no: 4
+      type: Option
+      db_name: type
+      options: ["Nearest", "Up", "Down"]
+
+    - name: precision
+      no: 5
+      type: types.Decimal
+      db_name: precision
+      decimal_places: "0:5"
+      validation: {min: 0}
+      precision: 18
+      scale: 5
+
+    - name: amount_added_after
+      no: 6
+      type: types.Decimal
+      db_name: amount_added_after
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+  keys:
+    - name: Primary
+      fields: [code, minimum_amount]
+      clustered: true

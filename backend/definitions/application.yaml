@@ -12,6 +12,10 @@ application:
     objects:
       - from: 1
         to: 999
+      # Classic jobs, resources and inventory cost objects keep their numbers (reports 1002
+      # Post Inventory Cost to G/L, 1191–1195 resource prices)
+      - from: 1000
+        to: 1299
       # Items keep their classic numbers (Item Variant 5401, Item Unit of Measure 5404 …)
       - from: 5400
         to: 5499

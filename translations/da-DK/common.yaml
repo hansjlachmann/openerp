@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    costs: "Kostpriser"
+    suggest_res_price_chg_res: "Foreslå ressourceprisændr. (ress.)"
+    suggest_res_price_chg_price: "Foreslå ressourceprisændr. (pris)"
+    implement_price_change: "Implementer prisændring"
     picture: "Billede"
     calculate_inventory: "Beregn lager"
     phys_inventory_ledger: "Lageropgørelsesposter"
@@ -93,6 +97,7 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    personal_data: "Personlige data"
     picture: "Billede"
     inventory: "Lager"
     ordering: "Bestilling"

@@ -500,3 +500,25 @@ pages:
     caption: "Opptellingsposter"
   item_picture:
     caption: "Varebilde"
+  resource_list:
+    caption: "Ressursoversikt"
+  resource_card:
+    caption: "Ressurskort"
+  resource_groups:
+    caption: "Ressursgrupper"
+  resource_costs:
+    caption: "Ressurskost"
+  resource_prices:
+    caption: "Ressurspriser"
+  work_types:
+    caption: "Arbeidstyper"
+  rounding_methods:
+    caption: "Avrundingsmetoder"
+  resource_price_changes:
+    caption: "Ressursprisendringer"
+  res_capacity_entries:
+    caption: "Ressurskapasitetsposter"
+  resources_setup:
+    caption: "Ressursoppsett"
+  resource_picture:
+    caption: "Ressursbilde"

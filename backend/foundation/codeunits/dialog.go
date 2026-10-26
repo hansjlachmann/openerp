@@ -10,28 +10,45 @@ import (
 
 // ProgressEvent represents a progress update or dialog event
 type ProgressEvent struct {
-	JobID      string                 `json:"job_id"`
-	Field      int                    `json:"field"`                  // Field number (1-based)
-	Value      int                    `json:"value"`                  // Current value (0-100 for progress)
-	Message    string                 `json:"message"`                // Optional message
-	Completed  bool                   `json:"completed"`              // Job completed
-	Error      string                 `json:"error"`                  // Error message if failed
-	Timestamp  int64                  `json:"timestamp"`
-	EventType  string                 `json:"event_type,omitempty"`   // "progress", "confirm", etc.
-	ConfirmID  string                 `json:"confirm_id,omitempty"`   // Unique ID for confirm dialogs
-	Data       map[string]interface{} `json:"data,omitempty"`         // Result data (e.g., PDF base64)
+	JobID     string                 `json:"job_id"`
+	Field     int                    `json:"field"`     // Field number (1-based)
+	Value     int                    `json:"value"`     // Current value (0-100 for progress)
+	Message   string                 `json:"message"`   // Optional message
+	Completed bool                   `json:"completed"` // Job completed
+	Error     string                 `json:"error"`     // Error message if failed
+	Timestamp int64                  `json:"timestamp"`
+	EventType string                 `json:"event_type,omitempty"` // "progress", "confirm", etc.
+	ConfirmID string                 `json:"confirm_id,omitempty"` // Unique ID for confirm dialogs
+	Data      map[string]interface{} `json:"data,omitempty"`       // Result data (e.g., PDF base64)
 }
 
 // InputField describes a single input field for RequestInput dialogs
 type InputField struct {
 	Name     string `json:"name"`               // Field key (e.g. "date")
 	Label    string `json:"label"`              // Display label
-	Type     string `json:"type"`               // "date", "text", "number", "option"
+	Type     string `json:"type"`               // "date", "text", "number", "option", "bool"
 	Required bool   `json:"required,omitempty"` // Whether the field is required
 	Default  string `json:"default,omitempty"`  // Default value ("option": the number, 1-based)
 	// Options: the choices of an "option" field, shown as a list to pick one from; the value
 	// is the number (1-based) of the chosen option
 	Options []string `json:"options,omitempty"`
+	// Lookup: a code field picked from the rows of a table (a report option with a table
+	// relation, e.g. a currency) — shown as the dropdown of a relation field
+	Lookup *InputLookup `json:"lookup,omitempty"`
+}
+
+// InputLookup is the dropdown of an input field: its columns (the key first) and rows, each
+// with "_key" (the value picked)
+type InputLookup struct {
+	Columns  []InputLookupColumn      `json:"columns"`
+	Rows     []map[string]interface{} `json:"rows"`
+	Captions map[string]string        `json:"captions,omitempty"` // column captions
+}
+
+// InputLookupColumn is a column of an input field's dropdown
+type InputLookupColumn struct {
+	Source string `json:"source"`
+	Width  int    `json:"width"`
 }
 
 // RequestDataItem is a data item of a report's request page: the user filters its records on
@@ -59,11 +76,12 @@ type RequestFilter struct {
 
 // Dialog represents a dialog with progress bar support
 // Usage:
-//   dialog := OpenDialog("Processing @1@@@@@@@@@@@")
-//   defer dialog.Close()
-//   for i := 1; i <= 100; i++ {
-//       dialog.Update(1, i)
-//   }
+//
+//	dialog := OpenDialog("Processing @1@@@@@@@@@@@")
+//	defer dialog.Close()
+//	for i := 1; i <= 100; i++ {
+//	    dialog.Update(1, i)
+//	}
 type Dialog struct {
 	jobID          string
 	template       string
@@ -72,9 +90,9 @@ type Dialog struct {
 	cancel         context.CancelFunc
 	closed         bool
 	mu             sync.Mutex
-	pendingConfirm map[string]chan bool              // Map of confirm ID to response channel
+	pendingConfirm map[string]chan bool // Map of confirm ID to response channel
 	confirmMu      sync.Mutex
-	pendingInput   map[string]chan map[string]string  // Map of confirm ID to input response channel
+	pendingInput   map[string]chan map[string]string // Map of confirm ID to input response channel
 	inputMu        sync.Mutex
 }
 

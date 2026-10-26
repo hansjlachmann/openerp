@@ -170,6 +170,7 @@ errors:
   ERR_ITEM_OPEN_ENTRIES_CHANGE: "You cannot change %1 for item %2 because there are open ledger entries."
   ERR_ITEM_HAS_ENTRIES_CHANGE: "You cannot change %1 because there are one or more ledger entries for this item."
   ERR_ITEM_CANNOT_CHANGE_WHEN: "You cannot change %1 when %2 is %3."
+  ERR_RES_CODE_WHEN_TYPE_ALL: "%1 cannot be specified when %2 is %3."
   ERR_ITEM_NOT_ON_INVENTORY: "Item %1 is not on inventory."
   ERR_ITEM_MUST_BE_RESERVED: "When the %1 field for the item %2 contains %3, the item must be reserved."
   ERR_FIELD_TOO_LOW: "%1 is too low."

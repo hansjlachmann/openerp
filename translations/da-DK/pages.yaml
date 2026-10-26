@@ -500,3 +500,25 @@ pages:
     caption: "Lageropgørelsesposter"
   item_picture:
     caption: "Varebillede"
+  resource_list:
+    caption: "Ressourceoversigt"
+  resource_card:
+    caption: "Ressourcekort"
+  resource_groups:
+    caption: "Ressourcegrupper"
+  resource_costs:
+    caption: "Ressourcekostpriser"
+  resource_prices:
+    caption: "Ressourcepriser"
+  work_types:
+    caption: "Arbejdstyper"
+  rounding_methods:
+    caption: "Afrundingsmetoder"
+  resource_price_changes:
+    caption: "Ressourceprisændringer"
+  res_capacity_entries:
+    caption: "Ressourcekapacitetsposter"
+  resources_setup:
+    caption: "Ressourceopsætning"
+  resource_picture:
+    caption: "Ressourcebillede"

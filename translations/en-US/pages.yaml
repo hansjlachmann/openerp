@@ -500,3 +500,25 @@ pages:
     caption: "Phys. Inventory Ledger Entries"
   item_picture:
     caption: "Item Picture"
+  resource_list:
+    caption: "Resource List"
+  resource_card:
+    caption: "Resource Card"
+  resource_groups:
+    caption: "Resource Groups"
+  resource_costs:
+    caption: "Resource Costs"
+  resource_prices:
+    caption: "Resource Prices"
+  work_types:
+    caption: "Work Types"
+  rounding_methods:
+    caption: "Rounding Methods"
+  resource_price_changes:
+    caption: "Resource Price Changes"
+  res_capacity_entries:
+    caption: "Res. Capacity Entries"
+  resources_setup:
+    caption: "Resources Setup"
+  resource_picture:
+    caption: "Resource Picture"

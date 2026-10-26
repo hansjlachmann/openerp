@@ -2894,3 +2894,139 @@ tables:
         positive_adjmt: "Oppjustering"
         negative_adjmt: "Nedjustering"
         transfer: "Overføring"
+  resource:
+    caption: "Ressurs"
+    fields:
+      no: "Nr."
+      type: "Type"
+      name: "Navn"
+      search_name: "Søkenavn"
+      name_2: "Navn 2"
+      address: "Adresse"
+      address_2: "Adresse 2"
+      city: "Poststed"
+      social_security_no: "Personnr."
+      title: "Tittel"
+      education: "Utdannelse"
+      contract_class: "Kontraktklasse"
+      employment_date: "Ansettelsesdato"
+      resource_group_no: "Ressursgruppenr."
+      department_code: "Avdelingskode"
+      project_code: "Prosjektkode"
+      unit_of_measure_code: "Enhetskode"
+      direct_unit_cost: "Direkte enhetskost"
+      indirect_cost_percent: "Indirekte kost %"
+      unit_cost: "Enhetskost"
+      profit_percent: "Avanse %"
+      price_profit_calculation: "Pris/avanse-beregning"
+      unit_price: "Enhetspris"
+      vendor_no: "Leverandørnr."
+      last_date_modified: "Sist endret"
+      comment: "Merknad"
+      blocked: "Sperret"
+      date_filter: "Datofilter"
+      unit_of_measure_filter: "Enhetsfilter"
+      capacity: "Kapasitet"
+      chargeable_filter: "Fakturerbar-filter"
+      gen_prod_posting_group: "Produktbokføringsgruppe"
+      picture: "Bilde"
+      post_code: "Postnr."
+      state: "Fylke"
+      no_series: "Nummerserie"
+      tax_group_code: "Avgiftsgruppekode"
+      tax_prod_posting_group: "MVA-produktbokføringsgruppe"
+    options:
+      type:
+        person: "Person"
+        machine: "Maskin"
+      price_profit_calculation:
+        profit_price_cost: "Avanse=Pris-Kost"
+        price_cost_profit: "Pris=Kost+Avanse"
+        no_relationship: "Ingen relasjon"
+  resource_group:
+    caption: "Ressursgruppe"
+    fields:
+      no: "Nr."
+      name: "Navn"
+      date_filter: "Datofilter"
+      capacity: "Kapasitet"
+      unit_of_measure_filter: "Enhetsfilter"
+      chargeable_filter: "Fakturerbar-filter"
+  resources_setup:
+    caption: "Ressursoppsett"
+    fields:
+      primary_key: "Primærnøkkel"
+      resource_nos: "Ressursnumre"
+  work_type:
+    caption: "Arbeidstype"
+    fields:
+      code: "Kode"
+      description: "Beskrivelse"
+      unit_of_measure_code: "Enhetskode"
+  resource_price:
+    caption: "Ressurspris"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbeidstypekode"
+      currency_code: "Valutakode"
+      unit_price: "Enhetspris"
+    options:
+      type:
+        resource: "Ressurs"
+        group_resource: "Gruppe(ressurs)"
+        all: "Alle"
+  resource_price_change:
+    caption: "Ressursprisendring"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbeidstypekode"
+      currency_code: "Valutakode"
+      current_unit_price: "Gjeldende enhetspris"
+      new_unit_price: "Ny enhetspris"
+    options:
+      type:
+        resource: "Ressurs"
+        group_resource: "Gruppe(ressurs)"
+        all: "Alle"
+  resource_cost:
+    caption: "Ressurskost"
+    fields:
+      type: "Type"
+      code: "Kode"
+      work_type_code: "Arbeidstypekode"
+      cost_type: "Kosttype"
+      direct_unit_cost: "Direkte enhetskost"
+      unit_cost: "Enhetskost"
+    options:
+      type:
+        resource: "Ressurs"
+        group_resource: "Gruppe(ressurs)"
+        all: "Alle"
+      cost_type:
+        fixed: "Fast"
+        extra: "% tillegg"
+        lcy_extra: "NOK-tillegg"
+  res_capacity_entry:
+    caption: "Ressurskapasitetspost"
+    fields:
+      entry_no: "Løpenr."
+      resource_no: "Ressursnr."
+      resource_group_no: "Ressursgruppenr."
+      date: "Dato"
+      capacity: "Kapasitet"
+  rounding_method:
+    caption: "Avrundingsmetode"
+    fields:
+      code: "Kode"
+      minimum_amount: "Minimumsbeløp"
+      amount_added_before: "Beløp lagt til før"
+      type: "Type"
+      precision: "Presisjon"
+      amount_added_after: "Beløp lagt til etter"
+    options:
+      type:
+        nearest: "Nærmeste"
+        up: "Opp"
+        down: "Ned"

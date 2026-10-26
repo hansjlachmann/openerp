@@ -242,3 +242,32 @@ func TestDeleteJobQueueLog(t *testing.T) {
 		t.Errorf("left %v, message %q", nos, res.Message)
 	}
 }
+
+// Request page options: a "bool" option reads Yes/No; an option with a table relation sends
+// the table's rows as its dropdown, each code once (Rounding Method has a row per minimum
+// amount)
+func TestOptionBoolAndLookup(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&gtables.RoundingMethod{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	src := ftables.DBSource(db, "c1", database.DBTypeSQLite)
+	for _, m := range []struct{ code, min string }{{"A", "0"}, {"A", "100"}, {"B", "0"}} {
+		rec := gtables.NewRoundingMethod(src)
+		rec.Code, rec.Minimum_amount = types.Code(m.code), types.MustDecimal(m.min)
+		if err := rec.InsertOrError(false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run := &Run{DB: db, Company: "c1", DBType: database.DBTypeSQLite, options: map[string]string{"a": "true", "b": "false", "c": "Yes"}}
+	if !run.OptionBool("a") || run.OptionBool("b") || !run.OptionBool("c") || run.OptionBool("missing") {
+		t.Errorf("OptionBool: a %v b %v c %v", run.OptionBool("a"), run.OptionBool("b"), run.OptionBool("c"))
+	}
+	lookup := optionLookup(run, &OptionRelation{Table: "Rounding_Method", Columns: []string{"code"}}, "en-US")
+	if lookup == nil || len(lookup.Rows) != 2 || lookup.Rows[0]["_key"] != "A" || lookup.Rows[1]["_key"] != "B" || lookup.Columns[0].Source != "code" {
+		t.Errorf("lookup = %+v", lookup)
+	}
+	if optionLookup(run, nil, "en-US") != nil {
+		t.Error("an option without relation has a lookup")
+	}
+}
