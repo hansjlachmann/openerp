@@ -142,6 +142,18 @@ type Resource struct {
 	No_series              types.Code `db:"no_series"`
 	Tax_group_code         types.Code `db:"tax_group_code"`
 	Tax_prod_posting_group types.Code `db:"tax_prod_posting_group"`
+	// FlowField: Sum(ResLedgerEntry.quantity)
+	Usage_qty types.Decimal
+	// FlowField: Sum(ResLedgerEntry.total_cost)
+	Usage_cost types.Decimal
+	// FlowField: Sum(ResLedgerEntry.total_price)
+	Usage_price types.Decimal
+	// FlowField: Sum(ResLedgerEntry.quantity)
+	Sales_qty types.Decimal
+	// FlowField: Sum(ResLedgerEntry.total_cost)
+	Sales_cost types.Decimal
+	// FlowField: Sum(ResLedgerEntry.total_price)
+	Sales_price types.Decimal
 	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
 	Date_filter string
 	// FlowFilter unit_of_measure_filter (types.Code): the filter expression FlowFields apply — not stored
@@ -273,6 +285,12 @@ var Resource_FieldNo = struct {
 	No_series                int
 	Tax_group_code           int
 	Tax_prod_posting_group   int
+	Usage_qty                int
+	Usage_cost               int
+	Usage_price              int
+	Sales_qty                int
+	Sales_cost               int
+	Sales_price              int
 	Date_filter              int
 	Unit_of_measure_filter   int
 	Chargeable_filter        int
@@ -312,6 +330,12 @@ var Resource_FieldNo = struct {
 	No_series:                56,
 	Tax_group_code:           57,
 	Tax_prod_posting_group:   58,
+	Usage_qty:                44,
+	Usage_cost:               45,
+	Usage_price:              46,
+	Sales_qty:                47,
+	Sales_cost:               48,
+	Sales_price:              49,
 	Date_filter:              39,
 	Unit_of_measure_filter:   40,
 	Chargeable_filter:        50,
@@ -390,6 +414,18 @@ func (t *Resource) FieldNo(fieldName string) int {
 		return 57
 	case "tax_prod_posting_group":
 		return 58
+	case "usage_qty":
+		return 44
+	case "usage_cost":
+		return 45
+	case "usage_price":
+		return 46
+	case "sales_qty":
+		return 47
+	case "sales_cost":
+		return 48
+	case "sales_price":
+		return 49
 	case "date_filter":
 		return 39
 	case "unit_of_measure_filter":
@@ -473,6 +509,18 @@ func (t *Resource) FieldName(fieldNo int) string {
 		return "tax_group_code"
 	case 58:
 		return "tax_prod_posting_group"
+	case 44:
+		return "usage_qty"
+	case 45:
+		return "usage_cost"
+	case 46:
+		return "usage_price"
+	case 47:
+		return "sales_qty"
+	case 48:
+		return "sales_cost"
+	case 49:
+		return "sales_price"
 	case 39:
 		return "date_filter"
 	case 40:
@@ -919,7 +967,13 @@ func GetResourceTableSchema() string {
 		state TEXT(30),
 		no_series TEXT(10),
 		tax_group_code TEXT(10),
-		tax_prod_posting_group TEXT(10)
+		tax_prod_posting_group TEXT(10),
+		usage_qty TEXT,
+		usage_cost TEXT,
+		usage_price TEXT,
+		sales_qty TEXT,
+		sales_cost TEXT,
+		sales_price TEXT
 	`
 }
 
@@ -960,7 +1014,13 @@ func GetResourcePostgresTableSchema() string {
 		state VARCHAR(30),
 		no_series VARCHAR(10),
 		tax_group_code VARCHAR(10),
-		tax_prod_posting_group VARCHAR(10)
+		tax_prod_posting_group VARCHAR(10),
+		usage_qty NUMERIC,
+		usage_cost NUMERIC,
+		usage_price NUMERIC,
+		sales_qty NUMERIC,
+		sales_cost NUMERIC,
+		sales_price NUMERIC
 	`
 }
 
@@ -2032,7 +2092,7 @@ func (t *Resource) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}},
+		"no": {{"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Res_Journal_Line", false, "resource_no", "", 0}, {"Res_Ledger_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -2105,6 +2165,12 @@ func (t *Resource) CalcFields(fieldNames ...string) {
 	if len(fieldNames) == 0 {
 		t.calcFlowField_comment()
 		t.calcFlowField_capacity()
+		t.calcFlowField_usage_qty()
+		t.calcFlowField_usage_cost()
+		t.calcFlowField_usage_price()
+		t.calcFlowField_sales_qty()
+		t.calcFlowField_sales_cost()
+		t.calcFlowField_sales_price()
 		return
 	}
 
@@ -2115,6 +2181,18 @@ func (t *Resource) CalcFields(fieldNames ...string) {
 			t.calcFlowField_comment()
 		case "capacity":
 			t.calcFlowField_capacity()
+		case "usage_qty":
+			t.calcFlowField_usage_qty()
+		case "usage_cost":
+			t.calcFlowField_usage_cost()
+		case "usage_price":
+			t.calcFlowField_usage_price()
+		case "sales_qty":
+			t.calcFlowField_sales_qty()
+		case "sales_cost":
+			t.calcFlowField_sales_cost()
+		case "sales_price":
+			t.calcFlowField_sales_price()
 		}
 	}
 }
@@ -2129,6 +2207,42 @@ func (t *Resource) calcFlowField_comment() {
 // CalcFormula: Sum(ResCapacityEntry.capacity)
 func (t *Resource) calcFlowField_capacity() {
 	t.Capacity = t.calcSum_capacity()
+}
+
+// calcFlowField_usage_qty calculates the usage_qty FlowField
+// CalcFormula: Sum(ResLedgerEntry.quantity)
+func (t *Resource) calcFlowField_usage_qty() {
+	t.Usage_qty = t.calcSum_usage_qty()
+}
+
+// calcFlowField_usage_cost calculates the usage_cost FlowField
+// CalcFormula: Sum(ResLedgerEntry.total_cost)
+func (t *Resource) calcFlowField_usage_cost() {
+	t.Usage_cost = t.calcSum_usage_cost()
+}
+
+// calcFlowField_usage_price calculates the usage_price FlowField
+// CalcFormula: Sum(ResLedgerEntry.total_price)
+func (t *Resource) calcFlowField_usage_price() {
+	t.Usage_price = t.calcSum_usage_price()
+}
+
+// calcFlowField_sales_qty calculates the sales_qty FlowField
+// CalcFormula: Sum(ResLedgerEntry.quantity)
+func (t *Resource) calcFlowField_sales_qty() {
+	t.Sales_qty = t.calcSum_sales_qty()
+}
+
+// calcFlowField_sales_cost calculates the sales_cost FlowField
+// CalcFormula: Sum(ResLedgerEntry.total_cost)
+func (t *Resource) calcFlowField_sales_cost() {
+	t.Sales_cost = t.calcSum_sales_cost()
+}
+
+// calcFlowField_sales_price calculates the sales_price FlowField
+// CalcFormula: Sum(ResLedgerEntry.total_price)
+func (t *Resource) calcFlowField_sales_price() {
+	t.Sales_price = t.calcSum_sales_price()
 }
 
 // CalcFieldsForRecords calculates FlowFields for many records at once (list pages):
@@ -2148,6 +2262,18 @@ func (t *Resource) CalcFieldsForRecords(records []map[string]interface{}, fieldN
 			t.calcForRecords_comment(records)
 		case "capacity":
 			t.calcForRecords_capacity(records)
+		case "usage_qty":
+			t.calcForRecords_usage_qty(records)
+		case "usage_cost":
+			t.calcForRecords_usage_cost(records)
+		case "usage_price":
+			t.calcForRecords_usage_price(records)
+		case "sales_qty":
+			t.calcForRecords_sales_qty(records)
+		case "sales_cost":
+			t.calcForRecords_sales_cost(records)
+		case "sales_price":
+			t.calcForRecords_sales_price(records)
 		}
 	}
 }
@@ -2300,6 +2426,555 @@ func (t *Resource) calcForRecords_capacity(records []map[string]interface{}) {
 	}
 }
 
+// calcForRecords_usage_qty calculates the usage_qty FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.quantity)
+func (t *Resource) calcForRecords_usage_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate usage_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["usage_qty"] = v.String()
+	}
+}
+
+// calcForRecords_usage_cost calculates the usage_cost FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.total_cost)
+func (t *Resource) calcForRecords_usage_cost(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, COALESCE(SUM(total_cost), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate usage_cost: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["usage_cost"] = v.String()
+	}
+}
+
+// calcForRecords_usage_price calculates the usage_price FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.total_price)
+func (t *Resource) calcForRecords_usage_price(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, COALESCE(SUM(total_price), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate usage_price: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["usage_price"] = v.String()
+	}
+}
+
+// calcForRecords_sales_qty calculates the sales_qty FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.quantity)
+func (t *Resource) calcForRecords_sales_qty(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, -COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_qty: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_qty"] = v.String()
+	}
+}
+
+// calcForRecords_sales_cost calculates the sales_cost FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.total_cost)
+func (t *Resource) calcForRecords_sales_cost(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, -COALESCE(SUM(total_cost), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_cost: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_cost"] = v.String()
+	}
+}
+
+// calcForRecords_sales_price calculates the sales_price FlowField for a set of records
+// CalcFormula: Sum(ResLedgerEntry.total_price)
+func (t *Resource) calcForRecords_sales_price(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "resource_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT resource_no, -COALESCE(SUM(total_price), 0) FROM "%s" WHERE %s GROUP BY resource_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate sales_price: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["sales_price"] = v.String()
+	}
+}
+
 // Helper methods for FlowField calculations
 
 func (t *Resource) calcCount_comment() int {
@@ -2376,6 +3051,345 @@ func (t *Resource) calcSum_capacity() types.Decimal {
 	err := t.db.QueryRow(query, args...).Scan(&sumStr)
 	if err != nil {
 		fmt.Printf("Error: Failed to calculate sum for capacity: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_usage_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Chargeable_filter != "" {
+		// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for usage_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_usage_cost() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Chargeable_filter != "" {
+		// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(total_cost), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for usage_cost: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_usage_price() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 0)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Chargeable_filter != "" {
+		// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(total_price), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for usage_price: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_sales_qty() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(quantity), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for sales_qty: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_sales_cost() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(total_cost), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for sales_cost: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Resource) calcSum_sales_price() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+	tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "entry_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "resource_no = ?")
+	args = append(args, t.No)
+	if t.Date_filter != "" {
+		// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Unit_of_measure_filter != "" {
+		// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT -COALESCE(SUM(total_price), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for sales_price: %v\n", err)
 		return types.ZeroDecimal()
 	}
 
@@ -2499,6 +3513,18 @@ func (t *Resource) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	switch strings.ToLower(field) {
 	case "capacity":
 		return flowfilter.KindDecimal, true
+	case "usage_qty":
+		return flowfilter.KindDecimal, true
+	case "usage_cost":
+		return flowfilter.KindDecimal, true
+	case "usage_price":
+		return flowfilter.KindDecimal, true
+	case "sales_qty":
+		return flowfilter.KindDecimal, true
+	case "sales_cost":
+		return flowfilter.KindDecimal, true
+	case "sales_price":
+		return flowfilter.KindDecimal, true
 	}
 	return "", false
 }
@@ -2534,6 +3560,231 @@ func (t *Resource) flowFieldExpr(field string) (string, []interface{}) {
 			where = strings.Join(whereClauses, " AND ")
 		}
 		agg := "COALESCE(SUM(capacity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "usage_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "usage_cost":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(total_cost), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "usage_price":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" || t.Chargeable_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 0)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Chargeable_filter != "" {
+			// FlowFilter chargeable_filter applied to chargeable (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("chargeable", flowfilter.KindBool, t.Chargeable_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(total_price), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_qty":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(quantity), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_cost":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(total_cost), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "sales_price":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, ResLedgerEntryTableName), false
+		tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		if t.Date_filter != "" || t.Unit_of_measure_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = sift.TableName(t.company, ResLedgerEntryTableName, "type_resource"), true
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "entry_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "resource_no = "+outer+".no")
+		if t.Date_filter != "" {
+			// FlowFilter date_filter applied to posting_date (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("posting_date", flowfilter.KindDate, t.Date_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Unit_of_measure_filter != "" {
+			// FlowFilter unit_of_measure_filter applied to unit_of_measure_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("unit_of_measure_code", flowfilter.KindCode, t.Unit_of_measure_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "-COALESCE(SUM(total_price), 0)"
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
 	}
 	return "NULL", nil
@@ -3716,6 +4967,12 @@ func (t *Resource) copyFromBuffered(record *Resource) {
 	t.No_series = record.No_series
 	t.Tax_group_code = record.Tax_group_code
 	t.Tax_prod_posting_group = record.Tax_prod_posting_group
+	t.Usage_qty = record.Usage_qty
+	t.Usage_cost = record.Usage_cost
+	t.Usage_price = record.Usage_price
+	t.Sales_qty = record.Sales_qty
+	t.Sales_cost = record.Sales_cost
+	t.Sales_price = record.Sales_price
 	t.StoreOldValues()
 }
 
@@ -4710,6 +5967,18 @@ func (t *Resource) flowFieldValue(no int) (any, bool) {
 		return t.Comment, true
 	case 41:
 		return t.Capacity, true
+	case 44:
+		return t.Usage_qty, true
+	case 45:
+		return t.Usage_cost, true
+	case 46:
+		return t.Usage_price, true
+	case 47:
+		return t.Sales_qty, true
+	case 48:
+		return t.Sales_cost, true
+	case 49:
+		return t.Sales_price, true
 	}
 	return nil, false
 }
@@ -5669,6 +6938,18 @@ func (t *Resource) ToMap() map[string]interface{} {
 		"no_series":              t.No_series.String(),
 		"tax_group_code":         t.Tax_group_code.String(),
 		"tax_prod_posting_group": t.Tax_prod_posting_group.String(),
+		// FlowField: usage_qty
+		"usage_qty": t.Usage_qty.String(),
+		// FlowField: usage_cost
+		"usage_cost": t.Usage_cost.String(),
+		// FlowField: usage_price
+		"usage_price": t.Usage_price.String(),
+		// FlowField: sales_qty
+		"sales_qty": t.Sales_qty.String(),
+		// FlowField: sales_cost
+		"sales_cost": t.Sales_cost.String(),
+		// FlowField: sales_price
+		"sales_price": t.Sales_price.String(),
 	}
 }
 
@@ -6274,6 +7555,72 @@ func (t *Resource) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:            44,
+			Name:          "usage_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            45,
+			Name:          "usage_cost",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            46,
+			Name:          "usage_price",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            47,
+			Name:          "sales_qty",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            48,
+			Name:          "sales_cost",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            49,
+			Name:          "sales_price",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
 	}
 }
 
@@ -6317,6 +7664,12 @@ func (t *Resource) GetFlowFields() []string {
 	return []string{
 		"comment",
 		"capacity",
+		"usage_qty",
+		"usage_cost",
+		"usage_price",
+		"sales_qty",
+		"sales_cost",
+		"sales_price",
 	}
 }
 

@@ -379,6 +379,10 @@ messages:
   ITEM_JNL_POST_WINDOW: "Kladdenavn #1##########
 Kontrollerer linjer #2######
 Bokfører linjer #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bokfører linjer #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_TEMPLATE_DESCRIPTION: "Ressurskladder"
   PICTURE_NONE: "Ikke noe bilde"
   PICTURE_IMPORT: "Importer"
   PICTURE_EXPORT: "Eksporter"

@@ -522,3 +522,17 @@ pages:
     caption: "Ressourceopsætning"
   resource_picture:
     caption: "Ressourcebillede"
+  resource_journal:
+    caption: "Ressourcekladde"
+    fields:
+      resource_name: "Ressourcenavn"
+  resource_journal_templates:
+    caption: "Ressourcekladdetyper"
+  res_journal_template_list:
+    caption: "Ressourcekladdetypeoversigt"
+  resource_jnl_batches:
+    caption: "Ressourcekladdenavne"
+  resource_registers:
+    caption: "Ressourcejournaler"
+  resource_ledger_entries:
+    caption: "Ressourceposter"

@@ -1,0 +1,291 @@
+table:
+  id: 203
+  name: "Res_Ledger_Entry"
+  description: "Resource ledger entries (table 203)"
+  lookup_page_id: 202
+  # 9 Job No. is left out until jobs exist
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: entry_type
+      no: 2
+      type: Option
+      db_name: entry_type
+      options: ["Usage", "Sale"]
+
+    - name: document_no
+      no: 3
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: resource_no
+      no: 5
+      type: types.Code
+      db_name: resource_no
+      length: 20
+      table_relation:
+        table: Resource
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: resource_group_no
+      no: 6
+      type: types.Code
+      db_name: resource_group_no
+      length: 20
+      table_relation:
+        table: Resource_Group
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: description
+      no: 7
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: work_type_code
+      no: 8
+      type: types.Code
+      db_name: work_type_code
+      length: 10
+      table_relation:
+        table: Work_Type
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: unit_of_measure_code
+      no: 10
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: quantity
+      no: 11
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: direct_unit_cost
+      no: 12
+      type: types.Decimal
+      db_name: direct_unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_cost
+      no: 13
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: total_cost
+      no: 14
+      type: types.Decimal
+      db_name: total_cost
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+
+    - name: unit_price
+      no: 15
+      type: types.Decimal
+      db_name: unit_price
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: total_price
+      no: 16
+      type: types.Decimal
+      db_name: total_price
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+
+    - name: department_code
+      no: 17
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 18
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: user_id
+      no: 20
+      type: types.Code
+      db_name: user_id
+      length: 50
+      table_relation:
+        table: User
+        field: user_id
+        validate: false
+        lookup_columns:
+          - source: user_id
+            width: 120
+          - source: user_name
+            width: 200
+
+    - name: source_code
+      no: 21
+      type: types.Code
+      db_name: source_code
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: chargeable
+      no: 22
+      type: bool
+      db_name: chargeable
+      default: true
+
+    - name: journal_batch_name
+      no: 23
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+
+    - name: reason_code
+      no: 24
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_bus_posting_group
+      no: 25
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 26
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: document_date
+      no: 27
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 28
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: no_series
+      no: 29
+      type: types.Code
+      db_name: no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: resource_date
+      fields: [resource_no, posting_date]
+    - name: type_resource
+      fields: [entry_type, chargeable, unit_of_measure_code, resource_no, posting_date]
+      sum_index_fields: [quantity, total_cost, total_price]
+    - name: type_group
+      fields: [entry_type, chargeable, unit_of_measure_code, resource_group_no, posting_date]
+      sum_index_fields: [quantity, total_cost, total_price]
+    - name: document
+      fields: [document_no, posting_date]

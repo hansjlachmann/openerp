@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    resource: "Ressource"
+    resource_ledger: "Ressourceposter"
     costs: "Kostpriser"
     suggest_res_price_chg_res: "Foreslå ressourceprisændr. (ress.)"
     suggest_res_price_chg_price: "Foreslå ressourceprisændr. (pris)"

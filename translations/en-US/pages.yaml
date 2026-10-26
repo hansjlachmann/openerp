@@ -522,3 +522,17 @@ pages:
     caption: "Resources Setup"
   resource_picture:
     caption: "Resource Picture"
+  resource_journal:
+    caption: "Resource Journal"
+    fields:
+      resource_name: "Resource Name"
+  resource_journal_templates:
+    caption: "Resource Journal Templates"
+  res_journal_template_list:
+    caption: "Res. Journal Template List"
+  resource_jnl_batches:
+    caption: "Resource Jnl. Batches"
+  resource_registers:
+    caption: "Resource Registers"
+  resource_ledger_entries:
+    caption: "Resource Ledger Entries"

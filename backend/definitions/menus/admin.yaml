@@ -475,6 +475,7 @@ menu:
         page_id: 214
       - separator: true
       - name: "Resource Journals"
+        page_id: 207
       - separator: true
       - name: "Reports"
       - name: "Registers"

@@ -1,0 +1,60 @@
+page:
+  id: 202
+  type: List
+  name: Resource Ledger Entries
+  source_table: Res_Ledger_Entry
+  caption: Resource Ledger Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: posting_date
+          width: 100
+        - source: entry_type
+          width: 90
+        - source: document_no
+          width: 110
+        - source: resource_no
+          width: 110
+        - source: resource_group_no
+          width: 120
+          visible: false
+        - source: description
+          width: 250
+        - source: work_type_code
+          width: 110
+        - source: department_code
+          width: 110
+          visible: false
+        - source: project_code
+          width: 110
+          visible: false
+        - source: unit_of_measure_code
+          width: 110
+        - source: quantity
+          width: 100
+        - source: direct_unit_cost
+          width: 120
+          visible: false
+        - source: unit_cost
+          width: 120
+        - source: total_cost
+          width: 120
+        - source: unit_price
+          width: 120
+        - source: total_price
+          width: 120
+        - source: chargeable
+          width: 90
+        - source: user_id
+          width: 110
+          visible: false
+        - source: source_code
+          width: 110
+          visible: false
+        - source: reason_code
+          width: 110
+          visible: false
+        - source: entry_no
+          width: 90

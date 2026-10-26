@@ -118,3 +118,12 @@ page:
       run_page: 407
       run_page_filter_field: "no"
       run_page_filter_value: "no"
+
+    - name: Ledger Entries
+      caption: Ledger Entries
+      image: Entries
+      shortcut: Ctrl+F5
+      promoted: true
+      run_page: 202
+      run_page_filter_field: resource_no
+      run_page_filter_value: "no"

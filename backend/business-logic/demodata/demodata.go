@@ -115,6 +115,7 @@ type Counts struct {
 	GLEntries                int // demo G/L entries (monthly sales and costs against the bank)
 	ItemLedgerEntries        int // the demo items' opening stock, purchases and sales (posted)
 	ResCapacityEntries       int // the demo resources' capacity per working day
+	ResLedgerEntries         int // the demo resources' weekly usage and monthly sales (posted)
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -414,6 +415,11 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	}
 
 	err = insertResCapacity(exec, company, dbType, setup.MasterData, today, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = postDemoResources(ftables.DBSource(exec, company, dbType), today, setup.MasterData, &counts)
 	if err != nil {
 		rollback()
 		return Counts{}, err

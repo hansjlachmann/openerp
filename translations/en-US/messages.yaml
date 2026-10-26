@@ -379,6 +379,10 @@ messages:
   ITEM_JNL_POST_WINDOW: "Journal Batch Name #1##########
 Checking lines #2######
 Posting lines #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_POST_WINDOW: "Journal Batch Name #1##########
+Checking lines #2######
+Posting lines #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_TEMPLATE_DESCRIPTION: "Resource Journals"
   PICTURE_NONE: "No picture"
   PICTURE_IMPORT: "Import"
   PICTURE_EXPORT: "Export"

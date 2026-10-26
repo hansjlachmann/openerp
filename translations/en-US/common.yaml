@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    resource: "Resource"
+    resource_ledger: "Resource Ledger"
     costs: "Costs"
     suggest_res_price_chg_res: "Suggest Res. Price Chg. (Res.)"
     suggest_res_price_chg_price: "Suggest Res. Price Chg. (Price)"

@@ -20,7 +20,7 @@ func TestResourceTriggers(t *testing.T) {
 	db := newTestDB(t)
 	createTables(t, db, &gtables.Resource{}, &gtables.ResourceGroup{}, &gtables.ResourcesSetup{}, &gtables.ResCapacityEntry{},
 		&gtables.ResourceCost{}, &gtables.ResourcePrice{}, &gtables.CommentLine{}, &gtables.UnitOfMeasure{},
-		&gtables.GenProductPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.PostCode{},
+		&gtables.GenProductPostingGroup{}, &gtables.TaxProductPostingGroup{}, &gtables.PostCode{}, &gtables.ResLedgerEntry{}, &gtables.AccountingPeriod{},
 		&gtables.NoSeries{}, &gtables.NoSeriesLine{}, &gtables.NoSeriesRelationship{})
 	src := ftables.DBSource(db, "c1", database.DBTypeSQLite)
 	series := gtables.NewNoSeries(src)

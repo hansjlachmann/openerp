@@ -522,3 +522,17 @@ pages:
     caption: "Ressursoppsett"
   resource_picture:
     caption: "Ressursbilde"
+  resource_journal:
+    caption: "Ressurskladd"
+    fields:
+      resource_name: "Ressursnavn"
+  resource_journal_templates:
+    caption: "Ressurskladdemaler"
+  res_journal_template_list:
+    caption: "Ressurskladdemaloversikt"
+  resource_jnl_batches:
+    caption: "Ressurskladdenavn"
+  resource_registers:
+    caption: "Ressursjournaler"
+  resource_ledger_entries:
+    caption: "Ressursposter"

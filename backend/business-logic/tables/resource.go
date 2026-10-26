@@ -2,6 +2,7 @@ package tables
 
 import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/noseries"
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/functions"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -232,5 +233,22 @@ func AssistEditResource(rec *gtables.Resource) (bool, error) {
 // MoveResEntries (codeunit 361 MoveEntries): a resource with ledger entries in a fiscal year
 // that is not closed cannot be deleted; its older entries lose the resource no.
 func MoveResEntries(res *gtables.Resource) error {
+	resLedgEntry := gtables.NewResLedgerEntry(res)
+	resLedgEntry.Reset()
+	resLedgEntry.SetCurrentKey("resource_no", "posting_date")
+	resLedgEntry.SetRange("resource_no", res.No)
+	accountingPeriod := gtables.NewAccountingPeriod(res)
+	accountingPeriod.SetRange("closed", false)
+	if accountingPeriod.FindFirst() {
+		resLedgEntry.SetFilter("posting_date", ">="+accountingPeriod.Starting_date.String())
+	}
+	if resLedgEntry.FindFirst() {
+		return apperrors.DeleteHasEntries(gtables.ResourceTableName, res.No.String())
+	}
+
+	resLedgEntry.Reset()
+	resLedgEntry.SetCurrentKey("resource_no")
+	resLedgEntry.SetRange("resource_no", res.No)
+	resLedgEntry.ModifyAll("resource_no", types.Code(""))
 	return nil
 }

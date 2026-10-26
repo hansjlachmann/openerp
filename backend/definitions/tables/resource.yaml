@@ -6,8 +6,7 @@ table:
   auto_key: true   # OnInsert gives a resource without No. the next number of its series
   lookup_page_id: 77
   # Left out until their tables exist: 42/43 Qty. on Order/Quoted (Job) (Job Budget Entry),
-  # 55 Automatic Ext. Text (Extended Texts). The ledger FlowFields 44-49 come with the Res.
-  # Ledger Entry.
+  # 55 Automatic Ext. Text (Extended Texts).
   fields:
     - name: no
       no: 1
@@ -366,6 +365,156 @@ table:
             width: 100
           - source: description
             width: 250
+
+    - name: usage_qty
+      no: 44
+      type: types.Decimal
+      db_name: usage_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: usage_cost
+      no: 45
+      type: types.Decimal
+      db_name: usage_cost
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_cost
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: usage_price
+      no: 46
+      type: types.Decimal
+      db_name: usage_price
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_price
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: sales_qty
+      no: 47
+      type: types.Decimal
+      db_name: sales_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: quantity
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+
+    - name: sales_cost
+      no: 48
+      type: types.Decimal
+      db_name: sales_cost
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_cost
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+
+    - name: sales_price
+      no: 49
+      type: types.Decimal
+      db_name: sales_price
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_price
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
 
   keys:
     - name: Primary
