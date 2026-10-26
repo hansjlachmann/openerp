@@ -2525,6 +2525,7 @@ tables:
   item:
     caption: "Item"
     fields:
+      bill_of_materials: "Bill of Materials"
       picture: "Picture"
       quantity_on_hand: "Quantity on Hand"
       net_invoiced_qty: "Net Invoiced Qty."
@@ -3137,6 +3138,103 @@ tables:
         sale: "Sale"
   resource_register:
     caption: "Resource Register"
+    fields:
+      no: "No."
+      from_entry_no: "From Entry No."
+      to_entry_no: "To Entry No."
+      creation_date: "Creation Date"
+      source_code: "Source Code"
+      user_id: "User ID"
+      journal_batch_name: "Journal Batch Name"
+  bom_component:
+    caption: "BOM Component"
+    fields:
+      parent_item_no: "Parent Item No."
+      line_no: "Line No."
+      type: "Type"
+      no: "No."
+      bill_of_materials: "Bill of Materials"
+      description: "Description"
+      unit_of_measure_code: "Unit of Measure Code"
+      quantity_per: "Quantity per"
+      position: "Position"
+      position_2: "Position 2"
+      position_3: "Position 3"
+      machine_no: "Machine No."
+      production_lead_time: "Production Lead Time"
+      bom_description: "BOM Description"
+      variant_code: "Variant Code"
+    options:
+      type:
+        item: "Item"
+        resource: "Resource"
+  bom_journal_template:
+    caption: "BOM Journal Template"
+    fields:
+      name: "Name"
+      description: "Description"
+      test_report_id: "Test Report ID"
+      page_id: "Page ID"
+      posting_report_id: "Posting Report ID"
+      force_posting_report: "Force Posting Report"
+      source_code: "Source Code"
+      reason_code: "Reason Code"
+      recurring: "Recurring"
+      no_series: "No. Series"
+      posting_no_series: "Posting No. Series"
+  bom_journal_batch:
+    caption: "BOM Journal Batch"
+    fields:
+      journal_template_name: "Journal Template Name"
+      name: "Name"
+      description: "Description"
+      reason_code: "Reason Code"
+      no_series: "No. Series"
+      posting_no_series: "Posting No. Series"
+  bom_journal_line:
+    caption: "BOM Journal Line"
+    fields:
+      journal_template_name: "Journal Template Name"
+      journal_batch_name: "Journal Batch Name"
+      line_no: "Line No."
+      item_no: "Item No."
+      posting_date: "Posting Date"
+      document_no: "Document No."
+      description: "Description"
+      department_code: "Department Code"
+      project_code: "Project Code"
+      location_code: "Location Code"
+      quantity: "Quantity"
+      unit_cost: "Unit Cost"
+      total_cost: "Total Cost"
+      inventory_posting_group: "Inventory Posting Group"
+      source_code: "Source Code"
+      reason_code: "Reason Code"
+      document_date: "Document Date"
+      external_document_no: "External Document No."
+      posting_no_series: "Posting No. Series"
+      variant_code: "Variant Code"
+      qty_per_unit_of_measure: "Qty. per Unit of Measure"
+      unit_of_measure_code: "Unit of Measure Code"
+      quantity_base: "Quantity (Base)"
+  bom_ledger_entry:
+    caption: "BOM Ledger Entry"
+    fields:
+      entry_no: "Entry No."
+      reference_type: "Reference Type"
+      reference_entry_no: "Reference Entry No."
+      posting_date: "Posting Date"
+      entry_type: "Entry Type"
+      document_date: "Document Date"
+    options:
+      reference_type:
+        item: "Item"
+        resource: "Resource"
+      entry_type:
+        component: "Component"
+        bom: "BOM"
+  bom_register:
+    caption: "BOM Register"
     fields:
       no: "No."
       from_entry_no: "From Entry No."

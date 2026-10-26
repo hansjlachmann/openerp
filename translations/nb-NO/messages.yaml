@@ -383,6 +383,12 @@ Bokfører linjer #3###### @4@@@@@@@@@@@@@"
 Kontrollerer linjer #2######
 Bokfører linjer #3###### @4@@@@@@@@@@@@@"
   RES_JNL_TEMPLATE_DESCRIPTION: "Ressurskladder"
+  BOM_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bokfører linjer #3###### @4@@@@@@@@@@@@@"
+  BOM_JNL_TEMPLATE_DESCRIPTION: "Stykklistekladd"
+  BOM_EXPLODE_CONFIRM: "Vil du utvide stykklisten?"
+  BOM_CALC_COST_LEVELS: "Dette stykklistenivået,Alle stykklistenivåer"
   PICTURE_NONE: "Ikke noe bilde"
   PICTURE_IMPORT: "Importer"
   PICTURE_EXPORT: "Eksporter"

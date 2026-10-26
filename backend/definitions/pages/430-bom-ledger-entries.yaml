@@ -1,0 +1,23 @@
+page:
+  id: 430
+  type: List
+  name: BOM Ledger Entries
+  source_table: BOM_Ledger_Entry
+  caption: BOM Ledger Entries
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: entry_no
+          width: 90
+        - source: reference_type
+          width: 110
+        - source: reference_entry_no
+          width: 130
+        - source: posting_date
+          width: 100
+        - source: entry_type
+          width: 110
+        - source: document_date
+          width: 100

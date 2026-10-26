@@ -12,7 +12,7 @@ import (
 // itemLogic is the business logic of table 27 Item.
 //
 // Not migrated yet (their tables come later): OnDelete's checks of outstanding purchase, sales
-// and production order lines and its deletion of BOM components and extended texts; the
+// and production order lines and its deletion of extended texts; the
 // Costing Method's check of purchase order lines; the Standard Cost's confirmation (no dialogs
 // in table triggers yet); the additional reporting currency (Add.-Curr. Average Cost).
 type itemLogic struct{}
@@ -55,8 +55,8 @@ func (itemLogic) OnRename(rec *gtables.Item) error {
 	return nil
 }
 
-// OnDelete deletes the item's comment lines, vendors, prices, translations, units of measure
-// and variants
+// OnDelete deletes the item's comment lines, vendors, prices, translations, units of measure,
+// variants and BOM components
 func (itemLogic) OnDelete(rec *gtables.Item) error {
 	DeleteComments(rec, gtables.CommentLine_Table_name.Item, rec.No)
 
@@ -79,6 +79,10 @@ func (itemLogic) OnDelete(rec *gtables.Item) error {
 	itemVariant := gtables.NewItemVariant(rec)
 	itemVariant.SetRange("item_no", rec.No)
 	itemVariant.DeleteAll()
+
+	bomComp := gtables.NewBOMComponent(rec)
+	bomComp.SetRange("parent_item_no", rec.No)
+	bomComp.DeleteAll()
 	return nil
 }
 

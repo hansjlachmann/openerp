@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    bill_of_materials: "Stykkliste"
+    bom_ledger: "Stykklisteposter"
+    calc_standard_cost: "Beregn standardkost"
+    explode_bom: "Utvid stykkliste"
     resource: "Ressurs"
     resource_ledger: "Ressursposter"
     costs: "Kost"

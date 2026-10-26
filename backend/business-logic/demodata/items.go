@@ -3,8 +3,10 @@ package demodata
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
+	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -56,12 +58,16 @@ func postDemoItems(src ftables.Source, open func(src ftables.Source) ItemJnlPost
 		return nil
 	}
 
+	bomItems := demoBOMItems(masterData)
 	for _, t := range masterData {
 		if t.Table != gtables.ItemTableName {
 			continue
 		}
 		for _, r := range t.Records {
 			itemNo := fmt.Sprint(r["no"])
+			if bomItems[itemNo] {
+				continue // assembled from its components (postDemoAssemblies)
+			}
 			cost, err := types.NewDecimalFromString(fmt.Sprint(r["last_direct_cost"]))
 			if err != nil {
 				return err
@@ -85,6 +91,84 @@ func postDemoItems(src ftables.Source, open func(src ftables.Source) ItemJnlPost
 					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+// demoBOMItems are the demo items that have a bill of materials
+func demoBOMItems(masterData []tableRecords) map[string]bool {
+	bomItems := map[string]bool{}
+	for _, t := range masterData {
+		if t.Table == gtables.BOMComponentTableName {
+			for _, r := range t.Records {
+				bomItems[fmt.Sprint(r["parent_item_no"])] = true
+			}
+		}
+	}
+	return bomItems
+}
+
+// postDemoAssemblies assembles the demo bills of materials through the BOM posting (codeunit
+// 32): every quarter a batch of each, from the components in stock
+func postDemoAssemblies(src ftables.Source, open func(src ftables.Source) BOMJnlPoster, today time.Time, masterData []tableRecords, counts *Counts) error {
+	rng := rand.New(rand.NewSource(seed + 90))
+	bomJnlPostLine := open(src)
+	start := today.AddDate(-1, 0, 1)
+	lineNo := 0
+	var itemNos []string
+	for itemNo := range demoBOMItems(masterData) {
+		itemNos = append(itemNos, itemNo)
+	}
+	sort.Strings(itemNos)
+	for q := 0; q < 4; q++ {
+		quarter := start.AddDate(0, 3*q, 10)
+		for _, itemNo := range itemNos {
+			// as many as the components on hand allow, at most the planned quantity
+			qty := types.NewDecimalFromInt(int64(2 + rng.Intn(4)))
+			bomComp := gtables.NewBOMComponent(src)
+			bomComp.SetRange("parent_item_no", types.Code(itemNo))
+			bomComp.SetRange("type", gtables.BOMComponent_Type.Item)
+			for found := bomComp.FindSetBuffered(); found; found = bomComp.Next() {
+				item := gtables.NewItem(src)
+				if item.Get(bomComp.No) && !bomComp.Quantity_per.IsZero() {
+					item.CalcFields("quantity_on_hand")
+					possible := system.Round(item.Quantity_on_hand.Div(bomComp.Quantity_per), types.NewDecimalFromInt(1), "<")
+					if possible.LessThan(qty) {
+						qty = possible
+					}
+				}
+			}
+			if !qty.IsPositive() {
+				continue
+			}
+			lineNo = lineNo + 10000
+			line := gtables.NewBOMJournalLine(src)
+			line.InitRecord()
+			line.Journal_template_name = "BOM"
+			line.Journal_batch_name = "DEFAULT"
+			line.Line_no = lineNo
+			line.Source_code = "BOMJNL"
+			line.Document_no = types.Code(fmt.Sprintf("ASM%d-%s", q+1, itemNo))
+			for _, step := range []struct {
+				field string
+				value interface{}
+			}{
+				{"posting_date", types.NewDateFromTime(quarter)},
+				{"item_no", types.Code(itemNo)},
+				{"location_code", types.Code("MAIN")},
+				{"quantity", qty},
+			} {
+				err := line.Validate(step.field, step.value)
+				if err != nil {
+					return fmt.Errorf("demo BOM journal %s %s: %w", itemNo, step.field, err)
+				}
+			}
+			err := bomJnlPostLine.Run(line)
+			if err != nil {
+				return fmt.Errorf("demo BOM journal %s %s: %w", itemNo, line.Document_no, err)
+			}
+			counts.BOMLedgerEntries++
 		}
 	}
 	return nil

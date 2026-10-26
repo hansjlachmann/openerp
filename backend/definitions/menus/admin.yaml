@@ -385,6 +385,7 @@ menu:
       - name: "Phys. Inventory Journals"
         page_id: 392
       - name: "BOM Journals"
+        page_id: 109
       - separator: true
       - name: "Item Reports"
       - name: "BOM Reports"

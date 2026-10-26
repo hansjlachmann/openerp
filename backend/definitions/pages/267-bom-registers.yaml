@@ -1,0 +1,45 @@
+page:
+  id: 267
+  type: List
+  name: BOM Registers
+  source_table: BOM_Register
+  caption: BOM Registers
+  editable: false
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 90
+        - source: creation_date
+          width: 100
+        - source: user_id
+          width: 110
+        - source: source_code
+          width: 110
+        - source: journal_batch_name
+          width: 110
+        - source: from_entry_no
+          width: 90
+        - source: to_entry_no
+          width: 90
+
+  actions:
+    # The entries the posting wrote: the BOM ledger entries and the item and resource entries
+    # they point at (codeunits 404, 255, 256)
+    - name: Register
+      caption: Register
+      image: Entries
+      promoted: true
+      items:
+        - name: BOM Ledger
+          caption: BOM Ledger
+          run_page: 430
+          run_page_filters:
+            - {field: entry_no, from: from_entry_no, to: to_entry_no}
+        - name: Item Ledger
+          caption: Item Ledger
+          run_object: table:BOM_Register.ShowItemLedger
+        - name: Resource Ledger
+          caption: Resource Ledger
+          run_object: table:BOM_Register.ShowResLedger

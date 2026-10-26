@@ -2092,7 +2092,7 @@ func (t *Resource) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Res_Journal_Line", false, "resource_no", "", 0}, {"Res_Ledger_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}},
+		"no": {{"BOM_Component", false, "no", "type", 2}, {"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Res_Journal_Line", false, "resource_no", "", 0}, {"Res_Ledger_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

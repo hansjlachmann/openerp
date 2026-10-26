@@ -151,11 +151,13 @@ func (o ItemReserve) IsValid() bool {
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterItemLogic.
 type Item struct {
-	No                       types.Code                   `db:"no,pk"`
-	No_2                     types.Code                   `db:"no_2"`
-	Description              types.Text                   `db:"description"`
-	Search_description       types.Code                   `db:"search_description"`
-	Description_2            types.Text                   `db:"description_2"`
+	No                 types.Code `db:"no,pk"`
+	No_2               types.Code `db:"no_2"`
+	Description        types.Text `db:"description"`
+	Search_description types.Code `db:"search_description"`
+	Description_2      types.Text `db:"description_2"`
+	// FlowField: Exist(BOMComponent.line_no)
+	Bill_of_materials        bool
 	Class                    types.Code                   `db:"class"`
 	Base_unit_of_measure     types.Code                   `db:"base_unit_of_measure"`
 	Price_unit_conversion    int                          `db:"price_unit_conversion"`
@@ -366,6 +368,7 @@ var Item_FieldNo = struct {
 	Description              int
 	Search_description       int
 	Description_2            int
+	Bill_of_materials        int
 	Class                    int
 	Base_unit_of_measure     int
 	Price_unit_conversion    int
@@ -449,6 +452,7 @@ var Item_FieldNo = struct {
 	Description:              3,
 	Search_description:       4,
 	Description_2:            5,
+	Bill_of_materials:        6,
 	Class:                    7,
 	Base_unit_of_measure:     8,
 	Price_unit_conversion:    9,
@@ -541,6 +545,8 @@ func (t *Item) FieldNo(fieldName string) int {
 		return 4
 	case "description_2":
 		return 5
+	case "bill_of_materials":
+		return 6
 	case "class":
 		return 7
 	case "base_unit_of_measure":
@@ -712,6 +718,8 @@ func (t *Item) FieldName(fieldNo int) string {
 		return "search_description"
 	case 5:
 		return "description_2"
+	case 6:
+		return "bill_of_materials"
 	case 7:
 		return "class"
 	case 8:
@@ -1403,6 +1411,7 @@ func GetItemTableSchema() string {
 		description TEXT(50),
 		search_description TEXT(50),
 		description_2 TEXT(50),
+		bill_of_materials INTEGER,
 		class TEXT(10),
 		base_unit_of_measure TEXT(10),
 		price_unit_conversion INTEGER,
@@ -1485,6 +1494,7 @@ func GetItemPostgresTableSchema() string {
 		description VARCHAR(50),
 		search_description VARCHAR(50),
 		description_2 VARCHAR(50),
+		bill_of_materials BOOLEAN,
 		class VARCHAR(10),
 		base_unit_of_measure VARCHAR(10),
 		price_unit_conversion INTEGER,
@@ -3186,7 +3196,7 @@ func (t *Item) renameReferences(field string, oldValue, newValue interface{}) er
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Application_Entry", false, "item_no", "", 0}, {"Item_Journal_Line", false, "item_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 3}, {"Item_Ledger_Entry", false, "item_no", "", 0}, {"Item_Ledger_Entry", false, "source_no", "source_type", 3}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}, {"Phys_Inventory_Ledger_Entry", false, "item_no", "", 0}},
+		"no": {{"BOM_Component", false, "parent_item_no", "", 0}, {"BOM_Component", false, "no", "type", 1}, {"BOM_Journal_Line", false, "item_no", "", 0}, {"Item", false, "sales_qty_disc_code", "", 0}, {"Item", false, "alternative_item_no", "", 0}, {"Item_Application_Entry", false, "item_no", "", 0}, {"Item_Journal_Line", false, "item_no", "", 0}, {"Item_Journal_Line", false, "source_no", "source_type", 3}, {"Item_Ledger_Entry", false, "item_no", "", 0}, {"Item_Ledger_Entry", false, "source_no", "source_type", 3}, {"Item_Price", false, "item_no", "", 0}, {"Item_Translation", false, "item_no", "", 0}, {"Item_Unit_of_Measure", false, "item_no", "", 0}, {"Item_Variant", false, "item_no", "", 0}, {"Item_Vendor", false, "item_no", "", 0}, {"Phys_Inventory_Ledger_Entry", false, "item_no", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3257,6 +3267,7 @@ func (t *Item) Delete(runTrigger bool) bool {
 func (t *Item) CalcFields(fieldNames ...string) {
 	// If no field names specified, calculate all FlowFields
 	if len(fieldNames) == 0 {
+		t.calcFlowField_bill_of_materials()
 		t.calcFlowField_comment()
 		t.calcFlowField_quantity_on_hand()
 		t.calcFlowField_net_invoiced_qty()
@@ -3278,6 +3289,8 @@ func (t *Item) CalcFields(fieldNames ...string) {
 	// Calculate only specified fields
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "bill_of_materials":
+			t.calcFlowField_bill_of_materials()
 		case "comment":
 			t.calcFlowField_comment()
 		case "quantity_on_hand":
@@ -3310,6 +3323,12 @@ func (t *Item) CalcFields(fieldNames ...string) {
 			t.calcFlowField_transferred_lcy()
 		}
 	}
+}
+
+// calcFlowField_bill_of_materials calculates the bill_of_materials FlowField
+// CalcFormula: Exist(BOMComponent.line_no)
+func (t *Item) calcFlowField_bill_of_materials() {
+	t.Bill_of_materials = t.calcCount_bill_of_materials() > 0
 }
 
 // calcFlowField_comment calculates the comment FlowField
@@ -3415,6 +3434,8 @@ func (t *Item) CalcFieldsForRecords(records []map[string]interface{}, fieldNames
 	}
 	for _, fieldName := range fieldNames {
 		switch fieldName {
+		case "bill_of_materials":
+			t.calcForRecords_bill_of_materials(records)
 		case "comment":
 			t.calcForRecords_comment(records)
 		case "quantity_on_hand":
@@ -3446,6 +3467,73 @@ func (t *Item) CalcFieldsForRecords(records []map[string]interface{}, fieldNames
 		case "transferred_lcy":
 			t.calcForRecords_transferred_lcy(records)
 		}
+	}
+}
+
+// calcForRecords_bill_of_materials calculates the bill_of_materials FlowField for a set of records
+// CalcFormula: Exist(BOMComponent.line_no)
+func (t *Item) calcForRecords_bill_of_materials(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, BOMComponentTableName), false
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]int, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "parent_item_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COUNT(*)"
+		if useSIFT {
+			agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+		}
+		query := fmt.Sprintf(`SELECT parent_item_no, %s FROM "%s" WHERE %s GROUP BY parent_item_no`, agg, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate bill_of_materials: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var count int
+			if err := rows.Scan(&key, &count); err == nil {
+				values[key] = count
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		rec["bill_of_materials"] = values[fmt.Sprint(rec["no"])] > 0
 	}
 }
 
@@ -5123,6 +5211,41 @@ func (t *Item) calcForRecords_transferred_lcy(records []map[string]interface{}) 
 }
 
 // Helper methods for FlowField calculations
+
+func (t *Item) calcCount_bill_of_materials() int {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, BOMComponentTableName), false
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "parent_item_no = ?")
+	args = append(args, t.No)
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	agg := "COUNT(*)"
+	if useSIFT {
+		agg = "COALESCE(SUM(cnt), 0)" // the totals hold the entry count per key value
+	}
+	query := fmt.Sprintf(`SELECT %s FROM "%s" WHERE %s`, agg, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var count int
+	err := t.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate count for bill_of_materials: %v\n", err)
+		return 0
+	}
+
+	return count
+}
 
 func (t *Item) calcCount_comment() int {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
@@ -8799,6 +8922,7 @@ func (t *Item) copyFromBuffered(record *Item) {
 	t.Description = record.Description
 	t.Search_description = record.Search_description
 	t.Description_2 = record.Description_2
+	t.Bill_of_materials = record.Bill_of_materials
 	t.Class = record.Class
 	t.Base_unit_of_measure = record.Base_unit_of_measure
 	t.Price_unit_conversion = record.Price_unit_conversion
@@ -10668,6 +10792,8 @@ func (t *Item) FieldValue(no int) (any, bool) {
 // flowFieldValue returns the value of a FlowField by its number, as CalcFields left it
 func (t *Item) flowFieldValue(no int) (any, bool) {
 	switch no {
+	case 6:
+		return t.Bill_of_materials, true
 	case 53:
 		return t.Comment, true
 	case 68:
@@ -12024,11 +12150,13 @@ func (t *Item) ClearFilters() {
 // ToMap converts the current record to a map for JSON serialization
 func (t *Item) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"no":                       t.No.String(),
-		"no_2":                     t.No_2.String(),
-		"description":              t.Description.String(),
-		"search_description":       t.Search_description.String(),
-		"description_2":            t.Description_2.String(),
+		"no":                 t.No.String(),
+		"no_2":               t.No_2.String(),
+		"description":        t.Description.String(),
+		"search_description": t.Search_description.String(),
+		"description_2":      t.Description_2.String(),
+		// FlowField: bill_of_materials
+		"bill_of_materials":        t.Bill_of_materials,
 		"class":                    t.Class.String(),
 		"base_unit_of_measure":     t.Base_unit_of_measure.String(),
 		"price_unit_conversion":    t.Price_unit_conversion,
@@ -12706,6 +12834,16 @@ func (t *Item) GetFields() []tables.FieldInfo {
 			Editable:   true,
 			PrimaryKey: false,
 			FlowField:  false,
+		},
+		{
+			No:         6,
+			Name:       "bill_of_materials",
+			Type:       tables.FieldTypeBoolean,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  true,
 		},
 		{
 			No:         7,
@@ -13518,6 +13656,7 @@ func (t *Item) GetFlowFilterFields() []tables.FlowFilterFieldInfo {
 // GetFlowFields returns names of FlowFields that need CalcFields
 func (t *Item) GetFlowFields() []string {
 	return []string{
+		"bill_of_materials",
 		"comment",
 		"quantity_on_hand",
 		"net_invoiced_qty",

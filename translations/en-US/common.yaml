@@ -8,6 +8,10 @@ common:
 
   # Common actions
   actions:
+    bill_of_materials: "Bill of Materials"
+    bom_ledger: "BOM Ledger"
+    calc_standard_cost: "Calc. Standard Cost"
+    explode_bom: "Explode BOM"
     resource: "Resource"
     resource_ledger: "Resource Ledger"
     costs: "Costs"

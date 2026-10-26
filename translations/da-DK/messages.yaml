@@ -383,6 +383,12 @@ Bogfører linjer #3###### @4@@@@@@@@@@@@@"
 Kontrollerer linjer #2######
 Bogfører linjer #3###### @4@@@@@@@@@@@@@"
   RES_JNL_TEMPLATE_DESCRIPTION: "Ressourcekladder"
+  BOM_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bogfører linjer #3###### @4@@@@@@@@@@@@@"
+  BOM_JNL_TEMPLATE_DESCRIPTION: "Styklistekladde"
+  BOM_EXPLODE_CONFIRM: "Vil du udfolde styklisten?"
+  BOM_CALC_COST_LEVELS: "Dette styklisteniveau,Alle styklisteniveauer"
   PICTURE_NONE: "Intet billede"
   PICTURE_IMPORT: "Importér"
   PICTURE_EXPORT: "Eksportér"

@@ -887,7 +887,7 @@ func (t *InventoryPostingGroup) renameReferences(field string, oldValue, newValu
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Item", false, "inventory_posting_group", "", 0}, {"Item_Journal_Line", false, "inventory_posting_group", "", 0}, {"Item_Journal_Line", false, "source_posting_group", "source_type", 3}, {"Item_Ledger_Entry", false, "inventory_posting_group", "", 0}, {"Item_Ledger_Entry", false, "source_posting_group", "source_type", 3}, {"Phys_Inventory_Ledger_Entry", false, "inventory_posting_group", "", 0}},
+		"code": {{"BOM_Journal_Line", false, "inventory_posting_group", "", 0}, {"Item", false, "inventory_posting_group", "", 0}, {"Item_Journal_Line", false, "inventory_posting_group", "", 0}, {"Item_Journal_Line", false, "source_posting_group", "source_type", 3}, {"Item_Ledger_Entry", false, "inventory_posting_group", "", 0}, {"Item_Ledger_Entry", false, "source_posting_group", "source_type", 3}, {"Phys_Inventory_Ledger_Entry", false, "inventory_posting_group", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

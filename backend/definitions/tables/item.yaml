@@ -5,7 +5,7 @@ table:
   data_caption_fields: [no, description]
   auto_key: true   # OnInsert gives an item without No. the next number of its series
   lookup_page_id: 31
-  # Left out until their tables exist: 6 Bill of Materials (BOM), 47 Tariff No., 84/85 Qty. on
+  # Left out until their tables exist: 47 Tariff No., 84/85 Qty. on
   # Purch./Sales Order, 96 Automatic Ext. Text, 101-103/5429/5430 reserved quantities, 104
   # Add.-Curr. Average Cost, manufacturing and requisition fields 5400-5421/5428, 5423 Bin Filter,
   # 10004 Duty Class (local series).
@@ -41,6 +41,19 @@ table:
       type: types.Text
       db_name: description_2
       length: 50
+
+    - name: bill_of_materials
+      no: 6
+      type: bool
+      db_name: bill_of_materials
+      flow_field: true
+      calc_formula: Exist
+      source_table: BOMComponent
+      source_field: line_no
+      flow_filters:
+        - field: parent_item_no
+          type: field
+          value: no
 
     - name: class
       no: 7

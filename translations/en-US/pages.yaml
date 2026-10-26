@@ -536,3 +536,19 @@ pages:
     caption: "Resource Registers"
   resource_ledger_entries:
     caption: "Resource Ledger Entries"
+  bill_of_materials:
+    caption: "Bill of Materials"
+  bom_journal:
+    caption: "BOM Journal"
+    fields:
+      item_description: "Item Description"
+  bom_journal_templates:
+    caption: "BOM Journal Templates"
+  bom_journal_template_list:
+    caption: "BOM Journal Template List"
+  bom_journal_batches:
+    caption: "BOM Journal Batches"
+  bom_registers:
+    caption: "BOM Registers"
+  bom_ledger_entries:
+    caption: "BOM Ledger Entries"

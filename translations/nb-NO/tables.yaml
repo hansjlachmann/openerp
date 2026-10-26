@@ -2525,6 +2525,7 @@ tables:
   item:
     caption: "Vare"
     fields:
+      bill_of_materials: "Stykkliste"
       picture: "Bilde"
       quantity_on_hand: "Beholdning"
       net_invoiced_qty: "Netto fakturert antall"
@@ -3137,6 +3138,103 @@ tables:
         sale: "Salg"
   resource_register:
     caption: "Ressursjournal"
+    fields:
+      no: "Nr."
+      from_entry_no: "Fra løpenr."
+      to_entry_no: "Til løpenr."
+      creation_date: "Opprettet dato"
+      source_code: "Kildekode"
+      user_id: "Bruker-ID"
+      journal_batch_name: "Kladdenavn"
+  bom_component:
+    caption: "Stykklistekomponent"
+    fields:
+      parent_item_no: "Overordnet varenr."
+      line_no: "Linjenr."
+      type: "Type"
+      no: "Nr."
+      bill_of_materials: "Stykkliste"
+      description: "Beskrivelse"
+      unit_of_measure_code: "Enhetskode"
+      quantity_per: "Antall per"
+      position: "Posisjon"
+      position_2: "Posisjon 2"
+      position_3: "Posisjon 3"
+      machine_no: "Maskinnr."
+      production_lead_time: "Produksjonstid"
+      bom_description: "Stykklistebeskrivelse"
+      variant_code: "Variantkode"
+    options:
+      type:
+        item: "Vare"
+        resource: "Ressurs"
+  bom_journal_template:
+    caption: "Stykklistekladdemal"
+    fields:
+      name: "Navn"
+      description: "Beskrivelse"
+      test_report_id: "Testrapport-ID"
+      page_id: "Side-ID"
+      posting_report_id: "Bokføringsrapport-ID"
+      force_posting_report: "Tving bokføringsrapport"
+      source_code: "Kildekode"
+      reason_code: "Årsakskode"
+      recurring: "Gjentakende"
+      no_series: "Nummerserie"
+      posting_no_series: "Bokføringsnummerserie"
+  bom_journal_batch:
+    caption: "Stykklistekladdenavn"
+    fields:
+      journal_template_name: "Kladdemalnavn"
+      name: "Navn"
+      description: "Beskrivelse"
+      reason_code: "Årsakskode"
+      no_series: "Nummerserie"
+      posting_no_series: "Bokføringsnummerserie"
+  bom_journal_line:
+    caption: "Stykklistekladdelinje"
+    fields:
+      journal_template_name: "Kladdemalnavn"
+      journal_batch_name: "Kladdenavn"
+      line_no: "Linjenr."
+      item_no: "Varenr."
+      posting_date: "Bokføringsdato"
+      document_no: "Bilagsnr."
+      description: "Beskrivelse"
+      department_code: "Avdelingskode"
+      project_code: "Prosjektkode"
+      location_code: "Lokasjonskode"
+      quantity: "Antall"
+      unit_cost: "Enhetskost"
+      total_cost: "Totalkost"
+      inventory_posting_group: "Lagerbokføringsgruppe"
+      source_code: "Kildekode"
+      reason_code: "Årsakskode"
+      document_date: "Bilagsdato"
+      external_document_no: "Eksternt bilagsnr."
+      posting_no_series: "Bokføringsnummerserie"
+      variant_code: "Variantkode"
+      qty_per_unit_of_measure: "Antall per enhet"
+      unit_of_measure_code: "Enhetskode"
+      quantity_base: "Antall (basis)"
+  bom_ledger_entry:
+    caption: "Stykklistepost"
+    fields:
+      entry_no: "Løpenr."
+      reference_type: "Referansetype"
+      reference_entry_no: "Referanseløpenr."
+      posting_date: "Bokføringsdato"
+      entry_type: "Posttype"
+      document_date: "Bilagsdato"
+    options:
+      reference_type:
+        item: "Vare"
+        resource: "Ressurs"
+      entry_type:
+        component: "Komponent"
+        bom: "Stykkliste"
+  bom_register:
+    caption: "Stykklistejournal"
     fields:
       no: "Nr."
       from_entry_no: "Fra løpenr."

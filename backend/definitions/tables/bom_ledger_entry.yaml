@@ -1,0 +1,66 @@
+table:
+  id: 238
+  name: "BOM_Ledger_Entry"
+  description: "BOM ledger entries (table 238): the item and resource entries of an assembly"
+  lookup_page_id: 430
+  fields:
+    - name: entry_no
+      no: 1
+      type: int
+      db_name: entry_no
+      primary_key: true
+      required: true
+
+    - name: reference_type
+      no: 2
+      type: Option
+      db_name: reference_type
+      options: ["Item", "Resource"]
+
+    - name: reference_entry_no
+      no: 3
+      type: int
+      db_name: reference_entry_no
+      table_relation:
+        conditions:
+          - when: {field: reference_type, equal: 0}
+            table: Item_Ledger_Entry
+            field: entry_no
+            lookup_columns:
+              - source: entry_no
+                width: 100
+              - source: item_no
+                width: 120
+          - when: {field: reference_type, equal: 1}
+            table: Res_Ledger_Entry
+            field: entry_no
+            lookup_columns:
+              - source: entry_no
+                width: 100
+              - source: resource_no
+                width: 120
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: entry_type
+      no: 5
+      type: Option
+      db_name: entry_type
+      options: ["Component", "BOM"]
+
+    - name: document_date
+      no: 6
+      type: types.Date
+      db_name: document_date
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true
+    - name: posting_date
+      fields: [posting_date]
+    - name: reference
+      fields: [reference_type, reference_entry_no]

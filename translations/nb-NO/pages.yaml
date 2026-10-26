@@ -536,3 +536,19 @@ pages:
     caption: "Ressursjournaler"
   resource_ledger_entries:
     caption: "Ressursposter"
+  bill_of_materials:
+    caption: "Stykkliste"
+  bom_journal:
+    caption: "Stykklistekladd"
+    fields:
+      item_description: "Varebeskrivelse"
+  bom_journal_templates:
+    caption: "Stykklistekladdemaler"
+  bom_journal_template_list:
+    caption: "Stykklistekladdemaloversikt"
+  bom_journal_batches:
+    caption: "Stykklistekladdenavn"
+  bom_registers:
+    caption: "Stykklistejournaler"
+  bom_ledger_entries:
+    caption: "Stykklisteposter"

@@ -1,0 +1,72 @@
+page:
+  id: 36
+  type: List
+  name: Bill of Materials
+  source_table: BOM_Component
+  caption: Bill of Materials
+  editable: true
+  auto_split_key: true      # a new line gets Line No. 10000, 20000 … or halfway between its neighbours
+  # classic form 36: the components of an item (opened from the item, filtered on Parent Item No.)
+
+  layout:
+    repeater:
+      fields:
+        - source: parent_item_no
+          width: 110
+          visible: false
+        - source: type
+          width: 100
+        - source: "no"
+          width: 110
+        - source: variant_code
+          width: 100
+          visible: false
+        - source: description
+          width: 250
+        - source: bill_of_materials
+          width: 90
+        - source: quantity_per
+          width: 110
+        - source: unit_of_measure_code
+          width: 110
+        - source: position
+          width: 90
+        - source: position_2
+          width: 90
+          visible: false
+        - source: position_3
+          width: 90
+          visible: false
+        - source: machine_no
+          width: 100
+          visible: false
+        - source: production_lead_time
+          width: 110
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+
+    # A component that is a bill of materials itself becomes its own components (codeunit 51)
+    - name: Explode BOM
+      caption: Explode BOM
+      image: Rows
+      promoted: true
+      run_object: table:BOM_Component.ExplodeBOM
