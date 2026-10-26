@@ -64,7 +64,7 @@ func TestPostResourceJournal(t *testing.T) {
 	src := demoCompany(t)
 	res := gtables.NewResource(src)
 	must(t, res.GetOrError(types.Code("R0010")))
-	res.SetFlowFilter("date_filter", "2026-10-05")
+	must(t, res.SetFlowFilter("date_filter", "2026-10-05"))
 	res.CalcFields("usage_qty", "sales_qty", "sales_price")
 	usageBefore, salesBefore := res.Usage_qty, res.Sales_qty
 
@@ -120,13 +120,13 @@ func TestPostResourceJournal(t *testing.T) {
 
 	res = gtables.NewResource(src)
 	must(t, res.GetOrError(types.Code("R0010")))
-	res.SetFlowFilter("date_filter", "2026-10-05")
+	must(t, res.SetFlowFilter("date_filter", "2026-10-05"))
 	res.CalcFields("usage_qty", "sales_qty", "sales_price")
 	if !res.Usage_qty.Sub(usageBefore).Equal(dec("10")) || !res.Sales_qty.Sub(salesBefore).Equal(dec("10")) {
 		t.Errorf("usage %s → %s, sales %s → %s, want +10 each", usageBefore, res.Usage_qty, salesBefore, res.Sales_qty)
 	}
 	// Chargeable Filter: only the chargeable usage
-	res.SetFlowFilter("chargeable_filter", "No")
+	must(t, res.SetFlowFilter("chargeable_filter", "No"))
 	res.CalcFields("usage_qty")
 	if res.Usage_qty.IsNegative() {
 		t.Errorf("non-chargeable usage %s", res.Usage_qty)

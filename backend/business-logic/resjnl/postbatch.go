@@ -91,7 +91,7 @@ func (b *ResJnlPostBatch) Run(rec *gtables.ResJournalLine) (PostBatchResult, err
 	resLedgEntry.LockTable()
 	resReg := gtables.NewResourceRegister(b.src)
 	resReg.LockTable()
-	resRegNo := 1
+	var resRegNo int
 	if resReg.FindLast() && resReg.To_entry_no == 0 {
 		resRegNo = resReg.No
 	} else {
