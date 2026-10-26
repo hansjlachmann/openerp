@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -139,6 +140,20 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		}
 	}
 
+	// A report that writes as one unit (posting) runs in a transaction: committed at the end,
+	// rolled back on an error (a caller's transaction is used as it is)
+	var tx *sql.Tx
+	if def.Transaction {
+		if _, ok := run.DB.(*sql.DB); ok {
+			var err error
+			tx, err = ftables.BeginTransaction(run.DB)
+			if err != nil {
+				return Result{}, err
+			}
+			run.DB = tx
+		}
+	}
+
 	err := func() error {
 		if def.OnPreReport != nil {
 			err := def.OnPreReport(run)
@@ -159,6 +174,16 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 	}()
 	if errors.Is(err, errQuit) {
 		err = nil
+	}
+	if tx != nil {
+		if err != nil {
+			_ = ftables.Rollback(tx)
+			return Result{}, err
+		}
+		err = ftables.Commit(tx)
+		if err != nil {
+			return Result{}, err
+		}
 	}
 	return Result{Message: run.message}, err
 }

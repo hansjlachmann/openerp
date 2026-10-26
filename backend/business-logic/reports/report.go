@@ -66,6 +66,9 @@ type Definition struct {
 	// page's filters) as its Run.Context instead of request filters — e.g. Calculate Inventory
 	// fills the journal batch it is run from (classic SetItemJnlLine before RUNMODAL)
 	ContextTable string
+	// Transaction: the report's writes are one unit (a posting) — after the request page it
+	// runs in a transaction, committed at the end and rolled back when it fails
+	Transaction bool
 }
 
 // Option is a field of the request page

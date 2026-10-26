@@ -271,3 +271,46 @@ func TestOptionBoolAndLookup(t *testing.T) {
 		t.Error("an option without relation has a lookup")
 	}
 }
+
+// txReport writes a rounding method and fails when told to
+type txReport struct{ fail bool }
+
+func (r *txReport) Definition() *Definition {
+	return &Definition{
+		Transaction: true,
+		OnPreReport: func(run *Run) error {
+			rec := gtables.NewRoundingMethod(run)
+			rec.Code = "TX"
+			if err := rec.InsertOrError(false); err != nil {
+				return err
+			}
+			if r.fail {
+				return fmt.Errorf("failed")
+			}
+			return nil
+		},
+	}
+}
+
+// A Transaction report's writes are kept when it succeeds and rolled back when it fails
+func TestReportTransaction(t *testing.T) {
+	db := newTestDB(t)
+	if err := (&gtables.RoundingMethod{}).CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
+		t.Fatal(err)
+	}
+	src := ftables.DBSource(db, "c1", database.DBTypeSQLite)
+	Register(99902, "tx-test", func() Report { return &txReport{fail: true} })
+	if _, err := Execute(99902, db, "c1", database.DBTypeSQLite, RunOptions{}); err == nil {
+		t.Fatal("failing report: no error")
+	}
+	if n := gtables.NewRoundingMethod(src).Count(); n != 0 {
+		t.Errorf("%d records after a failed run, want 0", n)
+	}
+	Register(99902, "tx-test", func() Report { return &txReport{} })
+	if _, err := Execute(99902, db, "c1", database.DBTypeSQLite, RunOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if n := gtables.NewRoundingMethod(src).Count(); n != 1 {
+		t.Errorf("%d records after a run, want 1", n)
+	}
+}

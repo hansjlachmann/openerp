@@ -511,6 +511,12 @@ func (t *BOMRegister) SyncKeys(db database.Executor, company string, dbType data
 		fmt.Sprintf("%s$BOM_Register$source_code", company), tableName)); err != nil {
 		return fmt.Errorf("failed to create index source_code: %w", err)
 	}
+	// Index "company$Table$key"; a global table's indexes are shared by all companies:
+	// "Table$key" (a company prefix created a copy of every index per company)
+	if _, err := db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s" ON "%s" (from_entry_no, to_entry_no)`,
+		fmt.Sprintf("%s$BOM_Register$entry_range", company), tableName)); err != nil {
+		return fmt.Errorf("failed to create index entry_range: %w", err)
+	}
 	var keys []sift.Key
 	for _, spec := range bOMRegisterSIFTSpecs() {
 		keys = append(keys, sift.BuildKey(dbType, siftCompany, BOMRegisterTableName, tableName, spec))

@@ -82,3 +82,30 @@ reports:
       UNIT_COST: "Kostpris"
       PROFIT_PERCENT: "Avance %"
       UNIT_PRICE: "Enhedspris"
+  "795":
+    caption: "Reguler kostpris - vareposter"
+    options:
+      starting_date: "Startdato"
+      ending_date: "Slutdato"
+    texts:
+      WINDOW_INCREASE: "Behandler varetilgange...\n\nLøbenr.          #1######\nSidste løbenr.   #2######"
+      WINDOW_DECREASE: "Behandler varefraførsler...\n\nLøbenr.          #1######\nSidste løbenr.   #2######"
+  "1002":
+    caption: "Bogfør lagerværdi i Finans"
+    options:
+      post_level: "Bogfør"
+      posting_date: "Bogføringsdato"
+      document_no: "Bilagsnr."
+    texts:
+      OPTIONS: "Indstillinger"
+      PER_POSTING_GROUP: "pr. lagerbogføringsgruppe"
+      PER_ENTRY: "pr. varepost"
+      ENTER_DOCUMENT_NO: "Angiv %1 ved bogføring %2."
+      NO_DOCUMENT_NO: "Angiv ikke %1 ved bogføring %2."
+      WINDOW: "Behandler varer  #1##########"
+      ENTRY_DESCRIPTION: "%1 %2 den %3"
+      COGS_POSTING_GROUP: "Vareforbrug for bogf.gruppe %1"
+      ADJ_POSTING_GROUP: "Regulering af bogf.gruppe %1"
+      ADJ_GEN_SETUP: "Regulering af bogf.opsætning %1,%2"
+      COGS_GEN_SETUP: "Vareforbrug for bogf.opsætning %1,%2"
+      POSTED: "Lagerværdien er bogført i Finans: vareforbrug %1, lagerreguleringer %2."

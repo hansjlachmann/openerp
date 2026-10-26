@@ -10,9 +10,9 @@ import (
 	_ "github.com/hansjlachmann/openerp/backend/business-logic/pages"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 

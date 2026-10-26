@@ -69,3 +69,5 @@ table:
       fields: [creation_date]
     - name: source_code
       fields: [source_code, journal_batch_name, creation_date]
+    - name: entry_range
+      fields: [from_entry_no, to_entry_no]

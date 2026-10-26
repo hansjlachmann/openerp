@@ -82,3 +82,30 @@ reports:
       UNIT_COST: "Enhetskost"
       PROFIT_PERCENT: "Avanse %"
       UNIT_PRICE: "Enhetspris"
+  "795":
+    caption: "Juster kost - vareposter"
+    options:
+      starting_date: "Startdato"
+      ending_date: "Sluttdato"
+    texts:
+      WINDOW_INCREASE: "Behandler vareøkninger...\n\nLøpenr.          #1######\nSiste løpenr.    #2######"
+      WINDOW_DECREASE: "Behandler varereduksjoner...\n\nLøpenr.          #1######\nSiste løpenr.    #2######"
+  "1002":
+    caption: "Bokfør lagerkost i finans"
+    options:
+      post_level: "Bokfør"
+      posting_date: "Bokføringsdato"
+      document_no: "Bilagsnr."
+    texts:
+      OPTIONS: "Alternativer"
+      PER_POSTING_GROUP: "per lagerbokføringsgruppe"
+      PER_ENTRY: "per varepost"
+      ENTER_DOCUMENT_NO: "Angi %1 ved bokføring %2."
+      NO_DOCUMENT_NO: "Ikke angi %1 ved bokføring %2."
+      WINDOW: "Behandler varer  #1##########"
+      ENTRY_DESCRIPTION: "%1 %2 den %3"
+      COGS_POSTING_GROUP: "Vareforbruk for bokf.gruppe %1"
+      ADJ_POSTING_GROUP: "Justering av bokf.gruppe %1"
+      ADJ_GEN_SETUP: "Justering av bokf.oppsett %1,%2"
+      COGS_GEN_SETUP: "Vareforbruk for bokf.oppsett %1,%2"
+      POSTED: "Lagerkosten er bokført i finans: vareforbruk %1, lagerjusteringer %2."
