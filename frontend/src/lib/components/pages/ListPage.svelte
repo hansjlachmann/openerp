@@ -50,7 +50,7 @@
 		type ListSelection
 	} from '$lib/utils/selection';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, canInsertNewRecord, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, recordKeyText, deepCopy, hasRecordChanged, canInsertNewRecord, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -2014,7 +2014,7 @@
 			const deleted = selectedRecord;
 			confirm.show(
 				t(DLG.DELETE_RECORD_TITLE),
-				t(DLG.DELETE_RECORD_CONFIRM),
+				t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(deleted, primaryKeyFieldsList, captions, options)),
 				async () => {
 					if (deleted._isNew) {
 						// Not saved yet: just drop the row
@@ -2301,7 +2301,7 @@
 				const deleteRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
 				if (!deleteRecordId) break;
 				// Same translated confirmation as Delete on the list (not the browser's confirm())
-				confirm.show(t(DLG.DELETE_RECORD_TITLE), t(DLG.DELETE_RECORD_CONFIRM), async () => {
+				confirm.show(t(DLG.DELETE_RECORD_TITLE), t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(modalRecord, primaryKeyFieldsList, captions, options)), async () => {
 					// Mark as deleted BEFORE the API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
 					try {

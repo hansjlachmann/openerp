@@ -21,7 +21,7 @@
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import Modal from '../Modal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, recordKeyText, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
@@ -604,7 +604,7 @@
 				if (deleteId) {
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
-						t(DLG.DELETE_CONFIRM, page.page.caption),
+						t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(record, primaryKeyFieldsList, captions, options)),
 						async () => {
 							try {
 								await api.deleteRecord(page!.page.source_table, deleteId);
@@ -717,7 +717,7 @@
 					const deleteRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
-						t(DLG.DELETE_RECORD_CONFIRM),
+						t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(selectedRecord, primaryKeyFieldsList, captions, options)),
 						async () => {
 							try {
 								await api.deleteRecord(page!.page.source_table, deleteRecordId!);

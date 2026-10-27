@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	applyServerValues,
 	getRecordId,
+	recordKeyText,
 	hasPrimaryKey,
 	canInsertNewRecord,
 	isNewRecord,
@@ -288,5 +289,22 @@ describe('canInsertNewRecord', () => {
 		expect(canInsertNewRecord({ no: '', name: '', blocked: false }, { blocked: false }, ['no'], true)).toBe(false);
 		expect(canInsertNewRecord({ no: '', name: 'A' }, {}, ['no'], true)).toBe(true);
 		expect(canInsertNewRecord({ no: 'E00001', _isNew: true }, { no: '' }, ['no'], true)).toBe(true);
+	});
+});
+
+describe('recordKeyText', () => {
+	it('names the key fields with their captions and values', () => {
+		expect(recordKeyText({ no: 'C00010', name: 'X' }, ['no'], { no: 'No.' })).toBe('No.: C00010');
+		expect(
+			recordKeyText(
+				{ journal_template_name: 'GENERAL', journal_batch_name: 'DEFAULT', line_no: 10000 },
+				['journal_template_name', 'journal_batch_name', 'line_no'],
+				{ journal_template_name: 'Journal Template Name', journal_batch_name: 'Journal Batch Name', line_no: 'Line No.' }
+			)
+		).toBe('Journal Template Name: GENERAL, Journal Batch Name: DEFAULT, Line No.: 10000');
+	});
+	it('shows options by caption, blanks as quotes, no record as nothing', () => {
+		expect(recordKeyText({ type: 1, code: '' }, ['type', 'code'], {}, { type: { '1': 'Item' } })).toBe("type: Item, code: ''");
+		expect(recordKeyText(undefined, ['no'])).toBe('');
 	});
 });
