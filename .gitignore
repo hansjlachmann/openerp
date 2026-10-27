@@ -99,3 +99,6 @@ backups/
 *.dump
 *.sql.gz
 openerp-cli
+
+# Compiled Go test binaries (go test -c, -cpuprofile)
+*.test
