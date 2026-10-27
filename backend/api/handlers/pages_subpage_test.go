@@ -45,7 +45,7 @@ func TestSubpageDefinitions(t *testing.T) {
 		}
 	}
 	if found == 0 {
-		t.Error("no subpage found (Job Queue Card 674 has one)")
+		t.Error("no subpage found (Tax Area 464 has one)")
 	}
 }
 

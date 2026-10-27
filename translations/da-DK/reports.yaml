@@ -1,16 +1,6 @@
 # Danish report texts: reports.<id>.caption, .options.<name>, .texts.<key>
 
 reports:
-  "675":
-    caption: "Slet opgavekøposter"
-    options:
-      older_than_days: "Slet poster ældre end (dage)"
-    texts:
-      OPTIONS: "Indstillinger"
-      CONFIRM: "Vil du slette opgavekøposterne, der er ældre end %1 dage?"
-      DAYS_NEGATIVE: "Antal dage kan ikke være negativt."
-      WINDOW: "Sletter opgavekøposter...\nOpgavekø          #1##########\nSlettede poster   #2######"
-      DONE: "%1 opgavekøposter blev slettet."
   "93":
     caption: "Opret regnskabsår"
     options:

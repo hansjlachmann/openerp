@@ -64,7 +64,7 @@ func TestGetPageTranslatesCopy(t *testing.T) {
 	})
 	app.Get("/api/pages/:id", NewPagesHandler().GetPage)
 
-	resp, err := app.Test(httptest.NewRequest("GET", "/api/pages/674", nil))
+	resp, err := app.Test(httptest.NewRequest("GET", "/api/pages/21", nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,15 +82,15 @@ func TestGetPageTranslatesCopy(t *testing.T) {
 	for _, s := range out.Data.Page.Layout.Sections {
 		captions[s.Name] = s.Caption
 	}
-	for name, want := range map[string]string{"Send Test E-mail": "Send test-e-post", "Notification": "Varsling", "General": "Generelt"} {
+	for name, want := range map[string]string{"Ledger Entries": "Poster", "Invoicing": "Fakturering", "General": "Generelt"} {
 		if captions[name] != want {
 			t.Errorf("%s = %q, want %q", name, captions[name], want)
 		}
 	}
 
-	shared, _ := pages.GetRegistry().GetPage(674)
+	shared, _ := pages.GetRegistry().GetPage(21)
 	for _, a := range shared.Page.Actions {
-		if a.Name == "Send Test E-mail" && a.Caption != "Send Test E-mail" {
+		if a.Name == "Ledger Entries" && a.Caption != "Ledger Entries" {
 			t.Errorf("registry page changed: caption %q", a.Caption)
 		}
 	}

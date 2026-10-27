@@ -4,9 +4,8 @@ page:
   name: User Roles
   source_table: User_Role
   caption: User Roles
-  card_page_id: 904
-  modal_card: true
   editable: true
+  copy_paste_allowed: true   # Ctrl+C / Ctrl+V copy and paste selected records
 
   layout:
     repeater:
@@ -39,3 +38,12 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    # The role's permissions (table data, codeunits, reports); new lines get the role
+    - name: Permissions
+      caption: Permissions
+      image: Setup
+      promoted: true
+      run_page: 905
+      run_page_filter_field: role_id
+      run_page_filter_value: code

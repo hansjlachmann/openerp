@@ -4,9 +4,9 @@
 //
 // A report is a Go type registered with its number, like a codeunit:
 //
-//	func init() { Register(675, "delete-job-queue-log-entries", func() Report { return &deleteLog{} }) }
+//	func init() { Register(50100, "purge-log", func() Report { return &purgeLog{} }) }
 //
-//	func (r *deleteLog) Definition() *Definition {
+//	func (r *purgeLog) Definition() *Definition {
 //		return &Definition{
 //			Options:   []Option{{Name: "older_than_days", Type: "number", Default: "30"}},
 //			DataItems: []*DataItem{{

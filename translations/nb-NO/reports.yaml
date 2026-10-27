@@ -1,16 +1,6 @@
 # Norwegian report texts: reports.<id>.caption, .options.<name>, .texts.<key>
 
 reports:
-  "675":
-    caption: "Slett jobbkøposter"
-    options:
-      older_than_days: "Slett poster eldre enn (dager)"
-    texts:
-      OPTIONS: "Alternativer"
-      CONFIRM: "Vil du slette jobbkøpostene som er eldre enn %1 dager?"
-      DAYS_NEGATIVE: "Antall dager kan ikke være negativt."
-      WINDOW: "Sletter jobbkøposter...\nJobbkø            #1##########\nSlettede poster   #2######"
-      DONE: "%1 jobbkøposter ble slettet."
   "93":
     caption: "Opprett regnskapsår"
     options:

@@ -691,10 +691,6 @@ menu:
       - separator: true
       - name: "Job Queue"
         page_id: 672
-      - name: "Job Queue Entries"
-        page_id: 673
-      - name: "Delete Job Queue Log Entries"
-        run_object: "report:675"
       - separator: true
       - name: "SMTP Setup"
         page_id: 409
