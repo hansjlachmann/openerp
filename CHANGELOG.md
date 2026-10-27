@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.114](https://github.com/hansjlachmann/openerp/compare/v0.1.113...v0.1.114) (2026-10-27)
+
+
+### Features
+
+* resources, item BOMs, cost adjustment and period grids ([#153](https://github.com/hansjlachmann/openerp/issues/153)) ([be5aa95](https://github.com/hansjlachmann/openerp/commit/be5aa95069823b352d35c02afa5cf1587000e044))
+
 ## [0.1.113](https://github.com/hansjlachmann/openerp/compare/v0.1.112...v0.1.113) (2026-10-25)
 
 
