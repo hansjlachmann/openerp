@@ -500,3 +500,73 @@ pages:
     caption: "Opptellingsposter"
   item_picture:
     caption: "Varebilde"
+  resource_list:
+    caption: "Ressursoversikt"
+  resource_card:
+    caption: "Ressurskort"
+  resource_groups:
+    caption: "Ressursgrupper"
+  resource_costs:
+    caption: "Ressurskost"
+  resource_prices:
+    caption: "Ressurspriser"
+  work_types:
+    caption: "Arbeidstyper"
+  rounding_methods:
+    caption: "Avrundingsmetoder"
+  resource_price_changes:
+    caption: "Ressursprisendringer"
+  res_capacity_entries:
+    caption: "Ressurskapasitetsposter"
+  resources_setup:
+    caption: "Ressursoppsett"
+  resource_picture:
+    caption: "Ressursbilde"
+  resource_journal:
+    caption: "Ressurskladd"
+    fields:
+      resource_name: "Ressursnavn"
+  resource_journal_templates:
+    caption: "Ressurskladdemaler"
+  res_journal_template_list:
+    caption: "Ressurskladdemaloversikt"
+  resource_jnl_batches:
+    caption: "Ressurskladdenavn"
+  resource_registers:
+    caption: "Ressursjournaler"
+  resource_ledger_entries:
+    caption: "Ressursposter"
+  bill_of_materials:
+    caption: "Stykkliste"
+  bom_journal:
+    caption: "Stykklistekladd"
+    fields:
+      item_description: "Varebeskrivelse"
+  bom_journal_templates:
+    caption: "Stykklistekladdemaler"
+  bom_journal_template_list:
+    caption: "Stykklistekladdemaloversikt"
+  bom_journal_batches:
+    caption: "Stykklistekladdenavn"
+  bom_registers:
+    caption: "Stykklistejournaler"
+  bom_ledger_entries:
+    caption: "Stykklisteposter"
+  item_availability_by_periods:
+    caption: "Varetilgjengelighet per periode"
+    fields:
+      net_change: "Lager"
+  item_availability_by_location:
+    caption: "Varetilgjengelighet per lokasjon"
+    fields:
+      net_change: "Lager"
+  item_availability_by_variant:
+    caption: "Varetilgjengelighet per variant"
+    fields:
+      net_change: "Lager"
+  item_turnover:
+    caption: "Vareomsetning"
+  resource_availability:
+    caption: "Ressurstilgjengelighet"
+  res_group_availability:
+    caption: "Ressursgruppetilgjengelighet"

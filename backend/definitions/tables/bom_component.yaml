@@ -1,0 +1,172 @@
+table:
+  id: 90
+  name: "BOM_Component"
+  description: "BOM components (table 90): the items and resources a bill of materials is assembled from"
+  lookup_page_id: 36
+  fields:
+    - name: parent_item_no
+      no: 1
+      type: types.Code
+      db_name: parent_item_no
+      length: 20
+      primary_key: true
+      required: true
+      table_relation:
+        table: Item
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: type
+      no: 3
+      type: Option
+      db_name: type
+      options: [" ", "Item", "Resource"]
+
+    - name: no
+      no: 4
+      type: types.Code
+      db_name: no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 1}
+            table: Item
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+          - when: {field: type, equal: 2}
+            table: Resource
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: bill_of_materials
+      no: 5
+      type: bool
+      db_name: bill_of_materials
+      editable: false
+
+    - name: description
+      no: 6
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: unit_of_measure_code
+      no: 7
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 1}
+            table: Item_Unit_of_Measure
+            field: code
+            filters:
+              item_no: {field: no}
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: qty_per_unit_of_measure
+                width: 120
+          - when: {field: type, equal: 2}
+            table: Unit_of_Measure
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+
+    - name: quantity_per
+      no: 8
+      type: types.Decimal
+      db_name: quantity_per
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: position
+      no: 9
+      type: types.Code
+      db_name: position
+      length: 10
+
+    - name: position_2
+      no: 10
+      type: types.Code
+      db_name: position_2
+      length: 10
+
+    - name: position_3
+      no: 11
+      type: types.Code
+      db_name: position_3
+      length: 10
+
+    - name: machine_no
+      no: 12
+      type: types.Code
+      db_name: machine_no
+      length: 10
+
+    - name: production_lead_time
+      no: 13
+      type: int
+      db_name: production_lead_time
+
+    - name: bom_description
+      no: 14
+      type: types.Text
+      db_name: bom_description
+      length: 50
+      flow_field: true
+      calc_formula: Lookup
+      source_table: Item
+      source_field: description
+      flow_filters:
+        - field: no
+          type: field
+          value: parent_item_no
+
+    - name: variant_code
+      no: 5402
+      type: types.Code
+      db_name: variant_code
+      length: 10
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 1}
+            table: Item_Variant
+            field: code
+            filters:
+              item_no: {field: no}
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+
+  keys:
+    - name: Primary
+      fields: [parent_item_no, line_no]
+      clustered: true
+    - name: type_no
+      fields: [type, no]

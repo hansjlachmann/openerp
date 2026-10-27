@@ -1,0 +1,22 @@
+page:
+  id: 462
+  type: Card
+  name: Resources Setup
+  source_table: Resources_Setup
+  caption: Resources Setup
+  editable: true
+
+  layout:
+    sections:
+      - name: Numbering
+        caption: Numbering
+        fields:
+          - source: resource_nos
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+      enabled: true

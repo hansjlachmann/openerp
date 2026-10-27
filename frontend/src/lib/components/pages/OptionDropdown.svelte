@@ -197,7 +197,8 @@
 						onclick={() => handleSelect(optKey)}
 						onmouseenter={() => selectedIndex = i}
 					>
-						{optLabel}
+						<!-- a blank option (" ") keeps the height of a row with text -->
+						{String(optLabel ?? '').trim() === '' ? '\u00a0' : optLabel}
 					</div>
 				{/each}
 			</div>
@@ -302,6 +303,7 @@
 		left: 0;
 		z-index: 50;
 		min-width: 100%;
+		width: max-content; /* the longest option on one line */
 		max-height: 300px;
 		margin-top: 2px;
 		@apply bg-surface border border-gray-300 rounded shadow-lg;
@@ -320,7 +322,7 @@
 	}
 
 	.option-row {
-		@apply px-3 py-1.5 text-sm cursor-pointer;
+		@apply px-3 py-1.5 text-sm cursor-pointer whitespace-nowrap;
 		@apply hover:bg-gray-100;
 	}
 

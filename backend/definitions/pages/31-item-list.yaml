@@ -182,3 +182,41 @@ page:
       run_page: 346
       run_page_filter_field: "no"
       run_page_filter_value: "no"
+
+    - name: Bill of Materials
+      caption: Bill of Materials
+      image: Rows
+      promoted: true
+      run_page: 36
+      run_page_filter_field: parent_item_no
+      run_page_filter_value: "no"
+
+    # The item per period, location or variant (classic Item Availability by), its turnover
+    - name: Item Availability by
+      caption: Item Availability by
+      image: Calendar
+      promoted: true
+      items:
+        - name: Period
+          caption: Period
+          run_page: 157
+          run_page_filter_field: "no"
+          run_page_filter_value: "no"
+        - name: Location
+          caption: Location
+          run_page: 492
+          run_page_filter_field: "no"
+          run_page_filter_value: "no"
+        - name: Variant
+          caption: Variant
+          run_page: 5414
+          run_page_filter_field: "no"
+          run_page_filter_value: "no"
+
+    - name: Turnover
+      caption: Turnover
+      image: Statistics
+      promoted: true
+      run_page: 158
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"

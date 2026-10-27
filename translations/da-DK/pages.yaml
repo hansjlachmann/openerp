@@ -500,3 +500,73 @@ pages:
     caption: "Lageropgørelsesposter"
   item_picture:
     caption: "Varebillede"
+  resource_list:
+    caption: "Ressourceoversigt"
+  resource_card:
+    caption: "Ressourcekort"
+  resource_groups:
+    caption: "Ressourcegrupper"
+  resource_costs:
+    caption: "Ressourcekostpriser"
+  resource_prices:
+    caption: "Ressourcepriser"
+  work_types:
+    caption: "Arbejdstyper"
+  rounding_methods:
+    caption: "Afrundingsmetoder"
+  resource_price_changes:
+    caption: "Ressourceprisændringer"
+  res_capacity_entries:
+    caption: "Ressourcekapacitetsposter"
+  resources_setup:
+    caption: "Ressourceopsætning"
+  resource_picture:
+    caption: "Ressourcebillede"
+  resource_journal:
+    caption: "Ressourcekladde"
+    fields:
+      resource_name: "Ressourcenavn"
+  resource_journal_templates:
+    caption: "Ressourcekladdetyper"
+  res_journal_template_list:
+    caption: "Ressourcekladdetypeoversigt"
+  resource_jnl_batches:
+    caption: "Ressourcekladdenavne"
+  resource_registers:
+    caption: "Ressourcejournaler"
+  resource_ledger_entries:
+    caption: "Ressourceposter"
+  bill_of_materials:
+    caption: "Stykliste"
+  bom_journal:
+    caption: "Styklistekladde"
+    fields:
+      item_description: "Varebeskrivelse"
+  bom_journal_templates:
+    caption: "Styklistekladdetyper"
+  bom_journal_template_list:
+    caption: "Styklistekladdetypeoversigt"
+  bom_journal_batches:
+    caption: "Styklistekladdenavne"
+  bom_registers:
+    caption: "Styklistejournaler"
+  bom_ledger_entries:
+    caption: "Styklisteposter"
+  item_availability_by_periods:
+    caption: "Varedisponering pr. periode"
+    fields:
+      net_change: "Lager"
+  item_availability_by_location:
+    caption: "Varedisponering pr. lokation"
+    fields:
+      net_change: "Lager"
+  item_availability_by_variant:
+    caption: "Varedisponering pr. variant"
+    fields:
+      net_change: "Lager"
+  item_turnover:
+    caption: "Vareomsætning"
+  resource_availability:
+    caption: "Ressourcedisponering"
+  res_group_availability:
+    caption: "Ressourcegruppedisponering"

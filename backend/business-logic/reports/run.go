@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,6 +47,24 @@ func (r *Run) OptionInt(name string) int {
 // OptionDate returns a date option (blank when blank or not a date)
 func (r *Run) OptionDate(name string) types.Date {
 	d, _ := types.NewDateFromString(strings.TrimSpace(r.options[name]))
+	return d
+}
+
+// OptionBool returns a "bool" option (true for true/yes/1)
+func (r *Run) OptionBool(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(r.options[name])) {
+	case "true", "yes", "1":
+		return true
+	}
+	return false
+}
+
+// OptionDecimal returns a number option as a decimal (0 when blank or not a number)
+func (r *Run) OptionDecimal(name string) types.Decimal {
+	d, err := types.NewDecimalFromString(strings.TrimSpace(r.options[name]))
+	if err != nil {
+		return types.Decimal{}
+	}
 	return d
 }
 
@@ -121,6 +140,20 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		}
 	}
 
+	// A report that writes as one unit (posting) runs in a transaction: committed at the end,
+	// rolled back on an error (a caller's transaction is used as it is)
+	var tx *sql.Tx
+	if def.Transaction {
+		if _, ok := run.DB.(*sql.DB); ok {
+			var err error
+			tx, err = ftables.BeginTransaction(run.DB)
+			if err != nil {
+				return Result{}, err
+			}
+			run.DB = tx
+		}
+	}
+
 	err := func() error {
 		if def.OnPreReport != nil {
 			err := def.OnPreReport(run)
@@ -142,6 +175,16 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 	if errors.Is(err, errQuit) {
 		err = nil
 	}
+	if tx != nil {
+		if err != nil {
+			_ = ftables.Rollback(tx)
+			return Result{}, err
+		}
+		err = ftables.Commit(tx)
+		if err != nil {
+			return Result{}, err
+		}
+	}
 	return Result{Message: run.message}, err
 }
 
@@ -158,6 +201,7 @@ func requestPage(run *Run, def *Definition) bool {
 			Required: o.Required,
 			Default:  run.options[o.Name],
 			Options:  translatedChoices(run, o.Options),
+			Lookup:   optionLookup(run, o.Relation, language),
 		})
 	}
 	var items []fcodeunits.RequestDataItem
@@ -410,4 +454,49 @@ func translatedChoices(run *Run, keys []string) []string {
 		choices = append(choices, run.Text(key))
 	}
 	return choices
+}
+
+// optionLookupLimit: an option's dropdown shows at most this many rows of its table
+const optionLookupLimit = 200
+
+// optionLookup is the dropdown of an option with a table relation: the table's rows (at most
+// optionLookupLimit) with the relation's columns; nil without a relation
+func optionLookup(run *Run, relation *OptionRelation, language string) *fcodeunits.InputLookup {
+	if relation == nil || len(relation.Columns) == 0 {
+		return nil
+	}
+	factory, ok := gtables.GetTableFactory(relation.Table)
+	if !ok {
+		return nil
+	}
+	rec := factory()
+	rec.InitWithDBType(run.DB, run.Company, run.DBType)
+	lookup := &fcodeunits.InputLookup{Rows: []map[string]interface{}{}, Captions: map[string]string{}}
+	for i, col := range relation.Columns {
+		width := 250
+		if i == 0 {
+			width = 100
+		}
+		lookup.Columns = append(lookup.Columns, fcodeunits.InputLookupColumn{Source: col, Width: width})
+		c, ok := rec.(interface{ GetFieldCaption(string, string) string })
+		if ok {
+			lookup.Captions[col] = c.GetFieldCaption(col, language)
+		}
+	}
+	rec.SetCurrentKey(relation.Columns[0])
+	seen := map[string]bool{} // a code once (Rounding Method has a row per minimum amount)
+	for found := rec.FindSet(); found && len(lookup.Rows) < optionLookupLimit; found = rec.Next() {
+		values := rec.ToMap()
+		key := fmt.Sprint(values[relation.Columns[0]])
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		row := map[string]interface{}{"_key": key}
+		for _, col := range relation.Columns {
+			row[col] = values[col]
+		}
+		lookup.Rows = append(lookup.Rows, row)
+	}
+	return lookup
 }

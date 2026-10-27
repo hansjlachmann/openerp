@@ -139,6 +139,7 @@ func (s *Server) Setup() {
 	api.Get("/pages", pagesHandler.GetAllPages)
 	api.Get("/pages/:id", pagesHandler.GetPage)
 	api.Post("/pages/:id/field-states", handlers.NewPageTriggersHandler(s.db, s.dbType).FieldStates) // page triggers (OnAfterGetRecord)
+	api.Post("/pages/:id/period-grid", handlers.NewPageTriggersHandler(s.db, s.dbType).PeriodGrid)   // a card section of periods (FlowFields per period)
 	api.Post("/pages/:id/open", handlers.NewPageTriggersHandler(s.db, s.dbType).OpenPage)            // OnOpenPage: the page's filters
 	api.Get("/menu", pagesHandler.GetMenu)
 

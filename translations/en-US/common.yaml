@@ -8,6 +8,23 @@ common:
 
   # Common actions
   actions:
+    item_availability_by: "Item Availability by"
+    location: "Location"
+    period: "Period"
+    res_group_availability: "Res. Group Availability"
+    resource_availability: "Resource Availability"
+    turnover: "Turnover"
+    variant: "Variant"
+    bill_of_materials: "Bill of Materials"
+    bom_ledger: "BOM Ledger"
+    calc_standard_cost: "Calc. Standard Cost"
+    explode_bom: "Explode BOM"
+    resource: "Resource"
+    resource_ledger: "Resource Ledger"
+    costs: "Costs"
+    suggest_res_price_chg_res: "Suggest Res. Price Chg. (Res.)"
+    suggest_res_price_chg_price: "Suggest Res. Price Chg. (Price)"
+    implement_price_change: "Implement Price Change"
     picture: "Picture"
     calculate_inventory: "Calculate Inventory"
     phys_inventory_ledger: "Phys. Inventory Ledger"
@@ -93,6 +110,10 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    locations: "Locations"
+    variants: "Variants"
+    periods: "Periods"
+    personal_data: "Personal Data"
     picture: "Picture"
     inventory: "Inventory"
     ordering: "Ordering"

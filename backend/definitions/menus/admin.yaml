@@ -385,6 +385,7 @@ menu:
       - name: "Phys. Inventory Journals"
         page_id: 392
       - name: "BOM Journals"
+        page_id: 109
       - separator: true
       - name: "Item Reports"
       - name: "BOM Reports"
@@ -466,7 +467,7 @@ menu:
     icon: user
     items:
       - name: "Resources"
-        page_id: 76
+        page_id: 77
       - name: "Resource Groups"
         page_id: 72
       - name: "Resource Capacity"
@@ -475,6 +476,7 @@ menu:
         page_id: 214
       - separator: true
       - name: "Resource Journals"
+        page_id: 207
       - separator: true
       - name: "Reports"
       - name: "Registers"

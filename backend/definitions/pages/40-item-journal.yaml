@@ -122,6 +122,13 @@ page:
           run_page_filter_field: item_no
           run_page_filter_value: item_no
 
+    # The line's bill of materials becomes a line per component (codeunit 246)
+    - name: Explode BOM
+      caption: Explode BOM
+      image: Rows
+      promoted: true
+      run_object: table:Item_Journal_Line.ExplodeBOM
+
     # Posting: the batch (codeunit 241 Item Jnl.-Post, after asking; the list's filters say which batch)
     - name: Post
       caption: Post

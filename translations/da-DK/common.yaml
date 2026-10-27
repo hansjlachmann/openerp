@@ -8,6 +8,23 @@ common:
 
   # Common actions
   actions:
+    item_availability_by: "Varedisponering pr."
+    location: "Lokation"
+    period: "Periode"
+    res_group_availability: "Ressourcegruppedisponering"
+    resource_availability: "Ressourcedisponering"
+    turnover: "Omsætning"
+    variant: "Variant"
+    bill_of_materials: "Stykliste"
+    bom_ledger: "Styklisteposter"
+    calc_standard_cost: "Beregn standardkostpris"
+    explode_bom: "Udfold stykliste"
+    resource: "Ressource"
+    resource_ledger: "Ressourceposter"
+    costs: "Kostpriser"
+    suggest_res_price_chg_res: "Foreslå ressourceprisændr. (ress.)"
+    suggest_res_price_chg_price: "Foreslå ressourceprisændr. (pris)"
+    implement_price_change: "Implementer prisændring"
     picture: "Billede"
     calculate_inventory: "Beregn lager"
     phys_inventory_ledger: "Lageropgørelsesposter"
@@ -93,6 +110,10 @@ common:
 
   # Card page sections (page YAML section name in snake case)
   sections:
+    locations: "Lokationer"
+    variants: "Varianter"
+    periods: "Perioder"
+    personal_data: "Personlige data"
     picture: "Billede"
     inventory: "Lager"
     ordering: "Bestilling"

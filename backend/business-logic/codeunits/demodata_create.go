@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hansjlachmann/openerp/backend/business-logic/bomjnl"
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
 	"github.com/hansjlachmann/openerp/backend/business-logic/itemjnl"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
@@ -98,7 +99,7 @@ func (c *DemoDataCreate) create(jobQueue *gtables.JobQueue, ts *i18n.Translation
 		}
 	}
 
-	return demodata.Create(c.db, c.company, c.dbType, demodata.Options{Size: size, Progress: progress, ItemJnlPostLine: openItemJnlPostLine})
+	return demodata.Create(c.db, c.company, c.dbType, demodata.Options{Size: size, Progress: progress, ItemJnlPostLine: openItemJnlPostLine, BOMJnlPostLine: openBOMJnlPostLine})
 }
 
 // errorMessage translates the demodata errors users can act on.
@@ -119,4 +120,9 @@ func (c *DemoDataCreate) errorMessage(err error, ts *i18n.TranslationService, la
 // openItemJnlPostLine opens the item posting (codeunit 22) for the demo items' postings
 func openItemJnlPostLine(src ftables.Source) demodata.ItemJnlPoster {
 	return itemjnl.NewItemJnlPostLine(src)
+}
+
+// openBOMJnlPostLine opens the BOM posting (codeunit 32) for the demo assemblies
+func openBOMJnlPostLine(src ftables.Source) demodata.BOMJnlPoster {
+	return bomjnl.NewBOMJnlPostLine(src)
 }

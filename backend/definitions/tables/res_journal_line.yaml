@@ -1,0 +1,297 @@
+table:
+  id: 207
+  name: "Res_Journal_Line"
+  description: "Resource journal lines (table 207)"
+  # Left out until their objects exist: 10 Job No. (jobs); 25-27 recurring (recurring journals)
+  fields:
+    - name: journal_template_name
+      no: 1
+      type: types.Code
+      db_name: journal_template_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Res_Journal_Template
+        field: name
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: journal_batch_name
+      no: 23
+      type: types.Code
+      db_name: journal_batch_name
+      length: 10
+      primary_key: true
+      required: true
+      table_relation:
+        table: Res_Journal_Batch
+        field: name
+        filters:
+          journal_template_name: {field: journal_template_name}
+        lookup_columns:
+          - source: name
+            width: 100
+          - source: description
+            width: 250
+
+    - name: line_no
+      no: 2
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: entry_type
+      no: 3
+      type: Option
+      db_name: entry_type
+      options: ["Usage", "Sale"]
+
+    - name: document_no
+      no: 4
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: posting_date
+      no: 5
+      type: types.Date
+      db_name: posting_date
+
+    - name: resource_no
+      no: 6
+      type: types.Code
+      db_name: resource_no
+      length: 20
+      table_relation:
+        table: Resource
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: resource_group_no
+      no: 7
+      type: types.Code
+      db_name: resource_group_no
+      length: 20
+      editable: false
+      table_relation:
+        table: Resource_Group
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+
+    - name: description
+      no: 8
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: work_type_code
+      no: 9
+      type: types.Code
+      db_name: work_type_code
+      length: 10
+      table_relation:
+        table: Work_Type
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: unit_of_measure_code
+      no: 11
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: quantity
+      no: 12
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: direct_unit_cost
+      no: 13
+      type: types.Decimal
+      db_name: direct_unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: unit_cost
+      no: 14
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: total_cost
+      no: 15
+      type: types.Decimal
+      db_name: total_cost
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+
+    - name: unit_price
+      no: 16
+      type: types.Decimal
+      db_name: unit_price
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: total_price
+      no: 17
+      type: types.Decimal
+      db_name: total_price
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+
+    - name: department_code
+      no: 18
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 19
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: source_code
+      no: 21
+      type: types.Code
+      db_name: source_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: chargeable
+      no: 22
+      type: bool
+      db_name: chargeable
+      default: true
+
+    - name: reason_code
+      no: 24
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_bus_posting_group
+      no: 28
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 29
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: document_date
+      no: 30
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 31
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: posting_no_series
+      no: 32
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [journal_template_name, journal_batch_name, line_no]
+      clustered: true

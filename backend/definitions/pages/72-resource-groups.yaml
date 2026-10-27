@@ -1,0 +1,76 @@
+page:
+  id: 72
+  type: List
+  name: Resource Groups
+  source_table: Resource_Group
+  caption: Resource Groups
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 100
+        - source: name
+          width: 250
+        - source: capacity
+          width: 120
+          visible: false
+          drilldown: 224
+          drilldown_filter_field: resource_group_no
+          drilldown_filter_value: "no"
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Costs
+      caption: Costs
+      image: Calculate
+      promoted: true
+      run_page: 203
+      run_page_filters:
+        - {field: type, const: "1"}   # Group(Resource)
+        - {field: code, value: "no"}
+
+    - name: Prices
+      caption: Prices
+      image: Calculate
+      promoted: true
+      run_page: 204
+      run_page_filters:
+        - {field: type, const: "1"}   # Group(Resource)
+        - {field: code, value: "no"}
+
+    - name: Comments
+      caption: Comments
+      image: Document
+      promoted: true
+      run_page: 124
+      run_page_filters:
+        - {field: table_name, const: "7"}   # Resource Group
+        - {field: "no", value: "no"}
+
+    - name: Res. Group Availability
+      caption: Res. Group Availability
+      image: Calendar
+      promoted: true
+      run_page: 226
+      run_page_filter_field: "no"
+      run_page_filter_value: "no"

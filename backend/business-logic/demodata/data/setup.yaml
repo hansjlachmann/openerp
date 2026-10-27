@@ -54,6 +54,8 @@ master_data:
       - {code: TRANSFER, description: Item transfer journal}
       - {code: PHYSINVJNL, description: Phys. inventory journal}
       - {code: INVTPCOST, description: Inventory cost posted to the G/L}
+      - {code: RESJNL, description: Resource journal}
+      - {code: BOMJNL, description: BOM journal}
   - table: Reason_Code
     records:
       - {code: CORRECTION, description: Correction of an entry}
@@ -276,8 +278,12 @@ master_data:
       - {"no": "2010", description: "Tea assortment", search_description: "TEA ASSORTMENT", base_unit_of_measure: BOX, sales_unit_of_measure: BOX, purch_unit_of_measure: BOX, inventory_posting_group: FOOD, gen_prod_posting_group: FOOD, tax_prod_posting_group: REDUCED, tax_group_code: REDUCED, costing_method: 0, average_cost: "45", unit_cost: "45", last_direct_cost: "45", unit_price: "85", profit_percent: "47.05882", sales_qty_disc_code: "2010", item_cust_disc_gr: FOOD}
       - {"no": "2020", description: "Mineral water 0.5 l", search_description: "MINERAL WATER 0.5 L", base_unit_of_measure: PCS, sales_unit_of_measure: PCS, purch_unit_of_measure: PCS, inventory_posting_group: FOOD, gen_prod_posting_group: FOOD, tax_prod_posting_group: REDUCED, tax_group_code: REDUCED, costing_method: 0, average_cost: "6", unit_cost: "6", last_direct_cost: "6", unit_price: "15", profit_percent: "60.00000", sales_qty_disc_code: "2020", item_cust_disc_gr: FOOD}
       - {"no": "2030", description: "Biscuits", search_description: "BISCUITS", base_unit_of_measure: PACK, sales_unit_of_measure: PACK, purch_unit_of_measure: PACK, inventory_posting_group: FOOD, gen_prod_posting_group: FOOD, tax_prod_posting_group: REDUCED, tax_group_code: REDUCED, costing_method: 0, average_cost: "19", unit_cost: "19", last_direct_cost: "19", unit_price: "39", profit_percent: "51.28205", sales_qty_disc_code: "2030", item_cust_disc_gr: FOOD}
+      - {"no": "1500", description: "Office starter kit", search_description: "OFFICE STARTER KIT", base_unit_of_measure: PCS, sales_unit_of_measure: PCS, purch_unit_of_measure: PCS, inventory_posting_group: RESALE, gen_prod_posting_group: RETAIL, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, costing_method: 3, average_cost: "330", unit_cost: "330", last_direct_cost: "330", unit_price: "599", profit_percent: "44.90818", sales_qty_disc_code: "1500"}
+      - {"no": "2100", description: "Coffee gift basket", search_description: "COFFEE GIFT BASKET", base_unit_of_measure: PCS, sales_unit_of_measure: PCS, purch_unit_of_measure: PCS, inventory_posting_group: FOOD, gen_prod_posting_group: FOOD, tax_prod_posting_group: REDUCED, tax_group_code: TAXABLE, costing_method: 0, average_cost: "240", unit_cost: "240", last_direct_cost: "240", unit_price: "449", profit_percent: "46.54788", sales_qty_disc_code: "2100"}
   - table: Item_Unit_of_Measure
     records:
+      - {item_no: "1500", code: PCS, qty_per_unit_of_measure: 1}
+      - {item_no: "2100", code: PCS, qty_per_unit_of_measure: 1}
       - {item_no: "1000", code: PACK, qty_per_unit_of_measure: 1}
       - {item_no: "1000", code: BOX, qty_per_unit_of_measure: 5}
       - {item_no: "1010", code: PACK, qty_per_unit_of_measure: 1}
@@ -306,6 +312,19 @@ master_data:
       - {item_no: "2020", code: PCS, qty_per_unit_of_measure: 1}
       - {item_no: "2020", code: PACK, qty_per_unit_of_measure: 24}
       - {item_no: "2030", code: PACK, qty_per_unit_of_measure: 1}
+  # Bills of materials (type 1 Item, 2 Resource): the assembled items 1500 and 2100
+  - table: BOM_Component
+    records:
+      - {parent_item_no: "1500", line_no: 10000, type: 1, "no": "1100", description: Ballpoint pen, unit_of_measure_code: PCS, quantity_per: "5", position: "A"}
+      - {parent_item_no: "1500", line_no: 20000, type: 1, "no": "1110", description: "Marker set, 4 colours", unit_of_measure_code: SET, quantity_per: "1", position: "B"}
+      - {parent_item_no: "1500", line_no: 30000, type: 1, "no": "1120", description: "Notebook A5, lined", unit_of_measure_code: PCS, quantity_per: "3", position: "C"}
+      - {parent_item_no: "1500", line_no: 40000, type: 1, "no": "1410", description: Stapler, unit_of_measure_code: PCS, quantity_per: "1", position: "D"}
+      - {parent_item_no: "1500", line_no: 50000, type: 1, "no": "1000", description: "Copy paper A4, 500 sheets", unit_of_measure_code: PACK, quantity_per: "1", position: "E"}
+      - {parent_item_no: "1500", line_no: 60000, type: 2, "no": R0060, description: Ole Strand, unit_of_measure_code: HOUR, quantity_per: "0.25"}
+      - {parent_item_no: "2100", line_no: 10000, type: 1, "no": "2000", description: Coffee beans, unit_of_measure_code: KG, quantity_per: "0.5"}
+      - {parent_item_no: "2100", line_no: 20000, type: 1, "no": "2010", description: Tea assortment, unit_of_measure_code: BOX, quantity_per: "1"}
+      - {parent_item_no: "2100", line_no: 30000, type: 1, "no": "2030", description: Biscuits, unit_of_measure_code: PACK, quantity_per: "2"}
+      - {parent_item_no: "2100", line_no: 40000, type: 1, "no": "1200", description: "Cardboard box, small", unit_of_measure_code: PCS, quantity_per: "1"}
   - table: Item_Variant
     records:
       - {item_no: "1100", code: BLUE, description: "Ballpoint pen, blue"}
@@ -526,6 +545,8 @@ master_data:
       - {code: "IJNL-GEN", description: Item journal, default_nos: true, manual_nos: true}
       - {code: "IJNL-TRANS", description: Item transfer journal, default_nos: true, manual_nos: true}
       - {code: "IJNL-PHYS", description: Phys. inventory journal, default_nos: true, manual_nos: true}
+      - {code: "RES", description: Resources, default_nos: true, manual_nos: true}
+      - {code: "BJNL", description: BOM journal, default_nos: true, manual_nos: true}
   - table: No_Series_Line   # starting at the beginning (blank Starting Date)
     records:
       - {series_code: "CUST", line_no: 10000, starting_no: "C00001", ending_no: "C99999", warning_no: "C99000", increment_by_no: 1, open: true}
@@ -563,6 +584,8 @@ master_data:
       - {series_code: "IJNL-GEN", line_no: 10000, starting_no: "T00001", increment_by_no: 1, open: true}
       - {series_code: "IJNL-TRANS", line_no: 10000, starting_no: "T01001", increment_by_no: 1, open: true}
       - {series_code: "IJNL-PHYS", line_no: 10000, starting_no: "T02001", increment_by_no: 1, open: true}
+      - {series_code: "BJNL", line_no: 10000, starting_no: "B00001", increment_by_no: 1, open: true}
+      - {series_code: "RES", line_no: 10000, starting_no: "R0010", ending_no: "R9990", increment_by_no: 10, open: true}
   - table: No_Series_Relationship   # a customer may be numbered from CUST or CUST-EXP
     records:
       - {code: CUST, series_code: CUST-EXP}
@@ -609,7 +632,7 @@ master_data:
       - {code: PROPERTY, description: Property insurance}
   - table: Source_Code_Setup   # the single setup record (blank key): the journals' source codes
     records:
-      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL, item_journal: ITEMJNL, item_transfer_journal: TRANSFER, phys_inventory_journal: PHYSINVJNL, inventory_post_cost: INVTPCOST}
+      - {general_journal: GENJNL, sales_journal: SALESJNL, purchase_journal: PURCHJNL, cash_receipt_journal: CASHRECJNL, payment_journal: PAYMENTJNL, sales: SALES, purchases: PURCHASES, sales_entry_application: SALESAPPL, purchase_entry_application: PURCHAPPL, item_journal: ITEMJNL, item_transfer_journal: TRANSFER, phys_inventory_journal: PHYSINVJNL, inventory_post_cost: INVTPCOST, resource_journal: RESJNL, bom_journal: BOMJNL}
   - table: Gen_Journal_Template   # one per journal type (type 0 General … 4 Payments); page and source code come from the type
     records:
       - {name: GENERAL, description: General Journal, type: 0, no_series: GJNL-GEN}
@@ -634,6 +657,66 @@ master_data:
       - {journal_template_name: ITEM, name: DEFAULT, description: Default Journal, no_series: IJNL-GEN}
       - {journal_template_name: TRANSFER, name: DEFAULT, description: Default Journal, no_series: IJNL-TRANS}
       - {journal_template_name: PHYS. INV., name: DEFAULT, description: Default Journal, no_series: IJNL-PHYS}
+  - table: Unit_of_Measure   # the resources' units
+    records:
+      - {code: DAY, description: Day}
+  - table: Rounding_Method   # price rounding of the price reports
+    records:
+      - {code: "1.00", minimum_amount: "0", type: 0, precision: "1"}
+      - {code: "1.00", minimum_amount: "1000", type: 1, precision: "10"}
+      - {code: "5.00", minimum_amount: "0", type: 1, precision: "5"}
+  - table: Resources_Setup   # the single setup record (blank key)
+    records:
+      - {resource_nos: RES}
+  - table: Res_Journal_Template
+    records:
+      - {name: RESOURCES, description: Resource Journals, page_id: 207, source_code: RESJNL}
+  - table: Res_Journal_Batch
+    records:
+      - {journal_template_name: RESOURCES, name: DEFAULT, description: Default Journal}
+  - table: BOM_Journal_Template
+    records:
+      - {name: BOM, description: BOM Journal, page_id: 109, source_code: BOMJNL}
+  - table: BOM_Journal_Batch
+    records:
+      - {journal_template_name: BOM, name: DEFAULT, description: Default Journal, no_series: BJNL}
+  - table: Work_Type
+    records:
+      - {code: NORMAL, description: Normal hours, unit_of_measure_code: HOUR}
+      - {code: OVERTIME, description: Overtime, unit_of_measure_code: HOUR}
+      - {code: TRAVEL, description: Travel time, unit_of_measure_code: HOUR}
+      - {code: DAY, description: Day rate, unit_of_measure_code: DAY}
+  - table: Resource_Group
+    records:
+      - {"no": CONSULT, name: Consultants}
+      - {"no": TECH, name: Technicians}
+      - {"no": MACHINES, name: Machines}
+  # type 0 Person, 1 Machine; price/profit calculation 0 Profit=Price-Cost
+  - table: Resource
+    records:
+      - {"no": R0010, type: 0, name: Anna Berg, search_name: ANNA BERG, title: Senior consultant, resource_group_no: CONSULT, unit_of_measure_code: HOUR, direct_unit_cost: "550", indirect_cost_percent: "10", unit_cost: "605", unit_price: "1250", profit_percent: "51.6", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: SALES, employment_date: "2019-03-01", city: Oslo}
+      - {"no": R0020, type: 0, name: Erik Holm, search_name: ERIK HOLM, title: Consultant, resource_group_no: CONSULT, unit_of_measure_code: HOUR, direct_unit_cost: "450", indirect_cost_percent: "10", unit_cost: "495", unit_price: "1050", profit_percent: "52.85714", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: SALES, employment_date: "2021-08-15", city: Bergen}
+      - {"no": R0030, type: 0, name: Sofie Lund, search_name: SOFIE LUND, title: Consultant, resource_group_no: CONSULT, unit_of_measure_code: HOUR, direct_unit_cost: "430", indirect_cost_percent: "10", unit_cost: "473", unit_price: "1050", profit_percent: "54.95238", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: SALES, employment_date: "2022-01-10", city: Copenhagen}
+      - {"no": R0040, type: 0, name: Lars Moe, search_name: LARS MOE, title: Service technician, resource_group_no: TECH, unit_of_measure_code: HOUR, direct_unit_cost: "380", indirect_cost_percent: "15", unit_cost: "437", unit_price: "850", profit_percent: "48.58824", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: PROD, employment_date: "2018-05-02", city: Oslo}
+      - {"no": R0050, type: 0, name: Nina Dahl, search_name: NINA DAHL, title: Installer, resource_group_no: TECH, unit_of_measure_code: HOUR, direct_unit_cost: "360", indirect_cost_percent: "15", unit_cost: "414", unit_price: "800", profit_percent: "48.25", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: PROD, employment_date: "2020-09-01", city: Aarhus}
+      - {"no": R0060, type: 0, name: Ole Strand, search_name: OLE STRAND, title: Installer, resource_group_no: TECH, unit_of_measure_code: HOUR, direct_unit_cost: "350", indirect_cost_percent: "15", unit_cost: "402.5", unit_price: "800", profit_percent: "49.6875", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: PROD, employment_date: "2023-02-01", city: Stockholm}
+      - {"no": R0070, type: 1, name: Delivery van, search_name: DELIVERY VAN, resource_group_no: MACHINES, unit_of_measure_code: HOUR, direct_unit_cost: "180", unit_cost: "180", unit_price: "450", profit_percent: "60", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: PROD}
+      - {"no": R0080, type: 1, name: Forklift, search_name: FORKLIFT, resource_group_no: MACHINES, unit_of_measure_code: HOUR, direct_unit_cost: "120", unit_cost: "120", unit_price: "350", profit_percent: "65.71429", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: PROD}
+      - {"no": R0090, type: 1, name: Projector set, search_name: PROJECTOR SET, resource_group_no: MACHINES, unit_of_measure_code: DAY, direct_unit_cost: "300", unit_cost: "300", unit_price: "900", profit_percent: "66.66667", gen_prod_posting_group: SERVICES, tax_prod_posting_group: STANDARD, tax_group_code: TAXABLE, department_code: SALES}
+  # type 0 Resource, 1 Group(Resource), 2 All; cost type 0 Fixed, 1 % Extra, 2 LCY Extra
+  - table: Resource_Cost
+    records:
+      - {type: 2, code: "", work_type_code: OVERTIME, cost_type: 1, direct_unit_cost: "50", unit_cost: "50"}
+      - {type: 2, code: "", work_type_code: TRAVEL, cost_type: 1, direct_unit_cost: "-20", unit_cost: "-20"}
+      - {type: 0, code: R0010, work_type_code: DAY, cost_type: 0, direct_unit_cost: "4000", unit_cost: "4400"}
+  - table: Resource_Price
+    records:
+      - {type: 1, code: CONSULT, work_type_code: OVERTIME, currency_code: "", unit_price: "1600"}
+      - {type: 1, code: CONSULT, work_type_code: TRAVEL, currency_code: "", unit_price: "750"}
+      - {type: 1, code: TECH, work_type_code: OVERTIME, currency_code: "", unit_price: "1200"}
+      - {type: 0, code: R0010, work_type_code: DAY, currency_code: "", unit_price: "9000"}
+      - {type: 0, code: R0010, work_type_code: "", currency_code: EUR, unit_price: "110"}
+      - {type: 2, code: "", work_type_code: TRAVEL, currency_code: "", unit_price: "650"}
 
 # Records that belong to the demo customers, inserted after them (with the tables' triggers: a
 # ship-to address gets the customer's name)

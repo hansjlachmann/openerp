@@ -1,0 +1,43 @@
+page:
+  id: 226
+  type: Card
+  name: Res. Group Availability
+  source_table: Resource_Group
+  caption: Res. Group Availability
+  editable: false
+  # classic form 226 with its lines: capacity and use per period. The job columns (Qty. on
+  # Order (Job), Job Quotes Allocation and the availabilities after them) come with jobs
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            editable: false
+          - source: name
+            editable: false
+      - name: Periods
+        caption: Periods
+        period_grid:
+          date_filter: date_filter
+          view_by: 0
+          filters:
+            - source: unit_of_measure_filter
+              drilldown_filter_field: unit_of_measure_code
+          columns:
+            - source: capacity
+              drilldown: 224
+              drilldown_filter_field: resource_group_no
+              drilldown_filter_value: "no"
+              drilldown_date_field: date
+            - source: usage_qty
+              drilldown: 202
+              drilldown_filter_field: resource_group_no
+              drilldown_filter_value: "no"
+              drilldown_date_field: posting_date
+            - source: sales_qty
+              drilldown: 202
+              drilldown_filter_field: resource_group_no
+              drilldown_filter_value: "no"
+              drilldown_date_field: posting_date

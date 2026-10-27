@@ -64,7 +64,7 @@ func TestPhysInventory(t *testing.T) {
 	item.SetRange("no", "T7")
 	_, err = reports.Execute(reports.CalculateInventoryID, src.GetDB(), src.GetCompany(), src.GetDBType(), reports.RunOptions{
 		Context: context, Record: item,
-		Options: map[string]string{"posting_date": date(t, 20, 10, 2026).String(), "by_location": "2"}})
+		Options: map[string]string{"posting_date": date(t, 20, 10, 2026).String(), "by_location": "true"}})
 	must(t, err)
 	line := gtables.NewItemJournalLine(src)
 	line.SetRange("journal_template_name", "PHYS. INV.")

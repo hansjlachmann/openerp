@@ -1,0 +1,43 @@
+page:
+  id: 65
+  type: List
+  name: Rounding Methods
+  source_table: Rounding_Method
+  caption: Rounding Methods
+  editable: true
+  copy_paste_allowed: true
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 100
+        - source: minimum_amount
+          width: 130
+        - source: amount_added_before
+          width: 140
+        - source: type
+          width: 100
+        - source: precision
+          width: 110
+        - source: amount_added_after
+          width: 140
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

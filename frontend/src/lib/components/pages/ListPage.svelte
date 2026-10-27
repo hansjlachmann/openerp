@@ -13,7 +13,7 @@
 	import ActionButton from '../ActionButton.svelte';
 	import { newLineNo } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
-	import type { RequestDataItem, Action } from '$lib/types/pages';
+	import type { RequestDataItem, RequestInputField, Action } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
 	import OptionDropdown from './OptionDropdown.svelte';
 	import CustomizeFieldsModal from './CustomizeFieldsModal.svelte';
@@ -230,7 +230,7 @@
 	let progressInputMode = $state(false);
 	let progressInputDataItems = $state<RequestDataItem[]>([]); // a report's request page
 	let progressOptionsCaption = $state(''); // … and the heading of its options
-	let progressInputFields = $state<Array<{ name: string; label: string; type: string; required?: boolean; default?: string; options?: string[] }>>([]);
+	let progressInputFields = $state<RequestInputField[]>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
 	// Rows shown: the loaded window of the list. Search and sort run on the server
@@ -941,6 +941,21 @@
 		currentCellCol = 0;
 		cellState = 'cell-selected';
 		focusCellSelectedElement(currentCellRow, currentCellCol);
+	}
+
+	// The cursor into the lines (Tab from a journal's header fields): the first column of the
+	// first line, cell-selected — an empty journal starts a new line
+	export function enterLines() {
+		if (!page.page.editable) {
+			if (displayRecords.length > 0) selectedIndex = 0;
+			listPageElement?.focus();
+			return;
+		}
+		if (displayRecords.length > 0) {
+			enterCellSelected(0, 0);
+		} else {
+			handleNew();
+		}
 	}
 
 	// --- 3-State Transition Functions ---

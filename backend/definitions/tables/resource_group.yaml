@@ -1,0 +1,219 @@
+table:
+  id: 152
+  name: "Resource_Group"
+  description: "Resource Groups (table 152)"
+  data_caption_fields: [no, name]
+  lookup_page_id: 72
+  # Left out until their tables exist: 24/25 Qty. on Order/Quoted (Job) (Job Budget Entry).
+  fields:
+    - name: no
+      no: 1
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: date_filter
+      no: 22
+      type: types.Date
+      db_name: date_filter
+      flow_filter: true
+
+    - name: capacity
+      no: 23
+      type: types.Decimal
+      db_name: capacity
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResCapacityEntry
+      source_field: capacity
+      flow_filters:
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: date
+          type: filter
+          value: date_filter
+
+    - name: unit_of_measure_filter
+      no: 26
+      type: types.Code
+      db_name: unit_of_measure_filter
+      flow_filter: true
+      table_relation:
+        table: Unit_of_Measure
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: chargeable_filter
+      no: 33
+      type: bool
+      db_name: chargeable_filter
+      flow_filter: true
+
+    - name: usage_qty
+      no: 27
+      type: types.Decimal
+      db_name: usage_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: quantity
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: usage_cost
+      no: 28
+      type: types.Decimal
+      db_name: usage_cost
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_cost
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: usage_price
+      no: 29
+      type: types.Decimal
+      db_name: usage_price
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_price
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 0
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+        - field: chargeable
+          type: filter
+          value: chargeable_filter
+
+    - name: sales_qty
+      no: 30
+      type: types.Decimal
+      db_name: sales_qty
+      flow_field: true
+      decimal_places: "0:5"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: quantity
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+
+    - name: sales_cost
+      no: 31
+      type: types.Decimal
+      db_name: sales_cost
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_cost
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+
+    - name: sales_price
+      no: 32
+      type: types.Decimal
+      db_name: sales_price
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: ResLedgerEntry
+      source_field: total_price
+      reverse_sign: true
+      flow_filters:
+        - field: entry_type
+          type: const
+          value: 1
+        - field: resource_group_no
+          type: field
+          value: no
+        - field: posting_date
+          type: filter
+          value: date_filter
+        - field: unit_of_measure_code
+          type: filter
+          value: unit_of_measure_filter
+
+  keys:
+    - name: Primary
+      fields: [no]
+      clustered: true

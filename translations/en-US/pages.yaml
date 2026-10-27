@@ -500,3 +500,73 @@ pages:
     caption: "Phys. Inventory Ledger Entries"
   item_picture:
     caption: "Item Picture"
+  resource_list:
+    caption: "Resource List"
+  resource_card:
+    caption: "Resource Card"
+  resource_groups:
+    caption: "Resource Groups"
+  resource_costs:
+    caption: "Resource Costs"
+  resource_prices:
+    caption: "Resource Prices"
+  work_types:
+    caption: "Work Types"
+  rounding_methods:
+    caption: "Rounding Methods"
+  resource_price_changes:
+    caption: "Resource Price Changes"
+  res_capacity_entries:
+    caption: "Res. Capacity Entries"
+  resources_setup:
+    caption: "Resources Setup"
+  resource_picture:
+    caption: "Resource Picture"
+  resource_journal:
+    caption: "Resource Journal"
+    fields:
+      resource_name: "Resource Name"
+  resource_journal_templates:
+    caption: "Resource Journal Templates"
+  res_journal_template_list:
+    caption: "Res. Journal Template List"
+  resource_jnl_batches:
+    caption: "Resource Jnl. Batches"
+  resource_registers:
+    caption: "Resource Registers"
+  resource_ledger_entries:
+    caption: "Resource Ledger Entries"
+  bill_of_materials:
+    caption: "Bill of Materials"
+  bom_journal:
+    caption: "BOM Journal"
+    fields:
+      item_description: "Item Description"
+  bom_journal_templates:
+    caption: "BOM Journal Templates"
+  bom_journal_template_list:
+    caption: "BOM Journal Template List"
+  bom_journal_batches:
+    caption: "BOM Journal Batches"
+  bom_registers:
+    caption: "BOM Registers"
+  bom_ledger_entries:
+    caption: "BOM Ledger Entries"
+  item_availability_by_periods:
+    caption: "Item Availability by Periods"
+    fields:
+      net_change: "Inventory"
+  item_availability_by_location:
+    caption: "Item Availability by Location"
+    fields:
+      net_change: "Inventory"
+  item_availability_by_variant:
+    caption: "Item Availability by Variant"
+    fields:
+      net_change: "Inventory"
+  item_turnover:
+    caption: "Item Turnover"
+  resource_availability:
+    caption: "Resource Availability"
+  res_group_availability:
+    caption: "Res. Group Availability"

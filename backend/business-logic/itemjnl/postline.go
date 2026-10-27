@@ -859,3 +859,23 @@ func (p *ItemJnlPostLine) insertPhysInventoryEntry() error {
 
 	return p.insertItemReg(0, physInvtLedgEntry.Entry_no)
 }
+
+// AutomaticCostPosting reports whether the posting puts the inventory value in the G/L (the
+// Inventory Setup's Automatic Cost Posting, read with the first posted line)
+func (p *ItemJnlPostLine) AutomaticCostPosting() bool {
+	return p.invtSetup != nil && p.invtSetup.Automatic_cost_posting
+}
+
+// PostInventoryToGL posts the part of an item ledger entry's adjusted cost not yet in the G/L
+// (an entry whose cost changed after it was posted, the BOM journal's assembled item); the
+// entry's Cost Posted to G/L follows, the caller modifies it
+func (p *ItemJnlPostLine) PostInventoryToGL(itemLedgEntry *gtables.ItemLedgerEntry) error {
+	return p.postInventoryToGL(itemLedgEntry)
+}
+
+// AdjustSalesInv adjusts the cost of the sales invoiced before an inbound entry of an Average
+// item (the BOM journal's assembled item, whose cost is set after codeunit 22 posted it)
+func (p *ItemJnlPostLine) AdjustSalesInv(itemLedgEntry *gtables.ItemLedgerEntry) error {
+	p.itemLedgEntry = itemLedgEntry
+	return p.adjustSalesInv()
+}

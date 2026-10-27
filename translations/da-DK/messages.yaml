@@ -236,6 +236,23 @@ messages:
   CARD_SELECT_OR_CREATE: "Vælg en post fra listen eller opret en ny."
   CARD_CREATE_NEW: "Opret ny"
   CARD_CLEAR_FORM: "Ryd formular"
+  PERIOD_VIEW_BY: "Vis efter"
+  PERIOD_DAY: "Dag"
+  PERIOD_WEEK: "Uge"
+  PERIOD_MONTH: "Måned"
+  PERIOD_QUARTER: "Kvartal"
+  PERIOD_YEAR: "År"
+  PERIOD_ACCOUNTING: "Periode"
+  PERIOD_VIEW_AS: "Vis som"
+  PERIOD_NET_CHANGE: "Bevægelse"
+  PERIOD_BALANCE_AT_DATE: "Saldo til dato"
+  PERIOD_START: "Periodestart"
+  PERIOD_NAME: "Periodenavn"
+  PERIOD_PREVIOUS: "Forrige periode"
+  PERIOD_NEXT: "Næste periode"
+  PERIOD_CODE: "Kode"
+  PERIOD_DESCRIPTION: "Navn"
+  PERIOD_NO_PERIODS: "Der er ingen perioder at vise."
   CARD_SAVE_FIRST: "Gem posten først for at tilføje linjer her."
 
   # List Page
@@ -379,6 +396,16 @@ messages:
   ITEM_JNL_POST_WINDOW: "Kladdenavn #1##########
 Kontrollerer linjer #2######
 Bogfører linjer #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bogfører linjer #3###### @4@@@@@@@@@@@@@"
+  RES_JNL_TEMPLATE_DESCRIPTION: "Ressourcekladder"
+  BOM_JNL_POST_WINDOW: "Kladdenavn #1##########
+Kontrollerer linjer #2######
+Bogfører linjer #3###### @4@@@@@@@@@@@@@"
+  BOM_JNL_TEMPLATE_DESCRIPTION: "Styklistekladde"
+  BOM_EXPLODE_CONFIRM: "Vil du udfolde styklisten?"
+  BOM_CALC_COST_LEVELS: "Dette styklisteniveau,Alle styklisteniveauer"
   PICTURE_NONE: "Intet billede"
   PICTURE_IMPORT: "Importér"
   PICTURE_EXPORT: "Eksportér"

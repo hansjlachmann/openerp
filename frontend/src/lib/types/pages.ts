@@ -63,6 +63,27 @@ export interface Section {
 	caption: string;
 	fields: Field[];
 	subpage?: Subpage; // instead of fields: a list page linked to the card's record
+	period_grid?: PeriodGrid; // instead of fields: the record's FlowFields per period
+}
+
+/** A card section of periods (or of a table's records) with the record's FlowFields per row */
+export interface PeriodGrid {
+	date_filter: string;
+	filters: Field[]; // FlowFilter fields the grid is filtered by (Location Filter)
+	columns: Field[];
+	drilldown_date_field?: string; // the date field a column's drilldown filters on
+	view_by: number; // 0 Day … 4 Year, 5 Accounting Period
+	rows?: { table: string; field: string; caption_field: string; filter: string; filters?: Record<string, string>; drilldown_filter_field?: string };
+}
+
+/** A row of a period grid: its period (or record) and the columns' values */
+export interface PeriodGridRow {
+	period_start: string;
+	period_end: string;
+	period_name?: string;
+	key?: string;
+	caption?: string;
+	values: Record<string, unknown>;
 }
 
 /** A list page shown in a card section, tied to the card's record */
@@ -76,6 +97,7 @@ export interface Repeater {
 }
 
 export interface Field {
+	drilldown_date_field?: string; // in a period grid: the drilldown page's date field the row's dates filter
 	source: string;
 	caption?: string;
 	editable?: boolean;
@@ -161,6 +183,22 @@ export interface MenuResponse {
 export interface FieldState {
 	editable?: boolean;
 	visible?: boolean;
+}
+
+/** A field of an input dialog or a report's request page (options) */
+export interface RequestInputField {
+	name: string;
+	label: string;
+	type: string; // "text", "number", "date", "option", "bool"
+	required?: boolean;
+	default?: string;
+	options?: string[]; // type "option": the choices; the value is the chosen number (1-based)
+	// A code picked from a table (an option with a table relation): the dropdown's rows
+	lookup?: {
+		columns: { source: string; width: number }[];
+		rows: Array<{ _key: string; [key: string]: unknown }>;
+		captions?: Record<string, string>;
+	};
 }
 
 /** A data item of a report's request page: its fields can be filtered as on a list page */

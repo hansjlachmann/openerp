@@ -90,11 +90,19 @@ type Options struct {
 	// through it. The caller passes it (codeunit 901: itemjnl.NewItemJnlPostLine) — the item
 	// posting depends on the general journal posting, whose tests use this package.
 	ItemJnlPostLine func(src ftables.Source) ItemJnlPoster
+	// BOMJnlPostLine (optional) opens the BOM posting (codeunit 32) the same way: the demo bills
+	// of materials are assembled through it (codeunit 901: bomjnl.NewBOMJnlPostLine)
+	BOMJnlPostLine func(src ftables.Source) BOMJnlPoster
 }
 
 // ItemJnlPoster posts an item journal line (codeunit 22 Item Jnl.-Post Line)
 type ItemJnlPoster interface {
 	Run(itemJnlLine *gtables.ItemJournalLine) error
+}
+
+// BOMJnlPoster posts a BOM journal line (codeunit 32 BOM Jnl.-Post Line)
+type BOMJnlPoster interface {
+	Run(bomJnlLine *gtables.BOMJournalLine) error
 }
 
 // Counts reports what Create inserted.
@@ -114,6 +122,9 @@ type Counts struct {
 	LedgerEntries            int
 	GLEntries                int // demo G/L entries (monthly sales and costs against the bank)
 	ItemLedgerEntries        int // the demo items' opening stock, purchases and sales (posted)
+	BOMLedgerEntries         int // the demo assemblies of the bills of materials (posted)
+	ResCapacityEntries       int // the demo resources' capacity per working day
+	ResLedgerEntries         int // the demo resources' weekly usage and monthly sales (posted)
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -396,6 +407,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	seriesUse["BANK"] = ledgerUse{no: lastRecordNo(setup.MasterData, gtables.BankAccountTableName)}
 	seriesUse["FA"] = ledgerUse{no: fixedAssets.FixedAssets[len(fixedAssets.FixedAssets)-1].No}
 	seriesUse["INS"] = ledgerUse{no: fixedAssets.Insurance.No}
+	seriesUse["RES"] = ledgerUse{no: lastRecordNo(setup.MasterData, gtables.ResourceTableName)}
 	err = useSeriesNumbers(exec, company, dbType, customers, entries, seriesUse)
 	if err != nil {
 		rollback()
@@ -411,11 +423,29 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return Counts{}, err
 	}
 
+	err = insertResCapacity(exec, company, dbType, setup.MasterData, today, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+	err = postDemoResources(ftables.DBSource(exec, company, dbType), today, setup.MasterData, &counts)
+	if err != nil {
+		rollback()
+		return Counts{}, err
+	}
+
 	if opts.ItemJnlPostLine != nil {
 		err = postDemoItems(ftables.DBSource(exec, company, dbType), opts.ItemJnlPostLine, today, setup.MasterData, &counts)
 		if err != nil {
 			rollback()
 			return Counts{}, err
+		}
+		if opts.BOMJnlPostLine != nil {
+			err = postDemoAssemblies(ftables.DBSource(exec, company, dbType), opts.BOMJnlPostLine, today, setup.MasterData, &counts)
+			if err != nil {
+				rollback()
+				return Counts{}, err
+			}
 		}
 	}
 

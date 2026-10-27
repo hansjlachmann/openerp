@@ -1,0 +1,40 @@
+page:
+  id: 5414
+  type: Card
+  name: Item Availability by Variant
+  source_table: Item
+  caption: Item Availability by Variant
+  editable: false
+  # classic form 5414 with its lines (form 5415): the item's inventory per variant in a period
+
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+            editable: false
+          - source: description
+            editable: false
+      - name: Variants
+        caption: Variants
+        period_grid:
+          date_filter: date_filter
+          drilldown_date_field: posting_date
+          view_by: 0
+          rows:
+            table: Item_Variant
+            field: code
+            caption_field: description
+            filter: variant_filter
+            filters:
+              item_no: "no"
+            drilldown_filter_field: variant_code
+          filters:
+            - source: location_filter
+              drilldown_filter_field: location_code
+          columns:
+            - source: net_change
+              drilldown: 38
+              drilldown_filter_field: item_no
+              drilldown_filter_value: "no"

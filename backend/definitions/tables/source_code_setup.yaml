@@ -250,6 +250,34 @@ table:
           - source: description
             width: 250
 
+    - name: bom_journal
+      no: 17
+      type: types.Code
+      db_name: bom_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: resource_journal
+      no: 19
+      type: types.Code
+      db_name: resource_journal
+      length: 10
+      table_relation:
+        table: Source_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
     - name: item_transfer_journal
       no: 33
       type: types.Code
