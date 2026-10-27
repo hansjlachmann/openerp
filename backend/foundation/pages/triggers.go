@@ -311,3 +311,40 @@ func RunOpenPage(pageID int, rec any, params map[string]string) (*Open, error) {
 	}
 	return page, nil
 }
+
+var findRecords = map[int][]func(rec any, page *Open) error{}
+
+// OnFindRecords registers the trigger of a page on a temporary source table
+// (source_table_temporary: true): it fills the page's temporary record from the page's
+// parameters (page.Param) before the list reads it — on every load, so the rows are always
+// up to date (Navigate counts the entries of a document)
+//
+//	pages.OnFindRecords(344, func(rec *gtables.DocumentEntry, page *pages.Open) error {
+//		return navigate.FindRecords(rec, page.Param("document_no"), page.Param("posting_date"))
+//	})
+func OnFindRecords[T any](pageID int, fn func(rec T, page *Open) error) {
+	triggersMu.Lock()
+	defer triggersMu.Unlock()
+	findRecords[pageID] = append(findRecords[pageID], func(rec any, page *Open) error {
+		r, ok := rec.(T)
+		if !ok {
+			var want T
+			return fmt.Errorf("page %d: OnFindRecords takes %T, the page's record is %T", pageID, want, rec)
+		}
+		return fn(r, page)
+	})
+}
+
+// RunFindRecords runs a page's OnFindRecords triggers on its temporary record
+func RunFindRecords(pageID int, rec any, params map[string]string) error {
+	triggersMu.RLock()
+	triggers := findRecords[pageID]
+	triggersMu.RUnlock()
+	page := NewOpen(params)
+	for _, trigger := range triggers {
+		if err := trigger(rec, page); err != nil {
+			return err
+		}
+	}
+	return nil
+}

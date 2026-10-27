@@ -3023,6 +3023,18 @@ tables:
         fixed: "Fast"
         extra: "% tillæg"
         lcy_extra: "DKK-tillæg"
+  document_entry:
+    caption: "Dokumentpost"
+    fields:
+      table_id: "Tabel-id"
+      no_of_records: "Antal poster"
+      document_no: "Bilagsnr."
+      posting_date: "Bogføringsdato"
+      entry_no: "Løbenr."
+      table_name: "Tabelnavn"
+      page_id: "Side-id"
+      document_no_filter: "Bilagsnr.filter"
+      posting_date_filter: "Bogføringsdatofilter"
   res_capacity_entry:
     caption: "Ressourcekapacitetspost"
     fields:

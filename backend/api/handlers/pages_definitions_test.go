@@ -56,6 +56,9 @@ func TestPageDefinitions(t *testing.T) {
 			if f.Drilldown != 0 && !exists(f.Drilldown) {
 				t.Errorf("page %d: field %s drills down to page %d, which does not exist", id, f.Source, f.Drilldown)
 			}
+			if f.DrilldownPageField != "" && !fields[f.DrilldownPageField] {
+				t.Errorf("page %d: field %s drills down to the page in %q, not a field of %s", id, f.Source, f.DrilldownPageField, p.Page.SourceTable)
+			}
 		}
 		for _, other := range []int{p.Page.CardPageID, p.Page.ListPageID} {
 			if other != 0 && !exists(other) {
@@ -67,6 +70,14 @@ func TestPageDefinitions(t *testing.T) {
 			for _, a := range actions {
 				if a.RunPage != 0 && !exists(a.RunPage) {
 					t.Errorf("page %d: action %s opens page %d, which does not exist", id, a.Name, a.RunPage)
+				}
+				if a.RunPageField != "" && !fields[a.RunPageField] {
+					t.Errorf("page %d: action %s opens the page in %q, not a field of %s", id, a.Name, a.RunPageField, p.Page.SourceTable)
+				}
+				for param, field := range a.RunPageParams {
+					if !fields[field] {
+						t.Errorf("page %d: action %s sets parameter %s from %q, not a field of %s", id, a.Name, param, field, p.Page.SourceTable)
+					}
 				}
 				check(a.Items)
 			}

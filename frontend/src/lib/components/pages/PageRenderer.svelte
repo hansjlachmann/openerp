@@ -11,8 +11,8 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
-	import { cardTitle } from '$lib/utils/fieldHelpers';
-	import { t, MSG, ERR, DLG, BTN, PAGE_ERR } from '$lib/services/i18n.svelte';
+	import { cardTitle, formatDate, isDateType } from '$lib/utils/fieldHelpers';
+	import { t, MSG, ERR, DLG, BTN, PAGE_ERR, FILTER as FLT } from '$lib/services/i18n.svelte';
 	import Button from '../Button.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
@@ -25,7 +25,7 @@
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { apiFlowFilters } from '$lib/utils/flowFilter';
+	import { apiFlowFilters, toApiFlowFilter } from '$lib/utils/flowFilter';
 	import { currentLanguage } from '$lib/stores/session';
 	import { get } from 'svelte/store';
 
@@ -176,11 +176,28 @@
 		reopenWith(request.param, String(picked[request.field] ?? ''));
 	}
 
-	// A header field typed in: Code values in upper case (on leaving the field)
+	// A header field typed in: Code values in upper case (on leaving the field); a date field
+	// takes a date filter in the user's format (t, 01.01..31.01) and keeps it as ISO
 	function handleHeaderChange(header: HeaderField, value: string) {
-		const next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
+		let next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
+		if (isDateType(fieldTypes[header.source])) {
+			const result = toApiFlowFilter(value, 'date', get(currentLanguage));
+			if (result.error !== undefined) {
+				toast.error(t(FLT.INVALID, header.caption ?? header.source, result.error));
+				return;
+			}
+			next = result.value ?? '';
+		}
 		if (next === (pageParams[header.param] ?? '')) return;
 		reopenWith(header.param, next);
+	}
+
+	// A header field's value as the user reads it (a date filter's dates in the user's format)
+	function headerValue(header: HeaderField): string {
+		const value = pageParams[header.param] ?? '';
+		if (!isDateType(fieldTypes[header.source])) return value;
+		const locale = get(currentLanguage);
+		return value.replace(/\d{4}-\d{2}-\d{2}/g, (iso) => formatDate(iso, locale));
 	}
 
 	// A subpage reloads its lines when its card asks (refreshToken changes after the first load)
@@ -466,8 +483,9 @@
 			if (visibleFields.length > 0) {
 				listOptions.fields = visibleFields;
 			}
-			// The page's triggers fill its calculated fields (OnAfterGetRecord)
-			if (page.page.has_record_triggers) listOptions.page_id = page.page.id;
+			// The page's triggers fill its calculated fields (OnAfterGetRecord), or its rows (a
+			// temporary source table: OnFindRecords from the page parameters)
+			if (page.page.has_record_triggers || page.page.source_table_temporary) listOptions.page_id = page.page.id;
 
 			// Fetch records, options, and lookups in a single API call
 			const response = await api.listRecordsWithOptions(page.page.source_table, listOptions);
@@ -918,7 +936,7 @@
 				</div>
 			</div>
 		{:else}
-			{#if page.page.header_fields?.length && openFilters.length > 0}
+			{#if page.page.header_fields?.length && (openFilters.length > 0 || page.page.source_table_temporary)}
 				<!-- Header fields above the list (a journal's Batch Name) -->
 				<div class="page-header-fields">
 					{#each page.page.header_fields as header (header.param)}
@@ -929,7 +947,7 @@
 									class="header-input"
 									data-header-param={header.param}
 									use:focusOnOpen={header === page.page.header_fields[0]}
-									value={pageParams[header.param] ?? ''}
+									value={headerValue(header)}
 									autocomplete="off"
 									onchange={(e) => handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value)}
 									onkeydown={(e) => {

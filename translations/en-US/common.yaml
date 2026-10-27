@@ -102,6 +102,8 @@ common:
     test_line_1: "Test Line 1"
     test_line_2: "Test Line 2"
     job_queue: "Job Queue"
+    navigate: "Navigate"
+    show: "Show"
     show_status: "Show Status"
     add_test_entry: "Add Test Entry"
     show_line: "Show Line"

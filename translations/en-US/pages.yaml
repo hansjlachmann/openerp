@@ -516,6 +516,8 @@ pages:
     caption: "Rounding Methods"
   resource_price_changes:
     caption: "Resource Price Changes"
+  navigate:
+    caption: "Navigate"
   res_capacity_entries:
     caption: "Res. Capacity Entries"
   resources_setup:

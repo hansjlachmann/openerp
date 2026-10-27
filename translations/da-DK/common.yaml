@@ -102,6 +102,8 @@ common:
     test_line_1: "Test linje 1"
     test_line_2: "Test linje 2"
     job_queue: "Opgavekø"
+    navigate: "Naviger"
+    show: "Vis"
     show_status: "Vis status"
     add_test_entry: "Tilføj testpost"
     show_line: "Vis linje"

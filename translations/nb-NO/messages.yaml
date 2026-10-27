@@ -201,6 +201,7 @@ messages:
   HELP_LIST_DELETE: "Slett valgt(e) post(er)"
   HELP_LIST_SEARCH: "Søk"
   HELP_LIST_FILTER_PANE: "Vis/skjul filterrute — feltvelger i fokus: Alt+↓, Enter, skriv verdi, Enter"
+  HELP_LIST_NAVIGATE: "Naviger: alle poster for radens bilag (postlister)"
   HELP_LIST_REFRESH: "Oppdater"
   HELP_LIST_ESCAPE: "Med flere rader merket: tilbake til én rad; ellers tilbake til hovedmenyen"
   HELP_SEC_CELLS: "Redigering i en liste"

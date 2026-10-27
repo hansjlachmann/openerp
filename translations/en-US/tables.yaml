@@ -3023,6 +3023,18 @@ tables:
         fixed: "Fixed"
         extra: "% Extra"
         lcy_extra: "LCY Extra"
+  document_entry:
+    caption: "Document Entry"
+    fields:
+      table_id: "Table ID"
+      no_of_records: "No. of Records"
+      document_no: "Document No."
+      posting_date: "Posting Date"
+      entry_no: "Entry No."
+      table_name: "Table Name"
+      page_id: "Page ID"
+      document_no_filter: "Document No. Filter"
+      posting_date_filter: "Posting Date Filter"
   res_capacity_entry:
     caption: "Res. Capacity Entry"
     fields:
