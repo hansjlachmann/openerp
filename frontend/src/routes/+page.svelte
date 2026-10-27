@@ -55,8 +55,9 @@
 </div>
 
 <style>
+	/* the keyboard tip, close under the description, without a frame */
 	.shortcuts-tip {
-		@apply mt-5 mx-auto max-w-2xl rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm space-y-1;
+		@apply mt-2 mx-auto max-w-2xl text-sm space-y-1;
 	}
 
 	.shortcuts-link {

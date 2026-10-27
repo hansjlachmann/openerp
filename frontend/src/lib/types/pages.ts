@@ -136,7 +136,7 @@ export interface Action {
 	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
 	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
 	run_page_filters?: { field: string; value?: string; const?: string; from?: string; to?: string }[]; // several filters (record fields, constants, or the range from..to of two fields)
-	run_object?: string; // "codeunit:455", "report:675", a function "table:Job_Queue_Entry.ShowLineNo"
+	run_object?: string; // "codeunit:455", "report:93", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)
 	image?: string; // the button's icon (actionIcons.ts names, e.g. "New", "Post"); a bullet by default

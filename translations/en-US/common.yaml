@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    permissions: "Permissions"
+    log_entries: "Log Entries"
     item_availability_by: "Item Availability by"
     location: "Location"
     period: "Period"
@@ -106,7 +108,6 @@ common:
     entry_no: "Entry No."
     description: "Description"
     status: "Status"
-    delete_log_entries: "Delete Log Entries"
 
   # Card page sections (page YAML section name in snake case)
   sections:
@@ -219,7 +220,6 @@ common:
     delete_invoiced_blanket_sales_orders: "Delete Invoiced Blanket Sales Orders"
     delete_invoiced_purch_orders: "Delete Invoiced Purch. Orders"
     delete_invoiced_sales_orders: "Delete Invoiced Sales Orders"
-    delete_job_queue_log_entries: "Delete Job Queue Log Entries"
     delete_phys_inventory_ledger: "Delete Phys. Inventory Ledger"
     delete_reservation_entries: "Delete Reservation Entries"
     depreciation_tables: "Depreciation Tables"
@@ -415,7 +415,6 @@ common:
     companies: "Companies"
     menus: "Menus"
     job_queue: "Job Queue"
-    job_queue_entries: "Job Queue Entries"
     user_roles: "User Roles"
     user_members: "User Members"
     permissions: "Permissions"

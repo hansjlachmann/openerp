@@ -42,7 +42,7 @@
 	let dialog = $state<DialogResult | null>(null);
 
 	/**
-	 * Run a run_object: "codeunit:455", "report:675", a function "table:X.F(0)" — with the
+	 * Run a run_object: "codeunit:455", "report:93", a function "table:X.F(0)" — with the
 	 * record (a card's record). quiet (AssistEdit): no progress window and no "completed"
 	 * message, only the pages it opens and its errors. Returns the result's data (an AssistEdit
 	 * function's changed record is data.record).

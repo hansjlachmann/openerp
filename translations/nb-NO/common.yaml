@@ -8,6 +8,8 @@ common:
 
   # Common actions
   actions:
+    permissions: "Rettigheter"
+    log_entries: "Loggposter"
     item_availability_by: "Varetilgjengelighet per"
     location: "Lokasjon"
     period: "Periode"
@@ -106,7 +108,6 @@ common:
     entry_no: "Løpenr."
     description: "Beskrivelse"
     status: "Status"
-    delete_log_entries: "Slett loggposter"
 
   # Card page sections (page YAML section name in snake case)
   sections:
@@ -219,7 +220,6 @@ common:
     delete_invoiced_blanket_sales_orders: "Slett fakturerte rammesalgsordrer"
     delete_invoiced_purch_orders: "Slett fakturerte bestillinger"
     delete_invoiced_sales_orders: "Slett fakturerte salgsordrer"
-    delete_job_queue_log_entries: "Slett jobbkøloggposter"
     delete_phys_inventory_ledger: "Slett lagertellingsposter"
     delete_reservation_entries: "Slett reservasjonsposter"
     depreciation_tables: "Avskrivningstabeller"
@@ -415,7 +415,6 @@ common:
     companies: "Selskaper"
     menus: "Menyer"
     job_queue: "Oppgavekø"
-    job_queue_entries: "Oppgavekøposter"
     user_roles: "Brukerroller"
     user_members: "Brukertilganger"
     permissions: "Rettigheter"

@@ -4,8 +4,6 @@ page:
   name: Job Queue List
   source_table: Job_Queue
   caption: Job Queue
-  card_page_id: 674
-  modal_card: true
   editable: true
 
   layout:
@@ -75,13 +73,6 @@ page:
       enabled: true
       run_object: codeunit:455
 
-    - name: Delete Log Entries
-      caption: Delete Log Entries
-      image: Delete
-      promoted: true
-      enabled: true
-      run_object: report:675   # processing-only report: request page, then deletes old log entries
-
     - name: New
       caption: New
       image: New
@@ -102,3 +93,29 @@ page:
       shortcut: Ctrl+D
       promoted: true
       enabled: true
+
+    # The job's log: its runs (Job Queue Entries, page 673)
+    - name: Log Entries
+      caption: Log Entries
+      image: Entries
+      shortcut: Ctrl+F7
+      promoted: true
+      enabled: true
+      run_page: 673
+      run_page_filter_field: job_queue_no
+      run_page_filter_value: no
+
+    # Functions with the selected job
+    - name: Job Queue
+      caption: Job Queue
+      image: Card
+      promoted: true
+      items:
+        - name: Show Status
+          caption: Show Status
+          image: Info
+          run_object: table:Job_Queue.ShowStatus
+        - name: Add Test Entry
+          caption: Add Test Entry
+          image: New
+          run_object: table:Job_Queue.AddTestEntry

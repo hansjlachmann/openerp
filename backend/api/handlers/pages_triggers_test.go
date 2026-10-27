@@ -16,12 +16,16 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
-// The Job Queue card's OnAfterGetRecord switches fields per record; the page says it has
+// A card's OnAfterGetRecord switches fields per record (here a test trigger on Customer
+// Statistics 151: Name editable only for a customer that is not blocked); the page says it has
 // such a trigger
 func TestPageFieldStates(t *testing.T) {
 	if err := pages.GetRegistry().LoadPages(); err != nil {
 		t.Skipf("pages: %v", err)
 	}
+	pages.OnAfterGetRecord(151, func(rec *gtables.Customer, page *pages.Control) {
+		page.SetEditable("name", !rec.Blocked)
+	})
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +40,7 @@ func TestPageFieldStates(t *testing.T) {
 
 	states := func(body string) map[string]interface{} {
 		t.Helper()
-		out := postJSON(t, app, "/api/pages/674/field-states", body)
+		out := postJSON(t, app, "/api/pages/151/field-states", body)
 		data, _ := out["data"].(map[string]interface{})
 		s, _ := data["field_states"].(map[string]interface{})
 		if s == nil {
@@ -48,15 +52,13 @@ func TestPageFieldStates(t *testing.T) {
 		f, _ := s[field].(map[string]interface{})
 		return f["editable"]
 	}
-	s := states(`{"no":"JQ1","recurrence":1,"notify_on":0}`) // Minutes, Never
-	if editable(s, "minutes_between_run") != true || editable(s, "notification_email") != false || editable(s, "notification_language") != false {
-		t.Errorf("Minutes, Never: %v", s)
+	if s := states(`{"no":"C1","blocked":false}`); editable(s, "name") != true {
+		t.Errorf("not blocked: %v", s)
 	}
-	s = states(`{"no":"JQ1","recurrence":3,"notify_on":2}`) // Daily, On Error
-	if editable(s, "minutes_between_run") != false || editable(s, "notification_email") != true {
-		t.Errorf("Daily, On Error: %v", s)
+	if s := states(`{"no":"C1","blocked":true}`); editable(s, "name") != false {
+		t.Errorf("blocked: %v", s)
 	}
-	if !pages.HasRecordTriggers(674) || pages.HasRecordTriggers(22) {
+	if !pages.HasRecordTriggers(151) || pages.HasRecordTriggers(22) {
 		t.Error("HasRecordTriggers")
 	}
 

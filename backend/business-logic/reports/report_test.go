@@ -192,57 +192,6 @@ func TestRequestPage(t *testing.T) {
 	}
 }
 
-// Report 675 deletes the log entries older than the days, not those in process
-func TestDeleteJobQueueLog(t *testing.T) {
-	db := newTestDB(t)
-	for _, r := range []interface {
-		CreateTableWithDBType(database.Executor, string, database.DBType) error
-	}{&gtables.JobQueue{}, &gtables.JobQueueEntry{}} {
-		if err := r.CreateTableWithDBType(db, "c1", database.DBTypeSQLite); err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, no := range []string{"JQ1", "JQ2"} {
-		q := &gtables.JobQueue{}
-		q.InitWithDBType(db, "c1", database.DBTypeSQLite)
-		q.No = types.NewCode(no)
-		if !q.Insert(false) {
-			t.Fatal("job queue")
-		}
-	}
-	now := time.Now()
-	for _, e := range []struct {
-		no      int
-		queue   string
-		daysAgo int
-		status  gtables.JobQueueEntryStatus
-	}{
-		{1, "JQ1", 40, gtables.JobQueueEntry_Status.Success}, {2, "JQ1", 5, gtables.JobQueueEntry_Status.Success},
-		{3, "JQ2", 50, gtables.JobQueueEntry_Status.Error}, {4, "JQ2", 60, gtables.JobQueueEntry_Status.InProcess},
-	} {
-		r := &gtables.JobQueueEntry{}
-		r.InitWithDBType(db, "c1", database.DBTypeSQLite)
-		r.Entry_no, r.Job_queue_no, r.Status = e.no, types.NewCode(e.queue), e.status
-		r.Start_date_time = types.NewDateTimeFromTime(now.AddDate(0, 0, -e.daysAgo))
-		if !r.Insert(false) {
-			t.Fatal("entry")
-		}
-	}
-	res, err := Execute(DeleteJobQueueLogID, db, "c1", database.DBTypeSQLite, RunOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var left gtables.JobQueueEntry
-	left.InitWithDBType(db, "c1", database.DBTypeSQLite)
-	var nos []int
-	for ok := left.FindSetBuffered(); ok; ok = left.Next() {
-		nos = append(nos, left.Entry_no)
-	}
-	if fmt.Sprint(nos) != "[2 4]" || !strings.Contains(res.Message, "2") {
-		t.Errorf("left %v, message %q", nos, res.Message)
-	}
-}
-
 // Request page options: a "bool" option reads Yes/No; an option with a table relation sends
 // the table's rows as its dropdown, each code once (Rounding Method has a row per minimum
 // amount)
