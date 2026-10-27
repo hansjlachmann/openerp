@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.115](https://github.com/hansjlachmann/openerp/compare/v0.1.114...v0.1.115) (2026-10-27)
+
+
+### Features
+
+* Job Queue and User Roles on their list pages, copy and paste ([#155](https://github.com/hansjlachmann/openerp/issues/155)) ([23f9e9b](https://github.com/hansjlachmann/openerp/commit/23f9e9b0b0eec2c8a5b161c824f24658a3443fd6))
+
 ## [0.1.114](https://github.com/hansjlachmann/openerp/compare/v0.1.113...v0.1.114) (2026-10-27)
 
 
