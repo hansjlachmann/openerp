@@ -141,6 +141,9 @@
 
 	// The first header field has the focus when the page opens (a journal: Batch Name, so
 	// Alt+↓ opens the batches at once); the list never takes it from there
+	// The list below the header fields (Tab from the last header field goes into its lines)
+	let listPageRef = $state<ReturnType<typeof ListPage>>();
+
 	function focusOnOpen(node: HTMLInputElement, first: boolean) {
 		if (!first) return;
 		requestAnimationFrame(() => {
@@ -933,6 +936,10 @@
 										if (e.key === 'Enter') {
 											e.preventDefault();
 											handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value);
+										} else if (e.key === 'Tab' && !e.shiftKey && header === page?.page.header_fields?.at(-1)) {
+											// Tab from the last header field: into the lines (their first column)
+											e.preventDefault();
+											listPageRef?.enterLines();
 										} else if ((e.key === 'ArrowDown' && e.altKey) || e.key === 'F4') {
 											e.preventDefault();
 											openHeaderLookup(header);
@@ -948,6 +955,7 @@
 				</div>
 			{/if}
 			<ListPage
+				bind:this={listPageRef}
 				{page}
 				{records}
 				{captions}

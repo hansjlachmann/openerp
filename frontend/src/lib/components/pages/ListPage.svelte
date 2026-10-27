@@ -943,6 +943,21 @@
 		focusCellSelectedElement(currentCellRow, currentCellCol);
 	}
 
+	// The cursor into the lines (Tab from a journal's header fields): the first column of the
+	// first line, cell-selected — an empty journal starts a new line
+	export function enterLines() {
+		if (!page.page.editable) {
+			if (displayRecords.length > 0) selectedIndex = 0;
+			listPageElement?.focus();
+			return;
+		}
+		if (displayRecords.length > 0) {
+			enterCellSelected(0, 0);
+		} else {
+			handleNew();
+		}
+	}
+
 	// --- 3-State Transition Functions ---
 
 	// Enter cell-selected state at the given cell
