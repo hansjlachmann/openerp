@@ -370,3 +370,26 @@ export interface NewRecordContext {
 	belowXRec: boolean;
 	values?: Record<string, any>;
 }
+
+/**
+ * A record's primary key as the user reads it, for messages (the Delete confirmation):
+ * "No.: C00010"; a composite key lists every key field, "Journal Template Name: GENERAL,
+ * Journal Batch Name: DEFAULT, Line No.: 10000". Captions from the page, option values by
+ * their caption; a blank value shows as ''.
+ */
+export function recordKeyText(
+	record: Record<string, any> | null | undefined,
+	primaryKeyFields: string[],
+	captions: Record<string, string> = {},
+	options: Record<string, Record<string, string>> = {}
+): string {
+	if (!record) return '';
+	return primaryKeyFields
+		.map((field) => {
+			const value = record[field];
+			let text = value === undefined || value === null || value === '' ? "''" : String(value);
+			if (options[field] && value !== undefined && value !== null && value !== '') text = options[field][String(value)] ?? text;
+			return `${captions[field] ?? field}: ${text}`;
+		})
+		.join(', ');
+}

@@ -50,7 +50,7 @@
 		type ListSelection
 	} from '$lib/utils/selection';
 	import { needsShift, windowOffsetFor, windowSize, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, deepCopy, hasRecordChanged, canInsertNewRecord, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordKey, getPrimaryKeyField, getPrimaryKeyFields, recordKeyText, deepCopy, hasRecordChanged, canInsertNewRecord, hasUserEdits, sameFieldValue, shouldInsertNewRecord, stripInternalFields, findSelectedRecord, applyServerValues, newRecordContext } from '$lib/utils/recordHelpers';
 
 	interface Props {
 		page: PageDefinition;
@@ -793,7 +793,7 @@
 
 	// A menu item: run what it runs (an item without run_object / run_page does nothing)
 	async function handleMenuItem(item: Action) {
-		if (item.run_object || item.run_page) await handleAction(item.name);
+		if (item.run_object || item.run_page || item.run_page_field) await handleAction(item.name);
 	}
 
 	// Handle action clicks
@@ -817,8 +817,9 @@
 			return;
 		}
 		// run_page: open the page, filtered to the selected row when the action names a filter
-		// (run_page_filter_field = row[run_page_filter_value]); Esc there comes back to this row
-		if (action?.run_page) {
+		// (run_page_filter_field = row[run_page_filter_value]); Esc there comes back to this row.
+		// run_page_field: the page in the row's field (a Navigate line's entries)
+		if (action?.run_page || action?.run_page_field) {
 			const row = selectedRecord;
 			const url = runPagePath(action, row);
 			if (!url) return; // no row to filter on
@@ -2013,7 +2014,7 @@
 			const deleted = selectedRecord;
 			confirm.show(
 				t(DLG.DELETE_RECORD_TITLE),
-				t(DLG.DELETE_RECORD_CONFIRM),
+				t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(deleted, primaryKeyFieldsList, captions, options)),
 				async () => {
 					if (deleted._isNew) {
 						// Not saved yet: just drop the row
@@ -2300,7 +2301,7 @@
 				const deleteRecordId = getRecordId(modalRecord, primaryKeyField, primaryKeyFieldsList);
 				if (!deleteRecordId) break;
 				// Same translated confirmation as Delete on the list (not the browser's confirm())
-				confirm.show(t(DLG.DELETE_RECORD_TITLE), t(DLG.DELETE_RECORD_CONFIRM), async () => {
+				confirm.show(t(DLG.DELETE_RECORD_TITLE), t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(modalRecord, primaryKeyFieldsList, captions, options)), async () => {
 					// Mark as deleted BEFORE the API call to prevent any pending auto-saves
 					modalRecordDeleted = true;
 					try {
@@ -2539,7 +2540,9 @@
 	function selectionQuery(): ListOptions {
 		return {
 			...(cardNavigationQuery ?? {}),
-			flow_filters: apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, locale)
+			flow_filters: apiFlowFilters(currentFlowFilters, page.page.flow_filter_fields, locale),
+			// a temporary source table: the page fills its rows from its parameters (Navigate)
+			...(page.page.source_table_temporary ? { page_id: page.page.id, page_params: pageParams } : {})
 		};
 	}
 
@@ -2993,7 +2996,7 @@
 						<!-- A menu button: its items need a record when they run something -->
 						<ActionMenu
 							{action}
-							itemDisabled={(item) => !!(item.run_object || item.run_page) && !runsOnListFilters(item.run_object) && !selectedRecord}
+							itemDisabled={(item) => !!(item.run_object || item.run_page || item.run_page_field) && !runsOnListFilters(item.run_object) && !selectedRecord}
 							onselect={handleMenuItem}
 						/>
 					{:else}
@@ -3010,6 +3013,9 @@
 						// A codeunit or report runs on the list's filters: no row needed (an empty
 						// journal can be calculated or posted)
 						if (runsOnListFilters(action.run_object)) return false;
+
+						// Searching again with the header fields needs no row (Navigate's Find)
+						if (action.apply_header_fields) return false;
 
 						// Other buttons require selection
 						return !selectedRecord;
@@ -3476,18 +3482,19 @@
 											>
 												{formatCellValue(record[field.source], field.source)}
 											</button>
-										{:else if field.drilldown && !record._isNew && (record[field.source] || record[field.source] === 0 || page.page.flow_fields?.includes(field.source))}
+										{:else if (field.drilldown || field.drilldown_page_field) && !record._isNew && (record[field.source] || record[field.source] === 0 || page.page.flow_fields?.includes(field.source))}
 											<button
 												type="button"
 												class="primary-key-link"
 												onclick={(e) => {
 													e.stopPropagation();
-													const filterValue = record[field.drilldown_filter_value || ''] ?? '';
+													// The page in the row's field with the drilldown's filters (Navigate's No. of Records)
+													const url = field.drilldown_page_field
+														? runPagePath({ run_page_field: field.drilldown_page_field, run_page_filters: field.drilldown_filters }, record)
+														: `/pages/${field.drilldown}?filter=${encodeURIComponent(`${field.drilldown_filter_field}=${record[field.drilldown_filter_value || ''] ?? ''}`)}`;
+													if (!url) return;
 													// Back to this list, on this record, with Esc or the close button
-													goto(withReturn(
-														`/pages/${field.drilldown}?filter=${encodeURIComponent(`${field.drilldown_filter_field}=${filterValue}`)}`,
-														getRecordId(record, primaryKeyField, primaryKeyFieldsList)
-													));
+													goto(withReturn(url, getRecordId(record, primaryKeyField, primaryKeyFieldsList)));
 												}}
 											>
 												{formatCellValue(record[field.source], field.source)}

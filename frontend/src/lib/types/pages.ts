@@ -29,6 +29,7 @@ export interface PageMetadata {
 	// DelayedInsert: insert a new list row only when the user leaves the row
 	delayed_insert?: boolean;
 	copy_paste_allowed?: boolean; // list Ctrl+C copies the selected records, Ctrl+V pastes them
+	source_table_temporary?: boolean; // the list's rows are filled from the page parameters on every load (Navigate)
 	auto_split_key?: boolean; // a new line between two lines gets the line number between them
 	focus_field?: string; // Field to focus when page opens
 	layout: Layout;
@@ -109,6 +110,8 @@ export interface Field {
 	drilldown?: number;
 	drilldown_filter_field?: string;
 	drilldown_filter_value?: string;
+	drilldown_page_field?: string; // the drilldown opens the page whose number is in this record's field
+	drilldown_filters?: RunPageFilter[]; // with these filters (as an action's run_page_filters)
 	primary_key?: boolean;
 	required?: boolean;
 	masked?: boolean; // write-only secret (Masked): password input, value never shown
@@ -127,6 +130,16 @@ export interface StyleExpr {
 	style: 'Strong' | 'Attention' | 'Favorable' | 'Unfavorable';
 }
 
+/** A filter of a page an action opens: field = the record's value field, a constant, or the range from..to (optional: none when blank) */
+export interface RunPageFilter {
+	field: string;
+	value?: string;
+	const?: string;
+	from?: string;
+	to?: string;
+	optional?: boolean;
+}
+
 export interface Action {
 	name: string;
 	caption: string;
@@ -135,7 +148,10 @@ export interface Action {
 	run_page?: number;
 	run_page_filter_field?: string; // open run_page filtered: filter_field = this record's
 	run_page_filter_value?: string; // filter_value field (e.g. the customer's ledger entries)
-	run_page_filters?: { field: string; value?: string; const?: string; from?: string; to?: string }[]; // several filters (record fields, constants, or the range from..to of two fields)
+	run_page_filters?: RunPageFilter[]; // several filters (record fields, constants, or the range from..to of two fields)
+	run_page_field?: string; // the page to open is the number in this record's field (instead of run_page)
+	run_page_params?: Record<string, string>; // page parameters of the opened page from this record's fields (parameter → field)
+	apply_header_fields?: boolean; // the header fields as typed become the page's parameters and the list loads again (Navigate's Find)
 	run_object?: string; // "codeunit:455", "report:93", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)

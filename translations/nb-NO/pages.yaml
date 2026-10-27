@@ -516,6 +516,8 @@ pages:
     caption: "Avrundingsmetoder"
   resource_price_changes:
     caption: "Ressursprisendringer"
+  navigate:
+    caption: "Naviger"
   res_capacity_entries:
     caption: "Ressurskapasitetsposter"
   resources_setup:

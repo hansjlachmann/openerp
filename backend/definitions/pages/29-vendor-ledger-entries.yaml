@@ -42,3 +42,12 @@ page:
           width: 100
 
   actions:
+    - name: Navigate
+      caption: Navigate
+      image: Navigate
+      shortcut: Ctrl+Alt+Q
+      promoted: true
+      run_page: 344
+      run_page_params:
+        document_no: document_no
+        posting_date: posting_date

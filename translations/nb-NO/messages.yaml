@@ -201,6 +201,7 @@ messages:
   HELP_LIST_DELETE: "Slett valgt(e) post(er)"
   HELP_LIST_SEARCH: "Søk"
   HELP_LIST_FILTER_PANE: "Vis/skjul filterrute — feltvelger i fokus: Alt+↓, Enter, skriv verdi, Enter"
+  HELP_LIST_NAVIGATE: "Naviger: alle poster for radens bilag (postlister)"
   HELP_LIST_REFRESH: "Oppdater"
   HELP_LIST_ESCAPE: "Med flere rader merket: tilbake til én rad; ellers tilbake til hovedmenyen"
   HELP_SEC_CELLS: "Redigering i en liste"
@@ -369,6 +370,7 @@ messages:
 
   # Dialog Messages
   DLG_DELETE_RECORD_CONFIRM: "Er du sikker på at du vil slette denne posten?"
+  DLG_DELETE_RECORD_KEY_CONFIRM: "Er du sikker på at du vil slette posten %1?"
   DLG_DELETE_RECORDS_TITLE: "Slett poster"
   DLG_DELETE_RECORDS_CONFIRM: "Slette de %1 merkede postene?"
   DLG_PASTE_RECORDS_TITLE: "Lim inn poster"

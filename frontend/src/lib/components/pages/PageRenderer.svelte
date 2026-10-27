@@ -11,8 +11,8 @@
 	import { toast } from '$lib/stores/toast';
 	import { confirm } from '$lib/stores/confirm';
 	import { breadcrumb } from '$lib/stores/breadcrumb';
-	import { cardTitle } from '$lib/utils/fieldHelpers';
-	import { t, MSG, ERR, DLG, BTN, PAGE_ERR } from '$lib/services/i18n.svelte';
+	import { cardTitle, formatDate, isDateType } from '$lib/utils/fieldHelpers';
+	import { t, MSG, ERR, DLG, BTN, PAGE_ERR, FILTER as FLT } from '$lib/services/i18n.svelte';
 	import Button from '../Button.svelte';
 	import CardPage from './CardPage.svelte';
 	import ListPage from './ListPage.svelte';
@@ -21,11 +21,11 @@
 	import CardPageSkeleton from './CardPageSkeleton.svelte';
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import Modal from '../Modal.svelte';
-	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
+	import { getRecordId, getRecordLabel, getPrimaryKeyField, getPrimaryKeyFields, recordKeyText, canInsertNewRecord, deepCopy, applyServerValues } from '$lib/utils/recordHelpers';
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { apiFlowFilters } from '$lib/utils/flowFilter';
+	import { apiFlowFilters, toApiFlowFilter } from '$lib/utils/flowFilter';
 	import { currentLanguage } from '$lib/stores/session';
 	import { get } from 'svelte/store';
 
@@ -176,11 +176,53 @@
 		reopenWith(request.param, String(picked[request.field] ?? ''));
 	}
 
-	// A header field typed in: Code values in upper case (on leaving the field)
-	function handleHeaderChange(header: HeaderField, value: string) {
+	// A header field's value as typed, as the page parameter: Code values in upper case; a date
+	// field takes a date filter in the user's format (t, 01.01..31.01), kept as ISO (null: it
+	// cannot be read — the user is told)
+	function headerParam(header: HeaderField, value: string): string | null {
 		const next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
-		if (next === (pageParams[header.param] ?? '')) return;
+		if (!isDateType(fieldTypes[header.source])) return next;
+		const result = toApiFlowFilter(value, 'date', get(currentLanguage));
+		if (result.error !== undefined) {
+			toast.error(t(FLT.INVALID, header.caption ?? header.source, result.error));
+			return null;
+		}
+		return result.value ?? '';
+	}
+
+	// A header field typed in (on leaving the field or Enter)
+	function handleHeaderChange(header: HeaderField, value: string) {
+		const next = headerParam(header, value);
+		if (next === null || next === (pageParams[header.param] ?? '')) return;
 		reopenWith(header.param, next);
+	}
+
+	// An action with apply_header_fields (Navigate's Find): every header field as typed becomes
+	// the page's parameter; unchanged values search again
+	function applyHeaderFields() {
+		if (!page) return;
+		const params = { ...pageParams };
+		for (const header of page.page.header_fields ?? []) {
+			const input = document.querySelector<HTMLInputElement>(`[data-header-param="${header.param}"]`);
+			if (!input) continue;
+			const next = headerParam(header, input.value);
+			if (next === null) return;
+			params[header.param] = next;
+		}
+		const changed = Object.keys(params).some((name) => (params[name] ?? '') !== (pageParams[name] ?? ''));
+		if (changed && !embedded && !subpage) {
+			goto(pageUrlWith(params), { replaceState: true });
+		} else {
+			void loadListData(0);
+		}
+	}
+
+	// A header field's value as the user reads it (a date filter's dates in the user's format)
+	function headerValue(header: HeaderField): string {
+		const value = pageParams[header.param] ?? '';
+		if (!isDateType(fieldTypes[header.source])) return value;
+		const locale = get(currentLanguage);
+		return value.replace(/\d{4}-\d{2}-\d{2}/g, (iso) => formatDate(iso, locale));
 	}
 
 	// A subpage reloads its lines when its card asks (refreshToken changes after the first load)
@@ -466,8 +508,9 @@
 			if (visibleFields.length > 0) {
 				listOptions.fields = visibleFields;
 			}
-			// The page's triggers fill its calculated fields (OnAfterGetRecord)
-			if (page.page.has_record_triggers) listOptions.page_id = page.page.id;
+			// The page's triggers fill its calculated fields (OnAfterGetRecord), or its rows (a
+			// temporary source table: OnFindRecords from the page parameters)
+			if (page.page.has_record_triggers || page.page.source_table_temporary) listOptions.page_id = page.page.id;
 
 			// Fetch records, options, and lookups in a single API call
 			const response = await api.listRecordsWithOptions(page.page.source_table, listOptions);
@@ -561,7 +604,7 @@
 				if (deleteId) {
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
-						t(DLG.DELETE_CONFIRM, page.page.caption),
+						t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(record, primaryKeyFieldsList, captions, options)),
 						async () => {
 							try {
 								await api.deleteRecord(page!.page.source_table, deleteId);
@@ -650,6 +693,10 @@
 	// Handle actions from list page
 	async function handleListAction(actionName: string, selectedRecord?: Record<string, any>) {
 		if (!page) return;
+		if (page.page.actions?.find((a) => a.name === actionName)?.apply_header_fields) {
+			applyHeaderFields();
+			return;
+		}
 
 		switch (actionName) {
 			case 'New':
@@ -670,7 +717,7 @@
 					const deleteRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
 					confirm.show(
 						t(DLG.DELETE_RECORD_TITLE),
-						t(DLG.DELETE_RECORD_CONFIRM),
+						t(DLG.DELETE_RECORD_KEY_CONFIRM, recordKeyText(selectedRecord, primaryKeyFieldsList, captions, options)),
 						async () => {
 							try {
 								await api.deleteRecord(page!.page.source_table, deleteRecordId!);
@@ -918,7 +965,7 @@
 				</div>
 			</div>
 		{:else}
-			{#if page.page.header_fields?.length && openFilters.length > 0}
+			{#if page.page.header_fields?.length && (openFilters.length > 0 || page.page.source_table_temporary)}
 				<!-- Header fields above the list (a journal's Batch Name) -->
 				<div class="page-header-fields">
 					{#each page.page.header_fields as header (header.param)}
@@ -927,9 +974,10 @@
 							<span class="header-input-wrap">
 								<input
 									class="header-input"
+									class:header-input-date={isDateType(fieldTypes[header.source])}
 									data-header-param={header.param}
 									use:focusOnOpen={header === page.page.header_fields[0]}
-									value={pageParams[header.param] ?? ''}
+									value={headerValue(header)}
 									autocomplete="off"
 									onchange={(e) => handleHeaderChange(header, (e.currentTarget as HTMLInputElement).value)}
 									onkeydown={(e) => {
@@ -1057,6 +1105,10 @@
 	}
 	.header-input-wrap:focus-within {
 		border-color: rgb(var(--accent-500));
+	}
+	/* a date header field holds a date filter (a range) */
+	.header-input.header-input-date {
+		width: 15rem;
 	}
 	.header-input {
 		width: 9rem;

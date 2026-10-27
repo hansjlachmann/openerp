@@ -29,4 +29,25 @@ describe('runPagePath', () => {
 		expect(runPagePath({ run_page: 25, run_page_filter_field: 'customer_no', run_page_filter_value: 'no' }, undefined)).toBeNull();
 		expect(runPagePath({ run_page: 9 }, undefined)).toBe('/pages/9');
 	});
+	it('opens the page in a field of the record, optional filters left out when blank (Navigate Show)', () => {
+		const action = {
+			run_page_field: 'page_id',
+			run_page_filters: [
+				{ field: 'document_no', value: 'document_no_filter', optional: true },
+				{ field: 'posting_date', value: 'posting_date_filter', optional: true }
+			]
+		};
+		expect(runPagePath(action, { page_id: 25, document_no_filter: 'G00012', posting_date_filter: '' })).toBe(
+			'/pages/25?filter=document_no%3DG00012'
+		);
+		expect(runPagePath(action, { page_id: 0 })).toBeNull();
+		expect(runPagePath(action, undefined)).toBeNull();
+	});
+	it('sets page parameters from the record (Navigate from an entry)', () => {
+		const action = { run_page: 344, run_page_params: { document_no: 'document_no', posting_date: 'posting_date' } };
+		expect(runPagePath(action, { document_no: 'G 1/2', posting_date: '2026-01-15' })).toBe(
+			'/pages/344?document_no=G%201%2F2&posting_date=2026-01-15'
+		);
+		expect(runPagePath(action, { document_no: 'G1', posting_date: '' })).toBe('/pages/344?document_no=G1');
+	});
 });

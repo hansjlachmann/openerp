@@ -1,0 +1,61 @@
+table:
+  id: 265
+  name: "Document_Entry"
+  description: "Document Entry (table 265): Navigate's lines — the tables with entries of a document and their number (a temporary table)"
+  fields:
+    - name: table_id
+      no: 1
+      type: int
+      db_name: table_id
+
+    - name: no_of_records
+      no: 2
+      type: int
+      db_name: no_of_records
+
+    - name: document_no
+      no: 3
+      type: types.Code
+      db_name: document_no
+      length: 20
+
+    - name: posting_date
+      no: 4
+      type: types.Date
+      db_name: posting_date
+
+    - name: entry_no
+      no: 5
+      type: int
+      db_name: entry_no
+      primary_key: true
+
+    - name: table_name
+      no: 6
+      type: types.Text
+      db_name: table_name
+      length: 100
+
+    # the entries page of the table (Show)
+    - name: page_id
+      no: 900
+      type: int
+      db_name: page_id
+
+    # the filters the entries were found with (Show filters the entries page with them)
+    - name: document_no_filter
+      no: 901
+      type: types.Text
+      db_name: document_no_filter
+      length: 250
+
+    - name: posting_date_filter
+      no: 902
+      type: types.Text
+      db_name: posting_date_filter
+      length: 250
+
+  keys:
+    - name: Primary
+      fields: [entry_no]
+      clustered: true

@@ -6,7 +6,9 @@ import (
 	"runtime"
 	"sync/atomic"
 
-	_ "github.com/mattn/go-sqlite3" // the in-memory databases of temporary records
+	// The in-memory databases of temporary records: a pure-Go SQLite (driver "sqlite"), so they
+	// also work in the release image, which is built without cgo (mattn/go-sqlite3 needs it)
+	_ "modernc.org/sqlite"
 )
 
 // TemporaryStore is the private in-memory database of a temporary record (Temporary): the
@@ -21,7 +23,7 @@ var temporaryStores atomic.Int64
 
 // NewTemporaryStore opens the in-memory database of a temporary record
 func NewTemporaryStore() (*TemporaryStore, error) {
-	db, err := sql.Open("sqlite3", fmt.Sprintf("file:temporary%d?mode=memory", temporaryStores.Add(1)))
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:temporary%d?mode=memory", temporaryStores.Add(1)))
 	if err != nil {
 		return nil, err
 	}

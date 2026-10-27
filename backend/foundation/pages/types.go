@@ -28,10 +28,14 @@ type PageMetadata struct {
 	// AutoSplitKey (AutoSplitKey): on list pages whose last primary key field is a line number
 	// (int), a new line inserted between two lines gets the number halfway between them (lines
 	// are numbered in steps of 10000) — document lines
-	AutoSplitKey *bool    `yaml:"auto_split_key,omitempty" json:"auto_split_key,omitempty"`
-	FocusField   string   `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
-	Layout       Layout   `yaml:"layout" json:"layout"`
-	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+	AutoSplitKey *bool  `yaml:"auto_split_key,omitempty" json:"auto_split_key,omitempty"`
+	FocusField   string `yaml:"focus_field,omitempty" json:"focus_field,omitempty"` // Field to focus when page opens
+	// SourceTableTemporary (SourceTableTemporary, list pages): the page shows a temporary record
+	// its OnFindRecords trigger fills from the page parameters on every load (Navigate); nothing
+	// is read from or written to the table in the database
+	SourceTableTemporary bool     `yaml:"source_table_temporary,omitempty" json:"source_table_temporary,omitempty"`
+	Layout               Layout   `yaml:"layout" json:"layout"`
+	Actions              []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
 	// HeaderFields (list pages): fields above the list that are not table fields (classic page
 	// variables, e.g. a journal's Batch Name) — each edits a parameter of the page's OnOpenPage
 	// trigger, which turns it into the list's filters
@@ -172,6 +176,10 @@ type Field struct {
 	Drilldown            int    `yaml:"drilldown,omitempty" json:"drilldown,omitempty"`                           // Page ID to navigate to on click
 	DrilldownFilterField string `yaml:"drilldown_filter_field,omitempty" json:"drilldown_filter_field,omitempty"` // Field on target table to filter
 	DrilldownFilterValue string `yaml:"drilldown_filter_value,omitempty" json:"drilldown_filter_value,omitempty"` // Field on current record for filter value
+	// DrilldownPageField / DrilldownFilters: the drilldown opens the page whose number is in
+	// this record's field, filtered like an action's run_page_filters (Navigate's No. of Records)
+	DrilldownPageField string          `yaml:"drilldown_page_field,omitempty" json:"drilldown_page_field,omitempty"`
+	DrilldownFilters   []RunPageFilter `yaml:"drilldown_filters,omitempty" json:"drilldown_filters,omitempty"`
 	// DrilldownDateField: in a period grid, the date field of the drilldown page the row's dates
 	// filter (else the grid's)
 	DrilldownDateField string `yaml:"drilldown_date_field,omitempty" json:"drilldown_date_field,omitempty"`
@@ -219,6 +227,8 @@ type RunPageFilter struct {
 	// From Entry No. .. To Entry No.
 	From string `yaml:"from,omitempty" json:"from,omitempty"`
 	To   string `yaml:"to,omitempty" json:"to,omitempty"`
+	// Optional: a blank value sets no filter (otherwise the action needs the value)
+	Optional bool `yaml:"optional,omitempty" json:"optional,omitempty"`
 }
 
 // Action represents a page action/button
@@ -236,7 +246,16 @@ type Action struct {
 	// set to this record's field (value) or a constant (const, an option by its number);
 	// classic RunFormLink=A=FIELD(x),B=CONST(y)
 	RunPageFilters []RunPageFilter `yaml:"run_page_filters,omitempty" json:"run_page_filters,omitempty"`
-	RunObject      string          `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
+	// RunPageField (optional): the page to open is the number in this record's field (a
+	// Navigate line's entries page) instead of run_page
+	RunPageField string `yaml:"run_page_field,omitempty" json:"run_page_field,omitempty"`
+	// RunPageParams (optional): page parameters of the opened page (its OnOpenPage / header
+	// fields) from this record's fields: parameter → field (Navigate's document_no, posting_date)
+	RunPageParams map[string]string `yaml:"run_page_params,omitempty" json:"run_page_params,omitempty"`
+	// ApplyHeaderFields (optional): the page's header fields as typed become its parameters and
+	// the list loads again — a temporary source page searches again (Navigate's Find)
+	ApplyHeaderFields bool   `yaml:"apply_header_fields,omitempty" json:"apply_header_fields,omitempty"`
+	RunObject         string `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
 	// Enabled: actions are enabled unless the YAML says enabled: false (a missing value is
 	// omitted from the JSON; a plain bool sent false and disabled such actions and their shortcuts)
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`

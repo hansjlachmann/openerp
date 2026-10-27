@@ -68,6 +68,7 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 			{ keys: ['Ctrl+D'], description: 'HELP_LIST_DELETE' },
 			{ keys: ['Ctrl+F'], description: 'HELP_LIST_SEARCH' },
 			{ keys: ['Ctrl+F7'], description: 'HELP_LIST_FILTER_PANE' },
+			{ keys: ['Ctrl+Alt+Q'], description: 'HELP_LIST_NAVIGATE' },
 			{ keys: ['Esc'], description: 'HELP_LIST_ESCAPE' }
 		]
 	},

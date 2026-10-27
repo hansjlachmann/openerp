@@ -516,6 +516,8 @@ pages:
     caption: "Afrundingsmetoder"
   resource_price_changes:
     caption: "Ressourceprisændringer"
+  navigate:
+    caption: "Naviger"
   res_capacity_entries:
     caption: "Ressourcekapacitetsposter"
   resources_setup:

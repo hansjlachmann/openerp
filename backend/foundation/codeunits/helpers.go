@@ -63,6 +63,16 @@ func CanExecute(objectType string, id int) bool {
 	return ctx.Access.CanExecute(objectType, id)
 }
 
+// CanRead reports whether the current user may read a table (classic READPERMISSION; session
+// HasPermission); without a user (internal code, a run without permissions loaded) it is allowed
+func CanRead(tableName string) bool {
+	ctx := GetCurrentContext()
+	if ctx == nil || ctx.Access == nil {
+		return true
+	}
+	return ctx.Access.HasPermission(tableName, session.PermRead)
+}
+
 // GetCurrentContext returns the context for the current goroutine
 func GetCurrentContext() *goroutineContext {
 	if ctx, ok := currentContexts.Load(getGoroutineID()); ok {

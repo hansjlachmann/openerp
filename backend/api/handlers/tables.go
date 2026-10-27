@@ -467,6 +467,11 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
 	}
 
+	// A page on a temporary source table: its rows (Navigate)
+	if err := h.fillTemporaryPage(c, table, tableName, sess); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+	}
+
 	// The list's filters, search and sort: card navigation (First/Previous/Next/Last) moves
 	// through the records in the order and selection the list shows
 	if err := applyFlowFilters(c, table); err != nil {
@@ -642,6 +647,11 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 	table, err := h.getTable(tableName, company)
 	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+
+	// A page on a temporary source table: its rows (Navigate)
+	if err := h.fillTemporaryPage(c, table, tableName, sess); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 
 	// Sort, filters and search
