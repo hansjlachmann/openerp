@@ -252,7 +252,10 @@ type Action struct {
 	// RunPageParams (optional): page parameters of the opened page (its OnOpenPage / header
 	// fields) from this record's fields: parameter → field (Navigate's document_no, posting_date)
 	RunPageParams map[string]string `yaml:"run_page_params,omitempty" json:"run_page_params,omitempty"`
-	RunObject     string            `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
+	// ApplyHeaderFields (optional): the page's header fields as typed become its parameters and
+	// the list loads again — a temporary source page searches again (Navigate's Find)
+	ApplyHeaderFields bool   `yaml:"apply_header_fields,omitempty" json:"apply_header_fields,omitempty"`
+	RunObject         string `yaml:"run_object,omitempty" json:"run_object,omitempty"` // Run codeunit, report, etc.
 	// Enabled: actions are enabled unless the YAML says enabled: false (a missing value is
 	// omitted from the JSON; a plain bool sent false and disabled such actions and their shortcuts)
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`

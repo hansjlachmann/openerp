@@ -35,6 +35,11 @@ page:
               optional: true
 
   actions:
+    - name: Find
+      caption: Find
+      image: Search
+      promoted: true
+      apply_header_fields: true   # searches again with the header fields as typed
     - name: Show
       caption: Show
       image: Entries

@@ -3014,6 +3014,9 @@
 						// journal can be calculated or posted)
 						if (runsOnListFilters(action.run_object)) return false;
 
+						// Searching again with the header fields needs no row (Navigate's Find)
+						if (action.apply_header_fields) return false;
+
 						// Other buttons require selection
 						return !selectedRecord;
 					})()}

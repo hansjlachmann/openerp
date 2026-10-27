@@ -102,6 +102,7 @@ common:
     test_line_1: "Test linje 1"
     test_line_2: "Test linje 2"
     job_queue: "Jobbkø"
+    find: "Finn"
     navigate: "Naviger"
     show: "Vis"
     show_status: "Vis status"

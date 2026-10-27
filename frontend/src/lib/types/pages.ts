@@ -151,6 +151,7 @@ export interface Action {
 	run_page_filters?: RunPageFilter[]; // several filters (record fields, constants, or the range from..to of two fields)
 	run_page_field?: string; // the page to open is the number in this record's field (instead of run_page)
 	run_page_params?: Record<string, string>; // page parameters of the opened page from this record's fields (parameter → field)
+	apply_header_fields?: boolean; // the header fields as typed become the page's parameters and the list loads again (Navigate's Find)
 	run_object?: string; // "codeunit:455", "report:93", a function "table:Job_Queue_Entry.ShowLineNo"
 	enabled?: boolean;
 	items?: Action[]; // a menu button: its menu items (each an action of its own)

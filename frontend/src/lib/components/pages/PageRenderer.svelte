@@ -176,20 +176,45 @@
 		reopenWith(request.param, String(picked[request.field] ?? ''));
 	}
 
-	// A header field typed in: Code values in upper case (on leaving the field); a date field
-	// takes a date filter in the user's format (t, 01.01..31.01) and keeps it as ISO
-	function handleHeaderChange(header: HeaderField, value: string) {
-		let next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
-		if (isDateType(fieldTypes[header.source])) {
-			const result = toApiFlowFilter(value, 'date', get(currentLanguage));
-			if (result.error !== undefined) {
-				toast.error(t(FLT.INVALID, header.caption ?? header.source, result.error));
-				return;
-			}
-			next = result.value ?? '';
+	// A header field's value as typed, as the page parameter: Code values in upper case; a date
+	// field takes a date filter in the user's format (t, 01.01..31.01), kept as ISO (null: it
+	// cannot be read — the user is told)
+	function headerParam(header: HeaderField, value: string): string | null {
+		const next = fieldTypes[header.source] && /code/i.test(fieldTypes[header.source]) ? value.toUpperCase() : value;
+		if (!isDateType(fieldTypes[header.source])) return next;
+		const result = toApiFlowFilter(value, 'date', get(currentLanguage));
+		if (result.error !== undefined) {
+			toast.error(t(FLT.INVALID, header.caption ?? header.source, result.error));
+			return null;
 		}
-		if (next === (pageParams[header.param] ?? '')) return;
+		return result.value ?? '';
+	}
+
+	// A header field typed in (on leaving the field or Enter)
+	function handleHeaderChange(header: HeaderField, value: string) {
+		const next = headerParam(header, value);
+		if (next === null || next === (pageParams[header.param] ?? '')) return;
 		reopenWith(header.param, next);
+	}
+
+	// An action with apply_header_fields (Navigate's Find): every header field as typed becomes
+	// the page's parameter; unchanged values search again
+	function applyHeaderFields() {
+		if (!page) return;
+		const params = { ...pageParams };
+		for (const header of page.page.header_fields ?? []) {
+			const input = document.querySelector<HTMLInputElement>(`[data-header-param="${header.param}"]`);
+			if (!input) continue;
+			const next = headerParam(header, input.value);
+			if (next === null) return;
+			params[header.param] = next;
+		}
+		const changed = Object.keys(params).some((name) => (params[name] ?? '') !== (pageParams[name] ?? ''));
+		if (changed && !embedded && !subpage) {
+			goto(pageUrlWith(params), { replaceState: true });
+		} else {
+			void loadListData(0);
+		}
 	}
 
 	// A header field's value as the user reads it (a date filter's dates in the user's format)
@@ -668,6 +693,10 @@
 	// Handle actions from list page
 	async function handleListAction(actionName: string, selectedRecord?: Record<string, any>) {
 		if (!page) return;
+		if (page.page.actions?.find((a) => a.name === actionName)?.apply_header_fields) {
+			applyHeaderFields();
+			return;
+		}
 
 		switch (actionName) {
 			case 'New':
@@ -945,6 +974,7 @@
 							<span class="header-input-wrap">
 								<input
 									class="header-input"
+									class:header-input-date={isDateType(fieldTypes[header.source])}
 									data-header-param={header.param}
 									use:focusOnOpen={header === page.page.header_fields[0]}
 									value={headerValue(header)}
@@ -1075,6 +1105,10 @@
 	}
 	.header-input-wrap:focus-within {
 		border-color: rgb(var(--accent-500));
+	}
+	/* a date header field holds a date filter (a range) */
+	.header-input.header-input-date {
+		width: 15rem;
 	}
 	.header-input {
 		width: 9rem;
