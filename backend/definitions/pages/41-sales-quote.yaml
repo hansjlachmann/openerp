@@ -107,6 +107,12 @@ page:
       shortcut: Alt+N
       promoted: true
 
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
     - name: Delete
       caption: Delete
       image: Delete
