@@ -3379,6 +3379,7 @@ tables:
       inv_discount_amount: "Fakturarabatbeløb"
       gen_bus_posting_group: "Virksomhedsbogføringsgruppe"
       gen_prod_posting_group: "Produktbogføringsgruppe"
+      tax_calculation_type: "Momsberegningstype"
       tax_area_code: "Skatteområdekode"
       tax_liable: "Skattepligtig"
       tax_group_code: "Skattegruppekode"
@@ -3404,7 +3405,11 @@ tables:
         g_l_account: "Finanskonto"
         item: "Vare"
         resource: "Ressource"
-        fixed_asset: "Anlægsaktiv"
+      tax_calculation_type:
+        normal_vat: "Normal moms"
+        reverse_charge_vat: "Omvendt betalingspligt"
+        full_vat: "Fuld moms"
+        sales_tax: "Salgsafgift"
   cust_invoice_disc:
     caption: "Debitorfakturarabat"
     fields:

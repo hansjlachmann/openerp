@@ -3379,6 +3379,7 @@ tables:
       inv_discount_amount: "Inv. Discount Amount"
       gen_bus_posting_group: "Gen. Bus. Posting Group"
       gen_prod_posting_group: "Gen. Prod. Posting Group"
+      tax_calculation_type: "Tax Calculation Type"
       tax_area_code: "Tax Area Code"
       tax_liable: "Tax Liable"
       tax_group_code: "Tax Group Code"
@@ -3404,7 +3405,11 @@ tables:
         g_l_account: "G/L Account"
         item: "Item"
         resource: "Resource"
-        fixed_asset: "Fixed Asset"
+      tax_calculation_type:
+        normal_vat: "Normal VAT"
+        reverse_charge_vat: "Reverse Charge VAT"
+        full_vat: "Full VAT"
+        sales_tax: "Sales Tax"
   cust_invoice_disc:
     caption: "Cust. Invoice Disc."
     fields:

@@ -3379,6 +3379,7 @@ tables:
       inv_discount_amount: "Fakturarabattbeløp"
       gen_bus_posting_group: "Bokføringsgruppe - forretning"
       gen_prod_posting_group: "Bokføringsgruppe - produkt"
+      tax_calculation_type: "Mva.-beregningstype"
       tax_area_code: "Skatteområdekode"
       tax_liable: "Skattepliktig"
       tax_group_code: "Skattegruppekode"
@@ -3404,7 +3405,11 @@ tables:
         g_l_account: "Finanskonto"
         item: "Vare"
         resource: "Ressurs"
-        fixed_asset: "Anleggsmiddel"
+      tax_calculation_type:
+        normal_vat: "Vanlig mva."
+        reverse_charge_vat: "Omvendt avgiftsplikt"
+        full_vat: "Full mva."
+        sales_tax: "Salgsavgift"
   cust_invoice_disc:
     caption: "Kundefakturarabatt"
     fields:

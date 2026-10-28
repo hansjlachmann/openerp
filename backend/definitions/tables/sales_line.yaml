@@ -3,8 +3,7 @@ table:
   name: "Sales_Line"
   description: "Sales Line (table 37): the lines of the sales documents"
   # Left out until their steps: 17/18/58-64/5417-5461 quantities to ship/invoice and shipped/invoiced,
-  # 38 Appl.-to Item Entry, 45-51 jobs, 53/5400 serial/lot, 71-73 drop shipment, 77 Tax Calculation
-  # Type, 78-83 foreign trade statistics, 80 Attached to Line No. (extended texts), 93 Shipped Not
+  # 38 Appl.-to Item Entry, 45-51 jobs, 53/5400 serial/lot, 71-73 drop shipment, 78-83 foreign trade statistics, 80 Attached to Line No. (extended texts), 93 Shipped Not
   # Invoiced (LCY), 95/96/5495 reservations, 97/98 blanket orders, 101 System-Created Entry, 5403 Bin,
   # 5405 Planned, 10000 Package Tracking No.
   fields:
@@ -49,9 +48,8 @@ table:
       no: 5
       type: Option
       db_name: type
-      options: [" ", "G/L Account", "Item", "Resource", "Fixed Asset"]
+      options: [" ", "G/L Account", "Item", "Resource"]
 
-    # Fixed Asset: no relation yet (fixed asset sales come later)
     - name: no
       no: 6
       type: types.Code
@@ -421,6 +419,13 @@ table:
             width: 100
           - source: description
             width: 250
+
+    - name: tax_calculation_type
+      no: 77
+      type: Option
+      db_name: tax_calculation_type
+      options: ["Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"]
+      editable: false
 
     - name: tax_area_code
       no: 85
