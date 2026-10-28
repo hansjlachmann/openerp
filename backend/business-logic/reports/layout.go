@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -242,7 +243,7 @@ func readLayout(file string) (*Layout, error) {
 	}
 	layout := doc.Report
 	if layout == nil {
-		return nil, fmt.Errorf("no report:")
+		return nil, errors.New("the file has no report section")
 	}
 	layout.file = filepath.Base(file)
 	prefix, _, _ := strings.Cut(layout.file, "-")

@@ -304,7 +304,7 @@ func (p *printer) prepare(f *frame, s *Section) (float64, drawFn) {
 		if width <= 0 {
 			width = p.doc.ContentWidth() - e.X
 		}
-		bottom := e.Y
+		var bottom float64 // where the element ends, from the section's top
 		switch e.kind() {
 		case "line":
 			bottom = e.Y + e.Height
