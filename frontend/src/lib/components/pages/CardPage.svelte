@@ -593,7 +593,15 @@
 			return;
 		}
 		const part = parts[i - 1];
-		// The subpage's list (navigation mode), or the folded section's header
+		// Into the lines as Tab does: the first cell of the first line (the card in edit mode;
+		// an empty subpage starts a line), else the first line selected
+		const renderer = subpageRenderers[part.dataset.subpageName ?? ''];
+		if (renderer?.enterLines && part.querySelector('.list-page')) {
+			part.scrollIntoView({ block: 'nearest' });
+			renderer.enterLines();
+			return;
+		}
+		// The folded section's header
 		const target =
 			part.querySelector<HTMLElement>('.list-page') ??
 			part.closest('.card')?.querySelector<HTMLElement>('.card-header') ??

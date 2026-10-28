@@ -374,8 +374,10 @@
 			if (isModalOpen() && !listPageElement?.closest('.modal-content')) return;
 			// The keys of an action menu (and other parts marking their keys as their own) are
 			// theirs — the filter pane's Esc is handled just below
+			// (only those inside this list: a card's subpage wrapper is around the list, its keys
+			// are the list's)
 			const ownKeys = (event.target as Element | null)?.closest?.('[data-own-keys]');
-			if (ownKeys && !ownKeys.closest('.filter-pane')) return;
+			if (ownKeys && listPageElement?.contains(ownKeys) && !ownKeys.closest('.filter-pane')) return;
 			// A subpage's shortcuts only while the cursor is in it (the card has its own)
 			if (subpage && !listPageElement?.contains(document.activeElement)) return;
 
@@ -396,8 +398,10 @@
 					// Revert edit, back to cell-selected
 					exitEditingToCellSelected(true);
 				} else if (isCellSelected) {
-					// Back to navigation mode
-					exitToNavigation();
+					// Back to navigation mode — in a card's lines straight back to the card's
+					// fields (the next Esc closes the card)
+					exitToNavigation(!subpage);
+					if (subpage) closeList();
 				} else if (multiSelected) {
 					// Several rows selected: back to the cursor row
 					clearSelection();
