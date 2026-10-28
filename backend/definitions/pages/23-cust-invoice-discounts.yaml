@@ -1,0 +1,41 @@
+page:
+  id: 23
+  type: List
+  name: Cust. Invoice Discounts
+  source_table: Cust_Invoice_Disc   # opened from the customer (its Invoice Disc. Code)
+  caption: Cust. Invoice Discounts
+  editable: true
+  delayed_insert: true      # the key is Code, Currency Code and Minimum Amount
+
+  layout:
+    repeater:
+      fields:
+        - source: code
+          width: 120
+        - source: currency_code
+          width: 110
+        - source: minimum_amount
+          width: 140
+        - source: discount_percent
+          width: 120
+        - source: service_charge
+          width: 140
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true

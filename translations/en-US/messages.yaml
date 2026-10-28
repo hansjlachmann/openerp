@@ -390,6 +390,8 @@ messages:
   GEN_JNL_TEMPLATE_DESCRIPTION: "%1 Journal"
   GEN_JNL_DEFAULT_BATCH: "Default Journal"
   GEN_JNL_POST_CONFIRM: "Do you want to post the journal lines?"
+  SALES_CALC_INV_DISC_CONFIRM: "Do you want to calculate the invoice discount?"
+  SALES_SERVICE_CHARGE: "Service Charge"
   GEN_JNL_NOTHING_TO_POST: "There is nothing to post."
   GEN_JNL_POSTED: "The journal lines were successfully posted."
   GEN_JNL_POSTED_NEW_BATCH: "The journal lines were successfully posted. You are now in the %1 journal."

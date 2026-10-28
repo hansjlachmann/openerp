@@ -15,7 +15,7 @@
 	import { currentUser } from '$lib/stores/user';
 	import { lookupFor, getFieldCaption, isItemVisible, isBlobType, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { loadPageCustomizations, savePageCustomizations } from '$lib/utils/customizationStorage';
-	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields } from '$lib/utils/recordHelpers';
+	import { getRecordId, isNewRecord, deepCopy, getPrimaryKeyField, getPrimaryKeyFields, stripInternalFields, hasRecordChanged } from '$lib/utils/recordHelpers';
 	import { runPagePath, type RunPageAction } from '$lib/utils/runPage';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { toast } from '$lib/stores/toast';
@@ -23,7 +23,7 @@
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 	import PictureField from './PictureField.svelte';
 	import PeriodGrid from './PeriodGrid.svelte';
-	import { handleFieldEnterKey, getFieldControls } from '$lib/utils/fieldNavigation';
+	import { handleFieldEnterKey, getFieldControls, arrowLeavesField, fieldInDirection, focusField, type ArrowDirection } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionButton from '../ActionButton.svelte';
@@ -235,6 +235,10 @@
 	function autoSave(opts?: { leavingKey?: boolean }) {
 		// Skip if already saving or blocked due to error
 		if (saveState === 'saving' || saveBlocked) {
+			return;
+		}
+		// Tabbing through the fields of a saved record changes nothing: nothing to save
+		if (!checkIsNewRecord() && lastSavedRecord && !hasRecordChanged($state.snapshot(record), lastSavedRecord)) {
 			return;
 		}
 
@@ -498,6 +502,68 @@
 		return !!savedRecord && Object.values(linkValues(sub)).every((v) => v !== undefined && v !== null && v !== '');
 	}
 
+	// The subpages' renderers by section name: Tab into their lines
+	// (a plain object: a $state proxy hides the components' exported functions)
+	const subpageRenderers: Record<string, { enterLines?: () => void } | undefined> = {};
+
+	// Arrow keys move between the fields (like the list's cells): ←/→ to the previous/next field
+	// at the start/end of the text, ↑/↓ to the field above/below — ↓ into the lines when they
+	// come first. A field that keeps the key (an open dropdown, a textarea) has it.
+	const arrowDirections: Record<string, ArrowDirection> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+	function arrowNavigate(e: KeyboardEvent, container: HTMLElement): boolean {
+		const direction = arrowDirections[e.key];
+		if (!direction || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.defaultPrevented || e.isComposing) return false;
+		const target = e.target as HTMLElement;
+		if (!target.matches('input:not([type="hidden"]), select, textarea, [role="combobox"]')) return false;
+		if (target.getAttribute('aria-expanded') === 'true') return false;
+		if (!arrowLeavesField(target, direction)) return false;
+		const controls = getFieldControls(container).filter((c) => !c.closest('.subpage-part') && c.offsetParent !== null);
+		const next = fieldInDirection(controls, target, direction);
+		if (direction === 'down') {
+			const bottom = target.getBoundingClientRect().bottom;
+			const nextTop = next ? next.getBoundingClientRect().top : Infinity;
+			const part = Array.from(container.querySelectorAll<HTMLElement>('[data-subpage-part]')).find((p) => {
+				const top = p.getBoundingClientRect().top;
+				return top >= bottom - 1 && top < nextTop;
+			});
+			const renderer = part ? subpageRenderers[part.dataset.subpageName ?? ''] : undefined;
+			if (renderer?.enterLines) {
+				e.preventDefault();
+				renderer.enterLines();
+				return true;
+			}
+		}
+		// ↑/↓ never change the value (a date's day); at the edge they stay put
+		if (direction === 'up' || direction === 'down') e.preventDefault();
+		if (!next) return direction === 'up' || direction === 'down';
+		e.preventDefault();
+		focusField(next);
+		return true;
+	}
+
+	// Tab (and Enter, which moves like Tab) on the last field before a subpage goes into its
+	// lines — the last field the user can reach, whichever is visible (hidden fields and the
+	// fields' buttons do not count); a field that keeps the key (an open dropdown) has it
+	function tabIntoLines(e: KeyboardEvent, container: HTMLElement): boolean {
+		if ((e.key !== 'Tab' && e.key !== 'Enter') || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.defaultPrevented) return false;
+		const target = e.target as HTMLElement;
+		if (e.key === 'Enter' && target.tagName === 'TEXTAREA') return false;
+		if (!target.matches('input, select, textarea, [role="combobox"]')) return false;
+		const following = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+		const part = Array.from(container.querySelectorAll<HTMLElement>('[data-subpage-part]')).find((p) => following(target, p));
+		if (!part) return false;
+		const reachable = (el: HTMLElement) => el.offsetParent !== null && el.tabIndex >= 0 && !(el as HTMLInputElement).disabled;
+		const fieldsBetween = Array.from(container.querySelectorAll<HTMLElement>('input, select, textarea')).filter(
+			(el) => el !== target && !el.closest('.subpage-part') && reachable(el) && following(target, el) && following(el, part)
+		);
+		if (fieldsBetween.length > 0) return false;
+		const renderer = subpageRenderers[part.dataset.subpageName ?? ''];
+		if (!renderer?.enterLines) return false;
+		e.preventDefault();
+		renderer.enterLines();
+		return true;
+	}
+
 	// Parts of the card: its fields, then each subpage. F6 / Shift+F6 and (cards with subpages)
 	// Ctrl+↓ / Ctrl+↑ move the cursor to the next/previous part; Ctrl+Shift+↓/↑ go to the
 	// next/previous record. Handled before the parts' own keys (capture).
@@ -527,7 +593,15 @@
 			return;
 		}
 		const part = parts[i - 1];
-		// The subpage's list (navigation mode), or the folded section's header
+		// Into the lines as Tab does: the first cell of the first line (the card in edit mode;
+		// an empty subpage starts a line), else the first line selected
+		const renderer = subpageRenderers[part.dataset.subpageName ?? ''];
+		if (renderer?.enterLines && part.querySelector('.list-page')) {
+			part.scrollIntoView({ block: 'nearest' });
+			renderer.enterLines();
+			return;
+		}
+		// The folded section's header
 		const target =
 			part.querySelector<HTMLElement>('.list-page') ??
 			part.closest('.card')?.querySelector<HTMLElement>('.card-header') ??
@@ -716,6 +790,8 @@
 		onkeydown={(e) => {
 			// Enter moves between the card's fields — not in a subpage (its list handles Enter)
 			if ((e.target as HTMLElement).closest('.subpage-part')) return;
+			if (tabIntoLines(e, e.currentTarget as HTMLElement)) return;
+			if (arrowNavigate(e, e.currentTarget as HTMLElement)) return;
 			handleFieldEnterKey(e, e.currentTarget as HTMLElement);
 		}}
 	>
@@ -769,12 +845,14 @@
 					{:else if section.subpage}
 						{@const sub = section.subpage}
 						<!-- A subpage: the list page with the lines of this record (its own keys) -->
-						<div class="subpage-part" data-subpage-part data-own-keys>
+						<div class="subpage-part" data-subpage-part data-subpage-name={section.name} data-own-keys>
 							{#if canShowLines(sub)}
 								{#key JSON.stringify(linkValues(sub))}
 									<PageRenderer
+										bind:this={subpageRenderers[section.name]}
 										pageid={sub.page_id}
 										subpage={true}
+										parentEditMode={editMode}
 										fixedFilters={linkFilters(sub)}
 										newRecordDefaults={linkValues(sub)}
 										onexit={() => focusPart(0)}

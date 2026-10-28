@@ -37,3 +37,15 @@ export function newLineNo(rows: Record<string, unknown>[], index: number, field:
 	const nos = rows.filter(numbered).map((r) => lineNo(r[field]) as number);
 	return splitLineNo(nos.length ? Math.max(...nos) : undefined, undefined);
 }
+
+/**
+ * The line number of a new line inserted above the row at `index` (classic: a new line in the
+ * middle of the lines goes above the current one) — halfway between the line before and it,
+ * half of its number above the first line. null when there is no room.
+ */
+export function newLineNoAbove(rows: Record<string, unknown>[], index: number, field: string): number | null {
+	const current = lineNo(rows[index]?.[field]);
+	if (current === undefined || current <= 0) return newLineNo(rows, -1, field);
+	const before = rows.slice(0, index).reverse().find((r) => (lineNo(r[field]) ?? 0) > 0);
+	return splitLineNo(before ? lineNo(before[field]) : undefined, current);
+}

@@ -114,3 +114,14 @@ func PictureInvalid() *AppError { return &AppError{Code: ErrPictureInvalid} }
 func PictureNoField(field string) *AppError {
 	return &AppError{Code: ErrPictureNoField, Params: []string{field}}
 }
+
+// Sales documents (tables 36 and 37)
+const (
+	ErrSalesResetCustomerLines ErrorCode = "ERR_SALES_RESET_CUSTOMER_LINES"
+)
+
+// SalesResetCustomerLines: the customer of a document with lines cannot be cleared ("You cannot
+// reset Sell-to Customer No. because the document still has one or more lines.")
+func SalesResetCustomerLines(table, field string) *AppError {
+	return &AppError{Code: ErrSalesResetCustomerLines, Table: table, Field: field}
+}

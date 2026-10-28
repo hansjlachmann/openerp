@@ -5,9 +5,13 @@
 	import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 	import type { LookupColumn } from '$lib/types/api';
 	import { clickOutside } from '$lib/actions/clickOutside';
+	import { floating } from '$lib/actions/floating';
 	import { api } from '$lib/services/api';
 	import { goto } from '$app/navigation';
 	import { withReturn } from '$lib/utils/returnUrl';
+	import type { TableFilter } from '$lib/types/api';
+	import Modal from '../Modal.svelte';
+	import PageRenderer from './PageRenderer.svelte';
 
 	interface LookupRow {
 		_key: string;
@@ -15,6 +19,8 @@
 	}
 
 	interface Props {
+		// On a card: ↑/↓ on the closed field move to the field above/below (Alt+↓ / F4 open it)
+		arrowsMoveFields?: boolean;
 		columns: LookupColumn[];
 		rows: LookupRow[];
 		value: string;
@@ -36,11 +42,15 @@
 		newPageId?: number;
 		// New with the relation's filters (an item's units of measure): the list opens filtered
 		newPath?: string;
+		// The related table's field the relation matches: New opens the list over the page (a
+		// new record ready to type) and Enter/OK there picks the record into this field
+		newKeyField?: string;
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
 
 	let {
+		arrowsMoveFields = false,
 		columns,
 		rows,
 		value = '',
@@ -56,11 +66,14 @@
 		openOnFocus = false,
 		newPageId,
 		newPath,
+		newKeyField,
 		onselect,
 		onblur
 	}: Props = $props();
 
 	let isOpen = $state(false);
+	// the open list (moved to <body> by floating, so nothing clips it)
+	let panelRef = $state<HTMLDivElement | null>(null);
 	let containerRef = $state<HTMLDivElement | null>(null);
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let bodyRef = $state<HTMLDivElement | null>(null);
@@ -226,7 +239,7 @@
 		// Small delay to allow click on dropdown to register
 		setTimeout(() => {
 			// Focus still inside the component (e.g. input re-focused after handleSelect) — do nothing
-			if (containerRef?.contains(document.activeElement)) {
+			if (containerRef?.contains(document.activeElement) || panelRef?.contains(document.activeElement)) {
 				return;
 			}
 
@@ -281,7 +294,31 @@
 		if (!newPageId) return;
 		isOpen = false;
 		const path = newPath ? `${newPath}&new=1` : `/pages/${newPageId}?new=1`;
+		if (newKeyField) {
+			// over the page: the record being entered stays as it is
+			const filters: TableFilter[] = new URL(path, 'http://x').searchParams.getAll('filter').map((f) => {
+				const i = f.indexOf('=');
+				return { field: f.slice(0, i), expression: f.slice(i + 1) };
+			});
+			newPick = { pageId: newPageId, filters };
+			return;
+		}
 		goto(withReturn(path));
+	}
+
+	// New over the page (lookup mode, a new record ready to type): Enter or OK picks the record
+	// — the one just entered — into the field; Cancel/Esc leaves the field as it was
+	let newPick = $state<{ pageId: number; filters: TableFilter[] } | null>(null);
+	function closeNew(action: string, picked?: Record<string, any>) {
+		newPick = null;
+		if (action === 'LookupOK' && picked && newKeyField) {
+			const key = String(picked[newKeyField] ?? '');
+			if (key) {
+				handleSelect({ _key: key } as LookupRow);
+				return;
+			}
+		}
+		inputRef?.focus();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -303,6 +340,7 @@
 				// If dropdown is closed, let Escape bubble up to close the card page
 				break;
 			case 'ArrowDown':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (!isOpen) {
 					selectHandled = false; // Clear so ArrowDown always opens
@@ -312,6 +350,7 @@
 				}
 				break;
 			case 'ArrowUp':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (isOpen) {
 					selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -432,7 +471,7 @@
 	data-own-keys={isOpen ? 'lookup' : undefined}
 	bind:this={containerRef}
 	style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
-	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen }}
+	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen, also: () => [panelRef] }}
 >
 	<div class="lookup-input-wrapper">
 		<input
@@ -467,7 +506,18 @@
 	</div>
 
 	{#if isOpen}
-		<div class="lookup-panel" role="listbox" id="lookup-listbox">
+		<!-- the list keeps the focus in the field (mousedown), so it is never focused itself -->
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div
+			class="lookup-panel"
+			role="listbox"
+			id="lookup-listbox"
+			bind:this={panelRef}
+			use:floating={containerRef}
+			data-own-keys="lookup"
+			onmousedown={(e) => e.preventDefault()}
+			style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
+		>
 			<!-- Column headers -->
 			<div class="lookup-header">
 				{#each columns as col}
@@ -532,7 +582,30 @@
 	{/if}
 </div>
 
+{#if newPick}
+	{@const request = newPick}
+	<Modal open={true} size="expanded" onclose={() => closeNew('Cancel')}>
+		<div class="new-pick-page" data-own-keys>
+			<PageRenderer
+				pageid={request.pageId}
+				embedded={true}
+				initialFilters={request.filters}
+				lookupMode={true}
+				editableLookup={true}
+				startNew={true}
+				onclose={(action, _key, picked) => closeNew(action, picked)}
+			/>
+		</div>
+	</Modal>
+{/if}
+
 <style>
+	.new-pick-page {
+		height: 70vh;
+		display: flex;
+		flex-direction: column;
+	}
+
 	.lookup-dropdown {
 		position: relative;
 		width: 100%;

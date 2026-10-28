@@ -2092,7 +2092,7 @@ func (t *Resource) renameReferences(field string, oldValue, newValue interface{}
 		condValue  int
 	}
 	references := map[string][]reference{
-		"no": {{"BOM_Component", false, "no", "type", 2}, {"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Res_Journal_Line", false, "resource_no", "", 0}, {"Res_Ledger_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}},
+		"no": {{"BOM_Component", false, "no", "type", 2}, {"Res_Capacity_Entry", false, "resource_no", "", 0}, {"Res_Journal_Line", false, "resource_no", "", 0}, {"Res_Ledger_Entry", false, "resource_no", "", 0}, {"Resource_Cost", false, "code", "type", 0}, {"Resource_Price", false, "code", "type", 0}, {"Resource_Price_Change", false, "code", "type", 0}, {"Sales_Line", false, "no", "type", 3}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
@@ -3456,12 +3456,16 @@ func (t *Resource) SetRange(fieldName string, values ...interface{}) {
 	}
 
 	// Blank dates are stored as NULL and come before every date: a range from the blank date
-	// (or the blank date itself) matches them
+	// (or the blank date itself) matches them; a range up to the blank date (0D..0D) is the
+	// blank date only
 	blankDate := false
 	if d, ok := values[0].(types.Date); ok && d.IsZero() {
 		blankDate = true
 		minValue = nil
 		if len(values) == 1 {
+			maxValue = nil
+		}
+		if to, ok := maxValue.(types.Date); ok && to.IsZero() {
 			maxValue = nil
 		}
 	}
@@ -3983,13 +3987,13 @@ func (t *Resource) buildWhereClause() (string, []interface{}) {
 			} else if filter.blankDate {
 				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s BETWEEN %s AND %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.minValue, filter.maxValue)
 			} else if filter.minValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s >= ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s >= %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.minValue)
 			} else if filter.maxValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s <= ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s <= %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.maxValue)
 			}
 		}
@@ -4091,6 +4095,45 @@ func (t *Resource) isDateColumn(column string) bool {
 	return false
 }
 
+// isDecimalColumn: a Decimal column
+func (t *Resource) isDecimalColumn(column string) bool {
+	switch column {
+	case "direct_unit_cost":
+		return true
+	case "indirect_cost_percent":
+		return true
+	case "unit_cost":
+		return true
+	case "profit_percent":
+		return true
+	case "unit_price":
+		return true
+	}
+	return false
+}
+
+// sqliteDecimal: decimals are stored as text on SQLite (exact), so comparisons and the order
+// on them must be numeric there — as text 100 lies between 0 and 16.2
+func (t *Resource) sqliteDecimal(column string) bool {
+	return t.isDecimalColumn(column) && (t.dbType != database.DBTypePostgres || t.temp != nil)
+}
+
+// cmpColumn is a column as filters, keys and the order compare it (a decimal on SQLite as a number)
+func (t *Resource) cmpColumn(column string) string {
+	if t.sqliteDecimal(column) {
+		return "CAST(" + column + " AS REAL)"
+	}
+	return column
+}
+
+// cmpParam is the placeholder of a value compared with a column (a decimal on SQLite as a number)
+func (t *Resource) cmpParam(column string) string {
+	if t.sqliteDecimal(column) {
+		return "CAST(? AS REAL)"
+	}
+	return "?"
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *Resource) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
@@ -4104,6 +4147,9 @@ func (t *Resource) parseFilterExpression(fieldName, expr string) (string, []inte
 		}
 		return condition
 	}
+
+	// a decimal on SQLite compares as a number
+	col, param := t.cmpColumn(fieldName), t.cmpParam(fieldName)
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -4121,13 +4167,13 @@ func (t *Resource) parseFilterExpression(fieldName, expr string) (string, []inte
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= %s", col, param)))
 					args = append(args, max)
 				case max == "":
-					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
+					conditions = append(conditions, fmt.Sprintf("%s >= %s", col, param))
 					args = append(args, min)
 				default:
-					conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
+					conditions = append(conditions, fmt.Sprintf("%s BETWEEN %s AND %s", col, param, param))
 					args = append(args, min, max)
 				}
 			}
@@ -4142,9 +4188,9 @@ func (t *Resource) parseFilterExpression(fieldName, expr string) (string, []inte
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
 			if op == "<" || op == "<=" {
-				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s %s", col, op, param)))
 			} else {
-				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+				conditions = append(conditions, fmt.Sprintf("%s %s %s", col, op, param))
 			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
@@ -4161,12 +4207,12 @@ func (t *Resource) parseFilterExpression(fieldName, expr string) (string, []inte
 				if value == "''" {
 					value = ""
 				}
-				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> %s", col, param)))
 				args = append(args, value)
 			}
 		} else {
 			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
-			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+			conditions = append(conditions, fmt.Sprintf("%s = %s", col, param))
 			if t.isBoolColumn(fieldName) {
 				args = append(args, tables.FilterBool(part))
 			} else {
@@ -4196,11 +4242,11 @@ func (t *Resource) getOrderByClause() (string, []interface{}) {
 			args = append(args, exprArgs...)
 			continue
 		}
-		columns = append(columns, column)
+		columns = append(columns, t.cmpColumn(column))
 	}
 	for _, column := range pk {
-		if !slices.Contains(columns, column) {
-			columns = append(columns, column)
+		if !slices.Contains(t.orderByFields, column) {
+			columns = append(columns, t.cmpColumn(column))
 		}
 	}
 	if t.descending {
@@ -6660,7 +6706,7 @@ func (t *Resource) Find(which ...string) bool {
 // comparison on the key and primary key columns). A key with a FlowField cannot seek.
 func (t *Resource) findInKey(seek string, reverse bool) bool {
 	if seek != "" {
-		var columns []string
+		var columns, params []string
 		var values []interface{}
 		for _, column := range t.keyColumns() {
 			v, ok := t.columnValue(column)
@@ -6671,7 +6717,8 @@ func (t *Resource) findInKey(seek string, reverse bool) bool {
 			if t.isKeyDateColumn(column) {
 				v = types.KeyDate(v)
 			}
-			columns = append(columns, column)
+			columns = append(columns, t.cmpColumn(column))
+			params = append(params, t.cmpParam(column))
 			values = append(values, v)
 		}
 		after := (seek == ">") != t.descending
@@ -6679,7 +6726,7 @@ func (t *Resource) findInKey(seek string, reverse bool) bool {
 		if after {
 			op = ">"
 		}
-		t.seek = "(" + strings.Join(columns, ", ") + ") " + op + " (" + strings.TrimSuffix(strings.Repeat("?, ", len(columns)), ", ") + ")"
+		t.seek = "(" + strings.Join(columns, ", ") + ") " + op + " (" + strings.Join(params, ", ") + ")"
 		t.seekArgs = values
 	}
 	savedLimit, savedOffset, savedDescending := t.limit, t.offset, t.descending

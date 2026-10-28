@@ -37,6 +37,7 @@
 		initialSelect?: string; // record key to select (returning from a drilldown)
 		openCard?: boolean; // and open its modal card again (returning from a card's action)
 		startNew?: boolean; // a list opened from a lookup's New: start a new record
+		initialEdit?: boolean; // a card opened with Edit (?edit=1): it starts in edit mode
 		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
 		// Opened from a codeunit (RunModal) in a modal: no breadcrumb or navigation; the list is
 		// filtered (initialFilters) and read-only, and onclose reports how it was closed — in
@@ -52,6 +53,10 @@
 		// new records get the link values; Esc in navigation mode goes back to the card (onexit);
 		// onlineschange after a line was saved or deleted (the card's totals)
 		subpage?: boolean;
+		// A subpage: its card's edit mode (undefined: the list decides itself). The lines are
+		// editable only while the card is (no New/Edit/Delete otherwise), and the card's Edit is
+		// the lines' Edit too (the subpage shows none)
+		parentEditMode?: boolean;
 		fixedFilters?: import('$lib/types/api').FixedFilter[];
 		newRecordDefaults?: Record<string, any>;
 		onexit?: () => void;
@@ -72,6 +77,7 @@
 		initialSelect,
 		openCard = false,
 		startNew = false,
+		initialEdit = false,
 		navigationQuery,
 		embedded = false,
 		initialFilters,
@@ -79,6 +85,7 @@
 		editableLookup = false,
 		onclose,
 		subpage = false,
+		parentEditMode = undefined,
 		fixedFilters = [],
 		newRecordDefaults = {},
 		onexit,
@@ -120,6 +127,11 @@
 			replaceState(pageUrlWith(pageParams), {});
 		}
 		return true;
+	}
+
+	// The cursor into the lines (a card's Tab from its last field before this subpage)
+	export function enterLines() {
+		listPageRef?.enterLines();
 	}
 
 	// This page's URL with other parameters (the rest of the query kept)
@@ -235,6 +247,23 @@
 
 	// State
 	let page: PageDefinition | null = $state(null);
+
+	// A subpage follows its card's edit mode: read-only lines without New/Edit/Delete while the
+	// card is read-only; while it is in edit mode the card's Edit stands for the lines' Edit
+	const listPageDef = $derived(page ? withParentEditMode(page) : null);
+	function withParentEditMode(def: PageDefinition): PageDefinition {
+		if (parentEditMode === undefined) return def;
+		const hidden = parentEditMode ? ['Edit'] : ['New', 'Edit', 'Delete'];
+		return {
+			...def,
+			page: {
+				...def.page,
+				editable: parentEditMode ? def.page.editable : false,
+				actions: (def.page.actions ?? []).filter((a) => !hidden.includes(a.name))
+			}
+		};
+	}
+
 	let captions: Record<string, string> = $state({});
 	let fieldTypes: Record<string, string> = $state({}); // Field type metadata (e.g., "bool", "code", "text")
 	let options: Record<string, Record<string, string>> = $state({}); // Option field values (enum lookups)
@@ -662,7 +691,7 @@
 					currentRecordId = newRecordId;
 					replaceState(withNavigationQuery(`/pages/${page.page.id}/${newRecordId}`, navigationQuery), {});
 				}
-				toast.success(t(MSG.RECORD_UPDATED));
+				// the card's own "Saving… / ✓ Saved" indicator at the top tells it
 			} else {
 				// Insert a new record only once its primary key is filled in (Record Entry
 				// rule); until then field changes stay on the form
@@ -676,7 +705,6 @@
 				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);
 				isExistingRecord = true;
 				currentRecordId = newRecordId;
-				toast.success(t(MSG.RECORD_CREATED));
 				// Navigate to the proper URL with the new record ID
 				if (newRecordId && page.page.id) {
 					// Update URL without full page reload
@@ -709,7 +737,7 @@
 				if (selectedRecord && page.page.card_page_id) {
 					// Navigate to card page with record ID
 					const editRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
-					goto(`/pages/${page.page.card_page_id}/${editRecordId}`);
+					goto(`/pages/${page.page.card_page_id}/${editRecordId}?edit=1`);
 				}
 				break;
 			case 'Delete':
@@ -899,6 +927,7 @@
 	{#if page.page.type === 'Card'}
 		<CardPage
 			{page}
+			initialEditMode={initialEdit || undefined}
 			bind:record
 			{captions}
 			{fieldTypes}
@@ -1004,7 +1033,8 @@
 			{/if}
 			<ListPage
 				bind:this={listPageRef}
-				{page}
+				page={listPageDef ?? page}
+				editOnClick={subpage && parentEditMode === true}
 				{records}
 				{captions}
 				{fieldTypes}

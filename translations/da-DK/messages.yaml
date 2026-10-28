@@ -390,6 +390,8 @@ messages:
   GEN_JNL_TEMPLATE_DESCRIPTION: "Kladde %1"
   GEN_JNL_DEFAULT_BATCH: "Standardkladde"
   GEN_JNL_POST_CONFIRM: "Vil du bogføre kladdelinjerne?"
+  SALES_CALC_INV_DISC_CONFIRM: "Vil du beregne fakturarabatten?"
+  SALES_SERVICE_CHARGE: "Gebyr"
   GEN_JNL_NOTHING_TO_POST: "Der er intet at bogføre."
   GEN_JNL_POSTED: "Kladdelinjerne er bogført."
   GEN_JNL_POSTED_NEW_BATCH: "Kladdelinjerne er bogført. Du er nu i kladden %1."

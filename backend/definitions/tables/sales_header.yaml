@@ -1,0 +1,708 @@
+table:
+  id: 36
+  name: "Sales_Header"
+  description: "Sales Header (table 36): quotes, orders, invoices, credit memos and blanket orders"
+  data_caption_fields: [no, sell_to_customer_name]
+  auto_key: true   # OnInsert gives a document without No. the next number of its type's series
+  # Left out until their steps: 52/53/118 applies-to, 55/94 Bal. Account, 56 Job, 57/58 Ship/Invoice,
+  # 62-65 and 108/109 shipping/posting numbers, 71 Combine Shipments, 75-78/97/101/102 foreign trade
+  # statistics, 98 Correction, 117 Reserve, 119 VAT Base Discount %, 45 Order Class, 51 On Hold,
+  # 106 Package Tracking No., 10005 Ship-to UPS Zone, 10009 Outstanding Amount (LCY)
+  fields:
+    - name: document_type
+      no: 1
+      type: Option
+      db_name: document_type
+      options: ["Quote", "Order", "Invoice", "Credit Memo", "Blanket Order"]
+      primary_key: true
+
+    - name: sell_to_customer_no
+      no: 2
+      type: types.Code
+      db_name: sell_to_customer_no
+      length: 20
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+          - source: city
+            width: 250
+
+    - name: no
+      no: 3
+      type: types.Code
+      db_name: no
+      length: 20
+      primary_key: true
+
+    - name: bill_to_customer_no
+      no: 4
+      type: types.Code
+      db_name: bill_to_customer_no
+      length: 20
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+          - source: city
+            width: 250
+
+    - name: bill_to_name
+      no: 5
+      type: types.Text
+      db_name: bill_to_name
+      length: 30
+
+    - name: bill_to_name_2
+      no: 6
+      type: types.Text
+      db_name: bill_to_name_2
+      length: 30
+
+    - name: bill_to_address
+      no: 7
+      type: types.Text
+      db_name: bill_to_address
+      length: 30
+
+    - name: bill_to_address_2
+      no: 8
+      type: types.Text
+      db_name: bill_to_address_2
+      length: 30
+
+    - name: bill_to_city
+      no: 9
+      type: types.Text
+      db_name: bill_to_city
+      length: 30
+
+    - name: bill_to_contact
+      no: 10
+      type: types.Text
+      db_name: bill_to_contact
+      length: 30
+
+    - name: your_reference
+      no: 11
+      type: types.Text
+      db_name: your_reference
+      length: 30
+
+    - name: ship_to_code
+      no: 12
+      type: types.Code
+      db_name: ship_to_code
+      length: 10
+      table_relation:
+        table: Ship_to_Address
+        field: code
+        filters:
+          customer_no: {field: sell_to_customer_no}
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: ship_to_name
+      no: 13
+      type: types.Text
+      db_name: ship_to_name
+      length: 30
+
+    - name: ship_to_name_2
+      no: 14
+      type: types.Text
+      db_name: ship_to_name_2
+      length: 30
+
+    - name: ship_to_address
+      no: 15
+      type: types.Text
+      db_name: ship_to_address
+      length: 30
+
+    - name: ship_to_address_2
+      no: 16
+      type: types.Text
+      db_name: ship_to_address_2
+      length: 30
+
+    - name: ship_to_city
+      no: 17
+      type: types.Text
+      db_name: ship_to_city
+      length: 30
+
+    - name: ship_to_contact
+      no: 18
+      type: types.Text
+      db_name: ship_to_contact
+      length: 30
+
+    - name: order_date
+      no: 19
+      type: types.Date
+      db_name: order_date
+
+    - name: posting_date
+      no: 20
+      type: types.Date
+      db_name: posting_date
+
+    - name: shipment_date
+      no: 21
+      type: types.Date
+      db_name: shipment_date
+
+    - name: posting_description
+      no: 22
+      type: types.Text
+      db_name: posting_description
+      length: 50
+
+    - name: payment_terms_code
+      no: 23
+      type: types.Code
+      db_name: payment_terms_code
+      length: 10
+      table_relation:
+        table: Payment_terms
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: due_date
+      no: 24
+      type: types.Date
+      db_name: due_date
+
+    - name: payment_discount_percent
+      no: 25
+      type: types.Decimal
+      db_name: payment_discount_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0, max: 100}
+
+    - name: pmt_discount_date
+      no: 26
+      type: types.Date
+      db_name: pmt_discount_date
+
+    - name: shipment_method_code
+      no: 27
+      type: types.Code
+      db_name: shipment_method_code
+      length: 10
+      table_relation:
+        table: Shipment_Method
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: location_code
+      no: 28
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: department_code
+      no: 29
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 30
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: customer_posting_group
+      no: 31
+      type: types.Code
+      db_name: customer_posting_group
+      length: 10
+      editable: false
+      table_relation:
+        table: Customer_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+
+    - name: currency_code
+      no: 32
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    # the exchange rate of the currency on the posting date (units per 1 LCY)
+    - name: currency_factor
+      no: 33
+      type: types.Decimal
+      db_name: currency_factor
+      decimal_places: "0:15"
+      precision: 18
+      scale: 15
+      editable: false
+
+    - name: price_group_code
+      no: 34
+      type: types.Code
+      db_name: price_group_code
+      length: 10
+      table_relation:
+        table: Price_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+
+    - name: prices_including_tax
+      no: 35
+      type: bool
+      db_name: prices_including_tax
+
+    - name: allow_quantity_disc
+      no: 36
+      type: bool
+      db_name: allow_quantity_disc
+
+    # the code of the customer's invoice discounts (Cust. Invoice Disc.); any code is accepted
+    - name: invoice_disc_code
+      no: 37
+      type: types.Code
+      db_name: invoice_disc_code
+      length: 20
+      table_relation:
+        table: Customer
+        field: no
+        validate: false
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+          - source: city
+            width: 250
+
+    - name: cust_item_disc_gr
+      no: 40
+      type: types.Code
+      db_name: cust_item_disc_gr
+      length: 10
+      table_relation:
+        table: Customer_Discount_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: language_code
+      no: 41
+      type: types.Code
+      db_name: language_code
+      length: 10
+      table_relation:
+        table: Language
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: salesperson_code
+      no: 43
+      type: types.Code
+      db_name: salesperson_code
+      length: 10
+      table_relation:
+        table: Salesperson_Purchaser
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: comment
+      no: 46
+      type: bool
+      flow_field: true
+      calc_formula: Exist
+      source_table: SalesCommentLine
+      source_field: line_no
+      flow_filters:
+        - field: document_type
+          type: field
+          value: document_type
+        - field: no
+          type: field
+          value: no
+
+    - name: no_printed
+      no: 47
+      type: int
+      db_name: no_printed
+      editable: false
+
+    - name: amount
+      no: 60
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: SalesLine
+      source_field: amount
+      flow_filters:
+        - field: document_type
+          type: field
+          value: document_type
+        - field: document_no
+          type: field
+          value: no
+
+    - name: amount_including_tax
+      no: 61
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: SalesLine
+      source_field: amount_including_tax
+      flow_filters:
+        - field: document_type
+          type: field
+          value: document_type
+        - field: document_no
+          type: field
+          value: no
+
+    - name: vat_registration_no
+      no: 70
+      type: types.Text
+      db_name: vat_registration_no
+      length: 20
+
+    - name: reason_code
+      no: 73
+      type: types.Code
+      db_name: reason_code
+      length: 10
+      table_relation:
+        table: Reason_Code
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_bus_posting_group
+      no: 74
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: sell_to_customer_name
+      no: 79
+      type: types.Text
+      db_name: sell_to_customer_name
+      length: 30
+
+    - name: sell_to_customer_name_2
+      no: 80
+      type: types.Text
+      db_name: sell_to_customer_name_2
+      length: 30
+
+    - name: sell_to_address
+      no: 81
+      type: types.Text
+      db_name: sell_to_address
+      length: 30
+
+    - name: sell_to_address_2
+      no: 82
+      type: types.Text
+      db_name: sell_to_address_2
+      length: 30
+
+    - name: sell_to_city
+      no: 83
+      type: types.Text
+      db_name: sell_to_city
+      length: 30
+
+    - name: sell_to_contact
+      no: 84
+      type: types.Text
+      db_name: sell_to_contact
+      length: 30
+
+    - name: bill_to_post_code
+      no: 85
+      type: types.Code
+      db_name: bill_to_post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: bill_to_state
+      no: 86
+      type: types.Text
+      db_name: bill_to_state
+      length: 30
+
+    - name: bill_to_country_code
+      no: 87
+      type: types.Code
+      db_name: bill_to_country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: sell_to_post_code
+      no: 88
+      type: types.Code
+      db_name: sell_to_post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: sell_to_state
+      no: 89
+      type: types.Text
+      db_name: sell_to_state
+      length: 30
+
+    - name: sell_to_country_code
+      no: 90
+      type: types.Code
+      db_name: sell_to_country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: ship_to_post_code
+      no: 91
+      type: types.Code
+      db_name: ship_to_post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: ship_to_state
+      no: 92
+      type: types.Text
+      db_name: ship_to_state
+      length: 30
+
+    - name: ship_to_country_code
+      no: 93
+      type: types.Code
+      db_name: ship_to_country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: document_date
+      no: 99
+      type: types.Date
+      db_name: document_date
+
+    - name: external_document_no
+      no: 100
+      type: types.Code
+      db_name: external_document_no
+      length: 20
+
+    - name: payment_method_code
+      no: 104
+      type: types.Code
+      db_name: payment_method_code
+      length: 10
+      table_relation:
+        table: Payment_Method
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: shipping_agent_code
+      no: 105
+      type: types.Code
+      db_name: shipping_agent_code
+      length: 10
+      table_relation:
+        table: Shipping_Agent
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: no_series
+      no: 107
+      type: types.Code
+      db_name: no_series
+      length: 10
+      editable: false
+      table_relation:
+        table: No_Series
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 114
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 115
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_bus_posting_group
+      no: 116
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    # classic local field 10015
+    - name: tax_exemption_no
+      no: 900
+      type: types.Text
+      db_name: tax_exemption_no
+      length: 30
+
+  keys:
+    - name: Primary
+      fields: [document_type, "no"]
+      clustered: true
+    - name: customer
+      fields: [document_type, sell_to_customer_no]
