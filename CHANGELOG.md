@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.117](https://github.com/hansjlachmann/openerp/compare/v0.1.116...v0.1.117) (2026-10-28)
+
+
+### Features
+
+* print a Sales Quote — Company Information, report engine, report 204 ([#160](https://github.com/hansjlachmann/openerp/issues/160)) ([7a075ab](https://github.com/hansjlachmann/openerp/commit/7a075ab5231a00465f8700a42786651da82876ab))
+
 ## [0.1.116](https://github.com/hansjlachmann/openerp/compare/v0.1.115...v0.1.116) (2026-10-28)
 
 
