@@ -166,6 +166,9 @@ type LookupData struct {
 	FreeText bool `json:"free_text,omitempty"`
 	// NewPageID: the related table's list page — the lookup's "New" opens it with a new record
 	NewPageID int `json:"new_page_id,omitempty"`
+	// KeyField: the related table's field the relation matches (the rows' _key) — a record
+	// picked from the New page gives its value
+	KeyField string `json:"key_field,omitempty"`
 	// Variants (a conditional relation): the lookup per value of VariantField (the record's
 	// type field, e.g. bal_account_type) — the page picks it by the record; types without a
 	// variant have no lookup
@@ -239,6 +242,7 @@ func (h *TablesHandler) buildLookup(tableName, fieldName string, relInfo ftables
 		SearchTimeout: relInfo.SearchTimeout,
 		FreeText:      relInfo.NoValidate,
 		NewPageID:     pages.GetRegistry().LookupPage(relInfo.Table),
+		KeyField:      relInfo.Field,
 	}
 	for _, f := range relInfo.Filters {
 		lookup.Filters = append(lookup.Filters, LookupFilter{Column: f.Column, Field: f.Field, Const: f.Const})

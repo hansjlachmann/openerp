@@ -71,11 +71,17 @@ func (salesHeaderLogic) OnRename(rec *gtables.SalesHeader) error {
 	return apperrors.RenameNotAllowed(gtables.SalesHeaderTableName)
 }
 
-// InitSalesHeaderRecord (InitRecord): order and invoice dates from the work date, the posting
-// date (not on quotes), the document date and the posting description ("Quote SQ000001")
+// InitSalesHeaderRecord (InitRecord): order and invoice dates from the work date (a quote's
+// order date too), the posting date (not on quotes), the document date and the posting
+// description ("Quote SQ000001")
 func InitSalesHeaderRecord(rec *gtables.SalesHeader) {
 	if rec.Document_type == gtables.SalesHeader_Document_type.Order || rec.Document_type == gtables.SalesHeader_Document_type.Invoice {
 		rec.Shipment_date = system.WorkDate()
+		rec.Order_date = system.WorkDate()
+	}
+	// a quote is dated too (decided 2026-10-28; the classic leaves its Order Date blank): its
+	// prices are those of the order date
+	if rec.Document_type == gtables.SalesHeader_Document_type.Quote {
 		rec.Order_date = system.WorkDate()
 	}
 	if rec.Document_type != gtables.SalesHeader_Document_type.Quote && rec.Posting_date.IsZero() {

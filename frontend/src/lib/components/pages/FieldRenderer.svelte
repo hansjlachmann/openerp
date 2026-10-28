@@ -195,6 +195,7 @@
 					freeText={lookups.free_text}
 					newPageId={lookups.new_page_id}
 					newPath={lookups.new_path}
+					newKeyField={lookups.key_field}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
@@ -284,6 +285,7 @@
 					freeText={lookups.free_text}
 					newPageId={lookups.new_page_id}
 					newPath={lookups.new_path}
+					newKeyField={lookups.key_field}
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}

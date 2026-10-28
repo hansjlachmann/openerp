@@ -8,6 +8,9 @@
 	import { api } from '$lib/services/api';
 	import { goto } from '$app/navigation';
 	import { withReturn } from '$lib/utils/returnUrl';
+	import type { TableFilter } from '$lib/types/api';
+	import Modal from '../Modal.svelte';
+	import PageRenderer from './PageRenderer.svelte';
 
 	interface LookupRow {
 		_key: string;
@@ -36,6 +39,9 @@
 		newPageId?: number;
 		// New with the relation's filters (an item's units of measure): the list opens filtered
 		newPath?: string;
+		// The related table's field the relation matches: New opens the list over the page (a
+		// new record ready to type) and Enter/OK there picks the record into this field
+		newKeyField?: string;
 		onselect?: (key: string) => void;
 		onblur?: () => void;
 	}
@@ -56,6 +62,7 @@
 		openOnFocus = false,
 		newPageId,
 		newPath,
+		newKeyField,
 		onselect,
 		onblur
 	}: Props = $props();
@@ -281,7 +288,31 @@
 		if (!newPageId) return;
 		isOpen = false;
 		const path = newPath ? `${newPath}&new=1` : `/pages/${newPageId}?new=1`;
+		if (newKeyField) {
+			// over the page: the record being entered stays as it is
+			const filters: TableFilter[] = new URL(path, 'http://x').searchParams.getAll('filter').map((f) => {
+				const i = f.indexOf('=');
+				return { field: f.slice(0, i), expression: f.slice(i + 1) };
+			});
+			newPick = { pageId: newPageId, filters };
+			return;
+		}
 		goto(withReturn(path));
+	}
+
+	// New over the page (lookup mode, a new record ready to type): Enter or OK picks the record
+	// — the one just entered — into the field; Cancel/Esc leaves the field as it was
+	let newPick = $state<{ pageId: number; filters: TableFilter[] } | null>(null);
+	function closeNew(action: string, picked?: Record<string, any>) {
+		newPick = null;
+		if (action === 'LookupOK' && picked && newKeyField) {
+			const key = String(picked[newKeyField] ?? '');
+			if (key) {
+				handleSelect({ _key: key } as LookupRow);
+				return;
+			}
+		}
+		inputRef?.focus();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -532,7 +563,30 @@
 	{/if}
 </div>
 
+{#if newPick}
+	{@const request = newPick}
+	<Modal open={true} size="expanded" onclose={() => closeNew('Cancel')}>
+		<div class="new-pick-page" data-own-keys>
+			<PageRenderer
+				pageid={request.pageId}
+				embedded={true}
+				initialFilters={request.filters}
+				lookupMode={true}
+				editableLookup={true}
+				startNew={true}
+				onclose={(action, _key, picked) => closeNew(action, picked)}
+			/>
+		</div>
+	</Modal>
+{/if}
+
 <style>
+	.new-pick-page {
+		height: 70vh;
+		display: flex;
+		flex-direction: column;
+	}
+
 	.lookup-dropdown {
 		position: relative;
 		width: 100%;

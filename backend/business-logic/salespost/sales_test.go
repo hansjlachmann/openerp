@@ -237,8 +237,8 @@ func TestSalesQuote(t *testing.T) {
 		salesHeader.Invoice_disc_code != "C1" || salesHeader.Tax_area_code != "AREA" || !salesHeader.Tax_liable || salesHeader.Customer_posting_group != "DOM" {
 		t.Errorf("customer fields: %+v", salesHeader.ToMap())
 	}
-	if !salesHeader.Posting_date.IsZero() || salesHeader.Document_date != system.WorkDate() {
-		t.Errorf("quote dates: posting %s document %s", salesHeader.Posting_date, salesHeader.Document_date)
+	if !salesHeader.Posting_date.IsZero() || salesHeader.Document_date != system.WorkDate() || salesHeader.Order_date != system.WorkDate() {
+		t.Errorf("quote dates: posting %s document %s order %s", salesHeader.Posting_date, salesHeader.Document_date, salesHeader.Order_date)
 	}
 	dueDate, err := system.CalcDate("14D", system.WorkDate())
 	must(t, err)

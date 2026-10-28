@@ -127,6 +127,11 @@
 		return true;
 	}
 
+	// The cursor into the lines (a card's Tab from its last field before this subpage)
+	export function enterLines() {
+		listPageRef?.enterLines();
+	}
+
 	// This page's URL with other parameters (the rest of the query kept)
 	function pageUrlWith(params: Record<string, string>): string {
 		const url = new URL(window.location.href);
@@ -684,7 +689,7 @@
 					currentRecordId = newRecordId;
 					replaceState(withNavigationQuery(`/pages/${page.page.id}/${newRecordId}`, navigationQuery), {});
 				}
-				toast.success(t(MSG.RECORD_UPDATED));
+				// the card's own "Saving… / ✓ Saved" indicator at the top tells it
 			} else {
 				// Insert a new record only once its primary key is filled in (Record Entry
 				// rule); until then field changes stay on the form
@@ -698,7 +703,6 @@
 				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);
 				isExistingRecord = true;
 				currentRecordId = newRecordId;
-				toast.success(t(MSG.RECORD_CREATED));
 				// Navigate to the proper URL with the new record ID
 				if (newRecordId && page.page.id) {
 					// Update URL without full page reload

@@ -1133,6 +1133,22 @@
 	//   stays uncommitted; an untouched new row is discarded when the user leaves it.
 	// - Pages with delayed_insert (DelayedInsert) insert only when leavingRow is true: the
 	//   user moved to another row, past the last row, or out of the table.
+	// A list to pick from (a lookup's New, RunModal in lookup mode): Enter in a cell saves the
+	// line — inserting a new one — and picks it. false: nothing to pick (an untouched new row)
+	async function pickFromCell(rowIndex: number, colIndex: number): Promise<boolean> {
+		const record = displayRecords[rowIndex];
+		if (!pickOnEnter || !record || isEmptyNewRecord(record)) return false;
+		const field = visibleColumns()[colIndex];
+		if (field && isCodeType(fieldTypes[field.source]) && typeof record[field.source] === 'string') {
+			record[field.source] = record[field.source].toUpperCase();
+		}
+		cellState = 'cell-selected';
+		await handleCellBlur(record, rowIndex, field?.source, true);
+		if (record._isNew === true) return true; // not saved: the error is shown, the line stays
+		onrowclick?.(record, cardNavigationQuery);
+		return true;
+	}
+
 	async function handleCellBlur(record: Record<string, any>, rowIndex: number, fieldName?: string, leavingRow: boolean = false) {
 		if (!page || !editableActive) return;
 
@@ -1542,6 +1558,10 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
+				if (pickOnEnter) {
+					void pickFromCell(rowIndex, colIndex);
+					break;
+				}
 				if (isBoolean && isCellEditable(field)) {
 					// Toggle checkbox + move down
 					record[field.source] = !record[field.source];
@@ -1778,6 +1798,10 @@
 				break;
 			case 'Enter':
 				event.preventDefault();
+				if (pickOnEnter) {
+					void pickFromCell(rowIndex, colIndex);
+					break;
+				}
 				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
@@ -1827,6 +1851,10 @@
 			case 'Enter':
 				// Only handle Enter when dropdown is closed (LookupDropdown preventDefault's Enter when open)
 				event.preventDefault();
+				if (pickOnEnter) {
+					void pickFromCell(rowIndex, colIndex);
+					break;
+				}
 				if (!isLastRow(rowIndex)) {
 					confirmAndMoveTo(rowIndex + 1, colIndex);
 				} else {
@@ -3033,8 +3061,9 @@
 						// New and Refresh are always enabled
 						if (action.name === 'New' || action.name === 'Refresh') return false;
 
-						// Edit is disabled if page is not editable
-						if (action.name === 'Edit') return page.page.editable !== true;
+						// Edit opens the card (a list with a card page: needs a row), or edits the
+						// lines of an editable list
+						if (action.name === 'Edit') return page.page.card_page_id ? !selectedRecord : page.page.editable !== true;
 
 						// Delete requires a selected record
 						if (action.name === 'Delete') return !selectedRecord;
@@ -3286,6 +3315,7 @@
 												freeText={lookupFor(lookups, field.source, record)!.free_text}
 												newPageId={lookupFor(lookups, field.source, record)!.new_page_id}
 												newPath={lookupFor(lookups, field.source, record)!.new_path}
+												newKeyField={lookupFor(lookups, field.source, record)!.key_field}
 												openOnFocus={openLookupOnEdit}
 												value={record[field.source] || ''}
 												fieldName={getFieldCaption(field.source, captions, field.caption)}
