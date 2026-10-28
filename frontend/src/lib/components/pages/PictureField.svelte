@@ -20,7 +20,10 @@
 
 	let version = $state(0);
 	let fileInput: HTMLInputElement | null = $state(null);
-	const url = $derived(`/api/tables/${encodeURIComponent(table)}/blob/${encodeURIComponent(field)}/${encodeURIComponent(recordId)}`);
+	// a record with a blank key (a setup table) has no key segment, like the other record URLs
+	const url = $derived(
+		`/api/tables/${encodeURIComponent(table)}/blob/${encodeURIComponent(field)}` + (recordId === '' ? '' : `/${encodeURIComponent(recordId)}`)
+	);
 
 	async function importPicture(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;

@@ -1,0 +1,78 @@
+page:
+  id: 1
+  type: Card
+  name: Company Information
+  source_table: Company_Information   # setup table: opens on its single record
+  caption: Company Information
+  editable: true
+
+  # The company's details printed on its documents (Format Address: Company)
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: name
+            importance: Promoted
+          - source: name_2
+          - source: address
+          - source: address_2
+          - source: post_code
+          - source: city
+          - source: state
+          - source: country_code
+          - source: vat_registration_no
+          - source: registration_no
+          - source: federal_id_no
+
+      - name: Communication
+        caption: Communication
+        fields:
+          - source: phone_no
+          - source: phone_no_2
+          - source: fax_no
+          - source: telex_no
+          - source: telex_answer_back
+          - source: e_mail
+          - source: home_page
+
+      - name: Payments
+        caption: Payments
+        fields:
+          - source: bank_name
+          - source: bank_branch_no
+          - source: bank_account_no
+          - source: payment_routing_no
+          - source: giro_no
+
+      - name: Shipping
+        caption: Shipping
+        fields:
+          - source: ship_to_name
+          - source: ship_to_name_2
+          - source: ship_to_address
+          - source: ship_to_address_2
+          - source: ship_to_post_code
+          - source: ship_to_city
+          - source: ship_to_state
+          - source: ship_to_contact
+          - source: location_code
+
+      - name: Foreign Trade
+        caption: Foreign Trade
+        fields:
+          - source: customs_permit_no
+          - source: customs_permit_date
+
+      # The logo printed on the documents
+      - name: Picture
+        caption: Picture
+        fields:
+          - source: picture
+
+  actions:
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true

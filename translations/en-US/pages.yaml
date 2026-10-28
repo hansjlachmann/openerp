@@ -548,6 +548,8 @@ pages:
     caption: "Cust. Invoice Discounts"
   sales_comment_sheet:
     caption: "Sales Comment Sheet"
+  company_information:
+    caption: "Company Information"
   res_capacity_entries:
     caption: "Res. Capacity Entries"
   resources_setup:
