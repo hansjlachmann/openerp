@@ -213,7 +213,7 @@ menu:
         page_id: 255
       - separator: true
       - name: "Quotes"
-        page_id: 41
+        page_id: 9300
       - name: "Blanket Orders"
         page_id: 507
       - name: "Orders"

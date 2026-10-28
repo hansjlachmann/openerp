@@ -518,6 +518,36 @@ pages:
     caption: "Ressursprisendringer"
   navigate:
     caption: "Naviger"
+  sales_quotes:
+    caption: "Salgstilbud"
+  sales_quote:
+    caption: "Salgstilbud"
+  sales_quote_subform:
+    caption: "Linjer"
+  sales_statistics:
+    caption: "Salgsstatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Beløp"
+      inv_discount_amount: "Fakturarabattbeløp"
+      total: "Totalt"
+      tax_amount: "Mva.-beløp"
+      total_incl_tax: "Totalt inkl. mva."
+      sales_lcy: "Salg (NOK)"
+      cost_lcy: "Kostnad (NOK)"
+      profit_lcy: "Avanse (NOK)"
+      profit_pct: "Avanse %"
+      quantity: "Antall"
+      parcels: "Kolli"
+      net_weight: "Nettovekt"
+      gross_weight: "Bruttovekt"
+      volume: "Volum"
+      balance_lcy: "Saldo (NOK)"
+      credit_limit_lcy: "Kredittgrense (NOK)"
+      credit_limit_expended_pct: "Brukt % av kredittgrense (NOK)"
+  cust_invoice_discounts:
+    caption: "Kundefakturarabatter"
+  sales_comment_sheet:
+    caption: "Salgsmerknader"
   res_capacity_entries:
     caption: "Ressurskapasitetsposter"
   resources_setup:

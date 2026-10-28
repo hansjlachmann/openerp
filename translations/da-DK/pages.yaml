@@ -518,6 +518,36 @@ pages:
     caption: "Ressourceprisændringer"
   navigate:
     caption: "Naviger"
+  sales_quotes:
+    caption: "Salgstilbud"
+  sales_quote:
+    caption: "Salgstilbud"
+  sales_quote_subform:
+    caption: "Linjer"
+  sales_statistics:
+    caption: "Salgsstatistik"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Beløb"
+      inv_discount_amount: "Fakturarabatbeløb"
+      total: "I alt"
+      tax_amount: "Momsbeløb"
+      total_incl_tax: "I alt inkl. moms"
+      sales_lcy: "Salg (RV)"
+      cost_lcy: "Kostpris (RV)"
+      profit_lcy: "Avance (RV)"
+      profit_pct: "Avance %"
+      quantity: "Antal"
+      parcels: "Kolli"
+      net_weight: "Nettovægt"
+      gross_weight: "Bruttovægt"
+      volume: "Rumfang"
+      balance_lcy: "Saldo (RV)"
+      credit_limit_lcy: "Kreditmaksimum (RV)"
+      credit_limit_expended_pct: "Forbrugt % af kreditmaksimum (RV)"
+  cust_invoice_discounts:
+    caption: "Debitorfakturarabatter"
+  sales_comment_sheet:
+    caption: "Salgsbemærkninger"
   res_capacity_entries:
     caption: "Ressourcekapacitetsposter"
   resources_setup:

@@ -22,6 +22,9 @@ application:
       # Fixed assets keep their classic numbers (tables, pages 5600–5661)
       - from: 5600
         to: 5699
+      # The document list pages (9300 Sales Quotes …)
+      - from: 9300
+        to: 9399
     # Fields of the application's tables (field IDs)
     fields:
       - from: 1

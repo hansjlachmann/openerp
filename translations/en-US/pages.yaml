@@ -518,6 +518,36 @@ pages:
     caption: "Resource Price Changes"
   navigate:
     caption: "Navigate"
+  sales_quotes:
+    caption: "Sales Quotes"
+  sales_quote:
+    caption: "Sales Quote"
+  sales_quote_subform:
+    caption: "Lines"
+  sales_statistics:
+    caption: "Sales Statistics"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Amount"
+      inv_discount_amount: "Inv. Discount Amount"
+      total: "Total"
+      tax_amount: "Tax Amount"
+      total_incl_tax: "Total Incl. Tax"
+      sales_lcy: "Sales (LCY)"
+      cost_lcy: "Cost (LCY)"
+      profit_lcy: "Profit (LCY)"
+      profit_pct: "Profit %"
+      quantity: "Quantity"
+      parcels: "Parcels"
+      net_weight: "Net Weight"
+      gross_weight: "Gross Weight"
+      volume: "Volume"
+      balance_lcy: "Balance (LCY)"
+      credit_limit_lcy: "Credit Limit (LCY)"
+      credit_limit_expended_pct: "Expended % of Credit Limit (LCY)"
+  cust_invoice_discounts:
+    caption: "Cust. Invoice Discounts"
+  sales_comment_sheet:
+    caption: "Sales Comment Sheet"
   res_capacity_entries:
     caption: "Res. Capacity Entries"
   resources_setup:
