@@ -176,6 +176,7 @@
 			{:else if isOptionField && options}
 				<!-- Option/Enum field - render as OptionDropdown -->
 				<OptionDropdown
+					arrowsMoveFields
 					{options}
 					{value}
 					{tabindex}
@@ -196,6 +197,7 @@
 					newPageId={lookups.new_page_id}
 					newPath={lookups.new_path}
 					newKeyField={lookups.key_field}
+					arrowsMoveFields
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}
@@ -286,6 +288,7 @@
 					newPageId={lookups.new_page_id}
 					newPath={lookups.new_path}
 					newKeyField={lookups.key_field}
+					arrowsMoveFields
 					value={value || ''}
 					fieldName={fieldCaption}
 					captions={fieldCaptions}

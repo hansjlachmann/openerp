@@ -2,8 +2,11 @@
 	import { dropdownPageSize, pageIndex } from '$utils/dropdownPaging';
 	import { cn } from '$lib/utils/cn';
 	import { clickOutside } from '$lib/actions/clickOutside';
+	import { floating } from '$lib/actions/floating';
 
 	interface Props {
+		// On a card: ↑/↓ on the closed field move to the field above/below (Alt+↓ / F4 open it)
+		arrowsMoveFields?: boolean;
 		options: Record<string, string>; // key (stored integer as string) → display label
 		value: number | string | null; // Current stored value (integer)
 		tabindex?: number;
@@ -14,6 +17,7 @@
 	}
 
 	let {
+		arrowsMoveFields = false,
 		options,
 		value = null,
 		tabindex = 0,
@@ -24,6 +28,8 @@
 	}: Props = $props();
 
 	let isOpen = $state(false);
+	// the open list (moved to <body> by floating, so nothing clips it)
+	let panelRef = $state<HTMLDivElement | null>(null);
 	let containerRef = $state<HTMLDivElement | null>(null);
 	let inputRef = $state<HTMLDivElement | null>(null);
 	let bodyRef = $state<HTMLDivElement | null>(null);
@@ -82,7 +88,7 @@
 
 	function handleBlur() {
 		setTimeout(() => {
-			if (containerRef?.contains(document.activeElement)) {
+			if (containerRef?.contains(document.activeElement) || panelRef?.contains(document.activeElement)) {
 				return;
 			}
 			isOpen = false;
@@ -103,6 +109,7 @@
 				// If closed, let Escape bubble up
 				break;
 			case 'ArrowDown':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (!isOpen) {
 					selectHandled = false;
@@ -112,6 +119,7 @@
 				}
 				break;
 			case 'ArrowUp':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (isOpen) {
 					selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -158,7 +166,7 @@
 <div
 	class={cn('option-dropdown', compact && 'option-dropdown-compact')}
 	bind:this={containerRef}
-	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen }}
+	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen, also: () => [panelRef] }}
 >
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -185,7 +193,9 @@
 	</div>
 
 	{#if isOpen}
-		<div class="option-panel" role="listbox" id="option-listbox">
+		<!-- the list keeps the focus in the field (mousedown), so it is never focused itself -->
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div class="option-panel" role="listbox" id="option-listbox" bind:this={panelRef} use:floating={inputRef} onmousedown={(e) => e.preventDefault()}>
 			<div class="option-body" bind:this={bodyRef}>
 				{#each entries as [optKey, optLabel], i}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->

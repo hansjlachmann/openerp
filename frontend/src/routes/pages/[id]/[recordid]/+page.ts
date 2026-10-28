@@ -6,10 +6,13 @@ export const load: PageLoad = ({ params, url }) => {
 	const recordId = params.recordid;
 	// Opened from a list: card navigation moves through the list's records (filters, search, sort)
 	const navigationQuery = parseNavigationQuery(url.searchParams.get('nav'));
+	// Opened with Edit (a list's Edit / Ctrl+E): the card starts in edit mode
+	const edit = url.searchParams.get('edit') === '1';
 
 	return {
 		pageId,
 		recordId,
-		navigationQuery
+		navigationQuery,
+		edit
 	};
 };

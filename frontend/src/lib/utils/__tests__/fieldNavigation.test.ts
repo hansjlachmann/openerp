@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getFieldControls, focusAdjacentField, handleFieldEnterKey } from '../fieldNavigation';
+import { getFieldControls, focusAdjacentField, handleFieldEnterKey, arrowLeavesField, fieldInDirection } from '../fieldNavigation';
 
 function setup(html: string): HTMLElement {
 	document.body.innerHTML = `<div id="root">${html}</div>`;
@@ -84,5 +84,44 @@ describe('fieldNavigation', () => {
 
 	it('focusAdjacentField returns false for a non-field element', () => {
 		expect(focusAdjacentField(root, document.getElementById('btn')!)).toBe(false);
+	});
+});
+
+describe('arrow keys between card fields', () => {
+	it('leaves a text field only at the start/end of the text or when all is selected', () => {
+		const root = setup('<input id="t" value="hello" /><textarea id="x">a</textarea><input id="c" type="checkbox" />');
+		const t = root.querySelector<HTMLInputElement>('#t')!;
+		t.setSelectionRange(0, 0);
+		expect(arrowLeavesField(t, 'left')).toBe(true);
+		expect(arrowLeavesField(t, 'right')).toBe(false);
+		t.setSelectionRange(5, 5);
+		expect(arrowLeavesField(t, 'right')).toBe(true);
+		t.setSelectionRange(2, 2);
+		expect(arrowLeavesField(t, 'left')).toBe(false);
+		expect(arrowLeavesField(t, 'down')).toBe(true);
+		t.setSelectionRange(0, 5);
+		expect(arrowLeavesField(t, 'right')).toBe(true);
+		expect(arrowLeavesField(root.querySelector('#x')!, 'down')).toBe(false);
+		expect(arrowLeavesField(root.querySelector('#c')!, 'right')).toBe(true);
+	});
+
+	it('finds the previous/next field and the nearest one in the row above/below', () => {
+		const root = setup('<input id="a" /><input id="b" /><input id="c" /><input id="d" />');
+		const [a, b, c, d] = ['a', 'b', 'c', 'd'].map((id) => root.querySelector<HTMLElement>('#' + id)!);
+		// a two-column card: a b / c d
+		const at = (el: HTMLElement, left: number, top: number) =>
+			(el.getBoundingClientRect = () => ({ left, top, right: left + 100, bottom: top + 30, width: 100, height: 30, x: left, y: top, toJSON: () => ({}) }) as DOMRect);
+		at(a, 0, 0);
+		at(b, 200, 0);
+		at(c, 0, 50);
+		at(d, 200, 50);
+		const controls = [a, b, c, d];
+		expect(fieldInDirection(controls, a, 'right')).toBe(b);
+		expect(fieldInDirection(controls, b, 'right')).toBe(c);
+		expect(fieldInDirection(controls, c, 'left')).toBe(b);
+		expect(fieldInDirection(controls, b, 'down')).toBe(d);
+		expect(fieldInDirection(controls, c, 'up')).toBe(a);
+		expect(fieldInDirection(controls, d, 'down')).toBeNull();
+		expect(fieldInDirection(controls, a, 'left')).toBeNull();
 	});
 });

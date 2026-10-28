@@ -45,3 +45,55 @@ export function handleFieldEnterKey(event: KeyboardEvent, container: HTMLElement
 	event.stopPropagation();
 	focusAdjacentField(container, target, event.shiftKey);
 }
+
+// Focus a field as Tab does: its text selected, so typing replaces it
+export function focusField(el: HTMLElement): void {
+	el.focus();
+	if (el instanceof HTMLInputElement && ['text', 'email', 'password', 'search', 'tel', 'url', 'number'].includes(el.type)) {
+		el.select();
+	}
+}
+
+export type ArrowDirection = 'up' | 'down' | 'left' | 'right';
+
+// Whether an arrow key leaves the field (card pages, like the list's cell editing): Up/Down
+// always (one-line fields), Left/Right only at the start/end of the text or when all of it is
+// selected — inside the text they move the cursor. Date inputs keep Left/Right (their parts);
+// selects and textareas keep all arrows.
+export function arrowLeavesField(el: HTMLElement, direction: ArrowDirection): boolean {
+	if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return false;
+	if (direction === 'up' || direction === 'down') return true;
+	if (!(el instanceof HTMLInputElement)) return true; // a custom dropdown (combobox)
+	let start: number | null = null;
+	let end: number | null = null;
+	try {
+		start = el.selectionStart;
+		end = el.selectionEnd;
+	} catch {
+		// inputs without a text selection (checkbox …)
+	}
+	if (start === null || end === null) return el.type === 'checkbox' || el.type === 'radio';
+	const length = el.value.length;
+	if (start === 0 && end === length) return true; // all (or nothing) selected
+	if (start !== end) return false;
+	return direction === 'left' ? start === 0 : end === length;
+}
+
+// The field an arrow key moves to: Left/Right the previous/next field in Tab order, Up/Down the
+// nearest field in the row above/below — of that row the one nearest horizontally. null: none.
+export function fieldInDirection(controls: HTMLElement[], from: HTMLElement, direction: ArrowDirection): HTMLElement | null {
+	const index = controls.indexOf(from);
+	if (direction === 'left') return index > 0 ? controls[index - 1] : null;
+	if (direction === 'right') return index >= 0 && index < controls.length - 1 ? controls[index + 1] : null;
+	const r = from.getBoundingClientRect();
+	const centre = r.left + r.width / 2;
+	const candidates = controls
+		.filter((c) => c !== from)
+		.map((c) => ({ c, rect: c.getBoundingClientRect() }))
+		.filter(({ rect }) => (direction === 'down' ? rect.top >= r.bottom - 1 : rect.bottom <= r.top + 1));
+	if (candidates.length === 0) return null;
+	const rowTop = direction === 'down' ? Math.min(...candidates.map(({ rect }) => rect.top)) : Math.max(...candidates.map(({ rect }) => rect.top));
+	const row = candidates.filter(({ rect }) => Math.abs(rect.top - rowTop) <= 4);
+	row.sort((a, b) => Math.abs(a.rect.left + a.rect.width / 2 - centre) - Math.abs(b.rect.left + b.rect.width / 2 - centre));
+	return row[0].c;
+}

@@ -5,6 +5,7 @@
 	import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 	import type { LookupColumn } from '$lib/types/api';
 	import { clickOutside } from '$lib/actions/clickOutside';
+	import { floating } from '$lib/actions/floating';
 	import { api } from '$lib/services/api';
 	import { goto } from '$app/navigation';
 	import { withReturn } from '$lib/utils/returnUrl';
@@ -18,6 +19,8 @@
 	}
 
 	interface Props {
+		// On a card: ↑/↓ on the closed field move to the field above/below (Alt+↓ / F4 open it)
+		arrowsMoveFields?: boolean;
 		columns: LookupColumn[];
 		rows: LookupRow[];
 		value: string;
@@ -47,6 +50,7 @@
 	}
 
 	let {
+		arrowsMoveFields = false,
 		columns,
 		rows,
 		value = '',
@@ -68,6 +72,8 @@
 	}: Props = $props();
 
 	let isOpen = $state(false);
+	// the open list (moved to <body> by floating, so nothing clips it)
+	let panelRef = $state<HTMLDivElement | null>(null);
 	let containerRef = $state<HTMLDivElement | null>(null);
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let bodyRef = $state<HTMLDivElement | null>(null);
@@ -233,7 +239,7 @@
 		// Small delay to allow click on dropdown to register
 		setTimeout(() => {
 			// Focus still inside the component (e.g. input re-focused after handleSelect) — do nothing
-			if (containerRef?.contains(document.activeElement)) {
+			if (containerRef?.contains(document.activeElement) || panelRef?.contains(document.activeElement)) {
 				return;
 			}
 
@@ -334,6 +340,7 @@
 				// If dropdown is closed, let Escape bubble up to close the card page
 				break;
 			case 'ArrowDown':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (!isOpen) {
 					selectHandled = false; // Clear so ArrowDown always opens
@@ -343,6 +350,7 @@
 				}
 				break;
 			case 'ArrowUp':
+				if (!isOpen && arrowsMoveFields && !e.altKey) break;
 				e.preventDefault();
 				if (isOpen) {
 					selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -463,7 +471,7 @@
 	data-own-keys={isOpen ? 'lookup' : undefined}
 	bind:this={containerRef}
 	style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
-	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen }}
+	use:clickOutside={{ callback: handleClickOutside, enabled: isOpen, also: () => [panelRef] }}
 >
 	<div class="lookup-input-wrapper">
 		<input
@@ -498,7 +506,18 @@
 	</div>
 
 	{#if isOpen}
-		<div class="lookup-panel" role="listbox" id="lookup-listbox">
+		<!-- the list keeps the focus in the field (mousedown), so it is never focused itself -->
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div
+			class="lookup-panel"
+			role="listbox"
+			id="lookup-listbox"
+			bind:this={panelRef}
+			use:floating={containerRef}
+			data-own-keys="lookup"
+			onmousedown={(e) => e.preventDefault()}
+			style="--dropdown-width: {Math.max(totalWidth + 20, 200)}px"
+		>
 			<!-- Column headers -->
 			<div class="lookup-header">
 				{#each columns as col}

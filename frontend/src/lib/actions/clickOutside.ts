@@ -11,6 +11,8 @@
 export interface ClickOutsideOptions {
 	callback: () => void;
 	enabled?: boolean;
+	// elements that count as inside too (a dropdown's list moved to <body>, see floating.ts)
+	also?: () => Array<HTMLElement | null | undefined>;
 }
 
 type ClickOutsideParam = (() => void) | ClickOutsideOptions;
@@ -18,14 +20,17 @@ type ClickOutsideParam = (() => void) | ClickOutsideOptions;
 export function clickOutside(node: HTMLElement, param: ClickOutsideParam) {
 	let callback: () => void;
 	let enabled: boolean;
+	let also: (() => Array<HTMLElement | null | undefined>) | undefined;
 
 	function parseParam(p: ClickOutsideParam) {
 		if (typeof p === 'function') {
 			callback = p;
 			enabled = true;
+			also = undefined;
 		} else {
 			callback = p.callback;
 			enabled = p.enabled ?? true;
+			also = p.also;
 		}
 	}
 
@@ -35,6 +40,7 @@ export function clickOutside(node: HTMLElement, param: ClickOutsideParam) {
 		if (!enabled) return;
 
 		const target = event.target as Node;
+		if (also?.().some((el) => el?.contains(target))) return;
 		if (node && !node.contains(target) && !event.defaultPrevented) {
 			callback();
 		}

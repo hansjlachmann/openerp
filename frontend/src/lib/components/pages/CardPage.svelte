@@ -23,7 +23,7 @@
 	import { t, ERR, MSG, LIST, CARD } from '$lib/services/i18n.svelte';
 	import PictureField from './PictureField.svelte';
 	import PeriodGrid from './PeriodGrid.svelte';
-	import { handleFieldEnterKey, getFieldControls } from '$lib/utils/fieldNavigation';
+	import { handleFieldEnterKey, getFieldControls, arrowLeavesField, fieldInDirection, focusField, type ArrowDirection } from '$lib/utils/fieldNavigation';
 	import { getJson, setJson } from '$lib/utils/storage';
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionButton from '../ActionButton.svelte';
@@ -506,6 +506,41 @@
 	// (a plain object: a $state proxy hides the components' exported functions)
 	const subpageRenderers: Record<string, { enterLines?: () => void } | undefined> = {};
 
+	// Arrow keys move between the fields (like the list's cells): ←/→ to the previous/next field
+	// at the start/end of the text, ↑/↓ to the field above/below — ↓ into the lines when they
+	// come first. A field that keeps the key (an open dropdown, a textarea) has it.
+	const arrowDirections: Record<string, ArrowDirection> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+	function arrowNavigate(e: KeyboardEvent, container: HTMLElement): boolean {
+		const direction = arrowDirections[e.key];
+		if (!direction || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.defaultPrevented || e.isComposing) return false;
+		const target = e.target as HTMLElement;
+		if (!target.matches('input:not([type="hidden"]), select, textarea, [role="combobox"]')) return false;
+		if (target.getAttribute('aria-expanded') === 'true') return false;
+		if (!arrowLeavesField(target, direction)) return false;
+		const controls = getFieldControls(container).filter((c) => !c.closest('.subpage-part') && c.offsetParent !== null);
+		const next = fieldInDirection(controls, target, direction);
+		if (direction === 'down') {
+			const bottom = target.getBoundingClientRect().bottom;
+			const nextTop = next ? next.getBoundingClientRect().top : Infinity;
+			const part = Array.from(container.querySelectorAll<HTMLElement>('[data-subpage-part]')).find((p) => {
+				const top = p.getBoundingClientRect().top;
+				return top >= bottom - 1 && top < nextTop;
+			});
+			const renderer = part ? subpageRenderers[part.dataset.subpageName ?? ''] : undefined;
+			if (renderer?.enterLines) {
+				e.preventDefault();
+				renderer.enterLines();
+				return true;
+			}
+		}
+		// ↑/↓ never change the value (a date's day); at the edge they stay put
+		if (direction === 'up' || direction === 'down') e.preventDefault();
+		if (!next) return direction === 'up' || direction === 'down';
+		e.preventDefault();
+		focusField(next);
+		return true;
+	}
+
 	// Tab (and Enter, which moves like Tab) on the last field before a subpage goes into its
 	// lines — the last field the user can reach, whichever is visible (hidden fields and the
 	// fields' buttons do not count); a field that keeps the key (an open dropdown) has it
@@ -748,6 +783,7 @@
 			// Enter moves between the card's fields — not in a subpage (its list handles Enter)
 			if ((e.target as HTMLElement).closest('.subpage-part')) return;
 			if (tabIntoLines(e, e.currentTarget as HTMLElement)) return;
+			if (arrowNavigate(e, e.currentTarget as HTMLElement)) return;
 			handleFieldEnterKey(e, e.currentTarget as HTMLElement);
 		}}
 	>

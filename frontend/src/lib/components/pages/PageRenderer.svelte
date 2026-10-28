@@ -37,6 +37,7 @@
 		initialSelect?: string; // record key to select (returning from a drilldown)
 		openCard?: boolean; // and open its modal card again (returning from a card's action)
 		startNew?: boolean; // a list opened from a lookup's New: start a new record
+		initialEdit?: boolean; // a card opened with Edit (?edit=1): it starts in edit mode
 		navigationQuery?: NavigationQuery; // card opened from a list: navigate through its records
 		// Opened from a codeunit (RunModal) in a modal: no breadcrumb or navigation; the list is
 		// filtered (initialFilters) and read-only, and onclose reports how it was closed — in
@@ -76,6 +77,7 @@
 		initialSelect,
 		openCard = false,
 		startNew = false,
+		initialEdit = false,
 		navigationQuery,
 		embedded = false,
 		initialFilters,
@@ -735,7 +737,7 @@
 				if (selectedRecord && page.page.card_page_id) {
 					// Navigate to card page with record ID
 					const editRecordId = getRecordId(selectedRecord, primaryKeyField, primaryKeyFieldsList);
-					goto(`/pages/${page.page.card_page_id}/${editRecordId}`);
+					goto(`/pages/${page.page.card_page_id}/${editRecordId}?edit=1`);
 				}
 				break;
 			case 'Delete':
@@ -925,6 +927,7 @@
 	{#if page.page.type === 'Card'}
 		<CardPage
 			{page}
+			initialEditMode={initialEdit || undefined}
 			bind:record
 			{captions}
 			{fieldTypes}
