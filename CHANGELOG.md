@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.116](https://github.com/hansjlachmann/openerp/compare/v0.1.115...v0.1.116) (2026-10-28)
+
+
+### Features
+
+* Navigate — the entries of a document across the ledgers ([#157](https://github.com/hansjlachmann/openerp/issues/157)) ([396cf11](https://github.com/hansjlachmann/openerp/commit/396cf11a65aed2fc53d91d54a5d4b5da12c3dc49))
+* Sales Quote — header and lines, prices, discounts, tax, invoice discount, statistics ([#159](https://github.com/hansjlachmann/openerp/issues/159)) ([2759dcc](https://github.com/hansjlachmann/openerp/commit/2759dcc0d3ee1387d7f7c02251817c9b9a41ace9))
+
 ## [0.1.115](https://github.com/hansjlachmann/openerp/compare/v0.1.114...v0.1.115) (2026-10-27)
 
 
