@@ -50,6 +50,7 @@
 //	OnValidate_Inv_discount_amount(rec *gtables.SalesLine) error
 //	OnValidate_Gen_bus_posting_group(rec *gtables.SalesLine) error
 //	OnValidate_Gen_prod_posting_group(rec *gtables.SalesLine) error
+//	OnValidate_Tax_calculation_type(rec *gtables.SalesLine) error
 //	OnValidate_Tax_area_code(rec *gtables.SalesLine) error
 //	OnValidate_Tax_liable(rec *gtables.SalesLine) error
 //	OnValidate_Tax_group_code(rec *gtables.SalesLine) error
@@ -109,7 +110,7 @@ type SalesLineType int
 
 // String returns the text representation of SalesLineType
 func (o SalesLineType) String() string {
-	options := []string{" ", "G/L Account", "Item", "Resource", "Fixed Asset"}
+	options := []string{" ", "G/L Account", "Item", "Resource"}
 	if o >= 0 && int(o) < len(options) {
 		return options[o]
 	}
@@ -118,67 +119,85 @@ func (o SalesLineType) String() string {
 
 // IsValid checks if the SalesLineType value is within valid range
 func (o SalesLineType) IsValid() bool {
-	return o >= 0 && o < 5
+	return o >= 0 && o < 4
+}
+
+// SalesLineTax_calculation_type represents the tax_calculation_type option field
+type SalesLineTax_calculation_type int
+
+// String returns the text representation of SalesLineTax_calculation_type
+func (o SalesLineTax_calculation_type) String() string {
+	options := []string{"Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"}
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the SalesLineTax_calculation_type value is within valid range
+func (o SalesLineTax_calculation_type) IsValid() bool {
+	return o >= 0 && o < 4
 }
 
 // SalesLine represents Table 37: Sales_Line
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterSalesLineLogic.
 type SalesLine struct {
-	Document_type           SalesLineDocument_type `db:"document_type,pk"`
-	Sell_to_customer_no     types.Code             `db:"sell_to_customer_no"`
-	Document_no             types.Code             `db:"document_no,pk"`
-	Line_no                 int                    `db:"line_no,pk"`
-	Type                    SalesLineType          `db:"type"`
-	No                      types.Code             `db:"no"`
-	Location_code           types.Code             `db:"location_code"`
-	Posting_group           types.Code             `db:"posting_group"`
-	Quantity_disc_code      types.Code             `db:"quantity_disc_code"`
-	Shipment_date           types.Date             `db:"shipment_date"`
-	Description             types.Text             `db:"description"`
-	Description_2           types.Text             `db:"description_2"`
-	Unit_of_measure         types.Text             `db:"unit_of_measure"`
-	Quantity                types.Decimal          `db:"quantity"`
-	Outstanding_quantity    types.Decimal          `db:"outstanding_quantity"`
-	Unit_price              types.Decimal          `db:"unit_price"`
-	Unit_cost_lcy           types.Decimal          `db:"unit_cost_lcy"`
-	Tax_percent             types.Decimal          `db:"tax_percent"`
-	Quantity_disc_percent   types.Decimal          `db:"quantity_disc_percent"`
-	Line_discount_percent   types.Decimal          `db:"line_discount_percent"`
-	Line_discount_amount    types.Decimal          `db:"line_discount_amount"`
-	Amount                  types.Decimal          `db:"amount"`
-	Amount_including_tax    types.Decimal          `db:"amount_including_tax"`
-	Allow_invoice_disc      bool                   `db:"allow_invoice_disc"`
-	Gross_weight            types.Decimal          `db:"gross_weight"`
-	Net_weight              types.Decimal          `db:"net_weight"`
-	Units_per_parcel        types.Decimal          `db:"units_per_parcel"`
-	Unit_volume             types.Decimal          `db:"unit_volume"`
-	Department_code         types.Code             `db:"department_code"`
-	Project_code            types.Code             `db:"project_code"`
-	Price_group_code        types.Code             `db:"price_group_code"`
-	Allow_quantity_disc     bool                   `db:"allow_quantity_disc"`
-	Work_type_code          types.Code             `db:"work_type_code"`
-	Cust_item_disc_percent  types.Decimal          `db:"cust_item_disc_percent"`
-	Outstanding_amount      types.Decimal          `db:"outstanding_amount"`
-	Profit_percent          types.Decimal          `db:"profit_percent"`
-	Bill_to_customer_no     types.Code             `db:"bill_to_customer_no"`
-	Inv_discount_amount     types.Decimal          `db:"inv_discount_amount"`
-	Gen_bus_posting_group   types.Code             `db:"gen_bus_posting_group"`
-	Gen_prod_posting_group  types.Code             `db:"gen_prod_posting_group"`
-	Tax_area_code           types.Code             `db:"tax_area_code"`
-	Tax_liable              bool                   `db:"tax_liable"`
-	Tax_group_code          types.Code             `db:"tax_group_code"`
-	Tax_bus_posting_group   types.Code             `db:"tax_bus_posting_group"`
-	Tax_prod_posting_group  types.Code             `db:"tax_prod_posting_group"`
-	Currency_code           types.Code             `db:"currency_code"`
-	Outstanding_amount_lcy  types.Decimal          `db:"outstanding_amount_lcy"`
-	Tax_base_amount         types.Decimal          `db:"tax_base_amount"`
-	Unit_cost               types.Decimal          `db:"unit_cost"`
-	Variant_code            types.Code             `db:"variant_code"`
-	Qty_per_unit_of_measure types.Decimal          `db:"qty_per_unit_of_measure"`
-	Unit_of_measure_code    types.Code             `db:"unit_of_measure_code"`
-	Quantity_base           types.Decimal          `db:"quantity_base"`
-	Outstanding_qty_base    types.Decimal          `db:"outstanding_qty_base"`
+	Document_type           SalesLineDocument_type        `db:"document_type,pk"`
+	Sell_to_customer_no     types.Code                    `db:"sell_to_customer_no"`
+	Document_no             types.Code                    `db:"document_no,pk"`
+	Line_no                 int                           `db:"line_no,pk"`
+	Type                    SalesLineType                 `db:"type"`
+	No                      types.Code                    `db:"no"`
+	Location_code           types.Code                    `db:"location_code"`
+	Posting_group           types.Code                    `db:"posting_group"`
+	Quantity_disc_code      types.Code                    `db:"quantity_disc_code"`
+	Shipment_date           types.Date                    `db:"shipment_date"`
+	Description             types.Text                    `db:"description"`
+	Description_2           types.Text                    `db:"description_2"`
+	Unit_of_measure         types.Text                    `db:"unit_of_measure"`
+	Quantity                types.Decimal                 `db:"quantity"`
+	Outstanding_quantity    types.Decimal                 `db:"outstanding_quantity"`
+	Unit_price              types.Decimal                 `db:"unit_price"`
+	Unit_cost_lcy           types.Decimal                 `db:"unit_cost_lcy"`
+	Tax_percent             types.Decimal                 `db:"tax_percent"`
+	Quantity_disc_percent   types.Decimal                 `db:"quantity_disc_percent"`
+	Line_discount_percent   types.Decimal                 `db:"line_discount_percent"`
+	Line_discount_amount    types.Decimal                 `db:"line_discount_amount"`
+	Amount                  types.Decimal                 `db:"amount"`
+	Amount_including_tax    types.Decimal                 `db:"amount_including_tax"`
+	Allow_invoice_disc      bool                          `db:"allow_invoice_disc"`
+	Gross_weight            types.Decimal                 `db:"gross_weight"`
+	Net_weight              types.Decimal                 `db:"net_weight"`
+	Units_per_parcel        types.Decimal                 `db:"units_per_parcel"`
+	Unit_volume             types.Decimal                 `db:"unit_volume"`
+	Department_code         types.Code                    `db:"department_code"`
+	Project_code            types.Code                    `db:"project_code"`
+	Price_group_code        types.Code                    `db:"price_group_code"`
+	Allow_quantity_disc     bool                          `db:"allow_quantity_disc"`
+	Work_type_code          types.Code                    `db:"work_type_code"`
+	Cust_item_disc_percent  types.Decimal                 `db:"cust_item_disc_percent"`
+	Outstanding_amount      types.Decimal                 `db:"outstanding_amount"`
+	Profit_percent          types.Decimal                 `db:"profit_percent"`
+	Bill_to_customer_no     types.Code                    `db:"bill_to_customer_no"`
+	Inv_discount_amount     types.Decimal                 `db:"inv_discount_amount"`
+	Gen_bus_posting_group   types.Code                    `db:"gen_bus_posting_group"`
+	Gen_prod_posting_group  types.Code                    `db:"gen_prod_posting_group"`
+	Tax_calculation_type    SalesLineTax_calculation_type `db:"tax_calculation_type"`
+	Tax_area_code           types.Code                    `db:"tax_area_code"`
+	Tax_liable              bool                          `db:"tax_liable"`
+	Tax_group_code          types.Code                    `db:"tax_group_code"`
+	Tax_bus_posting_group   types.Code                    `db:"tax_bus_posting_group"`
+	Tax_prod_posting_group  types.Code                    `db:"tax_prod_posting_group"`
+	Currency_code           types.Code                    `db:"currency_code"`
+	Outstanding_amount_lcy  types.Decimal                 `db:"outstanding_amount_lcy"`
+	Tax_base_amount         types.Decimal                 `db:"tax_base_amount"`
+	Unit_cost               types.Decimal                 `db:"unit_cost"`
+	Variant_code            types.Code                    `db:"variant_code"`
+	Qty_per_unit_of_measure types.Decimal                 `db:"qty_per_unit_of_measure"`
+	Unit_of_measure_code    types.Code                    `db:"unit_of_measure_code"`
+	Quantity_base           types.Decimal                 `db:"quantity_base"`
+	Outstanding_qty_base    types.Decimal                 `db:"outstanding_qty_base"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -259,17 +278,28 @@ var SalesLine_Document_type = struct {
 
 // SalesLine_Type provides named constants for the type option field (FieldName.OptionValue syntax)
 var SalesLine_Type = struct {
-	Blank      SalesLineType
-	GLAccount  SalesLineType
-	Item       SalesLineType
-	Resource   SalesLineType
-	FixedAsset SalesLineType
+	Blank     SalesLineType
+	GLAccount SalesLineType
+	Item      SalesLineType
+	Resource  SalesLineType
 }{
-	Blank:      0,
-	GLAccount:  1,
-	Item:       2,
-	Resource:   3,
-	FixedAsset: 4,
+	Blank:     0,
+	GLAccount: 1,
+	Item:      2,
+	Resource:  3,
+}
+
+// SalesLine_Tax_calculation_type provides named constants for the tax_calculation_type option field (FieldName.OptionValue syntax)
+var SalesLine_Tax_calculation_type = struct {
+	NormalVAT        SalesLineTax_calculation_type
+	ReverseChargeVAT SalesLineTax_calculation_type
+	FullVAT          SalesLineTax_calculation_type
+	SalesTax         SalesLineTax_calculation_type
+}{
+	NormalVAT:        0,
+	ReverseChargeVAT: 1,
+	FullVAT:          2,
+	SalesTax:         3,
 }
 
 // ========================================
@@ -319,6 +349,7 @@ var SalesLine_FieldNo = struct {
 	Inv_discount_amount     int
 	Gen_bus_posting_group   int
 	Gen_prod_posting_group  int
+	Tax_calculation_type    int
 	Tax_area_code           int
 	Tax_liable              int
 	Tax_group_code          int
@@ -374,6 +405,7 @@ var SalesLine_FieldNo = struct {
 	Inv_discount_amount:     69,
 	Gen_bus_posting_group:   74,
 	Gen_prod_posting_group:  75,
+	Tax_calculation_type:    77,
 	Tax_area_code:           85,
 	Tax_liable:              86,
 	Tax_group_code:          87,
@@ -473,6 +505,8 @@ func (t *SalesLine) FieldNo(fieldName string) int {
 		return 74
 	case "gen_prod_posting_group":
 		return 75
+	case "tax_calculation_type":
+		return 77
 	case "tax_area_code":
 		return 85
 	case "tax_liable":
@@ -588,6 +622,8 @@ func (t *SalesLine) FieldName(fieldNo int) string {
 		return "gen_bus_posting_group"
 	case 75:
 		return "gen_prod_posting_group"
+	case 77:
+		return "tax_calculation_type"
 	case 85:
 		return "tax_area_code"
 	case 86:
@@ -749,6 +785,7 @@ type (
 	SalesLineOnValidate_Inv_discount_amount     interface{ OnValidate_Inv_discount_amount(rec *SalesLine) error }
 	SalesLineOnValidate_Gen_bus_posting_group   interface{ OnValidate_Gen_bus_posting_group(rec *SalesLine) error }
 	SalesLineOnValidate_Gen_prod_posting_group  interface{ OnValidate_Gen_prod_posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_calculation_type    interface{ OnValidate_Tax_calculation_type(rec *SalesLine) error }
 	SalesLineOnValidate_Tax_area_code           interface{ OnValidate_Tax_area_code(rec *SalesLine) error }
 	SalesLineOnValidate_Tax_liable              interface{ OnValidate_Tax_liable(rec *SalesLine) error }
 	SalesLineOnValidate_Tax_group_code          interface{ OnValidate_Tax_group_code(rec *SalesLine) error }
@@ -872,6 +909,8 @@ func salesLineTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SalesLineOnValidate_Gen_bus_posting_group)
 	case "OnValidate_Gen_prod_posting_group":
 		_, ok = logic.(SalesLineOnValidate_Gen_prod_posting_group)
+	case "OnValidate_Tax_calculation_type":
+		_, ok = logic.(SalesLineOnValidate_Tax_calculation_type)
 	case "OnValidate_Tax_area_code":
 		_, ok = logic.(SalesLineOnValidate_Tax_area_code)
 	case "OnValidate_Tax_liable":
@@ -1077,7 +1116,7 @@ func GetSalesLineTableSchema() string {
 		sell_to_customer_no TEXT(20),
 		document_no TEXT(20),
 		line_no INTEGER,
-		type INTEGER CHECK (type >= 0 AND type <= 4),
+		type INTEGER CHECK (type >= 0 AND type <= 3),
 		no TEXT(20),
 		location_code TEXT(10),
 		posting_group TEXT(10),
@@ -1113,6 +1152,7 @@ func GetSalesLineTableSchema() string {
 		inv_discount_amount TEXT,
 		gen_bus_posting_group TEXT(10),
 		gen_prod_posting_group TEXT(10),
+		tax_calculation_type INTEGER CHECK (tax_calculation_type >= 0 AND tax_calculation_type <= 3),
 		tax_area_code TEXT(20),
 		tax_liable INTEGER,
 		tax_group_code TEXT(10),
@@ -1138,7 +1178,7 @@ func GetSalesLinePostgresTableSchema() string {
 		sell_to_customer_no VARCHAR(20),
 		document_no VARCHAR(20),
 		line_no INTEGER,
-		type INTEGER CHECK (type >= 0 AND type <= 4),
+		type INTEGER CHECK (type >= 0 AND type <= 3),
 		no VARCHAR(20),
 		location_code VARCHAR(10),
 		posting_group VARCHAR(10),
@@ -1174,6 +1214,7 @@ func GetSalesLinePostgresTableSchema() string {
 		inv_discount_amount NUMERIC,
 		gen_bus_posting_group VARCHAR(10),
 		gen_prod_posting_group VARCHAR(10),
+		tax_calculation_type INTEGER CHECK (tax_calculation_type >= 0 AND tax_calculation_type <= 3),
 		tax_area_code VARCHAR(20),
 		tax_liable BOOLEAN,
 		tax_group_code VARCHAR(10),
@@ -1366,6 +1407,7 @@ func (t *SalesLine) StoreOldValues() {
 	t.oldValues["inv_discount_amount"] = t.Inv_discount_amount
 	t.oldValues["gen_bus_posting_group"] = t.Gen_bus_posting_group
 	t.oldValues["gen_prod_posting_group"] = t.Gen_prod_posting_group
+	t.oldValues["tax_calculation_type"] = t.Tax_calculation_type
 	t.oldValues["tax_area_code"] = t.Tax_area_code
 	t.oldValues["tax_liable"] = t.Tax_liable
 	t.oldValues["tax_group_code"] = t.Tax_group_code
@@ -1513,6 +1555,9 @@ func (t *SalesLine) XRec() *SalesLine {
 	}
 	if v, ok := t.oldValues["gen_prod_posting_group"].(types.Code); ok {
 		x.Gen_prod_posting_group = v
+	}
+	if v, ok := t.oldValues["tax_calculation_type"].(SalesLineTax_calculation_type); ok {
+		x.Tax_calculation_type = v
 	}
 	if v, ok := t.oldValues["tax_area_code"].(types.Code); ok {
 		x.Tax_area_code = v
@@ -1681,6 +1726,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	var inv_discount_amountNull sql.NullString
 	var gen_bus_posting_groupNull sql.NullString
 	var gen_prod_posting_groupNull sql.NullString
+	var tax_calculation_typeInt int
 	var tax_area_codeNull sql.NullString
 	var tax_liableBool sql.NullBool
 	var tax_group_codeNull sql.NullString
@@ -1704,7 +1750,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE 1=1 AND document_type = ? AND document_no = ? AND line_no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE 1=1 AND document_type = ? AND document_no = ? AND line_no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1751,6 +1797,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 		&inv_discount_amountNull,
 		&gen_bus_posting_groupNull,
 		&gen_prod_posting_groupNull,
+		&tax_calculation_typeInt,
 		&tax_area_codeNull,
 		&tax_liableBool,
 		&tax_group_codeNull,
@@ -1818,6 +1865,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
 	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
 	t.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+	t.Tax_calculation_type = SalesLineTax_calculation_type(tax_calculation_typeInt)
 	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
 	t.Tax_liable = tax_liableBool.Bool
 	t.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -1894,6 +1942,7 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 		t.Inv_discount_amount,
 		t.Gen_bus_posting_group,
 		t.Gen_prod_posting_group,
+		t.Tax_calculation_type,
 		t.Tax_area_code,
 		t.Tax_liable,
 		t.Tax_group_code,
@@ -1912,7 +1961,7 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (document_type, document_no, line_no) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (document_type, document_no, line_no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1990,6 +2039,7 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 			r.Inv_discount_amount,
 			r.Gen_bus_posting_group,
 			r.Gen_prod_posting_group,
+			r.Tax_calculation_type,
 			r.Tax_area_code,
 			r.Tax_liable,
 			r.Tax_group_code,
@@ -2007,7 +2057,7 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, SalesLineTableName)
-	columns := []string{"document_type", "sell_to_customer_no", "document_no", "line_no", "type", "no", "location_code", "posting_group", "quantity_disc_code", "shipment_date", "description", "description_2", "unit_of_measure", "quantity", "outstanding_quantity", "unit_price", "unit_cost_lcy", "tax_percent", "quantity_disc_percent", "line_discount_percent", "line_discount_amount", "amount", "amount_including_tax", "allow_invoice_disc", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "department_code", "project_code", "price_group_code", "allow_quantity_disc", "work_type_code", "cust_item_disc_percent", "outstanding_amount", "profit_percent", "bill_to_customer_no", "inv_discount_amount", "gen_bus_posting_group", "gen_prod_posting_group", "tax_area_code", "tax_liable", "tax_group_code", "tax_bus_posting_group", "tax_prod_posting_group", "currency_code", "outstanding_amount_lcy", "tax_base_amount", "unit_cost", "variant_code", "qty_per_unit_of_measure", "unit_of_measure_code", "quantity_base", "outstanding_qty_base"}
+	columns := []string{"document_type", "sell_to_customer_no", "document_no", "line_no", "type", "no", "location_code", "posting_group", "quantity_disc_code", "shipment_date", "description", "description_2", "unit_of_measure", "quantity", "outstanding_quantity", "unit_price", "unit_cost_lcy", "tax_percent", "quantity_disc_percent", "line_discount_percent", "line_discount_amount", "amount", "amount_including_tax", "allow_invoice_disc", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "department_code", "project_code", "price_group_code", "allow_quantity_disc", "work_type_code", "cust_item_disc_percent", "outstanding_amount", "profit_percent", "bill_to_customer_no", "inv_discount_amount", "gen_bus_posting_group", "gen_prod_posting_group", "tax_calculation_type", "tax_area_code", "tax_liable", "tax_group_code", "tax_bus_posting_group", "tax_prod_posting_group", "currency_code", "outstanding_amount_lcy", "tax_base_amount", "unit_cost", "variant_code", "qty_per_unit_of_measure", "unit_of_measure_code", "quantity_base", "outstanding_qty_base"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -2213,6 +2263,10 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "gen_prod_posting_group = ?")
 			values = append(values, t.Gen_prod_posting_group)
 		}
+		if t.hasFieldChanged("tax_calculation_type") {
+			setClauses = append(setClauses, "tax_calculation_type = ?")
+			values = append(values, t.Tax_calculation_type)
+		}
 		if t.hasFieldChanged("tax_area_code") {
 			setClauses = append(setClauses, "tax_area_code = ?")
 			values = append(values, t.Tax_area_code)
@@ -2350,6 +2404,8 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		values = append(values, t.Gen_bus_posting_group)
 		setClauses = append(setClauses, "gen_prod_posting_group = ?")
 		values = append(values, t.Gen_prod_posting_group)
+		setClauses = append(setClauses, "tax_calculation_type = ?")
+		values = append(values, t.Tax_calculation_type)
 		setClauses = append(setClauses, "tax_area_code = ?")
 		values = append(values, t.Tax_area_code)
 		setClauses = append(setClauses, "tax_liable = ?")
@@ -2595,6 +2651,10 @@ func (t *SalesLine) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Gen_prod_posting_group.Equal(old)
 		}
+	case "tax_calculation_type":
+		if old, ok := oldValue.(SalesLineTax_calculation_type); ok {
+			return t.Tax_calculation_type != old
+		}
 	case "tax_area_code":
 		if old, ok := oldValue.(types.Code); ok {
 			return !t.Tax_area_code.Equal(old)
@@ -2765,12 +2825,16 @@ func (t *SalesLine) SetRange(fieldName string, values ...interface{}) {
 	}
 
 	// Blank dates are stored as NULL and come before every date: a range from the blank date
-	// (or the blank date itself) matches them
+	// (or the blank date itself) matches them; a range up to the blank date (0D..0D) is the
+	// blank date only
 	blankDate := false
 	if d, ok := values[0].(types.Date); ok && d.IsZero() {
 		blankDate = true
 		minValue = nil
 		if len(values) == 1 {
+			maxValue = nil
+		}
+		if to, ok := maxValue.(types.Date); ok && to.IsZero() {
 			maxValue = nil
 		}
 	}
@@ -2934,6 +2998,8 @@ func (t *SalesLine) columnName(fieldName string) (string, bool) {
 		return "gen_bus_posting_group", true
 	case strings.ToLower("gen_prod_posting_group"):
 		return "gen_prod_posting_group", true
+	case strings.ToLower("tax_calculation_type"):
+		return "tax_calculation_type", true
 	case strings.ToLower("tax_area_code"):
 		return "tax_area_code", true
 	case strings.ToLower("tax_liable"):
@@ -3024,13 +3090,13 @@ func (t *SalesLine) buildWhereClause() (string, []interface{}) {
 			} else if filter.blankDate {
 				conditions = append(conditions, fmt.Sprintf("(%s IS NULL OR %s = '%s')", filter.fieldName, filter.fieldName, types.BlankKeyDate))
 			} else if filter.minValue != nil && filter.maxValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s BETWEEN %s AND %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.minValue, filter.maxValue)
 			} else if filter.minValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s >= ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s >= %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.minValue)
 			} else if filter.maxValue != nil {
-				conditions = append(conditions, fmt.Sprintf("%s <= ?", filter.fieldName))
+				conditions = append(conditions, fmt.Sprintf("%s <= %s", t.cmpColumn(filter.fieldName), t.cmpParam(filter.fieldName)))
 				args = append(args, filter.maxValue)
 			}
 		}
@@ -3134,6 +3200,83 @@ func (t *SalesLine) isDateColumn(column string) bool {
 	return false
 }
 
+// isDecimalColumn: a Decimal column
+func (t *SalesLine) isDecimalColumn(column string) bool {
+	switch column {
+	case "quantity":
+		return true
+	case "outstanding_quantity":
+		return true
+	case "unit_price":
+		return true
+	case "unit_cost_lcy":
+		return true
+	case "tax_percent":
+		return true
+	case "quantity_disc_percent":
+		return true
+	case "line_discount_percent":
+		return true
+	case "line_discount_amount":
+		return true
+	case "amount":
+		return true
+	case "amount_including_tax":
+		return true
+	case "gross_weight":
+		return true
+	case "net_weight":
+		return true
+	case "units_per_parcel":
+		return true
+	case "unit_volume":
+		return true
+	case "cust_item_disc_percent":
+		return true
+	case "outstanding_amount":
+		return true
+	case "profit_percent":
+		return true
+	case "inv_discount_amount":
+		return true
+	case "outstanding_amount_lcy":
+		return true
+	case "tax_base_amount":
+		return true
+	case "unit_cost":
+		return true
+	case "qty_per_unit_of_measure":
+		return true
+	case "quantity_base":
+		return true
+	case "outstanding_qty_base":
+		return true
+	}
+	return false
+}
+
+// sqliteDecimal: decimals are stored as text on SQLite (exact), so comparisons and the order
+// on them must be numeric there — as text 100 lies between 0 and 16.2
+func (t *SalesLine) sqliteDecimal(column string) bool {
+	return t.isDecimalColumn(column) && (t.dbType != database.DBTypePostgres || t.temp != nil)
+}
+
+// cmpColumn is a column as filters, keys and the order compare it (a decimal on SQLite as a number)
+func (t *SalesLine) cmpColumn(column string) string {
+	if t.sqliteDecimal(column) {
+		return "CAST(" + column + " AS REAL)"
+	}
+	return column
+}
+
+// cmpParam is the placeholder of a value compared with a column (a decimal on SQLite as a number)
+func (t *SalesLine) cmpParam(column string) string {
+	if t.sqliteDecimal(column) {
+		return "CAST(? AS REAL)"
+	}
+	return "?"
+}
+
 // parseFilterExpression parses filter expressions into SQL
 // Supports: "100..200" (range), "100|200|300" (OR), "100..200|500" (combined)
 func (t *SalesLine) parseFilterExpression(fieldName, expr string) (string, []interface{}) {
@@ -3147,6 +3290,9 @@ func (t *SalesLine) parseFilterExpression(fieldName, expr string) (string, []int
 		}
 		return condition
 	}
+
+	// a decimal on SQLite compares as a number
+	col, param := t.cmpColumn(fieldName), t.cmpParam(fieldName)
 
 	// Split by | (OR operator)
 	orParts := strings.Split(expr, "|")
@@ -3164,13 +3310,13 @@ func (t *SalesLine) parseFilterExpression(fieldName, expr string) (string, []int
 				case min == "" && max == "":
 					conditions = append(conditions, "1=1")
 				case min == "":
-					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= ?", fieldName)))
+					conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <= %s", col, param)))
 					args = append(args, max)
 				case max == "":
-					conditions = append(conditions, fmt.Sprintf("%s >= ?", fieldName))
+					conditions = append(conditions, fmt.Sprintf("%s >= %s", col, param))
 					args = append(args, min)
 				default:
-					conditions = append(conditions, fmt.Sprintf("%s BETWEEN ? AND ?", fieldName))
+					conditions = append(conditions, fmt.Sprintf("%s BETWEEN %s AND %s", col, param, param))
 					args = append(args, min, max)
 				}
 			}
@@ -3185,9 +3331,9 @@ func (t *SalesLine) parseFilterExpression(fieldName, expr string) (string, []int
 		} else if op := tables.FilterComparison(part); op != "" {
 			// Comparison: <=, >=, <, > (a classic filter such as <3000)
 			if op == "<" || op == "<=" {
-				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s ?", fieldName, op)))
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s %s %s", col, op, param)))
 			} else {
-				conditions = append(conditions, fmt.Sprintf("%s %s ?", fieldName, op))
+				conditions = append(conditions, fmt.Sprintf("%s %s %s", col, op, param))
 			}
 			args = append(args, strings.TrimSpace(strings.TrimPrefix(part, op)))
 		} else if strings.Contains(part, "*") {
@@ -3204,12 +3350,12 @@ func (t *SalesLine) parseFilterExpression(fieldName, expr string) (string, []int
 				if value == "''" {
 					value = ""
 				}
-				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> ?", fieldName)))
+				conditions = append(conditions, orBlankDate(fmt.Sprintf("%s <> %s", col, param)))
 				args = append(args, value)
 			}
 		} else {
 			// Exact match (a boolean column takes Yes/No, true/false, 1/0)
-			conditions = append(conditions, fmt.Sprintf("%s = ?", fieldName))
+			conditions = append(conditions, fmt.Sprintf("%s = %s", col, param))
 			if t.isBoolColumn(fieldName) {
 				args = append(args, tables.FilterBool(part))
 			} else {
@@ -3233,11 +3379,11 @@ func (t *SalesLine) getOrderByClause() (string, []interface{}) {
 	var columns []string
 	var args []interface{}
 	for _, column := range t.orderByFields {
-		columns = append(columns, column)
+		columns = append(columns, t.cmpColumn(column))
 	}
 	for _, column := range pk {
-		if !slices.Contains(columns, column) {
-			columns = append(columns, column)
+		if !slices.Contains(t.orderByFields, column) {
+			columns = append(columns, t.cmpColumn(column))
 		}
 	}
 	if t.descending {
@@ -3285,7 +3431,7 @@ func (t *SalesLine) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3329,6 +3475,7 @@ func (t *SalesLine) FindFirst() bool {
 	var inv_discount_amountNull sql.NullString
 	var gen_bus_posting_groupNull sql.NullString
 	var gen_prod_posting_groupNull sql.NullString
+	var tax_calculation_typeInt int
 	var tax_area_codeNull sql.NullString
 	var tax_liableBool sql.NullBool
 	var tax_group_codeNull sql.NullString
@@ -3385,6 +3532,7 @@ func (t *SalesLine) FindFirst() bool {
 		&inv_discount_amountNull,
 		&gen_bus_posting_groupNull,
 		&gen_prod_posting_groupNull,
+		&tax_calculation_typeInt,
 		&tax_area_codeNull,
 		&tax_liableBool,
 		&tax_group_codeNull,
@@ -3449,6 +3597,7 @@ func (t *SalesLine) FindFirst() bool {
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
 	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
 	t.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+	t.Tax_calculation_type = SalesLineTax_calculation_type(tax_calculation_typeInt)
 	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
 	t.Tax_liable = tax_liableBool.Bool
 	t.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -3483,7 +3632,7 @@ func (t *SalesLine) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3527,6 +3676,7 @@ func (t *SalesLine) FindLast() bool {
 	var inv_discount_amountNull sql.NullString
 	var gen_bus_posting_groupNull sql.NullString
 	var gen_prod_posting_groupNull sql.NullString
+	var tax_calculation_typeInt int
 	var tax_area_codeNull sql.NullString
 	var tax_liableBool sql.NullBool
 	var tax_group_codeNull sql.NullString
@@ -3583,6 +3733,7 @@ func (t *SalesLine) FindLast() bool {
 		&inv_discount_amountNull,
 		&gen_bus_posting_groupNull,
 		&gen_prod_posting_groupNull,
+		&tax_calculation_typeInt,
 		&tax_area_codeNull,
 		&tax_liableBool,
 		&tax_group_codeNull,
@@ -3647,6 +3798,7 @@ func (t *SalesLine) FindLast() bool {
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
 	t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
 	t.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+	t.Tax_calculation_type = SalesLineTax_calculation_type(tax_calculation_typeInt)
 	t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
 	t.Tax_liable = tax_liableBool.Bool
 	t.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -3711,7 +3863,7 @@ func (t *SalesLine) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3819,6 +3971,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 		var inv_discount_amountNull sql.NullString
 		var gen_bus_posting_groupNull sql.NullString
 		var gen_prod_posting_groupNull sql.NullString
+		var tax_calculation_typeInt int
 		var tax_area_codeNull sql.NullString
 		var tax_liableBool sql.NullBool
 		var tax_group_codeNull sql.NullString
@@ -3875,6 +4028,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 			&inv_discount_amountNull,
 			&gen_bus_posting_groupNull,
 			&gen_prod_posting_groupNull,
+			&tax_calculation_typeInt,
 			&tax_area_codeNull,
 			&tax_liableBool,
 			&tax_group_codeNull,
@@ -3938,6 +4092,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 		t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
 		t.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
 		t.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+		t.Tax_calculation_type = SalesLineTax_calculation_type(tax_calculation_typeInt)
 		t.Tax_area_code = types.NewCode(tax_area_codeNull.String)
 		t.Tax_liable = tax_liableBool.Bool
 		t.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -4001,7 +4156,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4062,6 +4217,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 		var inv_discount_amountNull sql.NullString
 		var gen_bus_posting_groupNull sql.NullString
 		var gen_prod_posting_groupNull sql.NullString
+		var tax_calculation_typeInt int
 		var tax_area_codeNull sql.NullString
 		var tax_liableBool sql.NullBool
 		var tax_group_codeNull sql.NullString
@@ -4118,6 +4274,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 			&inv_discount_amountNull,
 			&gen_bus_posting_groupNull,
 			&gen_prod_posting_groupNull,
+			&tax_calculation_typeInt,
 			&tax_area_codeNull,
 			&tax_liableBool,
 			&tax_group_codeNull,
@@ -4179,6 +4336,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 		record.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
 		record.Gen_bus_posting_group = types.NewCode(gen_bus_posting_groupNull.String)
 		record.Gen_prod_posting_group = types.NewCode(gen_prod_posting_groupNull.String)
+		record.Tax_calculation_type = SalesLineTax_calculation_type(tax_calculation_typeInt)
 		record.Tax_area_code = types.NewCode(tax_area_codeNull.String)
 		record.Tax_liable = tax_liableBool.Bool
 		record.Tax_group_code = types.NewCode(tax_group_codeNull.String)
@@ -4261,6 +4419,7 @@ func (t *SalesLine) copyFromBuffered(record *SalesLine) {
 	t.Inv_discount_amount = record.Inv_discount_amount
 	t.Gen_bus_posting_group = record.Gen_bus_posting_group
 	t.Gen_prod_posting_group = record.Gen_prod_posting_group
+	t.Tax_calculation_type = record.Tax_calculation_type
 	t.Tax_area_code = record.Tax_area_code
 	t.Tax_liable = record.Tax_liable
 	t.Tax_group_code = record.Tax_group_code
@@ -4532,15 +4691,15 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 			t.Type = v
 			// Accept int (convert to enum)
 		} else if v, ok := value.(int); ok {
-			if v < 0 || v >= 5 {
-				return fmt.Errorf("invalid option value %d for field type (valid range: 0-%d)", v, 5-1)
+			if v < 0 || v >= 4 {
+				return fmt.Errorf("invalid option value %d for field type (valid range: 0-%d)", v, 4-1)
 			}
 			t.Type = SalesLineType(v)
 			// Accept float64 (JSON numbers decode as float64)
 		} else if v, ok := value.(float64); ok {
 			intVal := int(v)
-			if intVal < 0 || intVal >= 5 {
-				return fmt.Errorf("invalid option value %d for field type (valid range: 0-%d)", intVal, 5-1)
+			if intVal < 0 || intVal >= 4 {
+				return fmt.Errorf("invalid option value %d for field type (valid range: 0-%d)", intVal, 4-1)
 			}
 			t.Type = SalesLineType(intVal)
 			// Accept string (lookup in options and convert)
@@ -4549,7 +4708,7 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 				// Empty string defaults to first option (behavior)
 				t.Type = 0
 			} else {
-				options := []string{" ", "G/L Account", "Item", "Resource", "Fixed Asset"}
+				options := []string{" ", "G/L Account", "Item", "Resource"}
 				found := false
 				for i, opt := range options {
 					if opt == v {
@@ -5432,6 +5591,55 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "tax_calculation_type":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(SalesLineTax_calculation_type); ok {
+			t.Tax_calculation_type = v
+			// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 4 {
+				return fmt.Errorf("invalid option value %d for field tax_calculation_type (valid range: 0-%d)", v, 4-1)
+			}
+			t.Tax_calculation_type = SalesLineTax_calculation_type(v)
+			// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 4 {
+				return fmt.Errorf("invalid option value %d for field tax_calculation_type (valid range: 0-%d)", intVal, 4-1)
+			}
+			t.Tax_calculation_type = SalesLineTax_calculation_type(intVal)
+			// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			if v == "" {
+				// Empty string defaults to first option (behavior)
+				t.Tax_calculation_type = 0
+			} else {
+				options := []string{"Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"}
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Tax_calculation_type = SalesLineTax_calculation_type(i)
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field tax_calculation_type (valid options: %v)", v, options)
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid type for field tax_calculation_type (expected SalesLineTax_calculation_type, int, or string)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Tax_calculation_type); ok {
+				if err := trg.OnValidate_Tax_calculation_type(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "tax_area_code":
 		// Set field value
 		if v, ok := value.(types.Code); ok {
@@ -5865,6 +6073,8 @@ func (t *SalesLine) FieldValue(no int) (any, bool) {
 		return t.Gen_bus_posting_group, true
 	case 75:
 		return t.Gen_prod_posting_group, true
+	case 77:
+		return t.Tax_calculation_type, true
 	case 85:
 		return t.Tax_area_code, true
 	case 86:
@@ -5937,7 +6147,7 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 			return true
 		}
 	case 5:
-		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 5 {
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 4 {
 			t.Type = SalesLineType(i)
 			return true
 		}
@@ -6170,6 +6380,11 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Gen_prod_posting_group = types.NewCode(v)
+			return true
+		}
+	case 77:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 4 {
+			t.Tax_calculation_type = SalesLineTax_calculation_type(i)
 			return true
 		}
 	case 85:
@@ -6849,7 +7064,7 @@ func (t *SalesLine) Find(which ...string) bool {
 // comparison on the key and primary key columns). A key with a FlowField cannot seek.
 func (t *SalesLine) findInKey(seek string, reverse bool) bool {
 	if seek != "" {
-		var columns []string
+		var columns, params []string
 		var values []interface{}
 		for _, column := range t.keyColumns() {
 			v, ok := t.columnValue(column)
@@ -6860,7 +7075,8 @@ func (t *SalesLine) findInKey(seek string, reverse bool) bool {
 			if t.isKeyDateColumn(column) {
 				v = types.KeyDate(v)
 			}
-			columns = append(columns, column)
+			columns = append(columns, t.cmpColumn(column))
+			params = append(params, t.cmpParam(column))
 			values = append(values, v)
 		}
 		after := (seek == ">") != t.descending
@@ -6868,7 +7084,7 @@ func (t *SalesLine) findInKey(seek string, reverse bool) bool {
 		if after {
 			op = ">"
 		}
-		t.seek = "(" + strings.Join(columns, ", ") + ") " + op + " (" + strings.TrimSuffix(strings.Repeat("?, ", len(columns)), ", ") + ")"
+		t.seek = "(" + strings.Join(columns, ", ") + ") " + op + " (" + strings.Join(params, ", ") + ")"
 		t.seekArgs = values
 	}
 	savedLimit, savedOffset, savedDescending := t.limit, t.offset, t.descending
@@ -6984,6 +7200,8 @@ func (t *SalesLine) columnValue(column string) (interface{}, bool) {
 		return t.Gen_bus_posting_group, true
 	case "gen_prod_posting_group":
 		return t.Gen_prod_posting_group, true
+	case "tax_calculation_type":
+		return int(t.Tax_calculation_type), true
 	case "tax_area_code":
 		return t.Tax_area_code, true
 	case "tax_liable":
@@ -7111,6 +7329,7 @@ func (t *SalesLine) Init() {
 	t.Inv_discount_amount = *new(types.Decimal)
 	t.Gen_bus_posting_group = *new(types.Code)
 	t.Gen_prod_posting_group = *new(types.Code)
+	t.Tax_calculation_type = 0
 	t.Tax_area_code = *new(types.Code)
 	t.Tax_liable = *new(bool)
 	t.Tax_group_code = *new(types.Code)
@@ -7199,6 +7418,7 @@ func (t *SalesLine) ToMap() map[string]interface{} {
 		"inv_discount_amount":     t.Inv_discount_amount.String(),
 		"gen_bus_posting_group":   t.Gen_bus_posting_group.String(),
 		"gen_prod_posting_group":  t.Gen_prod_posting_group.String(),
+		"tax_calculation_type":    int(t.Tax_calculation_type),
 		"tax_area_code":           t.Tax_area_code.String(),
 		"tax_liable":              t.Tax_liable,
 		"tax_group_code":          t.Tax_group_code.String(),
@@ -7266,7 +7486,7 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 			t.Type = SalesLineType(val)
 		case string:
 			// Lookup string value in options
-			options := []string{" ", "G/L Account", "Item", "Resource", "Fixed Asset"}
+			options := []string{" ", "G/L Account", "Item", "Resource"}
 			for i, opt := range options {
 				if opt == val {
 					t.Type = SalesLineType(i)
@@ -7574,6 +7794,23 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 	if v, ok := data["gen_prod_posting_group"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Gen_prod_posting_group = types.NewCode(s)
+		}
+	}
+	if v, ok := data["tax_calculation_type"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Tax_calculation_type = SalesLineTax_calculation_type(int(val))
+		case int:
+			t.Tax_calculation_type = SalesLineTax_calculation_type(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"}
+			for i, opt := range options {
+				if opt == val {
+					t.Tax_calculation_type = SalesLineTax_calculation_type(i)
+					break
+				}
+			}
 		}
 	}
 	if v, ok := data["tax_area_code"]; ok && v != nil {
@@ -8143,6 +8380,17 @@ func (t *SalesLine) GetFields() []tables.FieldInfo {
 			FlowField:  false,
 		},
 		{
+			No:         77,
+			Name:       "tax_calculation_type",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+			ReadOnly:   true,
+		},
+		{
 			No:         85,
 			Name:       "tax_area_code",
 			Type:       tables.FieldTypeCode,
@@ -8318,8 +8566,9 @@ func (t *SalesLine) GetFlowFields() []string {
 // GetOptionFields returns Option field names mapped to their option values
 func (t *SalesLine) GetOptionFields() map[string][]string {
 	return map[string][]string{
-		"document_type": {"Quote", "Order", "Invoice", "Credit Memo", "Blanket Order"},
-		"type":          {" ", "G/L Account", "Item", "Resource", "Fixed Asset"},
+		"document_type":        {"Quote", "Order", "Invoice", "Credit Memo", "Blanket Order"},
+		"type":                 {" ", "G/L Account", "Item", "Resource"},
+		"tax_calculation_type": {"Normal VAT", "Reverse Charge VAT", "Full VAT", "Sales Tax"},
 	}
 }
 
