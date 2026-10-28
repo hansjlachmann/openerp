@@ -22,6 +22,10 @@ type ProgressEvent struct {
 	Data      map[string]interface{} `json:"data,omitempty"`       // Result data (e.g., PDF base64)
 }
 
+// OutputKey: the answer of a printed report's request page holds the output chosen under this
+// key — "preview", "print" or "pdf"
+const OutputKey = "_output"
+
 // InputField describes a single input field for RequestInput dialogs
 type InputField struct {
 	Name     string `json:"name"`               // Field key (e.g. "date")
@@ -360,18 +364,20 @@ func (d *Dialog) RespondToConfirm(confirmID string, response bool) bool {
 // RequestInput shows an input dialog with arbitrary fields and waits for user response
 // Returns a map of field name → value, or nil on cancel/timeout
 func (d *Dialog) RequestInput(title string, fields []InputField) map[string]string {
-	return d.requestInput(title, fields, nil, "")
+	return d.requestInput(title, fields, nil, "", false)
 }
 
 // RequestPage is RequestInput with the data items of a report: the answer has the options
 // ("option" fields as in RequestInput) and, per data item, "filters:<name>" — a JSON list of
 // {field, expression}. The options come below the filters, under optionsCaption ("": the
-// standard "Options"). nil on cancel/timeout.
-func (d *Dialog) RequestPage(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string) map[string]string {
-	return d.requestInput(title, fields, dataItems, optionsCaption)
+// standard "Options"). A printed report's (printed) has Preview, Print and PDF instead of OK,
+// and the answer's OutputKey holds the choice ("preview", "print", "pdf"). nil on
+// cancel/timeout.
+func (d *Dialog) RequestPage(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string, printed bool) map[string]string {
+	return d.requestInput(title, fields, dataItems, optionsCaption, printed)
 }
 
-func (d *Dialog) requestInput(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string) map[string]string {
+func (d *Dialog) requestInput(title string, fields []InputField, dataItems []RequestDataItem, optionsCaption string, printed bool) map[string]string {
 	d.mu.Lock()
 	if d.closed {
 		d.mu.Unlock()
@@ -410,6 +416,7 @@ func (d *Dialog) requestInput(title string, fields []InputField, dataItems []Req
 			"fields":          fields,
 			"data_items":      dataItems,
 			"options_caption": optionsCaption,
+			"printed":         printed,
 		},
 	}:
 	case <-d.ctx.Done():

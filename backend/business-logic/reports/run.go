@@ -12,6 +12,7 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
+	"github.com/hansjlachmann/openerp/backend/foundation/pdf"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
@@ -29,7 +30,56 @@ type Run struct {
 	filters map[string][]ftables.FieldFilter // data item name → the user's filters
 	message string
 	context interface{}
+
+	// A printed report: its printer, the values its sections print, the output chosen
+	printer  *printer
+	values   map[string]interface{}
+	output   string
+	fileName string
 }
+
+// SetValue sets a value the layout prints (value, lines, image elements; print_if) — the
+// classic report's global variables shown in its sections: texts, decimals, dates, whole
+// numbers, booleans, lines (an address array) or a picture ([]byte)
+func (r *Run) SetValue(name string, value interface{}) { r.values[name] = value }
+
+// Value returns a value set with SetValue (nil when not set)
+func (r *Run) Value(name string) interface{} { return r.values[name] }
+
+// PageNo is the page number being printed (CurrReport.PAGENO); 0 for a report that does not
+// print
+func (r *Run) PageNo() int {
+	if r.printer == nil {
+		return 0
+	}
+	return r.printer.pageNumber()
+}
+
+// SetPageNo sets the page number (CurrReport.PAGENO := n): of the current page, or of the
+// page about to start (a new copy starts on page 1)
+func (r *Run) SetPageNo(n int) {
+	if r.printer != nil {
+		r.printer.setPageNo(n)
+	}
+}
+
+// NewPage: the next section starts on a new page (CurrReport.NEWPAGE)
+func (r *Run) NewPage() {
+	if r.printer != nil && r.printer.pageOpen {
+		r.printer.newPage = true
+	}
+}
+
+// Preview reports whether the printout is only shown (CurrReport.PREVIEW): a document is not
+// counted as printed
+func (r *Run) Preview() bool { return r.output == OutputPreview }
+
+// Output is the output chosen on the request page: OutputPreview, OutputPrint or OutputPDF
+func (r *Run) Output() string { return r.output }
+
+// SetFileName sets the name of the PDF (without .pdf; default the report's caption) — also
+// the document's title
+func (r *Run) SetFileName(name string) { r.fileName = name }
 
 // Context is what the caller gave the report to work on (RunOptions.Context) — e.g. the item
 // journal line whose batch Calculate Inventory fills (classic SetItemJnlLine before RUNMODAL)
@@ -71,6 +121,19 @@ func (r *Run) OptionDecimal(name string) types.Decimal {
 // SetOption sets an option's value (OnInitReport: a default that depends on the data)
 func (r *Run) SetOption(name, value string) { r.options[name] = value }
 
+// SetRequestFilter sets a data item's starting request filter on a field (OnInitReport: the
+// document the report is run from — classic SETRANGE on the record given to REPORT.RUNMODAL)
+func (r *Run) SetRequestFilter(dataItem, field, expression string) {
+	filters := r.filters[dataItem]
+	for i, f := range filters {
+		if f.Field == field {
+			filters[i].Expression = expression
+			return
+		}
+	}
+	r.filters[dataItem] = append(filters, ftables.FieldFilter{Field: field, Expression: expression})
+}
+
 // Message sets the message shown when the report is done (filled in with StrSubstNo; pass a
 // translated text — Text gives the report's own)
 func (r *Run) Message(text string, values ...any) {
@@ -95,12 +158,22 @@ type RunOptions struct {
 	Options map[string]string
 	// Context: a value the report works on (Run.Context), set by the caller before the run
 	Context interface{}
+	// Output of a printed report run without a request page: OutputPreview, OutputPrint or
+	// OutputPDF (default)
+	Output string
 }
 
 // Result is how a report ended
 type Result struct {
 	Cancelled bool   // the user cancelled the request page: nothing ran
 	Message   string // set by the report with Run.Message
+	// A printed report's printout: the PDF, its file name, the output chosen, the pages and
+	// the texts printed (what tests check)
+	PDF      []byte
+	FileName string
+	Output   string
+	Pages    int
+	Texts    []pdf.PlacedText
 }
 
 // Execute runs a report (Report.Run): request page, OnPreReport, the data items, OnPostReport
@@ -110,7 +183,14 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		return Result{}, fmt.Errorf("report %d does not exist", id)
 	}
 	def := factory().Definition()
-	run := &Run{ID: id, DB: db, Company: company, DBType: dbType, options: map[string]string{}, filters: map[string][]ftables.FieldFilter{}, context: opts.Context}
+	layout, err := layoutOf(id)
+	if err != nil {
+		return Result{}, err
+	}
+	run := &Run{ID: id, DB: db, Company: company, DBType: dbType, options: map[string]string{}, filters: map[string][]ftables.FieldFilter{}, context: opts.Context, values: map[string]interface{}{}, output: opts.Output}
+	if layout != nil && run.output == "" {
+		run.output = OutputPDF
+	}
 	for _, o := range def.Options {
 		run.options[o.Name] = o.Default
 	}
@@ -135,8 +215,14 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 	}
 
 	if opts.RequestPage && fcodeunits.GetCurrentDialog() != nil {
-		if !requestPage(run, def) {
+		if !requestPage(run, def, layout != nil) {
 			return Result{Cancelled: true}, nil
+		}
+	}
+	if layout != nil {
+		run.printer, err = newPrinter(run, layout)
+		if err != nil {
+			return Result{}, err
 		}
 	}
 
@@ -154,7 +240,7 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 		}
 	}
 
-	err := func() error {
+	err = func() error {
 		if def.OnPreReport != nil {
 			err := def.OnPreReport(run)
 			if err != nil {
@@ -185,12 +271,38 @@ func Execute(id int, db database.Executor, company string, dbType database.DBTyp
 			return Result{}, err
 		}
 	}
-	return Result{Message: run.message}, err
+	if err != nil {
+		return Result{}, err
+	}
+	result := Result{Message: run.message}
+	if run.printer != nil {
+		result, err = run.printout(result)
+	}
+	return result, err
+}
+
+// printout finishes a printed report's PDF
+func (r *Run) printout(result Result) (Result, error) {
+	name := r.fileName
+	if name == "" {
+		name = Caption(r.ID, fcodeunits.CurrentLanguage())
+	}
+	r.printer.doc.SetTitle(name)
+	data, err := r.printer.doc.Bytes()
+	if err != nil {
+		return Result{}, err
+	}
+	result.PDF = data
+	result.FileName = name + ".pdf"
+	result.Output = r.output
+	result.Pages = r.printer.doc.Pages()
+	result.Texts = r.printer.doc.Texts()
+	return result, nil
 }
 
 // requestPage asks for the options and the data items' filters (any field, as on a list
 // page; the request filter fields to start with); false when cancelled
-func requestPage(run *Run, def *Definition) bool {
+func requestPage(run *Run, def *Definition, printed bool) bool {
 	language := fcodeunits.CurrentLanguage()
 	var fields []fcodeunits.InputField
 	for _, o := range def.Options {
@@ -211,7 +323,7 @@ func requestPage(run *Run, def *Definition) bool {
 		if !ok {
 			continue
 		}
-		requestItem := fcodeunits.RequestDataItem{Name: item.Name, Caption: rec.GetTableName(), Indent: entry.indent}
+		requestItem := fcodeunits.RequestDataItem{Name: item.Name, Caption: rec.GetTableName(), Indent: entry.indent, Filters: []fcodeunits.RequestFilter{}}
 		c, ok := rec.(interface{ GetCaption(string) string })
 		if ok {
 			requestItem.Caption = c.GetCaption(language)
@@ -252,9 +364,15 @@ func requestPage(run *Run, def *Definition) bool {
 	if def.OptionsCaption != "" {
 		optionsCaption = run.Text(def.OptionsCaption)
 	}
-	values := fcodeunits.RequestPage(translate(run.ID, "caption"), fields, items, optionsCaption)
+	values := fcodeunits.RequestPage(translate(run.ID, "caption"), fields, items, optionsCaption, printed)
 	if len(values) == 0 {
 		return false
+	}
+	if printed {
+		switch values[fcodeunits.OutputKey] {
+		case OutputPreview, OutputPrint, OutputPDF:
+			run.output = values[fcodeunits.OutputKey]
+		}
 	}
 	for key, value := range values {
 		name, ok := strings.CutPrefix(key, "option:")
@@ -313,8 +431,12 @@ func newRecord(run *Run, item *DataItem) (reportRecord, bool) {
 }
 
 // runDataItem runs a data item: filters, OnPreDataItem, the loop with OnAfterGetRecord and
-// the nested data items, OnPostDataItem. parent is the parent data item's current record.
+// the nested data items, OnPostDataItem. parent is the parent data item's current record. A
+// printed report prints the records by the data item's layout.
 func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
+	if item.Table == IntegerTable {
+		return runIntegerDataItem(run, item)
+	}
 	rec, ok := newRecord(run, item)
 	if !ok {
 		return fmt.Errorf("report %d: data item %s: table %q does not exist", run.ID, item.Name, item.Table)
@@ -362,6 +484,7 @@ func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
 		}
 	}
 
+	frame := run.beginItem(item, rec)
 	// SQLite reads all at once: its connection cannot read and write the table at once
 	var found bool
 	if run.DBType == database.DBTypeSQLite {
@@ -370,26 +493,91 @@ func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
 		found = rec.FindSet()
 	}
 	for ; found; found = rec.Next() {
-		if item.OnAfterGetRecord != nil {
-			err := item.OnAfterGetRecord(rec, run)
-			if errors.Is(err, errSkip) {
-				continue
-			}
-			if errors.Is(err, errBreak) {
-				break
-			}
-			if err != nil {
-				return err
-			}
+		next, err := runRecord(run, item, rec, frame)
+		if err != nil {
+			return err
 		}
-		for _, child := range item.DataItems {
-			err := runDataItem(run, child, rec)
+		if !next {
+			break
+		}
+	}
+	return endDataItem(run, item, rec, frame)
+}
+
+// runIntegerDataItem runs a data item of the Integer table: the numbers of the range its
+// OnPreDataItem sets
+func runIntegerDataItem(run *Run, item *DataItem) error {
+	rec := &Integer{}
+	if item.OnPreDataItem != nil {
+		err := item.OnPreDataItem(rec, run)
+		if err != nil {
+			if errors.Is(err, errBreak) {
+				return nil
+			}
+			return err
+		}
+	}
+	frame := run.beginItem(item, rec)
+	if rec.ranged {
+		for number := rec.from; number <= rec.to; number++ {
+			rec.Number = number
+			next, err := runRecord(run, item, rec, frame)
 			if err != nil {
 				return err
+			}
+			if !next {
+				break
 			}
 		}
 	}
+	return endDataItem(run, item, rec, frame)
+}
 
+// runRecord runs a data item's record: OnAfterGetRecord, its printout, the nested data items;
+// false when the loop ends (Break)
+func runRecord(run *Run, item *DataItem, rec interface{}, frame *frame) (bool, error) {
+	undoNewPage := func() {}
+	if run.printer != nil {
+		undoNewPage = run.printer.beforeRecord(frame)
+	}
+	if item.OnAfterGetRecord != nil {
+		err := item.OnAfterGetRecord(rec, run)
+		if errors.Is(err, errSkip) {
+			undoNewPage()
+			return true, nil
+		}
+		if errors.Is(err, errBreak) {
+			undoNewPage()
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+	}
+	if run.printer != nil {
+		err := run.printer.record(frame)
+		if err != nil {
+			return false, err
+		}
+	}
+	table, _ := rec.(ftables.Table) // the parent of the nested data items' links
+	for _, child := range item.DataItems {
+		err := runDataItem(run, child, table)
+		if err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+// endDataItem ends a data item's loop: its footers, OnPostDataItem
+func endDataItem(run *Run, item *DataItem, rec interface{}, frame *frame) error {
+	if run.printer != nil {
+		err := run.printer.endItem(frame)
+		if err != nil {
+			return err
+		}
+	}
 	if item.OnPostDataItem != nil {
 		err := item.OnPostDataItem(rec, run)
 		if err != nil && !errors.Is(err, errBreak) {
@@ -397,6 +585,14 @@ func runDataItem(run *Run, item *DataItem, parent ftables.Table) error {
 		}
 	}
 	return nil
+}
+
+// beginItem: a data item's loop starts (its frame in the printout; nil when nothing prints)
+func (r *Run) beginItem(item *DataItem, rec interface{}) *frame {
+	if r.printer == nil {
+		return nil
+	}
+	return r.printer.beginItem(item.Name, rec)
 }
 
 // allDataItems returns the data items and their nested ones, in order
