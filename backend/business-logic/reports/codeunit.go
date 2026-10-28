@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"encoding/base64"
 	"errors"
 
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
@@ -59,6 +60,18 @@ func (c *reportCodeunit) Run(record interface{}) (fcodeunits.Result, error) {
 	}
 	if err != nil {
 		return fcodeunits.Result{}, err
+	}
+	if result.PDF != nil {
+		// A printout: the frontend shows, prints or downloads it (the output chosen)
+		return fcodeunits.Result{
+			Success: true,
+			Message: result.Message,
+			Data: map[string]interface{}{
+				"pdf":      base64.StdEncoding.EncodeToString(result.PDF),
+				"filename": result.FileName,
+				"output":   result.Output,
+			},
+		}, nil
 	}
 	if result.Message != "" {
 		return fcodeunits.Message(result.Message), nil

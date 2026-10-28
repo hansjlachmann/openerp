@@ -7,6 +7,7 @@
 	import ProgressModal from './ProgressModal.svelte';
 	import PageRenderer from './pages/PageRenderer.svelte';
 	import { startJob } from '$lib/services/jobs';
+	import { printoutOf } from '$lib/utils/printout';
 	import { toast } from '$lib/stores/toast';
 	import { t, MSG, ERR, BTN } from '$lib/services/i18n.svelte';
 	import type { DialogResult } from '$lib/types/api';
@@ -30,6 +31,7 @@
 	let inputFields = $state<RequestInputField[]>([]);
 	let inputDataItems = $state<RequestDataItem[]>([]);
 	let optionsCaption = $state('');
+	let printed = $state(false); // a printed report's request page
 	let inputCallback = $state<((v: Record<string, string> | null) => void) | undefined>(undefined);
 	let runPage = $state<{
 		pageId: number;
@@ -119,6 +121,7 @@
 						inputFields = (event.data?.fields as typeof inputFields) || [];
 						inputDataItems = (event.data?.data_items as RequestDataItem[]) || [];
 						optionsCaption = (event.data?.options_caption as string) || '';
+						printed = event.data?.printed === true;
 						if (event.message) progressTitle = event.message;
 						inputCallback = (values: Record<string, string> | null) => {
 							inputMode = false;
@@ -150,7 +153,7 @@
 					// The codeunit's closing message box (Message), else a plain notice
 					const finalDialog = (result as { data?: Record<string, unknown> }).data?.dialog as DialogResult | undefined;
 					if (!progressError && finalDialog) dialog = finalDialog;
-					else if (!progressError) toast.success(t(MSG.JOB_COMPLETED));
+					else if (!progressError && !printoutOf((result as { data?: Record<string, unknown> }).data)) toast.success(t(MSG.JOB_COMPLETED));
 					refresh = true; // an async job may have changed anything
 				}
 				progressOpen = false;
@@ -177,6 +180,7 @@
 	{inputFields}
 	{inputDataItems}
 	{optionsCaption}
+	{printed}
 	onInputResponse={inputCallback}
 />
 

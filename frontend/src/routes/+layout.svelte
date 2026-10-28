@@ -16,6 +16,7 @@
 	import MenuBar from '$lib/components/menu/MenuBar.svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
+	import PrintPreview from '$lib/components/PrintPreview.svelte';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -65,3 +66,6 @@
 
 <!-- Toast notifications -->
 <ToastContainer />
+
+<!-- A printed report's preview -->
+<PrintPreview />

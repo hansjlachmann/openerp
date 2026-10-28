@@ -1,0 +1,265 @@
+table:
+  id: 79
+  name: "Company_Information"
+  caption: Company Information
+  description: "Company Information (table 79): the company's name, address, communication, bank and shipping details and logo — printed on its documents; a single record per company"
+  setup_table: true    # singleton: a single record with a blank Primary Key
+  # Left out: 10005 Ship-to UPS Zone, 10006 UPS Shipper ID
+  fields:
+    - name: primary_key
+      no: 1
+      type: types.Code
+      db_name: primary_key
+      length: 10
+      primary_key: true
+
+    - name: name
+      no: 2
+      type: types.Text
+      db_name: name
+      length: 50
+
+    - name: name_2
+      no: 3
+      type: types.Text
+      db_name: name_2
+      length: 50
+
+    - name: address
+      no: 4
+      type: types.Text
+      db_name: address
+      length: 50
+
+    - name: address_2
+      no: 5
+      type: types.Text
+      db_name: address_2
+      length: 50
+
+    - name: city
+      no: 6
+      type: types.Text
+      db_name: city
+      length: 50
+
+    - name: phone_no
+      no: 7
+      type: types.Text
+      db_name: phone_no
+      length: 20
+
+    - name: phone_no_2
+      no: 8
+      type: types.Text
+      db_name: phone_no_2
+      length: 20
+
+    - name: telex_no
+      no: 9
+      type: types.Text
+      db_name: telex_no
+      length: 20
+
+    - name: fax_no
+      no: 10
+      type: types.Text
+      db_name: fax_no
+      length: 20
+
+    - name: giro_no
+      no: 11
+      type: types.Text
+      db_name: giro_no
+      length: 20
+
+    - name: bank_name
+      no: 12
+      type: types.Text
+      db_name: bank_name
+      length: 30
+
+    - name: bank_branch_no
+      no: 13
+      type: types.Text
+      db_name: bank_branch_no
+      length: 20
+
+    - name: bank_account_no
+      no: 14
+      type: types.Text
+      db_name: bank_account_no
+      length: 20
+
+    - name: payment_routing_no
+      no: 15
+      type: types.Text
+      db_name: payment_routing_no
+      length: 20
+
+    - name: customs_permit_no
+      no: 17
+      type: types.Text
+      db_name: customs_permit_no
+      length: 10
+
+    - name: customs_permit_date
+      no: 18
+      type: types.Date
+      db_name: customs_permit_date
+
+    - name: vat_registration_no
+      no: 19
+      type: types.Text
+      db_name: vat_registration_no
+      length: 20
+
+    - name: registration_no
+      no: 20
+      type: types.Text
+      db_name: registration_no
+      length: 20
+
+    - name: telex_answer_back
+      no: 21
+      type: types.Text
+      db_name: telex_answer_back
+      length: 20
+
+    - name: ship_to_name
+      no: 22
+      type: types.Text
+      db_name: ship_to_name
+      length: 30
+
+    - name: ship_to_name_2
+      no: 23
+      type: types.Text
+      db_name: ship_to_name_2
+      length: 30
+
+    - name: ship_to_address
+      no: 24
+      type: types.Text
+      db_name: ship_to_address
+      length: 30
+
+    - name: ship_to_address_2
+      no: 25
+      type: types.Text
+      db_name: ship_to_address_2
+      length: 30
+
+    - name: ship_to_city
+      no: 26
+      type: types.Text
+      db_name: ship_to_city
+      length: 30
+
+    - name: ship_to_contact
+      no: 27
+      type: types.Text
+      db_name: ship_to_contact
+      length: 30
+
+    - name: location_code
+      no: 28
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    # the company's logo (printed on the documents); never in the table API, see Pictures
+    - name: picture
+      no: 29
+      type: "[]byte"
+      db_name: picture
+
+    # classic ZIP Code; any code is accepted, a known one fills City
+    - name: post_code
+      no: 30
+      type: types.Code
+      db_name: post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: state
+      no: 31
+      type: types.Text
+      db_name: state
+      length: 30
+
+    - name: ship_to_post_code
+      no: 32
+      type: types.Code
+      db_name: ship_to_post_code
+      length: 20
+      table_relation:
+        table: Post_Code
+        field: code
+        validate: false
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: city
+            width: 250
+
+    - name: ship_to_state
+      no: 33
+      type: types.Text
+      db_name: ship_to_state
+      length: 30
+
+    - name: e_mail
+      no: 34
+      type: types.Text
+      db_name: e_mail
+      length: 80
+
+    - name: home_page
+      no: 35
+      type: types.Text
+      db_name: home_page
+      length: 80
+
+    # classic local field 10016
+    - name: federal_id_no
+      no: 900
+      type: types.Text
+      db_name: federal_id_no
+      length: 30
+
+    # the company's country/region: its address format (Format Address)
+    - name: country_code
+      no: 901
+      type: types.Code
+      db_name: country_code
+      length: 10
+      table_relation:
+        table: Country_Region
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [primary_key]
+      clustered: true

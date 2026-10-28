@@ -7,6 +7,7 @@ import { t, ERR, MSG } from '$lib/services/i18n.svelte';
 import { toast } from '$lib/stores/toast';
 import { buildQueryString } from '$lib/services/api';
 import type { ListOptions } from '$lib/types/api';
+import { downloadPdf, handlePrintout, pdfBlob, printoutOf } from '$lib/utils/printout';
 
 /** An answer to a codeunit's question was refused by the server: show why */
 async function answerRefused(res: Response): Promise<void> {
@@ -70,27 +71,7 @@ export interface JobCallbacks {
  * Download a base64 PDF as a file
  */
 export function downloadBase64PDF(base64Data: string, filename: string = 'document.pdf') {
-	// Remove data URL prefix if present
-	const base64Clean = base64Data.replace(/^data:application\/pdf;base64,/, '');
-
-	// Convert base64 to blob
-	const byteCharacters = atob(base64Clean);
-	const byteNumbers = new Array(byteCharacters.length);
-	for (let i = 0; i < byteCharacters.length; i++) {
-		byteNumbers[i] = byteCharacters.charCodeAt(i);
-	}
-	const byteArray = new Uint8Array(byteNumbers);
-	const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-	// Create download link
-	const url = URL.createObjectURL(blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = filename;
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-	URL.revokeObjectURL(url);
+	downloadPdf(pdfBlob(base64Data), filename);
 }
 
 /**
@@ -183,12 +164,9 @@ export async function startJob(
 							if (event.data) {
 								callbacks.onData?.(event.data);
 
-								// Auto-download PDF if present
-								if (event.data.pdf && typeof event.data.pdf === 'string') {
-									const filename =
-										(event.data.filename as string) || 'document.pdf';
-									downloadBase64PDF(event.data.pdf, filename);
-								}
+								// A printed report's printout: preview, print or download
+								const printout = printoutOf(event.data);
+								if (printout) handlePrintout(printout);
 							}
 							callbacks.onComplete?.(event);
 							resolve(event);

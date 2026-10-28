@@ -22,6 +22,7 @@
 	import Modal, { isModalOpen } from '../Modal.svelte';
 	import ProgressModal from '../ProgressModal.svelte';
 	import { startJob, type SyncJobResult } from '$lib/services/jobs';
+	import { printoutOf } from '$lib/utils/printout';
 	import { shortcuts, normalizeShortcut, getShortcutKey, commonShortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
@@ -234,6 +235,7 @@
 	let progressInputMode = $state(false);
 	let progressInputDataItems = $state<RequestDataItem[]>([]); // a report's request page
 	let progressOptionsCaption = $state(''); // … and the heading of its options
+	let progressPrinted = $state(false); // a printed report's request page
 	let progressInputFields = $state<RequestInputField[]>([]);
 	let inputResponseCallback: ((values: Record<string, string> | null) => void) | undefined = $state(undefined);
 
@@ -724,6 +726,7 @@
 					progressInputFields = (event.data?.fields as typeof progressInputFields) || [];
 					progressInputDataItems = (event.data?.data_items as RequestDataItem[]) || [];
 					progressOptionsCaption = (event.data?.options_caption as string) || '';
+					progressPrinted = event.data?.printed === true;
 					if (event.message) progressTitle = event.message;
 					inputResponseCallback = (values: Record<string, string> | null) => {
 						progressInputMode = false;
@@ -762,7 +765,7 @@
 				if (!progressError && finalDialog) {
 					dialogData = finalDialog;
 					dialogOpen = true;
-				} else if (!progressError) {
+				} else if (!progressError && !printoutOf((result as { data?: Record<string, unknown> }).data)) {
 					toast.success(t(MSG.JOB_COMPLETED));
 				}
 				// Refresh list data to reflect changes (e.g. new entries, status updates)
@@ -3688,6 +3691,7 @@
 	inputFields={progressInputFields}
 	inputDataItems={progressInputDataItems}
 	optionsCaption={progressOptionsCaption}
+	printed={progressPrinted}
 	onInputResponse={inputResponseCallback}
 />
 

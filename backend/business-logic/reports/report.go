@@ -23,8 +23,9 @@
 // The factory makes a new instance for every run, so a report keeps its counters and windows
 // in its own fields. Triggers return Skip(), Break() or Quit() to leave the record, the data
 // item or the report. Captions and labels come from translations/<lang>/reports.yaml
-// (reports.<id>.caption, reports.<id>.options.<name>). Printed reports (sections, layout) are
-// not built yet.
+// (reports.<id>.caption, reports.<id>.options.<name>). A report with a layout
+// (backend/definitions/reports/<id>-<name>.yaml, see layout.go) is printed: its data items
+// print their sections into a PDF.
 package reports
 
 import (
@@ -90,8 +91,9 @@ type OptionRelation struct {
 	Columns []string // the key field first, then the columns shown (code, description)
 }
 
-// TriggerFunc is a data item trigger; rec is the data item's record
-type TriggerFunc func(rec ftables.Table, run *Run) error
+// TriggerFunc is a data item trigger; rec is the data item's record (a generated record, or
+// *Integer for a data item of the Integer table)
+type TriggerFunc func(rec any, run *Run) error
 
 // DataItem is a loop over the records of a table
 type DataItem struct {
@@ -120,7 +122,7 @@ type DataItem struct {
 //
 //	OnAfterGetRecord: Trigger(func(e *gtables.JobQueueEntry, run *Run) error { … })
 func Trigger[T any](fn func(rec T, run *Run) error) TriggerFunc {
-	return func(rec ftables.Table, run *Run) error {
+	return func(rec any, run *Run) error {
 		r, ok := rec.(T)
 		if !ok {
 			return errors.New("report trigger: wrong record type")

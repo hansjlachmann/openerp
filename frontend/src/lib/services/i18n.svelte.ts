@@ -140,6 +140,7 @@ export const ERR = {
 
 export const DLG = {
 	OPTIONS: 'DLG_OPTIONS', // the options heading of a report's request page
+	PRINT_PREVIEW: 'DLG_PRINT_PREVIEW', // the title of a printed report's preview
 	DELETE_RECORD_TITLE: 'DLG_DELETE_RECORD_TITLE',
 	DELETE_RECORD_CONFIRM: 'DLG_DELETE_RECORD_CONFIRM',
 	DELETE_RECORD_KEY_CONFIRM: 'DLG_DELETE_RECORD_KEY_CONFIRM', // %1: the record's key (recordKeyText)
@@ -160,7 +161,11 @@ export const BTN = {
 	CONFIRM: 'BTN_CONFIRM',
 	OK: 'BTN_OK',
 	YES: 'BTN_YES',
-	NO: 'BTN_NO'
+	NO: 'BTN_NO',
+	PREVIEW: 'BTN_PREVIEW',
+	PRINT: 'BTN_PRINT',
+	PDF: 'BTN_PDF',
+	CLOSE: 'BTN_CLOSE'
 } as const;
 
 export const LOGIN = {

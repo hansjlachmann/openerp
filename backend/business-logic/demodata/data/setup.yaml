@@ -596,6 +596,10 @@ master_data:
   - table: Purchases_Payables_Setup   # the single setup record (blank key)
     records:
       - {vendor_nos: VEND, quote_nos: P-QUO, blanket_order_nos: P-BLK, order_nos: P-ORD, invoice_nos: P-INV, posted_invoice_nos: P-INV+, credit_memo_nos: P-CR, posted_credit_memo_nos: P-CR+, posted_receipt_nos: P-RCPT, ext_doc_no_mandatory: true, calc_inv_discount: true}
+
+  - table: Company_Information   # the single record (blank key): the company printed on its documents
+    records:
+      - {name: Nordkapp Kontor AS, address: Stortingsgata 12, post_code: "0159", city: Oslo, country_code: "NO", phone_no: +47 22 00 12 00, e_mail: post@example.com, home_page: www.example.com, vat_registration_no: NO 987 654 321 MVA, registration_no: "987654321", bank_name: DNB, bank_branch_no: "1503", bank_account_no: "1503.12.34567", giro_no: "1503.12.34567", ship_to_name: Nordkapp Kontor AS, ship_to_address: Stortingsgata 12, ship_to_post_code: "0159", ship_to_city: Oslo, location_code: MAIN}
   - table: Depreciation_Book   # the book the demo assets are depreciated in, posted to the G/L
     records:
       - {code: COMPANY, description: Company book, g_l_integration_acq_cost: true, g_l_integration_depreciation: true, g_l_integration_write_down: true, g_l_integration_appreciation: true, g_l_integration_disposal: true, g_l_integration_maintenance: true, use_fa_ledger_check: true, use_same_fa_g_l_posting_dates: true}

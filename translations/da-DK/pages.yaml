@@ -548,6 +548,8 @@ pages:
     caption: "Debitorfakturarabatter"
   sales_comment_sheet:
     caption: "Salgsbemærkninger"
+  company_information:
+    caption: "Virksomhedsoplysninger"
   res_capacity_entries:
     caption: "Ressourcekapacitetsposter"
   resources_setup:

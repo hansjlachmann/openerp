@@ -548,6 +548,8 @@ pages:
     caption: "Kundefakturarabatter"
   sales_comment_sheet:
     caption: "Salgsmerknader"
+  company_information:
+    caption: "Firmaopplysninger"
   res_capacity_entries:
     caption: "Ressurskapasitetsposter"
   resources_setup:

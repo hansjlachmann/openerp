@@ -1078,7 +1078,7 @@ func (t *CountryRegion) renameReferences(field string, oldValue, newValue interf
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Bank_Account", false, "country_code", "", 0}, {"Customer", false, "country_code", "", 0}, {"Customer_Bank_Account", false, "country_code", "", 0}, {"Item", false, "country_purchased_code", "", 0}, {"Item", false, "country_of_origin_code", "", 0}, {"Order_Address", false, "country_code", "", 0}, {"Sales_Header", false, "bill_to_country_code", "", 0}, {"Sales_Header", false, "sell_to_country_code", "", 0}, {"Sales_Header", false, "ship_to_country_code", "", 0}, {"Ship_to_Address", false, "country_code", "", 0}, {"Tax_Entry", false, "country_code", "", 0}, {"Vendor", false, "country_code", "", 0}, {"Vendor_Bank_Account", false, "country_code", "", 0}},
+		"code": {{"Bank_Account", false, "country_code", "", 0}, {"Company_Information", false, "country_code", "", 0}, {"Customer", false, "country_code", "", 0}, {"Customer_Bank_Account", false, "country_code", "", 0}, {"Item", false, "country_purchased_code", "", 0}, {"Item", false, "country_of_origin_code", "", 0}, {"Order_Address", false, "country_code", "", 0}, {"Sales_Header", false, "bill_to_country_code", "", 0}, {"Sales_Header", false, "sell_to_country_code", "", 0}, {"Sales_Header", false, "ship_to_country_code", "", 0}, {"Ship_to_Address", false, "country_code", "", 0}, {"Tax_Entry", false, "country_code", "", 0}, {"Vendor", false, "country_code", "", 0}, {"Vendor_Bank_Account", false, "country_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

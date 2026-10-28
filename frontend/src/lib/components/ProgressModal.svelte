@@ -24,6 +24,9 @@
 		// A report's request page: the data items whose records can be filtered (any field)
 		inputDataItems?: RequestDataItem[];
 		optionsCaption?: string; // the heading of a request page's options (default "Options")
+		// A printed report's request page: Preview, Print and PDF instead of OK (the answer's
+		// _output says which)
+		printed?: boolean;
 		onInputResponse?: (values: Record<string, string> | null) => void;
 		showCancel?: boolean;
 		onCancel?: () => void;
@@ -42,6 +45,7 @@
 		inputFields = [],
 		inputDataItems = [],
 		optionsCaption = '',
+		printed = false,
 		onInputResponse,
 		showCancel = false,
 		onCancel
@@ -63,11 +67,12 @@
 		}, 0);
 	});
 
-	// Enter in the input form is OK (when the values are valid), Esc is Cancel
+	// Enter in the input form is OK — Preview on a printed report's request page — (when the
+	// values are valid), Esc is Cancel
 	function handleInputKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			if (inputValid()) handleInputOk();
+			if (inputValid()) handleInputOk(printed ? 'preview' : undefined);
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
 			handleInputCancel();
@@ -85,7 +90,7 @@
 	let requestFilters = $state<Record<string, RequestFilter[]>>({});
 	$effect(() => {
 		if (inputMode) {
-			requestFilters = Object.fromEntries(inputDataItems.map((item) => [item.name, item.filters.map((f) => ({ ...f }))]));
+			requestFilters = Object.fromEntries(inputDataItems.map((item) => [item.name, (item.filters ?? []).map((f) => ({ ...f }))]));
 		}
 	});
 
@@ -135,10 +140,11 @@
 		onCancel?.();
 	}
 
-	function handleInputOk() {
+	function handleInputOk(output?: 'preview' | 'print' | 'pdf') {
 		// Values go as text (number inputs bind numbers); locale-formatted dates back to ISO
 		const result: Record<string, string> = {};
 		for (const [name, value] of Object.entries(inputValues)) result[name] = String(value ?? '');
+		if (output) result._output = output;
 		// Request page filters: per data item the filters that have an expression
 		for (const item of inputDataItems) {
 			const filters = (requestFilters[item.name] ?? []).filter((f) => f.expression.trim() !== '');
@@ -204,7 +210,7 @@
 						name="input-{field.name}"
 						value={String(i + 1)}
 						bind:group={inputValues[field.name]}
-						ondblclick={() => { inputValues[field.name] = String(i + 1); handleInputOk(); }}
+						ondblclick={() => { inputValues[field.name] = String(i + 1); handleInputOk(printed ? 'preview' : undefined); }}
 					/>
 					<span>{option}</span>
 				</label>
@@ -269,7 +275,13 @@
 				</div>
 				<div class="confirm-buttons">
 					<Button variant="secondary" onclick={handleInputCancel}>{t(BTN.CANCEL)}</Button>
-					<Button variant="primary" onclick={handleInputOk} disabled={!inputValid()}>{t(BTN.OK)}</Button>
+					{#if printed}
+						<Button variant="secondary" onclick={() => handleInputOk('pdf')} disabled={!inputValid()}>{t(BTN.PDF)}</Button>
+						<Button variant="secondary" onclick={() => handleInputOk('print')} disabled={!inputValid()}>{t(BTN.PRINT)}</Button>
+						<Button variant="primary" onclick={() => handleInputOk('preview')} disabled={!inputValid()}>{t(BTN.PREVIEW)}</Button>
+					{:else}
+						<Button variant="primary" onclick={() => handleInputOk()} disabled={!inputValid()}>{t(BTN.OK)}</Button>
+					{/if}
 				</div>
 			{:else if error}
 				<div class="error-container">
