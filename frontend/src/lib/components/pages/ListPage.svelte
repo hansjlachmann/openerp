@@ -11,7 +11,7 @@
 	import PageRenderer from './PageRenderer.svelte';
 	import ActionMenu from '../ActionMenu.svelte';
 	import ActionButton from '../ActionButton.svelte';
-	import { newLineNo } from '$lib/utils/autoSplitKey';
+	import { newLineNo, newLineNoAbove } from '$lib/utils/autoSplitKey';
 	import type { FixedFilter } from '$lib/types/api';
 	import type { RequestDataItem, RequestInputField, Action } from '$lib/types/pages';
 	import LookupDropdown from './LookupDropdown.svelte';
@@ -31,7 +31,7 @@
 	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, lookupFor, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
 	import { runPagePath } from '$lib/utils/runPage';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
@@ -82,6 +82,9 @@
 		// Shown inside a card (subpage): its shortcuts work only while the cursor is in it, it
 		// never takes the focus by itself
 		subpage?: boolean;
+		// A subpage of a card in edit mode: a click goes into the clicked cell and the blank row
+		// at the end starts a new line (the card's Edit opens the lines for editing)
+		editOnClick?: boolean;
 		// Fixed filters (a subpage's link to its card): every query has them, the user cannot
 		// change them; new records get their values (newRecordDefaults)
 		fixedFilters?: FixedFilter[];
@@ -121,6 +124,7 @@
 		onclose,
 		pickOnEnter = false,
 		subpage = false,
+		editOnClick = false,
 		fixedFilters = [],
 		newRecordDefaults = {},
 		pageParams = {},
@@ -1060,6 +1064,13 @@
 		if (focusPage) listPageElement?.focus();
 	}
 
+	// A subpage whose card left edit mode (its page is no longer editable): the lines leave it too
+	$effect(() => {
+		if (subpage && !page.page.editable && cellState !== 'navigation') {
+			untrack(() => exitToNavigation(false));
+		}
+	});
+
 	// Confirm current cell value and move to target cell (enters cell-selected at target)
 	async function confirmAndMoveTo(targetRow: number, targetCol: number) {
 		const cols = visibleColumns();
@@ -1272,12 +1283,14 @@
 	// with the table's defaults from the init endpoint when they arrive; if that fails it stays
 	// blank so data entry is never blocked. The initial values are kept in _pristine: only
 	// changes away from them count as user edits, so defaults never trigger an insert.
-	// AutoSplitKey: the line number (the last primary key field) for a new row below the
-	// cursor row — halfway to the next line, 10000 more at the end
-	function autoSplitKeyValue(): Record<string, any> {
+	// AutoSplitKey: the line number (the last primary key field) for a new row next to xRec —
+	// below it: halfway to the next line (10000 more at the end), above it (a new line in cell
+	// mode): halfway to the line before. Calculated once, when the row is created.
+	function autoSplitKeyValue(xRec?: Record<string, any>, below = true): Record<string, any> {
 		if (!page.page.auto_split_key || primaryKeyFieldsList.length === 0) return {};
 		const field = primaryKeyFieldsList[primaryKeyFieldsList.length - 1];
-		const value = newLineNo(displayRecords, selectedIndex, field);
+		const index = xRec ? displayRecords.indexOf(xRec) : -1;
+		const value = below || index < 0 ? newLineNo(displayRecords, index, field) : newLineNoAbove(displayRecords, index, field);
 		if (value === null) {
 			toast.error(t(ERR.NO_ROOM_FOR_LINE));
 			return {};
@@ -1312,8 +1325,9 @@
 		}
 		// A subpage's link values (the card's key), and the line number (AutoSplitKey): part
 		// of the new row from the start, not user edits
-		Object.assign(blank, newRowValues, autoSplitKeyValue());
-		void applyNewRecordDefaults(tempId, blank, xRec, below);
+		const splitKey = autoSplitKeyValue(xRec, below);
+		Object.assign(blank, newRowValues, splitKey);
+		void applyNewRecordDefaults(tempId, blank, xRec, below, splitKey);
 		return { ...blank, _isNew: true, _tempId: tempId, _pristine: { ...blank } };
 	}
 
@@ -1328,18 +1342,18 @@
 		}
 	}
 
-	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true) {
+	async function applyNewRecordDefaults(tempId: string, blank: Record<string, any>, xRec?: Record<string, any>, below = true, splitKey: Record<string, any> = {}) {
 		let defaults: Record<string, any>;
 		if (page.page.has_new_record_triggers) await waitForSaves();
 		try {
-			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below, { ...newRowValues, ...autoSplitKeyValue() }));
+			defaults = await api.initRecord(page.page.source_table, newRecordContext(page.page, xRec, below, { ...newRowValues, ...splitKey }));
 		} catch (err) {
 			console.error('Failed to initialize new record, keeping it blank:', err);
 			return;
 		}
 		const row = editableRecords.find(r => r._tempId === tempId);
 		if (!row || row._isNew !== true || !defaults) return;
-		const fixedKeys = new Set([...Object.keys(newRowValues), ...Object.keys(autoSplitKeyValue())]);
+		const fixedKeys = new Set([...Object.keys(newRowValues), ...Object.keys(splitKey)]);
 		for (const [key, value] of Object.entries(defaults)) {
 			// Never overwrite what the user already typed while the defaults were loading, nor
 			// the link values and the line number
@@ -1987,6 +2001,11 @@
 				return;
 			}
 			clearSelection();
+			// The lines of a card in edit mode: the click goes into the cell
+			if (editOnClick && page.page.editable) {
+				enterCellSelected(rowIndex, colIndex);
+				return;
+			}
 			// One click only selects the row: editing starts with Edit / Ctrl+E / F2, in the
 			// column clicked last
 			editStartCol = colIndex;
@@ -1999,6 +2018,16 @@
 
 	// Handle click on the trailing blank row: start a new record at the end
 	async function handlePlaceholderRowClick() {
+		if (isNavigation && editOnClick) {
+			// the lines of a card in edit mode: the blank row starts a new line
+			if (!editableActive) {
+				editableRecords = toEditableRecords();
+				editableActive = true;
+			}
+			insertNewRow(true);
+			selectedIndex = currentCellRow;
+			return;
+		}
 		if (isNavigation) return; // shown in edit mode only
 		if (currentCellRow >= 0 && currentCellCol >= 0) {
 			// Confirm the cell being left, as a click on any other cell does
@@ -3512,7 +3541,7 @@
 						{/each}
 					</tr>
 				{/each}
-				{#if page.page.editable && !isNavigation && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+				{#if page.page.editable && (!isNavigation || editOnClick) && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
 					<!-- trailing blank row, in edit mode only: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}

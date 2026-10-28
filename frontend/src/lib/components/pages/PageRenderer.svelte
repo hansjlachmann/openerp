@@ -52,6 +52,10 @@
 		// new records get the link values; Esc in navigation mode goes back to the card (onexit);
 		// onlineschange after a line was saved or deleted (the card's totals)
 		subpage?: boolean;
+		// A subpage: its card's edit mode (undefined: the list decides itself). The lines are
+		// editable only while the card is (no New/Edit/Delete otherwise), and the card's Edit is
+		// the lines' Edit too (the subpage shows none)
+		parentEditMode?: boolean;
 		fixedFilters?: import('$lib/types/api').FixedFilter[];
 		newRecordDefaults?: Record<string, any>;
 		onexit?: () => void;
@@ -79,6 +83,7 @@
 		editableLookup = false,
 		onclose,
 		subpage = false,
+		parentEditMode = undefined,
 		fixedFilters = [],
 		newRecordDefaults = {},
 		onexit,
@@ -235,6 +240,23 @@
 
 	// State
 	let page: PageDefinition | null = $state(null);
+
+	// A subpage follows its card's edit mode: read-only lines without New/Edit/Delete while the
+	// card is read-only; while it is in edit mode the card's Edit stands for the lines' Edit
+	const listPageDef = $derived(page ? withParentEditMode(page) : null);
+	function withParentEditMode(def: PageDefinition): PageDefinition {
+		if (parentEditMode === undefined) return def;
+		const hidden = parentEditMode ? ['Edit'] : ['New', 'Edit', 'Delete'];
+		return {
+			...def,
+			page: {
+				...def.page,
+				editable: parentEditMode ? def.page.editable : false,
+				actions: (def.page.actions ?? []).filter((a) => !hidden.includes(a.name))
+			}
+		};
+	}
+
 	let captions: Record<string, string> = $state({});
 	let fieldTypes: Record<string, string> = $state({}); // Field type metadata (e.g., "bool", "code", "text")
 	let options: Record<string, Record<string, string>> = $state({}); // Option field values (enum lookups)
@@ -1004,7 +1026,8 @@
 			{/if}
 			<ListPage
 				bind:this={listPageRef}
-				{page}
+				page={listPageDef ?? page}
+				editOnClick={subpage && parentEditMode === true}
 				{records}
 				{captions}
 				{fieldTypes}

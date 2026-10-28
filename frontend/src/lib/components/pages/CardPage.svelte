@@ -775,6 +775,7 @@
 									<PageRenderer
 										pageid={sub.page_id}
 										subpage={true}
+										parentEditMode={editMode}
 										fixedFilters={linkFilters(sub)}
 										newRecordDefaults={linkValues(sub)}
 										onexit={() => focusPart(0)}
