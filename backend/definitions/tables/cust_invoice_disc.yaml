@@ -1,0 +1,61 @@
+table:
+  id: 19
+  name: "Cust_Invoice_Disc"
+  description: "Cust. Invoice Disc. (table 19): invoice discount % and service charge from a minimum amount, per invoice discount code and currency"
+  fields:
+    # a customer's Invoice Disc. Code (by default its No.)
+    - name: code
+      no: 1
+      type: types.Code
+      db_name: code
+      length: 20
+      primary_key: true
+      required: true
+
+    - name: minimum_amount
+      no: 2
+      type: types.Decimal
+      db_name: minimum_amount
+      primary_key: true
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: discount_percent
+      no: 3
+      type: types.Decimal
+      db_name: discount_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0, max: 100}
+
+    - name: service_charge
+      no: 4
+      type: types.Decimal
+      db_name: service_charge
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      validation: {min: 0}
+
+    - name: currency_code
+      no: 5
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      primary_key: true
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+  keys:
+    - name: Primary
+      fields: [code, currency_code, minimum_amount]
+      clustered: true

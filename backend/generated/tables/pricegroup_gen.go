@@ -973,7 +973,7 @@ func (t *PriceGroup) renameReferences(field string, oldValue, newValue interface
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "price_group_code", "", 0}, {"Item_Price", false, "price_group_code", "", 0}},
+		"code": {{"Customer", false, "price_group_code", "", 0}, {"Item_Price", false, "price_group_code", "", 0}, {"Sales_Header", false, "price_group_code", "", 0}, {"Sales_Line", false, "price_group_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

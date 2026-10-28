@@ -1,0 +1,604 @@
+table:
+  id: 37
+  name: "Sales_Line"
+  description: "Sales Line (table 37): the lines of the sales documents"
+  # Left out until their steps: 17/18/58-64/5417-5461 quantities to ship/invoice and shipped/invoiced,
+  # 38 Appl.-to Item Entry, 45-51 jobs, 53/5400 serial/lot, 71-73 drop shipment, 77 Tax Calculation
+  # Type, 78-83 foreign trade statistics, 80 Attached to Line No. (extended texts), 93 Shipped Not
+  # Invoiced (LCY), 95/96/5495 reservations, 97/98 blanket orders, 101 System-Created Entry, 5403 Bin,
+  # 5405 Planned, 10000 Package Tracking No.
+  fields:
+    - name: document_type
+      no: 1
+      type: Option
+      db_name: document_type
+      options: ["Quote", "Order", "Invoice", "Credit Memo", "Blanket Order"]
+      primary_key: true
+
+    - name: sell_to_customer_no
+      no: 2
+      type: types.Code
+      db_name: sell_to_customer_no
+      length: 20
+      editable: false
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+          - source: city
+            width: 250
+
+    - name: document_no
+      no: 3
+      type: types.Code
+      db_name: document_no
+      length: 20
+      primary_key: true
+
+    - name: line_no
+      no: 4
+      type: int
+      db_name: line_no
+      primary_key: true
+
+    - name: type
+      no: 5
+      type: Option
+      db_name: type
+      options: [" ", "G/L Account", "Item", "Resource", "Fixed Asset"]
+
+    # Fixed Asset: no relation yet (fixed asset sales come later)
+    - name: no
+      no: 6
+      type: types.Code
+      db_name: no
+      length: 20
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 0}
+            table: Standard_Text
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+          - when: {field: type, equal: 1}
+            table: G_L_Account
+            field: no
+            filters:
+              account_type: {const: 0}   # Posting accounts only
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+          - when: {field: type, equal: 2}
+            table: Item
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: description
+                width: 250
+          - when: {field: type, equal: 3}
+            table: Resource
+            field: no
+            lookup_columns:
+              - source: no
+                width: 100
+              - source: name
+                width: 250
+
+    - name: location_code
+      no: 7
+      type: types.Code
+      db_name: location_code
+      length: 10
+      table_relation:
+        table: Location
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: posting_group
+      no: 8
+      type: types.Code
+      db_name: posting_group
+      length: 10
+      editable: false
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 2}
+            table: Inventory_Posting_Group
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+
+    - name: quantity_disc_code
+      no: 9
+      type: types.Code
+      db_name: quantity_disc_code
+      length: 20
+      editable: false
+
+    - name: shipment_date
+      no: 10
+      type: types.Date
+      db_name: shipment_date
+
+    - name: description
+      no: 11
+      type: types.Text
+      db_name: description
+      length: 50
+
+    - name: description_2
+      no: 12
+      type: types.Text
+      db_name: description_2
+      length: 50
+
+    - name: unit_of_measure
+      no: 13
+      type: types.Text
+      db_name: unit_of_measure
+      length: 10
+      editable: false
+
+    - name: quantity
+      no: 15
+      type: types.Decimal
+      db_name: quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: outstanding_quantity
+      no: 16
+      type: types.Decimal
+      db_name: outstanding_quantity
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: unit_price
+      no: 22
+      type: types.Decimal
+      db_name: unit_price
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_cost_lcy
+      no: 23
+      type: types.Decimal
+      db_name: unit_cost_lcy
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+
+    - name: tax_percent
+      no: 25
+      type: types.Decimal
+      db_name: tax_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: quantity_disc_percent
+      no: 26
+      type: types.Decimal
+      db_name: quantity_disc_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: line_discount_percent
+      no: 27
+      type: types.Decimal
+      db_name: line_discount_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      validation: {min: 0, max: 100}
+
+    - name: line_discount_amount
+      no: 28
+      type: types.Decimal
+      db_name: line_discount_amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+
+    - name: amount
+      no: 29
+      type: types.Decimal
+      db_name: amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: amount_including_tax
+      no: 30
+      type: types.Decimal
+      db_name: amount_including_tax
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: allow_invoice_disc
+      no: 32
+      type: bool
+      db_name: allow_invoice_disc
+      default: true
+
+    - name: gross_weight
+      no: 34
+      type: types.Decimal
+      db_name: gross_weight
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: net_weight
+      no: 35
+      type: types.Decimal
+      db_name: net_weight
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: units_per_parcel
+      no: 36
+      type: types.Decimal
+      db_name: units_per_parcel
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: unit_volume
+      no: 37
+      type: types.Decimal
+      db_name: unit_volume
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: department_code
+      no: 40
+      type: types.Code
+      db_name: department_code
+      length: 10
+      table_relation:
+        table: Department
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: project_code
+      no: 41
+      type: types.Code
+      db_name: project_code
+      length: 10
+      table_relation:
+        table: Project
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: name
+            width: 250
+
+    - name: price_group_code
+      no: 42
+      type: types.Code
+      db_name: price_group_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Price_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+
+    - name: allow_quantity_disc
+      no: 43
+      type: bool
+      db_name: allow_quantity_disc
+      default: true
+
+    - name: work_type_code
+      no: 52
+      type: types.Code
+      db_name: work_type_code
+      length: 10
+      table_relation:
+        table: Work_Type
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: cust_item_disc_percent
+      no: 55
+      type: types.Decimal
+      db_name: cust_item_disc_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: outstanding_amount
+      no: 57
+      type: types.Decimal
+      db_name: outstanding_amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: profit_percent
+      no: 67
+      type: types.Decimal
+      db_name: profit_percent
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: bill_to_customer_no
+      no: 68
+      type: types.Code
+      db_name: bill_to_customer_no
+      length: 20
+      editable: false
+      table_relation:
+        table: Customer
+        field: no
+        lookup_columns:
+          - source: no
+            width: 100
+          - source: name
+            width: 250
+          - source: city
+            width: 250
+
+    - name: inv_discount_amount
+      no: 69
+      type: types.Decimal
+      db_name: inv_discount_amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: gen_bus_posting_group
+      no: 74
+      type: types.Code
+      db_name: gen_bus_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: gen_prod_posting_group
+      no: 75
+      type: types.Code
+      db_name: gen_prod_posting_group
+      length: 10
+      table_relation:
+        table: Gen_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_area_code
+      no: 85
+      type: types.Code
+      db_name: tax_area_code
+      length: 20
+      table_relation:
+        table: Tax_Area
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_liable
+      no: 86
+      type: bool
+      db_name: tax_liable
+
+    - name: tax_group_code
+      no: 87
+      type: types.Code
+      db_name: tax_group_code
+      length: 10
+      table_relation:
+        table: Tax_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_bus_posting_group
+      no: 89
+      type: types.Code
+      db_name: tax_bus_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Business_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: tax_prod_posting_group
+      no: 90
+      type: types.Code
+      db_name: tax_prod_posting_group
+      length: 10
+      table_relation:
+        table: Tax_Product_Posting_Group
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: currency_code
+      no: 91
+      type: types.Code
+      db_name: currency_code
+      length: 10
+      editable: false
+      table_relation:
+        table: Currency
+        field: code
+        lookup_columns:
+          - source: code
+            width: 100
+          - source: description
+            width: 250
+
+    - name: outstanding_amount_lcy
+      no: 92
+      type: types.Decimal
+      db_name: outstanding_amount_lcy
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: tax_base_amount
+      no: 99
+      type: types.Decimal
+      db_name: tax_base_amount
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: unit_cost
+      no: 100
+      type: types.Decimal
+      db_name: unit_cost
+      decimal_places: "2:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: variant_code
+      no: 5402
+      type: types.Code
+      db_name: variant_code
+      length: 10
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 2}
+            table: Item_Variant
+            field: code
+            filters:
+              item_no: {field: "no"}
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+
+    - name: qty_per_unit_of_measure
+      no: 5404
+      type: types.Decimal
+      db_name: qty_per_unit_of_measure
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      default: 1
+      editable: false
+
+    - name: unit_of_measure_code
+      no: 5407
+      type: types.Code
+      db_name: unit_of_measure_code
+      length: 10
+      table_relation:
+        conditions:
+          - when: {field: type, equal: 2}
+            table: Item_Unit_of_Measure
+            field: code
+            filters:
+              item_no: {field: "no"}
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: qty_per_unit_of_measure
+                width: 120
+          - when: {field: type, equal: 3}
+            table: Unit_of_Measure
+            field: code
+            lookup_columns:
+              - source: code
+                width: 100
+              - source: description
+                width: 250
+
+    - name: quantity_base
+      no: 5415
+      type: types.Decimal
+      db_name: quantity_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: outstanding_qty_base
+      no: 5416
+      type: types.Decimal
+      db_name: outstanding_qty_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+  keys:
+    - name: Primary
+      fields: [document_type, document_no, line_no]
+      clustered: true
+    - name: type_no
+      fields: [type, "no"]

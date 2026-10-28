@@ -924,7 +924,7 @@ func (t *ShippingAgent) renameReferences(field string, oldValue, newValue interf
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "shipping_agent_code", "", 0}, {"Ship_to_Address", false, "shipping_agent_code", "", 0}, {"Vendor", false, "shipping_agent_code", "", 0}},
+		"code": {{"Customer", false, "shipping_agent_code", "", 0}, {"Sales_Header", false, "shipping_agent_code", "", 0}, {"Ship_to_Address", false, "shipping_agent_code", "", 0}, {"Vendor", false, "shipping_agent_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {
