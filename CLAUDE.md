@@ -594,7 +594,7 @@ Always use this identity for commits — never update git config to anything els
 ## CI Pipeline
 
 GitHub Actions runs on push/PR to main:
-1. Backend: `go vet` + `golangci-lint` + tests with race detection + build
+1. Backend: `go vet` + `golangci-lint` + tests with race detection (SQLite, and the PostgreSQL tests against a Postgres service — `TEST_POSTGRES_DSN`; add a `…Postgres` variant for behaviour that depends on the database) + build
 2. Frontend: type check + unit tests + build + Playwright E2E
 3. Release Please on main push
 4. Docker multi-arch build to ghcr.io on release

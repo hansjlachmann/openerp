@@ -17,6 +17,23 @@ jobs:
     name: Backend (Go)
     runs-on: ubuntu-24.04
 
+    # PostgreSQL for the tests that also run on it (TEST_POSTGRES_DSN): production runs on
+    # PostgreSQL, the other tests on SQLite
+    services:
+      postgres:
+        image: postgres:16-alpine # as production
+        env:
+          POSTGRES_USER: openerp
+          POSTGRES_DB: ci_test
+          POSTGRES_HOST_AUTH_METHOD: trust # a throwaway database of the job, no password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openerp -d ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,6 +67,8 @@ jobs:
           args: --timeout=10m
 
       - name: Run tests
+        env:
+          TEST_POSTGRES_DSN: postgres://openerp@localhost:5432/ci_test?sslmode=disable
         run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: Upload Go coverage to Codecov
