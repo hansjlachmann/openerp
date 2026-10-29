@@ -850,7 +850,7 @@ func (t *CustomerDiscountGroup) renameReferences(field string, oldValue, newValu
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Cust_Item_Discount", false, "customer_disc_group", "", 0}, {"Customer", false, "cust_item_disc_gr", "", 0}, {"Sales_Header", false, "cust_item_disc_gr", "", 0}},
+		"code": {{"Cust_Item_Discount", false, "customer_disc_group", "", 0}, {"Customer", false, "cust_item_disc_gr", "", 0}, {"Sales_Cr_Memo_Header", false, "cust_item_disc_gr", "", 0}, {"Sales_Header", false, "cust_item_disc_gr", "", 0}, {"Sales_Invoice_Header", false, "cust_item_disc_gr", "", 0}, {"Sales_Shipment_Header", false, "cust_item_disc_gr", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

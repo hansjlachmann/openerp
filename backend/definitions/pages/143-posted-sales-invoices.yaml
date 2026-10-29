@@ -1,0 +1,33 @@
+page:
+  id: 143
+  type: List
+  name: Posted Sales Invoices
+  source_table: Sales_Invoice_Header
+  caption: Posted Sales Invoices
+  card_page_id: 132
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: sell_to_customer_no
+          width: 130
+        - source: sell_to_customer_name
+          width: 250
+        - source: posting_date
+          width: 110
+        - source: due_date
+          width: 110
+        - source: currency_code
+          width: 90
+        - source: amount
+          width: 130
+        - source: amount_including_tax
+          width: 150
+        - source: order_no
+          width: 120
+          visible: false
+        - source: no_printed
+          width: 100
+          visible: false

@@ -7,7 +7,27 @@ const (
 	ErrSalesCannotShipMoreBase  ErrorCode = "ERR_SALES_CANNOT_SHIP_MORE_BASE"
 	ErrSalesCannotInvoiceMore   ErrorCode = "ERR_SALES_CANNOT_INVOICE_MORE"
 	ErrSalesCannotInvoiceMoreBs ErrorCode = "ERR_SALES_CANNOT_INVOICE_MORE_BASE"
+	ErrSalesShipOrInvoice       ErrorCode = "ERR_SALES_SHIP_OR_INVOICE"
+	ErrSalesNothingToPost       ErrorCode = "ERR_SALES_NOTHING_TO_POST"
+	ErrSalesCannotPostType      ErrorCode = "ERR_SALES_CANNOT_POST_TYPE"
 )
+
+// SalesShipOrInvoice: an order is posted with neither Ship nor Invoice ("Please enter Yes in
+// Ship and/or Invoice.")
+func SalesShipOrInvoice(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrSalesShipOrInvoice, Table: table, Field: field, Field2: field2}
+}
+
+// SalesNothingToPost: a document has no line with something to ship or invoice
+func SalesNothingToPost() *AppError {
+	return &AppError{Code: ErrSalesNothingToPost}
+}
+
+// SalesCannotPostType: a document of a type that is not posted (a quote, a blanket order) —
+// "Document Type Quote cannot be posted."
+func SalesCannotPostType(table, field string, value any) *AppError {
+	return &AppError{Code: ErrSalesCannotPostType, Table: table, Field: field, Value: value}
+}
 
 // SalesQtyLessThan: a line's quantity is below what was shipped or invoiced ("Quantity must not
 // be less than Quantity Shipped.")

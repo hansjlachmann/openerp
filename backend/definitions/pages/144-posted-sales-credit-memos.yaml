@@ -1,0 +1,31 @@
+page:
+  id: 144
+  type: List
+  name: Posted Sales Credit Memos
+  source_table: Sales_Cr_Memo_Header
+  caption: Posted Sales Credit Memos
+  card_page_id: 134
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: sell_to_customer_no
+          width: 130
+        - source: sell_to_customer_name
+          width: 250
+        - source: posting_date
+          width: 110
+        - source: currency_code
+          width: 90
+        - source: amount
+          width: 130
+        - source: amount_including_tax
+          width: 150
+        - source: applies_to_doc_no
+          width: 130
+          visible: false
+        - source: no_printed
+          width: 100
+          visible: false

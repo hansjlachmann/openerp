@@ -977,3 +977,16 @@ func calcSalesLineOriginalAmount(rec *gtables.SalesLine) (types.Decimal, *gtable
 	}
 	return system.Round(originalAmount, currency.Amount_rounding_precision), currency, nil
 }
+
+// InitSalesLineOutstanding (InitOutstanding) for sales posting: the outstanding and
+// shipped-not-invoiced quantities and amounts after the line's shipped/invoiced quantities
+// changed
+func InitSalesLineOutstanding(rec *gtables.SalesLine) error {
+	return initSalesLineOutstanding(rec)
+}
+
+// InitSalesLineQtyToShip (InitQtyToShip) for sales posting: all that is still outstanding is
+// to be shipped, all that can be invoiced to be invoiced
+func InitSalesLineQtyToShip(rec *gtables.SalesLine) {
+	initSalesLineQtyToShip(rec)
+}

@@ -1,0 +1,29 @@
+page:
+  id: 142
+  type: List
+  name: Posted Sales Shipments
+  source_table: Sales_Shipment_Header
+  caption: Posted Sales Shipments
+  card_page_id: 130
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: sell_to_customer_no
+          width: 130
+        - source: sell_to_customer_name
+          width: 250
+        - source: posting_date
+          width: 110
+        - source: order_no
+          width: 120
+        - source: shipment_date
+          width: 110
+        - source: location_code
+          width: 110
+          visible: false
+        - source: no_printed
+          width: 100
+          visible: false

@@ -4,8 +4,7 @@ table:
   description: "Sales Header (table 36): quotes, orders, invoices, credit memos and blanket orders"
   data_caption_fields: [no, sell_to_customer_name]
   auto_key: true   # OnInsert gives a document without No. the next number of its type's series
-  # Left out until their steps: 52/53/118 applies-to, 55/94 Bal. Account, 56 Job, 57/58 Ship/Invoice,
-  # 62-65 and 108/109 shipping/posting numbers, 71 Combine Shipments, 75-78/97/101/102 foreign trade
+  # Left out until their steps: 118 Applies-to ID, 55/94 Bal. Account, 56 Job, 71 Combine Shipments, 75-78/97/101/102 foreign trade
   # statistics, 98 Correction, 117 Reserve, 119 VAT Base Discount %, 45 Order Class, 51 On Hold,
   # 106 Package Tracking No., 10005 Ship-to UPS Zone, 10009 Outstanding Amount (LCY)
   fields:
@@ -287,6 +286,7 @@ table:
             width: 250
 
     # the exchange rate of the currency on the posting date (units per 1 LCY)
+
     - name: currency_factor
       no: 33
       type: types.Decimal
@@ -319,6 +319,7 @@ table:
       db_name: allow_quantity_disc
 
     # the code of the customer's invoice discounts (Cust. Invoice Disc.); any code is accepted
+
     - name: invoice_disc_code
       no: 37
       type: types.Code
@@ -399,6 +400,47 @@ table:
       db_name: no_printed
       editable: false
 
+    - name: applies_to_doc_type
+      no: 52
+      type: Option
+      db_name: applies_to_doc_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    # an open entry of the bill-to customer (of the Applies-to Doc. Type) the document is applied to
+    - name: applies_to_doc_no
+      no: 53
+      type: types.Code
+      db_name: applies_to_doc_no
+      length: 20
+      table_relation:
+        table: Customer_ledger_entry
+        field: document_no
+        filters:
+          customer_no: {field: bill_to_customer_no}
+          document_type: {field: applies_to_doc_type}
+          open: {const: "true"}
+        lookup_columns:
+          - source: document_no
+            width: 120
+          - source: document_type
+            width: 120
+          - source: posting_date
+            width: 110
+          - source: due_date
+            width: 110
+          - source: remaining_amount
+            width: 130
+
+    - name: ship
+      no: 57
+      type: bool
+      db_name: ship
+
+    - name: invoice
+      no: 58
+      type: bool
+      db_name: invoice
+
     - name: amount
       no: 60
       type: types.Decimal
@@ -430,6 +472,35 @@ table:
         - field: document_no
           type: field
           value: no
+
+    - name: shipping_no
+      no: 62
+      type: types.Code
+      db_name: shipping_no
+      length: 20
+
+    - name: posting_no
+      no: 63
+      type: types.Code
+      db_name: posting_no
+      length: 20
+
+    - name: last_shipping_no
+      no: 64
+      type: types.Code
+      db_name: last_shipping_no
+      length: 20
+      editable: false
+      table_relation:
+        table: Sales_Shipment_Header
+        field: no
+
+    - name: last_posting_no
+      no: 65
+      type: types.Code
+      db_name: last_posting_no
+      length: 20
+      editable: false
 
     - name: vat_registration_no
       no: 70
@@ -660,6 +731,24 @@ table:
           - source: description
             width: 250
 
+    - name: posting_no_series
+      no: 108
+      type: types.Code
+      db_name: posting_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+
+    - name: shipping_no_series
+      no: 109
+      type: types.Code
+      db_name: shipping_no_series
+      length: 10
+      table_relation:
+        table: No_Series
+        field: code
+
     - name: tax_area_code
       no: 114
       type: types.Code
@@ -694,6 +783,7 @@ table:
             width: 250
 
     # classic local field 10015
+
     - name: tax_exemption_no
       no: 900
       type: types.Text

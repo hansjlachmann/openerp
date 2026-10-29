@@ -219,12 +219,12 @@ master_data:
       - {tax_bus_posting_group: "EXPORT", tax_prod_posting_group: "EXEMPT", tax_calculation_type: 3}
   - table: General_Posting_Setup
     records:
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, sales_account: "3110", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, sales_account: "3130", purch_account: "4130", cogs_account: "4135", inventory_adjmt_account: "4140"}
-      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, sales_account: "3140", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: SERVICES, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
-      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: FOOD, sales_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: RETAIL, sales_account: "3110", sales_credit_memo_account: "3110", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: SERVICES, sales_account: "3130", sales_credit_memo_account: "3130", purch_account: "4130", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: DOMESTIC, gen_prod_posting_group: FOOD, sales_account: "3140", sales_credit_memo_account: "3140", purch_account: "4110", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: RETAIL, sales_account: "3120", sales_credit_memo_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: SERVICES, sales_account: "3120", sales_credit_memo_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
+      - {gen_bus_posting_group: EXPORT, gen_prod_posting_group: FOOD, sales_account: "3120", sales_credit_memo_account: "3120", purch_account: "4120", cogs_account: "4135", inventory_adjmt_account: "4140"}
       - {gen_bus_posting_group: "", gen_prod_posting_group: RETAIL, cogs_account: "4135", inventory_adjmt_account: "4140"}   # item journals: no business group
       - {gen_bus_posting_group: "", gen_prod_posting_group: SERVICES, cogs_account: "4135", inventory_adjmt_account: "4140"}
       - {gen_bus_posting_group: "", gen_prod_posting_group: FOOD, cogs_account: "4135", inventory_adjmt_account: "4140"}
