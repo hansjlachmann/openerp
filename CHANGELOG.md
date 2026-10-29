@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.119](https://github.com/hansjlachmann/openerp/compare/v0.1.118...v0.1.119) (2026-10-29)
+
+
+### Features
+
+* My Settings — date and number format, short date entry, work date ([#166](https://github.com/hansjlachmann/openerp/issues/166)) ([98c0d1a](https://github.com/hansjlachmann/openerp/commit/98c0d1a5bfd852ca35b5db029c7a6232f67bca2b))
+
 ## [0.1.118](https://github.com/hansjlachmann/openerp/compare/v0.1.117...v0.1.118) (2026-10-29)
 
 
