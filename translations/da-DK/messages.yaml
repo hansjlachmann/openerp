@@ -342,6 +342,11 @@ messages:
   DEMO_DATA_SETUP: "Opretter lande og betalingsbetingelser..."
   DEMO_DATA_CUSTOMERS: "Opretter debitorer..."
   DEMO_DATA_ENTRIES: "Opretter debitorposter..."
+  DEMO_DATA_LEDGERS: "Opretter kreditorer, bank-, anlægs- og finansposter..."
+  DEMO_DATA_RESOURCES: "Bogfører ressourcerne..."
+  DEMO_DATA_ITEMS: "Bogfører varerne..."
+  DEMO_DATA_ASSEMBLIES: "Samler styklisterne..."
+  DEMO_DATA_SALES: "Bogfører salgsdokumenterne..."
 
   # Opgavekø-notifikationer på e-mail (%1 opgave, %2 virksomhed)
   JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Opgavekø %1 fuldført (%2)"

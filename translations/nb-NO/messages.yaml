@@ -342,6 +342,11 @@ messages:
   DEMO_DATA_SETUP: "Oppretter land og betalingsbetingelser..."
   DEMO_DATA_CUSTOMERS: "Oppretter kunder..."
   DEMO_DATA_ENTRIES: "Oppretter kundeposter..."
+  DEMO_DATA_LEDGERS: "Oppretter leverandører, bank-, anleggs- og finansposter..."
+  DEMO_DATA_RESOURCES: "Bokfører ressursene..."
+  DEMO_DATA_ITEMS: "Bokfører varene..."
+  DEMO_DATA_ASSEMBLIES: "Monterer stykklistene..."
+  DEMO_DATA_SALES: "Bokfører salgsdokumentene..."
 
   # Jobbkø-varsler på e-post (%1 jobb, %2 selskap)
   JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Jobbkø %1 fullført (%2)"

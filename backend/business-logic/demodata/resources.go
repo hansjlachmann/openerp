@@ -69,7 +69,7 @@ func insertResCapacity(exec database.Executor, company string, dbType database.D
 // postDemoResources posts a year of resource use through the resource posting (codeunit 212):
 // every week each resource's usage — normal hours, sometimes overtime or travel — and every
 // month the chargeable hours as a sale; one register per month
-func postDemoResources(src ftables.Source, today time.Time, masterData []tableRecords, counts *Counts) error {
+func postDemoResources(src ftables.Source, today time.Time, masterData []tableRecords, counts *Counts, p *progress) error {
 	rng := rand.New(rand.NewSource(seed + 156))
 	var resources []map[string]interface{}
 	for _, t := range masterData {
@@ -82,6 +82,8 @@ func postDemoResources(src ftables.Source, today time.Time, masterData []tableRe
 	for start.Weekday() != time.Monday {
 		start = start.AddDate(0, 0, 1)
 	}
+	// about a usage per resource and week and a sale per resource and month
+	p.setTotal((int(today.Sub(start).Hours()/24/7) + 13) * len(resources))
 	lineNo := 0
 	docNo := 0
 	var resJnlPostLine *resjnl.ResJnlPostLine
@@ -115,6 +117,7 @@ func postDemoResources(src ftables.Source, today time.Time, masterData []tableRe
 			return fmt.Errorf("demo resource journal %s %s: %w", resNo, line.Document_no, err)
 		}
 		counts.ResLedgerEntries++
+		p.step()
 		return nil
 	}
 

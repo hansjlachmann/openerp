@@ -20,7 +20,7 @@ type SalesPoster interface {
 // invoiced a week later), an invoice and a credit memo applied to an invoice; open quotes, open
 // orders (one shipped in part) and an open invoice. Sold from the main warehouse to the domestic
 // customers, items and resources at their prices.
-func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster, today time.Time, size Size, counts *Counts) error {
+func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster, today time.Time, size Size, counts *Counts, p *progress) error {
 	rng := rand.New(rand.NewSource(seed + 36))
 	salesPost := open(src)
 	customers, items, resources, err := demoSalesMasters(src)
@@ -34,6 +34,8 @@ func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster
 	if perMonth == 0 {
 		perMonth = 4
 	}
+	// the postings and the open documents
+	p.setTotal(3*perMonth + perMonth + 10)
 
 	// a document for a customer on a date with 1-3 lines (an item, sometimes a resource)
 	newDocument := func(documentType gtables.SalesHeaderDocument_type, date time.Time) (*gtables.SalesHeader, error) {
@@ -111,6 +113,7 @@ func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster
 		if err != nil {
 			return fmt.Errorf("demo sales posting %s: %w", salesHeader.No, err)
 		}
+		p.step()
 		if ship && salesHeader.Document_type != gtables.SalesHeader_Document_type.CreditMemo {
 			counts.PostedSalesShipments++
 		}
@@ -229,6 +232,7 @@ func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster
 			return err
 		}
 		counts.SalesQuotes++
+		p.step()
 	}
 	for i := 0; i < 3; i++ {
 		order, err := newDocument(gtables.SalesHeader_Document_type.Order, today.AddDate(0, 0, -i))
@@ -236,6 +240,7 @@ func postDemoSales(src ftables.Source, open func(src ftables.Source) SalesPoster
 			return err
 		}
 		counts.SalesOrders++
+		p.step()
 		if i == 0 {
 			salesLine := gtables.NewSalesLine(src)
 			err = salesLine.GetOrError(map[string]interface{}{"document_type": int(order.Document_type), "document_no": order.No, "line_no": 10000})

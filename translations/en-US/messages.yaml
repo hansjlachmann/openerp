@@ -342,6 +342,11 @@ messages:
   DEMO_DATA_SETUP: "Creating countries and payment terms..."
   DEMO_DATA_CUSTOMERS: "Creating customers..."
   DEMO_DATA_ENTRIES: "Creating customer ledger entries..."
+  DEMO_DATA_LEDGERS: "Creating vendors, bank, fixed asset and G/L entries..."
+  DEMO_DATA_RESOURCES: "Posting the resources..."
+  DEMO_DATA_ITEMS: "Posting the items..."
+  DEMO_DATA_ASSEMBLIES: "Assembling the bills of materials..."
+  DEMO_DATA_SALES: "Posting the sales documents..."
 
   # Job Queue notification e-mails (%1 job, %2 company)
   JOBQUEUE_MAIL_SUBJECT_SUCCESS: "Job Queue %1 completed (%2)"

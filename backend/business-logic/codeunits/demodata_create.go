@@ -90,9 +90,14 @@ func (c *DemoDataCreate) create(jobQueue *gtables.JobQueue, ts *i18n.Translation
 
 	dialog := fcodeunits.GetCurrentDialog() // nil in a scheduled run
 	phaseKeys := map[demodata.Phase]string{
-		demodata.PhaseSetup:     "DEMO_DATA_SETUP",
-		demodata.PhaseCustomers: "DEMO_DATA_CUSTOMERS",
-		demodata.PhaseEntries:   "DEMO_DATA_ENTRIES",
+		demodata.PhaseSetup:      "DEMO_DATA_SETUP",
+		demodata.PhaseCustomers:  "DEMO_DATA_CUSTOMERS",
+		demodata.PhaseEntries:    "DEMO_DATA_ENTRIES",
+		demodata.PhaseLedgers:    "DEMO_DATA_LEDGERS",
+		demodata.PhaseResources:  "DEMO_DATA_RESOURCES",
+		demodata.PhaseItems:      "DEMO_DATA_ITEMS",
+		demodata.PhaseAssemblies: "DEMO_DATA_ASSEMBLIES",
+		demodata.PhaseSales:      "DEMO_DATA_SALES",
 	}
 	progress := func(pct int, phase demodata.Phase) {
 		if dialog != nil {

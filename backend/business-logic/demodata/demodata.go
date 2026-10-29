@@ -76,6 +76,10 @@ const (
 	PhaseSetup     Phase = "setup"     // countries and payment terms
 	PhaseCustomers Phase = "customers" // customers
 	PhaseEntries   Phase = "entries"   // customer ledger entries
+	PhaseLedgers   Phase = "ledgers"   // vendors, bank and fixed asset entries, G/L entries
+	PhaseResources Phase = "resources" // the resources' postings
+	PhaseItems     Phase = "items"     // the items' postings and the assemblies
+	PhaseSales     Phase = "sales"     // the sales documents and their postings
 )
 
 // Options control a Create run.
@@ -351,7 +355,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		return counts, ErrCompanyNotEmpty
 	}
 
-	p := newProgress(opts.Progress, len(setup.Countries)+len(setup.PaymentTerms)+recordCount(setup.MasterData)+recordCount(setup.CustomerData)+recordCount(setup.VendorData), len(customers), len(entries))
+	p := newProgress(opts.Progress, opts.Size, len(setup.Countries)+len(setup.PaymentTerms)+recordCount(setup.MasterData)+recordCount(setup.CustomerData)+recordCount(setup.VendorData), len(customers), len(entries))
 
 	err = insertSetup(exec, company, dbType, setup, &counts, p)
 	if err != nil {
@@ -389,6 +393,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
+	p.phase(PhaseLedgers)
 	err = insertVendors(exec, company, dbType, vendors.Vendors, &counts)
 	if err != nil {
 		rollback()
@@ -439,27 +444,31 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		rollback()
 		return Counts{}, err
 	}
-	err = postDemoResources(ftables.DBSource(exec, company, dbType), today, setup.MasterData, &counts)
+	p.phase(PhaseResources)
+	err = postDemoResources(ftables.DBSource(exec, company, dbType), today, setup.MasterData, &counts, p)
 	if err != nil {
 		rollback()
 		return Counts{}, err
 	}
 
 	if opts.ItemJnlPostLine != nil {
-		err = postDemoItems(ftables.DBSource(exec, company, dbType), opts.ItemJnlPostLine, today, setup.MasterData, &counts)
+		p.phase(PhaseItems)
+		err = postDemoItems(ftables.DBSource(exec, company, dbType), opts.ItemJnlPostLine, today, setup.MasterData, &counts, p)
 		if err != nil {
 			rollback()
 			return Counts{}, err
 		}
 		if opts.BOMJnlPostLine != nil {
-			err = postDemoAssemblies(ftables.DBSource(exec, company, dbType), opts.BOMJnlPostLine, today, setup.MasterData, &counts)
+			p.phase(PhaseAssemblies)
+			err = postDemoAssemblies(ftables.DBSource(exec, company, dbType), opts.BOMJnlPostLine, today, setup.MasterData, &counts, p)
 			if err != nil {
 				rollback()
 				return Counts{}, err
 			}
 		}
 		if opts.SalesPost != nil {
-			err = postDemoSales(ftables.DBSource(exec, company, dbType), opts.SalesPost, today, opts.Size, &counts)
+			p.phase(PhaseSales)
+			err = postDemoSales(ftables.DBSource(exec, company, dbType), opts.SalesPost, today, opts.Size, &counts, p)
 			if err != nil {
 				rollback()
 				return Counts{}, err
@@ -903,42 +912,87 @@ func round2(v float64) float64 { return math.Round(v*100) / 100 }
 // Progress
 // ---------------------------------------------------------------------------
 
-// progress turns record counts into an overall percentage: setup 0-5%,
-// customers 5-30%, ledger entries 30-100%.
+// progress turns record counts into an overall percentage: each phase has its share of the
+// run (by the time it takes), and within a phase the records done of the phase's total — never
+// past the phase's end
 type progress struct {
 	report      func(int, Phase)
 	current     Phase
 	start, span float64
 	total, n    int
 	last        int
+	lastPhase   Phase
+	ranges      map[Phase][2]float64
 	sizes       map[Phase]int
 }
 
-func newProgress(report func(int, Phase), setup, customers, entries int) *progress {
-	return &progress{report: report, last: -1, sizes: map[Phase]int{PhaseSetup: setup, PhaseCustomers: customers, PhaseEntries: entries}}
+// PhaseAssemblies: the assemblies of the bills of materials (part of the items' share)
+const PhaseAssemblies Phase = "assemblies"
+
+// phaseRanges: the start and the share (in %) of each phase — as measured for SMALL, where the
+// postings take most of the time; LARGE and HEAVY spend more on the customers and their entries
+var phaseRanges = map[Phase][2]float64{
+	PhaseSetup:      {0, 1},
+	PhaseCustomers:  {1, 1},
+	PhaseEntries:    {2, 2},
+	PhaseLedgers:    {4, 3},
+	PhaseResources:  {7, 31},
+	PhaseItems:      {38, 28},
+	PhaseAssemblies: {66, 8},
+	PhaseSales:      {74, 25},
+}
+
+var phaseRangesLarge = map[Phase][2]float64{
+	PhaseSetup:      {0, 1},
+	PhaseCustomers:  {1, 14},
+	PhaseEntries:    {15, 30},
+	PhaseLedgers:    {45, 5},
+	PhaseResources:  {50, 15},
+	PhaseItems:      {65, 14},
+	PhaseAssemblies: {79, 4},
+	PhaseSales:      {83, 16},
+}
+
+func newProgress(report func(int, Phase), size Size, setup, customers, entries int) *progress {
+	ranges := phaseRanges
+	if size == Large || size == Heavy {
+		ranges = phaseRangesLarge
+	}
+	return &progress{report: report, last: -1, ranges: ranges, sizes: map[Phase]int{PhaseSetup: setup, PhaseCustomers: customers, PhaseEntries: entries}}
 }
 
 func (p *progress) phase(ph Phase) {
-	ranges := map[Phase][2]float64{PhaseSetup: {0, 5}, PhaseCustomers: {5, 25}, PhaseEntries: {30, 70}}
-	p.current, p.start, p.span = ph, ranges[ph][0], ranges[ph][1]
+	p.current, p.start, p.span = ph, p.ranges[ph][0], p.ranges[ph][1]
 	p.total, p.n = p.sizes[ph], 0
 	p.emit(int(p.start))
+}
+
+// setTotal: the number of steps the current phase takes (an estimate is fine: the phase does
+// not go past its share)
+func (p *progress) setTotal(total int) {
+	p.total = total
 }
 
 func (p *progress) step() {
 	p.n++
 	if p.total > 0 {
-		p.emit(int(p.start + p.span*float64(p.n)/float64(p.total)))
+		done := float64(p.n) / float64(p.total)
+		if done > 1 {
+			done = 1
+		}
+		p.emit(int(p.start + p.span*done))
 	}
 }
 
 func (p *progress) done() { p.emit(100) }
 
+// emit reports a new percentage, or a new phase (its message) at the same percentage
 func (p *progress) emit(pct int) {
-	if p.report == nil || pct == p.last {
+	if p.report == nil || pct == p.last && p.current == p.lastPhase {
 		return
 	}
 	p.last = pct
+	p.lastPhase = p.current
 	p.report(pct, p.current)
 }
 

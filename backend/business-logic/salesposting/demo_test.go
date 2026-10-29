@@ -22,7 +22,13 @@ func TestDemoSales(t *testing.T) {
 	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = db.Close() })
 	must(t, tables.CreateCompanyTables(db, "demo", database.DBTypeSQLite))
+	var percents []int
+	phases := map[demodata.Phase]bool{}
 	counts, err := demodata.Create(db, "demo", database.DBTypeSQLite, demodata.Options{
+		Progress: func(pct int, phase demodata.Phase) {
+			percents = append(percents, pct)
+			phases[phase] = true
+		},
 		Today:           time.Date(2026, 10, 6, 0, 0, 0, 0, time.Local),
 		ItemJnlPostLine: func(src ftables.Source) demodata.ItemJnlPoster { return itemjnl.NewItemJnlPostLine(src) },
 		SalesPost:       func(src ftables.Source) demodata.SalesPoster { return salesposting.NewSalesPost(src) },
@@ -31,6 +37,25 @@ func TestDemoSales(t *testing.T) {
 	if counts.PostedSalesInvoices < 12 || counts.PostedSalesShipments < 12 || counts.PostedSalesCrMemos != 1 ||
 		counts.SalesQuotes != 3 || counts.SalesOrders != 3 || counts.SalesInvoices != 1 {
 		t.Errorf("counts %+v", counts)
+	}
+	// the progress goes up to 100, never back and never past it, through every phase; the
+	// postings are most of it
+	for i, pct := range percents {
+		if pct > 100 || i > 0 && pct < percents[i-1] {
+			t.Fatalf("progress %v", percents)
+		}
+	}
+	if percents[len(percents)-1] != 100 || len(phases) != 7 { // all but the assemblies (no BOM posting here)
+		t.Errorf("progress ends at %d, phases %v", percents[len(percents)-1], phases)
+	}
+	salesSteps := 0
+	for _, pct := range percents {
+		if pct > 75 && pct < 100 {
+			salesSteps++
+		}
+	}
+	if salesSteps < 10 {
+		t.Errorf("the sales postings move the progress %d times: %v", salesSteps, percents)
 	}
 	src := ftables.DBSource(db, "demo", database.DBTypeSQLite)
 	salesInvHeader := gtables.NewSalesInvoiceHeader(src)
