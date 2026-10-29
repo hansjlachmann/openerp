@@ -105,3 +105,32 @@ func TestConsistentPerPostingDate(t *testing.T) {
 		t.Errorf("%d G/L entries saved", gl1-gl0)
 	}
 }
+
+// The balance check on PostgreSQL (TEST_POSTGRES_DSN): an unbalanced posting and one balanced
+// in total but not per date are refused with nothing saved; a balanced one commits
+func TestConsistentPostgres(t *testing.T) {
+	src := demoCompanyPostgres(t)
+	gl0, _, _, reg0 := countEntries(src)
+	err := postLines(t, src, lineSpec{lineNo: 10000, docNo: "PG00001", accNo: "1210", amount: "1000"})
+	if !isInconsistent(err) {
+		t.Fatalf("an unbalanced posting must be refused, got %v", err)
+	}
+	err = postLines(t, src,
+		lineSpec{lineNo: 20000, docNo: "PG00002", accNo: "1210", amount: "500", postingDay: 15},
+		lineSpec{lineNo: 30000, docNo: "PG00002", accNo: "1230", amount: "-500", postingDay: 16})
+	if !isInconsistent(err) {
+		t.Fatalf("balanced in total but not per date must be refused, got %v", err)
+	}
+	gl1, _, _, reg1 := countEntries(src)
+	if gl1 != gl0 || reg1 != reg0 {
+		t.Errorf("after the refusals: %d G/L entries, %d registers saved", gl1-gl0, reg1-reg0)
+	}
+	err = postLines(t, src,
+		lineSpec{lineNo: 40000, docNo: "PG00003", accNo: "1210", amount: "250"},
+		lineSpec{lineNo: 50000, docNo: "PG00003", accNo: "1230", amount: "-250"})
+	must(t, err)
+	gl2, _, _, _ := countEntries(src)
+	if gl2-gl0 != 2 {
+		t.Errorf("a balanced posting saved %d G/L entries", gl2-gl0)
+	}
+}
