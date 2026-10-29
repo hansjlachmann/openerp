@@ -219,9 +219,9 @@ menu:
       - name: "Orders"
         page_id: 9305
       - name: "Invoices"
-        page_id: 43
+        page_id: 9301
       - name: "Credit Memos"
-        page_id: 44
+        page_id: 9302
       - separator: true
       - name: "Reports"
       - name: "Documents"

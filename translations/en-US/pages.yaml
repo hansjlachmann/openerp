@@ -530,6 +530,18 @@ pages:
     caption: "Sales Order"
   sales_order_subform:
     caption: "Lines"
+  sales_invoices:
+    caption: "Sales Invoices"
+  sales_invoice:
+    caption: "Sales Invoice"
+  sales_invoice_subform:
+    caption: "Lines"
+  sales_credit_memos:
+    caption: "Sales Credit Memos"
+  sales_credit_memo:
+    caption: "Sales Credit Memo"
+  sales_cr_memo_subform:
+    caption: "Lines"
   sales_statistics:
     caption: "Sales Statistics"
     fields:  # the calculated fields (OnAfterGetRecord)

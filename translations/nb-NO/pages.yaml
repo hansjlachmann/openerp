@@ -530,6 +530,18 @@ pages:
     caption: "Salgsordre"
   sales_order_subform:
     caption: "Linjer"
+  sales_invoices:
+    caption: "Salgsfakturaer"
+  sales_invoice:
+    caption: "Salgsfaktura"
+  sales_invoice_subform:
+    caption: "Linjer"
+  sales_credit_memos:
+    caption: "Salgskreditnotaer"
+  sales_credit_memo:
+    caption: "Salgskreditnota"
+  sales_cr_memo_subform:
+    caption: "Linjer"
   sales_statistics:
     caption: "Salgsstatistikk"
     fields:  # the calculated fields (OnAfterGetRecord)

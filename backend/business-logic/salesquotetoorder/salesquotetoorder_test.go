@@ -44,7 +44,7 @@ func orderCompany(t *testing.T) ftables.Source {
 	t.Cleanup(func() { _ = ftables.Rollback(tx) })
 	src := ftables.DBSource(tx, "orders", database.DBTypeSQLite)
 
-	for _, series := range []struct{ code, start string }{{"S-QUO", "SQ000001"}, {"S-ORD", "SO000001"}} {
+	for _, series := range []struct{ code, start string }{{"S-QUO", "SQ000001"}, {"S-ORD", "SO000001"}, {"S-INV", "SI000001"}, {"S-INV+", "PSI000001"}, {"S-CR", "SCM000001"}, {"S-CR+", "PSCM000001"}} {
 		noSeries := gtables.NewNoSeries(src)
 		noSeries.Code = types.Code(series.code)
 		noSeries.Default_nos = true
@@ -60,6 +60,10 @@ func orderCompany(t *testing.T) ftables.Source {
 	salesSetup := gtables.GetSalesReceivablesSetup(src)
 	salesSetup.Quote_nos = "S-QUO"
 	salesSetup.Order_nos = "S-ORD"
+	salesSetup.Invoice_nos = "S-INV"
+	salesSetup.Posted_invoice_nos = "S-INV+"
+	salesSetup.Credit_memo_nos = "S-CR"
+	salesSetup.Posted_credit_memo_nos = "S-CR+"
 	must(t, salesSetup.InsertOrError(false))
 
 	cust := gtables.NewCustomer(src)
