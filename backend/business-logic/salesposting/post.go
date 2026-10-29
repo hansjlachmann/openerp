@@ -83,8 +83,10 @@ func NewSalesPost(src ftables.Source) *SalesPost {
 	return &SalesPost{src: src}
 }
 
-// Run posts the document
+// Run posts the document (a SalesPost can post one document after the other: each run starts
+// afresh)
 func (p *SalesPost) Run(salesHeader *gtables.SalesHeader) error {
+	*p = SalesPost{src: p.src}
 	p.salesHeader = salesHeader
 	err := p.checkAndUpdate()
 	if err != nil {

@@ -93,6 +93,10 @@ type Options struct {
 	// BOMJnlPostLine (optional) opens the BOM posting (codeunit 32) the same way: the demo bills
 	// of materials are assembled through it (codeunit 901: bomjnl.NewBOMJnlPostLine)
 	BOMJnlPostLine func(src ftables.Source) BOMJnlPoster
+	// SalesPost (optional) opens the sales posting (codeunit 80) the same way: the demo sales
+	// orders, invoices and credit memos are posted through it (codeunit 901:
+	// salesposting.NewSalesPost); needs ItemJnlPostLine (the items on inventory)
+	SalesPost func(src ftables.Source) SalesPoster
 }
 
 // ItemJnlPoster posts an item journal line (codeunit 22 Item Jnl.-Post Line)
@@ -125,6 +129,13 @@ type Counts struct {
 	BOMLedgerEntries         int // the demo assemblies of the bills of materials (posted)
 	ResCapacityEntries       int // the demo resources' capacity per working day
 	ResLedgerEntries         int // the demo resources' weekly usage and monthly sales (posted)
+	// The demo sales documents: open quotes, orders and invoices, and the posted ones
+	SalesQuotes          int
+	SalesOrders          int
+	SalesInvoices        int
+	PostedSalesShipments int
+	PostedSalesInvoices  int
+	PostedSalesCrMemos   int
 	// AccountingPeriods: monthly periods of the fiscal years from two years ago to this year
 	// and the first period of the next year; the oldest year is closed
 	AccountingPeriods int
@@ -442,6 +453,13 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 		}
 		if opts.BOMJnlPostLine != nil {
 			err = postDemoAssemblies(ftables.DBSource(exec, company, dbType), opts.BOMJnlPostLine, today, setup.MasterData, &counts)
+			if err != nil {
+				rollback()
+				return Counts{}, err
+			}
+		}
+		if opts.SalesPost != nil {
+			err = postDemoSales(ftables.DBSource(exec, company, dbType), opts.SalesPost, today, opts.Size, &counts)
 			if err != nil {
 				rollback()
 				return Counts{}, err
