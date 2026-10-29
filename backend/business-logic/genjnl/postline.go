@@ -3,8 +3,6 @@ package genjnl
 import (
 	"fmt"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/hansjlachmann/openerp/backend/business-logic/salestax"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -553,27 +551,9 @@ func (p *GenJnlPostLine) finishCodeunit() error {
 			return err
 		}
 	}
-	balance := p.balance()
 	glEntry := gtables.NewGLEntry(p.src)
-	glEntry.Consistent(balance.amount.IsZero() && balance.amount2.IsZero())
+	glEntry.Consistent(p.balance().balanced())
 	return nil
-}
-
-// balanceCheck holds the balance sums of the G/L entries posted in the transaction (two date
-// weightings). All postings in a transaction share them, so a posting that balances cannot
-// hide an earlier one in the same transaction that does not.
-type balanceCheck struct {
-	amount  decimal.Decimal
-	amount2 decimal.Decimal
-}
-
-// balance returns the balance sums of the posting's transaction
-func (p *GenJnlPostLine) balance() *balanceCheck {
-	if p.balanceCheck == nil {
-		state := ftables.TransactionState(p.src.GetDB(), "genjnl.balanceCheck", func() any { return &balanceCheck{} })
-		p.balanceCheck = state.(*balanceCheck)
-	}
-	return p.balanceCheck
 }
 
 // initGLEntry starts a G/L entry of the line on a G/L account (a posting account, not blocked,
@@ -663,13 +643,7 @@ func (p *GenJnlPostLine) insertGLEntry() error {
 	if !glEntry.Amount.Equal(system.Round(glEntry.Amount)) {
 		return apperrors.JnlNeedsRounding(gtables.GLEntryTableName, "amount", glEntry.Amount.String())
 	}
-	days := decimal.NewFromInt(int64(glEntry.Posting_date.Normal().Time.Unix() / 86400))
-	if glEntry.Posting_date.IsClosing() {
-		days = days.Add(decimal.NewFromInt(50))
-	}
-	balance := p.balance()
-	balance.amount = balance.amount.Add(glEntry.Amount.Decimal.Mul(days.Mod(decimal.NewFromInt(99)).Add(decimal.NewFromInt(1))))
-	balance.amount2 = balance.amount2.Add(glEntry.Amount.Decimal.Mul(days.Mod(decimal.NewFromInt(98)).Add(decimal.NewFromInt(1))))
+	p.balance().add(glEntry)
 	if glEntry.Amount.IsPositive() && !p.genJnlLine.Correction || glEntry.Amount.IsNegative() && p.genJnlLine.Correction {
 		glEntry.Debit_amount = glEntry.Amount
 		glEntry.Credit_amount = types.Decimal{}

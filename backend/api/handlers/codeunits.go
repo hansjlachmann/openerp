@@ -105,7 +105,7 @@ func (h *CodeunitsHandler) RunCodeunit(c *fiber.Ctx) error {
 	// Run the codeunit with the typed record
 	result, err := codeunit.Run(table)
 	if err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 
 	response := map[string]interface{}{

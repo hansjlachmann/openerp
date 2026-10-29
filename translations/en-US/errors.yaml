@@ -31,6 +31,7 @@ errors:
   ERR_SELECTION_TOO_MANY: "More than %1 records are selected: select fewer (filter the list first)."
   ERR_INCONSISTENT: "The transaction cannot be completed because it would leave inconsistencies in: %1. Nothing was saved."
   ERR_POSTED_TABLE: "%1 is written by posting only: its records cannot be entered, deleted or renamed."
+  ERR_GL_NOT_BALANCED: "The transaction cannot be completed because the G/L entries do not balance: document %1 on %2 is off by %3. Nothing was saved."
   ERR_FIELD_NOT_EDITABLE: "%1 cannot be changed."
   ERR_MUST_BE_ROUNDED_TO: "%1 must be rounded to the nearest %2."
   ERR_DECIMAL_PLACES_FORMAT: "%1: enter one number or two numbers separated by a colon, from 0 to 9 (e.g. 2:5)."

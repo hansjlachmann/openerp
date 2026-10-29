@@ -2,11 +2,9 @@ package reports
 
 import (
 	"encoding/base64"
-	"errors"
 
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 )
 
 // CodeunitFactory runs a report like a codeunit, so pages (run_object: report:<id>) start it
@@ -53,11 +51,6 @@ func (c *reportCodeunit) Run(record interface{}) (fcodeunits.Result, error) {
 		opts.Context = record // the page's record (with its filters) the report works on
 	}
 	result, err := Execute(c.id, c.db, c.company, c.dbType, opts)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		// e.g. a request filter that cannot be applied: in the user's language
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	if err != nil {
 		return fcodeunits.Result{}, err
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/genjnl"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -50,10 +49,6 @@ func (c *GenJnlPost) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New("codeunit 231 runs on a journal line")
 	}
 	result, err := c.code(rec)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 

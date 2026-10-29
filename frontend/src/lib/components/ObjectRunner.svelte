@@ -6,7 +6,7 @@
 	import Modal from './Modal.svelte';
 	import ProgressModal from './ProgressModal.svelte';
 	import PageRenderer from './pages/PageRenderer.svelte';
-	import { startJob } from '$lib/services/jobs';
+	import { startJob, type ErrorDetails } from '$lib/services/jobs';
 	import { printoutOf } from '$lib/utils/printout';
 	import { goto } from '$app/navigation';
 	import { openPagePath } from '$lib/utils/runPage';
@@ -26,6 +26,7 @@
 	let progressValue = $state(0);
 	let progressMessage = $state('');
 	let progressError = $state('');
+	let progressErrorDetails = $state<ErrorDetails | null>(null); // what lies behind the error (Show Entries)
 	let confirmMode = $state(false);
 	let confirmMessage = $state('');
 	let confirmCallback = $state<((r: boolean) => void) | undefined>(undefined);
@@ -85,6 +86,7 @@
 		progressValue = 0;
 		progressMessage = '';
 		progressError = '';
+		progressErrorDetails = null;
 		confirmMode = false;
 		inputMode = false;
 		let refresh = false;
@@ -107,10 +109,11 @@
 						if (event.data?.refresh) refresh = true;
 						resultData = event.data as Record<string, unknown> | undefined;
 					},
-					onError: (err) => {
+					onError: (err, details) => {
 						confirmMode = false;
 						inputMode = false;
 						progressError = err;
+						progressErrorDetails = details ?? null;
 					},
 					onConfirm: (event, respond) => {
 						confirmMode = true;
@@ -180,9 +183,19 @@
 			if (!quiet && !opens) ondone?.(refresh);
 			return resultData;
 		} catch (err) {
+			// an error with details (the G/L entries of a posting that does not balance) stays in
+			// the dialog with Show Entries; others are a toast
+			if (progressErrorDetails) return;
 			progressOpen = false;
 			toast.error(err instanceof Error ? err.message : t(ERR.CODEUNIT_FAILED));
 		}
+	}
+
+	// closes the dialog of an error with details
+	function closeError() {
+		progressOpen = false;
+		progressError = '';
+		progressErrorDetails = null;
 	}
 </script>
 
@@ -192,6 +205,8 @@
 	message={progressMessage}
 	progress={progressValue}
 	error={progressError}
+	errorDetails={progressErrorDetails}
+	onCloseError={progressErrorDetails ? closeError : undefined}
 	confirmMode={confirmMode}
 	confirmMessage={confirmMessage}
 	onConfirmResponse={confirmCallback}

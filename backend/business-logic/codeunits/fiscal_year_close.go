@@ -1,11 +1,8 @@
 package codeunits
 
 import (
-	"errors"
-
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -43,10 +40,6 @@ func (c *FiscalYearClose) GetDBType() database.DBType { return c.dbType }
 // Run closes the fiscal year
 func (c *FiscalYearClose) Run(record interface{}) (fcodeunits.Result, error) {
 	result, err := c.code()
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 

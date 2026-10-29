@@ -16,9 +16,10 @@ import (
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
+// isInconsistent: the commit was refused by the balance check (the G/L entries named)
 func isInconsistent(err error) bool {
 	var appErr *apperrors.AppError
-	return errors.As(err, &appErr) && appErr.Code == apperrors.ErrInconsistent
+	return errors.As(err, &appErr) && (appErr.Code == apperrors.ErrGLNotBalanced || appErr.Code == apperrors.ErrInconsistent)
 }
 
 // offByOneCent makes the customer entry 0.01 more than the document: the G/L entries of the

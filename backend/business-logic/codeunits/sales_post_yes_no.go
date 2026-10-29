@@ -6,7 +6,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/salesposting"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -57,10 +56,6 @@ func (c *SalesPostYesNo) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New("codeunit 81 runs on a sales header")
 	}
 	result, _, err := c.post(rec)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 

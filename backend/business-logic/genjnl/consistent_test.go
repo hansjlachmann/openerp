@@ -32,9 +32,10 @@ func postLines(t *testing.T, src ftables.Source, lines ...lineSpec) error {
 	return ftables.Commit(tx)
 }
 
+// isInconsistent: the commit was refused by the balance check (the G/L entries named)
 func isInconsistent(err error) bool {
 	var appErr *apperrors.AppError
-	return errors.As(err, &appErr) && appErr.Code == apperrors.ErrInconsistent
+	return errors.As(err, &appErr) && (appErr.Code == apperrors.ErrGLNotBalanced || appErr.Code == apperrors.ErrInconsistent)
 }
 
 // G/L entries that do not balance are never committed: the commit is refused with
@@ -45,6 +46,25 @@ func TestConsistentRefusesUnbalancedPosting(t *testing.T) {
 	err := postLines(t, src, lineSpec{lineNo: 10000, docNo: "G00001", accNo: "1210", amount: "1000"})
 	if !isInconsistent(err) {
 		t.Fatalf("an unbalanced posting must be refused by the balance check, got %v", err)
+	}
+	// the message names the document, its date and the difference; the details hold the totals
+	// (the document marked) and the entries
+	var appErr *apperrors.AppError
+	errors.As(err, &appErr)
+	if appErr.Code != apperrors.ErrGLNotBalanced || appErr.Message("en-US") !=
+		"The transaction cannot be completed because the G/L entries do not balance: document G00001 on 10/15/2026 is off by 1,000.00. Nothing was saved." {
+		t.Errorf("message: %s", appErr.Message("en-US"))
+	}
+	details := appErr.Details
+	if details == nil || len(details.Sections) != 2 {
+		t.Fatalf("details %+v", details)
+	}
+	totals, entries := details.Sections[0], details.Sections[1]
+	if len(totals.Rows) != 1 || totals.Rows[0][1] != "G00001" || totals.Rows[0][2] != "1,000.00" || len(totals.Marked) != 1 {
+		t.Errorf("totals %+v", totals)
+	}
+	if len(entries.Rows) != 1 || entries.Rows[0][3] != "1210" || entries.Rows[0][4] != "Land and Buildings" || entries.Rows[0][7] != "1,000.00" {
+		t.Errorf("entries %+v", entries)
 	}
 	gl1, _, _, reg1 := countEntries(src)
 	if gl1 != gl0 || reg1 != reg0 {

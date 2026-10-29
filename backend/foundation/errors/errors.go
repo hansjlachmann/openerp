@@ -41,6 +41,7 @@ const (
 	ErrSelectionTooMany   ErrorCode = "ERR_SELECTION_TOO_MANY"
 	ErrInconsistent       ErrorCode = "ERR_INCONSISTENT"
 	ErrPostedTable        ErrorCode = "ERR_POSTED_TABLE"
+	ErrGLNotBalanced      ErrorCode = "ERR_GL_NOT_BALANCED"
 	ErrFieldNotEditable   ErrorCode = "ERR_FIELD_NOT_EDITABLE"
 	ErrMustBeRoundedTo    ErrorCode = "ERR_MUST_BE_ROUNDED_TO"
 	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
@@ -148,6 +149,8 @@ type AppError struct {
 	// Value (optional) is the last parameter, shown in the message's language: a boolean as
 	// Yes/No, an option of the table field as its caption
 	Value any
+	// Details (optional): what lies behind the error, shown on request (Show Entries)
+	Details *Details
 }
 
 // Error implements the error interface
@@ -538,6 +541,12 @@ func FieldNotEditable(table, field string) *AppError {
 // Inconsistent: a transaction cannot be committed while tables are inconsistent (Consistent)
 func Inconsistent(tables string) *AppError {
 	return &AppError{Code: ErrInconsistent, Params: []string{tables}}
+}
+
+// GLNotBalanced: a transaction's G/L entries do not balance on a posting date — the document,
+// the date and the difference, formatted for the user; nothing was saved
+func GLNotBalanced(documentNo, postingDate, difference string) *AppError {
+	return &AppError{Code: ErrGLNotBalanced, Params: []string{documentNo, postingDate, difference}}
 }
 
 // PostedTable: the records of a posted table (ledger entries, registers) are written by posting

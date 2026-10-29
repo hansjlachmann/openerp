@@ -7,7 +7,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/reports"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -45,10 +44,6 @@ func (c *SalesPostPrint) GetDBType() database.DBType { return c.dbType }
 // Run posts the document and prints what was posted
 func (c *SalesPostPrint) Run(record interface{}) (fcodeunits.Result, error) {
 	result, err := c.code(record)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 
