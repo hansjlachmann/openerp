@@ -23,6 +23,12 @@ import (
 // and quote SQ1 with lines lines of 2 PCS (a text line after the first)
 func quoteCompany(t *testing.T, lines int) (ftables.Source, *gtables.SalesHeader) {
 	t.Helper()
+	return documentCompany(t, lines, gtables.SalesHeader_Document_type.Quote, "SQ1")
+}
+
+// documentCompany: as quoteCompany, with a document of the type and number
+func documentCompany(t *testing.T, lines int, documentType gtables.SalesHeaderDocument_type, no types.Code) (ftables.Source, *gtables.SalesHeader) {
+	t.Helper()
 	db, err := sql.Open("sqlite3", ":memory:")
 	mustOK(t, err)
 	db.SetMaxOpenConns(1)
@@ -73,8 +79,8 @@ func quoteCompany(t *testing.T, lines int) (ftables.Source, *gtables.SalesHeader
 	mustOK(t, itemUnitOfMeasure.InsertOrError(false))
 
 	salesHeader := gtables.NewSalesHeader(src)
-	salesHeader.Document_type = gtables.SalesHeader_Document_type.Quote
-	salesHeader.No = "SQ1"
+	salesHeader.Document_type = documentType
+	salesHeader.No = no
 	mustOK(t, salesHeader.InsertOrError(true))
 	mustOK(t, salesHeader.Validate("sell_to_customer_no", types.Code("C1")))
 	salesHeader.Ship_to_name = "Fjord Møbler Lager"
@@ -82,8 +88,8 @@ func quoteCompany(t *testing.T, lines int) (ftables.Source, *gtables.SalesHeader
 	mustOK(t, salesHeader.ModifyOrError(true))
 	for i := 1; i <= lines; i++ {
 		salesLine := gtables.NewSalesLine(salesHeader)
-		salesLine.Document_type = gtables.SalesLine_Document_type.Quote
-		salesLine.Document_no = "SQ1"
+		salesLine.Document_type = gtables.SalesLineDocument_type(documentType)
+		salesLine.Document_no = no
 		salesLine.Line_no = i * 10000
 		if i == 2 {
 			mustOK(t, salesLine.Validate("description", types.Text("Delivered in October")))
@@ -214,4 +220,31 @@ func TestPrintedLayoutsLoad(t *testing.T) {
 		t.Error("report 93 (processing only) is printed")
 	}
 	_ = fmt.Sprint()
+}
+
+// Report 205 prints orders as the quote report prints quotes: its title and the order's dates
+func TestOrderConfirmationReport(t *testing.T) {
+	src, salesHeader := documentCompany(t, 2, gtables.SalesHeader_Document_type.Order, "SO1")
+	result, err := reports.Execute(reports.OrderConfirmationID, src.GetDB(), src.GetCompany(), src.GetDBType(), reports.RunOptions{Output: reports.OutputPDF})
+	mustOK(t, err)
+	texts := "|" + printedTexts(result, 1) + "|"
+	for _, want := range []string{"ORDER CONFIRMATION", "Order No.", "SO1", "Shipment Date", "Fjord Møbler AS", "Office Chair", "25.00"} {
+		if !strings.Contains(texts, "|"+want+"|") {
+			t.Errorf("%q not printed: %s", want, texts)
+		}
+	}
+	if result.FileName != "Order Confirmation SO1.pdf" {
+		t.Errorf("file %q", result.FileName)
+	}
+	stored := gtables.NewSalesHeader(src)
+	mustOK(t, stored.GetOrError(map[string]interface{}{"document_type": 1, "no": "SO1"}))
+	if stored.No_printed != 1 {
+		t.Errorf("No. Printed %d, want 1", stored.No_printed)
+	}
+	// Only orders: the quote report does not print it
+	result, err = reports.Execute(reports.SalesQuoteID, src.GetDB(), src.GetCompany(), src.GetDBType(), reports.RunOptions{Output: reports.OutputPDF})
+	mustOK(t, err)
+	if strings.Contains(printedTexts(result, 0), "SO1") {
+		t.Errorf("the quote report printed order %s", salesHeader.No)
+	}
 }
