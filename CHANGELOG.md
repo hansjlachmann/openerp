@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.118](https://github.com/hansjlachmann/openerp/compare/v0.1.117...v0.1.118) (2026-10-29)
+
+
+### Features
+
+* Sales Invoice and Sales Credit Memo pages ([#164](https://github.com/hansjlachmann/openerp/issues/164)) ([77a7ba5](https://github.com/hansjlachmann/openerp/commit/77a7ba56b1a5c6a5b391bf0f63a3b7c87ce358e9))
+* Sales Order — Make Order, quantities to ship and invoice, Order Confirmation ([#162](https://github.com/hansjlachmann/openerp/issues/162)) ([1be7020](https://github.com/hansjlachmann/openerp/commit/1be70206b9c150fa963f895e787a679c3b652f21))
+
 ## [0.1.117](https://github.com/hansjlachmann/openerp/compare/v0.1.116...v0.1.117) (2026-10-28)
 
 
