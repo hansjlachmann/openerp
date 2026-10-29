@@ -142,6 +142,10 @@ tables:
       reserve: "Reserver"
       no_of_ledger_entries: "Antall poster"
       comment: "Merknad"
+      outstanding_orders: "Utestående ordrer"
+      shipped_not_invoiced: "Levert ikke fakturert"
+      outstanding_orders_lcy: "Utestående ordrer (NOK)"
+      shipped_not_invoiced_lcy: "Levert ikke fakturert (NOK)"
 
     # Option field values
     options:
@@ -3394,6 +3398,18 @@ tables:
       unit_of_measure_code: "Enhetskode"
       quantity_base: "Antall (basis)"
       outstanding_qty_base: "Restantall (basis)"
+      qty_to_invoice: "Antall å fakturere"
+      qty_to_ship: "Antall å levere"
+      qty_shipped_not_invoiced: "Ant. levert ikke fakturert"
+      shipped_not_invoiced: "Levert ikke fakturert"
+      quantity_shipped: "Antall levert"
+      quantity_invoiced: "Antall fakturert"
+      shipped_not_invoiced_lcy: "Levert ikke fakturert (NOK)"
+      qty_to_invoice_base: "Antall å fakturere (basis)"
+      qty_to_ship_base: "Antall å levere (basis)"
+      qty_shpd_not_invd_base: "Ant. levert ikke fakt. (basis)"
+      qty_shipped_base: "Antall levert (basis)"
+      qty_invoiced_base: "Antall fakturert (basis)"
     options:
       document_type:
         quote: "Tilbud"

@@ -396,6 +396,8 @@ messages:
   GEN_JNL_DEFAULT_BATCH: "Default Journal"
   GEN_JNL_POST_CONFIRM: "Do you want to post the journal lines?"
   SALES_CALC_INV_DISC_CONFIRM: "Do you want to calculate the invoice discount?"
+  SALES_QUOTE_TO_ORDER_CONFIRM: "Do you want to convert the quote to an order?"
+  SALES_QUOTE_CHANGED_TO_ORDER: "Quote %1 has been changed to order %2."
   SALES_SERVICE_CHARGE: "Service Charge"
   GEN_JNL_NOTHING_TO_POST: "There is nothing to post."
   GEN_JNL_POSTED: "The journal lines were successfully posted."

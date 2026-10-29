@@ -89,6 +89,7 @@ common:
     refresh: "Oppdater"
     search: "Søk"
     filter: "Filter"
+    make_order: "Lag ordre"
     print: "Skriv ut"
     export: "Eksporter"
     import: "Importer"

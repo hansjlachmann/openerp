@@ -89,6 +89,7 @@ common:
     refresh: "Refresh"
     search: "Search"
     filter: "Filter"
+    make_order: "Make Order"
     print: "Print"
     export: "Export"
     import: "Import"

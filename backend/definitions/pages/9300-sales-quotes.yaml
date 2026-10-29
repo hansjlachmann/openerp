@@ -57,6 +57,12 @@ page:
       promoted: true
       run_object: report:204
 
+    - name: Make Order
+      caption: Make Order
+      image: Document
+      promoted: true
+      run_object: codeunit:83
+
     - name: Statistics
       caption: Statistics
       image: Statistics

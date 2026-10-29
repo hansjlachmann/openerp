@@ -427,6 +427,18 @@
 		);
 	}
 
+	// A new card record: blank, or — on a card with OnNewRecord triggers — the record the
+	// page's triggers start it as (a Sales Order card: an order)
+	async function newCardRecord(): Promise<Record<string, any>> {
+		if (!page?.page.has_new_record_triggers) return {};
+		try {
+			return await api.initRecord(page.page.source_table, { pageId: page.page.id, belowXRec: false });
+		} catch (err) {
+			console.error('Failed to initialize the new record:', err);
+			return {};
+		}
+	}
+
 	// Load data for card page
 	async function loadCardData() {
 		if (!page) return;
@@ -455,7 +467,7 @@
 				currentRecordId = cardRecordId;
 			} else {
 				// New record - fetch options/lookups before rendering
-				record = {};
+				record = await newCardRecord();
 				isExistingRecord = false;
 				currentRecordId = undefined;
 
@@ -621,7 +633,7 @@
 
 		switch (actionName) {
 			case 'New':
-				record = {};
+				record = await newCardRecord();
 				isExistingRecord = false; // Reset for new record
 				currentRecordId = undefined;
 				// Update URL to remove the recordid
@@ -699,7 +711,7 @@
 					return false;
 				}
 				const sentRecord = deepCopy(savedRecord);
-				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord);
+				const insertedRecord = await api.insertRecord(page.page.source_table, savedRecord, page.page.has_new_record_triggers ? page.page.id : undefined);
 				applyServerValues(savedRecord, sentRecord, insertedRecord);
 				// After successful insert, mark as existing for future saves
 				const newRecordId = getRecordId(insertedRecord, primaryKeyField, primaryKeyFieldsList);

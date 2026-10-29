@@ -1,0 +1,72 @@
+page:
+  id: 9305
+  type: List
+  name: Sales Orders
+  source_table: Sales_Header   # OnOpenPage: Document Type = Order (business-logic/pages/salesorder.go)
+  caption: Sales Orders
+  card_page_id: 42             # a full page: the card has its lines
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: sell_to_customer_no
+          width: 130
+        - source: sell_to_customer_name
+          width: 250
+        - source: order_date
+          width: 110
+        - source: shipment_date
+          width: 110
+        - source: salesperson_code
+          width: 110
+        - source: currency_code
+          width: 90
+        - source: amount
+          width: 130
+        - source: amount_including_tax
+          width: 150
+        - source: external_document_no
+          width: 150
+          visible: false
+        - source: location_code
+          width: 110
+          visible: false
+
+  actions:
+    - name: New
+      caption: New
+      image: New
+      shortcut: Alt+N
+      promoted: true
+
+    - name: Edit
+      caption: Edit
+      image: Edit
+      shortcut: Ctrl+E
+      promoted: true
+
+    - name: Delete
+      caption: Delete
+      image: Delete
+      shortcut: Ctrl+D
+      promoted: true
+
+    - name: Print
+      caption: Print
+      image: Print
+      promoted: true
+      run_object: report:205
+
+    - name: Statistics
+      caption: Statistics
+      image: Statistics
+      shortcut: F9
+      promoted: true
+      run_page: 160
+      run_page_filters:
+        - field: document_type
+          value: document_type
+        - field: "no"
+          value: "no"

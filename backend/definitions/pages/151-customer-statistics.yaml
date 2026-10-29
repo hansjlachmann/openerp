@@ -19,6 +19,8 @@ page:
             drilldown: 25
             drilldown_filter_field: customer_no
             drilldown_filter_value: "no"
+          - source: outstanding_orders_lcy
+          - source: shipped_not_invoiced_lcy
           - source: total_lcy
             calculated: true
             type: types.Decimal

@@ -8,6 +8,8 @@
 	import PageRenderer from './pages/PageRenderer.svelte';
 	import { startJob } from '$lib/services/jobs';
 	import { printoutOf } from '$lib/utils/printout';
+	import { goto } from '$app/navigation';
+	import { openPagePath } from '$lib/utils/runPage';
 	import { toast } from '$lib/stores/toast';
 	import { t, MSG, ERR, BTN } from '$lib/services/i18n.svelte';
 	import type { DialogResult } from '$lib/types/api';
@@ -42,6 +44,19 @@
 		respond: (values: Record<string, string> | null) => void;
 	} | null>(null);
 	let dialog = $state<DialogResult | null>(null);
+	// The page the result opens afterwards (open_page: the order a quote became), after its
+	// message box
+	let pendingOpen: string | null = null;
+
+	function closeDialog() {
+		dialog = null;
+		openPending();
+	}
+	function openPending() {
+		const path = pendingOpen;
+		pendingOpen = null;
+		if (path) goto(path);
+	}
 
 	/**
 	 * Run a run_object: "codeunit:455", "report:93", a function "table:X.F(0)" — with the
@@ -158,7 +173,11 @@
 				}
 				progressOpen = false;
 			}
-			if (!quiet) ondone?.(refresh);
+			const opens = openPagePath(resultData?.open_page);
+			pendingOpen = opens;
+			if (opens && !dialog) openPending();
+			// a page that opens another record leaves this one (it may be gone: the quote)
+			if (!quiet && !opens) ondone?.(refresh);
 			return resultData;
 		} catch (err) {
 			progressOpen = false;
@@ -210,14 +229,14 @@
 <!-- The result's message box (Esc closes it) -->
 {#if dialog}
 	{@const d = dialog}
-	<Modal open={true} onclose={() => (dialog = null)}>
+	<Modal open={true} onclose={closeDialog}>
 		<div class="p-6">
 			<h3 class="text-lg font-semibold text-gray-900 dark:text-white">{d.title}</h3>
 			<p class="mt-2 text-gray-600 dark:text-gray-300" class:text-red-600={d.type === 'error'}>{d.message}</p>
 			<div class="mt-6 flex justify-end">
 				<button
 					class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-					onclick={() => (dialog = null)}
+					onclick={closeDialog}
 				>
 					{t(BTN.OK)}
 				</button>

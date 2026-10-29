@@ -171,6 +171,22 @@ table:
       scale: 5
       editable: false
 
+    - name: qty_to_invoice
+      no: 17
+      type: types.Decimal
+      db_name: qty_to_invoice
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: qty_to_ship
+      no: 18
+      type: types.Decimal
+      db_name: qty_to_ship
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
     - name: unit_price
       no: 22
       type: types.Decimal
@@ -357,6 +373,42 @@ table:
       scale: 5
       editable: false
 
+    - name: qty_shipped_not_invoiced
+      no: 58
+      type: types.Decimal
+      db_name: qty_shipped_not_invoiced
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: shipped_not_invoiced
+      no: 59
+      type: types.Decimal
+      db_name: shipped_not_invoiced
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: quantity_shipped
+      no: 60
+      type: types.Decimal
+      db_name: quantity_shipped
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: quantity_invoiced
+      no: 61
+      type: types.Decimal
+      db_name: quantity_invoiced
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
     - name: profit_percent
       no: 67
       type: types.Decimal
@@ -512,6 +564,15 @@ table:
       scale: 5
       editable: false
 
+    - name: shipped_not_invoiced_lcy
+      no: 93
+      type: types.Decimal
+      db_name: shipped_not_invoiced_lcy
+      decimal_places: "2:2"
+      precision: 18
+      scale: 5
+      editable: false
+
     - name: tax_base_amount
       no: 99
       type: types.Decimal
@@ -596,6 +657,49 @@ table:
       no: 5416
       type: types.Decimal
       db_name: outstanding_qty_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: qty_to_invoice_base
+      no: 5417
+      type: types.Decimal
+      db_name: qty_to_invoice_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: qty_to_ship_base
+      no: 5418
+      type: types.Decimal
+      db_name: qty_to_ship_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+
+    - name: qty_shpd_not_invd_base
+      no: 5458
+      type: types.Decimal
+      db_name: qty_shpd_not_invd_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: qty_shipped_base
+      no: 5460
+      type: types.Decimal
+      db_name: qty_shipped_base
+      decimal_places: "0:5"
+      precision: 18
+      scale: 5
+      editable: false
+
+    - name: qty_invoiced_base
+      no: 5461
+      type: types.Decimal
+      db_name: qty_invoiced_base
       decimal_places: "0:5"
       precision: 18
       scale: 5
