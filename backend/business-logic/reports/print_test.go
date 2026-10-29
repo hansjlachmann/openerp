@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/pdf"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -307,5 +308,20 @@ func TestFormatInLanguages(t *testing.T) {
 	}
 	if strings.Join(linesOf([3]string{"a", "", "b"}), "|") != "a||b" || linesOf(42) != nil {
 		t.Error("linesOf")
+	}
+}
+
+// The user's own date and number formats (My Settings) win over the language's
+func TestFormatWithRegionalSettings(t *testing.T) {
+	fcodeunits.SetCurrentContext("", "", "", "en-US")
+	defer fcodeunits.ClearCurrentContext()
+	ctx := fcodeunits.GetCurrentContext()
+	ctx.Regional = fcodeunits.Regional{DateFormat: "dd.mm.yy", NumberFormat: "1 234,56"}
+	date, _ := types.NewDateFromString("2026-10-28")
+	if got := formatDate(date, "en-US"); got != "28.10.26" {
+		t.Errorf("date %q", got)
+	}
+	if got := formatDecimal(types.MustDecimal("1234.5"), "2:2", "en-US"); got != "1 234,50" {
+		t.Errorf("decimal %q", got)
 	}
 }

@@ -17,6 +17,7 @@
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import PrintPreview from '$lib/components/PrintPreview.svelte';
+	import { regionalVersion } from '$lib/stores/regional';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -60,7 +61,10 @@
 		<Breadcrumb />
 	{/if}
 	<main class="flex-1" class:overflow-hidden={!detached}>
-		{@render children()}
+		<!-- drawn again when the user's date/number formats change (My Settings) -->
+		{#key $regionalVersion}
+			{@render children()}
+		{/key}
 	</main>
 </div>
 

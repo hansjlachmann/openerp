@@ -2,11 +2,11 @@
 	import Modal from './Modal.svelte';
 	import Button from './Button.svelte';
 	import { t, MSG, DLG, BTN } from '$lib/services/i18n.svelte';
-	import { getDateFormatPattern, parseLocaleDate, formatDate } from '$lib/utils/fieldHelpers';
 	import { currentLanguage } from '$lib/stores/session';
 	import RequestFilters from './RequestFilters.svelte';
 	import type { RequestDataItem, RequestFilter, RequestInputField } from '$lib/types/pages';
 	import LookupDropdown from './pages/LookupDropdown.svelte';
+	import DateInput from './DateInput.svelte';
 
 	type InputField = RequestInputField;
 
@@ -70,6 +70,7 @@
 	// Enter in the input form is OK — Preview on a printed report's request page — (when the
 	// values are valid), Esc is Cancel
 	function handleInputKeydown(event: KeyboardEvent) {
+		if (event.defaultPrevented) return; // a field kept the key (a date that is not one)
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			if (inputValid()) handleInputOk(printed ? 'preview' : undefined);
@@ -99,12 +100,8 @@
 		if (inputMode && (inputFields.length > 0 || inputDataItems.length > 0)) {
 			const initial: Record<string, string> = {};
 			for (const field of inputFields) {
-				if (field.type === 'date' && field.default) {
-					// Convert ISO default to locale format for display
-					initial[field.name] = formatDate(field.default, locale);
-				} else {
-					initial[field.name] = field.default ?? '';
-				}
+				// dates stay ISO: the date field shows them in the user's format
+				initial[field.name] = field.default ?? '';
 			}
 			inputValues = initial;
 		}
@@ -117,7 +114,7 @@
 			const val = String(inputValues[f.name] ?? '').trim(); // number inputs bind numbers
 			if (f.required && val === '') return false;
 			if (f.type === 'date' && val !== '') {
-				return parseLocaleDate(val, locale) !== null;
+				return /^\d{4}-\d{2}-\d{2}$/.test(val);
 			}
 			return true;
 		});
@@ -150,12 +147,6 @@
 			const filters = (requestFilters[item.name] ?? []).filter((f) => f.expression.trim() !== '');
 			result[`filters:${item.name}`] = JSON.stringify(filters.map((f) => ({ field: f.field, expression: f.expression.trim() })));
 		}
-		for (const field of inputFields) {
-			if (field.type === 'date' && result[field.name]) {
-				const iso = parseLocaleDate(result[field.name], locale);
-				if (iso) result[field.name] = iso;
-			}
-		}
 		onInputResponse?.(result);
 	}
 
@@ -165,7 +156,6 @@
 
 	function getInputType(fieldType: string): string {
 		switch (fieldType) {
-			case 'date': return 'text'; // Use text input with locale placeholder
 			case 'number': return 'number';
 			default: return 'text';
 		}
@@ -216,6 +206,20 @@
 				</label>
 			{/each}
 		</div>
+	{:else if field.type === 'date'}
+	<div class="input-field">
+		<label class="input-label" for="input-{field.name}">
+			{field.label}
+			{#if field.required}<span class="required-mark">*</span>{/if}
+		</label>
+		<!-- the user's date format, short entries (05, 0509, t, w, +1w …), a calendar -->
+		<DateInput
+			id="input-{field.name}"
+			class="input-control"
+			value={inputValues[field.name]}
+			onchange={(iso) => (inputValues[field.name] = iso)}
+		/>
+	</div>
 	{:else}
 	<div class="input-field">
 		<label class="input-label" for="input-{field.name}">
@@ -226,7 +230,6 @@
 			id="input-{field.name}"
 			type={getInputType(field.type)}
 			class="input-control"
-			placeholder={field.type === 'date' ? getDateFormatPattern(locale) : undefined}
 			bind:value={inputValues[field.name]}
 		/>
 	</div>

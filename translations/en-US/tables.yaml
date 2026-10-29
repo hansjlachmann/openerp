@@ -385,9 +385,25 @@ tables:
       font_size: "Font Size %"
       density: "Density"
       updated_at: "Updated At"
+      date_format: "Date Format"
+      number_format: "Number Format"
+      work_date: "Work Date"
 
     # Option field values
     options:
+      date_format:
+        language_default: "Language default"
+        dd_mm_yy: "DD.MM.YY"
+        dd_mm_yyyy: "DD.MM.YYYY"
+        dd_mm_yyyy_2: "DD/MM/YYYY"
+        mm_dd_yyyy: "MM/DD/YYYY"
+        yyyy_mm_dd: "YYYY-MM-DD"
+      number_format:
+        language_default: "Language default"
+        comma_thousands_point_decimals: "1,234.56"
+        point_thousands_comma_decimals: "1.234,56"
+        space_thousands_comma_decimals: "1 234,56"
+        point_decimals: "1234.56"
       mode:
         dark: "Dark"
         light: "Light"

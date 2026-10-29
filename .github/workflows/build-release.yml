@@ -46,6 +46,8 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+          # the default 1 minute is too short for the generated table code without a warm cache
+          args: --timeout=10m
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...

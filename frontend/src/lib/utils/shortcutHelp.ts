@@ -41,6 +41,16 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 		]
 	},
 	{
+		title: 'HELP_SEC_DATES',
+		items: [
+			{ keys: ['05', '0509', '050926'], description: 'HELP_DATE_SHORT' },
+			{ keys: ['t', 'w'], description: 'HELP_DATE_TODAY_WORKDATE' },
+			{ keys: ['mo … su'], description: 'HELP_DATE_WEEKDAY' },
+			{ keys: ['+1w', '-3d', 'cm'], description: 'HELP_DATE_FORMULA' },
+			{ keys: ['Alt+↓', 'F4'], description: 'HELP_DATE_CALENDAR' }
+		]
+	},
+	{
 		title: 'HELP_SEC_MENU',
 		items: [
 			{ keys: ['↑', '↓', '←', '→'], description: 'HELP_MENU_ARROWS' },

@@ -126,6 +126,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	sess := session.NewSession(dbWrapper, company, nil)
 	sess.SetUser(user.User_id.String(), user.User_name.String(), user.Language.String(), userMenu)
 	sess.SetPermissions(hasRoles, isSuper, perms)
+	// a login starts on today (the work date of My Settings lasts for the session)
+	ResetWorkDate(h.db, h.dbType, user.User_id.String())
 
 	// Generate JWT and set cookie
 	token, tokenErr := middleware.GenerateToken(h.jwtConfig, user.User_id.String(), user.User_name.String(), company, user.Language.String(), userMenu)

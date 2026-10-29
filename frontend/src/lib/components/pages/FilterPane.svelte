@@ -13,7 +13,7 @@
 	import { get } from 'svelte/store';
 	import { onMount, tick } from 'svelte';
 	import { toApiFlowFilter, dateFilterHint } from '$lib/utils/flowFilter';
-	import { getDateFormatPattern } from '$lib/utils/fieldHelpers';
+	import { datePattern } from '$lib/utils/regional';
 
 	interface Props {
 		page: PageDefinition;
@@ -597,7 +597,7 @@
 								oninput={(e) => (flowValues[field.name] = e.currentTarget.value)}
 								onkeydown={handleKeyDown}
 								onblur={applyFilters}
-								placeholder={field.kind === 'date' ? dateFilterHint(getDateFormatPattern(get(currentLanguage))) : t(FLT.ENTER_EXPRESSION)}
+								placeholder={field.kind === 'date' ? dateFilterHint(datePattern(get(currentLanguage))) : t(FLT.ENTER_EXPRESSION)}
 							/>
 						</div>
 					{/each}

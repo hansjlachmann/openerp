@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/dateformula"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -11,8 +12,14 @@ import (
 // Today returns today's date
 func Today() types.Date { return types.Today() }
 
-// WorkDate returns the work date: today (a work date per user may come later)
-func WorkDate() types.Date { return types.Today() }
+// WorkDate returns the work date: the current user's (My Settings), else today
+func WorkDate() types.Date {
+	workDate := codeunits.CurrentWorkDate()
+	if !workDate.IsZero() {
+		return workDate
+	}
+	return types.Today()
+}
 
 // CurrentDateTime returns the current date and time
 func CurrentDateTime() types.DateTime { return types.NewDateTimeFromTime(time.Now()) }

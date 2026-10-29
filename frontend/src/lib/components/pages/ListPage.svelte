@@ -23,13 +23,16 @@
 	import ProgressModal from '../ProgressModal.svelte';
 	import { startJob, type SyncJobResult } from '$lib/services/jobs';
 	import { printoutOf } from '$lib/utils/printout';
+	import { toDecimalInput, fromDecimalInput } from '$lib/utils/regional';
+	import { apiFieldFilters } from '$lib/utils/flowFilter';
+	import DateInput from '../DateInput.svelte';
 	import { shortcuts, normalizeShortcut, getShortcutKey, commonShortcuts } from '$lib/utils/shortcuts';
 	import { cn } from '$lib/utils/cn';
 	import { api } from '$lib/services/api';
 	import { currentUser } from '$lib/stores/user';
 	import { companySwitchOpen } from '$lib/stores/companySwitch';
 	import { get } from 'svelte/store';
-	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, lookupFor, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
+	import { getFieldCaption, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup, isItemVisible, isDateType, isDateTimeType, isDecimalType, isCodeType, formatDate, formatDateTime, formatDecimal, cellStyle, lookupFor, toDateTimeInput, fromDateTimeInput, type ItemCustomization } from '$lib/utils/fieldHelpers';
 	import { currentLanguage, currentCompany } from '$lib/stores/session';
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick, untrack } from 'svelte';
@@ -203,7 +206,6 @@
 	function getCellInputType(field: Field): string {
 		if (field.masked) return 'password'; // secret: typed without showing it
 		const ft = fieldTypes[field.source];
-		if (isDateType(ft)) return 'date';
 		if (isDateTimeType(ft)) return 'datetime-local';
 		return 'text';
 	}
@@ -2598,7 +2600,7 @@
 	// navigates through the same records in the same order
 	const cardNavigationQuery = $derived(
 		navigationQuery({
-			filters: currentFilters,
+			filters: apiFieldFilters(currentFilters, (field) => isDateType(fieldTypes[field]), locale),
 			fixed_filters: fixedFilters,
 			search: searchQuery,
 			search_fields: visibleColumns()
@@ -3404,6 +3406,38 @@
 											data-col={colIndex}
 											class="edit-cell-input"
 											bind:value={() => toDateTimeInput(record[field.source]), (v) => (record[field.source] = fromDateTimeInput(v))}
+											onfocus={() => {
+												currentCellRow = index;
+												currentCellCol = colIndex;
+											}}
+											onblur={handleEditingInputBlur}
+											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+										/>
+									{:else if isDateType(fieldTypes[field.source])}
+										<!-- the user's date format, short entries, a calendar on Alt+↓ / F4 -->
+										<DateInput
+											compact
+											data-row={index}
+											data-col={colIndex}
+											class="edit-cell-input"
+											value={record[field.source]}
+											onchange={(iso) => (record[field.source] = iso)}
+											onfocus={() => {
+												currentCellRow = index;
+												currentCellCol = colIndex;
+											}}
+											onblur={handleEditingInputBlur}
+											onkeydown={(e) => handleCellKeyDown(e, index, colIndex)}
+										/>
+									{:else if isDecimalType(fieldTypes[field.source])}
+										<!-- typed with the user's decimal separator, kept with a dot -->
+										<input
+											type="text"
+											autocomplete="off"
+											data-row={index}
+											data-col={colIndex}
+											class="edit-cell-input"
+											bind:value={() => toDecimalInput(record[field.source], locale), (v) => (record[field.source] = fromDecimalInput(v, locale))}
 											onfocus={() => {
 												currentCellRow = index;
 												currentCellCol = colIndex;

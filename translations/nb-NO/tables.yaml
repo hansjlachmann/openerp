@@ -385,9 +385,25 @@ tables:
       font_size: "Skriftstørrelse %"
       density: "Tetthet"
       updated_at: "Oppdatert"
+      date_format: "Datoformat"
+      number_format: "Tallformat"
+      work_date: "Arbeidsdato"
 
     # Option field values
     options:
+      date_format:
+        language_default: "Språkets standard"
+        dd_mm_yy: "DD.MM.ÅÅ"
+        dd_mm_yyyy: "DD.MM.ÅÅÅÅ"
+        dd_mm_yyyy_2: "DD/MM/ÅÅÅÅ"
+        mm_dd_yyyy: "MM/DD/ÅÅÅÅ"
+        yyyy_mm_dd: "ÅÅÅÅ-MM-DD"
+      number_format:
+        language_default: "Språkets standard"
+        comma_thousands_point_decimals: "1,234.56"
+        point_thousands_comma_decimals: "1.234,56"
+        space_thousands_comma_decimals: "1 234,56"
+        point_decimals: "1234.56"
       mode:
         dark: "Mørk"
         light: "Lys"
