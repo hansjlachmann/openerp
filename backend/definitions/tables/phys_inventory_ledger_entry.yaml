@@ -1,6 +1,7 @@
 table:
   id: 281
   name: "Phys_Inventory_Ledger_Entry"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Phys. inventory ledger entries (table 281): the counted and calculated quantities of a phys. inventory"
   lookup_page_id: 390
   # Left out until their objects exist: 40 Serial No., 5400 Lot No., 5403 Bin Code

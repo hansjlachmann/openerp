@@ -6,7 +6,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/itemjnl"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -50,10 +49,6 @@ func (c *ItemJnlPost) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New("codeunit 241 runs on an item journal line")
 	}
 	result, err := c.code(rec)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 

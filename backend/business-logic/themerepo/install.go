@@ -18,6 +18,7 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/themes"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -198,10 +199,10 @@ func (in *Installer) install(ctx context.Context, repo themes.Repo, code, userID
 	}
 	err = in.save(tx, repo, code, name, userID, d.CommitSHA, string(tokensJSON), tokens.Mode, n, assets)
 	if err != nil {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return Result{}, err
 	}
-	err = tx.Commit()
+	err = ftables.Commit(tx)
 	if err != nil {
 		return Result{}, err
 	}
@@ -313,13 +314,13 @@ func (in *Installer) Remove(userID, code string) (removed bool, err error) {
 	}
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 		}
 	}()
 	var link gtables.UserTheme
 	link.InitWithDBType(tx, "", in.DBType)
 	if !link.GetByPK(types.NewCode(userID), types.NewCode(code)) {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return false, nil
 	}
 	if !link.Delete(true) {
@@ -335,7 +336,7 @@ func (in *Installer) Remove(userID, code string) (removed bool, err error) {
 			return false, fmt.Errorf("deleting theme %s failed", code)
 		}
 	}
-	err = tx.Commit()
+	err = ftables.Commit(tx)
 	if err != nil {
 		return false, err
 	}

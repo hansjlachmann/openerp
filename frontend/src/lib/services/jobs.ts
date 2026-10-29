@@ -38,6 +38,21 @@ export interface ProgressEvent {
 	event_type?: string;
 	confirm_id?: string;
 	data?: Record<string, unknown>; // Result data (e.g., PDF base64)
+	error_details?: ErrorDetails; // what lies behind the error (Show Entries)
+}
+
+/** What lies behind an error (the G/L entries of a posting that does not balance): sections of
+ *  rows, every value a text formatted by the server; marked rows are pointed out */
+export interface ErrorDetails {
+	title: string;
+	sections: ErrorDetailsSection[];
+}
+
+export interface ErrorDetailsSection {
+	caption: string;
+	columns: { caption: string; numeric?: boolean }[];
+	rows: string[][];
+	marked?: number[];
 }
 
 export interface DialogResult {
@@ -57,7 +72,7 @@ export interface SyncJobResult {
 export interface JobCallbacks {
 	onProgress?: (event: ProgressEvent) => void;
 	onComplete?: (event: ProgressEvent) => void;
-	onError?: (error: string) => void;
+	onError?: (error: string, details?: ErrorDetails) => void;
 	onSyncResult?: (result: SyncJobResult) => void;
 	onConfirm?: (event: ProgressEvent, respond: (response: boolean) => void) => void;
 	onInputRequest?: (event: ProgressEvent, respond: (values: Record<string, string> | null) => void) => void;
@@ -157,7 +172,7 @@ export async function startJob(
 					if (event.completed) {
 						eventSource.close();
 						if (event.error) {
-							callbacks.onError?.(event.error);
+							callbacks.onError?.(event.error, event.error_details);
 							reject(new Error(event.error));
 						} else {
 							// Handle result data (e.g., PDF download)

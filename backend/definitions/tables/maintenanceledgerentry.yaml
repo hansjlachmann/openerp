@@ -2,6 +2,7 @@ table:
   id: 5625
   name: "Maintenance_Ledger_Entry"
   caption: Maintenance Ledger Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Maintenance ledger entries of fixed assets, posted (table 5625)"
   lookup_page_id: 5641
   fields:

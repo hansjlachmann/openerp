@@ -6,7 +6,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/salesposting"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
@@ -57,11 +56,38 @@ func (c *SalesPostYesNo) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New("codeunit 81 runs on a sales header")
 	}
 	result, _, err := c.post(rec)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
+}
+
+// askShipInvoice asks what to post of an order (Ship, Invoice, Ship and Invoice); ok is false
+// when the user cancelled
+func askShipInvoice() (ship, invoice, ok bool) {
+	ts := i18n.GetInstance()
+	selection := system.StrMenu(ts.Message("SALES_POST_SHIP_INVOICE", fcodeunits.CurrentLanguage()), 3)
+	if selection == 0 {
+		return false, false, false
+	}
+	return selection == 1 || selection == 3, selection == 2 || selection == 3, true
+}
+
+// postSalesDocument posts the document (codeunit 80) in src, the posting's transaction: an
+// order ships and/or invoices as asked
+func postSalesDocument(src ftables.Source, rec *gtables.SalesHeader, ship, invoice bool) (*salesposting.SalesPost, error) {
+	salesHeader := gtables.NewSalesHeader(src)
+	err := salesHeader.GetOrError(map[string]interface{}{"document_type": int(rec.Document_type), "no": rec.No})
+	if err != nil {
+		return nil, err
+	}
+	if salesHeader.Document_type == gtables.SalesHeader_Document_type.Order {
+		salesHeader.Ship = ship
+		salesHeader.Invoice = invoice
+	}
+	salesPost := salesposting.NewSalesPost(src)
+	err = salesPost.Run(salesHeader)
+	if err != nil {
+		return nil, err
+	}
+	return salesPost, nil
 }
 
 // post asks, posts and returns the page's result and what was posted (nil when the user
@@ -71,12 +97,11 @@ func (c *SalesPostYesNo) post(rec *gtables.SalesHeader) (fcodeunits.Result, *sal
 	lang := fcodeunits.CurrentLanguage()
 	ship, invoice := false, false
 	if rec.Document_type == gtables.SalesHeader_Document_type.Order {
-		selection := system.StrMenu(ts.Message("SALES_POST_SHIP_INVOICE", lang), 3)
-		if selection == 0 {
+		var ok bool
+		ship, invoice, ok = askShipInvoice()
+		if !ok {
 			return fcodeunits.Result{Success: true}, nil, nil
 		}
-		ship = selection == 1 || selection == 3
-		invoice = selection == 2 || selection == 3
 	} else {
 		documentType := ts.OptionCaption(gtables.SalesHeaderTableName, "document_type", i18n.Key(rec.Document_type.String()), lang)
 		if !system.Confirm(system.StrSubstNo(ts.Message("SALES_POST_CONFIRM", lang), documentType)) {
@@ -89,18 +114,7 @@ func (c *SalesPostYesNo) post(rec *gtables.SalesHeader) (fcodeunits.Result, *sal
 		return fcodeunits.Result{}, nil, err
 	}
 	src := ftables.DBSource(tx, c.company, c.dbType)
-	salesHeader := gtables.NewSalesHeader(src)
-	err = salesHeader.GetOrError(map[string]interface{}{"document_type": int(rec.Document_type), "no": rec.No})
-	if err != nil {
-		_ = ftables.Rollback(tx)
-		return fcodeunits.Result{}, nil, err
-	}
-	if salesHeader.Document_type == gtables.SalesHeader_Document_type.Order {
-		salesHeader.Ship = ship
-		salesHeader.Invoice = invoice
-	}
-	salesPost := salesposting.NewSalesPost(src)
-	err = salesPost.Run(salesHeader)
+	salesPost, err := postSalesDocument(src, rec, ship, invoice)
 	if err != nil {
 		_ = ftables.Rollback(tx)
 		return fcodeunits.Result{}, nil, err

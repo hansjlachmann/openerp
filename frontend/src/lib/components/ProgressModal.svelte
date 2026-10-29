@@ -7,6 +7,8 @@
 	import type { RequestDataItem, RequestFilter, RequestInputField } from '$lib/types/pages';
 	import LookupDropdown from './pages/LookupDropdown.svelte';
 	import DateInput from './DateInput.svelte';
+	import ErrorDetailsDialog from './ErrorDetailsDialog.svelte';
+	import type { ErrorDetails } from '$lib/services/jobs';
 
 	type InputField = RequestInputField;
 
@@ -16,6 +18,8 @@
 		message?: string;
 		progress?: number;
 		error?: string;
+		errorDetails?: ErrorDetails | null; // what lies behind the error: Show Entries opens it
+		onCloseError?: () => void; // the error stays in the dialog (with Close) instead of a toast
 		confirmMode?: boolean;
 		confirmMessage?: string;
 		onConfirmResponse?: (response: boolean) => void;
@@ -38,6 +42,8 @@
 		message = '',
 		progress = 0,
 		error = '',
+		errorDetails = null,
+		onCloseError,
 		confirmMode = false,
 		confirmMessage = '',
 		onConfirmResponse,
@@ -52,6 +58,7 @@
 	}: Props = $props();
 
 	const displayPercent = $derived(Math.round(progress));
+	let detailsOpen = $state(false);
 
 	// The input form gets the focus when it appears (the modal was already open): the chosen
 	// option of an option list (arrow keys move it), else the first input
@@ -131,6 +138,7 @@
 	function handleEscape() {
 		if (confirmMode) handleNo();
 		else if (inputMode) handleInputCancel();
+		else if (error) onCloseError?.();
 	}
 
 	function handleCancel() {
@@ -241,7 +249,7 @@
 <Modal {open} onclose={handleEscape}>
 	<div class="progress-modal" class:request-page={inputMode && inputDataItems.length > 0}>
 		<div class="progress-header">
-			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : (title ?? t(MSG.PROCESSING))}</h3>
+			<h3 class="progress-title">{confirmMode ? t(DLG.CONFIRM_TITLE) : error && onCloseError ? t(DLG.ERROR_TITLE) : (title ?? t(MSG.PROCESSING))}</h3>
 		</div>
 
 		<div class="progress-body">
@@ -293,8 +301,18 @@
 						<line x1="12" y1="8" x2="12" y2="12" />
 						<line x1="12" y1="16" x2="12.01" y2="16" />
 					</svg>
-					<p class="error-message">{error}</p>
+					<div class="error-text">
+						<p class="error-message">{error}</p>
+						{#if errorDetails}
+							<button type="button" class="show-entries" onclick={() => (detailsOpen = true)}>{t(BTN.SHOW_ENTRIES)}</button>
+						{/if}
+					</div>
 				</div>
+				{#if onCloseError}
+					<div class="cancel-container">
+						<Button variant="primary" onclick={() => onCloseError?.()}>{t(BTN.CLOSE)}</Button>
+					</div>
+				{/if}
 			{:else}
 				{#if message}
 					<p class="status-message">{message}</p>
@@ -316,6 +334,10 @@
 		</div>
 	</div>
 </Modal>
+
+{#if detailsOpen && errorDetails}
+	<ErrorDetailsDialog details={errorDetails} onclose={() => (detailsOpen = false)} />
+{/if}
 
 <style>
 	.progress-modal {
@@ -385,6 +407,10 @@
 
 	.error-message {
 		@apply text-sm text-red-700;
+	}
+
+	.show-entries {
+		@apply mt-2 text-sm font-medium underline text-blue-600 dark:text-blue-400;
 	}
 
 	:global(.dark) .error-message {

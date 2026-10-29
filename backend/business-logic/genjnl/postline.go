@@ -3,8 +3,6 @@ package genjnl
 import (
 	"fmt"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/hansjlachmann/openerp/backend/business-logic/salestax"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
@@ -43,8 +41,7 @@ type GenJnlPostLine struct {
 	lastDate            types.Date
 	currentBalance      types.Decimal
 	fiscalYearStartDate types.Date
-	balanceCheckAmount  decimal.Decimal
-	balanceCheckAmount2 decimal.Decimal
+	balanceCheck        *balanceCheck
 
 	// Customer and vendor application of the current line
 	custPosting           bool
@@ -555,7 +552,7 @@ func (p *GenJnlPostLine) finishCodeunit() error {
 		}
 	}
 	glEntry := gtables.NewGLEntry(p.src)
-	glEntry.Consistent(p.balanceCheckAmount.IsZero() && p.balanceCheckAmount2.IsZero())
+	glEntry.Consistent(p.balance().balanced())
 	return nil
 }
 
@@ -646,12 +643,7 @@ func (p *GenJnlPostLine) insertGLEntry() error {
 	if !glEntry.Amount.Equal(system.Round(glEntry.Amount)) {
 		return apperrors.JnlNeedsRounding(gtables.GLEntryTableName, "amount", glEntry.Amount.String())
 	}
-	days := decimal.NewFromInt(int64(glEntry.Posting_date.Normal().Time.Unix() / 86400))
-	if glEntry.Posting_date.IsClosing() {
-		days = days.Add(decimal.NewFromInt(50))
-	}
-	p.balanceCheckAmount = p.balanceCheckAmount.Add(glEntry.Amount.Decimal.Mul(days.Mod(decimal.NewFromInt(99)).Add(decimal.NewFromInt(1))))
-	p.balanceCheckAmount2 = p.balanceCheckAmount2.Add(glEntry.Amount.Decimal.Mul(days.Mod(decimal.NewFromInt(98)).Add(decimal.NewFromInt(1))))
+	p.balance().add(glEntry)
 	if glEntry.Amount.IsPositive() && !p.genJnlLine.Correction || glEntry.Amount.IsNegative() && p.genJnlLine.Correction {
 		glEntry.Debit_amount = glEntry.Amount
 		glEntry.Credit_amount = types.Decimal{}

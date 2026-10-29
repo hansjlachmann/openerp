@@ -366,7 +366,7 @@ func sortTxsByDate(txs []glTx) {
 }
 
 // insertGLEntries loads the demo G/L entries (InsertAll in chunks) with their SIFT totals
-// suspended and built once afterwards
+// suspended and built once afterwards, and a G/L register over them
 func insertGLEntries(exec database.Executor, company string, dbType database.DBType, entries []*gtables.GLEntry, counts *Counts) error {
 	if len(entries) == 0 {
 		return nil
@@ -397,6 +397,21 @@ func insertGLEntries(exec database.Executor, company string, dbType database.DBT
 			return &InsertError{Table: gtables.GLEntryTableName, Key: key, Err: cause}
 		}
 		counts.GLEntries += len(batch)
+	}
+	// a G/L register over them, as a posting writes one (the G/L check finds entries without)
+	glReg := gtables.NewGLRegister(ftables.DBSource(exec, company, dbType))
+	nextRegNo := 1
+	if glReg.FindLast() {
+		nextRegNo = glReg.No + 1
+	}
+	glReg = gtables.NewGLRegister(ftables.DBSource(exec, company, dbType))
+	glReg.No = nextRegNo
+	glReg.From_entry_no = firstNo
+	glReg.To_entry_no = firstNo + len(entries) - 1
+	glReg.Creation_date = entries[len(entries)-1].Posting_date
+	err = glReg.InsertOrError(false)
+	if err != nil {
+		return err
 	}
 	return (&gtables.GLEntry{}).SyncKeys(exec, company, dbType)
 }

@@ -1,6 +1,7 @@
 table:
   id: 339
   name: "Item_Application_Entry"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Item application entries (table 339): which inbound entry each outbound quantity came from"
   lookup_page_id: 506
   fields:

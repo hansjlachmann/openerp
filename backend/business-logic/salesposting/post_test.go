@@ -41,6 +41,16 @@ func wantDec(t *testing.T, what string, got types.Decimal, want types.Decimal) {
 // posting setups, the posted documents' number series), in a transaction
 func demoCompany(t *testing.T) ftables.Source {
 	t.Helper()
+	db := demoDB(t)
+	tx, err := ftables.BeginTransaction(db)
+	must(t, err)
+	t.Cleanup(func() { _ = ftables.Rollback(tx) })
+	return ftables.DBSource(tx, "demo", database.DBTypeSQLite)
+}
+
+// demoDB: the demo company's database (no transaction)
+func demoDB(t *testing.T) *sql.DB {
+	t.Helper()
 	db, err := sql.Open("sqlite3", ":memory:")
 	must(t, err)
 	db.SetMaxOpenConns(1)
@@ -51,10 +61,7 @@ func demoCompany(t *testing.T) ftables.Source {
 		ItemJnlPostLine: func(src ftables.Source) demodata.ItemJnlPoster { return itemjnl.NewItemJnlPostLine(src) },
 	})
 	must(t, err)
-	tx, err := ftables.BeginTransaction(db)
-	must(t, err)
-	t.Cleanup(func() { _ = ftables.Rollback(tx) })
-	return ftables.DBSource(tx, "demo", database.DBTypeSQLite)
+	return db
 }
 
 func newDocument(t *testing.T, src ftables.Source, documentType gtables.SalesHeaderDocument_type, customer string) *gtables.SalesHeader {

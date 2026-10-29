@@ -1,6 +1,7 @@
 table:
   id: 203
   name: "Res_Ledger_Entry"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Resource ledger entries (table 203)"
   lookup_page_id: 202
   # 9 Job No. is left out until jobs exist

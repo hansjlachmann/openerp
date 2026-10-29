@@ -29,6 +29,11 @@ export function pdfBlob(base64: string): Blob {
 
 /** Saves the PDF as a file */
 export function downloadPdf(blob: Blob, filename: string) {
+	downloadBlob(blob, filename);
+}
+
+/** Saves a blob as a file (the browser's download) */
+export function downloadBlob(blob: Blob, filename: string) {
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement('a');
 	link.href = url;

@@ -2,6 +2,7 @@ table:
   id: 271
   name: "Bank_Account_Ledger_Entry"
   caption: Bank Account Ledger Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Bank account ledger entries, posted (table 271)"
   lookup_page_id: 372
   # Statement No./Line No. relate to the bank reconciliation lines (table 274), which come with posting

@@ -79,6 +79,7 @@ export const shortcutHelpSections: ShortcutHelpSection[] = [
 			{ keys: ['Ctrl+F'], description: 'HELP_LIST_SEARCH' },
 			{ keys: ['Ctrl+F7'], description: 'HELP_LIST_FILTER_PANE' },
 			{ keys: ['Ctrl+Alt+Q'], description: 'HELP_LIST_NAVIGATE' },
+			{ keys: ['Ctrl+Alt+F9'], description: 'HELP_PREVIEW_POSTING' },
 			{ keys: ['Esc'], description: 'HELP_LIST_ESCAPE' }
 		]
 	},

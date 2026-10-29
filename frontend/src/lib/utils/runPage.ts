@@ -7,6 +7,7 @@
 // the record does not have (no row selected); an optional filter with a blank value is left out.
 
 import type { RunPageFilter } from '$lib/types/pages';
+import { withReturn } from '$lib/utils/returnUrl';
 
 export interface RunPageAction {
 	run_page?: number;
@@ -60,7 +61,17 @@ export function runPagePath(action: RunPageAction, record: Record<string, any> |
  */
 export function openPagePath(openPage: unknown): string | null {
 	if (!openPage || typeof openPage !== 'object') return null;
-	const { page_id, key } = openPage as { page_id?: unknown; key?: unknown };
+	const { page_id, key, params, return: returns } = openPage as { page_id?: unknown; key?: unknown; params?: unknown; return?: unknown };
 	if (typeof page_id !== 'number' || page_id <= 0) return null;
-	return typeof key === 'string' && key !== '' ? `/pages/${page_id}/${encodeURIComponent(key)}` : `/pages/${page_id}`;
+	let path = typeof key === 'string' && key !== '' ? `/pages/${page_id}/${encodeURIComponent(key)}` : `/pages/${page_id}`;
+	// the page's parameters (Posting Preview: preview)
+	const query = new URLSearchParams();
+	if (params && typeof params === 'object') {
+		for (const [name, value] of Object.entries(params as Record<string, unknown>)) {
+			if (typeof value === 'string' && value !== '') query.set(name, value);
+		}
+	}
+	if (query.size > 0) path += '?' + query.toString();
+	// back to the page the codeunit ran from (Esc / close)
+	return returns === true ? withReturn(path) : path;
 }

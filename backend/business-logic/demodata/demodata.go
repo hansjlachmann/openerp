@@ -344,7 +344,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	}
 	rollback := func() {
 		if tx != nil {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 		}
 	}
 
@@ -477,7 +477,7 @@ func Create(db database.Executor, company string, dbType database.DBType, opts O
 	}
 
 	if tx != nil {
-		err := tx.Commit()
+		err := ftables.Commit(tx)
 		if err != nil {
 			return Counts{}, err
 		}

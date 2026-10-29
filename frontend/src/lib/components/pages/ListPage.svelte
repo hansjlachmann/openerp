@@ -21,7 +21,7 @@
 	import ConfirmModal from '../ConfirmModal.svelte';
 	import Modal, { isModalOpen } from '../Modal.svelte';
 	import ProgressModal from '../ProgressModal.svelte';
-	import { startJob, type SyncJobResult } from '$lib/services/jobs';
+	import { startJob, type SyncJobResult, type ErrorDetails } from '$lib/services/jobs';
 	import { printoutOf } from '$lib/utils/printout';
 	import { toDecimalInput, fromDecimalInput } from '$lib/utils/regional';
 	import { apiFieldFilters } from '$lib/utils/flowFilter';
@@ -241,6 +241,7 @@
 	let progressValue = $state(0);
 	let progressMessage = $state('');
 	let progressError = $state('');
+	let progressErrorDetails = $state<ErrorDetails | null>(null); // what lies behind the error (Show Entries)
 	let progressConfirmMode = $state(false);
 	let progressConfirmMessage = $state('');
 	let confirmResponseCallback: ((response: boolean) => void) | undefined = $state(undefined);
@@ -675,6 +676,7 @@
 		progressValue = 0;
 		progressMessage = '';
 		progressError = '';
+		progressErrorDetails = null;
 		progressConfirmMode = false;
 		progressConfirmMessage = '';
 		confirmResponseCallback = undefined;
@@ -707,10 +709,11 @@
 						progressMessage = event.message;
 					}
 				},
-				onError: (err) => {
+				onError: (err, details) => {
 					progressConfirmMode = false;
 					progressInputMode = false;
 					progressError = err;
+					progressErrorDetails = details ?? null;
 				},
 				onConfirm: (event, respond) => {
 					// Show confirm dialog
@@ -789,6 +792,9 @@
 				onaction?.('Refresh');
 			}
 		} catch (err) {
+			// an error with details (the G/L entries of a posting that does not balance) stays in
+			// the dialog with Show Entries; others are a toast
+			if (progressErrorDetails) return;
 			const errMsg = err instanceof Error ? err.message : 'Unknown error';
 			progressModalOpen = false;
 			toast.error(errMsg);
@@ -940,6 +946,7 @@
 
 	// Handle new record - insert blank row below current selection
 	function handleNew() {
+		if (page.page.posted) return; // posted entries come from posting only
 		// Initialize editable records if not already active
 		if (!editableActive) {
 			editableRecords = toEditableRecords();
@@ -1441,7 +1448,7 @@
 
 	// Insert a new row at cursor position
 	function insertNewRow(atEnd: boolean = false) {
-		if (!editableActive) return;
+		if (!editableActive || page.page.posted) return;
 
 		// Don't create a new row if we're already on an empty new row
 		const currentRecord = currentCellRow >= 0 ? displayRecords[currentCellRow] : undefined;
@@ -3627,7 +3634,7 @@
 						{/each}
 					</tr>
 				{/each}
-				{#if page.page.editable && (!isNavigation || editOnClick) && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+				{#if page.page.editable && !page.page.posted && (!isNavigation || editOnClick) && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
 					<!-- trailing blank row, in edit mode only: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}
@@ -3733,6 +3740,8 @@
 	message={progressMessage}
 	progress={progressValue}
 	error={progressError}
+	errorDetails={progressErrorDetails}
+	onCloseError={progressErrorDetails ? () => { progressModalOpen = false; progressError = ''; progressErrorDetails = null; } : undefined}
 	confirmMode={progressConfirmMode}
 	confirmMessage={progressConfirmMessage}
 	onConfirmResponse={confirmResponseCallback}

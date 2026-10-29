@@ -89,6 +89,17 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 	if factory, ok := gtables.GetTableFactory(pageDef.Page.SourceTable); ok {
 		pageDef.Page.SetupTable = factory().IsSetupTable()
 		pageDef.Page.AutoKey = pages.GetTableMetadata().IsAutoKey(pageDef.Page.SourceTable)
+		pageDef.Page.Posted = pages.GetTableMetadata().IsPosted(pageDef.Page.SourceTable)
+		if pageDef.Page.Posted {
+			// posted entries are not entered or deleted on a page (the table API refuses it)
+			actions := pageDef.Page.Actions[:0]
+			for _, action := range pageDef.Page.Actions {
+				if action.Name != "New" && action.Name != "Delete" {
+					actions = append(actions, action)
+				}
+			}
+			pageDef.Page.Actions = actions
+		}
 		for _, f := range factory().GetFields() {
 			tableFields[f.Name] = f
 		}
@@ -98,7 +109,7 @@ func (h *PagesHandler) GetPage(c *fiber.Ctx) error {
 		if !ok {
 			return
 		}
-		if info.ReadOnly {
+		if info.ReadOnly || !tableMeta.IsPostedFieldEditable(pageDef.Page.SourceTable, field.Source) {
 			readOnly := false
 			field.Editable = &readOnly // a page cannot make a read-only table field editable
 		}

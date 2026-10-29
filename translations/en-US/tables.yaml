@@ -3056,6 +3056,7 @@ tables:
       document_no_filter: "Document No. Filter"
       posting_date_filter: "Posting Date Filter"
       no_filter: "No. Filter"
+      preview_id: "Preview ID"
   res_capacity_entry:
     caption: "Res. Capacity Entry"
     fields:

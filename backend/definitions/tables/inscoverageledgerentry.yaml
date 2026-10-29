@@ -2,6 +2,7 @@ table:
   id: 5629
   name: "Ins_Coverage_Ledger_Entry"
   caption: Ins. Coverage Ledger Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Insurance coverage ledger entries, posted (table 5629)"
   lookup_page_id: 5647
   fields:

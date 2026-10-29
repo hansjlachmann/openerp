@@ -62,6 +62,13 @@ table:
       db_name: no_filter
       length: 250
 
+    # a posting preview's line (Posting Preview 115): the preview Show opens the entries of
+    - name: preview_id
+      no: 904
+      type: types.Text
+      db_name: preview_id
+      length: 50
+
   keys:
     - name: Primary
       fields: [entry_no]

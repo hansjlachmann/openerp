@@ -162,7 +162,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		// Run synchronously and return result directly
 		result, err := codeunit.Run(table)
 		if err != nil {
-			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+			return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 		}
 		withOpenPage(&result)
 
@@ -307,6 +307,9 @@ func (h *JobsHandler) GetJobEvents(c *fiber.Ctx) error {
 				}
 				if event.Data != nil {
 					eventData["data"] = event.Data
+				}
+				if event.ErrorDetails != nil {
+					eventData["error_details"] = event.ErrorDetails
 				}
 				jsonData, _ := json.Marshal(eventData)
 				fmt.Fprintf(w, "event: progress\ndata: %s\n\n", string(jsonData))

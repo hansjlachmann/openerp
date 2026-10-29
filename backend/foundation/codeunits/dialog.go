@@ -2,24 +2,30 @@ package codeunits
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+
+	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 )
 
 // ProgressEvent represents a progress update or dialog event
 type ProgressEvent struct {
-	JobID     string                 `json:"job_id"`
-	Field     int                    `json:"field"`     // Field number (1-based)
-	Value     int                    `json:"value"`     // Current value (0-100 for progress)
-	Message   string                 `json:"message"`   // Optional message
-	Completed bool                   `json:"completed"` // Job completed
-	Error     string                 `json:"error"`     // Error message if failed
-	Timestamp int64                  `json:"timestamp"`
-	EventType string                 `json:"event_type,omitempty"` // "progress", "confirm", etc.
-	ConfirmID string                 `json:"confirm_id,omitempty"` // Unique ID for confirm dialogs
-	Data      map[string]interface{} `json:"data,omitempty"`       // Result data (e.g., PDF base64)
+	JobID     string `json:"job_id"`
+	Field     int    `json:"field"`     // Field number (1-based)
+	Value     int    `json:"value"`     // Current value (0-100 for progress)
+	Message   string `json:"message"`   // Optional message
+	Completed bool   `json:"completed"` // Job completed
+	Error     string `json:"error"`     // Error message if failed
+	// ErrorDetails: what lies behind the error (an AppError's Details — e.g. the G/L entries of
+	// a posting that does not balance), shown with Show Entries
+	ErrorDetails *apperrors.Details     `json:"error_details,omitempty"`
+	Timestamp    int64                  `json:"timestamp"`
+	EventType    string                 `json:"event_type,omitempty"` // "progress", "confirm", etc.
+	ConfirmID    string                 `json:"confirm_id,omitempty"` // Unique ID for confirm dialogs
+	Data         map[string]interface{} `json:"data,omitempty"`       // Result data (e.g., PDF base64)
 }
 
 // OutputKey: the answer of a printed report's request page holds the output chosen under this
@@ -183,12 +189,21 @@ func (d *Dialog) CloseWithError(err error) {
 	}
 	d.closed = true
 
+	// an AppError in the user's language, with its details
+	message := err.Error()
+	var details *apperrors.Details
+	var appErr *apperrors.AppError
+	if errors.As(err, &appErr) {
+		message = appErr.Message(CurrentLanguage())
+		details = appErr.Details
+	}
 	select {
 	case d.events <- ProgressEvent{
-		JobID:     d.jobID,
-		Completed: true,
-		Error:     err.Error(),
-		Timestamp: time.Now().UnixMilli(),
+		JobID:        d.jobID,
+		Completed:    true,
+		Error:        message,
+		ErrorDetails: details,
+		Timestamp:    time.Now().UnixMilli(),
 	}:
 	case <-d.ctx.Done():
 	default:

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
+	"github.com/hansjlachmann/openerp/backend/foundation/tables"
 )
 
 // PermissionOperation represents a CRUD operation type
@@ -229,8 +230,8 @@ func (s *Session) Commit() error {
 		return fmt.Errorf("no active transaction to commit")
 	}
 
-	err := s.transaction.Commit()
-	s.transaction = nil // Clear transaction regardless of error
+	err := tables.Commit(s.transaction) // refused while a table is inconsistent (Consistent)
+	s.transaction = nil                 // Clear transaction regardless of error
 
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -247,7 +248,7 @@ func (s *Session) Rollback() error {
 		return fmt.Errorf("no active transaction to rollback")
 	}
 
-	err := s.transaction.Rollback()
+	err := tables.Rollback(s.transaction)
 	s.transaction = nil // Clear transaction regardless of error
 
 	if err != nil {

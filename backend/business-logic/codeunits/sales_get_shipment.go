@@ -6,7 +6,6 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/salesgetshipment"
 	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
-	apperrors "github.com/hansjlachmann/openerp/backend/foundation/errors"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
@@ -48,10 +47,6 @@ func (c *SalesGetShipment) Run(record interface{}) (fcodeunits.Result, error) {
 		return fcodeunits.Result{}, errors.New("codeunit 64 runs on a sales header")
 	}
 	result, err := c.code(rec)
-	var appErr *apperrors.AppError
-	if errors.As(err, &appErr) {
-		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
-	}
 	return result, err
 }
 

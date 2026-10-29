@@ -3056,6 +3056,7 @@ tables:
       document_no_filter: "Bilagsnr.filter"
       posting_date_filter: "Bokføringsdatofilter"
       no_filter: "Nr.-filter"
+      preview_id: "Forhåndsvisnings-ID"
   res_capacity_entry:
     caption: "Ressurskapasitetspost"
     fields:

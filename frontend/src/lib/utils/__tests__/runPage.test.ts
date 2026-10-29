@@ -55,6 +55,8 @@ describe('runPagePath', () => {
 describe('openPagePath', () => {
 	it('is the card of the record a result opens', () => {
 		expect(openPagePath({ page_id: 42, key: '1,SO000001' })).toBe('/pages/42/1%2CSO000001');
+		// a page with parameters (Posting Preview)
+		expect(openPagePath({ page_id: 115, key: '', params: { preview: 'ab12' } })).toBe('/pages/115?preview=ab12');
 		expect(openPagePath({ page_id: 9305 })).toBe('/pages/9305');
 	});
 	it('is null without a page', () => {
