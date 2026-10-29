@@ -597,5 +597,4 @@ GitHub Actions runs on push/PR to main:
 1. Backend: `go vet` + `golangci-lint` + tests with race detection (SQLite, and the PostgreSQL tests against a Postgres service — `TEST_POSTGRES_DSN`; add a `…Postgres` variant for behaviour that depends on the database) + build
 2. Frontend: type check + unit tests + build + Playwright E2E
 3. Release Please on main push
-`main` is protected: a PR merges only when Backend (Go) and Frontend (SvelteKit) pass.
 4. Docker multi-arch build to ghcr.io on release
