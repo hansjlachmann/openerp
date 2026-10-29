@@ -3039,6 +3039,7 @@ tables:
       page_id: "Side-ID"
       document_no_filter: "Bilagsnr.filter"
       posting_date_filter: "Bokføringsdatofilter"
+      no_filter: "Nr.-filter"
   res_capacity_entry:
     caption: "Ressurskapasitetspost"
     fields:
@@ -3426,6 +3427,8 @@ tables:
       qty_shpd_not_invd_base: "Ant. levert ikke fakt. (basis)"
       qty_shipped_base: "Antall levert (basis)"
       qty_invoiced_base: "Antall fakturert (basis)"
+      shipment_no: "Leveringsnr."
+      shipment_line_no: "Leveringslinjenr."
     options:
       document_type:
         quote: "Tilbud"

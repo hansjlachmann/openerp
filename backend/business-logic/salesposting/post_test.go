@@ -10,6 +10,9 @@ import (
 
 	"github.com/hansjlachmann/openerp/backend/business-logic/demodata"
 	"github.com/hansjlachmann/openerp/backend/business-logic/itemjnl"
+	"github.com/hansjlachmann/openerp/backend/business-logic/navigate"
+	"github.com/hansjlachmann/openerp/backend/business-logic/reports"
+	"github.com/hansjlachmann/openerp/backend/business-logic/salesgetshipment"
 	"github.com/hansjlachmann/openerp/backend/business-logic/salesposting"
 	"github.com/hansjlachmann/openerp/backend/business-logic/tables"
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
@@ -352,4 +355,85 @@ func TestPostInvoiceRounding(t *testing.T) {
 	must(t, invHeader.GetOrError(salesPost.InvoiceNo))
 	invHeader.CalcFields("amount_including_tax")
 	wantDec(t, "posted invoice total", invHeader.Amount_including_tax, entry.Amount)
+}
+
+// History: the posted invoice and shipment printed (No. Printed), an invoice made from the
+// order's shipment with Get Shipment Lines and posted (the shipment's item entry invoiced, the
+// order line and shipment line updated), Navigate finding the posted documents
+func TestPostedDocumentsHistory(t *testing.T) {
+	src := demoCompany(t)
+	order := newDocument(t, src, gtables.SalesHeader_Document_type.Order, "C00010")
+	addLine(t, order, 10000, gtables.SalesLine_Type.Item, "1000", "5")
+	shipment := post(t, order, true, false).ShipmentNo
+
+	// Get Shipment Lines onto an invoice, post it
+	invoice := newDocument(t, src, gtables.SalesHeader_Document_type.Invoice, "C00010")
+	must(t, salesgetshipment.CreateInvLines(invoice, shipment, "Shipment No. %1:"))
+	invLine := getLine(t, invoice, 20000)
+	if invLine.Shipment_no != shipment || !invLine.Quantity.Equal(dec("5")) {
+		t.Fatalf("invoice line from the shipment: %s %s", invLine.Shipment_no, invLine.Quantity)
+	}
+	if getLine(t, invoice, 10000).Description != types.Text("Shipment No. "+shipment.String()+":") {
+		t.Errorf("description line %q", getLine(t, invoice, 10000).Description)
+	}
+	salesPost := post(t, invoice, false, false)
+	if salesPost.ShipmentNo != "" {
+		t.Errorf("the invoice shipped again: %s", salesPost.ShipmentNo)
+	}
+	qty, invoiced := itemEntries(t, src, salesPost.InvoiceNo)
+	wantDec(t, "invoice item quantity", qty, types.Decimal{})
+	wantDec(t, "invoice item invoiced", invoiced, dec("-5"))
+	glBalance(t, src, salesPost.InvoiceNo)
+	shptLine := gtables.NewSalesShipmentLine(src)
+	must(t, shptLine.GetOrError(map[string]interface{}{"document_no": shipment, "line_no": 10000}))
+	wantDec(t, "shipment line not invoiced", shptLine.Qty_shipped_not_invoiced, types.Decimal{})
+	orderLine := getLine(t, order, 10000)
+	wantDec(t, "order line invoiced", orderLine.Quantity_invoiced, dec("5"))
+	wantDec(t, "order line shipped not invoiced", orderLine.Qty_shipped_not_invoiced, types.Decimal{})
+
+	// The printouts count in No. Printed
+	for _, c := range []struct {
+		reportID int
+		no       types.Code
+	}{{reports.SalesInvoiceID, salesPost.InvoiceNo}, {reports.SalesShipmentID, shipment}} {
+		var context interface{}
+		if c.reportID == reports.SalesInvoiceID {
+			h := gtables.NewSalesInvoiceHeader(src)
+			h.No = c.no
+			context = h
+		} else {
+			h := gtables.NewSalesShipmentHeader(src)
+			h.No = c.no
+			context = h
+		}
+		result, err := reports.Execute(c.reportID, src.GetDB(), src.GetCompany(), src.GetDBType(), reports.RunOptions{Output: reports.OutputPDF, Context: context})
+		must(t, err)
+		var texts []string
+		for _, text := range result.Texts {
+			texts = append(texts, text.Text)
+		}
+		joined := "|" + strings.Join(texts, "|") + "|"
+		if !strings.Contains(joined, "|"+c.no.String()+"|") || !strings.Contains(joined, "|Fjordkraft Interiør AS|") {
+			t.Errorf("report %d: %s", c.reportID, joined)
+		}
+	}
+	invHeader := gtables.NewSalesInvoiceHeader(src)
+	must(t, invHeader.GetOrError(salesPost.InvoiceNo))
+	shptHeader := gtables.NewSalesShipmentHeader(src)
+	must(t, shptHeader.GetOrError(shipment))
+	if invHeader.No_printed != 1 || shptHeader.No_printed != 1 {
+		t.Errorf("No. Printed: invoice %d, shipment %d", invHeader.No_printed, shptHeader.No_printed)
+	}
+
+	// Navigate finds the posted invoice and its entries
+	docEntry := gtables.NewDocumentEntry(src)
+	must(t, docEntry.InitTemporary(src.GetDB(), src.GetCompany(), src.GetDBType()))
+	must(t, navigate.FindRecords(docEntry, salesPost.InvoiceNo.String(), ""))
+	found := map[int]string{}
+	for ok := docEntry.FindSet(); ok; ok = docEntry.Next() {
+		found[docEntry.Table_id] = docEntry.No_filter.String() + "/" + docEntry.Document_no_filter.String()
+	}
+	if found[gtables.SalesInvoiceHeaderTableID] != salesPost.InvoiceNo.String()+"/" || found[gtables.CustomerLedgerEntryTableID] != "/"+salesPost.InvoiceNo.String() {
+		t.Errorf("navigate: %v", found)
+	}
 }

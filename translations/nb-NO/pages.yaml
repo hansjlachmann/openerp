@@ -560,6 +560,8 @@ pages:
     caption: "Bokført salgskreditnota"
   posted_sales_cr_memo_subform:
     caption: "Linjer"
+  get_shipment_lines:
+    caption: "Hent leveringslinjer"
   sales_statistics:
     caption: "Salgsstatistikk"
     fields:  # the calculated fields (OnAfterGetRecord)

@@ -3039,6 +3039,7 @@ tables:
       page_id: "Page ID"
       document_no_filter: "Document No. Filter"
       posting_date_filter: "Posting Date Filter"
+      no_filter: "No. Filter"
   res_capacity_entry:
     caption: "Res. Capacity Entry"
     fields:
@@ -3426,6 +3427,8 @@ tables:
       qty_shpd_not_invd_base: "Qty. Shipped Not Invd. (Base)"
       qty_shipped_base: "Qty. Shipped (Base)"
       qty_invoiced_base: "Qty. Invoiced (Base)"
+      shipment_no: "Shipment No."
+      shipment_line_no: "Shipment Line No."
     options:
       document_type:
         quote: "Quote"

@@ -156,3 +156,41 @@ func SalesHeaderShipTo(salesHeader *gtables.SalesHeader) (AddrArray, error) {
 		salesHeader.Ship_to_address.String(), salesHeader.Ship_to_address_2.String(), salesHeader.Ship_to_city.String(), salesHeader.Ship_to_post_code,
 		salesHeader.Ship_to_state.String(), salesHeader.Ship_to_country_code)
 }
+
+// SalesShptBillTo / SalesShptShipTo, SalesInvBillTo / SalesInvShipTo, SalesCrMemoBillTo /
+// SalesCrMemoShipTo: the addresses of the posted sales documents
+func SalesShptBillTo(rec *gtables.SalesShipmentHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Bill_to_name.String(), rec.Bill_to_name_2.String(), rec.Bill_to_contact.String(),
+		rec.Bill_to_address.String(), rec.Bill_to_address_2.String(), rec.Bill_to_city.String(), rec.Bill_to_post_code,
+		rec.Bill_to_state.String(), rec.Bill_to_country_code)
+}
+
+func SalesShptShipTo(rec *gtables.SalesShipmentHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Ship_to_name.String(), rec.Ship_to_name_2.String(), rec.Ship_to_contact.String(),
+		rec.Ship_to_address.String(), rec.Ship_to_address_2.String(), rec.Ship_to_city.String(), rec.Ship_to_post_code,
+		rec.Ship_to_state.String(), rec.Ship_to_country_code)
+}
+
+func SalesInvBillTo(rec *gtables.SalesInvoiceHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Bill_to_name.String(), rec.Bill_to_name_2.String(), rec.Bill_to_contact.String(),
+		rec.Bill_to_address.String(), rec.Bill_to_address_2.String(), rec.Bill_to_city.String(), rec.Bill_to_post_code,
+		rec.Bill_to_state.String(), rec.Bill_to_country_code)
+}
+
+func SalesInvShipTo(rec *gtables.SalesInvoiceHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Ship_to_name.String(), rec.Ship_to_name_2.String(), rec.Ship_to_contact.String(),
+		rec.Ship_to_address.String(), rec.Ship_to_address_2.String(), rec.Ship_to_city.String(), rec.Ship_to_post_code,
+		rec.Ship_to_state.String(), rec.Ship_to_country_code)
+}
+
+func SalesCrMemoBillTo(rec *gtables.SalesCrMemoHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Bill_to_name.String(), rec.Bill_to_name_2.String(), rec.Bill_to_contact.String(),
+		rec.Bill_to_address.String(), rec.Bill_to_address_2.String(), rec.Bill_to_city.String(), rec.Bill_to_post_code,
+		rec.Bill_to_state.String(), rec.Bill_to_country_code)
+}
+
+func SalesCrMemoShipTo(rec *gtables.SalesCrMemoHeader) (AddrArray, error) {
+	return FormatAddr(rec, rec.Ship_to_name.String(), rec.Ship_to_name_2.String(), rec.Ship_to_contact.String(),
+		rec.Ship_to_address.String(), rec.Ship_to_address_2.String(), rec.Ship_to_city.String(), rec.Ship_to_post_code,
+		rec.Ship_to_state.String(), rec.Ship_to_country_code)
+}

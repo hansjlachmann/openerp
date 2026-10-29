@@ -400,6 +400,7 @@ messages:
   SALES_QUOTE_CHANGED_TO_ORDER: "Tilbud %1 er konverteret til ordre %2."
   SALES_POST_SHIP_INVOICE: "Lever,Fakturer,Lever og fakturer"
   SALES_POST_CONFIRM: "Vil du bogføre %1?"
+  SALES_SHIPMENT_NO_DESCRIPTION: "Leverancenr. %1:"
   SALES_SERVICE_CHARGE: "Gebyr"
   GEN_JNL_NOTHING_TO_POST: "Der er intet at bogføre."
   GEN_JNL_POSTED: "Kladdelinjerne er bogført."

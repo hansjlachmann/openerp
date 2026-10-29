@@ -19,6 +19,7 @@
 //	OnValidate_Page_id(rec *gtables.DocumentEntry) error
 //	OnValidate_Document_no_filter(rec *gtables.DocumentEntry) error
 //	OnValidate_Posting_date_filter(rec *gtables.DocumentEntry) error
+//	OnValidate_No_filter(rec *gtables.DocumentEntry) error
 
 package tables
 
@@ -51,6 +52,7 @@ type DocumentEntry struct {
 	Page_id             int        `db:"page_id"`
 	Document_no_filter  types.Text `db:"document_no_filter"`
 	Posting_date_filter types.Text `db:"posting_date_filter"`
+	No_filter           types.Text `db:"no_filter"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -126,6 +128,7 @@ var DocumentEntry_FieldNo = struct {
 	Page_id             int
 	Document_no_filter  int
 	Posting_date_filter int
+	No_filter           int
 }{
 	Table_id:            1,
 	No_of_records:       2,
@@ -136,6 +139,7 @@ var DocumentEntry_FieldNo = struct {
 	Page_id:             900,
 	Document_no_filter:  901,
 	Posting_date_filter: 902,
+	No_filter:           903,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -159,6 +163,8 @@ func (t *DocumentEntry) FieldNo(fieldName string) int {
 		return 901
 	case "posting_date_filter":
 		return 902
+	case "no_filter":
+		return 903
 	}
 	return 0
 }
@@ -184,6 +190,8 @@ func (t *DocumentEntry) FieldName(fieldNo int) string {
 		return "document_no_filter"
 	case 902:
 		return "posting_date_filter"
+	case 903:
+		return "no_filter"
 	}
 	return ""
 }
@@ -312,6 +320,9 @@ type (
 	DocumentEntryOnValidate_Posting_date_filter interface {
 		OnValidate_Posting_date_filter(rec *DocumentEntry) error
 	}
+	DocumentEntryOnValidate_No_filter interface {
+		OnValidate_No_filter(rec *DocumentEntry) error
+	}
 )
 
 // documentEntryLogic is the registered business logic of Document_Entry, in
@@ -359,6 +370,8 @@ func documentEntryTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(DocumentEntryOnValidate_Document_no_filter)
 	case "OnValidate_Posting_date_filter":
 		_, ok = logic.(DocumentEntryOnValidate_Posting_date_filter)
+	case "OnValidate_No_filter":
+		_, ok = logic.(DocumentEntryOnValidate_No_filter)
 	default:
 		return false, false
 	}
@@ -445,6 +458,9 @@ func (t *DocumentEntry) CheckFields() error {
 	if err := tables.CheckMaxLength(DocumentEntryTableName, "posting_date_filter", string(t.Posting_date_filter), 250); err != nil {
 		return err
 	}
+	if err := tables.CheckMaxLength(DocumentEntryTableName, "no_filter", string(t.No_filter), 250); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -480,7 +496,8 @@ func GetDocumentEntryTableSchema() string {
 		table_name TEXT(100),
 		page_id INTEGER,
 		document_no_filter TEXT(250),
-		posting_date_filter TEXT(250)
+		posting_date_filter TEXT(250),
+		no_filter TEXT(250)
 	`
 }
 
@@ -495,7 +512,8 @@ func GetDocumentEntryPostgresTableSchema() string {
 		table_name VARCHAR(100),
 		page_id INTEGER,
 		document_no_filter VARCHAR(250),
-		posting_date_filter VARCHAR(250)
+		posting_date_filter VARCHAR(250),
+		no_filter VARCHAR(250)
 	`
 }
 
@@ -627,6 +645,7 @@ func (t *DocumentEntry) StoreOldValues() {
 	t.oldValues["page_id"] = t.Page_id
 	t.oldValues["document_no_filter"] = t.Document_no_filter
 	t.oldValues["posting_date_filter"] = t.Posting_date_filter
+	t.oldValues["no_filter"] = t.No_filter
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -667,6 +686,9 @@ func (t *DocumentEntry) XRec() *DocumentEntry {
 	}
 	if v, ok := t.oldValues["posting_date_filter"].(types.Text); ok {
 		x.Posting_date_filter = v
+	}
+	if v, ok := t.oldValues["no_filter"].(types.Text); ok {
+		x.No_filter = v
 	}
 	return x
 }
@@ -748,6 +770,7 @@ func (t *DocumentEntry) GetByPK(entry_no int) bool {
 	var page_idVal int
 	var document_no_filterNull sql.NullString
 	var posting_date_filterNull sql.NullString
+	var no_filterNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -755,7 +778,7 @@ func (t *DocumentEntry) GetByPK(entry_no int) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter FROM "%s" WHERE 1=1 AND entry_no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -771,6 +794,7 @@ func (t *DocumentEntry) GetByPK(entry_no int) bool {
 		&page_idVal,
 		&document_no_filterNull,
 		&posting_date_filterNull,
+		&no_filterNull,
 	)
 
 	if err != nil {
@@ -793,6 +817,7 @@ func (t *DocumentEntry) GetByPK(entry_no int) bool {
 	t.Page_id = page_idVal
 	t.Document_no_filter = types.NewText(document_no_filterNull.String)
 	t.Posting_date_filter = types.NewText(posting_date_filterNull.String)
+	t.No_filter = types.NewText(no_filterNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -824,11 +849,12 @@ func (t *DocumentEntry) Insert(runTrigger bool) bool {
 		t.Page_id,
 		t.Document_no_filter,
 		t.Posting_date_filter,
+		t.No_filter,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (entry_no) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (entry_no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -875,10 +901,11 @@ func (t *DocumentEntry) InsertAll(records []*DocumentEntry, runTrigger bool) err
 			r.Page_id,
 			r.Document_no_filter,
 			r.Posting_date_filter,
+			r.No_filter,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, DocumentEntryTableName)
-	columns := []string{"table_id", "no_of_records", "document_no", "posting_date", "entry_no", "table_name", "page_id", "document_no_filter", "posting_date_filter"}
+	columns := []string{"table_id", "no_of_records", "document_no", "posting_date", "entry_no", "table_name", "page_id", "document_no_filter", "posting_date_filter", "no_filter"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -954,6 +981,10 @@ func (t *DocumentEntry) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "posting_date_filter = ?")
 			values = append(values, t.Posting_date_filter)
 		}
+		if t.hasFieldChanged("no_filter") {
+			setClauses = append(setClauses, "no_filter = ?")
+			values = append(values, t.No_filter)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -977,6 +1008,8 @@ func (t *DocumentEntry) Modify(runTrigger bool) bool {
 		values = append(values, t.Document_no_filter)
 		setClauses = append(setClauses, "posting_date_filter = ?")
 		values = append(values, t.Posting_date_filter)
+		setClauses = append(setClauses, "no_filter = ?")
+		values = append(values, t.No_filter)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1060,6 +1093,10 @@ func (t *DocumentEntry) hasFieldChanged(fieldName string) bool {
 	case "posting_date_filter":
 		if old, ok := oldValue.(types.Text); ok {
 			return !t.Posting_date_filter.Equal(old)
+		}
+	case "no_filter":
+		if old, ok := oldValue.(types.Text); ok {
+			return !t.No_filter.Equal(old)
 		}
 	}
 
@@ -1283,6 +1320,8 @@ func (t *DocumentEntry) columnName(fieldName string) (string, bool) {
 		return "document_no_filter", true
 	case strings.ToLower("posting_date_filter"):
 		return "posting_date_filter", true
+	case strings.ToLower("no_filter"):
+		return "no_filter", true
 	}
 	return "", false
 }
@@ -1632,7 +1671,7 @@ func (t *DocumentEntry) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1642,6 +1681,7 @@ func (t *DocumentEntry) FindFirst() bool {
 	var table_nameNull sql.NullString
 	var document_no_filterNull sql.NullString
 	var posting_date_filterNull sql.NullString
+	var no_filterNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&t.Table_id,
@@ -1653,6 +1693,7 @@ func (t *DocumentEntry) FindFirst() bool {
 		&t.Page_id,
 		&document_no_filterNull,
 		&posting_date_filterNull,
+		&no_filterNull,
 	)
 
 	if err != nil {
@@ -1669,6 +1710,7 @@ func (t *DocumentEntry) FindFirst() bool {
 	t.Table_name = types.NewText(table_nameNull.String)
 	t.Document_no_filter = types.NewText(document_no_filterNull.String)
 	t.Posting_date_filter = types.NewText(posting_date_filterNull.String)
+	t.No_filter = types.NewText(no_filterNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1689,7 +1731,7 @@ func (t *DocumentEntry) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1699,6 +1741,7 @@ func (t *DocumentEntry) FindLast() bool {
 	var table_nameNull sql.NullString
 	var document_no_filterNull sql.NullString
 	var posting_date_filterNull sql.NullString
+	var no_filterNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&t.Table_id,
@@ -1710,6 +1753,7 @@ func (t *DocumentEntry) FindLast() bool {
 		&t.Page_id,
 		&document_no_filterNull,
 		&posting_date_filterNull,
+		&no_filterNull,
 	)
 
 	if err != nil {
@@ -1726,6 +1770,7 @@ func (t *DocumentEntry) FindLast() bool {
 	t.Table_name = types.NewText(table_nameNull.String)
 	t.Document_no_filter = types.NewText(document_no_filterNull.String)
 	t.Posting_date_filter = types.NewText(posting_date_filterNull.String)
+	t.No_filter = types.NewText(no_filterNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1776,7 +1821,7 @@ func (t *DocumentEntry) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1850,6 +1895,7 @@ func (t *DocumentEntry) Next(steps ...int) bool {
 		var table_nameNull sql.NullString
 		var document_no_filterNull sql.NullString
 		var posting_date_filterNull sql.NullString
+		var no_filterNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&t.Table_id,
@@ -1861,6 +1907,7 @@ func (t *DocumentEntry) Next(steps ...int) bool {
 			&t.Page_id,
 			&document_no_filterNull,
 			&posting_date_filterNull,
+			&no_filterNull,
 		)
 
 		if err != nil {
@@ -1876,6 +1923,7 @@ func (t *DocumentEntry) Next(steps ...int) bool {
 		t.Table_name = types.NewText(table_nameNull.String)
 		t.Document_no_filter = types.NewText(document_no_filterNull.String)
 		t.Posting_date_filter = types.NewText(posting_date_filterNull.String)
+		t.No_filter = types.NewText(no_filterNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -1925,7 +1973,7 @@ func (t *DocumentEntry) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT table_id, no_of_records, document_no, posting_date, entry_no, table_name, page_id, document_no_filter, posting_date_filter, no_filter FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1952,6 +2000,7 @@ func (t *DocumentEntry) FindSetBuffered() bool {
 		var table_nameNull sql.NullString
 		var document_no_filterNull sql.NullString
 		var posting_date_filterNull sql.NullString
+		var no_filterNull sql.NullString
 
 		err := rows.Scan(
 			&record.Table_id,
@@ -1963,6 +2012,7 @@ func (t *DocumentEntry) FindSetBuffered() bool {
 			&record.Page_id,
 			&document_no_filterNull,
 			&posting_date_filterNull,
+			&no_filterNull,
 		)
 
 		if err != nil {
@@ -1976,6 +2026,7 @@ func (t *DocumentEntry) FindSetBuffered() bool {
 		record.Table_name = types.NewText(table_nameNull.String)
 		record.Document_no_filter = types.NewText(document_no_filterNull.String)
 		record.Posting_date_filter = types.NewText(posting_date_filterNull.String)
+		record.No_filter = types.NewText(no_filterNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2013,6 +2064,7 @@ func (t *DocumentEntry) copyFromBuffered(record *DocumentEntry) {
 	t.Page_id = record.Page_id
 	t.Document_no_filter = record.Document_no_filter
 	t.Posting_date_filter = record.Posting_date_filter
+	t.No_filter = record.No_filter
 	t.StoreOldValues()
 }
 
@@ -2351,6 +2403,24 @@ func (t *DocumentEntry) ValidateField(fieldName string, value interface{}) error
 			}
 		}
 		return nil
+	case "no_filter":
+		// Set field value
+		if v, ok := value.(types.Text); ok {
+			t.No_filter = v
+		} else if v, ok := value.(string); ok {
+			t.No_filter = types.NewText(v)
+		} else {
+			return fmt.Errorf("invalid type for field no_filter")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(DocumentEntryOnValidate_No_filter); ok {
+				if err := trg.OnValidate_No_filter(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2381,6 +2451,8 @@ func (t *DocumentEntry) FieldValue(no int) (any, bool) {
 		return t.Document_no_filter, true
 	case 902:
 		return t.Posting_date_filter, true
+	case 903:
+		return t.No_filter, true
 	}
 	return nil, false
 }
@@ -2455,6 +2527,15 @@ func (t *DocumentEntry) SetFieldValue(no int, value any) bool {
 		}
 		if v, ok := value.(string); ok {
 			t.Posting_date_filter = types.NewText(v)
+			return true
+		}
+	case 903:
+		if v, ok := value.(types.Text); ok {
+			t.No_filter = v
+			return true
+		}
+		if v, ok := value.(string); ok {
+			t.No_filter = types.NewText(v)
 			return true
 		}
 	}
@@ -2940,6 +3021,8 @@ func (t *DocumentEntry) columnValue(column string) (interface{}, bool) {
 		return t.Document_no_filter, true
 	case "posting_date_filter":
 		return t.Posting_date_filter, true
+	case "no_filter":
+		return t.No_filter, true
 	}
 	return nil, false
 }
@@ -3002,6 +3085,7 @@ func (t *DocumentEntry) Init() {
 	t.Page_id = *new(int)
 	t.Document_no_filter = *new(types.Text)
 	t.Posting_date_filter = *new(types.Text)
+	t.No_filter = *new(types.Text)
 	t.applyDefaults()
 }
 
@@ -3045,6 +3129,7 @@ func (t *DocumentEntry) ToMap() map[string]interface{} {
 		"page_id":             t.Page_id,
 		"document_no_filter":  t.Document_no_filter.String(),
 		"posting_date_filter": t.Posting_date_filter.String(),
+		"no_filter":           t.No_filter.String(),
 	}
 }
 
@@ -3125,6 +3210,11 @@ func (t *DocumentEntry) FromMap(data map[string]interface{}) {
 	if v, ok := data["posting_date_filter"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Posting_date_filter = types.NewText(s)
+		}
+	}
+	if v, ok := data["no_filter"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.No_filter = types.NewText(s)
 		}
 	}
 }
@@ -3231,6 +3321,16 @@ func (t *DocumentEntry) GetFields() []tables.FieldInfo {
 		{
 			No:         902,
 			Name:       "posting_date_filter",
+			Type:       tables.FieldTypeText,
+			Length:     250,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         903,
+			Name:       "no_filter",
 			Type:       tables.FieldTypeText,
 			Length:     250,
 			Required:   false,

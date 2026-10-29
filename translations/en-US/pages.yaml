@@ -560,6 +560,8 @@ pages:
     caption: "Posted Sales Credit Memo"
   posted_sales_cr_memo_subform:
     caption: "Lines"
+  get_shipment_lines:
+    caption: "Get Shipment Lines"
   sales_statistics:
     caption: "Sales Statistics"
     fields:  # the calculated fields (OnAfterGetRecord)

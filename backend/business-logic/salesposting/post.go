@@ -168,10 +168,14 @@ func (p *SalesPost) checkAndUpdate() error {
 	salesLine.SetRange("document_type", gtables.SalesLineDocument_type(salesHeader.Document_type))
 	salesLine.SetRange("document_no", salesHeader.No)
 	somethingToPost := false
+	somethingToShip := false
 	for found := salesLine.FindSet(); found; found = salesLine.Next() {
 		qtyToShip, _, qtyToInvoice, _ := p.qtysToPost(salesLine)
 		if !qtyToShip.IsZero() || !qtyToInvoice.IsZero() {
 			somethingToPost = true
+		}
+		if !qtyToShip.IsZero() {
+			somethingToShip = true
 		}
 	}
 	if !somethingToPost {
@@ -179,7 +183,7 @@ func (p *SalesPost) checkAndUpdate() error {
 	}
 
 	// the posted documents' numbers
-	p.createShipment = salesHeader.Ship && (salesHeader.Document_type == gtables.SalesHeader_Document_type.Order ||
+	p.createShipment = salesHeader.Ship && somethingToShip && (salesHeader.Document_type == gtables.SalesHeader_Document_type.Order ||
 		salesHeader.Document_type == gtables.SalesHeader_Document_type.Invoice && p.salesSetup.Shipment_on_invoice)
 	noSeriesMgt := noseries.New(salesHeader)
 	if p.createShipment && salesHeader.Shipping_no == "" {
@@ -244,8 +248,11 @@ func (p *SalesPost) qtysToPost(salesLine *gtables.SalesLine) (qtyToShip, qtyToSh
 			}
 		}
 	case gtables.SalesHeader_Document_type.Invoice:
-		qtyToShip = salesLine.Quantity
-		qtyToShipBase = salesLine.Quantity_base
+		// a line got from a shipment (Get Shipment Lines) was shipped there
+		if salesLine.Shipment_no == "" {
+			qtyToShip = salesLine.Quantity
+			qtyToShipBase = salesLine.Quantity_base
+		}
 		qtyToInvoice = salesLine.Quantity
 		qtyToInvoiceBase = salesLine.Quantity_base
 	case gtables.SalesHeader_Document_type.CreditMemo:
@@ -376,14 +383,26 @@ func (p *SalesPost) postLines() error {
 			lineFCY, lineLCY = p.invoicedShare(salesLine, qtyToInvoice)
 		}
 		itemShptEntryNo := 0
-		switch salesLine.Type {
-		case gtables.SalesLine_Type.Item:
+		fromShipment := salesHeader.Document_type == gtables.SalesHeader_Document_type.Invoice && salesLine.Shipment_no != ""
+		switch {
+		case fromShipment:
+			err := p.invoiceShipmentLine(salesLine, qtyToInvoice, qtyToInvoiceBase, lineLCY)
+			if err != nil {
+				return err
+			}
+			if salesLine.Type == gtables.SalesLine_Type.Resource {
+				err = p.postResJnlLine(salesLine, qtyToInvoice, lineLCY)
+				if err != nil {
+					return err
+				}
+			}
+		case salesLine.Type == gtables.SalesLine_Type.Item:
 			var err error
 			itemShptEntryNo, err = p.postItemLines(salesLine, qtyToShip, qtyToShipBase, qtyToInvoice, qtyToInvoiceBase, lineLCY)
 			if err != nil {
 				return err
 			}
-		case gtables.SalesLine_Type.Resource:
+		case salesLine.Type == gtables.SalesLine_Type.Resource:
 			if !qtyToInvoice.IsZero() {
 				err := p.postResJnlLine(salesLine, qtyToInvoice, lineLCY)
 				if err != nil {
@@ -474,6 +493,36 @@ func (p *SalesPost) postItemLines(salesLine *gtables.SalesLine, qtyToShip, qtyTo
 		qtyToShipBase = qtyToInvoiceBase
 	}
 	return p.postItemJnlLine(salesLine, qtyToShip, qtyToShipBase, invoicedNow, invoicedNowBase, p.amountPart(lineLCY, invoicedNow, qtyToInvoice), 0)
+}
+
+// invoiceShipmentLine invoices a line got from a shipment: an item's shipment entry is invoiced
+// (an entry without quantity on it), the shipment line and the order line it came from count the
+// quantity invoiced
+func (p *SalesPost) invoiceShipmentLine(salesLine *gtables.SalesLine, qtyToInvoice, qtyToInvoiceBase types.Decimal, lineLCY *gtables.SalesLine) error {
+	salesShptLine := gtables.NewSalesShipmentLine(salesLine)
+	err := salesShptLine.GetOrError(map[string]interface{}{"document_no": salesLine.Shipment_no, "line_no": salesLine.Shipment_line_no})
+	if err != nil {
+		return err
+	}
+	if salesLine.Type == gtables.SalesLine_Type.Item {
+		_, err = p.postItemJnlLine(salesLine, types.Decimal{}, types.Decimal{}, qtyToInvoice, qtyToInvoiceBase, p.amountPart(lineLCY, qtyToInvoice, qtyToInvoice), salesShptLine.Item_shpt_entry_no)
+		if err != nil {
+			return err
+		}
+	}
+	salesShptLine.Quantity_invoiced = salesShptLine.Quantity_invoiced.Add(qtyToInvoice)
+	salesShptLine.Qty_invoiced_base = salesShptLine.Qty_invoiced_base.Add(qtyToInvoiceBase)
+	salesShptLine.Qty_shipped_not_invoiced = salesShptLine.Qty_shipped_not_invoiced.Sub(qtyToInvoice)
+	salesShptLine.Qty_shpd_not_invd_base = salesShptLine.Qty_shpd_not_invd_base.Sub(qtyToInvoiceBase)
+	err = salesShptLine.ModifyOrError(false)
+	if err != nil {
+		return err
+	}
+	salesOrderLine := gtables.NewSalesLine(salesLine)
+	if !salesOrderLine.Get(map[string]interface{}{"document_type": int(gtables.SalesLine_Document_type.Order), "document_no": salesShptLine.Order_no, "line_no": salesShptLine.Order_line_no}) {
+		return nil
+	}
+	return p.updateOrderLine(salesOrderLine, types.Decimal{}, types.Decimal{}, qtyToInvoice, qtyToInvoiceBase)
 }
 
 // amountPart: the LCY amounts of part of the invoiced quantity

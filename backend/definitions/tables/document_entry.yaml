@@ -55,6 +55,13 @@ table:
       db_name: posting_date_filter
       length: 250
 
+    # a posted document's line: its No. filter (the document no. filter on the documents' No.)
+    - name: no_filter
+      no: 903
+      type: types.Text
+      db_name: no_filter
+      length: 250
+
   keys:
     - name: Primary
       fields: [entry_no]

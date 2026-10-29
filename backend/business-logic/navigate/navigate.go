@@ -24,6 +24,9 @@ const (
 	faLedgEntriesPage       = 5604
 	maintLedgEntriesPage    = 5641
 	insCovLedgEntriesPage   = 5647
+	salesShptHeadersPage    = 142
+	salesInvHeadersPage     = 143
+	salesCrMemoHeadersPage  = 144
 )
 
 // entries is what Navigate needs of an entry table's record
@@ -40,6 +43,27 @@ func FindRecords(docEntry *gtables.DocumentEntry, docNoFilter, postingDateFilter
 	docEntry.DeleteAll()
 	if docNoFilter == "" && postingDateFilter == "" {
 		return nil
+	}
+	if fcodeunits.CanRead("Sales_Shipment_Header") {
+		salesShptHeader := gtables.NewSalesShipmentHeader(docEntry)
+		err := findPostedDocs(docEntry, salesShptHeader, gtables.SalesShipmentHeaderTableID, salesShptHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
+	}
+	if fcodeunits.CanRead("Sales_Invoice_Header") {
+		salesInvHeader := gtables.NewSalesInvoiceHeader(docEntry)
+		err := findPostedDocs(docEntry, salesInvHeader, gtables.SalesInvoiceHeaderTableID, salesInvHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
+	}
+	if fcodeunits.CanRead("Sales_Cr_Memo_Header") {
+		salesCrMemoHeader := gtables.NewSalesCrMemoHeader(docEntry)
+		err := findPostedDocs(docEntry, salesCrMemoHeader, gtables.SalesCrMemoHeaderTableID, salesCrMemoHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
 	}
 	if fcodeunits.CanRead("G_L_Entry") {
 		glEntry := gtables.NewGLEntry(docEntry)
@@ -136,11 +160,24 @@ func findEntries(docEntry *gtables.DocumentEntry, entryRec entries, tableID, pag
 	if postingDateFilter != "" {
 		entryRec.SetFilter("posting_date", postingDateFilter)
 	}
-	return insertIntoDocEntry(docEntry, tableID, pageID, entryRec.TableCaption(fcodeunits.CurrentLanguage()), entryRec.Count(), docNoFilter, postingDateFilter)
+	return insertIntoDocEntry(docEntry, tableID, pageID, entryRec.TableCaption(fcodeunits.CurrentLanguage()), entryRec.Count(), docNoFilter, "", postingDateFilter)
 }
 
-// insertIntoDocEntry (InsertIntoDocEntry): a line for a table with entries (none for 0)
-func insertIntoDocEntry(docEntry *gtables.DocumentEntry, docTableID, docPageID int, docTableName string, docNoOfRecords int, docNoFilter, postingDateFilter string) error {
+// findPostedDocs counts a posted document table's documents — the document no. filter on their
+// No. — and adds its line (Show filters the documents' list on No.)
+func findPostedDocs(docEntry *gtables.DocumentEntry, docRec entries, tableID, pageID int, docNoFilter, postingDateFilter string) error {
+	if docNoFilter != "" {
+		docRec.SetFilter("no", docNoFilter)
+	}
+	if postingDateFilter != "" {
+		docRec.SetFilter("posting_date", postingDateFilter)
+	}
+	return insertIntoDocEntry(docEntry, tableID, pageID, docRec.TableCaption(fcodeunits.CurrentLanguage()), docRec.Count(), "", docNoFilter, postingDateFilter)
+}
+
+// insertIntoDocEntry (InsertIntoDocEntry): a line for a table with entries (none for 0), with
+// the filters Show applies — Document No. on entries, No. on posted documents
+func insertIntoDocEntry(docEntry *gtables.DocumentEntry, docTableID, docPageID int, docTableName string, docNoOfRecords int, docNoFilter, noFilter, postingDateFilter string) error {
 	if docNoOfRecords == 0 {
 		return nil
 	}
@@ -152,6 +189,7 @@ func insertIntoDocEntry(docEntry *gtables.DocumentEntry, docTableID, docPageID i
 	docEntry.No_of_records = docNoOfRecords
 	docEntry.Page_id = docPageID
 	docEntry.Document_no_filter = types.Text(docNoFilter)
+	docEntry.No_filter = types.Text(noFilter)
 	docEntry.Posting_date_filter = types.Text(postingDateFilter)
 	return docEntry.InsertOrError(false)
 }

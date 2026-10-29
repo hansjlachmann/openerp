@@ -56,7 +56,7 @@ func (c *SalesPostYesNo) Run(record interface{}) (fcodeunits.Result, error) {
 	if !ok {
 		return fcodeunits.Result{}, errors.New("codeunit 81 runs on a sales header")
 	}
-	result, err := c.code(rec)
+	result, _, err := c.post(rec)
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {
 		return fcodeunits.Result{}, errors.New(appErr.Message(fcodeunits.CurrentLanguage()))
@@ -64,34 +64,36 @@ func (c *SalesPostYesNo) Run(record interface{}) (fcodeunits.Result, error) {
 	return result, err
 }
 
-func (c *SalesPostYesNo) code(rec *gtables.SalesHeader) (fcodeunits.Result, error) {
+// post asks, posts and returns the page's result and what was posted (nil when the user
+// cancelled)
+func (c *SalesPostYesNo) post(rec *gtables.SalesHeader) (fcodeunits.Result, *salesposting.SalesPost, error) {
 	ts := i18n.GetInstance()
 	lang := fcodeunits.CurrentLanguage()
 	ship, invoice := false, false
 	if rec.Document_type == gtables.SalesHeader_Document_type.Order {
 		selection := system.StrMenu(ts.Message("SALES_POST_SHIP_INVOICE", lang), 3)
 		if selection == 0 {
-			return fcodeunits.Result{Success: true}, nil
+			return fcodeunits.Result{Success: true}, nil, nil
 		}
 		ship = selection == 1 || selection == 3
 		invoice = selection == 2 || selection == 3
 	} else {
 		documentType := ts.OptionCaption(gtables.SalesHeaderTableName, "document_type", i18n.Key(rec.Document_type.String()), lang)
 		if !system.Confirm(system.StrSubstNo(ts.Message("SALES_POST_CONFIRM", lang), documentType)) {
-			return fcodeunits.Result{Success: true}, nil
+			return fcodeunits.Result{Success: true}, nil, nil
 		}
 	}
 
 	tx, err := ftables.BeginTransaction(c.db)
 	if err != nil {
-		return fcodeunits.Result{}, err
+		return fcodeunits.Result{}, nil, err
 	}
 	src := ftables.DBSource(tx, c.company, c.dbType)
 	salesHeader := gtables.NewSalesHeader(src)
 	err = salesHeader.GetOrError(map[string]interface{}{"document_type": int(rec.Document_type), "no": rec.No})
 	if err != nil {
 		_ = ftables.Rollback(tx)
-		return fcodeunits.Result{}, err
+		return fcodeunits.Result{}, nil, err
 	}
 	if salesHeader.Document_type == gtables.SalesHeader_Document_type.Order {
 		salesHeader.Ship = ship
@@ -101,15 +103,15 @@ func (c *SalesPostYesNo) code(rec *gtables.SalesHeader) (fcodeunits.Result, erro
 	err = salesPost.Run(salesHeader)
 	if err != nil {
 		_ = ftables.Rollback(tx)
-		return fcodeunits.Result{}, err
+		return fcodeunits.Result{}, nil, err
 	}
 	err = ftables.Commit(tx)
 	if err != nil {
-		return fcodeunits.Result{}, err
+		return fcodeunits.Result{}, nil, err
 	}
 
 	if !salesPost.Deleted {
-		return fcodeunits.Result{Success: true, Refresh: true}, nil
+		return fcodeunits.Result{Success: true, Refresh: true}, salesPost, nil
 	}
 	result := fcodeunits.Result{Success: true}
 	switch {
@@ -120,5 +122,5 @@ func (c *SalesPostYesNo) code(rec *gtables.SalesHeader) (fcodeunits.Result, erro
 	case salesPost.ShipmentNo != "":
 		result.OpenPage = &fcodeunits.PageLink{PageID: postedSalesShipmentCardID, Key: salesPost.ShipmentNo.String()}
 	}
-	return result, nil
+	return result, salesPost, nil
 }
