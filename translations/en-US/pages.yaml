@@ -524,6 +524,12 @@ pages:
     caption: "Sales Quote"
   sales_quote_subform:
     caption: "Lines"
+  sales_orders:
+    caption: "Sales Orders"
+  sales_order:
+    caption: "Sales Order"
+  sales_order_subform:
+    caption: "Lines"
   sales_statistics:
     caption: "Sales Statistics"
     fields:  # the calculated fields (OnAfterGetRecord)

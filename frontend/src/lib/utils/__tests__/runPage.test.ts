@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runPagePath } from '../runPage';
+import { runPagePath, openPagePath } from '../runPage';
 
 describe('runPagePath', () => {
 	it('filters on one field of the record', () => {
@@ -49,5 +49,17 @@ describe('runPagePath', () => {
 			'/pages/344?document_no=G%201%2F2&posting_date=2026-01-15'
 		);
 		expect(runPagePath(action, { document_no: 'G1', posting_date: '' })).toBe('/pages/344?document_no=G1');
+	});
+});
+
+describe('openPagePath', () => {
+	it('is the card of the record a result opens', () => {
+		expect(openPagePath({ page_id: 42, key: '1,SO000001' })).toBe('/pages/42/1%2CSO000001');
+		expect(openPagePath({ page_id: 9305 })).toBe('/pages/9305');
+	});
+	it('is null without a page', () => {
+		expect(openPagePath(undefined)).toBeNull();
+		expect(openPagePath({ key: 'x' })).toBeNull();
+		expect(openPagePath('42')).toBeNull();
 	});
 });

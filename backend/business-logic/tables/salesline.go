@@ -12,8 +12,9 @@ import (
 
 // salesLineLogic is the business logic of table 37 Sales Line.
 //
-// Not migrated yet: the quantities to ship and invoice and the shipped/invoiced quantities
-// (orders), reservations and the availability warning (codeunit 311), item tracking, bins,
+// Orders: the quantities to ship and invoice (all that is outstanding, by default) and the
+// shipped/invoiced quantities, which posting fills. Not migrated yet: return orders and credit
+// memo quantities, reservations and the availability warning (codeunit 311), item tracking, bins,
 // jobs, drop shipments, blanket orders, extended texts, the credit limit check (codeunit 312)
 // and Fixed Asset lines; the line's Amount and Amount Including Tax are calculated, not typed.
 type salesLineLogic struct{}
@@ -30,6 +31,14 @@ func (salesLineLogic) OnInsert(rec *gtables.SalesLine) error {
 	rec.LockTable()
 	salesHeader := gtables.NewSalesHeader(rec)
 	return salesHeader.GetOrError(map[string]interface{}{"document_type": int(rec.Document_type), "no": rec.Document_no})
+}
+
+// OnDelete: an order line shipped but not invoiced stays
+func (salesLineLogic) OnDelete(rec *gtables.SalesLine) error {
+	if rec.Document_type == gtables.SalesLine_Document_type.Order {
+		return rec.TestField("qty_shipped_not_invoiced", types.Decimal{})
+	}
+	return nil
 }
 
 // OnRename: a sales line is never renamed
@@ -75,8 +84,12 @@ func salesLineDate(salesHeader *gtables.SalesHeader) types.Date {
 	}
 }
 
-// OnValidate_Type: a new type starts the line again
+// OnValidate_Type: a new type starts the line again (not on a line already shipped)
 func (salesLineLogic) OnValidate_Type(rec *gtables.SalesLine) error {
+	err := testSalesLineNotShipped(rec)
+	if err != nil {
+		return err
+	}
 	lineType := rec.Type
 	rec.Init()
 	rec.Type = lineType
@@ -87,6 +100,10 @@ func (salesLineLogic) OnValidate_Type(rec *gtables.SalesLine) error {
 // location, price group, posting and tax groups) and the account, item or resource: description,
 // unit of measure, unit cost, posting groups, the price and the quantity it had
 func (salesLineLogic) OnValidate_No(rec *gtables.SalesLine) error {
+	err := testSalesLineNotShipped(rec)
+	if err != nil {
+		return err
+	}
 	if rec.No == "" {
 		return nil
 	}
@@ -226,18 +243,41 @@ func (salesLineLogic) OnValidate_No(rec *gtables.SalesLine) error {
 	return nil
 }
 
-// OnValidate_Quantity: Quantity (Base), the outstanding quantity and amount, and the item's
-// quantity discount for the base quantity (when the document and the line allow it)
+// testSalesLineNotShipped: the line's type and number stay once something is shipped
+func testSalesLineNotShipped(rec *gtables.SalesLine) error {
+	err := rec.TestField("qty_shipped_not_invoiced", types.Decimal{})
+	if err != nil {
+		return err
+	}
+	return rec.TestField("quantity_shipped", types.Decimal{})
+}
+
+// OnValidate_Quantity: Quantity (Base) — not below what is shipped or invoiced —, the
+// outstanding quantity and amount, the quantities to ship and invoice, and the item's quantity
+// discount for the base quantity (when the document and the line allow it)
 func (salesLineLogic) OnValidate_Quantity(rec *gtables.SalesLine) error {
 	quantityBase, err := calcSalesLineBaseQty(rec, rec.Quantity)
 	if err != nil {
 		return err
 	}
 	rec.Quantity_base = quantityBase
+	if rec.Quantity.Mul(rec.Quantity_shipped).IsNegative() || rec.Quantity.Abs().LessThan(rec.Quantity_shipped.Abs()) {
+		return apperrors.SalesQtyLessThan(gtables.SalesLineTableName, "quantity", "quantity_shipped")
+	}
+	if rec.Quantity_base.Mul(rec.Qty_shipped_base).IsNegative() || rec.Quantity_base.Abs().LessThan(rec.Qty_shipped_base.Abs()) {
+		return apperrors.SalesQtyLessThan(gtables.SalesLineTableName, "quantity_base", "qty_shipped_base")
+	}
+	if rec.Quantity.Mul(rec.Quantity_invoiced).IsNegative() || rec.Quantity.Abs().LessThan(rec.Quantity_invoiced.Abs()) {
+		return apperrors.SalesQtyLessThan(gtables.SalesLineTableName, "quantity", "quantity_invoiced")
+	}
+	if rec.Quantity_base.Mul(rec.Qty_invoiced_base).IsNegative() || rec.Quantity_base.Abs().LessThan(rec.Qty_invoiced_base.Abs()) {
+		return apperrors.SalesQtyLessThan(gtables.SalesLineTableName, "quantity_base", "qty_invoiced_base")
+	}
 	err = initSalesLineOutstanding(rec)
 	if err != nil {
 		return err
 	}
+	initSalesLineQtyToShip(rec)
 	rec.Quantity_disc_percent = types.Decimal{}
 	if rec.Type == gtables.SalesLine_Type.Item {
 		salesHeader, _, err := getSalesHeader(rec)
@@ -265,45 +305,170 @@ func calcSalesLineBaseQty(rec *gtables.SalesLine, qty types.Decimal) (types.Deci
 	return system.Round(qty.Mul(rec.Qty_per_unit_of_measure), roundPrecision), nil
 }
 
-// initSalesLineOutstanding (InitOutstanding): nothing is shipped yet, so everything is
-// outstanding
+// initSalesLineOutstanding (InitOutstanding): what is not shipped yet is outstanding, what is
+// shipped and not invoiced yet is shipped not invoiced
 func initSalesLineOutstanding(rec *gtables.SalesLine) error {
-	rec.Outstanding_quantity = rec.Quantity
-	rec.Outstanding_qty_base = rec.Quantity_base
+	rec.Outstanding_quantity = rec.Quantity.Sub(rec.Quantity_shipped)
+	rec.Outstanding_qty_base = rec.Quantity_base.Sub(rec.Qty_shipped_base)
+	rec.Qty_shipped_not_invoiced = rec.Quantity_shipped.Sub(rec.Quantity_invoiced)
+	rec.Qty_shpd_not_invd_base = rec.Qty_shipped_base.Sub(rec.Qty_invoiced_base)
 	return initSalesLineOutstandingAmount(rec)
 }
 
-// initSalesLineOutstandingAmount (InitOutstandingAmount): the outstanding share of Amount
-// Including Tax, in the document's currency and in LCY
+// initSalesLineOutstandingAmount (InitOutstandingAmount): the outstanding and the shipped not
+// invoiced shares of Amount Including Tax, in the document's currency and in LCY
 func initSalesLineOutstandingAmount(rec *gtables.SalesLine) error {
 	if rec.Quantity.IsZero() {
 		rec.Outstanding_amount = types.Decimal{}
 		rec.Outstanding_amount_lcy = types.Decimal{}
+		rec.Shipped_not_invoiced = types.Decimal{}
+		rec.Shipped_not_invoiced_lcy = types.Decimal{}
 	} else {
 		salesHeader, currency, err := getSalesHeader(rec)
 		if err != nil {
 			return err
 		}
 		rec.Outstanding_amount = system.Round(rec.Amount_including_tax.Mul(rec.Outstanding_quantity).Div(rec.Quantity), currency.Amount_rounding_precision)
-		return validateSalesLineOutstandingAmount(rec, salesHeader)
+		err = validateSalesLineOutstandingAmount(rec, salesHeader)
+		if err != nil {
+			return err
+		}
+		rec.Shipped_not_invoiced = system.Round(rec.Amount_including_tax.Mul(rec.Qty_shipped_not_invoiced).Div(rec.Quantity), currency.Amount_rounding_precision)
+		return validateSalesLineShippedNotInvoiced(rec, salesHeader)
 	}
 	return nil
 }
 
 // validateSalesLineOutstandingAmount (Outstanding Amount OnValidate): Outstanding Amount (LCY)
 func validateSalesLineOutstandingAmount(rec *gtables.SalesLine, salesHeader *gtables.SalesHeader) error {
+	amountLCY, err := salesLineAmountLCY(rec, salesHeader, rec.Outstanding_amount)
+	if err != nil {
+		return err
+	}
+	rec.Outstanding_amount_lcy = amountLCY
+	return nil
+}
+
+// validateSalesLineShippedNotInvoiced (Shipped Not Invoiced OnValidate): Shipped Not Invoiced
+// (LCY)
+func validateSalesLineShippedNotInvoiced(rec *gtables.SalesLine, salesHeader *gtables.SalesHeader) error {
+	amountLCY, err := salesLineAmountLCY(rec, salesHeader, rec.Shipped_not_invoiced)
+	if err != nil {
+		return err
+	}
+	rec.Shipped_not_invoiced_lcy = amountLCY
+	return nil
+}
+
+// salesLineAmountLCY: an amount of the line in LCY at the document's currency factor, rounded
+// to the local currency
+func salesLineAmountLCY(rec *gtables.SalesLine, salesHeader *gtables.SalesHeader, amount types.Decimal) (types.Decimal, error) {
 	currency2 := gtables.NewCurrency(rec)
 	InitRoundingPrecision(currency2)
 	if salesHeader.Currency_code != "" {
-		amountLCY, err := ExchangeRates(rec).ExchangeAmtFCYToLCY(salesLineDate(salesHeader), rec.Currency_code, rec.Outstanding_amount, salesHeader.Currency_factor)
+		amountLCY, err := ExchangeRates(rec).ExchangeAmtFCYToLCY(salesLineDate(salesHeader), rec.Currency_code, amount, salesHeader.Currency_factor)
+		if err != nil {
+			return types.Decimal{}, err
+		}
+		return system.Round(amountLCY, currency2.Amount_rounding_precision), nil
+	} else {
+		return system.Round(amount, currency2.Amount_rounding_precision), nil
+	}
+}
+
+// initSalesLineQtyToShip (InitQtyToShip): all that is outstanding is to be shipped
+func initSalesLineQtyToShip(rec *gtables.SalesLine) {
+	rec.Qty_to_ship = rec.Outstanding_quantity
+	rec.Qty_to_ship_base = rec.Outstanding_qty_base
+	initSalesLineQtyToInvoice(rec)
+}
+
+// initSalesLineQtyToInvoice (InitQtyToInvoice): all that can be invoiced is to be invoiced
+func initSalesLineQtyToInvoice(rec *gtables.SalesLine) {
+	rec.Qty_to_invoice = maxSalesLineQtyToInvoice(rec)
+	rec.Qty_to_invoice_base = maxSalesLineQtyToInvoiceBase(rec)
+}
+
+// maxSalesLineQtyToInvoice (MaxQtyToInvoice): what is shipped or to be shipped, less what is
+// invoiced
+func maxSalesLineQtyToInvoice(rec *gtables.SalesLine) types.Decimal {
+	return rec.Quantity_shipped.Add(rec.Qty_to_ship).Sub(rec.Quantity_invoiced)
+}
+
+// maxSalesLineQtyToInvoiceBase (MaxQtyToInvoiceBase): the same in the base unit of measure
+func maxSalesLineQtyToInvoiceBase(rec *gtables.SalesLine) types.Decimal {
+	return rec.Qty_shipped_base.Add(rec.Qty_to_ship_base).Sub(rec.Qty_invoiced_base)
+}
+
+// OnValidate_Qty_to_ship: its base quantity and the quantity to invoice; not more than is
+// outstanding (and of the same sign)
+func (salesLineLogic) OnValidate_Qty_to_ship(rec *gtables.SalesLine) error {
+	qtyToShipBase, err := calcSalesLineBaseQty(rec, rec.Qty_to_ship)
+	if err != nil {
+		return err
+	}
+	rec.Qty_to_ship_base = qtyToShipBase
+	initSalesLineQtyToInvoice(rec)
+	if salesLineQtyAbove(rec.Qty_to_ship, rec.Quantity, rec.Outstanding_quantity) {
+		return apperrors.SalesCannotShipMore(system.Format(rec.Outstanding_quantity), false)
+	}
+	if salesLineQtyAbove(rec.Qty_to_ship_base, rec.Quantity_base, rec.Outstanding_qty_base) {
+		return apperrors.SalesCannotShipMore(system.Format(rec.Outstanding_qty_base), true)
+	}
+	return nil
+}
+
+// salesLineQtyAbove: a quantity to handle of another sign than the line's quantity, or above
+// the most that can be handled (or that one of another sign)
+func salesLineQtyAbove(qtyToHandle, quantity, maxQty types.Decimal) bool {
+	if qtyToHandle.IsNegative() != quantity.IsNegative() && !quantity.IsZero() && !qtyToHandle.IsZero() {
+		return true
+	}
+	if qtyToHandle.Abs().GreaterThan(maxQty.Abs()) {
+		return true
+	}
+	return quantity.IsNegative() != maxQty.IsNegative() && !quantity.IsZero() && !maxQty.IsZero()
+}
+
+// OnValidate_Qty_to_ship_base: only in the base unit of measure; Qty. to Ship follows
+func (salesLineLogic) OnValidate_Qty_to_ship_base(rec *gtables.SalesLine) error {
+	err := rec.TestField("qty_per_unit_of_measure", types.NewDecimalFromInt(1))
+	if err != nil {
+		return err
+	}
+	return rec.Validate("qty_to_ship", rec.Qty_to_ship_base)
+}
+
+// OnValidate_Qty_to_invoice: its base quantity; not more than is shipped or to be shipped and
+// not invoiced (and of the line's sign)
+func (salesLineLogic) OnValidate_Qty_to_invoice(rec *gtables.SalesLine) error {
+	if rec.Qty_to_invoice.Equal(maxSalesLineQtyToInvoice(rec)) {
+		initSalesLineQtyToInvoice(rec)
+	} else {
+		qtyToInvoiceBase, err := calcSalesLineBaseQty(rec, rec.Qty_to_invoice)
 		if err != nil {
 			return err
 		}
-		rec.Outstanding_amount_lcy = system.Round(amountLCY, currency2.Amount_rounding_precision)
-	} else {
-		rec.Outstanding_amount_lcy = system.Round(rec.Outstanding_amount, currency2.Amount_rounding_precision)
+		rec.Qty_to_invoice_base = qtyToInvoiceBase
+	}
+	maxQtyToInvoice := maxSalesLineQtyToInvoice(rec)
+	if rec.Qty_to_invoice.Mul(rec.Quantity).IsNegative() || rec.Qty_to_invoice.Abs().GreaterThan(maxQtyToInvoice.Abs()) {
+		return apperrors.SalesCannotInvoiceMore(system.Format(maxQtyToInvoice), false)
+	}
+	maxQtyToInvoiceBase := maxSalesLineQtyToInvoiceBase(rec)
+	if rec.Qty_to_invoice_base.Mul(rec.Quantity_base).IsNegative() || rec.Qty_to_invoice_base.Abs().GreaterThan(maxQtyToInvoiceBase.Abs()) {
+		return apperrors.SalesCannotInvoiceMore(system.Format(maxQtyToInvoiceBase), true)
 	}
 	return nil
+}
+
+// OnValidate_Qty_to_invoice_base: only in the base unit of measure; Qty. to Invoice follows
+func (salesLineLogic) OnValidate_Qty_to_invoice_base(rec *gtables.SalesLine) error {
+	err := rec.TestField("qty_per_unit_of_measure", types.NewDecimalFromInt(1))
+	if err != nil {
+		return err
+	}
+	return rec.Validate("qty_to_invoice", rec.Qty_to_invoice_base)
 }
 
 // OnValidate_Unit_price: the discount and the amounts again

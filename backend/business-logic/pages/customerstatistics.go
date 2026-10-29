@@ -28,8 +28,8 @@ func init() {
 		cust := gtables.NewCustomer(rec)
 		cust.No = rec.No
 		_ = cust.SetFlowFilter("date_filter", ".."+currentDate.String())
-		cust.CalcFields("balance_lcy", "balance_due_lcy")
-		page.SetValue("total_lcy", cust.Balance_lcy)
+		cust.CalcFields("balance_lcy", "balance_due_lcy", "outstanding_orders_lcy", "shipped_not_invoiced_lcy")
+		page.SetValue("total_lcy", cust.Balance_lcy.Add(cust.Outstanding_orders_lcy).Add(cust.Shipped_not_invoiced_lcy))
 		page.SetValue("balance_due_to_date_lcy", cust.Balance_due_lcy)
 
 		for i, column := range statisticsColumns {

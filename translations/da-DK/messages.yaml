@@ -396,6 +396,8 @@ messages:
   GEN_JNL_DEFAULT_BATCH: "Standardkladde"
   GEN_JNL_POST_CONFIRM: "Vil du bogføre kladdelinjerne?"
   SALES_CALC_INV_DISC_CONFIRM: "Vil du beregne fakturarabatten?"
+  SALES_QUOTE_TO_ORDER_CONFIRM: "Vil du konvertere tilbuddet til en ordre?"
+  SALES_QUOTE_CHANGED_TO_ORDER: "Tilbud %1 er konverteret til ordre %2."
   SALES_SERVICE_CHARGE: "Gebyr"
   GEN_JNL_NOTHING_TO_POST: "Der er intet at bogføre."
   GEN_JNL_POSTED: "Kladdelinjerne er bogført."

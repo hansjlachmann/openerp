@@ -53,3 +53,14 @@ export function runPagePath(action: RunPageAction, record: Record<string, any> |
 	}
 	return `/pages/${pageId}` + (query.length ? `?${query.join('&')}` : '');
 }
+
+/**
+ * The URL of the page a codeunit's result opens afterwards (open_page: {page_id, key} — e.g.
+ * the order a quote became); null when it opens none
+ */
+export function openPagePath(openPage: unknown): string | null {
+	if (!openPage || typeof openPage !== 'object') return null;
+	const { page_id, key } = openPage as { page_id?: unknown; key?: unknown };
+	if (typeof page_id !== 'number' || page_id <= 0) return null;
+	return typeof key === 'string' && key !== '' ? `/pages/${page_id}/${encodeURIComponent(key)}` : `/pages/${page_id}`;
+}

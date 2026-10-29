@@ -524,6 +524,12 @@ pages:
     caption: "Salgstilbud"
   sales_quote_subform:
     caption: "Linjer"
+  sales_orders:
+    caption: "Salgsordrer"
+  sales_order:
+    caption: "Salgsordre"
+  sales_order_subform:
+    caption: "Linjer"
   sales_statistics:
     caption: "Salgsstatistik"
     fields:  # the calculated fields (OnAfterGetRecord)

@@ -25,6 +25,8 @@
 //	OnValidate_Unit_of_measure(rec *gtables.SalesLine) error
 //	OnValidate_Quantity(rec *gtables.SalesLine) error
 //	OnValidate_Outstanding_quantity(rec *gtables.SalesLine) error
+//	OnValidate_Qty_to_invoice(rec *gtables.SalesLine) error
+//	OnValidate_Qty_to_ship(rec *gtables.SalesLine) error
 //	OnValidate_Unit_price(rec *gtables.SalesLine) error
 //	OnValidate_Unit_cost_lcy(rec *gtables.SalesLine) error
 //	OnValidate_Tax_percent(rec *gtables.SalesLine) error
@@ -45,6 +47,10 @@
 //	OnValidate_Work_type_code(rec *gtables.SalesLine) error
 //	OnValidate_Cust_item_disc_percent(rec *gtables.SalesLine) error
 //	OnValidate_Outstanding_amount(rec *gtables.SalesLine) error
+//	OnValidate_Qty_shipped_not_invoiced(rec *gtables.SalesLine) error
+//	OnValidate_Shipped_not_invoiced(rec *gtables.SalesLine) error
+//	OnValidate_Quantity_shipped(rec *gtables.SalesLine) error
+//	OnValidate_Quantity_invoiced(rec *gtables.SalesLine) error
 //	OnValidate_Profit_percent(rec *gtables.SalesLine) error
 //	OnValidate_Bill_to_customer_no(rec *gtables.SalesLine) error
 //	OnValidate_Inv_discount_amount(rec *gtables.SalesLine) error
@@ -58,6 +64,7 @@
 //	OnValidate_Tax_prod_posting_group(rec *gtables.SalesLine) error
 //	OnValidate_Currency_code(rec *gtables.SalesLine) error
 //	OnValidate_Outstanding_amount_lcy(rec *gtables.SalesLine) error
+//	OnValidate_Shipped_not_invoiced_lcy(rec *gtables.SalesLine) error
 //	OnValidate_Tax_base_amount(rec *gtables.SalesLine) error
 //	OnValidate_Unit_cost(rec *gtables.SalesLine) error
 //	OnValidate_Variant_code(rec *gtables.SalesLine) error
@@ -65,6 +72,11 @@
 //	OnValidate_Unit_of_measure_code(rec *gtables.SalesLine) error
 //	OnValidate_Quantity_base(rec *gtables.SalesLine) error
 //	OnValidate_Outstanding_qty_base(rec *gtables.SalesLine) error
+//	OnValidate_Qty_to_invoice_base(rec *gtables.SalesLine) error
+//	OnValidate_Qty_to_ship_base(rec *gtables.SalesLine) error
+//	OnValidate_Qty_shpd_not_invd_base(rec *gtables.SalesLine) error
+//	OnValidate_Qty_shipped_base(rec *gtables.SalesLine) error
+//	OnValidate_Qty_invoiced_base(rec *gtables.SalesLine) error
 
 package tables
 
@@ -143,61 +155,73 @@ func (o SalesLineTax_calculation_type) IsValid() bool {
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterSalesLineLogic.
 type SalesLine struct {
-	Document_type           SalesLineDocument_type        `db:"document_type,pk"`
-	Sell_to_customer_no     types.Code                    `db:"sell_to_customer_no"`
-	Document_no             types.Code                    `db:"document_no,pk"`
-	Line_no                 int                           `db:"line_no,pk"`
-	Type                    SalesLineType                 `db:"type"`
-	No                      types.Code                    `db:"no"`
-	Location_code           types.Code                    `db:"location_code"`
-	Posting_group           types.Code                    `db:"posting_group"`
-	Quantity_disc_code      types.Code                    `db:"quantity_disc_code"`
-	Shipment_date           types.Date                    `db:"shipment_date"`
-	Description             types.Text                    `db:"description"`
-	Description_2           types.Text                    `db:"description_2"`
-	Unit_of_measure         types.Text                    `db:"unit_of_measure"`
-	Quantity                types.Decimal                 `db:"quantity"`
-	Outstanding_quantity    types.Decimal                 `db:"outstanding_quantity"`
-	Unit_price              types.Decimal                 `db:"unit_price"`
-	Unit_cost_lcy           types.Decimal                 `db:"unit_cost_lcy"`
-	Tax_percent             types.Decimal                 `db:"tax_percent"`
-	Quantity_disc_percent   types.Decimal                 `db:"quantity_disc_percent"`
-	Line_discount_percent   types.Decimal                 `db:"line_discount_percent"`
-	Line_discount_amount    types.Decimal                 `db:"line_discount_amount"`
-	Amount                  types.Decimal                 `db:"amount"`
-	Amount_including_tax    types.Decimal                 `db:"amount_including_tax"`
-	Allow_invoice_disc      bool                          `db:"allow_invoice_disc"`
-	Gross_weight            types.Decimal                 `db:"gross_weight"`
-	Net_weight              types.Decimal                 `db:"net_weight"`
-	Units_per_parcel        types.Decimal                 `db:"units_per_parcel"`
-	Unit_volume             types.Decimal                 `db:"unit_volume"`
-	Department_code         types.Code                    `db:"department_code"`
-	Project_code            types.Code                    `db:"project_code"`
-	Price_group_code        types.Code                    `db:"price_group_code"`
-	Allow_quantity_disc     bool                          `db:"allow_quantity_disc"`
-	Work_type_code          types.Code                    `db:"work_type_code"`
-	Cust_item_disc_percent  types.Decimal                 `db:"cust_item_disc_percent"`
-	Outstanding_amount      types.Decimal                 `db:"outstanding_amount"`
-	Profit_percent          types.Decimal                 `db:"profit_percent"`
-	Bill_to_customer_no     types.Code                    `db:"bill_to_customer_no"`
-	Inv_discount_amount     types.Decimal                 `db:"inv_discount_amount"`
-	Gen_bus_posting_group   types.Code                    `db:"gen_bus_posting_group"`
-	Gen_prod_posting_group  types.Code                    `db:"gen_prod_posting_group"`
-	Tax_calculation_type    SalesLineTax_calculation_type `db:"tax_calculation_type"`
-	Tax_area_code           types.Code                    `db:"tax_area_code"`
-	Tax_liable              bool                          `db:"tax_liable"`
-	Tax_group_code          types.Code                    `db:"tax_group_code"`
-	Tax_bus_posting_group   types.Code                    `db:"tax_bus_posting_group"`
-	Tax_prod_posting_group  types.Code                    `db:"tax_prod_posting_group"`
-	Currency_code           types.Code                    `db:"currency_code"`
-	Outstanding_amount_lcy  types.Decimal                 `db:"outstanding_amount_lcy"`
-	Tax_base_amount         types.Decimal                 `db:"tax_base_amount"`
-	Unit_cost               types.Decimal                 `db:"unit_cost"`
-	Variant_code            types.Code                    `db:"variant_code"`
-	Qty_per_unit_of_measure types.Decimal                 `db:"qty_per_unit_of_measure"`
-	Unit_of_measure_code    types.Code                    `db:"unit_of_measure_code"`
-	Quantity_base           types.Decimal                 `db:"quantity_base"`
-	Outstanding_qty_base    types.Decimal                 `db:"outstanding_qty_base"`
+	Document_type            SalesLineDocument_type        `db:"document_type,pk"`
+	Sell_to_customer_no      types.Code                    `db:"sell_to_customer_no"`
+	Document_no              types.Code                    `db:"document_no,pk"`
+	Line_no                  int                           `db:"line_no,pk"`
+	Type                     SalesLineType                 `db:"type"`
+	No                       types.Code                    `db:"no"`
+	Location_code            types.Code                    `db:"location_code"`
+	Posting_group            types.Code                    `db:"posting_group"`
+	Quantity_disc_code       types.Code                    `db:"quantity_disc_code"`
+	Shipment_date            types.Date                    `db:"shipment_date"`
+	Description              types.Text                    `db:"description"`
+	Description_2            types.Text                    `db:"description_2"`
+	Unit_of_measure          types.Text                    `db:"unit_of_measure"`
+	Quantity                 types.Decimal                 `db:"quantity"`
+	Outstanding_quantity     types.Decimal                 `db:"outstanding_quantity"`
+	Qty_to_invoice           types.Decimal                 `db:"qty_to_invoice"`
+	Qty_to_ship              types.Decimal                 `db:"qty_to_ship"`
+	Unit_price               types.Decimal                 `db:"unit_price"`
+	Unit_cost_lcy            types.Decimal                 `db:"unit_cost_lcy"`
+	Tax_percent              types.Decimal                 `db:"tax_percent"`
+	Quantity_disc_percent    types.Decimal                 `db:"quantity_disc_percent"`
+	Line_discount_percent    types.Decimal                 `db:"line_discount_percent"`
+	Line_discount_amount     types.Decimal                 `db:"line_discount_amount"`
+	Amount                   types.Decimal                 `db:"amount"`
+	Amount_including_tax     types.Decimal                 `db:"amount_including_tax"`
+	Allow_invoice_disc       bool                          `db:"allow_invoice_disc"`
+	Gross_weight             types.Decimal                 `db:"gross_weight"`
+	Net_weight               types.Decimal                 `db:"net_weight"`
+	Units_per_parcel         types.Decimal                 `db:"units_per_parcel"`
+	Unit_volume              types.Decimal                 `db:"unit_volume"`
+	Department_code          types.Code                    `db:"department_code"`
+	Project_code             types.Code                    `db:"project_code"`
+	Price_group_code         types.Code                    `db:"price_group_code"`
+	Allow_quantity_disc      bool                          `db:"allow_quantity_disc"`
+	Work_type_code           types.Code                    `db:"work_type_code"`
+	Cust_item_disc_percent   types.Decimal                 `db:"cust_item_disc_percent"`
+	Outstanding_amount       types.Decimal                 `db:"outstanding_amount"`
+	Qty_shipped_not_invoiced types.Decimal                 `db:"qty_shipped_not_invoiced"`
+	Shipped_not_invoiced     types.Decimal                 `db:"shipped_not_invoiced"`
+	Quantity_shipped         types.Decimal                 `db:"quantity_shipped"`
+	Quantity_invoiced        types.Decimal                 `db:"quantity_invoiced"`
+	Profit_percent           types.Decimal                 `db:"profit_percent"`
+	Bill_to_customer_no      types.Code                    `db:"bill_to_customer_no"`
+	Inv_discount_amount      types.Decimal                 `db:"inv_discount_amount"`
+	Gen_bus_posting_group    types.Code                    `db:"gen_bus_posting_group"`
+	Gen_prod_posting_group   types.Code                    `db:"gen_prod_posting_group"`
+	Tax_calculation_type     SalesLineTax_calculation_type `db:"tax_calculation_type"`
+	Tax_area_code            types.Code                    `db:"tax_area_code"`
+	Tax_liable               bool                          `db:"tax_liable"`
+	Tax_group_code           types.Code                    `db:"tax_group_code"`
+	Tax_bus_posting_group    types.Code                    `db:"tax_bus_posting_group"`
+	Tax_prod_posting_group   types.Code                    `db:"tax_prod_posting_group"`
+	Currency_code            types.Code                    `db:"currency_code"`
+	Outstanding_amount_lcy   types.Decimal                 `db:"outstanding_amount_lcy"`
+	Shipped_not_invoiced_lcy types.Decimal                 `db:"shipped_not_invoiced_lcy"`
+	Tax_base_amount          types.Decimal                 `db:"tax_base_amount"`
+	Unit_cost                types.Decimal                 `db:"unit_cost"`
+	Variant_code             types.Code                    `db:"variant_code"`
+	Qty_per_unit_of_measure  types.Decimal                 `db:"qty_per_unit_of_measure"`
+	Unit_of_measure_code     types.Code                    `db:"unit_of_measure_code"`
+	Quantity_base            types.Decimal                 `db:"quantity_base"`
+	Outstanding_qty_base     types.Decimal                 `db:"outstanding_qty_base"`
+	Qty_to_invoice_base      types.Decimal                 `db:"qty_to_invoice_base"`
+	Qty_to_ship_base         types.Decimal                 `db:"qty_to_ship_base"`
+	Qty_shpd_not_invd_base   types.Decimal                 `db:"qty_shpd_not_invd_base"`
+	Qty_shipped_base         types.Decimal                 `db:"qty_shipped_base"`
+	Qty_invoiced_base        types.Decimal                 `db:"qty_invoiced_base"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -309,117 +333,141 @@ var SalesLine_Tax_calculation_type = struct {
 // SalesLine_FieldNo holds the field numbers of Sales_Line (FieldNo):
 // SalesLine_FieldNo.Document_type is 1
 var SalesLine_FieldNo = struct {
-	Document_type           int
-	Sell_to_customer_no     int
-	Document_no             int
-	Line_no                 int
-	Type                    int
-	No                      int
-	Location_code           int
-	Posting_group           int
-	Quantity_disc_code      int
-	Shipment_date           int
-	Description             int
-	Description_2           int
-	Unit_of_measure         int
-	Quantity                int
-	Outstanding_quantity    int
-	Unit_price              int
-	Unit_cost_lcy           int
-	Tax_percent             int
-	Quantity_disc_percent   int
-	Line_discount_percent   int
-	Line_discount_amount    int
-	Amount                  int
-	Amount_including_tax    int
-	Allow_invoice_disc      int
-	Gross_weight            int
-	Net_weight              int
-	Units_per_parcel        int
-	Unit_volume             int
-	Department_code         int
-	Project_code            int
-	Price_group_code        int
-	Allow_quantity_disc     int
-	Work_type_code          int
-	Cust_item_disc_percent  int
-	Outstanding_amount      int
-	Profit_percent          int
-	Bill_to_customer_no     int
-	Inv_discount_amount     int
-	Gen_bus_posting_group   int
-	Gen_prod_posting_group  int
-	Tax_calculation_type    int
-	Tax_area_code           int
-	Tax_liable              int
-	Tax_group_code          int
-	Tax_bus_posting_group   int
-	Tax_prod_posting_group  int
-	Currency_code           int
-	Outstanding_amount_lcy  int
-	Tax_base_amount         int
-	Unit_cost               int
-	Variant_code            int
-	Qty_per_unit_of_measure int
-	Unit_of_measure_code    int
-	Quantity_base           int
-	Outstanding_qty_base    int
+	Document_type            int
+	Sell_to_customer_no      int
+	Document_no              int
+	Line_no                  int
+	Type                     int
+	No                       int
+	Location_code            int
+	Posting_group            int
+	Quantity_disc_code       int
+	Shipment_date            int
+	Description              int
+	Description_2            int
+	Unit_of_measure          int
+	Quantity                 int
+	Outstanding_quantity     int
+	Qty_to_invoice           int
+	Qty_to_ship              int
+	Unit_price               int
+	Unit_cost_lcy            int
+	Tax_percent              int
+	Quantity_disc_percent    int
+	Line_discount_percent    int
+	Line_discount_amount     int
+	Amount                   int
+	Amount_including_tax     int
+	Allow_invoice_disc       int
+	Gross_weight             int
+	Net_weight               int
+	Units_per_parcel         int
+	Unit_volume              int
+	Department_code          int
+	Project_code             int
+	Price_group_code         int
+	Allow_quantity_disc      int
+	Work_type_code           int
+	Cust_item_disc_percent   int
+	Outstanding_amount       int
+	Qty_shipped_not_invoiced int
+	Shipped_not_invoiced     int
+	Quantity_shipped         int
+	Quantity_invoiced        int
+	Profit_percent           int
+	Bill_to_customer_no      int
+	Inv_discount_amount      int
+	Gen_bus_posting_group    int
+	Gen_prod_posting_group   int
+	Tax_calculation_type     int
+	Tax_area_code            int
+	Tax_liable               int
+	Tax_group_code           int
+	Tax_bus_posting_group    int
+	Tax_prod_posting_group   int
+	Currency_code            int
+	Outstanding_amount_lcy   int
+	Shipped_not_invoiced_lcy int
+	Tax_base_amount          int
+	Unit_cost                int
+	Variant_code             int
+	Qty_per_unit_of_measure  int
+	Unit_of_measure_code     int
+	Quantity_base            int
+	Outstanding_qty_base     int
+	Qty_to_invoice_base      int
+	Qty_to_ship_base         int
+	Qty_shpd_not_invd_base   int
+	Qty_shipped_base         int
+	Qty_invoiced_base        int
 }{
-	Document_type:           1,
-	Sell_to_customer_no:     2,
-	Document_no:             3,
-	Line_no:                 4,
-	Type:                    5,
-	No:                      6,
-	Location_code:           7,
-	Posting_group:           8,
-	Quantity_disc_code:      9,
-	Shipment_date:           10,
-	Description:             11,
-	Description_2:           12,
-	Unit_of_measure:         13,
-	Quantity:                15,
-	Outstanding_quantity:    16,
-	Unit_price:              22,
-	Unit_cost_lcy:           23,
-	Tax_percent:             25,
-	Quantity_disc_percent:   26,
-	Line_discount_percent:   27,
-	Line_discount_amount:    28,
-	Amount:                  29,
-	Amount_including_tax:    30,
-	Allow_invoice_disc:      32,
-	Gross_weight:            34,
-	Net_weight:              35,
-	Units_per_parcel:        36,
-	Unit_volume:             37,
-	Department_code:         40,
-	Project_code:            41,
-	Price_group_code:        42,
-	Allow_quantity_disc:     43,
-	Work_type_code:          52,
-	Cust_item_disc_percent:  55,
-	Outstanding_amount:      57,
-	Profit_percent:          67,
-	Bill_to_customer_no:     68,
-	Inv_discount_amount:     69,
-	Gen_bus_posting_group:   74,
-	Gen_prod_posting_group:  75,
-	Tax_calculation_type:    77,
-	Tax_area_code:           85,
-	Tax_liable:              86,
-	Tax_group_code:          87,
-	Tax_bus_posting_group:   89,
-	Tax_prod_posting_group:  90,
-	Currency_code:           91,
-	Outstanding_amount_lcy:  92,
-	Tax_base_amount:         99,
-	Unit_cost:               100,
-	Variant_code:            5402,
-	Qty_per_unit_of_measure: 5404,
-	Unit_of_measure_code:    5407,
-	Quantity_base:           5415,
-	Outstanding_qty_base:    5416,
+	Document_type:            1,
+	Sell_to_customer_no:      2,
+	Document_no:              3,
+	Line_no:                  4,
+	Type:                     5,
+	No:                       6,
+	Location_code:            7,
+	Posting_group:            8,
+	Quantity_disc_code:       9,
+	Shipment_date:            10,
+	Description:              11,
+	Description_2:            12,
+	Unit_of_measure:          13,
+	Quantity:                 15,
+	Outstanding_quantity:     16,
+	Qty_to_invoice:           17,
+	Qty_to_ship:              18,
+	Unit_price:               22,
+	Unit_cost_lcy:            23,
+	Tax_percent:              25,
+	Quantity_disc_percent:    26,
+	Line_discount_percent:    27,
+	Line_discount_amount:     28,
+	Amount:                   29,
+	Amount_including_tax:     30,
+	Allow_invoice_disc:       32,
+	Gross_weight:             34,
+	Net_weight:               35,
+	Units_per_parcel:         36,
+	Unit_volume:              37,
+	Department_code:          40,
+	Project_code:             41,
+	Price_group_code:         42,
+	Allow_quantity_disc:      43,
+	Work_type_code:           52,
+	Cust_item_disc_percent:   55,
+	Outstanding_amount:       57,
+	Qty_shipped_not_invoiced: 58,
+	Shipped_not_invoiced:     59,
+	Quantity_shipped:         60,
+	Quantity_invoiced:        61,
+	Profit_percent:           67,
+	Bill_to_customer_no:      68,
+	Inv_discount_amount:      69,
+	Gen_bus_posting_group:    74,
+	Gen_prod_posting_group:   75,
+	Tax_calculation_type:     77,
+	Tax_area_code:            85,
+	Tax_liable:               86,
+	Tax_group_code:           87,
+	Tax_bus_posting_group:    89,
+	Tax_prod_posting_group:   90,
+	Currency_code:            91,
+	Outstanding_amount_lcy:   92,
+	Shipped_not_invoiced_lcy: 93,
+	Tax_base_amount:          99,
+	Unit_cost:                100,
+	Variant_code:             5402,
+	Qty_per_unit_of_measure:  5404,
+	Unit_of_measure_code:     5407,
+	Quantity_base:            5415,
+	Outstanding_qty_base:     5416,
+	Qty_to_invoice_base:      5417,
+	Qty_to_ship_base:         5418,
+	Qty_shpd_not_invd_base:   5458,
+	Qty_shipped_base:         5460,
+	Qty_invoiced_base:        5461,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -455,6 +503,10 @@ func (t *SalesLine) FieldNo(fieldName string) int {
 		return 15
 	case "outstanding_quantity":
 		return 16
+	case "qty_to_invoice":
+		return 17
+	case "qty_to_ship":
+		return 18
 	case "unit_price":
 		return 22
 	case "unit_cost_lcy":
@@ -495,6 +547,14 @@ func (t *SalesLine) FieldNo(fieldName string) int {
 		return 55
 	case "outstanding_amount":
 		return 57
+	case "qty_shipped_not_invoiced":
+		return 58
+	case "shipped_not_invoiced":
+		return 59
+	case "quantity_shipped":
+		return 60
+	case "quantity_invoiced":
+		return 61
 	case "profit_percent":
 		return 67
 	case "bill_to_customer_no":
@@ -521,6 +581,8 @@ func (t *SalesLine) FieldNo(fieldName string) int {
 		return 91
 	case "outstanding_amount_lcy":
 		return 92
+	case "shipped_not_invoiced_lcy":
+		return 93
 	case "tax_base_amount":
 		return 99
 	case "unit_cost":
@@ -535,6 +597,16 @@ func (t *SalesLine) FieldNo(fieldName string) int {
 		return 5415
 	case "outstanding_qty_base":
 		return 5416
+	case "qty_to_invoice_base":
+		return 5417
+	case "qty_to_ship_base":
+		return 5418
+	case "qty_shpd_not_invd_base":
+		return 5458
+	case "qty_shipped_base":
+		return 5460
+	case "qty_invoiced_base":
+		return 5461
 	}
 	return 0
 }
@@ -572,6 +644,10 @@ func (t *SalesLine) FieldName(fieldNo int) string {
 		return "quantity"
 	case 16:
 		return "outstanding_quantity"
+	case 17:
+		return "qty_to_invoice"
+	case 18:
+		return "qty_to_ship"
 	case 22:
 		return "unit_price"
 	case 23:
@@ -612,6 +688,14 @@ func (t *SalesLine) FieldName(fieldNo int) string {
 		return "cust_item_disc_percent"
 	case 57:
 		return "outstanding_amount"
+	case 58:
+		return "qty_shipped_not_invoiced"
+	case 59:
+		return "shipped_not_invoiced"
+	case 60:
+		return "quantity_shipped"
+	case 61:
+		return "quantity_invoiced"
 	case 67:
 		return "profit_percent"
 	case 68:
@@ -638,6 +722,8 @@ func (t *SalesLine) FieldName(fieldNo int) string {
 		return "currency_code"
 	case 92:
 		return "outstanding_amount_lcy"
+	case 93:
+		return "shipped_not_invoiced_lcy"
 	case 99:
 		return "tax_base_amount"
 	case 100:
@@ -652,6 +738,16 @@ func (t *SalesLine) FieldName(fieldNo int) string {
 		return "quantity_base"
 	case 5416:
 		return "outstanding_qty_base"
+	case 5417:
+		return "qty_to_invoice_base"
+	case 5418:
+		return "qty_to_ship_base"
+	case 5458:
+		return "qty_shpd_not_invd_base"
+	case 5460:
+		return "qty_shipped_base"
+	case 5461:
+		return "qty_invoiced_base"
 	}
 	return ""
 }
@@ -741,65 +837,77 @@ func (t *SalesLine) DeleteOrError(runTrigger bool) error {
 
 // Triggers of Sales_Line: a business logic type implements the ones it needs
 type (
-	SalesLineOnInsert                           interface{ OnInsert(rec *SalesLine) error }
-	SalesLineOnModify                           interface{ OnModify(rec *SalesLine) error }
-	SalesLineOnDelete                           interface{ OnDelete(rec *SalesLine) error }
-	SalesLineOnRename                           interface{ OnRename(rec *SalesLine) error }
-	SalesLineOnValidate_Document_type           interface{ OnValidate_Document_type(rec *SalesLine) error }
-	SalesLineOnValidate_Sell_to_customer_no     interface{ OnValidate_Sell_to_customer_no(rec *SalesLine) error }
-	SalesLineOnValidate_Document_no             interface{ OnValidate_Document_no(rec *SalesLine) error }
-	SalesLineOnValidate_Line_no                 interface{ OnValidate_Line_no(rec *SalesLine) error }
-	SalesLineOnValidate_Type                    interface{ OnValidate_Type(rec *SalesLine) error }
-	SalesLineOnValidate_No                      interface{ OnValidate_No(rec *SalesLine) error }
-	SalesLineOnValidate_Location_code           interface{ OnValidate_Location_code(rec *SalesLine) error }
-	SalesLineOnValidate_Posting_group           interface{ OnValidate_Posting_group(rec *SalesLine) error }
-	SalesLineOnValidate_Quantity_disc_code      interface{ OnValidate_Quantity_disc_code(rec *SalesLine) error }
-	SalesLineOnValidate_Shipment_date           interface{ OnValidate_Shipment_date(rec *SalesLine) error }
-	SalesLineOnValidate_Description             interface{ OnValidate_Description(rec *SalesLine) error }
-	SalesLineOnValidate_Description_2           interface{ OnValidate_Description_2(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_of_measure         interface{ OnValidate_Unit_of_measure(rec *SalesLine) error }
-	SalesLineOnValidate_Quantity                interface{ OnValidate_Quantity(rec *SalesLine) error }
-	SalesLineOnValidate_Outstanding_quantity    interface{ OnValidate_Outstanding_quantity(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_price              interface{ OnValidate_Unit_price(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_cost_lcy           interface{ OnValidate_Unit_cost_lcy(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_percent             interface{ OnValidate_Tax_percent(rec *SalesLine) error }
-	SalesLineOnValidate_Quantity_disc_percent   interface{ OnValidate_Quantity_disc_percent(rec *SalesLine) error }
-	SalesLineOnValidate_Line_discount_percent   interface{ OnValidate_Line_discount_percent(rec *SalesLine) error }
-	SalesLineOnValidate_Line_discount_amount    interface{ OnValidate_Line_discount_amount(rec *SalesLine) error }
-	SalesLineOnValidate_Amount                  interface{ OnValidate_Amount(rec *SalesLine) error }
-	SalesLineOnValidate_Amount_including_tax    interface{ OnValidate_Amount_including_tax(rec *SalesLine) error }
-	SalesLineOnValidate_Allow_invoice_disc      interface{ OnValidate_Allow_invoice_disc(rec *SalesLine) error }
-	SalesLineOnValidate_Gross_weight            interface{ OnValidate_Gross_weight(rec *SalesLine) error }
-	SalesLineOnValidate_Net_weight              interface{ OnValidate_Net_weight(rec *SalesLine) error }
-	SalesLineOnValidate_Units_per_parcel        interface{ OnValidate_Units_per_parcel(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_volume             interface{ OnValidate_Unit_volume(rec *SalesLine) error }
-	SalesLineOnValidate_Department_code         interface{ OnValidate_Department_code(rec *SalesLine) error }
-	SalesLineOnValidate_Project_code            interface{ OnValidate_Project_code(rec *SalesLine) error }
-	SalesLineOnValidate_Price_group_code        interface{ OnValidate_Price_group_code(rec *SalesLine) error }
-	SalesLineOnValidate_Allow_quantity_disc     interface{ OnValidate_Allow_quantity_disc(rec *SalesLine) error }
-	SalesLineOnValidate_Work_type_code          interface{ OnValidate_Work_type_code(rec *SalesLine) error }
-	SalesLineOnValidate_Cust_item_disc_percent  interface{ OnValidate_Cust_item_disc_percent(rec *SalesLine) error }
-	SalesLineOnValidate_Outstanding_amount      interface{ OnValidate_Outstanding_amount(rec *SalesLine) error }
-	SalesLineOnValidate_Profit_percent          interface{ OnValidate_Profit_percent(rec *SalesLine) error }
-	SalesLineOnValidate_Bill_to_customer_no     interface{ OnValidate_Bill_to_customer_no(rec *SalesLine) error }
-	SalesLineOnValidate_Inv_discount_amount     interface{ OnValidate_Inv_discount_amount(rec *SalesLine) error }
-	SalesLineOnValidate_Gen_bus_posting_group   interface{ OnValidate_Gen_bus_posting_group(rec *SalesLine) error }
-	SalesLineOnValidate_Gen_prod_posting_group  interface{ OnValidate_Gen_prod_posting_group(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_calculation_type    interface{ OnValidate_Tax_calculation_type(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_area_code           interface{ OnValidate_Tax_area_code(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_liable              interface{ OnValidate_Tax_liable(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_group_code          interface{ OnValidate_Tax_group_code(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_bus_posting_group   interface{ OnValidate_Tax_bus_posting_group(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_prod_posting_group  interface{ OnValidate_Tax_prod_posting_group(rec *SalesLine) error }
-	SalesLineOnValidate_Currency_code           interface{ OnValidate_Currency_code(rec *SalesLine) error }
-	SalesLineOnValidate_Outstanding_amount_lcy  interface{ OnValidate_Outstanding_amount_lcy(rec *SalesLine) error }
-	SalesLineOnValidate_Tax_base_amount         interface{ OnValidate_Tax_base_amount(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_cost               interface{ OnValidate_Unit_cost(rec *SalesLine) error }
-	SalesLineOnValidate_Variant_code            interface{ OnValidate_Variant_code(rec *SalesLine) error }
-	SalesLineOnValidate_Qty_per_unit_of_measure interface{ OnValidate_Qty_per_unit_of_measure(rec *SalesLine) error }
-	SalesLineOnValidate_Unit_of_measure_code    interface{ OnValidate_Unit_of_measure_code(rec *SalesLine) error }
-	SalesLineOnValidate_Quantity_base           interface{ OnValidate_Quantity_base(rec *SalesLine) error }
-	SalesLineOnValidate_Outstanding_qty_base    interface{ OnValidate_Outstanding_qty_base(rec *SalesLine) error }
+	SalesLineOnInsert                            interface{ OnInsert(rec *SalesLine) error }
+	SalesLineOnModify                            interface{ OnModify(rec *SalesLine) error }
+	SalesLineOnDelete                            interface{ OnDelete(rec *SalesLine) error }
+	SalesLineOnRename                            interface{ OnRename(rec *SalesLine) error }
+	SalesLineOnValidate_Document_type            interface{ OnValidate_Document_type(rec *SalesLine) error }
+	SalesLineOnValidate_Sell_to_customer_no      interface{ OnValidate_Sell_to_customer_no(rec *SalesLine) error }
+	SalesLineOnValidate_Document_no              interface{ OnValidate_Document_no(rec *SalesLine) error }
+	SalesLineOnValidate_Line_no                  interface{ OnValidate_Line_no(rec *SalesLine) error }
+	SalesLineOnValidate_Type                     interface{ OnValidate_Type(rec *SalesLine) error }
+	SalesLineOnValidate_No                       interface{ OnValidate_No(rec *SalesLine) error }
+	SalesLineOnValidate_Location_code            interface{ OnValidate_Location_code(rec *SalesLine) error }
+	SalesLineOnValidate_Posting_group            interface{ OnValidate_Posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity_disc_code       interface{ OnValidate_Quantity_disc_code(rec *SalesLine) error }
+	SalesLineOnValidate_Shipment_date            interface{ OnValidate_Shipment_date(rec *SalesLine) error }
+	SalesLineOnValidate_Description              interface{ OnValidate_Description(rec *SalesLine) error }
+	SalesLineOnValidate_Description_2            interface{ OnValidate_Description_2(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_of_measure          interface{ OnValidate_Unit_of_measure(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity                 interface{ OnValidate_Quantity(rec *SalesLine) error }
+	SalesLineOnValidate_Outstanding_quantity     interface{ OnValidate_Outstanding_quantity(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_to_invoice           interface{ OnValidate_Qty_to_invoice(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_to_ship              interface{ OnValidate_Qty_to_ship(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_price               interface{ OnValidate_Unit_price(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_cost_lcy            interface{ OnValidate_Unit_cost_lcy(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_percent              interface{ OnValidate_Tax_percent(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity_disc_percent    interface{ OnValidate_Quantity_disc_percent(rec *SalesLine) error }
+	SalesLineOnValidate_Line_discount_percent    interface{ OnValidate_Line_discount_percent(rec *SalesLine) error }
+	SalesLineOnValidate_Line_discount_amount     interface{ OnValidate_Line_discount_amount(rec *SalesLine) error }
+	SalesLineOnValidate_Amount                   interface{ OnValidate_Amount(rec *SalesLine) error }
+	SalesLineOnValidate_Amount_including_tax     interface{ OnValidate_Amount_including_tax(rec *SalesLine) error }
+	SalesLineOnValidate_Allow_invoice_disc       interface{ OnValidate_Allow_invoice_disc(rec *SalesLine) error }
+	SalesLineOnValidate_Gross_weight             interface{ OnValidate_Gross_weight(rec *SalesLine) error }
+	SalesLineOnValidate_Net_weight               interface{ OnValidate_Net_weight(rec *SalesLine) error }
+	SalesLineOnValidate_Units_per_parcel         interface{ OnValidate_Units_per_parcel(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_volume              interface{ OnValidate_Unit_volume(rec *SalesLine) error }
+	SalesLineOnValidate_Department_code          interface{ OnValidate_Department_code(rec *SalesLine) error }
+	SalesLineOnValidate_Project_code             interface{ OnValidate_Project_code(rec *SalesLine) error }
+	SalesLineOnValidate_Price_group_code         interface{ OnValidate_Price_group_code(rec *SalesLine) error }
+	SalesLineOnValidate_Allow_quantity_disc      interface{ OnValidate_Allow_quantity_disc(rec *SalesLine) error }
+	SalesLineOnValidate_Work_type_code           interface{ OnValidate_Work_type_code(rec *SalesLine) error }
+	SalesLineOnValidate_Cust_item_disc_percent   interface{ OnValidate_Cust_item_disc_percent(rec *SalesLine) error }
+	SalesLineOnValidate_Outstanding_amount       interface{ OnValidate_Outstanding_amount(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_shipped_not_invoiced interface{ OnValidate_Qty_shipped_not_invoiced(rec *SalesLine) error }
+	SalesLineOnValidate_Shipped_not_invoiced     interface{ OnValidate_Shipped_not_invoiced(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity_shipped         interface{ OnValidate_Quantity_shipped(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity_invoiced        interface{ OnValidate_Quantity_invoiced(rec *SalesLine) error }
+	SalesLineOnValidate_Profit_percent           interface{ OnValidate_Profit_percent(rec *SalesLine) error }
+	SalesLineOnValidate_Bill_to_customer_no      interface{ OnValidate_Bill_to_customer_no(rec *SalesLine) error }
+	SalesLineOnValidate_Inv_discount_amount      interface{ OnValidate_Inv_discount_amount(rec *SalesLine) error }
+	SalesLineOnValidate_Gen_bus_posting_group    interface{ OnValidate_Gen_bus_posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Gen_prod_posting_group   interface{ OnValidate_Gen_prod_posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_calculation_type     interface{ OnValidate_Tax_calculation_type(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_area_code            interface{ OnValidate_Tax_area_code(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_liable               interface{ OnValidate_Tax_liable(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_group_code           interface{ OnValidate_Tax_group_code(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_bus_posting_group    interface{ OnValidate_Tax_bus_posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_prod_posting_group   interface{ OnValidate_Tax_prod_posting_group(rec *SalesLine) error }
+	SalesLineOnValidate_Currency_code            interface{ OnValidate_Currency_code(rec *SalesLine) error }
+	SalesLineOnValidate_Outstanding_amount_lcy   interface{ OnValidate_Outstanding_amount_lcy(rec *SalesLine) error }
+	SalesLineOnValidate_Shipped_not_invoiced_lcy interface{ OnValidate_Shipped_not_invoiced_lcy(rec *SalesLine) error }
+	SalesLineOnValidate_Tax_base_amount          interface{ OnValidate_Tax_base_amount(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_cost                interface{ OnValidate_Unit_cost(rec *SalesLine) error }
+	SalesLineOnValidate_Variant_code             interface{ OnValidate_Variant_code(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_per_unit_of_measure  interface{ OnValidate_Qty_per_unit_of_measure(rec *SalesLine) error }
+	SalesLineOnValidate_Unit_of_measure_code     interface{ OnValidate_Unit_of_measure_code(rec *SalesLine) error }
+	SalesLineOnValidate_Quantity_base            interface{ OnValidate_Quantity_base(rec *SalesLine) error }
+	SalesLineOnValidate_Outstanding_qty_base     interface{ OnValidate_Outstanding_qty_base(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_to_invoice_base      interface{ OnValidate_Qty_to_invoice_base(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_to_ship_base         interface{ OnValidate_Qty_to_ship_base(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_shpd_not_invd_base   interface{ OnValidate_Qty_shpd_not_invd_base(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_shipped_base         interface{ OnValidate_Qty_shipped_base(rec *SalesLine) error }
+	SalesLineOnValidate_Qty_invoiced_base        interface{ OnValidate_Qty_invoiced_base(rec *SalesLine) error }
 )
 
 // salesLineLogic is the registered business logic of Sales_Line, in
@@ -859,6 +967,10 @@ func salesLineTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SalesLineOnValidate_Quantity)
 	case "OnValidate_Outstanding_quantity":
 		_, ok = logic.(SalesLineOnValidate_Outstanding_quantity)
+	case "OnValidate_Qty_to_invoice":
+		_, ok = logic.(SalesLineOnValidate_Qty_to_invoice)
+	case "OnValidate_Qty_to_ship":
+		_, ok = logic.(SalesLineOnValidate_Qty_to_ship)
 	case "OnValidate_Unit_price":
 		_, ok = logic.(SalesLineOnValidate_Unit_price)
 	case "OnValidate_Unit_cost_lcy":
@@ -899,6 +1011,14 @@ func salesLineTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SalesLineOnValidate_Cust_item_disc_percent)
 	case "OnValidate_Outstanding_amount":
 		_, ok = logic.(SalesLineOnValidate_Outstanding_amount)
+	case "OnValidate_Qty_shipped_not_invoiced":
+		_, ok = logic.(SalesLineOnValidate_Qty_shipped_not_invoiced)
+	case "OnValidate_Shipped_not_invoiced":
+		_, ok = logic.(SalesLineOnValidate_Shipped_not_invoiced)
+	case "OnValidate_Quantity_shipped":
+		_, ok = logic.(SalesLineOnValidate_Quantity_shipped)
+	case "OnValidate_Quantity_invoiced":
+		_, ok = logic.(SalesLineOnValidate_Quantity_invoiced)
 	case "OnValidate_Profit_percent":
 		_, ok = logic.(SalesLineOnValidate_Profit_percent)
 	case "OnValidate_Bill_to_customer_no":
@@ -925,6 +1045,8 @@ func salesLineTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SalesLineOnValidate_Currency_code)
 	case "OnValidate_Outstanding_amount_lcy":
 		_, ok = logic.(SalesLineOnValidate_Outstanding_amount_lcy)
+	case "OnValidate_Shipped_not_invoiced_lcy":
+		_, ok = logic.(SalesLineOnValidate_Shipped_not_invoiced_lcy)
 	case "OnValidate_Tax_base_amount":
 		_, ok = logic.(SalesLineOnValidate_Tax_base_amount)
 	case "OnValidate_Unit_cost":
@@ -939,6 +1061,16 @@ func salesLineTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(SalesLineOnValidate_Quantity_base)
 	case "OnValidate_Outstanding_qty_base":
 		_, ok = logic.(SalesLineOnValidate_Outstanding_qty_base)
+	case "OnValidate_Qty_to_invoice_base":
+		_, ok = logic.(SalesLineOnValidate_Qty_to_invoice_base)
+	case "OnValidate_Qty_to_ship_base":
+		_, ok = logic.(SalesLineOnValidate_Qty_to_ship_base)
+	case "OnValidate_Qty_shpd_not_invd_base":
+		_, ok = logic.(SalesLineOnValidate_Qty_shpd_not_invd_base)
+	case "OnValidate_Qty_shipped_base":
+		_, ok = logic.(SalesLineOnValidate_Qty_shipped_base)
+	case "OnValidate_Qty_invoiced_base":
+		_, ok = logic.(SalesLineOnValidate_Qty_invoiced_base)
 	default:
 		return false, false
 	}
@@ -1127,6 +1259,8 @@ func GetSalesLineTableSchema() string {
 		unit_of_measure TEXT(10),
 		quantity TEXT,
 		outstanding_quantity TEXT,
+		qty_to_invoice TEXT,
+		qty_to_ship TEXT,
 		unit_price TEXT,
 		unit_cost_lcy TEXT,
 		tax_percent TEXT,
@@ -1147,6 +1281,10 @@ func GetSalesLineTableSchema() string {
 		work_type_code TEXT(10),
 		cust_item_disc_percent TEXT,
 		outstanding_amount TEXT,
+		qty_shipped_not_invoiced TEXT,
+		shipped_not_invoiced TEXT,
+		quantity_shipped TEXT,
+		quantity_invoiced TEXT,
 		profit_percent TEXT,
 		bill_to_customer_no TEXT(20),
 		inv_discount_amount TEXT,
@@ -1160,6 +1298,7 @@ func GetSalesLineTableSchema() string {
 		tax_prod_posting_group TEXT(10),
 		currency_code TEXT(10),
 		outstanding_amount_lcy TEXT,
+		shipped_not_invoiced_lcy TEXT,
 		tax_base_amount TEXT,
 		unit_cost TEXT,
 		variant_code TEXT(10),
@@ -1167,6 +1306,11 @@ func GetSalesLineTableSchema() string {
 		unit_of_measure_code TEXT(10),
 		quantity_base TEXT,
 		outstanding_qty_base TEXT,
+		qty_to_invoice_base TEXT,
+		qty_to_ship_base TEXT,
+		qty_shpd_not_invd_base TEXT,
+		qty_shipped_base TEXT,
+		qty_invoiced_base TEXT,
 		PRIMARY KEY (document_type, document_no, line_no)
 	`
 }
@@ -1189,6 +1333,8 @@ func GetSalesLinePostgresTableSchema() string {
 		unit_of_measure VARCHAR(10),
 		quantity NUMERIC,
 		outstanding_quantity NUMERIC,
+		qty_to_invoice NUMERIC,
+		qty_to_ship NUMERIC,
 		unit_price NUMERIC,
 		unit_cost_lcy NUMERIC,
 		tax_percent NUMERIC,
@@ -1209,6 +1355,10 @@ func GetSalesLinePostgresTableSchema() string {
 		work_type_code VARCHAR(10),
 		cust_item_disc_percent NUMERIC,
 		outstanding_amount NUMERIC,
+		qty_shipped_not_invoiced NUMERIC,
+		shipped_not_invoiced NUMERIC,
+		quantity_shipped NUMERIC,
+		quantity_invoiced NUMERIC,
 		profit_percent NUMERIC,
 		bill_to_customer_no VARCHAR(20),
 		inv_discount_amount NUMERIC,
@@ -1222,6 +1372,7 @@ func GetSalesLinePostgresTableSchema() string {
 		tax_prod_posting_group VARCHAR(10),
 		currency_code VARCHAR(10),
 		outstanding_amount_lcy NUMERIC,
+		shipped_not_invoiced_lcy NUMERIC,
 		tax_base_amount NUMERIC,
 		unit_cost NUMERIC,
 		variant_code VARCHAR(10),
@@ -1229,6 +1380,11 @@ func GetSalesLinePostgresTableSchema() string {
 		unit_of_measure_code VARCHAR(10),
 		quantity_base NUMERIC,
 		outstanding_qty_base NUMERIC,
+		qty_to_invoice_base NUMERIC,
+		qty_to_ship_base NUMERIC,
+		qty_shpd_not_invd_base NUMERIC,
+		qty_shipped_base NUMERIC,
+		qty_invoiced_base NUMERIC,
 		PRIMARY KEY (document_type, document_no, line_no)
 	`
 }
@@ -1382,6 +1538,8 @@ func (t *SalesLine) StoreOldValues() {
 	t.oldValues["unit_of_measure"] = t.Unit_of_measure
 	t.oldValues["quantity"] = t.Quantity
 	t.oldValues["outstanding_quantity"] = t.Outstanding_quantity
+	t.oldValues["qty_to_invoice"] = t.Qty_to_invoice
+	t.oldValues["qty_to_ship"] = t.Qty_to_ship
 	t.oldValues["unit_price"] = t.Unit_price
 	t.oldValues["unit_cost_lcy"] = t.Unit_cost_lcy
 	t.oldValues["tax_percent"] = t.Tax_percent
@@ -1402,6 +1560,10 @@ func (t *SalesLine) StoreOldValues() {
 	t.oldValues["work_type_code"] = t.Work_type_code
 	t.oldValues["cust_item_disc_percent"] = t.Cust_item_disc_percent
 	t.oldValues["outstanding_amount"] = t.Outstanding_amount
+	t.oldValues["qty_shipped_not_invoiced"] = t.Qty_shipped_not_invoiced
+	t.oldValues["shipped_not_invoiced"] = t.Shipped_not_invoiced
+	t.oldValues["quantity_shipped"] = t.Quantity_shipped
+	t.oldValues["quantity_invoiced"] = t.Quantity_invoiced
 	t.oldValues["profit_percent"] = t.Profit_percent
 	t.oldValues["bill_to_customer_no"] = t.Bill_to_customer_no
 	t.oldValues["inv_discount_amount"] = t.Inv_discount_amount
@@ -1415,6 +1577,7 @@ func (t *SalesLine) StoreOldValues() {
 	t.oldValues["tax_prod_posting_group"] = t.Tax_prod_posting_group
 	t.oldValues["currency_code"] = t.Currency_code
 	t.oldValues["outstanding_amount_lcy"] = t.Outstanding_amount_lcy
+	t.oldValues["shipped_not_invoiced_lcy"] = t.Shipped_not_invoiced_lcy
 	t.oldValues["tax_base_amount"] = t.Tax_base_amount
 	t.oldValues["unit_cost"] = t.Unit_cost
 	t.oldValues["variant_code"] = t.Variant_code
@@ -1422,6 +1585,11 @@ func (t *SalesLine) StoreOldValues() {
 	t.oldValues["unit_of_measure_code"] = t.Unit_of_measure_code
 	t.oldValues["quantity_base"] = t.Quantity_base
 	t.oldValues["outstanding_qty_base"] = t.Outstanding_qty_base
+	t.oldValues["qty_to_invoice_base"] = t.Qty_to_invoice_base
+	t.oldValues["qty_to_ship_base"] = t.Qty_to_ship_base
+	t.oldValues["qty_shpd_not_invd_base"] = t.Qty_shpd_not_invd_base
+	t.oldValues["qty_shipped_base"] = t.Qty_shipped_base
+	t.oldValues["qty_invoiced_base"] = t.Qty_invoiced_base
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -1480,6 +1648,12 @@ func (t *SalesLine) XRec() *SalesLine {
 	}
 	if v, ok := t.oldValues["outstanding_quantity"].(types.Decimal); ok {
 		x.Outstanding_quantity = v
+	}
+	if v, ok := t.oldValues["qty_to_invoice"].(types.Decimal); ok {
+		x.Qty_to_invoice = v
+	}
+	if v, ok := t.oldValues["qty_to_ship"].(types.Decimal); ok {
+		x.Qty_to_ship = v
 	}
 	if v, ok := t.oldValues["unit_price"].(types.Decimal); ok {
 		x.Unit_price = v
@@ -1541,6 +1715,18 @@ func (t *SalesLine) XRec() *SalesLine {
 	if v, ok := t.oldValues["outstanding_amount"].(types.Decimal); ok {
 		x.Outstanding_amount = v
 	}
+	if v, ok := t.oldValues["qty_shipped_not_invoiced"].(types.Decimal); ok {
+		x.Qty_shipped_not_invoiced = v
+	}
+	if v, ok := t.oldValues["shipped_not_invoiced"].(types.Decimal); ok {
+		x.Shipped_not_invoiced = v
+	}
+	if v, ok := t.oldValues["quantity_shipped"].(types.Decimal); ok {
+		x.Quantity_shipped = v
+	}
+	if v, ok := t.oldValues["quantity_invoiced"].(types.Decimal); ok {
+		x.Quantity_invoiced = v
+	}
 	if v, ok := t.oldValues["profit_percent"].(types.Decimal); ok {
 		x.Profit_percent = v
 	}
@@ -1580,6 +1766,9 @@ func (t *SalesLine) XRec() *SalesLine {
 	if v, ok := t.oldValues["outstanding_amount_lcy"].(types.Decimal); ok {
 		x.Outstanding_amount_lcy = v
 	}
+	if v, ok := t.oldValues["shipped_not_invoiced_lcy"].(types.Decimal); ok {
+		x.Shipped_not_invoiced_lcy = v
+	}
 	if v, ok := t.oldValues["tax_base_amount"].(types.Decimal); ok {
 		x.Tax_base_amount = v
 	}
@@ -1600,6 +1789,21 @@ func (t *SalesLine) XRec() *SalesLine {
 	}
 	if v, ok := t.oldValues["outstanding_qty_base"].(types.Decimal); ok {
 		x.Outstanding_qty_base = v
+	}
+	if v, ok := t.oldValues["qty_to_invoice_base"].(types.Decimal); ok {
+		x.Qty_to_invoice_base = v
+	}
+	if v, ok := t.oldValues["qty_to_ship_base"].(types.Decimal); ok {
+		x.Qty_to_ship_base = v
+	}
+	if v, ok := t.oldValues["qty_shpd_not_invd_base"].(types.Decimal); ok {
+		x.Qty_shpd_not_invd_base = v
+	}
+	if v, ok := t.oldValues["qty_shipped_base"].(types.Decimal); ok {
+		x.Qty_shipped_base = v
+	}
+	if v, ok := t.oldValues["qty_invoiced_base"].(types.Decimal); ok {
+		x.Qty_invoiced_base = v
 	}
 	return x
 }
@@ -1701,6 +1905,8 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	var unit_of_measureNull sql.NullString
 	var quantityNull sql.NullString
 	var outstanding_quantityNull sql.NullString
+	var qty_to_invoiceNull sql.NullString
+	var qty_to_shipNull sql.NullString
 	var unit_priceNull sql.NullString
 	var unit_cost_lcyNull sql.NullString
 	var tax_percentNull sql.NullString
@@ -1721,6 +1927,10 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	var work_type_codeNull sql.NullString
 	var cust_item_disc_percentNull sql.NullString
 	var outstanding_amountNull sql.NullString
+	var qty_shipped_not_invoicedNull sql.NullString
+	var shipped_not_invoicedNull sql.NullString
+	var quantity_shippedNull sql.NullString
+	var quantity_invoicedNull sql.NullString
 	var profit_percentNull sql.NullString
 	var bill_to_customer_noNull sql.NullString
 	var inv_discount_amountNull sql.NullString
@@ -1734,6 +1944,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	var tax_prod_posting_groupNull sql.NullString
 	var currency_codeNull sql.NullString
 	var outstanding_amount_lcyNull sql.NullString
+	var shipped_not_invoiced_lcyNull sql.NullString
 	var tax_base_amountNull sql.NullString
 	var unit_costNull sql.NullString
 	var variant_codeNull sql.NullString
@@ -1741,6 +1952,11 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	var unit_of_measure_codeNull sql.NullString
 	var quantity_baseNull sql.NullString
 	var outstanding_qty_baseNull sql.NullString
+	var qty_to_invoice_baseNull sql.NullString
+	var qty_to_ship_baseNull sql.NullString
+	var qty_shpd_not_invd_baseNull sql.NullString
+	var qty_shipped_baseNull sql.NullString
+	var qty_invoiced_baseNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -1750,7 +1966,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE 1=1 AND document_type = ? AND document_no = ? AND line_no = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base FROM "%s" WHERE 1=1 AND document_type = ? AND document_no = ? AND line_no = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1772,6 +1988,8 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 		&unit_of_measureNull,
 		&quantityNull,
 		&outstanding_quantityNull,
+		&qty_to_invoiceNull,
+		&qty_to_shipNull,
 		&unit_priceNull,
 		&unit_cost_lcyNull,
 		&tax_percentNull,
@@ -1792,6 +2010,10 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 		&work_type_codeNull,
 		&cust_item_disc_percentNull,
 		&outstanding_amountNull,
+		&qty_shipped_not_invoicedNull,
+		&shipped_not_invoicedNull,
+		&quantity_shippedNull,
+		&quantity_invoicedNull,
 		&profit_percentNull,
 		&bill_to_customer_noNull,
 		&inv_discount_amountNull,
@@ -1805,6 +2027,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 		&tax_prod_posting_groupNull,
 		&currency_codeNull,
 		&outstanding_amount_lcyNull,
+		&shipped_not_invoiced_lcyNull,
 		&tax_base_amountNull,
 		&unit_costNull,
 		&variant_codeNull,
@@ -1812,6 +2035,11 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 		&unit_of_measure_codeNull,
 		&quantity_baseNull,
 		&outstanding_qty_baseNull,
+		&qty_to_invoice_baseNull,
+		&qty_to_ship_baseNull,
+		&qty_shpd_not_invd_baseNull,
+		&qty_shipped_baseNull,
+		&qty_invoiced_baseNull,
 	)
 
 	if err != nil {
@@ -1840,6 +2068,8 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	t.Unit_of_measure = types.NewText(unit_of_measureNull.String)
 	t.Quantity, _ = types.NewDecimalFromString(quantityNull.String)
 	t.Outstanding_quantity, _ = types.NewDecimalFromString(outstanding_quantityNull.String)
+	t.Qty_to_invoice, _ = types.NewDecimalFromString(qty_to_invoiceNull.String)
+	t.Qty_to_ship, _ = types.NewDecimalFromString(qty_to_shipNull.String)
 	t.Unit_price, _ = types.NewDecimalFromString(unit_priceNull.String)
 	t.Unit_cost_lcy, _ = types.NewDecimalFromString(unit_cost_lcyNull.String)
 	t.Tax_percent, _ = types.NewDecimalFromString(tax_percentNull.String)
@@ -1860,6 +2090,10 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	t.Work_type_code = types.NewCode(work_type_codeNull.String)
 	t.Cust_item_disc_percent, _ = types.NewDecimalFromString(cust_item_disc_percentNull.String)
 	t.Outstanding_amount, _ = types.NewDecimalFromString(outstanding_amountNull.String)
+	t.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(qty_shipped_not_invoicedNull.String)
+	t.Shipped_not_invoiced, _ = types.NewDecimalFromString(shipped_not_invoicedNull.String)
+	t.Quantity_shipped, _ = types.NewDecimalFromString(quantity_shippedNull.String)
+	t.Quantity_invoiced, _ = types.NewDecimalFromString(quantity_invoicedNull.String)
 	t.Profit_percent, _ = types.NewDecimalFromString(profit_percentNull.String)
 	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
@@ -1873,6 +2107,7 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	t.Tax_prod_posting_group = types.NewCode(tax_prod_posting_groupNull.String)
 	t.Currency_code = types.NewCode(currency_codeNull.String)
 	t.Outstanding_amount_lcy, _ = types.NewDecimalFromString(outstanding_amount_lcyNull.String)
+	t.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(shipped_not_invoiced_lcyNull.String)
 	t.Tax_base_amount, _ = types.NewDecimalFromString(tax_base_amountNull.String)
 	t.Unit_cost, _ = types.NewDecimalFromString(unit_costNull.String)
 	t.Variant_code = types.NewCode(variant_codeNull.String)
@@ -1880,6 +2115,11 @@ func (t *SalesLine) GetByPK(document_type SalesLineDocument_type, document_no ty
 	t.Unit_of_measure_code = types.NewCode(unit_of_measure_codeNull.String)
 	t.Quantity_base, _ = types.NewDecimalFromString(quantity_baseNull.String)
 	t.Outstanding_qty_base, _ = types.NewDecimalFromString(outstanding_qty_baseNull.String)
+	t.Qty_to_invoice_base, _ = types.NewDecimalFromString(qty_to_invoice_baseNull.String)
+	t.Qty_to_ship_base, _ = types.NewDecimalFromString(qty_to_ship_baseNull.String)
+	t.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(qty_shpd_not_invd_baseNull.String)
+	t.Qty_shipped_base, _ = types.NewDecimalFromString(qty_shipped_baseNull.String)
+	t.Qty_invoiced_base, _ = types.NewDecimalFromString(qty_invoiced_baseNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1917,6 +2157,8 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 		t.Unit_of_measure,
 		t.Quantity,
 		t.Outstanding_quantity,
+		t.Qty_to_invoice,
+		t.Qty_to_ship,
 		t.Unit_price,
 		t.Unit_cost_lcy,
 		t.Tax_percent,
@@ -1937,6 +2179,10 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 		t.Work_type_code,
 		t.Cust_item_disc_percent,
 		t.Outstanding_amount,
+		t.Qty_shipped_not_invoiced,
+		t.Shipped_not_invoiced,
+		t.Quantity_shipped,
+		t.Quantity_invoiced,
 		t.Profit_percent,
 		t.Bill_to_customer_no,
 		t.Inv_discount_amount,
@@ -1950,6 +2196,7 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 		t.Tax_prod_posting_group,
 		t.Currency_code,
 		t.Outstanding_amount_lcy,
+		t.Shipped_not_invoiced_lcy,
 		t.Tax_base_amount,
 		t.Unit_cost,
 		t.Variant_code,
@@ -1957,11 +2204,16 @@ func (t *SalesLine) Insert(runTrigger bool) bool {
 		t.Unit_of_measure_code,
 		t.Quantity_base,
 		t.Outstanding_qty_base,
+		t.Qty_to_invoice_base,
+		t.Qty_to_ship_base,
+		t.Qty_shpd_not_invd_base,
+		t.Qty_shipped_base,
+		t.Qty_invoiced_base,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (document_type, document_no, line_no) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (document_type, document_no, line_no) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -2014,6 +2266,8 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 			r.Unit_of_measure,
 			r.Quantity,
 			r.Outstanding_quantity,
+			r.Qty_to_invoice,
+			r.Qty_to_ship,
 			r.Unit_price,
 			r.Unit_cost_lcy,
 			r.Tax_percent,
@@ -2034,6 +2288,10 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 			r.Work_type_code,
 			r.Cust_item_disc_percent,
 			r.Outstanding_amount,
+			r.Qty_shipped_not_invoiced,
+			r.Shipped_not_invoiced,
+			r.Quantity_shipped,
+			r.Quantity_invoiced,
 			r.Profit_percent,
 			r.Bill_to_customer_no,
 			r.Inv_discount_amount,
@@ -2047,6 +2305,7 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 			r.Tax_prod_posting_group,
 			r.Currency_code,
 			r.Outstanding_amount_lcy,
+			r.Shipped_not_invoiced_lcy,
 			r.Tax_base_amount,
 			r.Unit_cost,
 			r.Variant_code,
@@ -2054,10 +2313,15 @@ func (t *SalesLine) InsertAll(records []*SalesLine, runTrigger bool) error {
 			r.Unit_of_measure_code,
 			r.Quantity_base,
 			r.Outstanding_qty_base,
+			r.Qty_to_invoice_base,
+			r.Qty_to_ship_base,
+			r.Qty_shpd_not_invd_base,
+			r.Qty_shipped_base,
+			r.Qty_invoiced_base,
 		})
 	}
 	tableName := fmt.Sprintf("%s$%s", t.company, SalesLineTableName)
-	columns := []string{"document_type", "sell_to_customer_no", "document_no", "line_no", "type", "no", "location_code", "posting_group", "quantity_disc_code", "shipment_date", "description", "description_2", "unit_of_measure", "quantity", "outstanding_quantity", "unit_price", "unit_cost_lcy", "tax_percent", "quantity_disc_percent", "line_discount_percent", "line_discount_amount", "amount", "amount_including_tax", "allow_invoice_disc", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "department_code", "project_code", "price_group_code", "allow_quantity_disc", "work_type_code", "cust_item_disc_percent", "outstanding_amount", "profit_percent", "bill_to_customer_no", "inv_discount_amount", "gen_bus_posting_group", "gen_prod_posting_group", "tax_calculation_type", "tax_area_code", "tax_liable", "tax_group_code", "tax_bus_posting_group", "tax_prod_posting_group", "currency_code", "outstanding_amount_lcy", "tax_base_amount", "unit_cost", "variant_code", "qty_per_unit_of_measure", "unit_of_measure_code", "quantity_base", "outstanding_qty_base"}
+	columns := []string{"document_type", "sell_to_customer_no", "document_no", "line_no", "type", "no", "location_code", "posting_group", "quantity_disc_code", "shipment_date", "description", "description_2", "unit_of_measure", "quantity", "outstanding_quantity", "qty_to_invoice", "qty_to_ship", "unit_price", "unit_cost_lcy", "tax_percent", "quantity_disc_percent", "line_discount_percent", "line_discount_amount", "amount", "amount_including_tax", "allow_invoice_disc", "gross_weight", "net_weight", "units_per_parcel", "unit_volume", "department_code", "project_code", "price_group_code", "allow_quantity_disc", "work_type_code", "cust_item_disc_percent", "outstanding_amount", "qty_shipped_not_invoiced", "shipped_not_invoiced", "quantity_shipped", "quantity_invoiced", "profit_percent", "bill_to_customer_no", "inv_discount_amount", "gen_bus_posting_group", "gen_prod_posting_group", "tax_calculation_type", "tax_area_code", "tax_liable", "tax_group_code", "tax_bus_posting_group", "tax_prod_posting_group", "currency_code", "outstanding_amount_lcy", "shipped_not_invoiced_lcy", "tax_base_amount", "unit_cost", "variant_code", "qty_per_unit_of_measure", "unit_of_measure_code", "quantity_base", "outstanding_qty_base", "qty_to_invoice_base", "qty_to_ship_base", "qty_shpd_not_invd_base", "qty_shipped_base", "qty_invoiced_base"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -2163,6 +2427,14 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "outstanding_quantity = ?")
 			values = append(values, t.Outstanding_quantity)
 		}
+		if t.hasFieldChanged("qty_to_invoice") {
+			setClauses = append(setClauses, "qty_to_invoice = ?")
+			values = append(values, t.Qty_to_invoice)
+		}
+		if t.hasFieldChanged("qty_to_ship") {
+			setClauses = append(setClauses, "qty_to_ship = ?")
+			values = append(values, t.Qty_to_ship)
+		}
 		if t.hasFieldChanged("unit_price") {
 			setClauses = append(setClauses, "unit_price = ?")
 			values = append(values, t.Unit_price)
@@ -2243,6 +2515,22 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "outstanding_amount = ?")
 			values = append(values, t.Outstanding_amount)
 		}
+		if t.hasFieldChanged("qty_shipped_not_invoiced") {
+			setClauses = append(setClauses, "qty_shipped_not_invoiced = ?")
+			values = append(values, t.Qty_shipped_not_invoiced)
+		}
+		if t.hasFieldChanged("shipped_not_invoiced") {
+			setClauses = append(setClauses, "shipped_not_invoiced = ?")
+			values = append(values, t.Shipped_not_invoiced)
+		}
+		if t.hasFieldChanged("quantity_shipped") {
+			setClauses = append(setClauses, "quantity_shipped = ?")
+			values = append(values, t.Quantity_shipped)
+		}
+		if t.hasFieldChanged("quantity_invoiced") {
+			setClauses = append(setClauses, "quantity_invoiced = ?")
+			values = append(values, t.Quantity_invoiced)
+		}
 		if t.hasFieldChanged("profit_percent") {
 			setClauses = append(setClauses, "profit_percent = ?")
 			values = append(values, t.Profit_percent)
@@ -2295,6 +2583,10 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "outstanding_amount_lcy = ?")
 			values = append(values, t.Outstanding_amount_lcy)
 		}
+		if t.hasFieldChanged("shipped_not_invoiced_lcy") {
+			setClauses = append(setClauses, "shipped_not_invoiced_lcy = ?")
+			values = append(values, t.Shipped_not_invoiced_lcy)
+		}
 		if t.hasFieldChanged("tax_base_amount") {
 			setClauses = append(setClauses, "tax_base_amount = ?")
 			values = append(values, t.Tax_base_amount)
@@ -2322,6 +2614,26 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		if t.hasFieldChanged("outstanding_qty_base") {
 			setClauses = append(setClauses, "outstanding_qty_base = ?")
 			values = append(values, t.Outstanding_qty_base)
+		}
+		if t.hasFieldChanged("qty_to_invoice_base") {
+			setClauses = append(setClauses, "qty_to_invoice_base = ?")
+			values = append(values, t.Qty_to_invoice_base)
+		}
+		if t.hasFieldChanged("qty_to_ship_base") {
+			setClauses = append(setClauses, "qty_to_ship_base = ?")
+			values = append(values, t.Qty_to_ship_base)
+		}
+		if t.hasFieldChanged("qty_shpd_not_invd_base") {
+			setClauses = append(setClauses, "qty_shpd_not_invd_base = ?")
+			values = append(values, t.Qty_shpd_not_invd_base)
+		}
+		if t.hasFieldChanged("qty_shipped_base") {
+			setClauses = append(setClauses, "qty_shipped_base = ?")
+			values = append(values, t.Qty_shipped_base)
+		}
+		if t.hasFieldChanged("qty_invoiced_base") {
+			setClauses = append(setClauses, "qty_invoiced_base = ?")
+			values = append(values, t.Qty_invoiced_base)
 		}
 
 		// If nothing changed, skip update
@@ -2354,6 +2666,10 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		values = append(values, t.Quantity)
 		setClauses = append(setClauses, "outstanding_quantity = ?")
 		values = append(values, t.Outstanding_quantity)
+		setClauses = append(setClauses, "qty_to_invoice = ?")
+		values = append(values, t.Qty_to_invoice)
+		setClauses = append(setClauses, "qty_to_ship = ?")
+		values = append(values, t.Qty_to_ship)
 		setClauses = append(setClauses, "unit_price = ?")
 		values = append(values, t.Unit_price)
 		setClauses = append(setClauses, "unit_cost_lcy = ?")
@@ -2394,6 +2710,14 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		values = append(values, t.Cust_item_disc_percent)
 		setClauses = append(setClauses, "outstanding_amount = ?")
 		values = append(values, t.Outstanding_amount)
+		setClauses = append(setClauses, "qty_shipped_not_invoiced = ?")
+		values = append(values, t.Qty_shipped_not_invoiced)
+		setClauses = append(setClauses, "shipped_not_invoiced = ?")
+		values = append(values, t.Shipped_not_invoiced)
+		setClauses = append(setClauses, "quantity_shipped = ?")
+		values = append(values, t.Quantity_shipped)
+		setClauses = append(setClauses, "quantity_invoiced = ?")
+		values = append(values, t.Quantity_invoiced)
 		setClauses = append(setClauses, "profit_percent = ?")
 		values = append(values, t.Profit_percent)
 		setClauses = append(setClauses, "bill_to_customer_no = ?")
@@ -2420,6 +2744,8 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		values = append(values, t.Currency_code)
 		setClauses = append(setClauses, "outstanding_amount_lcy = ?")
 		values = append(values, t.Outstanding_amount_lcy)
+		setClauses = append(setClauses, "shipped_not_invoiced_lcy = ?")
+		values = append(values, t.Shipped_not_invoiced_lcy)
 		setClauses = append(setClauses, "tax_base_amount = ?")
 		values = append(values, t.Tax_base_amount)
 		setClauses = append(setClauses, "unit_cost = ?")
@@ -2434,6 +2760,16 @@ func (t *SalesLine) Modify(runTrigger bool) bool {
 		values = append(values, t.Quantity_base)
 		setClauses = append(setClauses, "outstanding_qty_base = ?")
 		values = append(values, t.Outstanding_qty_base)
+		setClauses = append(setClauses, "qty_to_invoice_base = ?")
+		values = append(values, t.Qty_to_invoice_base)
+		setClauses = append(setClauses, "qty_to_ship_base = ?")
+		values = append(values, t.Qty_to_ship_base)
+		setClauses = append(setClauses, "qty_shpd_not_invd_base = ?")
+		values = append(values, t.Qty_shpd_not_invd_base)
+		setClauses = append(setClauses, "qty_shipped_base = ?")
+		values = append(values, t.Qty_shipped_base)
+		setClauses = append(setClauses, "qty_invoiced_base = ?")
+		values = append(values, t.Qty_invoiced_base)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -2549,6 +2885,14 @@ func (t *SalesLine) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Outstanding_quantity.Equal(old)
 		}
+	case "qty_to_invoice":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_to_invoice.Equal(old)
+		}
+	case "qty_to_ship":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_to_ship.Equal(old)
+		}
 	case "unit_price":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Unit_price.Equal(old)
@@ -2631,6 +2975,22 @@ func (t *SalesLine) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Outstanding_amount.Equal(old)
 		}
+	case "qty_shipped_not_invoiced":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_shipped_not_invoiced.Equal(old)
+		}
+	case "shipped_not_invoiced":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Shipped_not_invoiced.Equal(old)
+		}
+	case "quantity_shipped":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Quantity_shipped.Equal(old)
+		}
+	case "quantity_invoiced":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Quantity_invoiced.Equal(old)
+		}
 	case "profit_percent":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Profit_percent.Equal(old)
@@ -2684,6 +3044,10 @@ func (t *SalesLine) hasFieldChanged(fieldName string) bool {
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Outstanding_amount_lcy.Equal(old)
 		}
+	case "shipped_not_invoiced_lcy":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Shipped_not_invoiced_lcy.Equal(old)
+		}
 	case "tax_base_amount":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Tax_base_amount.Equal(old)
@@ -2711,6 +3075,26 @@ func (t *SalesLine) hasFieldChanged(fieldName string) bool {
 	case "outstanding_qty_base":
 		if old, ok := oldValue.(types.Decimal); ok {
 			return !t.Outstanding_qty_base.Equal(old)
+		}
+	case "qty_to_invoice_base":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_to_invoice_base.Equal(old)
+		}
+	case "qty_to_ship_base":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_to_ship_base.Equal(old)
+		}
+	case "qty_shpd_not_invd_base":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_shpd_not_invd_base.Equal(old)
+		}
+	case "qty_shipped_base":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_shipped_base.Equal(old)
+		}
+	case "qty_invoiced_base":
+		if old, ok := oldValue.(types.Decimal); ok {
+			return !t.Qty_invoiced_base.Equal(old)
 		}
 	}
 
@@ -2948,6 +3332,10 @@ func (t *SalesLine) columnName(fieldName string) (string, bool) {
 		return "quantity", true
 	case strings.ToLower("outstanding_quantity"):
 		return "outstanding_quantity", true
+	case strings.ToLower("qty_to_invoice"):
+		return "qty_to_invoice", true
+	case strings.ToLower("qty_to_ship"):
+		return "qty_to_ship", true
 	case strings.ToLower("unit_price"):
 		return "unit_price", true
 	case strings.ToLower("unit_cost_lcy"):
@@ -2988,6 +3376,14 @@ func (t *SalesLine) columnName(fieldName string) (string, bool) {
 		return "cust_item_disc_percent", true
 	case strings.ToLower("outstanding_amount"):
 		return "outstanding_amount", true
+	case strings.ToLower("qty_shipped_not_invoiced"):
+		return "qty_shipped_not_invoiced", true
+	case strings.ToLower("shipped_not_invoiced"):
+		return "shipped_not_invoiced", true
+	case strings.ToLower("quantity_shipped"):
+		return "quantity_shipped", true
+	case strings.ToLower("quantity_invoiced"):
+		return "quantity_invoiced", true
 	case strings.ToLower("profit_percent"):
 		return "profit_percent", true
 	case strings.ToLower("bill_to_customer_no"):
@@ -3014,6 +3410,8 @@ func (t *SalesLine) columnName(fieldName string) (string, bool) {
 		return "currency_code", true
 	case strings.ToLower("outstanding_amount_lcy"):
 		return "outstanding_amount_lcy", true
+	case strings.ToLower("shipped_not_invoiced_lcy"):
+		return "shipped_not_invoiced_lcy", true
 	case strings.ToLower("tax_base_amount"):
 		return "tax_base_amount", true
 	case strings.ToLower("unit_cost"):
@@ -3028,6 +3426,16 @@ func (t *SalesLine) columnName(fieldName string) (string, bool) {
 		return "quantity_base", true
 	case strings.ToLower("outstanding_qty_base"):
 		return "outstanding_qty_base", true
+	case strings.ToLower("qty_to_invoice_base"):
+		return "qty_to_invoice_base", true
+	case strings.ToLower("qty_to_ship_base"):
+		return "qty_to_ship_base", true
+	case strings.ToLower("qty_shpd_not_invd_base"):
+		return "qty_shpd_not_invd_base", true
+	case strings.ToLower("qty_shipped_base"):
+		return "qty_shipped_base", true
+	case strings.ToLower("qty_invoiced_base"):
+		return "qty_invoiced_base", true
 	}
 	return "", false
 }
@@ -3207,6 +3615,10 @@ func (t *SalesLine) isDecimalColumn(column string) bool {
 		return true
 	case "outstanding_quantity":
 		return true
+	case "qty_to_invoice":
+		return true
+	case "qty_to_ship":
+		return true
 	case "unit_price":
 		return true
 	case "unit_cost_lcy":
@@ -3235,11 +3647,21 @@ func (t *SalesLine) isDecimalColumn(column string) bool {
 		return true
 	case "outstanding_amount":
 		return true
+	case "qty_shipped_not_invoiced":
+		return true
+	case "shipped_not_invoiced":
+		return true
+	case "quantity_shipped":
+		return true
+	case "quantity_invoiced":
+		return true
 	case "profit_percent":
 		return true
 	case "inv_discount_amount":
 		return true
 	case "outstanding_amount_lcy":
+		return true
+	case "shipped_not_invoiced_lcy":
 		return true
 	case "tax_base_amount":
 		return true
@@ -3250,6 +3672,16 @@ func (t *SalesLine) isDecimalColumn(column string) bool {
 	case "quantity_base":
 		return true
 	case "outstanding_qty_base":
+		return true
+	case "qty_to_invoice_base":
+		return true
+	case "qty_to_ship_base":
+		return true
+	case "qty_shpd_not_invd_base":
+		return true
+	case "qty_shipped_base":
+		return true
+	case "qty_invoiced_base":
 		return true
 	}
 	return false
@@ -3431,7 +3863,7 @@ func (t *SalesLine) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3450,6 +3882,8 @@ func (t *SalesLine) FindFirst() bool {
 	var unit_of_measureNull sql.NullString
 	var quantityNull sql.NullString
 	var outstanding_quantityNull sql.NullString
+	var qty_to_invoiceNull sql.NullString
+	var qty_to_shipNull sql.NullString
 	var unit_priceNull sql.NullString
 	var unit_cost_lcyNull sql.NullString
 	var tax_percentNull sql.NullString
@@ -3470,6 +3904,10 @@ func (t *SalesLine) FindFirst() bool {
 	var work_type_codeNull sql.NullString
 	var cust_item_disc_percentNull sql.NullString
 	var outstanding_amountNull sql.NullString
+	var qty_shipped_not_invoicedNull sql.NullString
+	var shipped_not_invoicedNull sql.NullString
+	var quantity_shippedNull sql.NullString
+	var quantity_invoicedNull sql.NullString
 	var profit_percentNull sql.NullString
 	var bill_to_customer_noNull sql.NullString
 	var inv_discount_amountNull sql.NullString
@@ -3483,6 +3921,7 @@ func (t *SalesLine) FindFirst() bool {
 	var tax_prod_posting_groupNull sql.NullString
 	var currency_codeNull sql.NullString
 	var outstanding_amount_lcyNull sql.NullString
+	var shipped_not_invoiced_lcyNull sql.NullString
 	var tax_base_amountNull sql.NullString
 	var unit_costNull sql.NullString
 	var variant_codeNull sql.NullString
@@ -3490,6 +3929,11 @@ func (t *SalesLine) FindFirst() bool {
 	var unit_of_measure_codeNull sql.NullString
 	var quantity_baseNull sql.NullString
 	var outstanding_qty_baseNull sql.NullString
+	var qty_to_invoice_baseNull sql.NullString
+	var qty_to_ship_baseNull sql.NullString
+	var qty_shpd_not_invd_baseNull sql.NullString
+	var qty_shipped_baseNull sql.NullString
+	var qty_invoiced_baseNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&document_typeInt,
@@ -3507,6 +3951,8 @@ func (t *SalesLine) FindFirst() bool {
 		&unit_of_measureNull,
 		&quantityNull,
 		&outstanding_quantityNull,
+		&qty_to_invoiceNull,
+		&qty_to_shipNull,
 		&unit_priceNull,
 		&unit_cost_lcyNull,
 		&tax_percentNull,
@@ -3527,6 +3973,10 @@ func (t *SalesLine) FindFirst() bool {
 		&work_type_codeNull,
 		&cust_item_disc_percentNull,
 		&outstanding_amountNull,
+		&qty_shipped_not_invoicedNull,
+		&shipped_not_invoicedNull,
+		&quantity_shippedNull,
+		&quantity_invoicedNull,
 		&profit_percentNull,
 		&bill_to_customer_noNull,
 		&inv_discount_amountNull,
@@ -3540,6 +3990,7 @@ func (t *SalesLine) FindFirst() bool {
 		&tax_prod_posting_groupNull,
 		&currency_codeNull,
 		&outstanding_amount_lcyNull,
+		&shipped_not_invoiced_lcyNull,
 		&tax_base_amountNull,
 		&unit_costNull,
 		&variant_codeNull,
@@ -3547,6 +3998,11 @@ func (t *SalesLine) FindFirst() bool {
 		&unit_of_measure_codeNull,
 		&quantity_baseNull,
 		&outstanding_qty_baseNull,
+		&qty_to_invoice_baseNull,
+		&qty_to_ship_baseNull,
+		&qty_shpd_not_invd_baseNull,
+		&qty_shipped_baseNull,
+		&qty_invoiced_baseNull,
 	)
 
 	if err != nil {
@@ -3572,6 +4028,8 @@ func (t *SalesLine) FindFirst() bool {
 	t.Unit_of_measure = types.NewText(unit_of_measureNull.String)
 	t.Quantity, _ = types.NewDecimalFromString(quantityNull.String)
 	t.Outstanding_quantity, _ = types.NewDecimalFromString(outstanding_quantityNull.String)
+	t.Qty_to_invoice, _ = types.NewDecimalFromString(qty_to_invoiceNull.String)
+	t.Qty_to_ship, _ = types.NewDecimalFromString(qty_to_shipNull.String)
 	t.Unit_price, _ = types.NewDecimalFromString(unit_priceNull.String)
 	t.Unit_cost_lcy, _ = types.NewDecimalFromString(unit_cost_lcyNull.String)
 	t.Tax_percent, _ = types.NewDecimalFromString(tax_percentNull.String)
@@ -3592,6 +4050,10 @@ func (t *SalesLine) FindFirst() bool {
 	t.Work_type_code = types.NewCode(work_type_codeNull.String)
 	t.Cust_item_disc_percent, _ = types.NewDecimalFromString(cust_item_disc_percentNull.String)
 	t.Outstanding_amount, _ = types.NewDecimalFromString(outstanding_amountNull.String)
+	t.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(qty_shipped_not_invoicedNull.String)
+	t.Shipped_not_invoiced, _ = types.NewDecimalFromString(shipped_not_invoicedNull.String)
+	t.Quantity_shipped, _ = types.NewDecimalFromString(quantity_shippedNull.String)
+	t.Quantity_invoiced, _ = types.NewDecimalFromString(quantity_invoicedNull.String)
 	t.Profit_percent, _ = types.NewDecimalFromString(profit_percentNull.String)
 	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
@@ -3605,6 +4067,7 @@ func (t *SalesLine) FindFirst() bool {
 	t.Tax_prod_posting_group = types.NewCode(tax_prod_posting_groupNull.String)
 	t.Currency_code = types.NewCode(currency_codeNull.String)
 	t.Outstanding_amount_lcy, _ = types.NewDecimalFromString(outstanding_amount_lcyNull.String)
+	t.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(shipped_not_invoiced_lcyNull.String)
 	t.Tax_base_amount, _ = types.NewDecimalFromString(tax_base_amountNull.String)
 	t.Unit_cost, _ = types.NewDecimalFromString(unit_costNull.String)
 	t.Variant_code = types.NewCode(variant_codeNull.String)
@@ -3612,6 +4075,11 @@ func (t *SalesLine) FindFirst() bool {
 	t.Unit_of_measure_code = types.NewCode(unit_of_measure_codeNull.String)
 	t.Quantity_base, _ = types.NewDecimalFromString(quantity_baseNull.String)
 	t.Outstanding_qty_base, _ = types.NewDecimalFromString(outstanding_qty_baseNull.String)
+	t.Qty_to_invoice_base, _ = types.NewDecimalFromString(qty_to_invoice_baseNull.String)
+	t.Qty_to_ship_base, _ = types.NewDecimalFromString(qty_to_ship_baseNull.String)
+	t.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(qty_shpd_not_invd_baseNull.String)
+	t.Qty_shipped_base, _ = types.NewDecimalFromString(qty_shipped_baseNull.String)
+	t.Qty_invoiced_base, _ = types.NewDecimalFromString(qty_invoiced_baseNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -3632,7 +4100,7 @@ func (t *SalesLine) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3651,6 +4119,8 @@ func (t *SalesLine) FindLast() bool {
 	var unit_of_measureNull sql.NullString
 	var quantityNull sql.NullString
 	var outstanding_quantityNull sql.NullString
+	var qty_to_invoiceNull sql.NullString
+	var qty_to_shipNull sql.NullString
 	var unit_priceNull sql.NullString
 	var unit_cost_lcyNull sql.NullString
 	var tax_percentNull sql.NullString
@@ -3671,6 +4141,10 @@ func (t *SalesLine) FindLast() bool {
 	var work_type_codeNull sql.NullString
 	var cust_item_disc_percentNull sql.NullString
 	var outstanding_amountNull sql.NullString
+	var qty_shipped_not_invoicedNull sql.NullString
+	var shipped_not_invoicedNull sql.NullString
+	var quantity_shippedNull sql.NullString
+	var quantity_invoicedNull sql.NullString
 	var profit_percentNull sql.NullString
 	var bill_to_customer_noNull sql.NullString
 	var inv_discount_amountNull sql.NullString
@@ -3684,6 +4158,7 @@ func (t *SalesLine) FindLast() bool {
 	var tax_prod_posting_groupNull sql.NullString
 	var currency_codeNull sql.NullString
 	var outstanding_amount_lcyNull sql.NullString
+	var shipped_not_invoiced_lcyNull sql.NullString
 	var tax_base_amountNull sql.NullString
 	var unit_costNull sql.NullString
 	var variant_codeNull sql.NullString
@@ -3691,6 +4166,11 @@ func (t *SalesLine) FindLast() bool {
 	var unit_of_measure_codeNull sql.NullString
 	var quantity_baseNull sql.NullString
 	var outstanding_qty_baseNull sql.NullString
+	var qty_to_invoice_baseNull sql.NullString
+	var qty_to_ship_baseNull sql.NullString
+	var qty_shpd_not_invd_baseNull sql.NullString
+	var qty_shipped_baseNull sql.NullString
+	var qty_invoiced_baseNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&document_typeInt,
@@ -3708,6 +4188,8 @@ func (t *SalesLine) FindLast() bool {
 		&unit_of_measureNull,
 		&quantityNull,
 		&outstanding_quantityNull,
+		&qty_to_invoiceNull,
+		&qty_to_shipNull,
 		&unit_priceNull,
 		&unit_cost_lcyNull,
 		&tax_percentNull,
@@ -3728,6 +4210,10 @@ func (t *SalesLine) FindLast() bool {
 		&work_type_codeNull,
 		&cust_item_disc_percentNull,
 		&outstanding_amountNull,
+		&qty_shipped_not_invoicedNull,
+		&shipped_not_invoicedNull,
+		&quantity_shippedNull,
+		&quantity_invoicedNull,
 		&profit_percentNull,
 		&bill_to_customer_noNull,
 		&inv_discount_amountNull,
@@ -3741,6 +4227,7 @@ func (t *SalesLine) FindLast() bool {
 		&tax_prod_posting_groupNull,
 		&currency_codeNull,
 		&outstanding_amount_lcyNull,
+		&shipped_not_invoiced_lcyNull,
 		&tax_base_amountNull,
 		&unit_costNull,
 		&variant_codeNull,
@@ -3748,6 +4235,11 @@ func (t *SalesLine) FindLast() bool {
 		&unit_of_measure_codeNull,
 		&quantity_baseNull,
 		&outstanding_qty_baseNull,
+		&qty_to_invoice_baseNull,
+		&qty_to_ship_baseNull,
+		&qty_shpd_not_invd_baseNull,
+		&qty_shipped_baseNull,
+		&qty_invoiced_baseNull,
 	)
 
 	if err != nil {
@@ -3773,6 +4265,8 @@ func (t *SalesLine) FindLast() bool {
 	t.Unit_of_measure = types.NewText(unit_of_measureNull.String)
 	t.Quantity, _ = types.NewDecimalFromString(quantityNull.String)
 	t.Outstanding_quantity, _ = types.NewDecimalFromString(outstanding_quantityNull.String)
+	t.Qty_to_invoice, _ = types.NewDecimalFromString(qty_to_invoiceNull.String)
+	t.Qty_to_ship, _ = types.NewDecimalFromString(qty_to_shipNull.String)
 	t.Unit_price, _ = types.NewDecimalFromString(unit_priceNull.String)
 	t.Unit_cost_lcy, _ = types.NewDecimalFromString(unit_cost_lcyNull.String)
 	t.Tax_percent, _ = types.NewDecimalFromString(tax_percentNull.String)
@@ -3793,6 +4287,10 @@ func (t *SalesLine) FindLast() bool {
 	t.Work_type_code = types.NewCode(work_type_codeNull.String)
 	t.Cust_item_disc_percent, _ = types.NewDecimalFromString(cust_item_disc_percentNull.String)
 	t.Outstanding_amount, _ = types.NewDecimalFromString(outstanding_amountNull.String)
+	t.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(qty_shipped_not_invoicedNull.String)
+	t.Shipped_not_invoiced, _ = types.NewDecimalFromString(shipped_not_invoicedNull.String)
+	t.Quantity_shipped, _ = types.NewDecimalFromString(quantity_shippedNull.String)
+	t.Quantity_invoiced, _ = types.NewDecimalFromString(quantity_invoicedNull.String)
 	t.Profit_percent, _ = types.NewDecimalFromString(profit_percentNull.String)
 	t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
 	t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
@@ -3806,6 +4304,7 @@ func (t *SalesLine) FindLast() bool {
 	t.Tax_prod_posting_group = types.NewCode(tax_prod_posting_groupNull.String)
 	t.Currency_code = types.NewCode(currency_codeNull.String)
 	t.Outstanding_amount_lcy, _ = types.NewDecimalFromString(outstanding_amount_lcyNull.String)
+	t.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(shipped_not_invoiced_lcyNull.String)
 	t.Tax_base_amount, _ = types.NewDecimalFromString(tax_base_amountNull.String)
 	t.Unit_cost, _ = types.NewDecimalFromString(unit_costNull.String)
 	t.Variant_code = types.NewCode(variant_codeNull.String)
@@ -3813,6 +4312,11 @@ func (t *SalesLine) FindLast() bool {
 	t.Unit_of_measure_code = types.NewCode(unit_of_measure_codeNull.String)
 	t.Quantity_base, _ = types.NewDecimalFromString(quantity_baseNull.String)
 	t.Outstanding_qty_base, _ = types.NewDecimalFromString(outstanding_qty_baseNull.String)
+	t.Qty_to_invoice_base, _ = types.NewDecimalFromString(qty_to_invoice_baseNull.String)
+	t.Qty_to_ship_base, _ = types.NewDecimalFromString(qty_to_ship_baseNull.String)
+	t.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(qty_shpd_not_invd_baseNull.String)
+	t.Qty_shipped_base, _ = types.NewDecimalFromString(qty_shipped_baseNull.String)
+	t.Qty_invoiced_base, _ = types.NewDecimalFromString(qty_invoiced_baseNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -3863,7 +4367,7 @@ func (t *SalesLine) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -3946,6 +4450,8 @@ func (t *SalesLine) Next(steps ...int) bool {
 		var unit_of_measureNull sql.NullString
 		var quantityNull sql.NullString
 		var outstanding_quantityNull sql.NullString
+		var qty_to_invoiceNull sql.NullString
+		var qty_to_shipNull sql.NullString
 		var unit_priceNull sql.NullString
 		var unit_cost_lcyNull sql.NullString
 		var tax_percentNull sql.NullString
@@ -3966,6 +4472,10 @@ func (t *SalesLine) Next(steps ...int) bool {
 		var work_type_codeNull sql.NullString
 		var cust_item_disc_percentNull sql.NullString
 		var outstanding_amountNull sql.NullString
+		var qty_shipped_not_invoicedNull sql.NullString
+		var shipped_not_invoicedNull sql.NullString
+		var quantity_shippedNull sql.NullString
+		var quantity_invoicedNull sql.NullString
 		var profit_percentNull sql.NullString
 		var bill_to_customer_noNull sql.NullString
 		var inv_discount_amountNull sql.NullString
@@ -3979,6 +4489,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 		var tax_prod_posting_groupNull sql.NullString
 		var currency_codeNull sql.NullString
 		var outstanding_amount_lcyNull sql.NullString
+		var shipped_not_invoiced_lcyNull sql.NullString
 		var tax_base_amountNull sql.NullString
 		var unit_costNull sql.NullString
 		var variant_codeNull sql.NullString
@@ -3986,6 +4497,11 @@ func (t *SalesLine) Next(steps ...int) bool {
 		var unit_of_measure_codeNull sql.NullString
 		var quantity_baseNull sql.NullString
 		var outstanding_qty_baseNull sql.NullString
+		var qty_to_invoice_baseNull sql.NullString
+		var qty_to_ship_baseNull sql.NullString
+		var qty_shpd_not_invd_baseNull sql.NullString
+		var qty_shipped_baseNull sql.NullString
+		var qty_invoiced_baseNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&document_typeInt,
@@ -4003,6 +4519,8 @@ func (t *SalesLine) Next(steps ...int) bool {
 			&unit_of_measureNull,
 			&quantityNull,
 			&outstanding_quantityNull,
+			&qty_to_invoiceNull,
+			&qty_to_shipNull,
 			&unit_priceNull,
 			&unit_cost_lcyNull,
 			&tax_percentNull,
@@ -4023,6 +4541,10 @@ func (t *SalesLine) Next(steps ...int) bool {
 			&work_type_codeNull,
 			&cust_item_disc_percentNull,
 			&outstanding_amountNull,
+			&qty_shipped_not_invoicedNull,
+			&shipped_not_invoicedNull,
+			&quantity_shippedNull,
+			&quantity_invoicedNull,
 			&profit_percentNull,
 			&bill_to_customer_noNull,
 			&inv_discount_amountNull,
@@ -4036,6 +4558,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 			&tax_prod_posting_groupNull,
 			&currency_codeNull,
 			&outstanding_amount_lcyNull,
+			&shipped_not_invoiced_lcyNull,
 			&tax_base_amountNull,
 			&unit_costNull,
 			&variant_codeNull,
@@ -4043,6 +4566,11 @@ func (t *SalesLine) Next(steps ...int) bool {
 			&unit_of_measure_codeNull,
 			&quantity_baseNull,
 			&outstanding_qty_baseNull,
+			&qty_to_invoice_baseNull,
+			&qty_to_ship_baseNull,
+			&qty_shpd_not_invd_baseNull,
+			&qty_shipped_baseNull,
+			&qty_invoiced_baseNull,
 		)
 
 		if err != nil {
@@ -4067,6 +4595,8 @@ func (t *SalesLine) Next(steps ...int) bool {
 		t.Unit_of_measure = types.NewText(unit_of_measureNull.String)
 		t.Quantity, _ = types.NewDecimalFromString(quantityNull.String)
 		t.Outstanding_quantity, _ = types.NewDecimalFromString(outstanding_quantityNull.String)
+		t.Qty_to_invoice, _ = types.NewDecimalFromString(qty_to_invoiceNull.String)
+		t.Qty_to_ship, _ = types.NewDecimalFromString(qty_to_shipNull.String)
 		t.Unit_price, _ = types.NewDecimalFromString(unit_priceNull.String)
 		t.Unit_cost_lcy, _ = types.NewDecimalFromString(unit_cost_lcyNull.String)
 		t.Tax_percent, _ = types.NewDecimalFromString(tax_percentNull.String)
@@ -4087,6 +4617,10 @@ func (t *SalesLine) Next(steps ...int) bool {
 		t.Work_type_code = types.NewCode(work_type_codeNull.String)
 		t.Cust_item_disc_percent, _ = types.NewDecimalFromString(cust_item_disc_percentNull.String)
 		t.Outstanding_amount, _ = types.NewDecimalFromString(outstanding_amountNull.String)
+		t.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(qty_shipped_not_invoicedNull.String)
+		t.Shipped_not_invoiced, _ = types.NewDecimalFromString(shipped_not_invoicedNull.String)
+		t.Quantity_shipped, _ = types.NewDecimalFromString(quantity_shippedNull.String)
+		t.Quantity_invoiced, _ = types.NewDecimalFromString(quantity_invoicedNull.String)
 		t.Profit_percent, _ = types.NewDecimalFromString(profit_percentNull.String)
 		t.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
 		t.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
@@ -4100,6 +4634,7 @@ func (t *SalesLine) Next(steps ...int) bool {
 		t.Tax_prod_posting_group = types.NewCode(tax_prod_posting_groupNull.String)
 		t.Currency_code = types.NewCode(currency_codeNull.String)
 		t.Outstanding_amount_lcy, _ = types.NewDecimalFromString(outstanding_amount_lcyNull.String)
+		t.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(shipped_not_invoiced_lcyNull.String)
 		t.Tax_base_amount, _ = types.NewDecimalFromString(tax_base_amountNull.String)
 		t.Unit_cost, _ = types.NewDecimalFromString(unit_costNull.String)
 		t.Variant_code = types.NewCode(variant_codeNull.String)
@@ -4107,6 +4642,11 @@ func (t *SalesLine) Next(steps ...int) bool {
 		t.Unit_of_measure_code = types.NewCode(unit_of_measure_codeNull.String)
 		t.Quantity_base, _ = types.NewDecimalFromString(quantity_baseNull.String)
 		t.Outstanding_qty_base, _ = types.NewDecimalFromString(outstanding_qty_baseNull.String)
+		t.Qty_to_invoice_base, _ = types.NewDecimalFromString(qty_to_invoice_baseNull.String)
+		t.Qty_to_ship_base, _ = types.NewDecimalFromString(qty_to_ship_baseNull.String)
+		t.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(qty_shpd_not_invd_baseNull.String)
+		t.Qty_shipped_base, _ = types.NewDecimalFromString(qty_shipped_baseNull.String)
+		t.Qty_invoiced_base, _ = types.NewDecimalFromString(qty_invoiced_baseNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -4156,7 +4696,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT document_type, sell_to_customer_no, document_no, line_no, type, no, location_code, posting_group, quantity_disc_code, shipment_date, description, description_2, unit_of_measure, quantity, outstanding_quantity, qty_to_invoice, qty_to_ship, unit_price, unit_cost_lcy, tax_percent, quantity_disc_percent, line_discount_percent, line_discount_amount, amount, amount_including_tax, allow_invoice_disc, gross_weight, net_weight, units_per_parcel, unit_volume, department_code, project_code, price_group_code, allow_quantity_disc, work_type_code, cust_item_disc_percent, outstanding_amount, qty_shipped_not_invoiced, shipped_not_invoiced, quantity_shipped, quantity_invoiced, profit_percent, bill_to_customer_no, inv_discount_amount, gen_bus_posting_group, gen_prod_posting_group, tax_calculation_type, tax_area_code, tax_liable, tax_group_code, tax_bus_posting_group, tax_prod_posting_group, currency_code, outstanding_amount_lcy, shipped_not_invoiced_lcy, tax_base_amount, unit_cost, variant_code, qty_per_unit_of_measure, unit_of_measure_code, quantity_base, outstanding_qty_base, qty_to_invoice_base, qty_to_ship_base, qty_shpd_not_invd_base, qty_shipped_base, qty_invoiced_base FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -4192,6 +4732,8 @@ func (t *SalesLine) FindSetBuffered() bool {
 		var unit_of_measureNull sql.NullString
 		var quantityNull sql.NullString
 		var outstanding_quantityNull sql.NullString
+		var qty_to_invoiceNull sql.NullString
+		var qty_to_shipNull sql.NullString
 		var unit_priceNull sql.NullString
 		var unit_cost_lcyNull sql.NullString
 		var tax_percentNull sql.NullString
@@ -4212,6 +4754,10 @@ func (t *SalesLine) FindSetBuffered() bool {
 		var work_type_codeNull sql.NullString
 		var cust_item_disc_percentNull sql.NullString
 		var outstanding_amountNull sql.NullString
+		var qty_shipped_not_invoicedNull sql.NullString
+		var shipped_not_invoicedNull sql.NullString
+		var quantity_shippedNull sql.NullString
+		var quantity_invoicedNull sql.NullString
 		var profit_percentNull sql.NullString
 		var bill_to_customer_noNull sql.NullString
 		var inv_discount_amountNull sql.NullString
@@ -4225,6 +4771,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 		var tax_prod_posting_groupNull sql.NullString
 		var currency_codeNull sql.NullString
 		var outstanding_amount_lcyNull sql.NullString
+		var shipped_not_invoiced_lcyNull sql.NullString
 		var tax_base_amountNull sql.NullString
 		var unit_costNull sql.NullString
 		var variant_codeNull sql.NullString
@@ -4232,6 +4779,11 @@ func (t *SalesLine) FindSetBuffered() bool {
 		var unit_of_measure_codeNull sql.NullString
 		var quantity_baseNull sql.NullString
 		var outstanding_qty_baseNull sql.NullString
+		var qty_to_invoice_baseNull sql.NullString
+		var qty_to_ship_baseNull sql.NullString
+		var qty_shpd_not_invd_baseNull sql.NullString
+		var qty_shipped_baseNull sql.NullString
+		var qty_invoiced_baseNull sql.NullString
 
 		err := rows.Scan(
 			&document_typeInt,
@@ -4249,6 +4801,8 @@ func (t *SalesLine) FindSetBuffered() bool {
 			&unit_of_measureNull,
 			&quantityNull,
 			&outstanding_quantityNull,
+			&qty_to_invoiceNull,
+			&qty_to_shipNull,
 			&unit_priceNull,
 			&unit_cost_lcyNull,
 			&tax_percentNull,
@@ -4269,6 +4823,10 @@ func (t *SalesLine) FindSetBuffered() bool {
 			&work_type_codeNull,
 			&cust_item_disc_percentNull,
 			&outstanding_amountNull,
+			&qty_shipped_not_invoicedNull,
+			&shipped_not_invoicedNull,
+			&quantity_shippedNull,
+			&quantity_invoicedNull,
 			&profit_percentNull,
 			&bill_to_customer_noNull,
 			&inv_discount_amountNull,
@@ -4282,6 +4840,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 			&tax_prod_posting_groupNull,
 			&currency_codeNull,
 			&outstanding_amount_lcyNull,
+			&shipped_not_invoiced_lcyNull,
 			&tax_base_amountNull,
 			&unit_costNull,
 			&variant_codeNull,
@@ -4289,6 +4848,11 @@ func (t *SalesLine) FindSetBuffered() bool {
 			&unit_of_measure_codeNull,
 			&quantity_baseNull,
 			&outstanding_qty_baseNull,
+			&qty_to_invoice_baseNull,
+			&qty_to_ship_baseNull,
+			&qty_shpd_not_invd_baseNull,
+			&qty_shipped_baseNull,
+			&qty_invoiced_baseNull,
 		)
 
 		if err != nil {
@@ -4311,6 +4875,8 @@ func (t *SalesLine) FindSetBuffered() bool {
 		record.Unit_of_measure = types.NewText(unit_of_measureNull.String)
 		record.Quantity, _ = types.NewDecimalFromString(quantityNull.String)
 		record.Outstanding_quantity, _ = types.NewDecimalFromString(outstanding_quantityNull.String)
+		record.Qty_to_invoice, _ = types.NewDecimalFromString(qty_to_invoiceNull.String)
+		record.Qty_to_ship, _ = types.NewDecimalFromString(qty_to_shipNull.String)
 		record.Unit_price, _ = types.NewDecimalFromString(unit_priceNull.String)
 		record.Unit_cost_lcy, _ = types.NewDecimalFromString(unit_cost_lcyNull.String)
 		record.Tax_percent, _ = types.NewDecimalFromString(tax_percentNull.String)
@@ -4331,6 +4897,10 @@ func (t *SalesLine) FindSetBuffered() bool {
 		record.Work_type_code = types.NewCode(work_type_codeNull.String)
 		record.Cust_item_disc_percent, _ = types.NewDecimalFromString(cust_item_disc_percentNull.String)
 		record.Outstanding_amount, _ = types.NewDecimalFromString(outstanding_amountNull.String)
+		record.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(qty_shipped_not_invoicedNull.String)
+		record.Shipped_not_invoiced, _ = types.NewDecimalFromString(shipped_not_invoicedNull.String)
+		record.Quantity_shipped, _ = types.NewDecimalFromString(quantity_shippedNull.String)
+		record.Quantity_invoiced, _ = types.NewDecimalFromString(quantity_invoicedNull.String)
 		record.Profit_percent, _ = types.NewDecimalFromString(profit_percentNull.String)
 		record.Bill_to_customer_no = types.NewCode(bill_to_customer_noNull.String)
 		record.Inv_discount_amount, _ = types.NewDecimalFromString(inv_discount_amountNull.String)
@@ -4344,6 +4914,7 @@ func (t *SalesLine) FindSetBuffered() bool {
 		record.Tax_prod_posting_group = types.NewCode(tax_prod_posting_groupNull.String)
 		record.Currency_code = types.NewCode(currency_codeNull.String)
 		record.Outstanding_amount_lcy, _ = types.NewDecimalFromString(outstanding_amount_lcyNull.String)
+		record.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(shipped_not_invoiced_lcyNull.String)
 		record.Tax_base_amount, _ = types.NewDecimalFromString(tax_base_amountNull.String)
 		record.Unit_cost, _ = types.NewDecimalFromString(unit_costNull.String)
 		record.Variant_code = types.NewCode(variant_codeNull.String)
@@ -4351,6 +4922,11 @@ func (t *SalesLine) FindSetBuffered() bool {
 		record.Unit_of_measure_code = types.NewCode(unit_of_measure_codeNull.String)
 		record.Quantity_base, _ = types.NewDecimalFromString(quantity_baseNull.String)
 		record.Outstanding_qty_base, _ = types.NewDecimalFromString(outstanding_qty_baseNull.String)
+		record.Qty_to_invoice_base, _ = types.NewDecimalFromString(qty_to_invoice_baseNull.String)
+		record.Qty_to_ship_base, _ = types.NewDecimalFromString(qty_to_ship_baseNull.String)
+		record.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(qty_shpd_not_invd_baseNull.String)
+		record.Qty_shipped_base, _ = types.NewDecimalFromString(qty_shipped_baseNull.String)
+		record.Qty_invoiced_base, _ = types.NewDecimalFromString(qty_invoiced_baseNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -4394,6 +4970,8 @@ func (t *SalesLine) copyFromBuffered(record *SalesLine) {
 	t.Unit_of_measure = record.Unit_of_measure
 	t.Quantity = record.Quantity
 	t.Outstanding_quantity = record.Outstanding_quantity
+	t.Qty_to_invoice = record.Qty_to_invoice
+	t.Qty_to_ship = record.Qty_to_ship
 	t.Unit_price = record.Unit_price
 	t.Unit_cost_lcy = record.Unit_cost_lcy
 	t.Tax_percent = record.Tax_percent
@@ -4414,6 +4992,10 @@ func (t *SalesLine) copyFromBuffered(record *SalesLine) {
 	t.Work_type_code = record.Work_type_code
 	t.Cust_item_disc_percent = record.Cust_item_disc_percent
 	t.Outstanding_amount = record.Outstanding_amount
+	t.Qty_shipped_not_invoiced = record.Qty_shipped_not_invoiced
+	t.Shipped_not_invoiced = record.Shipped_not_invoiced
+	t.Quantity_shipped = record.Quantity_shipped
+	t.Quantity_invoiced = record.Quantity_invoiced
 	t.Profit_percent = record.Profit_percent
 	t.Bill_to_customer_no = record.Bill_to_customer_no
 	t.Inv_discount_amount = record.Inv_discount_amount
@@ -4427,6 +5009,7 @@ func (t *SalesLine) copyFromBuffered(record *SalesLine) {
 	t.Tax_prod_posting_group = record.Tax_prod_posting_group
 	t.Currency_code = record.Currency_code
 	t.Outstanding_amount_lcy = record.Outstanding_amount_lcy
+	t.Shipped_not_invoiced_lcy = record.Shipped_not_invoiced_lcy
 	t.Tax_base_amount = record.Tax_base_amount
 	t.Unit_cost = record.Unit_cost
 	t.Variant_code = record.Variant_code
@@ -4434,6 +5017,11 @@ func (t *SalesLine) copyFromBuffered(record *SalesLine) {
 	t.Unit_of_measure_code = record.Unit_of_measure_code
 	t.Quantity_base = record.Quantity_base
 	t.Outstanding_qty_base = record.Outstanding_qty_base
+	t.Qty_to_invoice_base = record.Qty_to_invoice_base
+	t.Qty_to_ship_base = record.Qty_to_ship_base
+	t.Qty_shpd_not_invd_base = record.Qty_shpd_not_invd_base
+	t.Qty_shipped_base = record.Qty_shipped_base
+	t.Qty_invoiced_base = record.Qty_invoiced_base
 	t.StoreOldValues()
 }
 
@@ -4946,6 +5534,62 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 		for _, l := range t.registeredLogic() {
 			if trg, ok := l.(SalesLineOnValidate_Outstanding_quantity); ok {
 				if err := trg.OnValidate_Outstanding_quantity(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_to_invoice":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_invoice = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_to_invoice, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_to_invoice: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_to_invoice = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_to_invoice = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_to_invoice = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_to_invoice (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_to_invoice); ok {
+				if err := trg.OnValidate_Qty_to_invoice(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_to_ship":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_ship = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_to_ship, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_to_ship: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_to_ship = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_to_ship = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_to_ship = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_to_ship (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_to_ship); ok {
+				if err := trg.OnValidate_Qty_to_ship(t); err != nil {
 					return err
 				}
 			}
@@ -5469,6 +6113,118 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "qty_shipped_not_invoiced":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shipped_not_invoiced = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_shipped_not_invoiced, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_shipped_not_invoiced: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_shipped_not_invoiced = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_shipped_not_invoiced = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_shipped_not_invoiced = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_shipped_not_invoiced (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_shipped_not_invoiced); ok {
+				if err := trg.OnValidate_Qty_shipped_not_invoiced(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "shipped_not_invoiced":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Shipped_not_invoiced = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Shipped_not_invoiced, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field shipped_not_invoiced: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Shipped_not_invoiced = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Shipped_not_invoiced = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Shipped_not_invoiced = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field shipped_not_invoiced (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Shipped_not_invoiced); ok {
+				if err := trg.OnValidate_Shipped_not_invoiced(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "quantity_shipped":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Quantity_shipped = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Quantity_shipped, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field quantity_shipped: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Quantity_shipped = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Quantity_shipped = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Quantity_shipped = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field quantity_shipped (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Quantity_shipped); ok {
+				if err := trg.OnValidate_Quantity_shipped(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "quantity_invoiced":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Quantity_invoiced = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Quantity_invoiced, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field quantity_invoiced: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Quantity_invoiced = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Quantity_invoiced = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Quantity_invoiced = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field quantity_invoiced (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Quantity_invoiced); ok {
+				if err := trg.OnValidate_Quantity_invoiced(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "profit_percent":
 		// Set field value
 		if v, ok := value.(types.Decimal); ok {
@@ -5797,6 +6553,34 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "shipped_not_invoiced_lcy":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Shipped_not_invoiced_lcy = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Shipped_not_invoiced_lcy, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field shipped_not_invoiced_lcy: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Shipped_not_invoiced_lcy = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Shipped_not_invoiced_lcy = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Shipped_not_invoiced_lcy = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field shipped_not_invoiced_lcy (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Shipped_not_invoiced_lcy); ok {
+				if err := trg.OnValidate_Shipped_not_invoiced_lcy(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	case "tax_base_amount":
 		// Set field value
 		if v, ok := value.(types.Decimal); ok {
@@ -5981,6 +6765,146 @@ func (t *SalesLine) ValidateField(fieldName string, value interface{}) error {
 			}
 		}
 		return nil
+	case "qty_to_invoice_base":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_invoice_base = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_to_invoice_base, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_to_invoice_base: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_to_invoice_base = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_to_invoice_base = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_to_invoice_base = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_to_invoice_base (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_to_invoice_base); ok {
+				if err := trg.OnValidate_Qty_to_invoice_base(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_to_ship_base":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_ship_base = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_to_ship_base, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_to_ship_base: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_to_ship_base = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_to_ship_base = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_to_ship_base = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_to_ship_base (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_to_ship_base); ok {
+				if err := trg.OnValidate_Qty_to_ship_base(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_shpd_not_invd_base":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shpd_not_invd_base = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_shpd_not_invd_base, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_shpd_not_invd_base: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_shpd_not_invd_base = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_shpd_not_invd_base = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_shpd_not_invd_base = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_shpd_not_invd_base (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_shpd_not_invd_base); ok {
+				if err := trg.OnValidate_Qty_shpd_not_invd_base(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_shipped_base":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shipped_base = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_shipped_base, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_shipped_base: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_shipped_base = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_shipped_base = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_shipped_base = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_shipped_base (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_shipped_base); ok {
+				if err := trg.OnValidate_Qty_shipped_base(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "qty_invoiced_base":
+		// Set field value
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_invoiced_base = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Qty_invoiced_base, err = types.NewDecimalFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid decimal value for field qty_invoiced_base: %w", err)
+			}
+		} else if v, ok := value.(float64); ok {
+			t.Qty_invoiced_base = types.NewDecimal(v)
+		} else if v, ok := value.(int); ok {
+			t.Qty_invoiced_base = types.NewDecimalFromInt(int64(v))
+		} else if v, ok := value.(int64); ok {
+			t.Qty_invoiced_base = types.NewDecimalFromInt(v)
+		} else {
+			return fmt.Errorf("invalid type for field qty_invoiced_base (expected Decimal, string, float64, int, or int64)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(SalesLineOnValidate_Qty_invoiced_base); ok {
+				if err := trg.OnValidate_Qty_invoiced_base(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -6023,6 +6947,10 @@ func (t *SalesLine) FieldValue(no int) (any, bool) {
 		return t.Quantity, true
 	case 16:
 		return t.Outstanding_quantity, true
+	case 17:
+		return t.Qty_to_invoice, true
+	case 18:
+		return t.Qty_to_ship, true
 	case 22:
 		return t.Unit_price, true
 	case 23:
@@ -6063,6 +6991,14 @@ func (t *SalesLine) FieldValue(no int) (any, bool) {
 		return t.Cust_item_disc_percent, true
 	case 57:
 		return t.Outstanding_amount, true
+	case 58:
+		return t.Qty_shipped_not_invoiced, true
+	case 59:
+		return t.Shipped_not_invoiced, true
+	case 60:
+		return t.Quantity_shipped, true
+	case 61:
+		return t.Quantity_invoiced, true
 	case 67:
 		return t.Profit_percent, true
 	case 68:
@@ -6089,6 +7025,8 @@ func (t *SalesLine) FieldValue(no int) (any, bool) {
 		return t.Currency_code, true
 	case 92:
 		return t.Outstanding_amount_lcy, true
+	case 93:
+		return t.Shipped_not_invoiced_lcy, true
 	case 99:
 		return t.Tax_base_amount, true
 	case 100:
@@ -6103,6 +7041,16 @@ func (t *SalesLine) FieldValue(no int) (any, bool) {
 		return t.Quantity_base, true
 	case 5416:
 		return t.Outstanding_qty_base, true
+	case 5417:
+		return t.Qty_to_invoice_base, true
+	case 5418:
+		return t.Qty_to_ship_base, true
+	case 5458:
+		return t.Qty_shpd_not_invd_base, true
+	case 5460:
+		return t.Qty_shipped_base, true
+	case 5461:
+		return t.Qty_invoiced_base, true
 	}
 	return nil, false
 }
@@ -6229,6 +7177,16 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 			t.Outstanding_quantity = v
 			return true
 		}
+	case 17:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_invoice = v
+			return true
+		}
+	case 18:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_ship = v
+			return true
+		}
 	case 22:
 		if v, ok := value.(types.Decimal); ok {
 			t.Unit_price = v
@@ -6345,6 +7303,26 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 			t.Outstanding_amount = v
 			return true
 		}
+	case 58:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shipped_not_invoiced = v
+			return true
+		}
+	case 59:
+		if v, ok := value.(types.Decimal); ok {
+			t.Shipped_not_invoiced = v
+			return true
+		}
+	case 60:
+		if v, ok := value.(types.Decimal); ok {
+			t.Quantity_shipped = v
+			return true
+		}
+	case 61:
+		if v, ok := value.(types.Decimal); ok {
+			t.Quantity_invoiced = v
+			return true
+		}
 	case 67:
 		if v, ok := value.(types.Decimal); ok {
 			t.Profit_percent = v
@@ -6442,6 +7420,11 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 			t.Outstanding_amount_lcy = v
 			return true
 		}
+	case 93:
+		if v, ok := value.(types.Decimal); ok {
+			t.Shipped_not_invoiced_lcy = v
+			return true
+		}
 	case 99:
 		if v, ok := value.(types.Decimal); ok {
 			t.Tax_base_amount = v
@@ -6483,6 +7466,31 @@ func (t *SalesLine) SetFieldValue(no int, value any) bool {
 	case 5416:
 		if v, ok := value.(types.Decimal); ok {
 			t.Outstanding_qty_base = v
+			return true
+		}
+	case 5417:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_invoice_base = v
+			return true
+		}
+	case 5418:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_to_ship_base = v
+			return true
+		}
+	case 5458:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shpd_not_invd_base = v
+			return true
+		}
+	case 5460:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_shipped_base = v
+			return true
+		}
+	case 5461:
+		if v, ok := value.(types.Decimal); ok {
+			t.Qty_invoiced_base = v
 			return true
 		}
 	}
@@ -6564,6 +7572,10 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 			column = "quantity"
 		case "outstanding_quantity":
 			column = "outstanding_quantity"
+		case "qty_to_invoice":
+			column = "qty_to_invoice"
+		case "qty_to_ship":
+			column = "qty_to_ship"
 		case "unit_price":
 			column = "unit_price"
 		case "unit_cost_lcy":
@@ -6592,12 +7604,22 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 			column = "cust_item_disc_percent"
 		case "outstanding_amount":
 			column = "outstanding_amount"
+		case "qty_shipped_not_invoiced":
+			column = "qty_shipped_not_invoiced"
+		case "shipped_not_invoiced":
+			column = "shipped_not_invoiced"
+		case "quantity_shipped":
+			column = "quantity_shipped"
+		case "quantity_invoiced":
+			column = "quantity_invoiced"
 		case "profit_percent":
 			column = "profit_percent"
 		case "inv_discount_amount":
 			column = "inv_discount_amount"
 		case "outstanding_amount_lcy":
 			column = "outstanding_amount_lcy"
+		case "shipped_not_invoiced_lcy":
+			column = "shipped_not_invoiced_lcy"
 		case "tax_base_amount":
 			column = "tax_base_amount"
 		case "unit_cost":
@@ -6608,6 +7630,16 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 			column = "quantity_base"
 		case "outstanding_qty_base":
 			column = "outstanding_qty_base"
+		case "qty_to_invoice_base":
+			column = "qty_to_invoice_base"
+		case "qty_to_ship_base":
+			column = "qty_to_ship_base"
+		case "qty_shpd_not_invd_base":
+			column = "qty_shpd_not_invd_base"
+		case "qty_shipped_base":
+			column = "qty_shipped_base"
+		case "qty_invoiced_base":
+			column = "qty_invoiced_base"
 		default:
 			return fmt.Errorf("CalcSums: %s is not a decimal or integer field of Sales_Line", name)
 		}
@@ -6635,6 +7667,18 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
 			}
 			t.Outstanding_quantity = d
+		case "qty_to_invoice":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_to_invoice = d
+		case "qty_to_ship":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_to_ship = d
 		case "unit_price":
 			d, err := types.NewDecimalFromString(total)
 			if err != nil {
@@ -6719,6 +7763,30 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
 			}
 			t.Outstanding_amount = d
+		case "qty_shipped_not_invoiced":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_shipped_not_invoiced = d
+		case "shipped_not_invoiced":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Shipped_not_invoiced = d
+		case "quantity_shipped":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Quantity_shipped = d
+		case "quantity_invoiced":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Quantity_invoiced = d
 		case "profit_percent":
 			d, err := types.NewDecimalFromString(total)
 			if err != nil {
@@ -6737,6 +7805,12 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
 			}
 			t.Outstanding_amount_lcy = d
+		case "shipped_not_invoiced_lcy":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Shipped_not_invoiced_lcy = d
 		case "tax_base_amount":
 			d, err := types.NewDecimalFromString(total)
 			if err != nil {
@@ -6767,6 +7841,36 @@ func (t *SalesLine) CalcSums(fieldNames ...string) error {
 				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
 			}
 			t.Outstanding_qty_base = d
+		case "qty_to_invoice_base":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_to_invoice_base = d
+		case "qty_to_ship_base":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_to_ship_base = d
+		case "qty_shpd_not_invd_base":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_shpd_not_invd_base = d
+		case "qty_shipped_base":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_shipped_base = d
+		case "qty_invoiced_base":
+			d, err := types.NewDecimalFromString(total)
+			if err != nil {
+				return fmt.Errorf("CalcSums Sales_Line.%s: %w", column, err)
+			}
+			t.Qty_invoiced_base = d
 		}
 	}
 	return nil
@@ -7150,6 +8254,10 @@ func (t *SalesLine) columnValue(column string) (interface{}, bool) {
 		return t.Quantity, true
 	case "outstanding_quantity":
 		return t.Outstanding_quantity, true
+	case "qty_to_invoice":
+		return t.Qty_to_invoice, true
+	case "qty_to_ship":
+		return t.Qty_to_ship, true
 	case "unit_price":
 		return t.Unit_price, true
 	case "unit_cost_lcy":
@@ -7190,6 +8298,14 @@ func (t *SalesLine) columnValue(column string) (interface{}, bool) {
 		return t.Cust_item_disc_percent, true
 	case "outstanding_amount":
 		return t.Outstanding_amount, true
+	case "qty_shipped_not_invoiced":
+		return t.Qty_shipped_not_invoiced, true
+	case "shipped_not_invoiced":
+		return t.Shipped_not_invoiced, true
+	case "quantity_shipped":
+		return t.Quantity_shipped, true
+	case "quantity_invoiced":
+		return t.Quantity_invoiced, true
 	case "profit_percent":
 		return t.Profit_percent, true
 	case "bill_to_customer_no":
@@ -7216,6 +8332,8 @@ func (t *SalesLine) columnValue(column string) (interface{}, bool) {
 		return t.Currency_code, true
 	case "outstanding_amount_lcy":
 		return t.Outstanding_amount_lcy, true
+	case "shipped_not_invoiced_lcy":
+		return t.Shipped_not_invoiced_lcy, true
 	case "tax_base_amount":
 		return t.Tax_base_amount, true
 	case "unit_cost":
@@ -7230,6 +8348,16 @@ func (t *SalesLine) columnValue(column string) (interface{}, bool) {
 		return t.Quantity_base, true
 	case "outstanding_qty_base":
 		return t.Outstanding_qty_base, true
+	case "qty_to_invoice_base":
+		return t.Qty_to_invoice_base, true
+	case "qty_to_ship_base":
+		return t.Qty_to_ship_base, true
+	case "qty_shpd_not_invd_base":
+		return t.Qty_shpd_not_invd_base, true
+	case "qty_shipped_base":
+		return t.Qty_shipped_base, true
+	case "qty_invoiced_base":
+		return t.Qty_invoiced_base, true
 	}
 	return nil, false
 }
@@ -7304,6 +8432,8 @@ func (t *SalesLine) Init() {
 	t.Unit_of_measure = *new(types.Text)
 	t.Quantity = *new(types.Decimal)
 	t.Outstanding_quantity = *new(types.Decimal)
+	t.Qty_to_invoice = *new(types.Decimal)
+	t.Qty_to_ship = *new(types.Decimal)
 	t.Unit_price = *new(types.Decimal)
 	t.Unit_cost_lcy = *new(types.Decimal)
 	t.Tax_percent = *new(types.Decimal)
@@ -7324,6 +8454,10 @@ func (t *SalesLine) Init() {
 	t.Work_type_code = *new(types.Code)
 	t.Cust_item_disc_percent = *new(types.Decimal)
 	t.Outstanding_amount = *new(types.Decimal)
+	t.Qty_shipped_not_invoiced = *new(types.Decimal)
+	t.Shipped_not_invoiced = *new(types.Decimal)
+	t.Quantity_shipped = *new(types.Decimal)
+	t.Quantity_invoiced = *new(types.Decimal)
 	t.Profit_percent = *new(types.Decimal)
 	t.Bill_to_customer_no = *new(types.Code)
 	t.Inv_discount_amount = *new(types.Decimal)
@@ -7337,6 +8471,7 @@ func (t *SalesLine) Init() {
 	t.Tax_prod_posting_group = *new(types.Code)
 	t.Currency_code = *new(types.Code)
 	t.Outstanding_amount_lcy = *new(types.Decimal)
+	t.Shipped_not_invoiced_lcy = *new(types.Decimal)
 	t.Tax_base_amount = *new(types.Decimal)
 	t.Unit_cost = *new(types.Decimal)
 	t.Variant_code = *new(types.Code)
@@ -7344,6 +8479,11 @@ func (t *SalesLine) Init() {
 	t.Unit_of_measure_code = *new(types.Code)
 	t.Quantity_base = *new(types.Decimal)
 	t.Outstanding_qty_base = *new(types.Decimal)
+	t.Qty_to_invoice_base = *new(types.Decimal)
+	t.Qty_to_ship_base = *new(types.Decimal)
+	t.Qty_shpd_not_invd_base = *new(types.Decimal)
+	t.Qty_shipped_base = *new(types.Decimal)
+	t.Qty_invoiced_base = *new(types.Decimal)
 	t.applyDefaults()
 }
 
@@ -7378,61 +8518,73 @@ func (t *SalesLine) ClearFilters() {
 // ToMap converts the current record to a map for JSON serialization
 func (t *SalesLine) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"document_type":           int(t.Document_type),
-		"sell_to_customer_no":     t.Sell_to_customer_no.String(),
-		"document_no":             t.Document_no.String(),
-		"line_no":                 t.Line_no,
-		"type":                    int(t.Type),
-		"no":                      t.No.String(),
-		"location_code":           t.Location_code.String(),
-		"posting_group":           t.Posting_group.String(),
-		"quantity_disc_code":      t.Quantity_disc_code.String(),
-		"shipment_date":           t.Shipment_date.String(),
-		"description":             t.Description.String(),
-		"description_2":           t.Description_2.String(),
-		"unit_of_measure":         t.Unit_of_measure.String(),
-		"quantity":                t.Quantity.String(),
-		"outstanding_quantity":    t.Outstanding_quantity.String(),
-		"unit_price":              t.Unit_price.String(),
-		"unit_cost_lcy":           t.Unit_cost_lcy.String(),
-		"tax_percent":             t.Tax_percent.String(),
-		"quantity_disc_percent":   t.Quantity_disc_percent.String(),
-		"line_discount_percent":   t.Line_discount_percent.String(),
-		"line_discount_amount":    t.Line_discount_amount.String(),
-		"amount":                  t.Amount.String(),
-		"amount_including_tax":    t.Amount_including_tax.String(),
-		"allow_invoice_disc":      t.Allow_invoice_disc,
-		"gross_weight":            t.Gross_weight.String(),
-		"net_weight":              t.Net_weight.String(),
-		"units_per_parcel":        t.Units_per_parcel.String(),
-		"unit_volume":             t.Unit_volume.String(),
-		"department_code":         t.Department_code.String(),
-		"project_code":            t.Project_code.String(),
-		"price_group_code":        t.Price_group_code.String(),
-		"allow_quantity_disc":     t.Allow_quantity_disc,
-		"work_type_code":          t.Work_type_code.String(),
-		"cust_item_disc_percent":  t.Cust_item_disc_percent.String(),
-		"outstanding_amount":      t.Outstanding_amount.String(),
-		"profit_percent":          t.Profit_percent.String(),
-		"bill_to_customer_no":     t.Bill_to_customer_no.String(),
-		"inv_discount_amount":     t.Inv_discount_amount.String(),
-		"gen_bus_posting_group":   t.Gen_bus_posting_group.String(),
-		"gen_prod_posting_group":  t.Gen_prod_posting_group.String(),
-		"tax_calculation_type":    int(t.Tax_calculation_type),
-		"tax_area_code":           t.Tax_area_code.String(),
-		"tax_liable":              t.Tax_liable,
-		"tax_group_code":          t.Tax_group_code.String(),
-		"tax_bus_posting_group":   t.Tax_bus_posting_group.String(),
-		"tax_prod_posting_group":  t.Tax_prod_posting_group.String(),
-		"currency_code":           t.Currency_code.String(),
-		"outstanding_amount_lcy":  t.Outstanding_amount_lcy.String(),
-		"tax_base_amount":         t.Tax_base_amount.String(),
-		"unit_cost":               t.Unit_cost.String(),
-		"variant_code":            t.Variant_code.String(),
-		"qty_per_unit_of_measure": t.Qty_per_unit_of_measure.String(),
-		"unit_of_measure_code":    t.Unit_of_measure_code.String(),
-		"quantity_base":           t.Quantity_base.String(),
-		"outstanding_qty_base":    t.Outstanding_qty_base.String(),
+		"document_type":            int(t.Document_type),
+		"sell_to_customer_no":      t.Sell_to_customer_no.String(),
+		"document_no":              t.Document_no.String(),
+		"line_no":                  t.Line_no,
+		"type":                     int(t.Type),
+		"no":                       t.No.String(),
+		"location_code":            t.Location_code.String(),
+		"posting_group":            t.Posting_group.String(),
+		"quantity_disc_code":       t.Quantity_disc_code.String(),
+		"shipment_date":            t.Shipment_date.String(),
+		"description":              t.Description.String(),
+		"description_2":            t.Description_2.String(),
+		"unit_of_measure":          t.Unit_of_measure.String(),
+		"quantity":                 t.Quantity.String(),
+		"outstanding_quantity":     t.Outstanding_quantity.String(),
+		"qty_to_invoice":           t.Qty_to_invoice.String(),
+		"qty_to_ship":              t.Qty_to_ship.String(),
+		"unit_price":               t.Unit_price.String(),
+		"unit_cost_lcy":            t.Unit_cost_lcy.String(),
+		"tax_percent":              t.Tax_percent.String(),
+		"quantity_disc_percent":    t.Quantity_disc_percent.String(),
+		"line_discount_percent":    t.Line_discount_percent.String(),
+		"line_discount_amount":     t.Line_discount_amount.String(),
+		"amount":                   t.Amount.String(),
+		"amount_including_tax":     t.Amount_including_tax.String(),
+		"allow_invoice_disc":       t.Allow_invoice_disc,
+		"gross_weight":             t.Gross_weight.String(),
+		"net_weight":               t.Net_weight.String(),
+		"units_per_parcel":         t.Units_per_parcel.String(),
+		"unit_volume":              t.Unit_volume.String(),
+		"department_code":          t.Department_code.String(),
+		"project_code":             t.Project_code.String(),
+		"price_group_code":         t.Price_group_code.String(),
+		"allow_quantity_disc":      t.Allow_quantity_disc,
+		"work_type_code":           t.Work_type_code.String(),
+		"cust_item_disc_percent":   t.Cust_item_disc_percent.String(),
+		"outstanding_amount":       t.Outstanding_amount.String(),
+		"qty_shipped_not_invoiced": t.Qty_shipped_not_invoiced.String(),
+		"shipped_not_invoiced":     t.Shipped_not_invoiced.String(),
+		"quantity_shipped":         t.Quantity_shipped.String(),
+		"quantity_invoiced":        t.Quantity_invoiced.String(),
+		"profit_percent":           t.Profit_percent.String(),
+		"bill_to_customer_no":      t.Bill_to_customer_no.String(),
+		"inv_discount_amount":      t.Inv_discount_amount.String(),
+		"gen_bus_posting_group":    t.Gen_bus_posting_group.String(),
+		"gen_prod_posting_group":   t.Gen_prod_posting_group.String(),
+		"tax_calculation_type":     int(t.Tax_calculation_type),
+		"tax_area_code":            t.Tax_area_code.String(),
+		"tax_liable":               t.Tax_liable,
+		"tax_group_code":           t.Tax_group_code.String(),
+		"tax_bus_posting_group":    t.Tax_bus_posting_group.String(),
+		"tax_prod_posting_group":   t.Tax_prod_posting_group.String(),
+		"currency_code":            t.Currency_code.String(),
+		"outstanding_amount_lcy":   t.Outstanding_amount_lcy.String(),
+		"shipped_not_invoiced_lcy": t.Shipped_not_invoiced_lcy.String(),
+		"tax_base_amount":          t.Tax_base_amount.String(),
+		"unit_cost":                t.Unit_cost.String(),
+		"variant_code":             t.Variant_code.String(),
+		"qty_per_unit_of_measure":  t.Qty_per_unit_of_measure.String(),
+		"unit_of_measure_code":     t.Unit_of_measure_code.String(),
+		"quantity_base":            t.Quantity_base.String(),
+		"outstanding_qty_base":     t.Outstanding_qty_base.String(),
+		"qty_to_invoice_base":      t.Qty_to_invoice_base.String(),
+		"qty_to_ship_base":         t.Qty_to_ship_base.String(),
+		"qty_shpd_not_invd_base":   t.Qty_shpd_not_invd_base.String(),
+		"qty_shipped_base":         t.Qty_shipped_base.String(),
+		"qty_invoiced_base":        t.Qty_invoiced_base.String(),
 	}
 }
 
@@ -7557,6 +8709,30 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 			t.Outstanding_quantity = types.NewDecimalFromInt(int64(val))
 		case int64:
 			t.Outstanding_quantity = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_to_invoice"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_to_invoice, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_to_invoice = types.NewDecimal(val)
+		case int:
+			t.Qty_to_invoice = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_to_invoice = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_to_ship"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_to_ship, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_to_ship = types.NewDecimal(val)
+		case int:
+			t.Qty_to_ship = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_to_ship = types.NewDecimalFromInt(val)
 		}
 	}
 	if v, ok := data["unit_price"]; ok && v != nil {
@@ -7757,6 +8933,54 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 			t.Outstanding_amount = types.NewDecimalFromInt(val)
 		}
 	}
+	if v, ok := data["qty_shipped_not_invoiced"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_shipped_not_invoiced, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_shipped_not_invoiced = types.NewDecimal(val)
+		case int:
+			t.Qty_shipped_not_invoiced = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_shipped_not_invoiced = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["shipped_not_invoiced"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Shipped_not_invoiced, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Shipped_not_invoiced = types.NewDecimal(val)
+		case int:
+			t.Shipped_not_invoiced = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Shipped_not_invoiced = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["quantity_shipped"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Quantity_shipped, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Quantity_shipped = types.NewDecimal(val)
+		case int:
+			t.Quantity_shipped = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Quantity_shipped = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["quantity_invoiced"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Quantity_invoiced, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Quantity_invoiced = types.NewDecimal(val)
+		case int:
+			t.Quantity_invoiced = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Quantity_invoiced = types.NewDecimalFromInt(val)
+		}
+	}
 	if v, ok := data["profit_percent"]; ok && v != nil {
 		switch val := v.(type) {
 		case string:
@@ -7855,6 +9079,18 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 			t.Outstanding_amount_lcy = types.NewDecimalFromInt(val)
 		}
 	}
+	if v, ok := data["shipped_not_invoiced_lcy"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Shipped_not_invoiced_lcy, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Shipped_not_invoiced_lcy = types.NewDecimal(val)
+		case int:
+			t.Shipped_not_invoiced_lcy = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Shipped_not_invoiced_lcy = types.NewDecimalFromInt(val)
+		}
+	}
 	if v, ok := data["tax_base_amount"]; ok && v != nil {
 		switch val := v.(type) {
 		case string:
@@ -7923,6 +9159,66 @@ func (t *SalesLine) FromMap(data map[string]interface{}) {
 			t.Outstanding_qty_base = types.NewDecimalFromInt(int64(val))
 		case int64:
 			t.Outstanding_qty_base = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_to_invoice_base"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_to_invoice_base, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_to_invoice_base = types.NewDecimal(val)
+		case int:
+			t.Qty_to_invoice_base = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_to_invoice_base = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_to_ship_base"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_to_ship_base, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_to_ship_base = types.NewDecimal(val)
+		case int:
+			t.Qty_to_ship_base = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_to_ship_base = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_shpd_not_invd_base"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_shpd_not_invd_base, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_shpd_not_invd_base = types.NewDecimal(val)
+		case int:
+			t.Qty_shpd_not_invd_base = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_shpd_not_invd_base = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_shipped_base"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_shipped_base, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_shipped_base = types.NewDecimal(val)
+		case int:
+			t.Qty_shipped_base = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_shipped_base = types.NewDecimalFromInt(val)
+		}
+	}
+	if v, ok := data["qty_invoiced_base"]; ok && v != nil {
+		switch val := v.(type) {
+		case string:
+			t.Qty_invoiced_base, _ = types.NewDecimalFromString(val)
+		case float64:
+			t.Qty_invoiced_base = types.NewDecimal(val)
+		case int:
+			t.Qty_invoiced_base = types.NewDecimalFromInt(int64(val))
+		case int64:
+			t.Qty_invoiced_base = types.NewDecimalFromInt(val)
 		}
 	}
 }
@@ -8101,6 +9397,28 @@ func (t *SalesLine) GetFields() []tables.FieldInfo {
 			PrimaryKey:    false,
 			FlowField:     false,
 			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            17,
+			Name:          "qty_to_invoice",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            18,
+			Name:          "qty_to_ship",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
 			DecimalPlaces: "0:5",
 		},
 		{
@@ -8325,6 +9643,54 @@ func (t *SalesLine) GetFields() []tables.FieldInfo {
 			DecimalPlaces: "2:2",
 		},
 		{
+			No:            58,
+			Name:          "qty_shipped_not_invoiced",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            59,
+			Name:          "shipped_not_invoiced",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            60,
+			Name:          "quantity_shipped",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            61,
+			Name:          "quantity_invoiced",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
 			No:            67,
 			Name:          "profit_percent",
 			Type:          tables.FieldTypeDecimal,
@@ -8464,6 +9830,18 @@ func (t *SalesLine) GetFields() []tables.FieldInfo {
 			DecimalPlaces: "2:2",
 		},
 		{
+			No:            93,
+			Name:          "shipped_not_invoiced_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "2:2",
+		},
+		{
 			No:            99,
 			Name:          "tax_base_amount",
 			Type:          tables.FieldTypeDecimal,
@@ -8533,6 +9911,64 @@ func (t *SalesLine) GetFields() []tables.FieldInfo {
 		{
 			No:            5416,
 			Name:          "outstanding_qty_base",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            5417,
+			Name:          "qty_to_invoice_base",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            5418,
+			Name:          "qty_to_ship_base",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            5458,
+			Name:          "qty_shpd_not_invd_base",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            5460,
+			Name:          "qty_shipped_base",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     false,
+			ReadOnly:      true,
+			DecimalPlaces: "0:5",
+		},
+		{
+			No:            5461,
+			Name:          "qty_invoiced_base",
 			Type:          tables.FieldTypeDecimal,
 			Length:        0,
 			Required:      false,

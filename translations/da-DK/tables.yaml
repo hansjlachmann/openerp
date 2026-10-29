@@ -142,6 +142,10 @@ tables:
       reserve: "Reserver"
       no_of_ledger_entries: "Antal poster"
       comment: "Bemærkning"
+      outstanding_orders: "Udestående ordrer"
+      shipped_not_invoiced: "Leveret ufaktureret"
+      outstanding_orders_lcy: "Udestående ordrer (RV)"
+      shipped_not_invoiced_lcy: "Leveret ufaktureret (RV)"
 
     # Option field values
     options:
@@ -3394,6 +3398,18 @@ tables:
       unit_of_measure_code: "Enhedskode"
       quantity_base: "Antal (basis)"
       outstanding_qty_base: "Restantal (basis)"
+      qty_to_invoice: "Antal til fakturering"
+      qty_to_ship: "Antal til levering"
+      qty_shipped_not_invoiced: "Lev. antal ufaktureret"
+      shipped_not_invoiced: "Leveret ufaktureret"
+      quantity_shipped: "Leveret antal"
+      quantity_invoiced: "Faktureret antal"
+      shipped_not_invoiced_lcy: "Leveret ufaktureret (RV)"
+      qty_to_invoice_base: "Antal til fakturering (basis)"
+      qty_to_ship_base: "Antal til levering (basis)"
+      qty_shpd_not_invd_base: "Lev. antal ufaktureret (basis)"
+      qty_shipped_base: "Leveret antal (basis)"
+      qty_invoiced_base: "Faktureret antal (basis)"
     options:
       document_type:
         quote: "Tilbud"

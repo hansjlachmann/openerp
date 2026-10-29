@@ -217,7 +217,7 @@ menu:
       - name: "Blanket Orders"
         page_id: 507
       - name: "Orders"
-        page_id: 42
+        page_id: 9305
       - name: "Invoices"
         page_id: 43
       - name: "Credit Memos"

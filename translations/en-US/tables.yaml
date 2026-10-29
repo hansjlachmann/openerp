@@ -142,6 +142,10 @@ tables:
       reserve: "Reserve"
       no_of_ledger_entries: "No. of Ledger Entries"
       comment: "Comment"
+      outstanding_orders: "Outstanding Orders"
+      shipped_not_invoiced: "Shipped Not Invoiced"
+      outstanding_orders_lcy: "Outstanding Orders (LCY)"
+      shipped_not_invoiced_lcy: "Shipped Not Invoiced (LCY)"
 
     # Option field values
     options:
@@ -3394,6 +3398,18 @@ tables:
       unit_of_measure_code: "Unit of Measure Code"
       quantity_base: "Quantity (Base)"
       outstanding_qty_base: "Outstanding Qty. (Base)"
+      qty_to_invoice: "Qty. to Invoice"
+      qty_to_ship: "Qty. to Ship"
+      qty_shipped_not_invoiced: "Qty. Shipped Not Invoiced"
+      shipped_not_invoiced: "Shipped Not Invoiced"
+      quantity_shipped: "Quantity Shipped"
+      quantity_invoiced: "Quantity Invoiced"
+      shipped_not_invoiced_lcy: "Shipped Not Invoiced (LCY)"
+      qty_to_invoice_base: "Qty. to Invoice (Base)"
+      qty_to_ship_base: "Qty. to Ship (Base)"
+      qty_shpd_not_invd_base: "Qty. Shipped Not Invd. (Base)"
+      qty_shipped_base: "Qty. Shipped (Base)"
+      qty_invoiced_base: "Qty. Invoiced (Base)"
     options:
       document_type:
         quote: "Quote"

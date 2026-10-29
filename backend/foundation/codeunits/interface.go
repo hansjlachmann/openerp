@@ -32,6 +32,16 @@ type Result struct {
 	// Refresh: the page reloads its data afterwards — a card its record and its subpages'
 	// lines (e.g. a function on the header that changed the lines)
 	Refresh bool `json:"refresh,omitempty"`
+	// OpenPage: the page opens a page afterwards (after the message box) — a card on a record
+	// the codeunit made, e.g. the order a quote became (classic PAGE.RUN after the codeunit)
+	OpenPage *PageLink `json:"open_page,omitempty"`
+}
+
+// PageLink is a page on a record: its number and the record's key (comma-joined for a
+// composite key, as in page URLs)
+type PageLink struct {
+	PageID int    `json:"page_id"`
+	Key    string `json:"key"`
 }
 
 // DialogResult represents a dialog/message box to display

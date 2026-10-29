@@ -34,7 +34,7 @@
 	import { loadPageCustomizations, savePageCustomizations, loadColumnWidths, saveColumnWidths, loadRowNumbersPreference, saveRowNumbersPreference } from '$lib/utils/customizationStorage';
 	import { tick, untrack } from 'svelte';
 	import { withReturn } from '$lib/utils/returnUrl';
-	import { runPagePath } from '$lib/utils/runPage';
+	import { runPagePath, openPagePath } from '$lib/utils/runPage';
 	import { apiFlowFilters } from '$lib/utils/flowFilter';
 	import ColumnHeaderMenu, { type ColumnMenuItem } from './ColumnHeaderMenu.svelte';
 	import { keyValuesFromFilters, loadClipboard, recordsToPaste, saveClipboard, singleValueFilters } from '$lib/utils/recordClipboard';
@@ -210,6 +210,18 @@
 
 	// Dialog state (for codeunit results)
 	let dialogOpen = $state(false);
+	// The page a codeunit's result opens after its message box (open_page)
+	let pendingOpen: string | null = null;
+	function openPending() {
+		const path = pendingOpen;
+		pendingOpen = null;
+		if (path) goto(path);
+	}
+	function closeDialog() {
+		dialogOpen = false;
+		dialogData = null;
+		openPending();
+	}
 	let dialogData = $state<DialogResult | null>(null);
 
 	// Progress modal state (for codeunits with progress)
@@ -762,12 +774,15 @@
 				progressModalOpen = false;
 				// The codeunit's closing message box (Message), else a plain notice
 				const finalDialog = (result as { data?: Record<string, unknown> }).data?.dialog as DialogResult | undefined;
+				// the page the result opens afterwards (the order a quote became), after its message
+				pendingOpen = progressError ? null : openPagePath((result as { data?: Record<string, unknown> }).data?.open_page);
 				if (!progressError && finalDialog) {
 					dialogData = finalDialog;
 					dialogOpen = true;
 				} else if (!progressError && !printoutOf((result as { data?: Record<string, unknown> }).data)) {
 					toast.success(t(MSG.JOB_COMPLETED));
 				}
+				if (!dialogOpen) openPending();
 				// Refresh list data to reflect changes (e.g. new entries, status updates)
 				onaction?.('Refresh');
 			}
@@ -3720,7 +3735,7 @@
 
 <!-- Codeunit Dialog Modal -->
 {#if dialogOpen && dialogData}
-	<Modal open={dialogOpen} onclose={() => { dialogOpen = false; dialogData = null; }}>
+	<Modal open={dialogOpen} onclose={closeDialog}>
 		<div class="p-6">
 			<div class="flex items-start gap-4">
 				{#if dialogData.type === 'info'}
@@ -3756,7 +3771,7 @@
 			<div class="mt-6 flex justify-end">
 				<button
 					class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-					onclick={() => { dialogOpen = false; dialogData = null; }}
+					onclick={closeDialog}
 				>
 					{t(BTN.OK)}
 				</button>

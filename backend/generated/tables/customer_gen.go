@@ -245,6 +245,14 @@ type Customer struct {
 	Reminder_amounts types.Decimal
 	// FlowField: Sum(CustomerLedgerEntry.original_amount_lcy)
 	Reminder_amounts_lcy types.Decimal
+	// FlowField: Sum(SalesLine.outstanding_amount)
+	Outstanding_orders types.Decimal
+	// FlowField: Sum(SalesLine.shipped_not_invoiced)
+	Shipped_not_invoiced types.Decimal
+	// FlowField: Sum(SalesLine.outstanding_amount_lcy)
+	Outstanding_orders_lcy types.Decimal
+	// FlowField: Sum(SalesLine.shipped_not_invoiced_lcy)
+	Shipped_not_invoiced_lcy types.Decimal
 	// FlowField: Count(CustomerLedgerEntry.entry_no)
 	No_of_ledger_entries int
 	// FlowFilter date_filter (types.Date): the filter expression FlowFields apply — not stored
@@ -431,6 +439,10 @@ var Customer_FieldNo = struct {
 	Credit_amount_lcy           int
 	Reminder_amounts            int
 	Reminder_amounts_lcy        int
+	Outstanding_orders          int
+	Shipped_not_invoiced        int
+	Outstanding_orders_lcy      int
+	Shipped_not_invoiced_lcy    int
 	No_of_ledger_entries        int
 	Date_filter                 int
 	Department_filter           int
@@ -523,6 +535,10 @@ var Customer_FieldNo = struct {
 	Credit_amount_lcy:           100,
 	Reminder_amounts:            105,
 	Reminder_amounts_lcy:        106,
+	Outstanding_orders:          78,
+	Shipped_not_invoiced:        79,
+	Outstanding_orders_lcy:      113,
+	Shipped_not_invoiced_lcy:    114,
 	No_of_ledger_entries:        903,
 	Date_filter:                 55,
 	Department_filter:           56,
@@ -705,6 +721,14 @@ func (t *Customer) FieldNo(fieldName string) int {
 		return 105
 	case "reminder_amounts_lcy":
 		return 106
+	case "outstanding_orders":
+		return 78
+	case "shipped_not_invoiced":
+		return 79
+	case "outstanding_orders_lcy":
+		return 113
+	case "shipped_not_invoiced_lcy":
+		return 114
 	case "no_of_ledger_entries":
 		return 903
 	case "date_filter":
@@ -894,6 +918,14 @@ func (t *Customer) FieldName(fieldNo int) string {
 		return "reminder_amounts"
 	case 106:
 		return "reminder_amounts_lcy"
+	case 78:
+		return "outstanding_orders"
+	case 79:
+		return "shipped_not_invoiced"
+	case 113:
+		return "outstanding_orders_lcy"
+	case 114:
+		return "shipped_not_invoiced_lcy"
 	case 903:
 		return "no_of_ledger_entries"
 	case 55:
@@ -1531,6 +1563,10 @@ func GetCustomerTableSchema() string {
 		credit_amount_lcy TEXT,
 		reminder_amounts TEXT,
 		reminder_amounts_lcy TEXT,
+		outstanding_orders TEXT,
+		shipped_not_invoiced TEXT,
+		outstanding_orders_lcy TEXT,
+		shipped_not_invoiced_lcy TEXT,
 		no_of_ledger_entries INTEGER
 	`
 }
@@ -1624,6 +1660,10 @@ func GetCustomerPostgresTableSchema() string {
 		credit_amount_lcy NUMERIC,
 		reminder_amounts NUMERIC,
 		reminder_amounts_lcy NUMERIC,
+		outstanding_orders NUMERIC,
+		shipped_not_invoiced NUMERIC,
+		outstanding_orders_lcy NUMERIC,
+		shipped_not_invoiced_lcy NUMERIC,
 		no_of_ledger_entries INTEGER
 	`
 }
@@ -3359,6 +3399,10 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 		t.calcFlowField_credit_amount_lcy()
 		t.calcFlowField_reminder_amounts()
 		t.calcFlowField_reminder_amounts_lcy()
+		t.calcFlowField_outstanding_orders()
+		t.calcFlowField_shipped_not_invoiced()
+		t.calcFlowField_outstanding_orders_lcy()
+		t.calcFlowField_shipped_not_invoiced_lcy()
 		t.calcFlowField_no_of_ledger_entries()
 		return
 	}
@@ -3416,6 +3460,14 @@ func (t *Customer) CalcFields(fieldNames ...string) {
 			t.calcFlowField_reminder_amounts()
 		case "reminder_amounts_lcy":
 			t.calcFlowField_reminder_amounts_lcy()
+		case "outstanding_orders":
+			t.calcFlowField_outstanding_orders()
+		case "shipped_not_invoiced":
+			t.calcFlowField_shipped_not_invoiced()
+		case "outstanding_orders_lcy":
+			t.calcFlowField_outstanding_orders_lcy()
+		case "shipped_not_invoiced_lcy":
+			t.calcFlowField_shipped_not_invoiced_lcy()
 		case "no_of_ledger_entries":
 			t.calcFlowField_no_of_ledger_entries()
 		}
@@ -3572,6 +3624,30 @@ func (t *Customer) calcFlowField_reminder_amounts_lcy() {
 	t.Reminder_amounts_lcy = t.calcSum_reminder_amounts_lcy()
 }
 
+// calcFlowField_outstanding_orders calculates the outstanding_orders FlowField
+// CalcFormula: Sum(SalesLine.outstanding_amount)
+func (t *Customer) calcFlowField_outstanding_orders() {
+	t.Outstanding_orders = t.calcSum_outstanding_orders()
+}
+
+// calcFlowField_shipped_not_invoiced calculates the shipped_not_invoiced FlowField
+// CalcFormula: Sum(SalesLine.shipped_not_invoiced)
+func (t *Customer) calcFlowField_shipped_not_invoiced() {
+	t.Shipped_not_invoiced = t.calcSum_shipped_not_invoiced()
+}
+
+// calcFlowField_outstanding_orders_lcy calculates the outstanding_orders_lcy FlowField
+// CalcFormula: Sum(SalesLine.outstanding_amount_lcy)
+func (t *Customer) calcFlowField_outstanding_orders_lcy() {
+	t.Outstanding_orders_lcy = t.calcSum_outstanding_orders_lcy()
+}
+
+// calcFlowField_shipped_not_invoiced_lcy calculates the shipped_not_invoiced_lcy FlowField
+// CalcFormula: Sum(SalesLine.shipped_not_invoiced_lcy)
+func (t *Customer) calcFlowField_shipped_not_invoiced_lcy() {
+	t.Shipped_not_invoiced_lcy = t.calcSum_shipped_not_invoiced_lcy()
+}
+
 // calcFlowField_no_of_ledger_entries calculates the no_of_ledger_entries FlowField
 // CalcFormula: Count(CustomerLedgerEntry.entry_no)
 func (t *Customer) calcFlowField_no_of_ledger_entries() {
@@ -3641,6 +3717,14 @@ func (t *Customer) CalcFieldsForRecords(records []map[string]interface{}, fieldN
 			t.calcForRecords_reminder_amounts(records)
 		case "reminder_amounts_lcy":
 			t.calcForRecords_reminder_amounts_lcy(records)
+		case "outstanding_orders":
+			t.calcForRecords_outstanding_orders(records)
+		case "shipped_not_invoiced":
+			t.calcForRecords_shipped_not_invoiced(records)
+		case "outstanding_orders_lcy":
+			t.calcForRecords_outstanding_orders_lcy(records)
+		case "shipped_not_invoiced_lcy":
+			t.calcForRecords_shipped_not_invoiced_lcy(records)
 		case "no_of_ledger_entries":
 			t.calcForRecords_no_of_ledger_entries(records)
 		}
@@ -6099,6 +6183,368 @@ func (t *Customer) calcForRecords_reminder_amounts_lcy(records []map[string]inte
 	}
 }
 
+// calcForRecords_outstanding_orders calculates the outstanding_orders FlowField for a set of records
+// CalcFormula: Sum(SalesLine.outstanding_amount)
+func (t *Customer) calcForRecords_outstanding_orders(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "bill_to_customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT bill_to_customer_no, COALESCE(SUM(outstanding_amount), 0) FROM "%s" WHERE %s GROUP BY bill_to_customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate outstanding_orders: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["outstanding_orders"] = v.String()
+	}
+}
+
+// calcForRecords_shipped_not_invoiced calculates the shipped_not_invoiced FlowField for a set of records
+// CalcFormula: Sum(SalesLine.shipped_not_invoiced)
+func (t *Customer) calcForRecords_shipped_not_invoiced(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "bill_to_customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT bill_to_customer_no, COALESCE(SUM(shipped_not_invoiced), 0) FROM "%s" WHERE %s GROUP BY bill_to_customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate shipped_not_invoiced: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["shipped_not_invoiced"] = v.String()
+	}
+}
+
+// calcForRecords_outstanding_orders_lcy calculates the outstanding_orders_lcy FlowField for a set of records
+// CalcFormula: Sum(SalesLine.outstanding_amount_lcy)
+func (t *Customer) calcForRecords_outstanding_orders_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "bill_to_customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT bill_to_customer_no, COALESCE(SUM(outstanding_amount_lcy), 0) FROM "%s" WHERE %s GROUP BY bill_to_customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate outstanding_orders_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["outstanding_orders_lcy"] = v.String()
+	}
+}
+
+// calcForRecords_shipped_not_invoiced_lcy calculates the shipped_not_invoiced_lcy FlowField for a set of records
+// CalcFormula: Sum(SalesLine.shipped_not_invoiced_lcy)
+func (t *Customer) calcForRecords_shipped_not_invoiced_lcy(records []map[string]interface{}) {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Distinct key values of the records
+	seen := make(map[string]bool, len(records))
+	var keys []interface{}
+	for _, rec := range records {
+		k := fmt.Sprint(rec["no"])
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, rec["no"])
+		}
+	}
+
+	// One grouped query for the keys (IN list). With more keys than chunkSize (a long
+	// list) one grouped query over the whole source table instead: much cheaper than
+	// many IN queries, and it keeps the bind parameters bounded.
+	values := make(map[string]types.Decimal, len(keys))
+	const chunkSize = 500
+	chunks := [][]interface{}{nil} // nil chunk: no IN filter, all keys
+	if len(keys) <= chunkSize {
+		chunks = [][]interface{}{keys}
+	}
+	for _, chunk := range chunks {
+
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if chunk != nil {
+			whereClauses = append(whereClauses, "bill_to_customer_no IN ("+strings.TrimSuffix(strings.Repeat("?, ", len(chunk)), ", ")+")")
+			args = append(args, chunk...)
+		}
+		whereClause := "1=1"
+		if len(whereClauses) > 0 {
+			whereClause = strings.Join(whereClauses, " AND ")
+		}
+		query := fmt.Sprintf(`SELECT bill_to_customer_no, COALESCE(SUM(shipped_not_invoiced_lcy), 0) FROM "%s" WHERE %s GROUP BY bill_to_customer_no`, tableName, whereClause)
+		query = t.convertPlaceholders(query, len(args))
+
+		rows, err := t.db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("Error: Failed to calculate shipped_not_invoiced_lcy: %v\n", err)
+			return
+		}
+		for rows.Next() {
+			var key string
+			var sumStr string
+			if err := rows.Scan(&key, &sumStr); err == nil {
+				values[key], _ = types.NewDecimalFromString(sumStr)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	// Records without matching entries get zero
+	for _, rec := range records {
+		v, ok := values[fmt.Sprint(rec["no"])]
+		if !ok {
+			v = types.ZeroDecimal()
+		}
+		rec["shipped_not_invoiced_lcy"] = v.String()
+	}
+}
+
 // calcForRecords_no_of_ledger_entries calculates the no_of_ledger_entries FlowField for a set of records
 // CalcFormula: Count(CustomerLedgerEntry.entry_no)
 func (t *Customer) calcForRecords_no_of_ledger_entries(records []map[string]interface{}) {
@@ -7760,6 +8206,228 @@ func (t *Customer) calcSum_reminder_amounts_lcy() types.Decimal {
 	return sum
 }
 
+func (t *Customer) calcSum_outstanding_orders() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "bill_to_customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(outstanding_amount), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for outstanding_orders: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_shipped_not_invoiced() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "bill_to_customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Currency_filter != "" {
+		// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(shipped_not_invoiced), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for shipped_not_invoiced: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_outstanding_orders_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "bill_to_customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(outstanding_amount_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for outstanding_orders_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
+func (t *Customer) calcSum_shipped_not_invoiced_lcy() types.Decimal {
+	// Source: the SIFT totals table of a key covering the filters, else the entries
+	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	if t.Department_filter != "" || t.Project_filter != "" {
+		// A FlowFilter is set: the key must contain the filtered fields too
+		tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+	}
+	_ = useSIFT
+
+	// Build WHERE clause from FlowFilters
+	var whereClauses []string
+	var args []interface{}
+	whereClauses = append(whereClauses, "document_type = ?")
+	args = append(args, 1)
+	whereClauses = append(whereClauses, "bill_to_customer_no = ?")
+	args = append(args, t.No)
+	if t.Department_filter != "" {
+		// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+	if t.Project_filter != "" {
+		// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+		if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+			whereClauses = append(whereClauses, clause)
+			args = append(args, filterArgs...)
+		}
+	}
+
+	whereClause := "1=1"
+	if len(whereClauses) > 0 {
+		whereClause = strings.Join(whereClauses, " AND ")
+	}
+
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(shipped_not_invoiced_lcy), 0) FROM "%s" WHERE %s`, tableName, whereClause)
+
+	// Convert placeholders for PostgreSQL
+	query = t.convertPlaceholders(query, len(args))
+
+	var sumStr string
+	err := t.db.QueryRow(query, args...).Scan(&sumStr)
+	if err != nil {
+		fmt.Printf("Error: Failed to calculate sum for shipped_not_invoiced_lcy: %v\n", err)
+		return types.ZeroDecimal()
+	}
+
+	sum, _ := types.NewDecimalFromString(sumStr)
+	return sum
+}
+
 func (t *Customer) calcCount_no_of_ledger_entries() int {
 	// Source: the SIFT totals table of a key covering the filters, else the entries
 	tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, CustomerLedgerEntryTableName), false
@@ -7972,6 +8640,14 @@ func (t *Customer) FlowFieldFilterKind(field string) (flowfilter.Kind, bool) {
 	case "reminder_amounts":
 		return flowfilter.KindDecimal, true
 	case "reminder_amounts_lcy":
+		return flowfilter.KindDecimal, true
+	case "outstanding_orders":
+		return flowfilter.KindDecimal, true
+	case "shipped_not_invoiced":
+		return flowfilter.KindDecimal, true
+	case "outstanding_orders_lcy":
+		return flowfilter.KindDecimal, true
+	case "shipped_not_invoiced_lcy":
 		return flowfilter.KindDecimal, true
 	case "no_of_ledger_entries":
 		return flowfilter.KindInt, true
@@ -9072,6 +9748,152 @@ func (t *Customer) flowFieldExpr(field string) (string, []interface{}) {
 			where = strings.Join(whereClauses, " AND ")
 		}
 		agg := "COALESCE(SUM(original_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "outstanding_orders":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "bill_to_customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(outstanding_amount), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "shipped_not_invoiced":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" || t.Currency_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "bill_to_customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Currency_filter != "" {
+			// FlowFilter currency_filter applied to currency_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("currency_code", flowfilter.KindCode, t.Currency_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(shipped_not_invoiced), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "outstanding_orders_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "bill_to_customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(outstanding_amount_lcy), 0)"
+		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
+	case "shipped_not_invoiced_lcy":
+		// Source: the SIFT totals table of a key covering the filters, else the entries
+		tableName, useSIFT := fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		if t.Department_filter != "" || t.Project_filter != "" {
+			// A FlowFilter is set: the key must contain the filtered fields too
+			tableName, useSIFT = fmt.Sprintf("%s$%s", t.company, SalesLineTableName), false
+		}
+		_ = useSIFT
+		var whereClauses []string
+		var args []interface{}
+		whereClauses = append(whereClauses, "document_type = ?")
+		args = append(args, 1)
+		whereClauses = append(whereClauses, "bill_to_customer_no = "+outer+".no")
+		if t.Department_filter != "" {
+			// FlowFilter department_filter applied to department_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("department_code", flowfilter.KindCode, t.Department_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		if t.Project_filter != "" {
+			// FlowFilter project_filter applied to project_code (validated by SetFlowFilter)
+			if clause, filterArgs, _ := flowfilter.Clause("project_code", flowfilter.KindCode, t.Project_filter); clause != "" {
+				whereClauses = append(whereClauses, clause)
+				args = append(args, filterArgs...)
+			}
+		}
+		where := "1=1"
+		if len(whereClauses) > 0 {
+			where = strings.Join(whereClauses, " AND ")
+		}
+		agg := "COALESCE(SUM(shipped_not_invoiced_lcy), 0)"
 		return "(SELECT " + agg + " FROM \"" + tableName + "\" WHERE " + where + ")", args
 	case "no_of_ledger_entries":
 		// Source: the SIFT totals table of a key covering the filters, else the entries
@@ -10739,6 +11561,10 @@ func (t *Customer) copyFromBuffered(record *Customer) {
 	t.Credit_amount_lcy = record.Credit_amount_lcy
 	t.Reminder_amounts = record.Reminder_amounts
 	t.Reminder_amounts_lcy = record.Reminder_amounts_lcy
+	t.Outstanding_orders = record.Outstanding_orders
+	t.Shipped_not_invoiced = record.Shipped_not_invoiced
+	t.Outstanding_orders_lcy = record.Outstanding_orders_lcy
+	t.Shipped_not_invoiced_lcy = record.Shipped_not_invoiced_lcy
 	t.No_of_ledger_entries = record.No_of_ledger_entries
 	t.StoreOldValues()
 }
@@ -12411,6 +13237,14 @@ func (t *Customer) flowFieldValue(no int) (any, bool) {
 		return t.Reminder_amounts, true
 	case 106:
 		return t.Reminder_amounts_lcy, true
+	case 78:
+		return t.Outstanding_orders, true
+	case 79:
+		return t.Shipped_not_invoiced, true
+	case 113:
+		return t.Outstanding_orders_lcy, true
+	case 114:
+		return t.Shipped_not_invoiced_lcy, true
 	case 903:
 		return t.No_of_ledger_entries, true
 	}
@@ -13775,6 +14609,14 @@ func (t *Customer) ToMap() map[string]interface{} {
 		"reminder_amounts": t.Reminder_amounts.String(),
 		// FlowField: reminder_amounts_lcy
 		"reminder_amounts_lcy": t.Reminder_amounts_lcy.String(),
+		// FlowField: outstanding_orders
+		"outstanding_orders": t.Outstanding_orders.String(),
+		// FlowField: shipped_not_invoiced
+		"shipped_not_invoiced": t.Shipped_not_invoiced.String(),
+		// FlowField: outstanding_orders_lcy
+		"outstanding_orders_lcy": t.Outstanding_orders_lcy.String(),
+		// FlowField: shipped_not_invoiced_lcy
+		"shipped_not_invoiced_lcy": t.Shipped_not_invoiced_lcy.String(),
 		// FlowField: no_of_ledger_entries
 		"no_of_ledger_entries": t.No_of_ledger_entries,
 	}
@@ -15072,6 +15914,50 @@ func (t *Customer) GetFields() []tables.FieldInfo {
 			DecimalPlaces: "2:2",
 		},
 		{
+			No:            78,
+			Name:          "outstanding_orders",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            79,
+			Name:          "shipped_not_invoiced",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            113,
+			Name:          "outstanding_orders_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
+			No:            114,
+			Name:          "shipped_not_invoiced_lcy",
+			Type:          tables.FieldTypeDecimal,
+			Length:        0,
+			Required:      false,
+			Editable:      true,
+			PrimaryKey:    false,
+			FlowField:     true,
+			DecimalPlaces: "2:2",
+		},
+		{
 			No:         903,
 			Name:       "no_of_ledger_entries",
 			Type:       tables.FieldTypeInteger,
@@ -15154,6 +16040,10 @@ func (t *Customer) GetFlowFields() []string {
 		"credit_amount_lcy",
 		"reminder_amounts",
 		"reminder_amounts_lcy",
+		"outstanding_orders",
+		"shipped_not_invoiced",
+		"outstanding_orders_lcy",
+		"shipped_not_invoiced_lcy",
 		"no_of_ledger_entries",
 	}
 }

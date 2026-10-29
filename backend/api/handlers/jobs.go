@@ -164,6 +164,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
 		}
+		withOpenPage(&result)
 
 		// Return the result with dialog info if present
 		response := map[string]interface{}{
@@ -210,6 +211,7 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 			return
 		}
 
+		withOpenPage(&result)
 		// The page reloads its data afterwards: sent with the result data
 		if result.Refresh {
 			if result.Data == nil {
@@ -227,10 +229,11 @@ func (h *JobsHandler) StartJob(c *fiber.Ctx) error {
 			}
 			dialog.CloseWithError(fmt.Errorf("%s", errMsg))
 		} else if result.Data != nil {
-			// Close with data (e.g., PDF base64)
+			// Close with data (e.g., PDF base64), and the closing message box with it
 			message := result.Message
 			if result.Dialog != nil {
 				message = result.Dialog.Message
+				result.Data["dialog"] = result.Dialog
 			}
 			dialog.CloseWithData(result.Data, message)
 		} else if result.Dialog != nil {
@@ -439,4 +442,15 @@ func runPermissionError(sess *session.Session, codeunitID, reportID int, functio
 		}
 	}
 	return nil
+}
+
+// withOpenPage puts the page a result opens afterwards into its data (open_page)
+func withOpenPage(result *fcodeunits.Result) {
+	if result.OpenPage == nil {
+		return
+	}
+	if result.Data == nil {
+		result.Data = map[string]interface{}{}
+	}
+	result.Data["open_page"] = result.OpenPage
 }
