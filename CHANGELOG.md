@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.121](https://github.com/hansjlachmann/openerp/compare/v0.1.120...v0.1.121) (2026-10-29)
+
+
+### CI/CD
+
+* run the PostgreSQL tests against a Postgres service ([#170](https://github.com/hansjlachmann/openerp/issues/170)) ([86ad966](https://github.com/hansjlachmann/openerp/commit/86ad966482ba44041983b09f6be7ce544d70d5b2))
+
 ## [0.1.120](https://github.com/hansjlachmann/openerp/compare/v0.1.119...v0.1.120) (2026-10-29)
 
 
