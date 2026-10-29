@@ -83,6 +83,7 @@ common:
     delete: "Delete"
     post: "Post"
     post_and_print: "Post and Print"
+    preview_posting: "Preview Posting"
     get_shipment_lines: "Get Shipment Lines"
     show_document: "Show Document"
     ok: "OK"

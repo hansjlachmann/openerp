@@ -518,6 +518,8 @@ pages:
     caption: "Resource Price Changes"
   navigate:
     caption: "Navigate"
+  posting_preview:
+    caption: "Posting Preview"
   sales_quotes:
     caption: "Sales Quotes"
   sales_quote:

@@ -475,6 +475,10 @@ func (h *TablesHandler) GetRecordIDs(c *fiber.Ctx) error {
 	if err := h.fillTemporaryPage(c, table, tableName, sess); err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
+	// A list opened from a posting preview: the previewed entries
+	if err := h.fillPreview(c, table, tableName, sess); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+	}
 
 	// The list's filters, search and sort: card navigation (First/Previous/Next/Last) moves
 	// through the records in the order and selection the list shows
@@ -655,6 +659,10 @@ func (h *TablesHandler) ListRecords(c *fiber.Ctx) error {
 
 	// A page on a temporary source table: its rows (Navigate)
 	if err := h.fillTemporaryPage(c, table, tableName, sess); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
+	}
+	// A list opened from a posting preview: the previewed entries
+	if err := h.fillPreview(c, table, tableName, sess); err != nil {
 		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 

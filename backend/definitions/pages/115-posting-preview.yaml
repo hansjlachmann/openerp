@@ -1,0 +1,32 @@
+page:
+  id: 115
+  type: List
+  name: Posting Preview
+  source_table: Document_Entry
+  caption: Posting Preview
+  editable: false
+  source_table_temporary: true   # the lines come from the previewed posting (OnFindRecords)
+
+  # Opened by Preview Posting with the page parameter preview: the tables the posting would
+  # write entries in and how many; Show opens a table's entries page on the preview. Nothing
+  # was saved.
+  layout:
+    repeater:
+      fields:
+        - source: table_id
+          width: 90
+
+        - source: table_name
+          width: 300
+
+        - source: no_of_records
+          width: 130
+
+  actions:
+    - name: Show
+      caption: Show
+      image: Entries
+      promoted: true
+      run_page_field: page_id
+      run_page_params:
+        preview: preview_id

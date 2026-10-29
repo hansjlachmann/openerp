@@ -90,6 +90,29 @@ func Commit(tx *sql.Tx) error {
 	return tx.Commit()
 }
 
+// Inconsistency is the error Commit would return for the transaction now (nil: it would
+// commit), with the tables' explanations run — without committing or forgetting anything: a
+// posting preview shows it and then rolls back
+func Inconsistency(tx *sql.Tx) error {
+	inconsistentMu.Lock()
+	var tables []string
+	for table := range inconsistent[tx] {
+		tables = append(tables, table)
+	}
+	inconsistentMu.Unlock()
+	if len(tables) == 0 {
+		return nil
+	}
+	sort.Strings(tables)
+	diagnoseMu.Lock()
+	explain := map[string]func() error{}
+	for table, diagnose := range diagnoses[tx] {
+		explain[table] = diagnose
+	}
+	diagnoseMu.Unlock()
+	return inconsistencyError(tables, explain)
+}
+
 // inconsistencyError is the error of a refused commit: the first registered explanation of an
 // inconsistent table (OnInconsistent), else the tables named
 func inconsistencyError(tables []string, explain map[string]func() error) error {

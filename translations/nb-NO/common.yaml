@@ -83,6 +83,7 @@ common:
     delete: "Slett"
     post: "Bokfør"
     post_and_print: "Bokfør og skriv ut"
+    preview_posting: "Forhåndsvis bokføring"
     get_shipment_lines: "Hent leveringslinjer"
     show_document: "Vis bilag"
     ok: "OK"

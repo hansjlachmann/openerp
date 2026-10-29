@@ -518,6 +518,8 @@ pages:
     caption: "Ressursprisendringer"
   navigate:
     caption: "Naviger"
+  posting_preview:
+    caption: "Forhåndsvisning av bokføring"
   sales_quotes:
     caption: "Salgstilbud"
   sales_quote:

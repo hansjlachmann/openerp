@@ -217,6 +217,7 @@ messages:
   HELP_LIST_SEARCH: "Search"
   HELP_LIST_FILTER_PANE: "Show/hide filter pane — field picker focused: Alt+↓, Enter, type value, Enter"
   HELP_LIST_NAVIGATE: "Navigate: all entries of the row's document (entry lists)"
+  HELP_PREVIEW_POSTING: "Preview Posting: the entries Post would write, nothing is saved (documents, journals)"
   HELP_LIST_REFRESH: "Refresh"
   HELP_LIST_ESCAPE: "With several rows selected: back to one row; otherwise back to the main menu"
   HELP_SEC_DATES: "Typing dates"

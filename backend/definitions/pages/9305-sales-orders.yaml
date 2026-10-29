@@ -66,6 +66,14 @@ page:
       promoted: true
       run_object: codeunit:81
 
+    # what Post would write, nothing saved (Posting Preview 115)
+    - name: Preview Posting
+      caption: Preview Posting
+      image: Search
+      shortcut: Ctrl+Alt+F9
+      promoted: true
+      run_object: "table:Sales_Header.PreviewPosting"
+
     - name: Post and Print
       caption: Post and Print
       image: Print

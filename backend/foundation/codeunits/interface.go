@@ -38,10 +38,13 @@ type Result struct {
 }
 
 // PageLink is a page on a record: its number and the record's key (comma-joined for a
-// composite key, as in page URLs)
+// composite key, as in page URLs), the page's parameters (Posting Preview: preview) and
+// whether Esc/close returns to the page the codeunit ran from (Return)
 type PageLink struct {
-	PageID int    `json:"page_id"`
-	Key    string `json:"key"`
+	PageID int               `json:"page_id"`
+	Key    string            `json:"key"`
+	Params map[string]string `json:"params,omitempty"`
+	Return bool              `json:"return,omitempty"`
 }
 
 // DialogResult represents a dialog/message box to display

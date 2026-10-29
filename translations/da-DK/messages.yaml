@@ -217,6 +217,7 @@ messages:
   HELP_LIST_SEARCH: "Søg"
   HELP_LIST_FILTER_PANE: "Vis/skjul filterrude — feltvælger i fokus: Alt+↓, Enter, skriv værdi, Enter"
   HELP_LIST_NAVIGATE: "Naviger: alle poster for rækkens bilag (postlister)"
+  HELP_PREVIEW_POSTING: "Vis bogføring: posterne Bogfør ville skrive, intet gemmes (bilag, kladder)"
   HELP_LIST_REFRESH: "Opdater"
   HELP_LIST_ESCAPE: "Med flere rækker markeret: tilbage til én række; ellers tilbage til hovedmenuen"
   HELP_SEC_DATES: "Indtaste datoer"
