@@ -182,6 +182,8 @@ menu:
             items:
               - name: "Import Taxonomy"
           - separator: true
+          - name: "G/L Balance Check"
+            run_object: "codeunit:904"
           - name: "Date Compression"
             items:
               - name: "General Ledger"

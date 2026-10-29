@@ -249,6 +249,7 @@ common:
     fa_setup: "FA Setup"
     finance_charge_memos: "Finance Charge Memos"
     fiscal_year: "Fiscal Year"
+    g_l_balance_check: "G/L Balance Check"
     g_l_budget_entries: "G/L Budget Entries"
     general_journals: "General Journals"
     general_ledger: "General Ledger"

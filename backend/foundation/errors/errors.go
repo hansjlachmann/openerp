@@ -42,6 +42,7 @@ const (
 	ErrInconsistent       ErrorCode = "ERR_INCONSISTENT"
 	ErrPostedTable        ErrorCode = "ERR_POSTED_TABLE"
 	ErrGLNotBalanced      ErrorCode = "ERR_GL_NOT_BALANCED"
+	ErrGLCheckFailed      ErrorCode = "ERR_GL_CHECK_FAILED"
 	ErrFieldNotEditable   ErrorCode = "ERR_FIELD_NOT_EDITABLE"
 	ErrMustBeRoundedTo    ErrorCode = "ERR_MUST_BE_ROUNDED_TO"
 	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
@@ -547,6 +548,12 @@ func Inconsistent(tables string) *AppError {
 // the date and the difference, formatted for the user; nothing was saved
 func GLNotBalanced(documentNo, postingDate, difference string) *AppError {
 	return &AppError{Code: ErrGLNotBalanced, Params: []string{documentNo, postingDate, difference}}
+}
+
+// GLCheckFailed: the G/L check (codeunit 904) found posting dates and transactions that do not
+// balance, gaps in the entry numbers or register problems (the counts)
+func GLCheckFailed(dates, transactions, gaps, registers string) *AppError {
+	return &AppError{Code: ErrGLCheckFailed, Params: []string{dates, transactions, gaps, registers}}
 }
 
 // PostedTable: the records of a posted table (ledger entries, registers) are written by posting
