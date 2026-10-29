@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { theme, loadAppearance, clearAppearance } from '$lib/stores/theme';
+	import { regional, loadRegional, clearRegional } from '$lib/stores/regional';
+	import MySettingsDialog from './MySettingsDialog.svelte';
+	import { formatDate } from '$lib/utils/fieldHelpers';
 	import { currentUser } from '$lib/stores/user';
 	import { session, currentCompany } from '$stores/session';
 	import { api } from '$lib/services/api';
@@ -32,6 +35,7 @@
 	let version = $state('...');
 	let showCompanyDialog = $state(false);
 	let showAppearanceDialog = $state(false);
+	let showMySettingsDialog = $state(false);
 	let focusBeforeDialog: HTMLElement | null = null;
 
 	$effect(() => {
@@ -66,8 +70,10 @@
 				// appearance (themes, mode)
 				api.getCompanies().then(comps => { companies = comps; }).catch(() => {});
 				loadAppearance().catch(() => {});
+				loadRegional().catch(() => {});
 			} else {
 				clearAppearance();
+				clearRegional();
 			}
 		}
 	});
@@ -291,6 +297,12 @@
 				{#if $session.language}
 					<span>Language: {$session.language}</span>
 				{/if}
+				<!-- the work date when it is not today (My Settings): new documents get it -->
+				{#if $regional.work_date && $regional.work_date !== $regional.today}
+					<button type="button" class="work-date" title={t(MENU.MY_SETTINGS)} onclick={() => (showMySettingsDialog = true)}>
+						{t(MENU.WORK_DATE)}: {formatDate($regional.work_date, $session.language)}
+					</button>
+				{/if}
 			</div>
 
 			<!-- Spacer to push user menu to the right -->
@@ -505,6 +517,18 @@
 									</div>
 								{/if}
 
+								<!-- My Settings: date and number format, work date -->
+								<button
+									onclick={() => { showUserMenu = false; showMySettingsDialog = true; }}
+									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+									data-my-settings-menu
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+									{t(MENU.MY_SETTINGS)}
+								</button>
+
 								<!-- Appearance: themes for light and dark mode -->
 								<button
 									onclick={() => { showUserMenu = false; showAppearanceDialog = true; }}
@@ -629,6 +653,10 @@
 	</nav>
 {/if}
 
+{#if showMySettingsDialog}
+	<MySettingsDialog onclose={() => (showMySettingsDialog = false)} />
+{/if}
+
 {#if showAppearanceDialog}
 	<AppearanceDialog onclose={() => (showAppearanceDialog = false)} />
 {/if}
@@ -647,5 +675,11 @@
 	.menu-bar {
 		@apply flex items-center px-4 py-2 shadow-md;
 		min-height: 3rem;
+	}
+	/* the work date when it is not today: a reminder (opens My Settings) */
+	.work-date {
+		@apply px-2 py-0.5 rounded font-semibold;
+		background: rgb(var(--accent-600));
+		color: rgb(var(--surface));
 	}
 </style>

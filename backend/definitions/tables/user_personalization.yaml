@@ -92,6 +92,29 @@ table:
       db_name: updated_at
       caption: Updated At
 
+    # Regional settings (My Settings): how dates and numbers are shown and entered
+    - name: date_format
+      no: 13
+      type: Option
+      db_name: date_format
+      caption: Date Format
+      options: ["Language Default", "DD.MM.YY", "DD.MM.YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]
+
+    - name: number_format
+      no: 14
+      type: Option
+      db_name: number_format
+      caption: Number Format
+      options: ["Language Default", "Comma Thousands Point Decimals", "Point Thousands Comma Decimals", "Space Thousands Comma Decimals", "Point Decimals"]
+
+    # The work date (classic): new documents and short date entries use it; blank = today. Back
+    # to today at every login.
+    - name: work_date
+      no: 15
+      type: types.Date
+      db_name: work_date
+      caption: Work Date
+
   keys:
     - name: Primary
       fields: [user_id]

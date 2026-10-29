@@ -2,7 +2,9 @@
 	import type { Field } from '$lib/types/pages';
 	import type { LookupData } from '$lib/types/api';
 	import { cn } from '$lib/utils/cn';
-	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
+	import { getFieldStyleClasses, formatValue, formatOptionValue, formatLookupValue, isAdvancedLookup as isAdvancedLookupData, isDateType, isDateTimeType, isDecimalType, formatDate, formatDateTime, formatDecimal, toDateTimeInput, fromDateTimeInput } from '$lib/utils/fieldHelpers';
+	import { toDecimalInput, fromDecimalInput } from '$lib/utils/regional';
+	import DateInput from '../DateInput.svelte';
 	import { currentLanguage } from '$lib/stores/session';
 	import { t, MSG } from '$lib/services/i18n.svelte';
 	import LookupDropdown from './LookupDropdown.svelte';
@@ -59,6 +61,7 @@
 	// Check if this is a date or datetime field
 	const isDateField = $derived(isDateType(fieldType));
 	const isDateTimeField = $derived(isDateTimeType(fieldType));
+	const isDecimalField = $derived(isDecimalType(fieldType));
 
 	// Check if this is an option/enum field (has options provided)
 	const isOptionField = $derived(options && Object.keys(options).length > 0);
@@ -94,7 +97,8 @@
 	function handleChange(e: Event) {
 		const target = e.target as HTMLInputElement;
 		// datetime-local holds local time without a zone; the API takes RFC3339
-		const newValue = isDateTimeField ? fromDateTimeInput(target.value) : target.value;
+		// decimals are typed with the user's decimal separator (My Settings), sent with a dot
+		const newValue = isDateTimeField ? fromDateTimeInput(target.value) : isDecimalField ? fromDecimalInput(target.value, locale) : target.value;
 		value = newValue;
 		onchange?.(newValue);
 	}
@@ -141,9 +145,6 @@
 		}
 		if (field.source.includes('email')) {
 			return 'email';
-		}
-		if (isDateField) {
-			return 'date';
 		}
 		if (isDateTimeField) {
 			return 'datetime-local';
@@ -224,6 +225,21 @@
 						<option value={lookupCode} title={lookupDisplay}>{lookupCode}</option>
 					{/each}
 				</select>
+			{:else if isDateField}
+				<!-- Date field: the user's format, short entries, a calendar (DateInput) -->
+				<DateInput
+					id={field.source}
+					class={cn('input', fieldStyle, error ? 'input-error' : '')}
+					{value}
+					{tabindex}
+					onchange={(iso) => {
+						value = iso;
+						onchange?.(iso);
+					}}
+					onblur={(e) => onblur?.(e)}
+					aria-invalid={!!error}
+					aria-describedby={error ? `${field.source}-error` : undefined}
+				/>
 			{:else}
 				<!-- Regular text field -->
 				<!-- autocomplete: browsers must not fill saved logins/addresses into record fields
@@ -233,7 +249,7 @@
 					type={inputType()}
 					autocomplete={field.masked ? 'new-password' : 'off'}
 					class={cn('input', fieldStyle, error ? 'input-error' : '', onassistedit ? 'with-assist' : '')}
-					value={isDateTimeField ? toDateTimeInput(value) : (value ?? '')}
+					value={isDateTimeField ? toDateTimeInput(value) : isDecimalField ? toDecimalInput(value, locale) : (value ?? '')}
 					{tabindex}
 					oninput={handleChange}
 					onblur={(e) => onblur?.(e)}

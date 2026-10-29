@@ -22,6 +22,9 @@
 //	OnValidate_Font_size(rec *gtables.UserPersonalization) error
 //	OnValidate_Density(rec *gtables.UserPersonalization) error
 //	OnValidate_Updated_at(rec *gtables.UserPersonalization) error
+//	OnValidate_Date_format(rec *gtables.UserPersonalization) error
+//	OnValidate_Number_format(rec *gtables.UserPersonalization) error
+//	OnValidate_Work_date(rec *gtables.UserPersonalization) error
 
 package tables
 
@@ -96,22 +99,59 @@ func (o UserPersonalizationDensity) IsValid() bool {
 	return o >= 0 && o < 2
 }
 
+// UserPersonalizationDate_format represents the date_format option field
+type UserPersonalizationDate_format int
+
+// String returns the text representation of UserPersonalizationDate_format
+func (o UserPersonalizationDate_format) String() string {
+	options := []string{"Language Default", "DD.MM.YY", "DD.MM.YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"}
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the UserPersonalizationDate_format value is within valid range
+func (o UserPersonalizationDate_format) IsValid() bool {
+	return o >= 0 && o < 6
+}
+
+// UserPersonalizationNumber_format represents the number_format option field
+type UserPersonalizationNumber_format int
+
+// String returns the text representation of UserPersonalizationNumber_format
+func (o UserPersonalizationNumber_format) String() string {
+	options := []string{"Language Default", "Comma Thousands Point Decimals", "Point Thousands Comma Decimals", "Space Thousands Comma Decimals", "Point Decimals"}
+	if o >= 0 && int(o) < len(options) {
+		return options[o]
+	}
+	return ""
+}
+
+// IsValid checks if the UserPersonalizationNumber_format value is within valid range
+func (o UserPersonalizationNumber_format) IsValid() bool {
+	return o >= 0 && o < 5
+}
+
 // UserPersonalization represents Table 2000000073: User_Personalization
 // (generated from the table definition). Its business logic — the table and field
 // triggers — is in business-logic/tables, registered with RegisterUserPersonalizationLogic.
 type UserPersonalization struct {
-	User_id           types.Code                 `db:"user_id,pk"`
-	Light_theme       types.Code                 `db:"light_theme"`
-	Dark_theme        types.Code                 `db:"dark_theme"`
-	Mode              UserPersonalizationMode    `db:"mode"`
-	Wallpaper         types.Text                 `db:"wallpaper"`
-	Wallpaper_opacity int                        `db:"wallpaper_opacity"`
-	Wallpaper_blur    int                        `db:"wallpaper_blur"`
-	Panel_opacity     int                        `db:"panel_opacity"`
-	Font              UserPersonalizationFont    `db:"font"`
-	Font_size         int                        `db:"font_size"`
-	Density           UserPersonalizationDensity `db:"density"`
-	Updated_at        types.DateTime             `db:"updated_at"`
+	User_id           types.Code                       `db:"user_id,pk"`
+	Light_theme       types.Code                       `db:"light_theme"`
+	Dark_theme        types.Code                       `db:"dark_theme"`
+	Mode              UserPersonalizationMode          `db:"mode"`
+	Wallpaper         types.Text                       `db:"wallpaper"`
+	Wallpaper_opacity int                              `db:"wallpaper_opacity"`
+	Wallpaper_blur    int                              `db:"wallpaper_blur"`
+	Panel_opacity     int                              `db:"panel_opacity"`
+	Font              UserPersonalizationFont          `db:"font"`
+	Font_size         int                              `db:"font_size"`
+	Density           UserPersonalizationDensity       `db:"density"`
+	Updated_at        types.DateTime                   `db:"updated_at"`
+	Date_format       UserPersonalizationDate_format   `db:"date_format"`
+	Number_format     UserPersonalizationNumber_format `db:"number_format"`
+	Work_date         types.Date                       `db:"work_date"`
 
 	// Internal context (set by Init)
 	db      database.Executor
@@ -210,6 +250,38 @@ var UserPersonalization_Density = struct {
 	Compact:     1,
 }
 
+// UserPersonalization_Date_format provides named constants for the date_format option field (FieldName.OptionValue syntax)
+var UserPersonalization_Date_format = struct {
+	LanguageDefault UserPersonalizationDate_format
+	DDMMYY          UserPersonalizationDate_format
+	DDMMYYYY        UserPersonalizationDate_format
+	DDMMYYYY3       UserPersonalizationDate_format
+	MMDDYYYY        UserPersonalizationDate_format
+	YYYYMMDD        UserPersonalizationDate_format
+}{
+	LanguageDefault: 0,
+	DDMMYY:          1,
+	DDMMYYYY:        2,
+	DDMMYYYY3:       3,
+	MMDDYYYY:        4,
+	YYYYMMDD:        5,
+}
+
+// UserPersonalization_Number_format provides named constants for the number_format option field (FieldName.OptionValue syntax)
+var UserPersonalization_Number_format = struct {
+	LanguageDefault             UserPersonalizationNumber_format
+	CommaThousandsPointDecimals UserPersonalizationNumber_format
+	PointThousandsCommaDecimals UserPersonalizationNumber_format
+	SpaceThousandsCommaDecimals UserPersonalizationNumber_format
+	PointDecimals               UserPersonalizationNumber_format
+}{
+	LanguageDefault:             0,
+	CommaThousandsPointDecimals: 1,
+	PointThousandsCommaDecimals: 2,
+	SpaceThousandsCommaDecimals: 3,
+	PointDecimals:               4,
+}
+
 // ========================================
 // Field numbers (field IDs)
 // ========================================
@@ -229,6 +301,9 @@ var UserPersonalization_FieldNo = struct {
 	Font_size         int
 	Density           int
 	Updated_at        int
+	Date_format       int
+	Number_format     int
+	Work_date         int
 }{
 	User_id:           1,
 	Light_theme:       2,
@@ -242,6 +317,9 @@ var UserPersonalization_FieldNo = struct {
 	Font_size:         10,
 	Density:           11,
 	Updated_at:        12,
+	Date_format:       13,
+	Number_format:     14,
+	Work_date:         15,
 }
 
 // FieldNo returns the number of a field (FieldNo), 0 for an unknown field
@@ -271,6 +349,12 @@ func (t *UserPersonalization) FieldNo(fieldName string) int {
 		return 11
 	case "updated_at":
 		return 12
+	case "date_format":
+		return 13
+	case "number_format":
+		return 14
+	case "work_date":
+		return 15
 	}
 	return 0
 }
@@ -302,6 +386,12 @@ func (t *UserPersonalization) FieldName(fieldNo int) string {
 		return "density"
 	case 12:
 		return "updated_at"
+	case 13:
+		return "date_format"
+	case 14:
+		return "number_format"
+	case 15:
+		return "work_date"
 	}
 	return ""
 }
@@ -439,6 +529,15 @@ type (
 	UserPersonalizationOnValidate_Updated_at interface {
 		OnValidate_Updated_at(rec *UserPersonalization) error
 	}
+	UserPersonalizationOnValidate_Date_format interface {
+		OnValidate_Date_format(rec *UserPersonalization) error
+	}
+	UserPersonalizationOnValidate_Number_format interface {
+		OnValidate_Number_format(rec *UserPersonalization) error
+	}
+	UserPersonalizationOnValidate_Work_date interface {
+		OnValidate_Work_date(rec *UserPersonalization) error
+	}
 )
 
 // userPersonalizationLogic is the registered business logic of User_Personalization, in
@@ -492,6 +591,12 @@ func userPersonalizationTrigger(name string, logic any) (known, ok bool) {
 		_, ok = logic.(UserPersonalizationOnValidate_Density)
 	case "OnValidate_Updated_at":
 		_, ok = logic.(UserPersonalizationOnValidate_Updated_at)
+	case "OnValidate_Date_format":
+		_, ok = logic.(UserPersonalizationOnValidate_Date_format)
+	case "OnValidate_Number_format":
+		_, ok = logic.(UserPersonalizationOnValidate_Number_format)
+	case "OnValidate_Work_date":
+		_, ok = logic.(UserPersonalizationOnValidate_Work_date)
 	default:
 		return false, false
 	}
@@ -619,7 +724,10 @@ func GetUserPersonalizationTableSchema() string {
 		font INTEGER CHECK (font >= 0 AND font <= 5),
 		font_size INTEGER,
 		density INTEGER CHECK (density >= 0 AND density <= 1),
-		updated_at TEXT
+		updated_at TEXT,
+		date_format INTEGER CHECK (date_format >= 0 AND date_format <= 5),
+		number_format INTEGER CHECK (number_format >= 0 AND number_format <= 4),
+		work_date TEXT
 	`
 }
 
@@ -637,7 +745,10 @@ func GetUserPersonalizationPostgresTableSchema() string {
 		font INTEGER CHECK (font >= 0 AND font <= 5),
 		font_size INTEGER,
 		density INTEGER CHECK (density >= 0 AND density <= 1),
-		updated_at TIMESTAMP
+		updated_at TIMESTAMP,
+		date_format INTEGER CHECK (date_format >= 0 AND date_format <= 5),
+		number_format INTEGER CHECK (number_format >= 0 AND number_format <= 4),
+		work_date DATE
 	`
 }
 
@@ -778,6 +889,9 @@ func (t *UserPersonalization) StoreOldValues() {
 	t.oldValues["font_size"] = t.Font_size
 	t.oldValues["density"] = t.Density
 	t.oldValues["updated_at"] = t.Updated_at
+	t.oldValues["date_format"] = t.Date_format
+	t.oldValues["number_format"] = t.Number_format
+	t.oldValues["work_date"] = t.Work_date
 }
 
 // OldValue returns a field's value as last read from or written to the database (
@@ -827,6 +941,15 @@ func (t *UserPersonalization) XRec() *UserPersonalization {
 	}
 	if v, ok := t.oldValues["updated_at"].(types.DateTime); ok {
 		x.Updated_at = v
+	}
+	if v, ok := t.oldValues["date_format"].(UserPersonalizationDate_format); ok {
+		x.Date_format = v
+	}
+	if v, ok := t.oldValues["number_format"].(UserPersonalizationNumber_format); ok {
+		x.Number_format = v
+	}
+	if v, ok := t.oldValues["work_date"].(types.Date); ok {
+		x.Work_date = v
 	}
 	return x
 }
@@ -901,6 +1024,9 @@ func (t *UserPersonalization) GetByPK(user_id types.Code) bool {
 	var font_sizeVal int
 	var densityInt int
 	var updated_atNull sql.NullString
+	var date_formatInt int
+	var number_formatInt int
+	var work_dateNull sql.NullString
 
 	// Collect arguments for query
 	args := []interface{}{
@@ -908,7 +1034,7 @@ func (t *UserPersonalization) GetByPK(user_id types.Code) bool {
 	}
 
 	// Build SQL with placeholders
-	sqlStr := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
+	sqlStr := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date FROM "%s" WHERE 1=1 AND user_id = ?`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -927,6 +1053,9 @@ func (t *UserPersonalization) GetByPK(user_id types.Code) bool {
 		&font_sizeVal,
 		&densityInt,
 		&updated_atNull,
+		&date_formatInt,
+		&number_formatInt,
+		&work_dateNull,
 	)
 
 	if err != nil {
@@ -952,6 +1081,9 @@ func (t *UserPersonalization) GetByPK(user_id types.Code) bool {
 	t.Font_size = font_sizeVal
 	t.Density = UserPersonalizationDensity(densityInt)
 	t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
+	t.Date_format = UserPersonalizationDate_format(date_formatInt)
+	t.Number_format = UserPersonalizationNumber_format(number_formatInt)
+	t.Work_date, _ = types.NewDateFromString(work_dateNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -986,11 +1118,14 @@ func (t *UserPersonalization) Insert(runTrigger bool) bool {
 		t.Font_size,
 		t.Density,
 		t.Updated_at,
+		t.Date_format,
+		t.Number_format,
+		t.Work_date,
 	}
 
 	// Build SQL with placeholders. A taken key inserts nothing (ON CONFLICT … DO NOTHING) instead
 	// of failing: on PostgreSQL a failed INSERT would abort the transaction
-	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO NOTHING`, tableName)
+	sqlStr := fmt.Sprintf(`INSERT INTO "%s" (user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO NOTHING`, tableName)
 
 	// Convert placeholders for PostgreSQL
 	sqlStr = t.convertPlaceholders(sqlStr, len(args))
@@ -1040,10 +1175,13 @@ func (t *UserPersonalization) InsertAll(records []*UserPersonalization, runTrigg
 			r.Font_size,
 			r.Density,
 			r.Updated_at,
+			r.Date_format,
+			r.Number_format,
+			r.Work_date,
 		})
 	}
 	tableName := UserPersonalizationTableName
-	columns := []string{"user_id", "light_theme", "dark_theme", "mode", "wallpaper", "wallpaper_opacity", "wallpaper_blur", "panel_opacity", "font", "font_size", "density", "updated_at"}
+	columns := []string{"user_id", "light_theme", "dark_theme", "mode", "wallpaper", "wallpaper_opacity", "wallpaper_blur", "panel_opacity", "font", "font_size", "density", "updated_at", "date_format", "number_format", "work_date"}
 	return tables.InsertRows(t.exec(), t.dbType, tableName, columns, rows)
 }
 
@@ -1131,6 +1269,18 @@ func (t *UserPersonalization) Modify(runTrigger bool) bool {
 			setClauses = append(setClauses, "updated_at = ?")
 			values = append(values, t.Updated_at)
 		}
+		if t.hasFieldChanged("date_format") {
+			setClauses = append(setClauses, "date_format = ?")
+			values = append(values, t.Date_format)
+		}
+		if t.hasFieldChanged("number_format") {
+			setClauses = append(setClauses, "number_format = ?")
+			values = append(values, t.Number_format)
+		}
+		if t.hasFieldChanged("work_date") {
+			setClauses = append(setClauses, "work_date = ?")
+			values = append(values, t.Work_date)
+		}
 
 		// If nothing changed, skip update
 		if len(setClauses) == 0 {
@@ -1160,6 +1310,12 @@ func (t *UserPersonalization) Modify(runTrigger bool) bool {
 		values = append(values, t.Density)
 		setClauses = append(setClauses, "updated_at = ?")
 		values = append(values, t.Updated_at)
+		setClauses = append(setClauses, "date_format = ?")
+		values = append(values, t.Date_format)
+		setClauses = append(setClauses, "number_format = ?")
+		values = append(values, t.Number_format)
+		setClauses = append(setClauses, "work_date = ?")
+		values = append(values, t.Work_date)
 	}
 
 	// Add WHERE clause value (primary key as loaded, so a renamed key still matches)
@@ -1255,6 +1411,18 @@ func (t *UserPersonalization) hasFieldChanged(fieldName string) bool {
 	case "updated_at":
 		if old, ok := oldValue.(types.DateTime); ok {
 			return !t.Updated_at.Equal(old)
+		}
+	case "date_format":
+		if old, ok := oldValue.(UserPersonalizationDate_format); ok {
+			return t.Date_format != old
+		}
+	case "number_format":
+		if old, ok := oldValue.(UserPersonalizationNumber_format); ok {
+			return t.Number_format != old
+		}
+	case "work_date":
+		if old, ok := oldValue.(types.Date); ok {
+			return !t.Work_date.Equal(old)
 		}
 	}
 
@@ -1484,6 +1652,12 @@ func (t *UserPersonalization) columnName(fieldName string) (string, bool) {
 		return "density", true
 	case strings.ToLower("updated_at"):
 		return "updated_at", true
+	case strings.ToLower("date_format"):
+		return "date_format", true
+	case strings.ToLower("number_format"):
+		return "number_format", true
+	case strings.ToLower("work_date"):
+		return "work_date", true
 	}
 	return "", false
 }
@@ -1644,6 +1818,8 @@ func (t *UserPersonalization) isBoolColumn(column string) bool {
 // isDateColumn: a Date column (blank dates are NULL, in the primary key types.BlankKeyDate)
 func (t *UserPersonalization) isDateColumn(column string) bool {
 	switch column {
+	case "work_date":
+		return true
 	}
 	return false
 }
@@ -1831,7 +2007,7 @@ func (t *UserPersonalization) FindFirst() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1844,6 +2020,9 @@ func (t *UserPersonalization) FindFirst() bool {
 	var fontInt int
 	var densityInt int
 	var updated_atNull sql.NullString
+	var date_formatInt int
+	var number_formatInt int
+	var work_dateNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&user_idNull,
@@ -1858,6 +2037,9 @@ func (t *UserPersonalization) FindFirst() bool {
 		&t.Font_size,
 		&densityInt,
 		&updated_atNull,
+		&date_formatInt,
+		&number_formatInt,
+		&work_dateNull,
 	)
 
 	if err != nil {
@@ -1877,6 +2059,9 @@ func (t *UserPersonalization) FindFirst() bool {
 	t.Font = UserPersonalizationFont(fontInt)
 	t.Density = UserPersonalizationDensity(densityInt)
 	t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
+	t.Date_format = UserPersonalizationDate_format(date_formatInt)
+	t.Number_format = UserPersonalizationNumber_format(number_formatInt)
+	t.Work_date, _ = types.NewDateFromString(work_dateNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1897,7 +2082,7 @@ func (t *UserPersonalization) FindLast() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date FROM "%s" WHERE %s ORDER BY %s LIMIT 1`, tableName, where, orderBy)
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -1910,6 +2095,9 @@ func (t *UserPersonalization) FindLast() bool {
 	var fontInt int
 	var densityInt int
 	var updated_atNull sql.NullString
+	var date_formatInt int
+	var number_formatInt int
+	var work_dateNull sql.NullString
 
 	err := t.exec().QueryRow(query, args...).Scan(
 		&user_idNull,
@@ -1924,6 +2112,9 @@ func (t *UserPersonalization) FindLast() bool {
 		&t.Font_size,
 		&densityInt,
 		&updated_atNull,
+		&date_formatInt,
+		&number_formatInt,
+		&work_dateNull,
 	)
 
 	if err != nil {
@@ -1943,6 +2134,9 @@ func (t *UserPersonalization) FindLast() bool {
 	t.Font = UserPersonalizationFont(fontInt)
 	t.Density = UserPersonalizationDensity(densityInt)
 	t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
+	t.Date_format = UserPersonalizationDate_format(date_formatInt)
+	t.Number_format = UserPersonalizationNumber_format(number_formatInt)
+	t.Work_date, _ = types.NewDateFromString(work_dateNull.String)
 
 	// Store old values for field tracking
 	t.StoreOldValues()
@@ -1993,7 +2187,7 @@ func (t *UserPersonalization) FindSet() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2070,6 +2264,9 @@ func (t *UserPersonalization) Next(steps ...int) bool {
 		var fontInt int
 		var densityInt int
 		var updated_atNull sql.NullString
+		var date_formatInt int
+		var number_formatInt int
+		var work_dateNull sql.NullString
 
 		err := t.currentRows.Scan(
 			&user_idNull,
@@ -2084,6 +2281,9 @@ func (t *UserPersonalization) Next(steps ...int) bool {
 			&t.Font_size,
 			&densityInt,
 			&updated_atNull,
+			&date_formatInt,
+			&number_formatInt,
+			&work_dateNull,
 		)
 
 		if err != nil {
@@ -2102,6 +2302,9 @@ func (t *UserPersonalization) Next(steps ...int) bool {
 		t.Font = UserPersonalizationFont(fontInt)
 		t.Density = UserPersonalizationDensity(densityInt)
 		t.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
+		t.Date_format = UserPersonalizationDate_format(date_formatInt)
+		t.Number_format = UserPersonalizationNumber_format(number_formatInt)
+		t.Work_date, _ = types.NewDateFromString(work_dateNull.String)
 
 		// Store old values for field tracking
 		t.StoreOldValues()
@@ -2151,7 +2354,7 @@ func (t *UserPersonalization) FindSetBuffered() bool {
 	args = append(args, orderArgs...)
 
 	// Build SELECT with all fields
-	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
+	query := fmt.Sprintf(`SELECT user_id, light_theme, dark_theme, mode, wallpaper, wallpaper_opacity, wallpaper_blur, panel_opacity, font, font_size, density, updated_at, date_format, number_format, work_date FROM "%s" WHERE %s ORDER BY %s%s`, tableName, where, orderBy, t.getLimitClause())
 
 	// Convert placeholders for PostgreSQL
 	query = t.convertPlaceholders(query, len(args))
@@ -2181,6 +2384,9 @@ func (t *UserPersonalization) FindSetBuffered() bool {
 		var fontInt int
 		var densityInt int
 		var updated_atNull sql.NullString
+		var date_formatInt int
+		var number_formatInt int
+		var work_dateNull sql.NullString
 
 		err := rows.Scan(
 			&user_idNull,
@@ -2195,6 +2401,9 @@ func (t *UserPersonalization) FindSetBuffered() bool {
 			&record.Font_size,
 			&densityInt,
 			&updated_atNull,
+			&date_formatInt,
+			&number_formatInt,
+			&work_dateNull,
 		)
 
 		if err != nil {
@@ -2211,6 +2420,9 @@ func (t *UserPersonalization) FindSetBuffered() bool {
 		record.Font = UserPersonalizationFont(fontInt)
 		record.Density = UserPersonalizationDensity(densityInt)
 		record.Updated_at, _ = types.NewDateTimeFromString(updated_atNull.String)
+		record.Date_format = UserPersonalizationDate_format(date_formatInt)
+		record.Number_format = UserPersonalizationNumber_format(number_formatInt)
+		record.Work_date, _ = types.NewDateFromString(work_dateNull.String)
 
 		// Store old values
 		record.StoreOldValues()
@@ -2251,6 +2463,9 @@ func (t *UserPersonalization) copyFromBuffered(record *UserPersonalization) {
 	t.Font_size = record.Font_size
 	t.Density = record.Density
 	t.Updated_at = record.Updated_at
+	t.Date_format = record.Date_format
+	t.Number_format = record.Number_format
+	t.Work_date = record.Work_date
 	t.StoreOldValues()
 }
 
@@ -2740,6 +2955,128 @@ func (t *UserPersonalization) ValidateField(fieldName string, value interface{})
 			}
 		}
 		return nil
+	case "date_format":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(UserPersonalizationDate_format); ok {
+			t.Date_format = v
+			// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 6 {
+				return fmt.Errorf("invalid option value %d for field date_format (valid range: 0-%d)", v, 6-1)
+			}
+			t.Date_format = UserPersonalizationDate_format(v)
+			// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 6 {
+				return fmt.Errorf("invalid option value %d for field date_format (valid range: 0-%d)", intVal, 6-1)
+			}
+			t.Date_format = UserPersonalizationDate_format(intVal)
+			// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			if v == "" {
+				// Empty string defaults to first option (behavior)
+				t.Date_format = 0
+			} else {
+				options := []string{"Language Default", "DD.MM.YY", "DD.MM.YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"}
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Date_format = UserPersonalizationDate_format(i)
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field date_format (valid options: %v)", v, options)
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid type for field date_format (expected UserPersonalizationDate_format, int, or string)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(UserPersonalizationOnValidate_Date_format); ok {
+				if err := trg.OnValidate_Date_format(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "number_format":
+		// Set field value
+		// Accept enum type directly
+		if v, ok := value.(UserPersonalizationNumber_format); ok {
+			t.Number_format = v
+			// Accept int (convert to enum)
+		} else if v, ok := value.(int); ok {
+			if v < 0 || v >= 5 {
+				return fmt.Errorf("invalid option value %d for field number_format (valid range: 0-%d)", v, 5-1)
+			}
+			t.Number_format = UserPersonalizationNumber_format(v)
+			// Accept float64 (JSON numbers decode as float64)
+		} else if v, ok := value.(float64); ok {
+			intVal := int(v)
+			if intVal < 0 || intVal >= 5 {
+				return fmt.Errorf("invalid option value %d for field number_format (valid range: 0-%d)", intVal, 5-1)
+			}
+			t.Number_format = UserPersonalizationNumber_format(intVal)
+			// Accept string (lookup in options and convert)
+		} else if v, ok := value.(string); ok {
+			if v == "" {
+				// Empty string defaults to first option (behavior)
+				t.Number_format = 0
+			} else {
+				options := []string{"Language Default", "Comma Thousands Point Decimals", "Point Thousands Comma Decimals", "Space Thousands Comma Decimals", "Point Decimals"}
+				found := false
+				for i, opt := range options {
+					if opt == v {
+						t.Number_format = UserPersonalizationNumber_format(i)
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid option '%s' for field number_format (valid options: %v)", v, options)
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid type for field number_format (expected UserPersonalizationNumber_format, int, or string)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(UserPersonalizationOnValidate_Number_format); ok {
+				if err := trg.OnValidate_Number_format(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	case "work_date":
+		// Set field value
+		if v, ok := value.(types.Date); ok {
+			t.Work_date = v
+		} else if v, ok := value.(string); ok {
+			var err error
+			t.Work_date, err = types.NewDateFromString(v)
+			if err != nil {
+				return fmt.Errorf("invalid date value for field work_date: %w", err)
+			}
+		} else if v, ok := value.(time.Time); ok {
+			t.Work_date = types.NewDateFromTime(v)
+		} else {
+			return fmt.Errorf("invalid type for field work_date (expected Date, string, or time.Time)")
+		}
+		// OnValidate trigger of the business logic (OnValidate of the field)
+		for _, l := range t.registeredLogic() {
+			if trg, ok := l.(UserPersonalizationOnValidate_Work_date); ok {
+				if err := trg.OnValidate_Work_date(t); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("field '%s' not found", fieldName)
@@ -2776,6 +3113,12 @@ func (t *UserPersonalization) FieldValue(no int) (any, bool) {
 		return t.Density, true
 	case 12:
 		return t.Updated_at, true
+	case 13:
+		return t.Date_format, true
+	case 14:
+		return t.Number_format, true
+	case 15:
+		return t.Work_date, true
 	}
 	return nil, false
 }
@@ -2865,6 +3208,21 @@ func (t *UserPersonalization) SetFieldValue(no int, value any) bool {
 	case 12:
 		if v, ok := value.(types.DateTime); ok {
 			t.Updated_at = v
+			return true
+		}
+	case 13:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 6 {
+			t.Date_format = UserPersonalizationDate_format(i)
+			return true
+		}
+	case 14:
+		if i, ok := tables.OptionIndex(value); ok && i >= 0 && i < 5 {
+			t.Number_format = UserPersonalizationNumber_format(i)
+			return true
+		}
+	case 15:
+		if v, ok := value.(types.Date); ok {
+			t.Work_date = v
 			return true
 		}
 	}
@@ -3356,6 +3714,12 @@ func (t *UserPersonalization) columnValue(column string) (interface{}, bool) {
 		return int(t.Density), true
 	case "updated_at":
 		return t.Updated_at, true
+	case "date_format":
+		return int(t.Date_format), true
+	case "number_format":
+		return int(t.Number_format), true
+	case "work_date":
+		return t.Work_date, true
 	}
 	return nil, false
 }
@@ -3421,6 +3785,9 @@ func (t *UserPersonalization) Init() {
 	t.Font_size = *new(int)
 	t.Density = 0
 	t.Updated_at = *new(types.DateTime)
+	t.Date_format = 0
+	t.Number_format = 0
+	t.Work_date = *new(types.Date)
 	t.applyDefaults()
 }
 
@@ -3467,6 +3834,9 @@ func (t *UserPersonalization) ToMap() map[string]interface{} {
 		"font_size":         t.Font_size,
 		"density":           int(t.Density),
 		"updated_at":        t.Updated_at.String(),
+		"date_format":       int(t.Date_format),
+		"number_format":     int(t.Number_format),
+		"work_date":         t.Work_date.String(),
 	}
 }
 
@@ -3598,6 +3968,45 @@ func (t *UserPersonalization) FromMap(data map[string]interface{}) {
 	if v, ok := data["updated_at"]; ok && v != nil {
 		if s, ok := v.(string); ok {
 			t.Updated_at, _ = types.NewDateTimeFromString(s)
+		}
+	}
+	if v, ok := data["date_format"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Date_format = UserPersonalizationDate_format(int(val))
+		case int:
+			t.Date_format = UserPersonalizationDate_format(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"Language Default", "DD.MM.YY", "DD.MM.YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"}
+			for i, opt := range options {
+				if opt == val {
+					t.Date_format = UserPersonalizationDate_format(i)
+					break
+				}
+			}
+		}
+	}
+	if v, ok := data["number_format"]; ok && v != nil {
+		switch val := v.(type) {
+		case float64:
+			t.Number_format = UserPersonalizationNumber_format(int(val))
+		case int:
+			t.Number_format = UserPersonalizationNumber_format(val)
+		case string:
+			// Lookup string value in options
+			options := []string{"Language Default", "Comma Thousands Point Decimals", "Point Thousands Comma Decimals", "Space Thousands Comma Decimals", "Point Decimals"}
+			for i, opt := range options {
+				if opt == val {
+					t.Number_format = UserPersonalizationNumber_format(i)
+					break
+				}
+			}
+		}
+	}
+	if v, ok := data["work_date"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			t.Work_date, _ = types.NewDateFromString(s)
 		}
 	}
 }
@@ -3741,6 +4150,36 @@ func (t *UserPersonalization) GetFields() []tables.FieldInfo {
 			PrimaryKey: false,
 			FlowField:  false,
 		},
+		{
+			No:         13,
+			Name:       "date_format",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         14,
+			Name:       "number_format",
+			Type:       tables.FieldTypeOption,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
+		{
+			No:         15,
+			Name:       "work_date",
+			Type:       tables.FieldTypeDate,
+			Length:     0,
+			Required:   false,
+			Editable:   true,
+			PrimaryKey: false,
+			FlowField:  false,
+		},
 	}
 }
 
@@ -3765,9 +4204,11 @@ func (t *UserPersonalization) GetFlowFields() []string {
 // GetOptionFields returns Option field names mapped to their option values
 func (t *UserPersonalization) GetOptionFields() map[string][]string {
 	return map[string][]string{
-		"mode":    {"Dark", "Light"},
-		"font":    {"Default", "System", "Inter", "IBM Plex Sans", "Serif", "Monospace"},
-		"density": {"Comfortable", "Compact"},
+		"mode":          {"Dark", "Light"},
+		"font":          {"Default", "System", "Inter", "IBM Plex Sans", "Serif", "Monospace"},
+		"density":       {"Comfortable", "Compact"},
+		"date_format":   {"Language Default", "DD.MM.YY", "DD.MM.YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"},
+		"number_format": {"Language Default", "Comma Thousands Point Decimals", "Point Thousands Comma Decimals", "Space Thousands Comma Decimals", "Point Decimals"},
 	}
 }
 

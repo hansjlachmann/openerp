@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"github.com/hansjlachmann/openerp/backend/foundation/i18n"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 )
@@ -22,11 +23,33 @@ var numberFormats = map[string]numberFormat{
 	"da-DK": {".", ",", "02.01.2006"},
 }
 
-// formatOf is the language's format (en-US for languages without one)
+// regionalDateLayouts and regionalNumberFormats: the user's own formats (My Settings) as Go date
+// layouts and separators
+var (
+	regionalDateLayouts = map[string]string{
+		"dd.mm.yy": "02.01.06", "dd.mm.yyyy": "02.01.2006", "dd/mm/yyyy": "02/01/2006",
+		"mm/dd/yyyy": "01/02/2006", "yyyy-mm-dd": "2006-01-02",
+	}
+	regionalNumberFormats = map[string][2]string{
+		"1,234.56": {",", "."}, "1.234,56": {".", ","}, "1 234,56": {" ", ","}, "1234.56": {"", "."},
+	}
+)
+
+// formatOf is the format a printout uses: the language's (en-US for languages without one),
+// with the user's date and number formats of My Settings where set
 func formatOf(language string) numberFormat {
 	f, ok := numberFormats[language]
 	if !ok {
-		return numberFormats["en-US"]
+		f = numberFormats["en-US"]
+	}
+	regional := fcodeunits.CurrentRegional()
+	layout, ok := regionalDateLayouts[regional.DateFormat]
+	if ok {
+		f.date = layout
+	}
+	separators, ok := regionalNumberFormats[regional.NumberFormat]
+	if ok {
+		f.thousands, f.decimal = separators[0], separators[1]
 	}
 	return f
 }

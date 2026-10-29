@@ -106,6 +106,25 @@ export const MSG = {
 	ASSIST_EDIT: 'MSG_ASSIST_EDIT'
 } as const;
 
+export const MYSET = {
+	TITLE: 'MYSET_TITLE',
+	DATE_FORMAT: 'MYSET_DATE_FORMAT',
+	NUMBER_FORMAT: 'MYSET_NUMBER_FORMAT',
+	WORK_DATE: 'MYSET_WORK_DATE',
+	WORK_DATE_HINT: 'MYSET_WORK_DATE_HINT', // what the work date does
+	ENTRY_HINT: 'MYSET_ENTRY_HINT', // how dates can be typed
+	LANGUAGE_DEFAULT: 'MYSET_LANGUAGE_DEFAULT',
+	TODAY: 'MYSET_TODAY',
+	PREVIEW: 'MYSET_PREVIEW'
+} as const;
+
+export const DATE = {
+	INVALID: 'DATE_INVALID', // %1: what was typed
+	CALENDAR: 'DATE_CALENDAR', // the calendar button's title
+	PREV_MONTH: 'DATE_PREV_MONTH',
+	NEXT_MONTH: 'DATE_NEXT_MONTH'
+} as const;
+
 export const ERR = {
 	NO_ROOM_FOR_LINE: 'ERR_NO_ROOM_FOR_LINE', // AutoSplitKey: no line number left between two lines
 	FAILED_DELETE: 'ERR_FAILED_DELETE',
@@ -211,6 +230,8 @@ export const MENU = {
 	NO_COMPANIES: 'MENU_NO_COMPANIES',
 	SHORTCUTS: 'MENU_SHORTCUTS',
 	APPEARANCE: 'MENU_APPEARANCE',
+	MY_SETTINGS: 'MENU_MY_SETTINGS',
+	WORK_DATE: 'MENU_WORK_DATE',
 	USER_MENU: 'MENU_USER_MENU',
 	SIGN_OUT: 'MENU_SIGN_OUT'
 } as const;

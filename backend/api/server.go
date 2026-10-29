@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
 	"log"
 	"os"
 
@@ -158,6 +159,11 @@ func (s *Server) Setup() {
 	api.Post("/themes/:code/refresh", middleware.ThemeInstallRateLimit(), themesHandler.RefreshTheme)
 	api.Delete("/themes/:code", themesHandler.DeleteTheme)
 	api.Get("/themes/:code/assets/:name", themesHandler.GetThemeAsset)
+	mySettingsHandler := handlers.NewMySettingsHandler(s.db, s.dbType)
+	api.Get("/my-settings", mySettingsHandler.GetMySettings)
+	api.Put("/my-settings", mySettingsHandler.SaveMySettings)
+	// the code that runs for a user gets the user's work date and formats
+	fcodeunits.RegionalLoader = handlers.RegionalLoader(s.db, s.dbType)
 	api.Get("/appearance", themesHandler.GetAppearance)
 	api.Put("/appearance", themesHandler.SaveAppearance)
 

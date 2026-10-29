@@ -25,7 +25,7 @@
 	import { createNavigationActions } from '$lib/utils/navigationHelpers';
 	import { getJson } from '$lib/utils/storage';
 	import { estimateRowsPerPage, windowSize, windowOffsetFor, type ListWindowRequest } from '$lib/utils/listWindow';
-	import { apiFlowFilters, toApiFlowFilter } from '$lib/utils/flowFilter';
+	import { apiFlowFilters, apiFieldFilters, toApiFlowFilter } from '$lib/utils/flowFilter';
 	import { currentLanguage } from '$lib/stores/session';
 	import { get } from 'svelte/store';
 
@@ -448,7 +448,7 @@
 			// filter (an action's run_page_filter) on the first record in the filter
 			let cardRecordId = recordid || (page.page.setup_table ? '' : undefined);
 			if (cardRecordId === undefined && currentFilters.length > 0) {
-				const ids = await api.getRecordIDs(page.page.source_table, { filters: currentFilters });
+				const ids = await api.getRecordIDs(page.page.source_table, { filters: apiFilters(currentFilters) });
 				cardRecordId = ids[0];
 			}
 			if (cardRecordId !== undefined) {
@@ -499,13 +499,18 @@
 		}
 	}
 
+	// The list's filters for the API: dates as ISO (typed in the user's format)
+	function apiFilters<T extends { field: string; expression: string }>(filters: T[]): T[] {
+		return apiFieldFilters(filters, (field) => isDateType(fieldTypes[field]), get(currentLanguage));
+	}
+
 	// The list's query: filters, FlowFilters, search over the visible stored fields, sort.
 	// Shared by the windows of the list and "delete all selected", so both mean the same records.
 	function listQuery(visibleFields = getVisibleFields(), flowFields = new Set(page?.page.flow_fields ?? [])) {
 		const query: import('$lib/types/api').ListOptions = {};
 		if (!page) return query;
 		if (currentFilters.length > 0) {
-			query.filters = currentFilters;
+			query.filters = apiFilters(currentFilters);
 		}
 		if (listFixedFilters.length > 0) {
 			query.fixed_filters = listFixedFilters; // a subpage's link to its card, a journal's batch
@@ -582,7 +587,7 @@
 		try {
 			const ids = await api.getRecordIDs(
 				page.page.source_table,
-				currentFilters.length > 0 ? { filters: currentFilters } : undefined
+				currentFilters.length > 0 ? { filters: apiFilters(currentFilters) } : undefined
 			);
 			const position = ids.indexOf(initialSelect);
 			if (position < 0) return 0;

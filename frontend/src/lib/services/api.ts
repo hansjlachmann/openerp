@@ -471,6 +471,24 @@ export const api = {
 		await handleApiResponseFull(response, 'delete theme');
 	},
 
+	/** The user's regional settings (My Settings): date and number format, work date */
+	async getMySettings(): Promise<MySettings> {
+		const response = await fetch(`${API_BASE}/my-settings`);
+		const result = await handleApiResponseFull<MySettings>(response, 'get my settings');
+		return result.data!;
+	},
+
+	/** Changes only the fields given (work_date '' = today) */
+	async saveMySettings(patch: Partial<MySettings>): Promise<MySettings> {
+		const response = await fetch(`${API_BASE}/my-settings`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(patch)
+		});
+		const result = await handleApiResponseFull<MySettings>(response, 'save my settings');
+		return result.data!;
+	},
+
 	async getAppearance(): Promise<Appearance & { saved: boolean }> {
 		const response = await fetch(`${API_BASE}/appearance`);
 		const result = await handleApiResponseFull<Appearance & { saved: boolean }>(response, 'get appearance');
@@ -505,4 +523,12 @@ export interface OpenPageResult {
 	params: Record<string, string>;
 	fixed_filters: FixedFilter[];
 	select: { page_id: number; param: string; field: string; filters?: FixedFilter[] } | null;
+}
+
+/** My Settings: '' formats follow the language, '' work date is today */
+export interface MySettings {
+	date_format: string;
+	number_format: string;
+	work_date: string;
+	today?: string;
 }

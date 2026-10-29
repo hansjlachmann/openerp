@@ -25,6 +25,8 @@ type goroutineContext struct {
 	// PageParams: the parameters of the page the code runs for (a page opened from code with
 	// parameters, e.g. Apply Customer Entries with the journal line's Applies-to ID)
 	PageParams map[string]string
+	// Regional: the user's work date and date and number formats (My Settings)
+	Regional Regional
 }
 
 // currentContexts holds the context for each goroutine
@@ -38,6 +40,9 @@ func SetCurrentContext(userID, userName, company, language string) {
 		UserName: userName,
 		Company:  company,
 		Language: language,
+	}
+	if RegionalLoader != nil && userID != "" {
+		ctx.Regional = RegionalLoader(userID)
 	}
 	currentContexts.Store(getGoroutineID(), ctx)
 }

@@ -201,10 +201,12 @@ func (s *Scheduler) runJob(company string, job *gtables.JobQueue) {
 	userID := job.User_id.String()
 	if userID == "" {
 		fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
+		fcodeunits.SetCurrentWorkDate(types.Date{}) // a scheduled job runs on today
 	} else {
 		access := &session.Session{UserID: userID, Company: company}
 		access.SetPermissions(session.LoadPermissions(s.db, s.dbType, userID, company))
 		fcodeunits.SetCurrentContext(userID, userID, company, "en-US")
+		fcodeunits.SetCurrentWorkDate(types.Date{}) // a scheduled job runs on today
 		fcodeunits.SetCurrentAccess(access)
 		if !access.CanExecute(session.ObjectCodeunit, job.Object_id_to_run) {
 			runErr = errors.New(apperrors.JobNoPermission(userID, job.Object_id_to_run).Message("en-US"))
@@ -219,6 +221,7 @@ func (s *Scheduler) runJob(company string, job *gtables.JobQueue) {
 	// Rescheduling is the scheduler's own work: saving the job must not check the job user's
 	// permissions again (a user without Execute could otherwise not get the job set to Error)
 	fcodeunits.SetCurrentContext("SCHEDULER", "SCHEDULER", company, "en-US")
+	fcodeunits.SetCurrentWorkDate(types.Date{}) // a scheduled job runs on today
 
 	s.finish(company, job.No.String(), runErr)
 	// The notification reports the job as saved after the run (status, next start)
