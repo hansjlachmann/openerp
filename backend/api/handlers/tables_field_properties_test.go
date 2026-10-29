@@ -14,6 +14,8 @@ import (
 	"github.com/hansjlachmann/openerp/backend/foundation/database"
 	"github.com/hansjlachmann/openerp/backend/foundation/pages"
 	"github.com/hansjlachmann/openerp/backend/foundation/session"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -270,18 +272,37 @@ func TestConditionalRelationAndGLTotals(t *testing.T) {
 	}
 
 	// Bal. Account No.: a G/L account for type G/L Account, a customer for type Customer, a
-	// vendor for type Vendor; any value for a type whose table does not exist yet (Employee)
-	for body, ok := range map[string]bool{
-		`{"entry_no":1,"gl_account_no":"1000","posting_date":"2026-01-10","amount":"100","bal_account_type":0,"bal_account_no":"2000"}`: true,
-		`{"entry_no":2,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"-100","bal_account_type":1,"bal_account_no":"C1"}`:  true,
-		`{"entry_no":3,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":1,"bal_account_no":"2000"}`:   false,
-		`{"entry_no":4,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":2,"bal_account_no":"V9"}`:     false,
-		`{"entry_no":5,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":5,"bal_account_no":"E9"}`:     true,  // employees: no table yet
-		`{"entry_no":6,"gl_account_no":"2000","posting_date":"2026-02-10","amount":"0","bal_account_type":0,"bal_account_no":"2999"}`:   false, // a total account: posting accounts only
+	// vendor for type Vendor; any value for a type whose table does not exist yet (Employee).
+	// G/L entries are posted (the table API does not insert them): checked on the record.
+	src := ftables.DBSource(db, "TEST", database.DBTypeSQLite)
+	type entrySpec struct {
+		entryNo int
+		account string
+		date    string
+		amount  string
+		balType gtables.GLEntryBal_account_type
+		balNo   string
+	}
+	for spec, ok := range map[entrySpec]bool{
+		{1, "1000", "2026-01-10", "100", 0, "2000"}: true,
+		{2, "2000", "2026-02-10", "-100", 1, "C1"}:  true,
+		{3, "2000", "2026-02-10", "0", 1, "2000"}:   false,
+		{4, "2000", "2026-02-10", "0", 2, "V9"}:     false,
+		{5, "2000", "2026-02-10", "0", 5, "E9"}:     true,  // employees: no table yet
+		{6, "2000", "2026-02-10", "0", 0, "2999"}:   false, // a total account: posting accounts only
 	} {
-		status, out := sendJSON(t, app, "POST", "/api/tables/G_L_Entry/insert", body)
-		if (status == 200) != ok {
-			t.Errorf("%s: %d %v, want ok=%v", body, status, out["error"], ok)
+		glEntry := gtables.NewGLEntry(src)
+		glEntry.Entry_no = spec.entryNo
+		glEntry.Gl_account_no = types.Code(spec.account)
+		glEntry.Posting_date = types.MustDate(spec.date)
+		glEntry.Amount = types.MustDecimal(spec.amount)
+		glEntry.Bal_account_type = spec.balType
+		err := glEntry.Validate("bal_account_no", types.Code(spec.balNo))
+		if err == nil {
+			err = glEntry.InsertOrError(false)
+		}
+		if (err == nil) != ok {
+			t.Errorf("%+v: %v, want ok=%v", spec, err, ok)
 		}
 	}
 

@@ -1,6 +1,7 @@
 table:
   id: 238
   name: "BOM_Ledger_Entry"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "BOM ledger entries (table 238): the item and resource entries of an assembly"
   lookup_page_id: 430
   fields:

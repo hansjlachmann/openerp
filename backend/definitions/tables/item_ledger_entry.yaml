@@ -1,6 +1,7 @@
 table:
   id: 32
   name: "Item_Ledger_Entry"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Item ledger entries (table 32): the quantity and value of every inventory movement"
   lookup_page_id: 38
   # Left out until their objects exist: 40 Serial No., 5400 Lot No., 5401 Prod. Order No., 5403 Bin

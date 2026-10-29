@@ -40,6 +40,7 @@ const (
 	ErrCopyTooMany        ErrorCode = "ERR_COPY_TOO_MANY"
 	ErrSelectionTooMany   ErrorCode = "ERR_SELECTION_TOO_MANY"
 	ErrInconsistent       ErrorCode = "ERR_INCONSISTENT"
+	ErrPostedTable        ErrorCode = "ERR_POSTED_TABLE"
 	ErrFieldNotEditable   ErrorCode = "ERR_FIELD_NOT_EDITABLE"
 	ErrMustBeRoundedTo    ErrorCode = "ERR_MUST_BE_ROUNDED_TO"
 	ErrDecimalPlaces      ErrorCode = "ERR_DECIMAL_PLACES_FORMAT"
@@ -537,6 +538,12 @@ func FieldNotEditable(table, field string) *AppError {
 // Inconsistent: a transaction cannot be committed while tables are inconsistent (Consistent)
 func Inconsistent(tables string) *AppError {
 	return &AppError{Code: ErrInconsistent, Params: []string{tables}}
+}
+
+// PostedTable: the records of a posted table (ledger entries, registers) are written by posting
+// only — the table API cannot insert, delete or rename them (tableCaption: translated)
+func PostedTable(tableCaption string) *AppError {
+	return &AppError{Code: ErrPostedTable, Params: []string{tableCaption}}
 }
 
 // SelectionTooMany: more records are selected than a codeunit may be run on (max)

@@ -2,6 +2,7 @@ table:
   id: 21
   name: "Customer Ledger Entry"
   api_name: Customer_ledger_entry # the name in the API and in pages (source_table)
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   fields:
     # Primary Key
     - name: entry_no
@@ -203,11 +204,13 @@ table:
     - name: pmt_discount_date
       no: 38
       type: types.Date
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: pmt_discount_date
 
     - name: pmt_disc_possible
       no: 39
       type: types.Decimal
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: pmt_disc_possible
       precision: 18
       scale: 2
@@ -339,6 +342,7 @@ table:
     - name: applies_to_id
       no: 47
       type: types.Code
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: applies_to_id
       length: 20
 
@@ -356,12 +360,14 @@ table:
     - name: on_hold
       no: 33
       type: types.Code
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: on_hold
       length: 3
 
     - name: due_date
       no: 37
       type: types.Date
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: due_date
 
     # Closing Information

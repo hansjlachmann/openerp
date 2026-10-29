@@ -940,6 +940,7 @@
 
 	// Handle new record - insert blank row below current selection
 	function handleNew() {
+		if (page.page.posted) return; // posted entries come from posting only
 		// Initialize editable records if not already active
 		if (!editableActive) {
 			editableRecords = toEditableRecords();
@@ -1441,7 +1442,7 @@
 
 	// Insert a new row at cursor position
 	function insertNewRow(atEnd: boolean = false) {
-		if (!editableActive) return;
+		if (!editableActive || page.page.posted) return;
 
 		// Don't create a new row if we're already on an empty new row
 		const currentRecord = currentCellRow >= 0 ? displayRecords[currentCellRow] : undefined;
@@ -3627,7 +3628,7 @@
 						{/each}
 					</tr>
 				{/each}
-				{#if page.page.editable && (!isNavigation || editOnClick) && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
+				{#if page.page.editable && !page.page.posted && (!isNavigation || editOnClick) && !searchQuery.trim() && !moreBelow && !(displayRecords.length > 0 && isEmptyNewRecord(displayRecords[displayRecords.length - 1]))}
 					<!-- trailing blank row, in edit mode only: click it to start a new record -->
 					<tr class="placeholder-row" onclick={handlePlaceholderRowClick}>
 						{#if showRowNumbers}

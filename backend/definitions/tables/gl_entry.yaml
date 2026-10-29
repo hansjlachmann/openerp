@@ -2,6 +2,7 @@ table:
   id: 17
   name: "G_L_Entry"
   caption: G/L Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: General ledger entries, posted (table 17)
   lookup_page_id: 20
   # Not yet (TODO): 5600/5601 FA Entry Type / No. (field series), closing dates on the dates,

@@ -2,6 +2,7 @@ table:
   id: 254
   name: "Tax_Entry"
   caption: Tax Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Tax entries (table 254): the sales tax of every posting, per jurisdiction"
   fields:
     - name: entry_no
@@ -85,12 +86,14 @@ table:
     - name: sell_to_buy_from_no
       no: 12
       type: types.Code
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: sell_to_buy_from_no
       length: 20
 
     - name: eu_3_party_trade
       no: 13
       type: bool
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: eu_3_party_trade
 
     - name: user_id
@@ -149,6 +152,7 @@ table:
     - name: country_code
       no: 19
       type: types.Code
+      editable: true   # a posted entry: the user may change it (the other fields come from posting)
       db_name: country_code
       length: 10
       table_relation:

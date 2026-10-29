@@ -77,3 +77,31 @@ func TestLockTablePostgres(t *testing.T) {
 		t.Errorf("the second lock did not wait: %v", order)
 	}
 }
+
+// A transaction's state is shared within the transaction and dropped when it ends
+func TestTransactionState(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	newCounter := func() any { return new(int) }
+	tx, err := BeginTransaction(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	*TransactionState(tx, "n", newCounter).(*int) += 5
+	if got := *TransactionState(tx, "n", newCounter).(*int); got != 5 {
+		t.Errorf("shared in the transaction: %d", got)
+	}
+	if err := Commit(tx); err != nil {
+		t.Fatal(err)
+	}
+	if got := *TransactionState(tx, "n", newCounter).(*int); got != 0 {
+		t.Errorf("dropped at commit: %d", got)
+	}
+	*TransactionState(db, "n", newCounter).(*int) += 1
+	if got := *TransactionState(db, "n", newCounter).(*int); got != 0 {
+		t.Errorf("outside a transaction nothing is kept: %d", got)
+	}
+}

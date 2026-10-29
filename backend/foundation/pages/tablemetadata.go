@@ -19,6 +19,8 @@ type TableMetadata struct {
 	captionFields  map[string][]string          // table name -> data_caption_fields (the card title)
 	lookupPages    map[string]int               // table name -> lookup_page_id (the lookup's "New" opens it)
 	autoKeys       map[string]bool              // table name -> auto_key (OnInsert assigns a blank key)
+	postedTables   map[string]bool              // table name -> posted (written by posting only)
+	editableFields map[string]map[string]bool   // table name -> fields with editable: true (a posted table's fields the user may change)
 	mu             sync.RWMutex
 }
 
@@ -30,6 +32,7 @@ type tableDefYAML struct {
 		DataCaptionFields []string        `yaml:"data_caption_fields"`
 		LookupPageID      int             `yaml:"lookup_page_id"`
 		AutoKey           bool            `yaml:"auto_key"`
+		Posted            bool            `yaml:"posted"`
 	} `yaml:"table"`
 }
 
@@ -40,6 +43,7 @@ type tableFieldDef struct {
 	PrimaryKey bool   `yaml:"primary_key"`
 	Required   bool   `yaml:"required"`
 	Masked     bool   `yaml:"masked"`
+	Editable   *bool  `yaml:"editable"`
 }
 
 var (
@@ -58,6 +62,8 @@ func GetTableMetadata() *TableMetadata {
 			captionFields:  make(map[string][]string),
 			lookupPages:    make(map[string]int),
 			autoKeys:       make(map[string]bool),
+			postedTables:   make(map[string]bool),
+			editableFields: make(map[string]map[string]bool),
 		}
 		if err := tableMetadata.Load(); err != nil {
 			fmt.Printf("Warning: Failed to load table metadata: %v\n", err)
@@ -123,6 +129,12 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 		if field.Masked {
 			maskFields[field.Name] = true
 		}
+		if field.Editable != nil && *field.Editable {
+			if tm.editableFields[metadataKey(tableDef.Table.Name)] == nil {
+				tm.editableFields[metadataKey(tableDef.Table.Name)] = map[string]bool{}
+			}
+			tm.editableFields[metadataKey(tableDef.Table.Name)][field.Name] = true
+		}
 		if field.Type != "" {
 			fTypes[field.Name] = field.Type
 		}
@@ -138,6 +150,9 @@ func (tm *TableMetadata) loadTableFile(filePath string) error {
 	}
 	if tableDef.Table.AutoKey {
 		tm.autoKeys[metadataKey(tableDef.Table.Name)] = true
+	}
+	if tableDef.Table.Posted {
+		tm.postedTables[metadataKey(tableDef.Table.Name)] = true
 	}
 	if len(tableDef.Table.DataCaptionFields) > 0 {
 		if tm.captionFields == nil {
@@ -208,6 +223,28 @@ func (tm *TableMetadata) IsAutoKey(tableName string) bool {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 	return tm.autoKeys[metadataKey(tableName)]
+}
+
+// IsPosted reports whether a table's records are written by posting only (posted: true —
+// ledger entries, registers): the table API does not insert, delete or rename them
+func (tm *TableMetadata) IsPosted(tableName string) bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.postedTables[metadataKey(tableName)]
+}
+
+// IsPostedFieldEditable reports whether the user may change a field of a posted table: only
+// the fields the table YAML marks editable: true (a customer entry's Due Date, On Hold,
+// Applies-to ID …); every other field of a posted record is written by posting only. Fields of
+// other tables: true.
+func (tm *TableMetadata) IsPostedFieldEditable(tableName, fieldName string) bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	key := metadataKey(tableName)
+	if !tm.postedTables[key] {
+		return true
+	}
+	return tm.editableFields[key][fieldName]
 }
 
 // GetLookupPageID returns a table's lookup_page_id (0 when it has none)

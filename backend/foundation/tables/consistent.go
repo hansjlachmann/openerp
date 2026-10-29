@@ -16,7 +16,30 @@ import (
 var (
 	inconsistentMu sync.Mutex
 	inconsistent   = map[database.Executor]map[string]bool{}
+	txState        = map[database.Executor]map[string]any{}
 )
+
+// TransactionState is a value kept with the transaction exec under key (made by newValue the
+// first time) and dropped when the transaction ends (Commit, Rollback) — e.g. the balance sums
+// of the G/L entries posted in it, shared by all postings in the transaction. Outside a
+// transaction (exec a database) there is nothing to keep it with: a new value every call.
+func TransactionState(exec database.Executor, key string, newValue func() any) any {
+	_, ok := exec.(*sql.Tx)
+	if !ok {
+		return newValue()
+	}
+	inconsistentMu.Lock()
+	defer inconsistentMu.Unlock()
+	if txState[exec] == nil {
+		txState[exec] = map[string]any{}
+	}
+	value, ok := txState[exec][key]
+	if !ok {
+		value = newValue()
+		txState[exec][key] = value
+	}
+	return value
+}
 
 // SetConsistent marks a table consistent or inconsistent in the transaction (or database) exec
 func SetConsistent(exec database.Executor, table string, ok bool) {
@@ -61,6 +84,7 @@ func clearConsistency(exec database.Executor) []string {
 		tables = append(tables, table)
 	}
 	delete(inconsistent, exec)
+	delete(txState, exec)
 	sort.Strings(tables)
 	return tables
 }

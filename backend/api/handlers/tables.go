@@ -868,11 +868,11 @@ func (h *TablesHandler) InsertRecord(c *fiber.Ctx) error {
 	}
 	table, status, msg := h.insertOne(tx, tableName, company, language, data, c.QueryInt("page_id", 0))
 	if msg != "" {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return c.Status(status).JSON(apitypes.NewErrorResponse(msg))
 	}
-	if err := tx.Commit(); err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.InsertFailed(tableName).Message(language)))
+	if err := ftables.Commit(tx); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(commitErrorMessage(err, apperrors.InsertFailed(tableName), language)))
 	}
 	if setter, ok := table.(interface{ SetDB(database.Executor) }); ok {
 		setter.SetDB(h.db) // the transaction is over
@@ -931,6 +931,7 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 	// sent back as its placeholder keeps its stored value
 	ftables.DropMaskedPlaceholders(table, data)
 	ftables.DropReadOnlyFields(table, data, false) // editable: false — only business logic sets them
+	dropPostedFields(tableName, data)
 	if err := rejectSensitiveFields(table, data); err != nil {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(err.Error()))
 	}
@@ -951,7 +952,8 @@ func (h *TablesHandler) ModifyRecord(c *fiber.Ctx) error {
 		}
 	}
 
-	// A rename to a key that another record already has ("The record already exists")
+	// A rename to a key that another record already has ("The record already exists"); a
+	// posted record is never renamed (dropPostedFields keeps its key fields out)
 	if newLookup, newKey := fullPrimaryKey(table); newKey != oldKey {
 		if existing, err := h.getTable(tableName, company); err == nil && existing.Get(newLookup) {
 			return c.Status(409).JSON(apitypes.NewErrorResponse(apperrors.DuplicateRecord(tableCaption, newKey).Message(language)))
@@ -1036,6 +1038,10 @@ func (h *TablesHandler) DeleteRecord(c *fiber.Ctx) error {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 	}
 
+	if msg := refusePosted(tableName, language); msg != "" {
+		return c.Status(403).JSON(apitypes.NewErrorResponse(msg))
+	}
+
 	// Delete record (a Company with all its tables and SIFT objects, in one transaction)
 	deleted, txErr := h.deleteInTransaction(tableName, table)
 	if txErr != nil {
@@ -1069,6 +1075,9 @@ func (h *TablesHandler) insertOne(exec database.Executor, tableName, company, la
 	table, err := h.getTableOn(exec, tableName, company)
 	if err != nil {
 		return nil, 404, apperrors.TableNotFound(tableName).Message(language)
+	}
+	if msg := refusePosted(tableName, language); msg != "" {
+		return nil, 403, msg
 	}
 
 	// Sensitive fields (e.g. password_hash) cannot be set through the API; a masked field
@@ -1255,15 +1264,15 @@ func (h *TablesHandler) InsertRecords(c *fiber.Ctx) error {
 	for i, data := range req.Records {
 		table, status, msg := h.insertOne(tx, tableName, company, language, data, 0)
 		if msg != "" {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 			return c.Status(status).JSON(apitypes.NewErrorResponse(
 				apperrors.PasteRecordFailed(i+1, len(req.Records), msg).Message(language)))
 		}
 		_, id := fullPrimaryKey(table)
 		keys = append(keys, id)
 	}
-	if err := tx.Commit(); err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	if err := ftables.Commit(tx); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 	return c.JSON(apitypes.NewSuccessResponse(map[string]interface{}{"inserted": len(keys), "keys": keys}))
 }
@@ -1298,6 +1307,9 @@ func (h *TablesHandler) DeleteRecords(c *fiber.Ctx) error {
 	table, err := h.getTable(tableName, sessCompany)
 	if err != nil {
 		return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.TableNotFound(tableName).Message(language)))
+	}
+	if msg := refusePosted(tableName, language); msg != "" {
+		return c.Status(403).JSON(apitypes.NewErrorResponse(msg))
 	}
 
 	keys := req.Keys
@@ -1335,21 +1347,21 @@ func (h *TablesHandler) DeleteRecords(c *fiber.Ctx) error {
 	for _, id := range keys {
 		record, err := h.getTable(tableName, sessCompany)
 		if err != nil {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 			return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
 		}
 		setter, ok := record.(interface{ SetDB(database.Executor) })
 		if !ok {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 			return c.Status(500).JSON(apitypes.NewErrorResponse(apperrors.DeleteFailed(tableCaption, id).Message(language)))
 		}
 		setter.SetDB(tx)
 		if (id == "" && !record.IsSetupTable()) || !record.Get(parseRecordKey(id, record)) {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 			return c.Status(404).JSON(apitypes.NewErrorResponse(apperrors.RecordNotFound(tableCaption, id).Message(language)))
 		}
 		if !record.Delete(true) {
-			_ = tx.Rollback()
+			_ = ftables.Rollback(tx)
 			// A failed OnDelete trigger is a business rule: name the record and the reason
 			if trigErr := record.TriggerError(); trigErr != nil {
 				return c.Status(400).JSON(apitypes.NewErrorResponse(
@@ -1361,14 +1373,14 @@ func (h *TablesHandler) DeleteRecords(c *fiber.Ctx) error {
 			// A company takes its tables and SIFT objects along (as DeleteRecord)
 			name := record.GetPrimaryKeyValue()
 			if err := company.DropObjects(tx, h.dbType, name); err != nil {
-				_ = tx.Rollback()
+				_ = ftables.Rollback(tx)
 				return c.Status(500).JSON(apitypes.NewErrorResponse(fmt.Sprintf("delete company %s: %v", name, err)))
 			}
 			companies = append(companies, name)
 		}
 	}
-	if err := tx.Commit(); err != nil {
-		return c.Status(500).JSON(apitypes.NewErrorResponse(err.Error()))
+	if err := ftables.Commit(tx); err != nil {
+		return c.Status(500).JSON(apitypes.NewErrorResponse(errorMessage(err, language)))
 	}
 	if h.onCompanyChanged != nil {
 		for _, name := range companies {
@@ -1580,8 +1592,9 @@ func (h *TablesHandler) ValidateField(c *fiber.Ctx) error {
 		table.FromMap(req.Record)
 	}
 
-	// A read-only field (editable: false) is not changed from a page
-	if ftables.IsReadOnly(table, req.Field) {
+	// A read-only field (editable: false, or a posted table's field that is not editable: true)
+	// is not changed from a page
+	if ftables.IsReadOnly(table, req.Field) || !pages.GetTableMetadata().IsPostedFieldEditable(tableName, req.Field) {
 		return c.Status(400).JSON(apitypes.NewErrorResponse(apperrors.FieldNotEditable(tableName, req.Field).Message(language)))
 	}
 
@@ -1616,10 +1629,10 @@ func (h *TablesHandler) modifyInTransaction(table ftables.Table) (bool, error) {
 	setter.SetDB(tx)
 	defer setter.SetDB(h.db)
 	if !table.Modify(true) {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return false, nil
 	}
-	if err := tx.Commit(); err != nil {
+	if err := ftables.Commit(tx); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -1641,14 +1654,14 @@ func (h *TablesHandler) deleteInTransaction(tableName string, table ftables.Tabl
 	setter.SetDB(tx)
 	defer setter.SetDB(h.db)
 	if !table.Delete(true) {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return false, nil
 	}
 	if err := company.DropObjects(tx, h.dbType, companyName); err != nil {
-		_ = tx.Rollback()
+		_ = ftables.Rollback(tx)
 		return false, fmt.Errorf("delete company %s: %w", companyName, err)
 	}
-	return true, tx.Commit()
+	return true, ftables.Commit(tx)
 }
 
 // errorMessage is an error as shown to the user: AppErrors (e.g. from table triggers) in
@@ -1659,6 +1672,41 @@ func errorMessage(err error, language string) string {
 		return appErr.Message(language)
 	}
 	return err.Error()
+}
+
+// refusePosted is the message refusing an insert, delete or rename on a posted table (posted:
+// true — ledger entries and registers, written by posting only; classic: users have only
+// indirect write permission on them), "" for other tables. Applies to every user, SUPER too.
+func refusePosted(tableName, language string) string {
+	if !pages.GetTableMetadata().IsPosted(tableName) {
+		return ""
+	}
+	return apperrors.PostedTable(i18n.GetInstance().TableCaption(tableName, language)).Message(language)
+}
+
+// dropPostedFields leaves only the fields of a posted record the user may change (the table
+// YAML's editable: true — a customer entry's Due Date, On Hold, Applies-to ID); the amounts,
+// accounts, dates and keys of a posted entry are written by posting only
+func dropPostedFields(tableName string, data map[string]interface{}) {
+	metadata := pages.GetTableMetadata()
+	if !metadata.IsPosted(tableName) {
+		return
+	}
+	for field := range data {
+		if !metadata.IsPostedFieldEditable(tableName, field) {
+			delete(data, field)
+		}
+	}
+}
+
+// commitErrorMessage is a refused commit as shown to the user: an AppError (the balance check,
+// ERR_INCONSISTENT) in the user's language, other errors as fallback
+func commitErrorMessage(err error, fallback *apperrors.AppError, language string) string {
+	var appErr *apperrors.AppError
+	if errors.As(err, &appErr) {
+		return appErr.Message(language)
+	}
+	return fallback.Message(language)
 }
 
 // applyFlowFilters sets the FlowFilter fields (FieldClass FlowFilter, e.g. Date Filter)

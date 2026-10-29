@@ -1,6 +1,7 @@
 table:
   id: 46
   name: "Item_Register"
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Item registers (table 46): one per posting, the range of the item and phys. inventory entries it wrote"
   lookup_page_id: 117
   fields:

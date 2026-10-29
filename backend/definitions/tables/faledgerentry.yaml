@@ -2,6 +2,7 @@ table:
   id: 5601
   name: "FA_Ledger_Entry"
   caption: FA Ledger Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Fixed asset ledger entries, posted (table 5601)"
   lookup_page_id: 5604
   fields:

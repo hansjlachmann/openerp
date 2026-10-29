@@ -900,8 +900,15 @@ func (p *SalesPost) postCustomerEntry() error {
 	genJnlLine.Payment_discount_percent = salesHeader.Payment_discount_percent
 	genJnlLine.Applies_to_doc_type = gtables.GenJournalLineApplies_to_doc_type(salesHeader.Applies_to_doc_type)
 	genJnlLine.Applies_to_doc_no = salesHeader.Applies_to_doc_no
+	if onCustomerEntry != nil {
+		onCustomerEntry(genJnlLine)
+	}
 	return p.genJnlPostLine.RunWithoutCheck(genJnlLine)
 }
+
+// onCustomerEntry (tests only) changes the customer entry's journal line before it is posted:
+// a posting whose G/L entries do not balance, which the balance check must refuse
+var onCustomerEntry func(genJnlLine *gtables.GenJournalLine)
 
 // insertPostedLines writes a line's posted shipment line (what shipped, what of it is invoiced)
 // and posted invoice or credit memo line (the invoiced quantity and amounts)

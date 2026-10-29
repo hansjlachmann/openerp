@@ -2,6 +2,7 @@ table:
   id: 272
   name: "Check_Ledger_Entry"
   caption: Check Ledger Entry
+  posted: true               # written by posting only: the table API does not insert, delete or rename
   description: "Check ledger entries, posted (table 272)"
   lookup_page_id: 374
   fields:
