@@ -1,0 +1,42 @@
+page:
+  id: 131
+  type: List
+  name: Posted Sales Shpt. Subform
+  source_table: Sales_Shipment_Line   # the lines of the Posted Sales Shpt. card (130), linked by Document No.
+  caption: Lines
+
+  layout:
+    repeater:
+      fields:
+        - source: document_no
+          width: 100
+          visible: false
+        - source: line_no
+          width: 90
+          visible: false
+        - source: type
+          width: 110
+        - source: "no"
+          width: 120
+        - source: variant_code
+          width: 100
+          visible: false
+        - source: description
+          width: 260
+        - source: location_code
+          width: 100
+          visible: false
+        - source: quantity
+          width: 100
+        - source: unit_of_measure_code
+          width: 110
+        - source: quantity_invoiced
+          width: 120
+        - source: qty_shipped_not_invoiced
+          width: 150
+        - source: order_no
+          width: 120
+          visible: false
+        - source: order_line_no
+          width: 110
+          visible: false

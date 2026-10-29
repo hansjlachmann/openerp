@@ -1,0 +1,36 @@
+page:
+  id: 5708
+  type: List
+  name: Get Shipment Lines
+  source_table: Sales_Shipment_Line   # opened by Get Shipment Lines (codeunit 64) in lookup mode: the customer's lines not invoiced
+  caption: Get Shipment Lines
+
+  layout:
+    repeater:
+      fields:
+        - source: document_no
+          width: 120
+        - source: line_no
+          width: 90
+          visible: false
+        - source: sell_to_customer_no
+          width: 120
+        - source: type
+          width: 110
+        - source: "no"
+          width: 120
+        - source: description
+          width: 260
+        - source: quantity
+          width: 100
+        - source: unit_of_measure_code
+          width: 110
+        - source: qty_shipped_not_invoiced
+          width: 150
+        - source: quantity_invoiced
+          width: 120
+        - source: order_no
+          width: 120
+        - source: shipment_date
+          width: 110
+          visible: false

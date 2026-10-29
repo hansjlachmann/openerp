@@ -43,8 +43,7 @@ func (salesHeaderLogic) OnInsert(rec *gtables.SalesHeader) error {
 			return err
 		}
 	}
-	InitSalesHeaderRecord(rec)
-	return nil
+	return InitSalesHeaderRecord(rec)
 }
 
 // OnDelete: the document's lines (with their triggers) and comments
@@ -71,10 +70,40 @@ func (salesHeaderLogic) OnRename(rec *gtables.SalesHeader) error {
 	return apperrors.RenameNotAllowed(gtables.SalesHeaderTableName)
 }
 
-// InitSalesHeaderRecord (InitRecord): order and invoice dates from the work date (a quote's
-// order date too), the posting date (not on quotes), the document date and the posting
-// description ("Quote SQ000001")
-func InitSalesHeaderRecord(rec *gtables.SalesHeader) {
+// InitSalesHeaderRecord (InitRecord): the series of the posted documents (Posting/Shipping No.
+// Series), order and invoice dates from the work date (a quote's order date too), the posting
+// date (not on quotes), the document date and the posting description ("Quote SQ000001")
+func InitSalesHeaderRecord(rec *gtables.SalesHeader) error {
+	salesSetup := gtables.GetSalesReceivablesSetup(rec)
+	noSeriesMgt := noseries.New(rec)
+	var err error
+	switch rec.Document_type {
+	case gtables.SalesHeader_Document_type.Quote, gtables.SalesHeader_Document_type.Order:
+		err = noSeriesMgt.SetDefaultSeries(&rec.Posting_no_series, salesSetup.Posted_invoice_nos)
+		if err != nil {
+			return err
+		}
+		err = noSeriesMgt.SetDefaultSeries(&rec.Shipping_no_series, salesSetup.Posted_shipment_nos)
+	case gtables.SalesHeader_Document_type.Invoice:
+		if rec.No_series != "" && salesSetup.Invoice_nos == salesSetup.Posted_invoice_nos {
+			rec.Posting_no_series = rec.No_series
+		} else {
+			err = noSeriesMgt.SetDefaultSeries(&rec.Posting_no_series, salesSetup.Posted_invoice_nos)
+		}
+		if err == nil && salesSetup.Shipment_on_invoice {
+			err = noSeriesMgt.SetDefaultSeries(&rec.Shipping_no_series, salesSetup.Posted_shipment_nos)
+		}
+	case gtables.SalesHeader_Document_type.CreditMemo:
+		if rec.No_series != "" && salesSetup.Credit_memo_nos == salesSetup.Posted_credit_memo_nos {
+			rec.Posting_no_series = rec.No_series
+		} else {
+			err = noSeriesMgt.SetDefaultSeries(&rec.Posting_no_series, salesSetup.Posted_credit_memo_nos)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
 	if rec.Document_type == gtables.SalesHeader_Document_type.Order || rec.Document_type == gtables.SalesHeader_Document_type.Invoice {
 		rec.Shipment_date = system.WorkDate()
 		rec.Order_date = system.WorkDate()
@@ -90,6 +119,7 @@ func InitSalesHeaderRecord(rec *gtables.SalesHeader) {
 	rec.Document_date = system.WorkDate()
 	documentType := i18n.GetInstance().OptionCaption(gtables.SalesHeaderTableName, "document_type", i18n.Key(rec.Document_type.String()), fcodeunits.CurrentLanguage())
 	rec.Posting_description = types.Text(system.CopyStr(documentType+" "+rec.No.String(), 1, rec.MaxStrLen("posting_description")))
+	return nil
 }
 
 // AssistEditSalesHeader (AssistEdit): No. from the document type's series or one related to it
@@ -190,7 +220,10 @@ func (salesHeaderLogic) OnValidate_Sell_to_customer_no(rec *gtables.SalesHeader)
 				return apperrors.SalesResetCustomerLines(gtables.SalesHeaderTableName, "sell_to_customer_no")
 			}
 			rec.Init()
-			InitSalesHeaderRecord(rec)
+			err := InitSalesHeaderRecord(rec)
+			if err != nil {
+				return err
+			}
 			rec.No_series = xRec.No_series
 			return nil
 		}

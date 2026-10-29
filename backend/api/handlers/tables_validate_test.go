@@ -332,7 +332,8 @@ func TestRenameToExistingKey(t *testing.T) {
 	}{&gtables.CommentLine{}, &gtables.ShipToAddress{}, &gtables.CustomerBankAccount{}, &gtables.VendorLedgerEntry{},
 		&gtables.BankAccountLedgerEntry{}, &gtables.CheckLedgerEntry{}, &gtables.FALedgerEntry{}, &gtables.MaintenanceLedgerEntry{},
 		&gtables.GenJournalTemplate{}, &gtables.GenJournalBatch{}, &gtables.GenJournalLine{}, &gtables.ItemJournalLine{}, &gtables.ItemLedgerEntry{},
-		&gtables.SalesHeader{}, &gtables.SalesLine{}} {
+		&gtables.SalesHeader{}, &gtables.SalesLine{}, &gtables.SalesShipmentHeader{}, &gtables.SalesShipmentLine{}, &gtables.SalesInvoiceHeader{},
+		&gtables.SalesInvoiceLine{}, &gtables.SalesCrMemoHeader{}, &gtables.SalesCrMemoLine{}} {
 		if err := related.CreateTableWithDBType(db, "TEST", database.DBTypeSQLite); err != nil {
 			t.Fatal(err)
 		}

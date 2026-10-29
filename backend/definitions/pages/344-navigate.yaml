@@ -30,6 +30,9 @@ page:
             - field: document_no
               value: document_no_filter
               optional: true
+            - field: "no"
+              value: no_filter
+              optional: true
             - field: posting_date
               value: posting_date_filter
               optional: true
@@ -48,6 +51,9 @@ page:
       run_page_filters:
         - field: document_no
           value: document_no_filter
+          optional: true
+        - field: "no"
+          value: no_filter
           optional: true
         - field: posting_date
           value: posting_date_filter

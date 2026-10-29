@@ -22,6 +22,9 @@ application:
       # Fixed assets keep their classic numbers (tables, pages 5600–5661)
       - from: 5600
         to: 5699
+      # Document helper pages keep their classic numbers (5708 Get Shipment Lines)
+      - from: 5700
+        to: 5799
       # The document list pages (9300 Sales Quotes …)
       - from: 9300
         to: 9399

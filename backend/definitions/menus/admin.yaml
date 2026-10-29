@@ -226,11 +226,11 @@ menu:
       - name: "Reports"
       - name: "Documents"
       - name: "Posted Shipments"
-        page_id: 130
+        page_id: 142
       - name: "Posted Invoices"
-        page_id: 132
+        page_id: 143
       - name: "Posted Credit Memos"
-        page_id: 134
+        page_id: 144
       - name: "Registers"
         page_id: 116
       - name: "Customer Ledger Entries"

@@ -1,6 +1,9 @@
 package tables
 
 import (
+	fcodeunits "github.com/hansjlachmann/openerp/backend/foundation/codeunits"
+	"github.com/hansjlachmann/openerp/backend/foundation/functions"
+	"github.com/hansjlachmann/openerp/backend/foundation/system"
 	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
@@ -26,4 +29,28 @@ func SetDebitCredit(e *gtables.CustomerLedgerEntry) {
 	} else {
 		e.Credit_amount_lcy = e.Amount_lcy.Abs()
 	}
+}
+
+func init() {
+	functions.Register("table", "Customer_ledger_entry", "ShowDoc", functions.For(ShowCustLedgEntryDoc), functions.WithDialog())
+}
+
+// ShowCustLedgEntryDoc (Show Document): the posted invoice or credit memo of an entry opens on
+// its card (an entry posted from a journal has none)
+func ShowCustLedgEntryDoc(rec *gtables.CustomerLedgerEntry) (fcodeunits.Result, error) {
+	switch rec.Document_type {
+	case gtables.CustomerLedgerEntry_Document_type.Invoice:
+		salesInvHeader := gtables.NewSalesInvoiceHeader(rec)
+		salesInvHeader.SetRange("no", rec.Document_no)
+		if !salesInvHeader.IsEmpty() {
+			system.RunModal(132, salesInvHeader, false)
+		}
+	case gtables.CustomerLedgerEntry_Document_type.CreditMemo:
+		salesCrMemoHeader := gtables.NewSalesCrMemoHeader(rec)
+		salesCrMemoHeader.SetRange("no", rec.Document_no)
+		if !salesCrMemoHeader.IsEmpty() {
+			system.RunModal(134, salesCrMemoHeader, false)
+		}
+	}
+	return fcodeunits.Result{Success: true}, nil
 }

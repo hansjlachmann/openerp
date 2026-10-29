@@ -542,6 +542,26 @@ pages:
     caption: "Sales Credit Memo"
   sales_cr_memo_subform:
     caption: "Lines"
+  posted_sales_shipments:
+    caption: "Posted Sales Shipments"
+  posted_sales_shipment:
+    caption: "Posted Sales Shipment"
+  posted_sales_shpt_subform:
+    caption: "Lines"
+  posted_sales_invoices:
+    caption: "Posted Sales Invoices"
+  posted_sales_invoice:
+    caption: "Posted Sales Invoice"
+  posted_sales_invoice_subform:
+    caption: "Lines"
+  posted_sales_credit_memos:
+    caption: "Posted Sales Credit Memos"
+  posted_sales_credit_memo:
+    caption: "Posted Sales Credit Memo"
+  posted_sales_cr_memo_subform:
+    caption: "Lines"
+  get_shipment_lines:
+    caption: "Get Shipment Lines"
   sales_statistics:
     caption: "Sales Statistics"
     fields:  # the calculated fields (OnAfterGetRecord)

@@ -542,6 +542,26 @@ pages:
     caption: "Salgskreditnota"
   sales_cr_memo_subform:
     caption: "Linjer"
+  posted_sales_shipments:
+    caption: "Bokførte salgsleveringer"
+  posted_sales_shipment:
+    caption: "Bokført salgslevering"
+  posted_sales_shpt_subform:
+    caption: "Linjer"
+  posted_sales_invoices:
+    caption: "Bokførte salgsfakturaer"
+  posted_sales_invoice:
+    caption: "Bokført salgsfaktura"
+  posted_sales_invoice_subform:
+    caption: "Linjer"
+  posted_sales_credit_memos:
+    caption: "Bokførte salgskreditnotaer"
+  posted_sales_credit_memo:
+    caption: "Bokført salgskreditnota"
+  posted_sales_cr_memo_subform:
+    caption: "Linjer"
+  get_shipment_lines:
+    caption: "Hent leveringslinjer"
   sales_statistics:
     caption: "Salgsstatistikk"
     fields:  # the calculated fields (OnAfterGetRecord)

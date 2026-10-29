@@ -409,6 +409,19 @@ table:
       scale: 5
       editable: false
 
+    - name: shipment_no
+      no: 63
+      type: types.Code
+      db_name: shipment_no
+      length: 20
+      editable: false
+
+    - name: shipment_line_no
+      no: 64
+      type: int
+      db_name: shipment_line_no
+      editable: false
+
     - name: profit_percent
       no: 67
       type: types.Decimal

@@ -126,6 +126,20 @@ page:
       promoted: true
       run_object: report:205
 
+    - name: Post
+      caption: Post
+      image: Post
+      shortcut: F11
+      promoted: true
+      run_object: codeunit:81
+
+    - name: Post and Print
+      caption: Post and Print
+      image: Print
+      shortcut: Shift+F11
+      promoted: true
+      run_object: codeunit:82
+
     - name: Statistics
       caption: Statistics
       image: Statistics

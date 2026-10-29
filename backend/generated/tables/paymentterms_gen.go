@@ -978,7 +978,7 @@ func (t *PaymentTerms) renameReferences(field string, oldValue, newValue interfa
 		condValue  int
 	}
 	references := map[string][]reference{
-		"code": {{"Customer", false, "payment_terms_code", "", 0}, {"Gen_Journal_Line", false, "payment_terms_code", "", 0}, {"Sales_Header", false, "payment_terms_code", "", 0}, {"Vendor", false, "payment_terms_code", "", 0}},
+		"code": {{"Customer", false, "payment_terms_code", "", 0}, {"Gen_Journal_Line", false, "payment_terms_code", "", 0}, {"Sales_Cr_Memo_Header", false, "payment_terms_code", "", 0}, {"Sales_Header", false, "payment_terms_code", "", 0}, {"Sales_Invoice_Header", false, "payment_terms_code", "", 0}, {"Sales_Shipment_Header", false, "payment_terms_code", "", 0}, {"Vendor", false, "payment_terms_code", "", 0}},
 	}
 	companies := []string{t.company}
 	for _, ref := range references[field] {

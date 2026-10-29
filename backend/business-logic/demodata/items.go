@@ -15,7 +15,7 @@ import (
 // postDemoItems posts a year of inventory movements of the demo items through the item posting
 // (codeunit 22, with Automatic Cost Posting also their value in the G/L): an opening stock a
 // year ago and every quarter a purchase and two sales, at the main warehouse
-func postDemoItems(src ftables.Source, open func(src ftables.Source) ItemJnlPoster, today time.Time, masterData []tableRecords, counts *Counts) error {
+func postDemoItems(src ftables.Source, open func(src ftables.Source) ItemJnlPoster, today time.Time, masterData []tableRecords, counts *Counts, p *progress) error {
 	rng := rand.New(rand.NewSource(seed + 27))
 	itemJnlPostLine := open(src)
 	start := today.AddDate(-1, 0, 1)
@@ -55,10 +55,23 @@ func postDemoItems(src ftables.Source, open func(src ftables.Source) ItemJnlPost
 			return fmt.Errorf("demo item journal %s %s: %w", itemNo, documentNo, err)
 		}
 		counts.ItemLedgerEntries++
+		p.step()
 		return nil
 	}
 
 	bomItems := demoBOMItems(masterData)
+	// an opening stock and every quarter a purchase and two sales per item
+	itemCount := 0
+	for _, t := range masterData {
+		if t.Table == gtables.ItemTableName {
+			for _, r := range t.Records {
+				if !bomItems[fmt.Sprint(r["no"])] {
+					itemCount++
+				}
+			}
+		}
+	}
+	p.setTotal(13 * itemCount)
 	for _, t := range masterData {
 		if t.Table != gtables.ItemTableName {
 			continue
@@ -111,7 +124,7 @@ func demoBOMItems(masterData []tableRecords) map[string]bool {
 
 // postDemoAssemblies assembles the demo bills of materials through the BOM posting (codeunit
 // 32): every quarter a batch of each, from the components in stock
-func postDemoAssemblies(src ftables.Source, open func(src ftables.Source) BOMJnlPoster, today time.Time, masterData []tableRecords, counts *Counts) error {
+func postDemoAssemblies(src ftables.Source, open func(src ftables.Source) BOMJnlPoster, today time.Time, masterData []tableRecords, counts *Counts, p *progress) error {
 	rng := rand.New(rand.NewSource(seed + 90))
 	bomJnlPostLine := open(src)
 	start := today.AddDate(-1, 0, 1)
@@ -121,6 +134,7 @@ func postDemoAssemblies(src ftables.Source, open func(src ftables.Source) BOMJnl
 		itemNos = append(itemNos, itemNo)
 	}
 	sort.Strings(itemNos)
+	p.setTotal(4 * len(itemNos))
 	for q := 0; q < 4; q++ {
 		quarter := start.AddDate(0, 3*q, 10)
 		for _, itemNo := range itemNos {
@@ -169,6 +183,7 @@ func postDemoAssemblies(src ftables.Source, open func(src ftables.Source) BOMJnl
 				return fmt.Errorf("demo BOM journal %s %s: %w", itemNo, line.Document_no, err)
 			}
 			counts.BOMLedgerEntries++
+			p.step()
 		}
 	}
 	return nil

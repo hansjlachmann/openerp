@@ -57,6 +57,8 @@ page:
           - source: payment_discount_percent
           - source: pmt_discount_date
           - source: payment_method_code
+          - source: applies_to_doc_type
+          - source: applies_to_doc_no
           - source: department_code
           - source: project_code
           - source: customer_posting_group
@@ -118,6 +120,26 @@ page:
       image: Delete
       shortcut: Ctrl+D
       promoted: true
+
+    - name: Post
+      caption: Post
+      image: Post
+      shortcut: F11
+      promoted: true
+      run_object: codeunit:81
+
+    - name: Post and Print
+      caption: Post and Print
+      image: Print
+      shortcut: Shift+F11
+      promoted: true
+      run_object: codeunit:82
+
+    - name: Get Shipment Lines
+      caption: Get Shipment Lines
+      image: Lines
+      promoted: true
+      run_object: codeunit:64
 
     - name: Statistics
       caption: Statistics

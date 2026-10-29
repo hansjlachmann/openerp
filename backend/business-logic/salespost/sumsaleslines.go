@@ -63,18 +63,9 @@ func SumSalesLines(salesHeader *gtables.SalesHeader, qtyType QtyType) (SalesTota
 }
 
 func (s *sumSales) sumSalesLines2(qtyType QtyType) error {
-	s.currency = gtables.NewCurrency(s.salesHeader)
-	if s.salesHeader.Currency_code == "" {
-		tables.InitRoundingPrecision(s.currency)
-	} else {
-		err := s.currency.GetOrError(s.salesHeader.Currency_code)
-		if err != nil {
-			return err
-		}
-		err = s.currency.TestField("amount_rounding_precision")
-		if err != nil {
-			return err
-		}
+	err := s.initCurrency()
+	if err != nil {
+		return err
 	}
 	oldSalesLine := gtables.NewSalesLine(s.salesHeader)
 	oldSalesLine.SetRange("document_type", s.salesHeader.Document_type)
@@ -104,6 +95,21 @@ func (s *sumSales) sumSalesLines2(qtyType QtyType) error {
 		}
 	}
 	return nil
+}
+
+// initCurrency: the document's currency and its rounding (local currency: the General Ledger
+// Setup's)
+func (s *sumSales) initCurrency() error {
+	s.currency = gtables.NewCurrency(s.salesHeader)
+	if s.salesHeader.Currency_code == "" {
+		tables.InitRoundingPrecision(s.currency)
+		return nil
+	}
+	err := s.currency.GetOrError(s.salesHeader.Currency_code)
+	if err != nil {
+		return err
+	}
+	return s.currency.TestField("amount_rounding_precision")
 }
 
 // divideAmount (DivideAmount): the line's amounts for a share of its quantity
@@ -192,4 +198,50 @@ func incrAmount(totalSalesLine *gtables.SalesLine, salesLine *gtables.SalesLine)
 	totalSalesLine.Amount_including_tax = totalSalesLine.Amount_including_tax.Add(salesLine.Amount_including_tax)
 	totalSalesLine.Line_discount_amount = totalSalesLine.Line_discount_amount.Add(salesLine.Line_discount_amount)
 	totalSalesLine.Inv_discount_amount = totalSalesLine.Inv_discount_amount.Add(salesLine.Inv_discount_amount)
+}
+
+// Totals are the running totals of SumSalesLines for codeunit 80's posting: each line's share
+// of the amounts is rounded so the totals stay exact, in the document's currency and in LCY
+type Totals struct {
+	s sumSales
+}
+
+// NewTotals starts the totals of a document
+func NewTotals(salesHeader *gtables.SalesHeader) (*Totals, error) {
+	t := &Totals{s: sumSales{salesHeader: salesHeader}}
+	err := t.s.initCurrency()
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// Currency is the document's currency (local currency: the General Ledger Setup's rounding)
+func (t *Totals) Currency() *gtables.Currency { return t.s.currency }
+
+// FCY and LCY are the totals so far in the document's currency and in LCY (LCY: Unit Cost (LCY)
+// holds the cost)
+func (t *Totals) FCY() *gtables.SalesLine { return &t.s.totalSalesLine }
+func (t *Totals) LCY() *gtables.SalesLine { return &t.s.totalSalesLineLCY }
+
+// InvoicedShare adds a line's share for a quantity to the totals and returns it in the
+// document's currency and in LCY (DivideAmount, RoundAmount); the LCY share's Unit Cost (LCY)
+// is the cost of the quantity
+func (t *Totals) InvoicedShare(salesLine *gtables.SalesLine, qty types.Decimal) (*gtables.SalesLine, *gtables.SalesLine) {
+	share := gtables.NewSalesLine(salesLine)
+	share.Copy(salesLine)
+	t.s.divideAmount(share, qty)
+	before := t.s.totalSalesLine
+	_ = t.s.roundAmount(share, qty)
+	lineFCY := gtables.NewSalesLine(salesLine)
+	lineFCY.Copy(salesLine)
+	lineFCY.Amount = t.s.totalSalesLine.Amount.Sub(before.Amount)
+	lineFCY.Amount_including_tax = t.s.totalSalesLine.Amount_including_tax.Sub(before.Amount_including_tax)
+	lineFCY.Tax_base_amount = t.s.totalSalesLine.Tax_base_amount.Sub(before.Tax_base_amount)
+	lineFCY.Line_discount_amount = t.s.totalSalesLine.Line_discount_amount.Sub(before.Line_discount_amount)
+	lineFCY.Inv_discount_amount = t.s.totalSalesLine.Inv_discount_amount.Sub(before.Inv_discount_amount)
+	lineFCY.Quantity = qty
+	share.Quantity = qty
+	share.Unit_cost_lcy = system.Round(qty.Mul(salesLine.Unit_cost_lcy))
+	return lineFCY, share
 }

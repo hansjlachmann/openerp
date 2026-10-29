@@ -4,6 +4,8 @@ import (
 	"github.com/hansjlachmann/openerp/backend/business-logic/formataddress"
 	"github.com/hansjlachmann/openerp/backend/business-logic/salespost"
 	"github.com/hansjlachmann/openerp/backend/business-logic/salesprinted"
+	ftables "github.com/hansjlachmann/openerp/backend/foundation/tables"
+	"github.com/hansjlachmann/openerp/backend/foundation/types"
 	gtables "github.com/hansjlachmann/openerp/backend/generated/tables"
 )
 
@@ -14,7 +16,6 @@ import (
 // document it prints that document. Each report has its layout and texts.
 type salesDocument struct {
 	documentType gtables.SalesHeaderDocument_type
-	companyInfo  *gtables.CompanyInformation
 	salesHeader  *gtables.SalesHeader
 	noOfLoops    int
 	printed      int // documents printed
@@ -66,17 +67,23 @@ func (r *salesDocument) onInitReport(run *Run) error {
 }
 
 func (r *salesDocument) onPreReport(run *Run) error {
-	r.companyInfo = gtables.GetCompanyInformation(run)
+	return setCompanyValues(run)
+}
+
+// setCompanyValues: with Print Company Address the company's address, logo, phone, e-mail and
+// VAT registration no. for the document printouts (CompanyInformation.GET, FormatAddr.Company)
+func setCompanyValues(run *Run) error {
+	companyInfo := gtables.GetCompanyInformation(run)
 	if run.OptionBool("print_company_address") {
-		companyAddress, err := formataddress.Company(r.companyInfo)
+		companyAddress, err := formataddress.Company(companyInfo)
 		if err != nil {
 			return err
 		}
 		run.SetValue("company_address", companyAddress)
-		run.SetValue("company_picture", r.companyInfo.Picture)
-		run.SetValue("company_phone_no", r.companyInfo.Phone_no.String())
-		run.SetValue("company_e_mail", r.companyInfo.E_mail.String())
-		run.SetValue("company_vat_registration_no", r.companyInfo.Vat_registration_no.String())
+		run.SetValue("company_picture", companyInfo.Picture)
+		run.SetValue("company_phone_no", companyInfo.Phone_no.String())
+		run.SetValue("company_e_mail", companyInfo.E_mail.String())
+		run.SetValue("company_vat_registration_no", companyInfo.Vat_registration_no.String())
 	}
 	return nil
 }
@@ -101,33 +108,7 @@ func (r *salesDocument) salesHeaderOnAfterGetRecord(rec *gtables.SalesHeader, ru
 	run.SetValue("bill_to_address", billToAddress)
 	run.SetValue("ship_to_address", shipToAddress)
 
-	salesPurchPerson := gtables.NewSalespersonPurchaser(rec)
-	if rec.Salesperson_code == "" {
-		salesPurchPerson.Init()
-	} else {
-		if !salesPurchPerson.Get(rec.Salesperson_code) {
-			salesPurchPerson.Init()
-		}
-	}
-	run.SetValue("salesperson", salesPurchPerson.Name.String())
-	shipmentMethod := gtables.NewShipmentMethod(rec)
-	if rec.Shipment_method_code == "" {
-		shipmentMethod.Init()
-	} else {
-		if !shipmentMethod.Get(rec.Shipment_method_code) {
-			shipmentMethod.Init()
-		}
-	}
-	run.SetValue("ship_via", shipmentMethod.Description.String())
-	paymentTerms := gtables.NewPaymentTerms(rec)
-	if rec.Payment_terms_code == "" {
-		paymentTerms.Init()
-	} else {
-		if !paymentTerms.Get(rec.Payment_terms_code) {
-			paymentTerms.Init()
-		}
-	}
-	run.SetValue("terms", paymentTerms.Description.String())
+	setTermsValues(run, rec, rec.Salesperson_code, rec.Shipment_method_code, rec.Payment_terms_code)
 
 	totals, err := salespost.SumSalesLines(rec, salespost.General)
 	if err != nil {
@@ -138,18 +119,8 @@ func (r *salesDocument) salesHeaderOnAfterGetRecord(rec *gtables.SalesHeader, ru
 	run.SetValue("invoice_discount", totalSalesLine.Inv_discount_amount.Neg())
 	run.SetValue("tax_amount", totals.TaxAmount)
 	run.SetValue("total", totalSalesLine.Amount_including_tax)
-	if rec.Currency_code == "" {
-		glSetup := gtables.GetGeneralLedgerSetup(rec)
-		run.SetValue("currency", glSetup.Lcy_code.String())
-	} else {
-		run.SetValue("currency", rec.Currency_code.String())
-	}
-
-	noOfCopies := run.OptionInt("no_of_copies")
-	if noOfCopies < 0 {
-		noOfCopies = -noOfCopies
-	}
-	r.noOfLoops = 1 + noOfCopies
+	setCurrencyValue(run, rec, rec.Currency_code)
+	r.noOfLoops = noOfLoops(run)
 	r.printed++
 	run.SetFileName(run.Text("FILE_NAME", rec.No))
 	return nil
@@ -196,4 +167,55 @@ func (r *salesDocument) salesLineOnAfterGetRecord(rec *gtables.SalesLine, run *R
 	run.SetValue("amount_excl_inv_disc", rec.Amount.Add(rec.Inv_discount_amount))
 	run.SetValue("description_2", rec.Description_2.String())
 	return nil
+}
+
+// setTermsValues: the names of the salesperson, the shipment method and the payment terms
+// (blank when they do not exist)
+func setTermsValues(run *Run, src ftables.Source, salespersonCode, shipmentMethodCode, paymentTermsCode types.Code) {
+	salesPurchPerson := gtables.NewSalespersonPurchaser(src)
+	if salespersonCode == "" {
+		salesPurchPerson.Init()
+	} else {
+		if !salesPurchPerson.Get(salespersonCode) {
+			salesPurchPerson.Init()
+		}
+	}
+	run.SetValue("salesperson", salesPurchPerson.Name.String())
+	shipmentMethod := gtables.NewShipmentMethod(src)
+	if shipmentMethodCode == "" {
+		shipmentMethod.Init()
+	} else {
+		if !shipmentMethod.Get(shipmentMethodCode) {
+			shipmentMethod.Init()
+		}
+	}
+	run.SetValue("ship_via", shipmentMethod.Description.String())
+	paymentTerms := gtables.NewPaymentTerms(src)
+	if paymentTermsCode == "" {
+		paymentTerms.Init()
+	} else {
+		if !paymentTerms.Get(paymentTermsCode) {
+			paymentTerms.Init()
+		}
+	}
+	run.SetValue("terms", paymentTerms.Description.String())
+}
+
+// setCurrencyValue: the document's currency, or the local currency code
+func setCurrencyValue(run *Run, src ftables.Source, currencyCode types.Code) {
+	if currencyCode == "" {
+		glSetup := gtables.GetGeneralLedgerSetup(src)
+		run.SetValue("currency", glSetup.Lcy_code.String())
+	} else {
+		run.SetValue("currency", currencyCode.String())
+	}
+}
+
+// noOfLoops: the original and the No. of Copies (NoLoops := 1 + ABS(NoCopies))
+func noOfLoops(run *Run) int {
+	noOfCopies := run.OptionInt("no_of_copies")
+	if noOfCopies < 0 {
+		noOfCopies = -noOfCopies
+	}
+	return 1 + noOfCopies
 }
