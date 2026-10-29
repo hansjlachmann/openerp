@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.120](https://github.com/hansjlachmann/openerp/compare/v0.1.119...v0.1.120) (2026-10-29)
+
+
+### Features
+
+* balance check, posted tables, G/L Balance Check, Preview Posting ([#168](https://github.com/hansjlachmann/openerp/issues/168)) ([77644ec](https://github.com/hansjlachmann/openerp/commit/77644ecc0354f0db1ff364d73e8b65f3693a649e))
+
 ## [0.1.119](https://github.com/hansjlachmann/openerp/compare/v0.1.118...v0.1.119) (2026-10-29)
 
 
