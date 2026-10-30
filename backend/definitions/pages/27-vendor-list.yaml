@@ -140,3 +140,11 @@ page:
       run_page: 297
       run_page_filter_field: vendor_no
       run_page_filter_value: "no"
+
+    - name: Invoice Discounts
+      caption: Invoice Discounts
+      image: Calculate
+      promoted: true
+      run_page: 28
+      run_page_filter_field: code
+      run_page_filter_value: invoice_disc_code

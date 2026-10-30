@@ -427,6 +427,9 @@ messages:
   SALES_CALC_INV_DISC_CONFIRM: "Vil du beregne fakturarabatten?"
   SALES_QUOTE_TO_ORDER_CONFIRM: "Vil du konvertere tilbuddet til en ordre?"
   SALES_QUOTE_CHANGED_TO_ORDER: "Tilbud %1 er konverteret til ordre %2."
+  PURCH_CALC_INV_DISC_CONFIRM: "Vil du beregne fakturarabatten?"
+  PURCH_QUOTE_TO_ORDER_CONFIRM: "Vil du konvertere tilbuddet til en ordre?"
+  PURCH_QUOTE_CHANGED_TO_ORDER: "Tilbud %1 er konverteret til ordre %2."
   SALES_POST_SHIP_INVOICE: "Lever,Fakturer,Lever og fakturer"
   SALES_POST_CONFIRM: "Vil du bogføre %1?"
   # Balance check: the G/L entries of a posting that does not balance (Show Entries)
@@ -449,6 +452,7 @@ messages:
   GL_CHECK_NOT_REGISTERED: "Poster uden journal"
   SALES_SHIPMENT_NO_DESCRIPTION: "Leverancenr. %1:"
   SALES_SERVICE_CHARGE: "Gebyr"
+  PURCH_SERVICE_CHARGE: "Gebyr"
   GEN_JNL_NOTHING_TO_POST: "Der er intet at bogføre."
   GEN_JNL_POSTED: "Kladdelinjerne er bogført."
   GEN_JNL_POSTED_NEW_BATCH: "Kladdelinjerne er bogført. Du er nu i kladden %1."

@@ -588,6 +588,37 @@ pages:
     caption: "Debitorfakturarabatter"
   sales_comment_sheet:
     caption: "Salgsbemærkninger"
+  purchase_quotes:
+    caption: "Købsrekvisitioner"
+  purchase_quote:
+    caption: "Købsrekvisition"
+  purchase_orders:
+    caption: "Købsordrer"
+  purchase_order:
+    caption: "Købsordre"
+  purchase_quote_subform:
+    caption: "Linjer"
+  purchase_order_subform:
+    caption: "Linjer"
+  purch_comment_sheet:
+    caption: "Købsbemærkninger"
+  vend_invoice_discounts:
+    caption: "Kreditorfakturarabatter"
+  purchase_statistics:
+    caption: "Købsstatistik"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Beløb"
+      inv_discount_amount: "Fakturarabatbeløb"
+      total: "I alt"
+      tax_amount: "Momsbeløb"
+      total_incl_tax: "I alt inkl. moms"
+      purchase_lcy: "Køb (DKK)"
+      quantity: "Antal"
+      parcels: "Kolli"
+      net_weight: "Nettovægt"
+      gross_weight: "Bruttovægt"
+      volume: "Rumfang"
+      balance_lcy: "Saldo (RV)"
   company_information:
     caption: "Virksomhedsoplysninger"
   res_capacity_entries:

@@ -427,6 +427,9 @@ messages:
   SALES_CALC_INV_DISC_CONFIRM: "Do you want to calculate the invoice discount?"
   SALES_QUOTE_TO_ORDER_CONFIRM: "Do you want to convert the quote to an order?"
   SALES_QUOTE_CHANGED_TO_ORDER: "Quote %1 has been changed to order %2."
+  PURCH_CALC_INV_DISC_CONFIRM: "Do you want to calculate the invoice discount?"
+  PURCH_QUOTE_TO_ORDER_CONFIRM: "Do you want to convert the quote to an order?"
+  PURCH_QUOTE_CHANGED_TO_ORDER: "Quote %1 has been changed to order %2."
   SALES_POST_SHIP_INVOICE: "Ship,Invoice,Ship and Invoice"
   SALES_POST_CONFIRM: "Do you want to post the %1?"
   # Balance check: the G/L entries of a posting that does not balance (Show Entries)
@@ -449,6 +452,7 @@ messages:
   GL_CHECK_NOT_REGISTERED: "Entries in no register"
   SALES_SHIPMENT_NO_DESCRIPTION: "Shipment No. %1:"
   SALES_SERVICE_CHARGE: "Service Charge"
+  PURCH_SERVICE_CHARGE: "Service Charge"
   GEN_JNL_NOTHING_TO_POST: "There is nothing to post."
   GEN_JNL_POSTED: "The journal lines were successfully posted."
   GEN_JNL_POSTED_NEW_BATCH: "The journal lines were successfully posted. You are now in the %1 journal."

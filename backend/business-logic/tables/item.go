@@ -286,3 +286,64 @@ func AssistEditItem(rec *gtables.Item) (bool, error) {
 	}
 	return picked, nil
 }
+
+// FindItemVend (FindItemVend): the item's purchase terms from the vendor — the Item Vendor line of
+// the vendor (in itemVend.Vendor_no) in effect on itemVend.Starting_date, for its unit of measure
+// when keepUnitOfMeasure (blank: the base unit; the base unit also matches a line without one);
+// without one the item's Last Direct Cost (per the purchase unit of measure, or the unit asked
+// for), its vendor item no. and lead time
+func FindItemVend(item *gtables.Item, itemVend *gtables.ItemVendor, keepUnitOfMeasure bool) error {
+	err := item.TestField("no")
+	if err != nil {
+		return err
+	}
+	vendorNo := itemVend.Vendor_no
+	unitOfMeasureCode := itemVend.Unit_of_measure_code
+	startingDate := itemVend.Starting_date
+	itemVend.Reset()
+	itemVend.SetRange("item_no", item.No)
+	itemVend.SetRange("vendor_no", vendorNo)
+	if keepUnitOfMeasure {
+		if unitOfMeasureCode == "" {
+			unitOfMeasureCode = item.Base_unit_of_measure
+		}
+		if unitOfMeasureCode == item.Base_unit_of_measure {
+			itemVend.SetFilter("unit_of_measure_code", system.StrSubstNo("%1|''", item.Base_unit_of_measure.String()))
+		} else {
+			itemVend.SetRange("unit_of_measure_code", unitOfMeasureCode)
+		}
+	}
+	itemVend.SetRange("starting_date", types.Date{}, startingDate)
+	if itemVend.FindLast() {
+		if itemVend.Unit_of_measure_code == "" {
+			itemVend.Unit_of_measure_code = item.Base_unit_of_measure
+		}
+	} else {
+		itemVend.Init()
+		itemVend.Item_no = item.No
+		itemVend.Currency_code = ""
+		itemVend.Starting_date = types.Date{}
+		if vendorNo == item.Vendor_no && item.Vendor_item_no != "" {
+			itemVend.Vendor_item_no = item.Vendor_item_no
+		} else {
+			itemVend.Vendor_item_no = types.Text(item.No)
+		}
+		itemVend.Vendor_no = vendorNo
+		itemVend.Direct_unit_cost = item.Last_direct_cost
+		itemVend.Unit_of_measure_code = unitOfMeasureCode
+		if !keepUnitOfMeasure {
+			itemVend.Unit_of_measure_code = item.Purch_unit_of_measure
+		}
+		if itemVend.Unit_of_measure_code != item.Base_unit_of_measure {
+			itemUnitOfMeasure := gtables.NewItemUnitOfMeasure(item)
+			err = itemUnitOfMeasure.GetOrError(map[string]interface{}{"item_no": item.No, "code": itemVend.Unit_of_measure_code})
+			if err != nil {
+				return err
+			}
+			itemVend.Direct_unit_cost = system.Round(itemVend.Direct_unit_cost.Mul(itemUnitOfMeasure.Qty_per_unit_of_measure), types.MustDecimal("0.00001"))
+		}
+		itemVend.Lead_time_calculation = item.Lead_time_calculation
+	}
+	itemVend.Reset()
+	return nil
+}

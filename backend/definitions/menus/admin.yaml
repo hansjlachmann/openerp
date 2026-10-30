@@ -311,11 +311,11 @@ menu:
       - separator: true
       - name: "Requisition Worksheets"
       - name: "Quotes"
-        page_id: 49
+        page_id: 9306
       - name: "Blanket Orders"
         page_id: 509
       - name: "Orders"
-        page_id: 50
+        page_id: 9307
       - name: "Invoices"
         page_id: 51
       - name: "Credit Memos"

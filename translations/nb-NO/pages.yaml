@@ -588,6 +588,37 @@ pages:
     caption: "Kundefakturarabatter"
   sales_comment_sheet:
     caption: "Salgsmerknader"
+  purchase_quotes:
+    caption: "Innkjøpstilbud"
+  purchase_quote:
+    caption: "Innkjøpstilbud"
+  purchase_orders:
+    caption: "Innkjøpsordrer"
+  purchase_order:
+    caption: "Innkjøpsordre"
+  purchase_quote_subform:
+    caption: "Linjer"
+  purchase_order_subform:
+    caption: "Linjer"
+  purch_comment_sheet:
+    caption: "Kjøpsmerknader"
+  vend_invoice_discounts:
+    caption: "Leverandørfakturarabatter"
+  purchase_statistics:
+    caption: "Kjøpsstatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Beløp"
+      inv_discount_amount: "Fakturarabattbeløp"
+      total: "Totalt"
+      tax_amount: "Mva.-beløp"
+      total_incl_tax: "Totalt inkl. mva."
+      purchase_lcy: "Kjøp (NOK)"
+      quantity: "Antall"
+      parcels: "Kolli"
+      net_weight: "Nettovekt"
+      gross_weight: "Bruttovekt"
+      volume: "Volum"
+      balance_lcy: "Saldo (NOK)"
   company_information:
     caption: "Firmaopplysninger"
   res_capacity_entries:
