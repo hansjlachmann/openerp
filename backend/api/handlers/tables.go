@@ -1413,7 +1413,9 @@ func rejectSensitiveFields(table ftables.Table, data map[string]interface{}) err
 // validateChangedFields runs ValidateField (VALIDATE) for each field in data whose
 // value differs from the table's current value, in table field order. Unchanged fields are
 // skipped so a stale payload value cannot overwrite a sibling that another field's
-// OnValidate trigger filled in. Unknown fields are still validated so they are reported.
+// OnValidate trigger filled in, and so are values an earlier field's trigger already set (a
+// new line's unit cost from its No.): only the user's changes are validated, as on a page.
+// Unknown fields are still validated so they are reported.
 func validateChangedFields(table ftables.Table, tableName string, data map[string]interface{}) error {
 	current := table.ToMap()
 
@@ -1464,6 +1466,11 @@ func validateChangedFields(table ftables.Table, tableName string, data map[strin
 			continue
 		}
 		if cur, ok := current[fieldName]; ok && fmt.Sprint(cur) == fmt.Sprint(value) {
+			continue
+		}
+		// a value a trigger of an earlier field already set (No. fills the unit cost) is not the
+		// user's change: validating it again would run checks meant for typing it
+		if now, ok := table.ToMap()[fieldName]; ok && fmt.Sprint(now) == fmt.Sprint(value) {
 			continue
 		}
 		if err := table.ValidateField(fieldName, value); err != nil {
