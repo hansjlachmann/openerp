@@ -53,6 +53,22 @@ page:
       shortcut: Ctrl+D
       promoted: true
 
+
+    - name: Post
+      caption: Post
+      image: Post
+      shortcut: F11
+      promoted: true
+      run_object: codeunit:91
+
+    # what Post would write, nothing saved (Posting Preview 115)
+    - name: Preview Posting
+      caption: Preview Posting
+      image: Search
+      shortcut: Ctrl+Alt+F9
+      promoted: true
+      run_object: "table:Purchase_Header.PreviewPosting"
+
     - name: Statistics
       caption: Statistics
       image: Statistics

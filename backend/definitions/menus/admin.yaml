@@ -317,18 +317,18 @@ menu:
       - name: "Orders"
         page_id: 9307
       - name: "Invoices"
-        page_id: 51
+        page_id: 9308
       - name: "Credit Memos"
-        page_id: 52
+        page_id: 9309
       - separator: true
       - name: "Reports"
       - name: "Documents"
       - name: "Posted Receipts"
-        page_id: 136
+        page_id: 145
       - name: "Posted Invoices"
-        page_id: 138
+        page_id: 146
       - name: "Posted Credit Memos"
-        page_id: 140
+        page_id: 147
       - name: "Registers"
         page_id: 116
       - name: "Vendor Ledger Entries"

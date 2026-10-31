@@ -432,6 +432,8 @@ messages:
   PURCH_QUOTE_CHANGED_TO_ORDER: "Quote %1 has been changed to order %2."
   SALES_POST_SHIP_INVOICE: "Ship,Invoice,Ship and Invoice"
   SALES_POST_CONFIRM: "Do you want to post the %1?"
+  PURCH_POST_RECEIVE_INVOICE: "Receive,Invoice,Receive and Invoice"
+  PURCH_POST_CONFIRM: "Do you want to post the %1?"
   # Balance check: the G/L entries of a posting that does not balance (Show Entries)
   BALANCE_CHECK_TITLE: "G/L entries that do not balance"
   BALANCE_CHECK_TOTALS: "Totals by posting date and document"

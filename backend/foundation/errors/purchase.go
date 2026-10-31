@@ -9,6 +9,9 @@ const (
 	ErrPurchCannotInvoiceMore     ErrorCode = "ERR_PURCH_CANNOT_INVOICE_MORE"
 	ErrPurchCannotInvoiceMoreBase ErrorCode = "ERR_PURCH_CANNOT_INVOICE_MORE_BASE"
 	ErrPurchIndirectCostStandard  ErrorCode = "ERR_PURCH_INDIRECT_COST_STANDARD"
+	ErrPurchReceiveOrInvoice      ErrorCode = "ERR_PURCH_RECEIVE_OR_INVOICE"
+	ErrPurchNothingToPost         ErrorCode = "ERR_PURCH_NOTHING_TO_POST"
+	ErrPurchCannotPostType        ErrorCode = "ERR_PURCH_CANNOT_POST_TYPE"
 )
 
 // PurchResetVendorLines: Buy-from Vendor No. cleared on a document that has lines ("You cannot
@@ -46,4 +49,21 @@ func PurchCannotInvoiceMore(qty string, base bool) *AppError {
 // %1, the item's Costing Method caption and value (in the user's language) %2 and %3
 func PurchIndirectCostStandard(table, field, costingMethodCaption, costingMethod string) *AppError {
 	return &AppError{Code: ErrPurchIndirectCostStandard, Table: table, Field: field, Params: []string{costingMethodCaption, costingMethod}}
+}
+
+// PurchReceiveOrInvoice: an order is posted with neither Receive nor Invoice ("Please enter Yes in
+// Receive and/or Invoice.")
+func PurchReceiveOrInvoice(table, field, field2 string) *AppError {
+	return &AppError{Code: ErrPurchReceiveOrInvoice, Table: table, Field: field, Field2: field2}
+}
+
+// PurchNothingToPost: a document has no line with something to receive or invoice
+func PurchNothingToPost() *AppError {
+	return &AppError{Code: ErrPurchNothingToPost}
+}
+
+// PurchCannotPostType: a document of a type that is not posted (a quote, a blanket order) —
+// "Document Type Quote cannot be posted."
+func PurchCannotPostType(table, field string, value any) *AppError {
+	return &AppError{Code: ErrPurchCannotPostType, Table: table, Field: field, Value: value}
 }

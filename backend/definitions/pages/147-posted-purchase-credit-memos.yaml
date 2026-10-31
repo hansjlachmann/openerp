@@ -1,0 +1,44 @@
+page:
+  id: 147
+  type: List
+  name: Posted Purchase Credit Memos
+  source_table: Purch_Cr_Memo_Hdr
+  caption: Posted Purchase Credit Memos
+  card_page_id: 140
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: buy_from_vendor_no
+          width: 130
+        - source: buy_from_vendor_name
+          width: 250
+        - source: posting_date
+          width: 110
+        - source: due_date
+          width: 110
+        - source: currency_code
+          width: 90
+        - source: amount
+          width: 130
+        - source: amount_including_tax
+          width: 150
+        - source: pre_assigned_no
+          width: 120
+          visible: false
+        - source: no_printed
+          width: 100
+          visible: false
+
+  actions:
+    - name: Navigate
+      caption: Navigate
+      image: Navigate
+      shortcut: Ctrl+Alt+Q
+      promoted: true
+      run_page: 344
+      run_page_params:
+        document_no: "no"
+        posting_date: posting_date

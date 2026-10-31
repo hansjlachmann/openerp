@@ -600,6 +600,36 @@ pages:
     caption: "Lines"
   purchase_order_subform:
     caption: "Lines"
+  purchase_invoices:
+    caption: "Purchase Invoices"
+  purchase_invoice:
+    caption: "Purchase Invoice"
+  purch_invoice_subform:
+    caption: "Lines"
+  purchase_credit_memos:
+    caption: "Purchase Credit Memos"
+  purchase_credit_memo:
+    caption: "Purchase Credit Memo"
+  purch_cr_memo_subform:
+    caption: "Lines"
+  posted_purchase_receipts:
+    caption: "Posted Purchase Receipts"
+  posted_purchase_receipt:
+    caption: "Posted Purchase Receipt"
+  posted_purchase_rcpt_subform:
+    caption: "Lines"
+  posted_purchase_invoices:
+    caption: "Posted Purchase Invoices"
+  posted_purchase_invoice:
+    caption: "Posted Purchase Invoice"
+  posted_purch_invoice_subform:
+    caption: "Lines"
+  posted_purchase_credit_memos:
+    caption: "Posted Purchase Credit Memos"
+  posted_purchase_credit_memo:
+    caption: "Posted Purchase Credit Memo"
+  posted_purch_cr_memo_subform:
+    caption: "Lines"
   purch_comment_sheet:
     caption: "Purch. Comment Sheet"
   vend_invoice_discounts:

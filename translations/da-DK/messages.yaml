@@ -432,6 +432,8 @@ messages:
   PURCH_QUOTE_CHANGED_TO_ORDER: "Tilbud %1 er konverteret til ordre %2."
   SALES_POST_SHIP_INVOICE: "Lever,Fakturer,Lever og fakturer"
   SALES_POST_CONFIRM: "Vil du bogføre %1?"
+  PURCH_POST_RECEIVE_INVOICE: "Modtag,Fakturer,Modtag og fakturer"
+  PURCH_POST_CONFIRM: "Vil du bogføre %1?"
   # Balance check: the G/L entries of a posting that does not balance (Show Entries)
   BALANCE_CHECK_TITLE: "Finansposter, der ikke balancerer"
   BALANCE_CHECK_TOTALS: "Summer pr. bogføringsdato og bilag"

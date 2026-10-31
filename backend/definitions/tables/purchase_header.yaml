@@ -4,8 +4,7 @@ table:
   description: "Purchase Header (table 38): quotes, orders, invoices, credit memos and blanket orders"
   data_caption_fields: [no, buy_from_vendor_name]
   auto_key: true   # OnInsert gives a document without No. the next number of its type's series
-  # Left out until their steps: posting (52/53 Applies-to, 57/58 Receive/Invoice, 62-65 numbers),
-  # 12 Ship-to Code and 72 Sell-to Customer No. (drop shipments), 51 On Hold, 55/94 Bal. Account,
+  # Left out until their steps: 12 Ship-to Code and 72 Sell-to Customer No. (drop shipments), 51 On Hold, 55/94 Bal. Account,
   # 56 Job, 75-78/97/101/102 foreign trade statistics, 98 Correction, 117 Reserve, 118 Applies-to
   # ID, 119 VAT Base Discount %, 45 Order Class, 1099 Code
   fields:
@@ -379,6 +378,76 @@ table:
         - field: document_no
           type: field
           value: no
+
+    - name: applies_to_doc_type
+      no: 52
+      type: Option
+      db_name: applies_to_doc_type
+      options: [" ", "Payment", "Invoice", "Credit Memo", "Finance Charge Memo", "Reminder"]
+
+    # an open entry of the pay-to vendor (of the Applies-to Doc. Type) the document is applied to
+    - name: applies_to_doc_no
+      no: 53
+      type: types.Code
+      db_name: applies_to_doc_no
+      length: 20
+      table_relation:
+        table: Vendor_ledger_entry
+        field: document_no
+        filters:
+          vendor_no: {field: pay_to_vendor_no}
+          document_type: {field: applies_to_doc_type}
+          open: {const: "true"}
+        lookup_columns:
+          - source: document_no
+            width: 120
+          - source: document_type
+            width: 120
+          - source: posting_date
+            width: 110
+          - source: due_date
+            width: 110
+          - source: remaining_amount
+            width: 130
+
+    - name: receive
+      no: 57
+      type: bool
+      db_name: receive
+
+    - name: invoice
+      no: 58
+      type: bool
+      db_name: invoice
+
+    - name: receiving_no
+      no: 62
+      type: types.Code
+      db_name: receiving_no
+      length: 20
+
+    - name: posting_no
+      no: 63
+      type: types.Code
+      db_name: posting_no
+      length: 20
+
+    - name: last_receiving_no
+      no: 64
+      type: types.Code
+      db_name: last_receiving_no
+      length: 20
+      editable: false
+      table_relation:
+        table: Purch_Rcpt_Header
+        field: no
+
+    - name: last_posting_no
+      no: 65
+      type: types.Code
+      db_name: last_posting_no
+      length: 20
+      editable: false
 
     - name: vendor_order_no
       no: 66
