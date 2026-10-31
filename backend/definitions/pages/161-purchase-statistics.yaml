@@ -1,0 +1,72 @@
+page:
+  id: 161
+  type: Card
+  name: Purchase Statistics
+  source_table: Purchase_Header   # opened from a purchase document (F9) on the document
+  caption: Purchase Statistics
+  editable: false
+
+  # The calculated fields are filled by the page's OnAfterGetRecord trigger
+  # (business-logic/pages/purchasestatistics.go, Purch.-Post SumPurchLines); their captions are
+  # pages.purchase_statistics.fields.*
+  layout:
+    sections:
+      - name: General
+        caption: General
+        fields:
+          - source: "no"
+          - source: buy_from_vendor_name
+          - source: line_amount
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: inv_discount_amount
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: total
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: tax_amount
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: total_incl_tax
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+            style: Strong
+          - source: purchase_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"
+          - source: quantity
+            calculated: true
+            type: types.Decimal
+            decimal_places: "0:5"
+          - source: parcels
+            calculated: true
+            type: types.Decimal
+            decimal_places: "0:5"
+          - source: net_weight
+            calculated: true
+            type: types.Decimal
+            decimal_places: "0:5"
+          - source: gross_weight
+            calculated: true
+            type: types.Decimal
+            decimal_places: "0:5"
+          - source: volume
+            calculated: true
+            type: types.Decimal
+            decimal_places: "0:5"
+
+      - name: Vendor
+        caption: Vendor
+        fields:
+          - source: pay_to_vendor_no
+          - source: balance_lcy
+            calculated: true
+            type: types.Decimal
+            decimal_places: "2:2"

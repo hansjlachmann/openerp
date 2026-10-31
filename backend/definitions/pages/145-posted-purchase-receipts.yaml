@@ -1,0 +1,39 @@
+page:
+  id: 145
+  type: List
+  name: Posted Purchase Receipts
+  source_table: Purch_Rcpt_Header
+  caption: Posted Purchase Receipts
+  card_page_id: 136
+
+  layout:
+    repeater:
+      fields:
+        - source: "no"
+          width: 120
+        - source: buy_from_vendor_no
+          width: 130
+        - source: buy_from_vendor_name
+          width: 250
+        - source: posting_date
+          width: 110
+        - source: expected_receipt_date
+          width: 130
+        - source: location_code
+          width: 110
+        - source: order_no
+          width: 120
+        - source: no_printed
+          width: 100
+          visible: false
+
+  actions:
+    - name: Navigate
+      caption: Navigate
+      image: Navigate
+      shortcut: Ctrl+Alt+Q
+      promoted: true
+      run_page: 344
+      run_page_params:
+        document_no: "no"
+        posting_date: posting_date

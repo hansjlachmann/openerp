@@ -588,6 +588,67 @@ pages:
     caption: "Cust. Invoice Discounts"
   sales_comment_sheet:
     caption: "Sales Comment Sheet"
+  purchase_quotes:
+    caption: "Purchase Quotes"
+  purchase_quote:
+    caption: "Purchase Quote"
+  purchase_orders:
+    caption: "Purchase Orders"
+  purchase_order:
+    caption: "Purchase Order"
+  purchase_quote_subform:
+    caption: "Lines"
+  purchase_order_subform:
+    caption: "Lines"
+  purchase_invoices:
+    caption: "Purchase Invoices"
+  purchase_invoice:
+    caption: "Purchase Invoice"
+  purch_invoice_subform:
+    caption: "Lines"
+  purchase_credit_memos:
+    caption: "Purchase Credit Memos"
+  purchase_credit_memo:
+    caption: "Purchase Credit Memo"
+  purch_cr_memo_subform:
+    caption: "Lines"
+  posted_purchase_receipts:
+    caption: "Posted Purchase Receipts"
+  posted_purchase_receipt:
+    caption: "Posted Purchase Receipt"
+  posted_purchase_rcpt_subform:
+    caption: "Lines"
+  posted_purchase_invoices:
+    caption: "Posted Purchase Invoices"
+  posted_purchase_invoice:
+    caption: "Posted Purchase Invoice"
+  posted_purch_invoice_subform:
+    caption: "Lines"
+  posted_purchase_credit_memos:
+    caption: "Posted Purchase Credit Memos"
+  posted_purchase_credit_memo:
+    caption: "Posted Purchase Credit Memo"
+  posted_purch_cr_memo_subform:
+    caption: "Lines"
+  purch_comment_sheet:
+    caption: "Purch. Comment Sheet"
+  vend_invoice_discounts:
+    caption: "Vend. Invoice Discounts"
+  purchase_statistics:
+    caption: "Purchase Statistics"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Amount"
+      inv_discount_amount: "Inv. Discount Amount"
+      total: "Total"
+      tax_amount: "Tax Amount"
+      total_incl_tax: "Total Incl. Tax"
+      purchase_lcy: "Purchase (LCY)"
+      quantity: "Quantity"
+      parcels: "Parcels"
+      net_weight: "Net Weight"
+      gross_weight: "Gross Weight"
+      volume: "Volume"
+      balance_lcy: "Balance (LCY)"
   company_information:
     caption: "Company Information"
   res_capacity_entries:

@@ -18,10 +18,17 @@ var (
 	registryMu     sync.RWMutex
 )
 
-// Register adds a codeunit factory to the registry
+// Register adds a codeunit factory to the registry; a number or name registered twice is a
+// programming error (the second would replace the first)
 func Register(id int, name string, factory fcodeunits.Factory) {
 	registryMu.Lock()
 	defer registryMu.Unlock()
+	if _, ok := registry[id]; ok {
+		panic(fmt.Sprintf("codeunit %d registered twice (%s)", id, name))
+	}
+	if _, ok := registryByName[name]; ok {
+		panic(fmt.Sprintf("codeunit name %q registered twice (%d)", name, id))
+	}
 	registry[id] = factory
 	registryByName[name] = id
 }

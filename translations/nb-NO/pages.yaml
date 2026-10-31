@@ -588,6 +588,67 @@ pages:
     caption: "Kundefakturarabatter"
   sales_comment_sheet:
     caption: "Salgsmerknader"
+  purchase_quotes:
+    caption: "Innkjøpstilbud"
+  purchase_quote:
+    caption: "Innkjøpstilbud"
+  purchase_orders:
+    caption: "Innkjøpsordrer"
+  purchase_order:
+    caption: "Innkjøpsordre"
+  purchase_quote_subform:
+    caption: "Linjer"
+  purchase_order_subform:
+    caption: "Linjer"
+  purchase_invoices:
+    caption: "Innkjøpsfakturaer"
+  purchase_invoice:
+    caption: "Innkjøpsfaktura"
+  purch_invoice_subform:
+    caption: "Linjer"
+  purchase_credit_memos:
+    caption: "Innkjøpskreditnotaer"
+  purchase_credit_memo:
+    caption: "Innkjøpskreditnota"
+  purch_cr_memo_subform:
+    caption: "Linjer"
+  posted_purchase_receipts:
+    caption: "Bokførte innkjøpsmottak"
+  posted_purchase_receipt:
+    caption: "Bokført innkjøpsmottak"
+  posted_purchase_rcpt_subform:
+    caption: "Linjer"
+  posted_purchase_invoices:
+    caption: "Bokførte innkjøpsfakturaer"
+  posted_purchase_invoice:
+    caption: "Bokført innkjøpsfaktura"
+  posted_purch_invoice_subform:
+    caption: "Linjer"
+  posted_purchase_credit_memos:
+    caption: "Bokførte innkjøpskreditnotaer"
+  posted_purchase_credit_memo:
+    caption: "Bokført innkjøpskreditnota"
+  posted_purch_cr_memo_subform:
+    caption: "Linjer"
+  purch_comment_sheet:
+    caption: "Kjøpsmerknader"
+  vend_invoice_discounts:
+    caption: "Leverandørfakturarabatter"
+  purchase_statistics:
+    caption: "Kjøpsstatistikk"
+    fields:  # the calculated fields (OnAfterGetRecord)
+      line_amount: "Beløp"
+      inv_discount_amount: "Fakturarabattbeløp"
+      total: "Totalt"
+      tax_amount: "Mva.-beløp"
+      total_incl_tax: "Totalt inkl. mva."
+      purchase_lcy: "Kjøp (NOK)"
+      quantity: "Antall"
+      parcels: "Kolli"
+      net_weight: "Nettovekt"
+      gross_weight: "Bruttovekt"
+      volume: "Volum"
+      balance_lcy: "Saldo (NOK)"
   company_information:
     caption: "Firmaopplysninger"
   res_capacity_entries:

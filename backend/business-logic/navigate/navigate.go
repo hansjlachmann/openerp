@@ -27,6 +27,9 @@ const (
 	salesShptHeadersPage    = 142
 	salesInvHeadersPage     = 143
 	salesCrMemoHeadersPage  = 144
+	purchRcptHeadersPage    = 145
+	purchInvHeadersPage     = 146
+	purchCrMemoHeadersPage  = 147
 )
 
 // entries is what Navigate needs of an entry table's record
@@ -61,6 +64,27 @@ func FindRecords(docEntry *gtables.DocumentEntry, docNoFilter, postingDateFilter
 	if fcodeunits.CanRead("Sales_Cr_Memo_Header") {
 		salesCrMemoHeader := gtables.NewSalesCrMemoHeader(docEntry)
 		err := findPostedDocs(docEntry, salesCrMemoHeader, gtables.SalesCrMemoHeaderTableID, salesCrMemoHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
+	}
+	if fcodeunits.CanRead("Purch_Rcpt_Header") {
+		purchRcptHeader := gtables.NewPurchRcptHeader(docEntry)
+		err := findPostedDocs(docEntry, purchRcptHeader, gtables.PurchRcptHeaderTableID, purchRcptHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
+	}
+	if fcodeunits.CanRead("Purch_Inv_Header") {
+		purchInvHeader := gtables.NewPurchInvHeader(docEntry)
+		err := findPostedDocs(docEntry, purchInvHeader, gtables.PurchInvHeaderTableID, purchInvHeadersPage, docNoFilter, postingDateFilter)
+		if err != nil {
+			return err
+		}
+	}
+	if fcodeunits.CanRead("Purch_Cr_Memo_Hdr") {
+		purchCrMemoHeader := gtables.NewPurchCrMemoHdr(docEntry)
+		err := findPostedDocs(docEntry, purchCrMemoHeader, gtables.PurchCrMemoHdrTableID, purchCrMemoHeadersPage, docNoFilter, postingDateFilter)
 		if err != nil {
 			return err
 		}

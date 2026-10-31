@@ -1108,6 +1108,101 @@ table:
           type: filter
           value: currency_filter
 
+    # the vendor's open purchase orders: outstanding, and received not invoiced (pay-to vendor)
+    - name: outstanding_orders
+      no: 78
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: PurchaseLine
+      source_field: outstanding_amount
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Order
+        - field: pay_to_vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: amt_rcd_not_invoiced
+      no: 79
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: PurchaseLine
+      source_field: amt_rcd_not_invoiced
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Order
+        - field: pay_to_vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+        - field: currency_code
+          type: filter
+          value: currency_filter
+
+    - name: outstanding_orders_lcy
+      no: 113
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: PurchaseLine
+      source_field: outstanding_amount_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Order
+        - field: pay_to_vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
+    - name: amt_rcd_not_invoiced_lcy
+      no: 114
+      type: types.Decimal
+      flow_field: true
+      decimal_places: "2:2"
+      calc_formula: Sum
+      source_table: PurchaseLine
+      source_field: amt_rcd_not_invoiced_lcy
+      flow_filters:
+        - field: document_type
+          type: const
+          value: 1   # Order
+        - field: pay_to_vendor_no
+          type: field
+          value: no
+        - field: department_code
+          type: filter
+          value: department_filter
+        - field: project_code
+          type: filter
+          value: project_filter
+
     # Not a classic field: the number of ledger entries (drilldown to them)
 
     - name: no_of_ledger_entries

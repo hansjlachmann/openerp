@@ -409,18 +409,18 @@ func (salesLineLogic) OnValidate_Qty_to_ship(rec *gtables.SalesLine) error {
 	}
 	rec.Qty_to_ship_base = qtyToShipBase
 	initSalesLineQtyToInvoice(rec)
-	if salesLineQtyAbove(rec.Qty_to_ship, rec.Quantity, rec.Outstanding_quantity) {
+	if qtyToHandleAbove(rec.Qty_to_ship, rec.Quantity, rec.Outstanding_quantity) {
 		return apperrors.SalesCannotShipMore(system.Format(rec.Outstanding_quantity), false)
 	}
-	if salesLineQtyAbove(rec.Qty_to_ship_base, rec.Quantity_base, rec.Outstanding_qty_base) {
+	if qtyToHandleAbove(rec.Qty_to_ship_base, rec.Quantity_base, rec.Outstanding_qty_base) {
 		return apperrors.SalesCannotShipMore(system.Format(rec.Outstanding_qty_base), true)
 	}
 	return nil
 }
 
-// salesLineQtyAbove: a quantity to handle of another sign than the line's quantity, or above
+// qtyToHandleAbove: a quantity to handle of another sign than the line's quantity, or above
 // the most that can be handled (or that one of another sign)
-func salesLineQtyAbove(qtyToHandle, quantity, maxQty types.Decimal) bool {
+func qtyToHandleAbove(qtyToHandle, quantity, maxQty types.Decimal) bool {
 	if qtyToHandle.IsNegative() != quantity.IsNegative() && !quantity.IsZero() && !qtyToHandle.IsZero() {
 		return true
 	}
